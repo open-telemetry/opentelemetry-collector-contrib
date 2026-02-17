@@ -308,6 +308,26 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 	if err != nil {
 		return pcommon.Slice{}, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
+	return valueToPSlice(val)
+}
+
+func newPSliceFromIntegers[T constraints.Integer](source []T) (pcommon.Slice, error) {
+	return newPSliceFrom(source, func(target *pcommon.Value, value T) {
+		target.SetInt(int64(value))
+	})
+}
+
+func newPSliceFrom[T any](source []T, set func(target *pcommon.Value, value T)) (pcommon.Slice, error) {
+	s := pcommon.NewSlice()
+	s.EnsureCapacity(len(source))
+	for _, v := range source {
+		empty := s.AppendEmpty()
+		set(&empty, v)
+	}
+	return s, nil
+}
+
+func valueToPSlice(val any) (pcommon.Slice, error) {
 	if val == nil {
 		return pcommon.Slice{}, TypeError("expected pcommon.Slice but got nil")
 	}
@@ -320,12 +340,7 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 		}
 		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %v", v.Type()))
 	case []any:
-		s := pcommon.NewSlice()
-		err = s.FromRaw(v)
-		if err != nil {
-			return pcommon.Slice{}, err
-		}
-		return s, nil
+		return newPSliceFromAny(v)
 	// Handle common slice types returned by OTTL functions
 	case []string:
 		return newPSliceFrom(v, func(target *pcommon.Value, value string) { target.SetStr(value) })
@@ -356,20 +371,46 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 	}
 }
 
-func newPSliceFromIntegers[T constraints.Integer](source []T) (pcommon.Slice, error) {
-	return newPSliceFrom(source, func(target *pcommon.Value, value T) {
-		target.SetInt(int64(value))
-	})
-}
-
-func newPSliceFrom[T any](source []T, set func(target *pcommon.Value, value T)) (pcommon.Slice, error) {
+func newPSliceFromAny(source []any) (pcommon.Slice, error) {
 	s := pcommon.NewSlice()
-	s.EnsureCapacity(len(source))
-	for _, v := range source {
-		empty := s.AppendEmpty()
-		set(&empty, v)
+	if err := setPSliceFromAny(s, source); err != nil {
+		return pcommon.Slice{}, err
 	}
 	return s, nil
+}
+
+func setPSliceFromAny(target pcommon.Slice, source []any) error {
+	target.EnsureCapacity(len(source))
+	for i, value := range source {
+		if err := setPValueFromAny(target.AppendEmpty(), value); err != nil {
+			return fmt.Errorf("element %d: %w", i, err)
+		}
+	}
+	return nil
+}
+
+func setPValueFromAny(target pcommon.Value, value any) error {
+	if value == nil {
+		return nil
+	}
+
+	switch typedVal := value.(type) {
+	case pcommon.Value:
+		typedVal.CopyTo(target)
+	case pcommon.Map:
+		typedVal.CopyTo(target.SetEmptyMap())
+	case pcommon.Slice:
+		typedVal.CopyTo(target.SetEmptySlice())
+	case []any:
+		if err := setPSliceFromAny(target.SetEmptySlice(), typedVal); err != nil {
+			return err
+		}
+	default:
+		if err := target.FromRaw(value); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // TypeError represents that a value was not an expected type.
@@ -377,6 +418,57 @@ type TypeError string
 
 func (t TypeError) Error() string {
 	return string(t)
+}
+
+func valueToString(val any) (string, error) {
+	if val == nil {
+		return "", TypeError("expected string but got nil")
+	}
+	switch v := val.(type) {
+	case string:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeStr {
+			return v.Str(), nil
+		}
+		return "", TypeError(fmt.Sprintf("expected string but got %v", v.Type()))
+	default:
+		return "", TypeError(fmt.Sprintf("expected string but got %T", val))
+	}
+}
+
+func valueToStringLike(val any) (*string, error) {
+	if val == nil {
+		return nil, nil
+	}
+	var result string
+	switch v := val.(type) {
+	case string:
+		result = v
+	case []byte:
+		result = hex.EncodeToString(v)
+	case pcommon.Map:
+		resultBytes, err := json.Marshal(v.AsRaw())
+		if err != nil {
+			return nil, err
+		}
+		result = string(resultBytes)
+	case pcommon.Slice:
+		resultBytes, err := json.Marshal(v.AsRaw())
+		if err != nil {
+			return nil, err
+		}
+		result = string(resultBytes)
+	case pcommon.Value:
+		result = v.AsString()
+	default:
+		resultBytes, err := json.Marshal(v)
+		if err != nil {
+			return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
+		}
+		result = string(resultBytes)
+	}
+	return &result, nil
 }
 
 // StringGetter is a Getter that must return a string.
@@ -414,20 +506,7 @@ func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error
 	if err != nil {
 		return "", fmt.Errorf("error getting value in %T: %w", g, err)
 	}
-	if val == nil {
-		return "", TypeError("expected string but got nil")
-	}
-	switch v := val.(type) {
-	case string:
-		return v, nil
-	case pcommon.Value:
-		if v.Type() == pcommon.ValueTypeStr {
-			return v.Str(), nil
-		}
-		return "", TypeError(fmt.Sprintf("expected string but got %v", v.Type()))
-	default:
-		return "", TypeError(fmt.Sprintf("expected string but got %T", val))
-	}
+	return valueToString(val)
 }
 
 // IntGetter is a Getter that must return an int64.
@@ -735,37 +814,7 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 	if err != nil {
 		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
-	if val == nil {
-		return nil, nil
-	}
-	var result string
-	switch v := val.(type) {
-	case string:
-		result = v
-	case []byte:
-		result = hex.EncodeToString(v)
-	case pcommon.Map:
-		resultBytes, err := json.Marshal(v.AsRaw())
-		if err != nil {
-			return nil, err
-		}
-		result = string(resultBytes)
-	case pcommon.Slice:
-		resultBytes, err := json.Marshal(v.AsRaw())
-		if err != nil {
-			return nil, err
-		}
-		result = string(resultBytes)
-	case pcommon.Value:
-		result = v.AsString()
-	default:
-		resultBytes, err := json.Marshal(v)
-		if err != nil {
-			return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
-		}
-		result = string(resultBytes)
-	}
-	return &result, nil
+	return valueToStringLike(val)
 }
 
 // FloatLikeGetter is a Getter that returns a float64 by converting the underlying value to a float64 if necessary.

@@ -569,12 +569,38 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return newStandardStringGetter[K](arg)
+	case strings.HasPrefix(name, "StringSliceGetter"):
+		if argVal.List != nil {
+			typedGetters, err := buildSlice[StringGetter[K]](argVal, reflect.TypeFor[[]StringGetter[K]](), p.buildArg, "StringGetter")
+			if err != nil {
+				return nil, err
+			}
+			return newStringSliceGetterFromStringGetters(typedGetters.([]StringGetter[K])), nil
+		}
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return newStandardStringSliceGetter[K](arg)
 	case strings.HasPrefix(name, "StringLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
 		return newStandardStringLikeGetter[K](arg)
+	case strings.HasPrefix(name, "StringLikeSliceGetter"):
+		if argVal.List != nil {
+			typedGetters, err := buildSlice[StringLikeGetter[K]](argVal, reflect.TypeFor[[]StringLikeGetter[K]](), p.buildArg, "StringLikeGetter")
+			if err != nil {
+				return nil, err
+			}
+			return newStringLikeSliceGetterFromStringLikeGetters(typedGetters.([]StringLikeGetter[K])), nil
+		}
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return newStandardStringLikeSliceGetter[K](arg)
 	case strings.HasPrefix(name, "FloatGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {

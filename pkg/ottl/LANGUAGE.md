@@ -65,6 +65,8 @@ The following types are supported for single-value parameters in OTTL functions:
 - `FloatLikeGetter`
 - `StringGetter`
 - `StringLikeGetter`
+- `StringSliceGetter`
+- `StringLikeSliceGetter`
 - `IntGetter`
 - `IntLikeGetter`
 - `BoolGetter`

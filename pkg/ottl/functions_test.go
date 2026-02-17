@@ -2010,6 +2010,189 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 	assert.Zero(t, args.OptionalFloatArg)
 }
 
+func Test_NewFunctionCall_TypedSliceGetters(t *testing.T) {
+	p, err := NewParser(
+		CreateFactoryMap(
+			createFactory[any](
+				"testing_stringslicegetter",
+				&stringSliceGetterArguments{},
+				functionWithStringSliceGetter,
+			),
+			createFactory[any](
+				"testing_stringlikeslicegetter",
+				&stringLikeSliceGetterArguments{},
+				functionWithStringLikeSliceGetter,
+			),
+		),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+
+	makePathArg := func() argument {
+		return argument{
+			Value: value{
+				Literal: &mathExprLiteral{
+					Path: &path{
+						Fields: []field{
+							{Name: "name"},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		function string
+		tCtx     any
+		want     any
+	}{
+		{
+			name:     "string slice getter",
+			function: "testing_stringslicegetter",
+			tCtx:     []string{"a", "b"},
+			want:     2,
+		},
+		{
+			name:     "string like slice getter",
+			function: "testing_stringlikeslicegetter",
+			tCtx:     []any{"a", int64(1), nil},
+			want:     3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fn, err := p.newFunctionCall(editor{
+				Function: tt.function,
+				Arguments: []argument{
+					makePathArg(),
+				},
+			})
+			require.NoError(t, err)
+
+			got, err := fn.Eval(t.Context(), tt.tCtx)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_NewFunctionCall_StringSliceGetterListValidation(t *testing.T) {
+	p, err := NewParser(
+		CreateFactoryMap(
+			createFactory[any](
+				"testing_stringslicegetter",
+				&stringSliceGetterArguments{},
+				functionWithStringSliceGetter,
+			),
+			createFactory[any](
+				"testing_stringlikeslicegetter",
+				&stringLikeSliceGetterArguments{},
+				functionWithStringLikeSliceGetter,
+			),
+		),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+
+	t.Run("string slice getter rejects invalid literal element at parse-time", func(t *testing.T) {
+		_, err = p.newFunctionCall(editor{
+			Function: "testing_stringslicegetter",
+			Arguments: []argument{
+				{
+					Value: value{
+						List: &list{
+							Values: []value{
+								{String: ottltest.Strp("a")},
+								{Literal: &mathExprLiteral{Int: ottltest.Intp(1)}},
+								{
+									Literal: &mathExprLiteral{
+										Path: &path{
+											Fields: []field{
+												{Name: "name"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "error while parsing list argument at index 1")
+		assert.ErrorContains(t, err, "expected string but got int64")
+	})
+
+	t.Run("string slice getter accepts valid mixed list", func(t *testing.T) {
+		fn, err := p.newFunctionCall(editor{
+			Function: "testing_stringslicegetter",
+			Arguments: []argument{
+				{
+					Value: value{
+						List: &list{
+							Values: []value{
+								{String: ottltest.Strp("a")},
+								{
+									Literal: &mathExprLiteral{
+										Path: &path{
+											Fields: []field{
+												{Name: "name"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+		require.NoError(t, err)
+		got, err := fn.Eval(t.Context(), "b")
+		require.NoError(t, err)
+		assert.Equal(t, 2, got)
+	})
+
+	t.Run("string like slice getter preserves scalar conversion semantics", func(t *testing.T) {
+		fn, err := p.newFunctionCall(editor{
+			Function: "testing_stringlikeslicegetter",
+			Arguments: []argument{
+				{
+					Value: value{
+						List: &list{
+							Values: []value{
+								{String: ottltest.Strp("a")},
+								{Literal: &mathExprLiteral{Int: ottltest.Intp(1)}},
+								{
+									Literal: &mathExprLiteral{
+										Path: &path{
+											Fields: []field{
+												{Name: "name"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+		require.NoError(t, err)
+		got, err := fn.Eval(t.Context(), true)
+		require.NoError(t, err)
+		assert.Equal(t, 3, got)
+	})
+}
+
 func functionWithNoArguments() (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return nil, nil
@@ -2169,6 +2352,34 @@ type intLikeGetterSliceArguments struct {
 func functionWithIntLikeGetterSlice(getters []IntLikeGetter[any]) (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return len(getters), nil
+	}, nil
+}
+
+type stringSliceGetterArguments struct {
+	StringSliceGetter StringSliceGetter[any]
+}
+
+func functionWithStringSliceGetter(getter StringSliceGetter[any]) (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
+		vals, err := getter.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return len(vals), nil
+	}, nil
+}
+
+type stringLikeSliceGetterArguments struct {
+	StringLikeSliceGetter StringLikeSliceGetter[any]
+}
+
+func functionWithStringLikeSliceGetter(getter StringLikeSliceGetter[any]) (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
+		vals, err := getter.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return len(vals), nil
 	}, nil
 }
 
