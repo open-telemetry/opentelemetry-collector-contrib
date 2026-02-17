@@ -228,11 +228,11 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "93"
+                - asInt: "105"
                   attributes:
                     - key: splunk.index.name
                       value:
-                        stringValue: some_val2
+                        stringValue: some_val5
                     - key: splunk.splunkd.build
                       value:
                         stringValue: ""
@@ -241,11 +241,11 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "105"
+                - asInt: "93"
                   attributes:
                     - key: splunk.index.name
                       value:
-                        stringValue: some_val5
+                        stringValue: some_val2
                     - key: splunk.splunkd.build
                       value:
                         stringValue: ""
