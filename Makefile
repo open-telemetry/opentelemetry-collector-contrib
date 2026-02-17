@@ -91,7 +91,7 @@ all-groups:
 	@echo -e "\ngenerated: $(GENERATED_MODS)"
 
 .PHONY: all
-all: install-tools all-common goporto multimod-verify gotest otelcontribcol
+all: all-common goporto multimod-verify gotest otelcontribcol
 
 .PHONY: all-common
 all-common:
@@ -146,7 +146,7 @@ gogci:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
 
 .PHONY: tidylist
-tidylist: $(CROSSLINK)
+tidylist:
 	cd internal/tidylist && \
 	$(CROSSLINK) tidylist \
 		--validate \
@@ -243,7 +243,7 @@ gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
 
 .PHONY: goporto
-goporto: $(PORTO)
+goporto:
 	$(PORTO) -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
@@ -266,7 +266,7 @@ COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
 .PHONY: push-tags
-push-tags: $(MULTIMOD)
+push-tags:
 	$(MULTIMOD) verify
 	set -e; for tag in `$(MULTIMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
@@ -395,11 +395,11 @@ docker-golden:
 
 
 .PHONY: gengithub
-gengithub: $(GITHUBGEN)
+gengithub:
 	$(GITHUBGEN)
 
 .PHONY: gendistributions
-gendistributions: $(GITHUBGEN)
+gendistributions:
 	$(GITHUBGEN) distributions
 
 .PHONY: gencodecov
@@ -411,32 +411,32 @@ update-codeowners: generate gengithub
 	$(MAKE) genlabels
 
 .PHONY: gencodeowners
-gencodeowners: install-tools
+gencodeowners:
 	$(GITHUBGEN) -skipgithub
 
 .PHONY: generate-chloggen-components
-generate-chloggen-components: $(GITHUBGEN)
+generate-chloggen-components:
 	$(GITHUBGEN) chloggen-components
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
-chlog-new: $(CHLOGGEN)
+chlog-new:
 	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate: $(CHLOGGEN)
+chlog-validate:
 	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG)
 
 .PHONY: chlog-preview
-chlog-preview: $(CHLOGGEN)
+chlog-preview:
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --dry
 
 .PHONY: chlog-update
-chlog-update: $(CHLOGGEN)
+chlog-update:
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
 .PHONY: genotelcontribcol
-genotelcontribcol: $(BUILDER)
+genotelcontribcol:
 	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
 	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
 
@@ -453,7 +453,7 @@ otelcontribcollite: genotelcontribcol
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
 .PHONY: genoteltestbedcol
-genoteltestbedcol: $(BUILDER)
+genoteltestbedcol:
 	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
 	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml
 
@@ -530,7 +530,7 @@ endef
 
 
 .PHONY: update-otel
-update-otel:$(MULTIMOD)
+update-otel:
 	# Make sure cmd/otelcontribcol/go.mod and cmd/oteltestbedcol/go.mod are present
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
@@ -541,7 +541,6 @@ update-otel:$(MULTIMOD)
 	$(MAKE) gotidy
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
-	$(MAKE) -B install-tools
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
@@ -599,16 +598,16 @@ build-examples:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc: $(CHECKFILE)
+checkdoc:
 	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
 
 # Verify existence of metadata.yaml for components specified as default components in the collector.
 .PHONY: checkmetadata
-checkmetadata: $(CHECKFILE)
+checkmetadata:
 	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: checkapi
-checkapi: $(CHECKAPI)
+checkapi:
 	$(CHECKAPI) -folder . -config .checkapi.yaml
 
 .PHONY: kind-ready
@@ -665,27 +664,27 @@ certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
 
 .PHONY: multimod-verify
-multimod-verify: $(MULTIMOD)
+multimod-verify:
 	@echo "Validating versions.yaml"
 	$(MULTIMOD) verify
 
 .PHONY: multimod-prerelease
-multimod-prerelease: $(MULTIMOD)
+multimod-prerelease:
 	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
 	$(MAKE) gotidy
 
 .PHONY: multimod-sync
-multimod-sync: $(MULTIMOD)
+multimod-sync:
 	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector
 	$(MAKE) gotidy
 
 .PHONY: crosslink
-crosslink: $(CROSSLINK)
+crosslink:
 	@echo "Executing crosslink"
 	$(CROSSLINK) --root=$(shell pwd) --prune
 
 .PHONY: actionlint
-actionlint: $(ACTIONLINT)
+actionlint:
 	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(filter-out $(wildcard .github/workflows/*windows.y*), $(wildcard .github/workflows/*.y*))
 
 .PHONY: clean
