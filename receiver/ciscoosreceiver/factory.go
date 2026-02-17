@@ -59,14 +59,7 @@ func createMetricsReceiver(
 	}
 
 	var receivers []receiver.Metrics
-	for i, device := range conf.Devices {
-		if device.Host == "" {
-			set.Logger.Warn("Skipping device with missing host",
-				zap.Int("device_index", i),
-				zap.String("device_name", device.Name))
-			continue
-		}
-
+	for _, device := range conf.Devices {
 		connDevice := connection.DeviceConfig{
 			Device: connection.DeviceInfo{
 				Host: connection.HostInfo{
