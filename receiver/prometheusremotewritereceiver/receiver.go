@@ -134,13 +134,11 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 		return fmt.Errorf("failed to create prometheus remote-write listener: %w", err)
 	}
 
-	prw.wg.Add(1)
-	go func() {
-		defer prw.wg.Done()
+	prw.wg.Go(func() {
 		if err := prw.server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting prometheus remote-write receiver: %w", err)))
 		}
-	}()
+	})
 	return nil
 }
 

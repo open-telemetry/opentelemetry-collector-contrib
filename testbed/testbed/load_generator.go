@@ -217,10 +217,7 @@ func (ps *ProviderSender) generate() {
 	tickDuration := ps.perWorkerTickDuration(numWorkers)
 
 	for i := 0; i < numWorkers; i++ {
-		workers.Add(1)
-
-		go func() {
-			defer workers.Done()
+		workers.Go(func() {
 			t := time.NewTicker(tickDuration)
 			defer t.Stop()
 
@@ -238,7 +235,7 @@ func (ps *ProviderSender) generate() {
 					return
 				}
 			}
-		}()
+		})
 	}
 
 	workers.Wait()

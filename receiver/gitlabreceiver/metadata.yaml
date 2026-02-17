@@ -6,7 +6,7 @@ status:
     alpha: [traces]
   distributions: [contrib]
   codeowners:
-    active: [adrielp, atoulme]
+    active: [adrielp, atoulme, niwoerner]
 tests:
   config:
     webhook:

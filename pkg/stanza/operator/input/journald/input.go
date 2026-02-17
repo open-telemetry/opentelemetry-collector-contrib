@@ -146,10 +146,7 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 	// This goroutine reads the stderr from the journalctl process. If the
 	// process exits for any reason, then the stderr will be closed, this
 	// goroutine will get an EOF error and exit.
-	operator.wg.Add(1)
-	go func() {
-		defer operator.wg.Done()
-
+	operator.wg.Go(func() {
 		stderrBuf := bufio.NewReader(jctl.stderr)
 
 		for {
@@ -162,17 +159,14 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 			}
 			operator.Logger().Error("Received from journalctl stderr", zap.ByteString("stderr", line))
 		}
-	}()
+	})
 
 	// Start the reader goroutine.
 	// This goroutine reads the stdout from the journalctl process, parses
 	// the data, and writes to output. If the journalctl process exits for
 	// any reason, then the stdout will be closed, this goroutine will get
 	// an EOF error and exits.
-	operator.wg.Add(1)
-	go func() {
-		defer operator.wg.Done()
-
+	operator.wg.Go(func() {
 		stdoutBuf := bufio.NewReader(jctl.stdout)
 
 		for {
@@ -196,7 +190,7 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 				operator.Logger().Error("failed to write entry", zap.Error(err))
 			}
 		}
-	}()
+	})
 
 	// we wait for the reader goroutines to exit before calling Cmd.Wait().
 	// As per documentation states, "It is thus incorrect to call Wait before all reads from the pipe have completed".

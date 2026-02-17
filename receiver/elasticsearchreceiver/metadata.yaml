@@ -195,8 +195,7 @@ metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.memory.estimated:
     description: Estimated memory used for the operation.
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -204,8 +203,7 @@ metrics:
     enabled: true
   elasticsearch.breaker.memory.limit:
     description: Memory limit for the circuit breaker.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -215,8 +213,7 @@ metrics:
     enabled: true
   elasticsearch.breaker.tripped:
     description: Total number of times the circuit breaker has been triggered and prevented an out of memory error.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: true
@@ -226,8 +223,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.data_nodes:
     description: The number of data nodes in the cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{nodes}"
     sum:
       monotonic: false
@@ -237,8 +233,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.health:
     description: The health status of the cluster.
-    stability:
-      level: development
+    stability: development
     extended_documentation: Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable.
     unit: "{status}"
     sum:
@@ -249,8 +244,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.in_flight_fetch:
     description: The number of unfinished fetches.
-    stability:
-      level: development
+    stability: development
     unit: "{fetches}"
     sum:
       monotonic: false
@@ -261,8 +255,7 @@ metrics:
   # these metrics are from /_cluster/health, and are cluster level metrics
   elasticsearch.cluster.indices.cache.evictions:
     description: The number of evictions from the cache for indices in cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{evictions}"
     sum:
       monotonic: true
@@ -272,8 +265,7 @@ metrics:
     enabled: false
   elasticsearch.cluster.nodes:
     description: The total number of nodes in the cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{nodes}"
     sum:
       monotonic: false
@@ -283,8 +275,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.pending_tasks:
     description: The number of cluster-level changes that have not yet been executed.
-    stability:
-      level: development
+    stability: development
     unit: "{tasks}"
     sum:
       monotonic: false
@@ -294,8 +285,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.published_states.differences:
     description: Number of differences between published cluster states.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: false
@@ -305,8 +295,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.published_states.full:
     description: Number of published cluster states.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: false
@@ -316,8 +305,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.shards:
     description: The number of shards in the cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{shards}"
     sum:
       monotonic: false
@@ -327,8 +315,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.state_queue:
     description: Number of cluster states in queue.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: false
@@ -338,8 +325,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.state_update.count:
     description: The number of cluster state update attempts that changed the cluster state since the node started.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: true
@@ -349,8 +335,7 @@ metrics:
     enabled: true
   elasticsearch.cluster.state_update.time:
     description: The cumulative amount of time updating the cluster state since the node started.
-    stability:
-      level: development
+    stability: development
     unit: ms
     sum:
       monotonic: true
@@ -360,8 +345,7 @@ metrics:
     enabled: true
   elasticsearch.index.cache.evictions:
     description: The number of evictions from the cache for an index.
-    stability:
-      level: development
+    stability: development
     unit: "{evictions}"
     sum:
       monotonic: true
@@ -371,8 +355,7 @@ metrics:
     enabled: false
   elasticsearch.index.cache.memory.usage:
     description: The size in bytes of the cache for an index.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -382,8 +365,7 @@ metrics:
     enabled: false
   elasticsearch.index.cache.size:
     description: The number of elements of the query cache for an index.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: false
@@ -393,8 +375,7 @@ metrics:
     enabled: false
   elasticsearch.index.documents:
     description: The number of documents for an index.
-    stability:
-      level: development
+    stability: development
     unit: "{documents}"
     sum:
       monotonic: false
@@ -404,8 +385,7 @@ metrics:
     enabled: true
   elasticsearch.index.operations.completed:
     description: The number of operations completed for an index.
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     sum:
       monotonic: true
@@ -415,8 +395,7 @@ metrics:
     enabled: true
   elasticsearch.index.operations.merge.current:
     description: The number of currently active segment merges
-    stability:
-      level: development
+    stability: development
     unit: "{merges}"
     gauge:
       value_type: int
@@ -424,8 +403,7 @@ metrics:
     enabled: true
   elasticsearch.index.operations.merge.docs_count:
     description: The total number of documents in merge operations for an index.
-    stability:
-      level: development
+    stability: development
     unit: "{documents}"
     sum:
       monotonic: true
@@ -435,8 +413,7 @@ metrics:
     enabled: false
   elasticsearch.index.operations.merge.size:
     description: The total size of merged segments for an index.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: true
@@ -446,8 +423,7 @@ metrics:
     enabled: false
   elasticsearch.index.operations.time:
     description: Time spent on operations for an index.
-    stability:
-      level: development
+    stability: development
     unit: ms
     sum:
       monotonic: true
@@ -457,8 +433,7 @@ metrics:
     enabled: true
   elasticsearch.index.segments.count:
     description: Number of segments of an index.
-    stability:
-      level: development
+    stability: development
     unit: "{segments}"
     sum:
       monotonic: false
@@ -468,8 +443,7 @@ metrics:
     enabled: true
   elasticsearch.index.segments.memory:
     description: Size of memory for segment object of an index.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -479,8 +453,7 @@ metrics:
     enabled: false
   elasticsearch.index.segments.size:
     description: Size of segments of an index.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -490,8 +463,7 @@ metrics:
     enabled: false
   elasticsearch.index.shards.size:
     description: The size of the shards assigned to this index.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -501,8 +473,7 @@ metrics:
     enabled: true
   elasticsearch.index.translog.operations:
     description: Number of transaction log operations for an index.
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     sum:
       monotonic: true
@@ -512,8 +483,7 @@ metrics:
     enabled: false
   elasticsearch.index.translog.size:
     description: Size of the transaction log for an index.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -523,8 +493,7 @@ metrics:
     enabled: false
   elasticsearch.indexing_pressure.memory.limit:
     description: Configured memory limit, in bytes, for the indexing requests.
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -532,8 +501,7 @@ metrics:
     enabled: true
   elasticsearch.indexing_pressure.memory.total.primary_rejections:
     description: Cumulative number of indexing requests rejected in the primary stage.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: true
@@ -543,8 +511,7 @@ metrics:
     enabled: true
   elasticsearch.indexing_pressure.memory.total.replica_rejections:
     description: Number of indexing requests rejected in the replica stage.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: true
@@ -554,8 +521,7 @@ metrics:
     enabled: true
   elasticsearch.memory.indexing_pressure:
     description: Memory consumed, in bytes, by indexing requests in the specified stage.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -565,8 +531,7 @@ metrics:
     enabled: true
   elasticsearch.node.cache.count:
     description: Total count of query cache misses across all shards assigned to selected nodes.
-    stability:
-      level: development
+    stability: development
     unit: "{count}"
     sum:
       monotonic: false
@@ -576,8 +541,7 @@ metrics:
     enabled: true
   elasticsearch.node.cache.evictions:
     description: The number of evictions from the cache on a node.
-    stability:
-      level: development
+    stability: development
     unit: "{evictions}"
     sum:
       monotonic: true
@@ -587,8 +551,7 @@ metrics:
     enabled: true
   elasticsearch.node.cache.memory.usage:
     description: The size in bytes of the cache on a node.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -598,8 +561,7 @@ metrics:
     enabled: true
   elasticsearch.node.cache.size:
     description: Total amount of memory used for the query cache across all shards assigned to the node.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -609,8 +571,7 @@ metrics:
     enabled: false
   elasticsearch.node.cluster.connections:
     description: The number of open tcp connections for internal cluster communication.
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     sum:
       monotonic: false
@@ -620,8 +581,7 @@ metrics:
     enabled: true
   elasticsearch.node.cluster.io:
     description: The number of bytes sent and received on the network for internal cluster communication.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: true
@@ -631,8 +591,7 @@ metrics:
     enabled: true
   elasticsearch.node.disk.io.read:
     description: The total number of kilobytes read across all file stores for this node.
-    stability:
-      level: development
+    stability: development
     unit: KiBy
     sum:
       monotonic: false
@@ -648,8 +607,7 @@ metrics:
   # Linux always considers sectors to be 512 bytes https://github.com/torvalds/linux/blob/6f0d349d922ba44e4348a17a78ea51b7135965b1/include/linux/types.h#L125
   elasticsearch.node.disk.io.write:
     description: The total number of kilobytes written across all file stores for this node.
-    stability:
-      level: development
+    stability: development
     unit: KiBy
     sum:
       monotonic: false
@@ -660,8 +618,7 @@ metrics:
     extended_documentation: This metric is available only on Linux systems.
   elasticsearch.node.documents:
     description: The number of documents on the node.
-    stability:
-      level: development
+    stability: development
     unit: "{documents}"
     sum:
       monotonic: false
@@ -671,8 +628,7 @@ metrics:
     enabled: true
   elasticsearch.node.fs.disk.available:
     description: The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -682,8 +638,7 @@ metrics:
     enabled: true
   elasticsearch.node.fs.disk.free:
     description: The amount of unallocated disk space across all file stores for this node.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -693,8 +648,7 @@ metrics:
     enabled: true
   elasticsearch.node.fs.disk.total:
     description: The amount of disk space across all file stores for this node.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -709,8 +663,7 @@ metrics:
   # Linux always considers sectors to be 512 bytes https://github.com/torvalds/linux/blob/6f0d349d922ba44e4348a17a78ea51b7135965b1/include/linux/types.h#L125
   elasticsearch.node.http.connections:
     description: The number of HTTP connections to the node.
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     sum:
       monotonic: false
@@ -720,8 +673,7 @@ metrics:
     enabled: true
   elasticsearch.node.ingest.documents:
     description: Total number of documents ingested during the lifetime of this node.
-    stability:
-      level: development
+    stability: development
     unit: "{documents}"
     sum:
       monotonic: true
@@ -731,8 +683,7 @@ metrics:
     enabled: true
   elasticsearch.node.ingest.documents.current:
     description: Total number of documents currently being ingested.
-    stability:
-      level: development
+    stability: development
     unit: "{documents}"
     sum:
       monotonic: false
@@ -742,8 +693,7 @@ metrics:
     enabled: true
   elasticsearch.node.ingest.operations.failed:
     description: Total number of failed ingest operations during the lifetime of this node.
-    stability:
-      level: development
+    stability: development
     unit: "{operation}"
     sum:
       monotonic: true
@@ -753,8 +703,7 @@ metrics:
     enabled: true
   elasticsearch.node.open_files:
     description: The number of open file descriptors held by the node.
-    stability:
-      level: development
+    stability: development
     unit: "{files}"
     sum:
       monotonic: false
@@ -766,8 +715,7 @@ metrics:
   # See https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/docs/target-systems/jvm.md
   elasticsearch.node.operations.completed:
     description: The number of operations completed by a node.
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     sum:
       monotonic: true
@@ -777,8 +725,7 @@ metrics:
     enabled: true
   elasticsearch.node.operations.current:
     description: Number of query operations currently running.
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     gauge:
       value_type: int
@@ -786,8 +733,7 @@ metrics:
     enabled: false
   elasticsearch.node.operations.get.completed:
     description: The number of hits and misses resulting from GET operations.
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     sum:
       monotonic: true
@@ -797,8 +743,7 @@ metrics:
     enabled: false
   elasticsearch.node.operations.get.time:
     description: The time spent on hits and misses resulting from GET operations.
-    stability:
-      level: development
+    stability: development
     unit: ms
     sum:
       monotonic: true
@@ -808,8 +753,7 @@ metrics:
     enabled: false
   elasticsearch.node.operations.time:
     description: Time spent on operations by a node.
-    stability:
-      level: development
+    stability: development
     unit: ms
     sum:
       monotonic: true
@@ -819,8 +763,7 @@ metrics:
     enabled: true
   elasticsearch.node.pipeline.ingest.documents.current:
     description: Total number of documents currently being ingested by a pipeline.
-    stability:
-      level: development
+    stability: development
     unit: "{documents}"
     sum:
       monotonic: false
@@ -830,8 +773,7 @@ metrics:
     enabled: true
   elasticsearch.node.pipeline.ingest.documents.preprocessed:
     description: Number of documents preprocessed by the ingest pipeline.
-    stability:
-      level: development
+    stability: development
     unit: "{documents}"
     sum:
       monotonic: false
@@ -841,8 +783,7 @@ metrics:
     enabled: true
   elasticsearch.node.pipeline.ingest.operations.failed:
     description: Total number of failed operations for the ingest pipeline.
-    stability:
-      level: development
+    stability: development
     unit: "{operation}"
     sum:
       monotonic: true
@@ -852,8 +793,7 @@ metrics:
     enabled: true
   elasticsearch.node.script.cache_evictions:
     description: Total number of times the script cache has evicted old data.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: true
@@ -863,8 +803,7 @@ metrics:
     enabled: true
   elasticsearch.node.script.compilation_limit_triggered:
     description: Total number of times the script compilation circuit breaker has limited inline script compilations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: true
@@ -874,8 +813,7 @@ metrics:
     enabled: true
   elasticsearch.node.script.compilations:
     description: Total number of inline script compilations performed by the node.
-    stability:
-      level: development
+    stability: development
     unit: "{compilations}"
     sum:
       monotonic: false
@@ -885,8 +823,7 @@ metrics:
     enabled: true
   elasticsearch.node.segments.memory:
     description: Size of memory for segment object of a node.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -897,8 +834,7 @@ metrics:
   # these metrics are from /*/_stats and are index level metrics
   elasticsearch.node.shards.data_set.size:
     description: Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -908,8 +844,7 @@ metrics:
     enabled: true
   elasticsearch.node.shards.reserved.size:
     description: A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -919,8 +854,7 @@ metrics:
     enabled: true
   elasticsearch.node.shards.size:
     description: The size of the shards assigned to this node.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -930,8 +864,7 @@ metrics:
     enabled: true
   elasticsearch.node.thread_pool.tasks.finished:
     description: The number of tasks finished by the thread pool.
-    stability:
-      level: development
+    stability: development
     unit: "{tasks}"
     sum:
       monotonic: true
@@ -941,8 +874,7 @@ metrics:
     enabled: true
   elasticsearch.node.thread_pool.tasks.queued:
     description: The number of queued tasks in the thread pool.
-    stability:
-      level: development
+    stability: development
     unit: "{tasks}"
     sum:
       monotonic: false
@@ -952,8 +884,7 @@ metrics:
     enabled: true
   elasticsearch.node.thread_pool.threads:
     description: The number of threads in the thread pool.
-    stability:
-      level: development
+    stability: development
     unit: "{threads}"
     sum:
       monotonic: false
@@ -963,8 +894,7 @@ metrics:
     enabled: true
   elasticsearch.node.translog.operations:
     description: Number of transaction log operations.
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     sum:
       monotonic: true
@@ -974,8 +904,7 @@ metrics:
     enabled: true
   elasticsearch.node.translog.size:
     description: Size of the transaction log.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -985,8 +914,7 @@ metrics:
     enabled: true
   elasticsearch.node.translog.uncommitted.size:
     description: Size of uncommitted transaction log operations.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -996,8 +924,7 @@ metrics:
     enabled: true
   elasticsearch.os.cpu.load_avg.15m:
     description: Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: double
@@ -1005,8 +932,7 @@ metrics:
     enabled: true
   elasticsearch.os.cpu.load_avg.1m:
     description: One-minute load average on the system (field is not present if one-minute load average is not available).
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: double
@@ -1014,8 +940,7 @@ metrics:
     enabled: true
   elasticsearch.os.cpu.load_avg.5m:
     description: Five-minute load average on the system (field is not present if five-minute load average is not available).
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: double
@@ -1023,8 +948,7 @@ metrics:
     enabled: true
   elasticsearch.os.cpu.usage:
     description: Recent CPU usage for the whole system, or -1 if not supported.
-    stability:
-      level: development
+    stability: development
     unit: '%'
     gauge:
       value_type: int
@@ -1032,8 +956,7 @@ metrics:
     enabled: true
   elasticsearch.os.memory:
     description: Amount of physical memory.
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -1041,8 +964,7 @@ metrics:
     enabled: true
   elasticsearch.process.cpu.time:
     description: CPU time used by the process on which the Java virtual machine is running.
-    stability:
-      level: development
+    stability: development
     unit: ms
     sum:
       monotonic: true
@@ -1052,8 +974,7 @@ metrics:
     enabled: false
   elasticsearch.process.cpu.usage:
     description: CPU usage in percent.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: double
@@ -1061,8 +982,7 @@ metrics:
     enabled: false
   elasticsearch.process.memory.virtual:
     description: Size of virtual memory that is guaranteed to be available to the running process.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -1073,8 +993,7 @@ metrics:
 
   jvm.classes.loaded:
     description: The number of loaded classes
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -1082,8 +1001,7 @@ metrics:
     enabled: true
   jvm.gc.collections.count:
     description: The total number of garbage collections that have occurred
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       monotonic: true
@@ -1093,8 +1011,7 @@ metrics:
     enabled: true
   jvm.gc.collections.elapsed:
     description: "The approximate accumulated collection elapsed time"
-    stability:
-      level: development
+    stability: development
     unit: ms
     sum:
       monotonic: true
@@ -1104,8 +1021,7 @@ metrics:
     enabled: true
   jvm.memory.heap.committed:
     description: The amount of memory that is guaranteed to be available for the heap
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -1113,8 +1029,7 @@ metrics:
     enabled: true
   jvm.memory.heap.max:
     description: The maximum amount of memory can be used for the heap
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -1122,8 +1037,7 @@ metrics:
     enabled: true
   jvm.memory.heap.used:
     description: The current heap memory usage
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -1131,8 +1045,7 @@ metrics:
     enabled: true
   jvm.memory.heap.utilization:
     description: Fraction of heap memory usage
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: double
@@ -1140,8 +1053,7 @@ metrics:
     enabled: false
   jvm.memory.nonheap.committed:
     description: The amount of memory that is guaranteed to be available for non-heap purposes
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -1149,8 +1061,7 @@ metrics:
     enabled: true
   jvm.memory.nonheap.used:
     description: The current non-heap memory usage
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -1158,8 +1069,7 @@ metrics:
     enabled: true
   jvm.memory.pool.max:
     description: The maximum amount of memory can be used for the memory pool
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -1167,8 +1077,7 @@ metrics:
     enabled: true
   jvm.memory.pool.used:
     description: The current memory pool memory usage
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -1176,8 +1085,7 @@ metrics:
     enabled: true
   jvm.threads.count:
     description: The current number of threads
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int

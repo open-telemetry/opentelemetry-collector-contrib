@@ -21,12 +21,11 @@ attributes:
     enum: [boot_start, system_start, auto_start, demand_start, disabled]
     type: string
     requirement_level: required
-  
+
 metrics:
   windows.service.status:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Gauge value containing service status as an integer value.
     extended_documentation: >
       Gauge values map to service status as follows:
