@@ -109,11 +109,12 @@ func ResetRNGSeedSourceForTest() {
 	seedSource = defaultSeedSource
 }
 
-var defaultSeedSource func() uint64 = func() uint64 {
+var defaultSeedSource = func() uint64 {
 	return uint64(time.Now().UnixNano())
 }
+
 var seedCounter uint64
-var seedSource func() uint64 = defaultSeedSource
+var seedSource = defaultSeedSource
 
 // prngPool is used to give each Goroutine its own PRNG state.
 // This avoids global locks and cache-line bouncing.
