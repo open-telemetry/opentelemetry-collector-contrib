@@ -2,30 +2,31 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
 go 1.25.0
 
-require (
-	github.com/Khan/genqlient v0.8.1
-	github.com/client9/misspell v0.3.4
-	github.com/daixiang0/gci v0.13.7
-	github.com/golangci/golangci-lint/v2 v2.7.2
-	github.com/google/addlicense v1.2.0
-	github.com/jcchavezs/porto v0.6.0
-	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/rhysd/actionlint v1.7.10
-	go.opentelemetry.io/build-tools/checkapi v0.29.0
-	go.opentelemetry.io/build-tools/checkfile v0.29.0
-	go.opentelemetry.io/build-tools/chloggen v0.29.0
-	go.opentelemetry.io/build-tools/crosslink v0.29.0
-	go.opentelemetry.io/build-tools/githubgen v0.29.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.29.0
-	go.opentelemetry.io/build-tools/multimod v0.29.0
-	go.opentelemetry.io/collector/cmd/builder v0.145.1-0.20260212100729-5a059d1d6718
-	go.opentelemetry.io/collector/cmd/mdatagen v0.145.1-0.20260212100729-5a059d1d6718
-	go.uber.org/goleak v1.3.0
-	golang.org/x/tools v0.42.0
-	golang.org/x/vuln v1.1.4
-	gotest.tools/gotestsum v1.13.0
-	mvdan.cc/gofumpt v0.9.2
+tool (
+	github.com/client9/misspell/cmd/misspell
+	github.com/daixiang0/gci
+	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+	github.com/google/addlicense
+	github.com/jcchavezs/porto/cmd/porto
+	github.com/jstemmer/go-junit-report
+	github.com/rhysd/actionlint/cmd/actionlint
+	go.opentelemetry.io/build-tools/checkapi
+	go.opentelemetry.io/build-tools/checkfile
+	go.opentelemetry.io/build-tools/chloggen
+	go.opentelemetry.io/build-tools/crosslink
+	go.opentelemetry.io/build-tools/githubgen
+	go.opentelemetry.io/build-tools/issuegenerator
+	go.opentelemetry.io/build-tools/multimod
+	go.opentelemetry.io/collector/cmd/builder
+	go.opentelemetry.io/collector/cmd/mdatagen
+	golang.org/x/tools/cmd/goimports
+	golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize
+	golang.org/x/vuln/cmd/govulncheck
+	gotest.tools/gotestsum
+	mvdan.cc/gofumpt
 )
+
+require go.uber.org/goleak v1.3.0
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
@@ -48,11 +49,8 @@ require (
 	github.com/MirrexOne/unqueryvet v1.3.0 // indirect
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.1 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
-	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alecthomas/chroma/v2 v2.20.0 // indirect
 	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
-	github.com/alexflint/go-arg v1.5.1 // indirect
-	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/alexkohler/nakedret/v2 v2.0.6 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alfatraining/structtag v1.0.0 // indirect
@@ -82,9 +80,11 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/ckaznocha/intrange v0.3.1 // indirect
+	github.com/client9/misspell v0.3.4 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/curioswitch/go-reassign v0.3.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.5.0 // indirect
+	github.com/daixiang0/gci v0.13.7 // indirect
 	github.com/dave/dst v0.27.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
@@ -122,12 +122,14 @@ require (
 	github.com/golangci/dupl v0.0.0-20250308024227-f665c8d69b32 // indirect
 	github.com/golangci/go-printf-func-name v0.1.1 // indirect
 	github.com/golangci/gofmt v0.0.0-20250106114630-d62b90e6713d // indirect
+	github.com/golangci/golangci-lint/v2 v2.7.2 // indirect
 	github.com/golangci/golines v0.0.0-20250217134842-442fd0091d95 // indirect
 	github.com/golangci/misspell v0.7.0 // indirect
 	github.com/golangci/plugin-module-register v0.1.2 // indirect
 	github.com/golangci/revgrep v0.8.0 // indirect
 	github.com/golangci/swaggoswag v0.0.0-20250504205917-77f2aca3143e // indirect
 	github.com/golangci/unconvert v0.0.0-20250410112200-a129a6e6413e // indirect
+	github.com/google/addlicense v1.2.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-github/v76 v76.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -145,11 +147,13 @@ require (
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
+	github.com/jcchavezs/porto v0.6.0 // indirect
 	github.com/jgautheron/goconst v1.8.2 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jjti/go-spancheck v0.6.5 // indirect
 	github.com/joshdk/go-junit v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/jstemmer/go-junit-report v1.0.0 // indirect
 	github.com/julz/importas v0.2.0 // indirect
 	github.com/kaptinlin/go-i18n v0.1.6 // indirect
 	github.com/kaptinlin/jsonschema v0.4.12 // indirect
@@ -213,6 +217,7 @@ require (
 	github.com/quasilyte/regex/syntax v0.0.0-20210819130434-b3f0c404a727 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
 	github.com/raeperd/recvcheck v0.2.0 // indirect
+	github.com/rhysd/actionlint v1.7.10 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
@@ -249,7 +254,6 @@ require (
 	github.com/ultraware/whitespace v0.2.0 // indirect
 	github.com/uudashr/gocognit v1.2.0 // indirect
 	github.com/uudashr/iface v1.4.1 // indirect
-	github.com/vektah/gqlparser/v2 v2.5.19 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xen0n/gosmopolitan v1.3.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
@@ -262,6 +266,15 @@ require (
 	go.augendre.info/arangolint v0.3.1 // indirect
 	go.augendre.info/fatcontext v0.9.0 // indirect
 	go.opentelemetry.io/build-tools v0.29.0 // indirect
+	go.opentelemetry.io/build-tools/checkapi v0.29.0 // indirect
+	go.opentelemetry.io/build-tools/checkfile v0.29.0 // indirect
+	go.opentelemetry.io/build-tools/chloggen v0.29.0 // indirect
+	go.opentelemetry.io/build-tools/crosslink v0.29.0 // indirect
+	go.opentelemetry.io/build-tools/githubgen v0.29.0 // indirect
+	go.opentelemetry.io/build-tools/issuegenerator v0.29.0 // indirect
+	go.opentelemetry.io/build-tools/multimod v0.29.0 // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.145.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.145.1-0.20260212100729-5a059d1d6718 // indirect
 	go.opentelemetry.io/collector/component v1.51.1-0.20260212100729-5a059d1d6718 // indirect
 	go.opentelemetry.io/collector/confmap v1.51.1-0.20260212100729-5a059d1d6718 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.51.1-0.20260212100729-5a059d1d6718 // indirect
@@ -286,11 +299,14 @@ require (
 	golang.org/x/telemetry v0.0.0-20260209163413-e7419c687ee4 // indirect
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/tools v0.42.0 // indirect
+	golang.org/x/vuln v1.1.4 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gotest.tools/gotestsum v1.13.0 // indirect
 	honnef.co/go/tools v0.7.0-0.dev.0.20250523013057-bbc2f4dd71ea // indirect
+	mvdan.cc/gofumpt v0.9.2 // indirect
 	mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 // indirect
 )
 
