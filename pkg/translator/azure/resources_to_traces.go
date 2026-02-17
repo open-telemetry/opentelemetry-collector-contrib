@@ -133,10 +133,10 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 		// Common attributes for both AppRequests and AppDependencies
 		span.SetName(azureTrace.Name)
-		span.Attributes().PutStr("operation.name", azureTrace.OperationName)
-		span.Attributes().PutStr("cloud.app.name", azureTrace.AppRoleName)
-		span.Attributes().PutStr("cloud.app.instance", azureTrace.AppRoleInstance)
-		span.Attributes().PutStr("cloud.span.type", azureTrace.Type)
+		span.Attributes().PutStr("azure.operation.name", azureTrace.OperationName)
+		span.Attributes().PutStr("azure.app.name", azureTrace.AppRoleName)
+		span.Attributes().PutStr("azure.app.instance", azureTrace.AppRoleInstance)
+		span.Attributes().PutStr("azure.category", azureTrace.Type)
 		span.Attributes().PutStr("azure.client.sdk.version", azureTrace.SDKVersion)
 		switch azureTrace.Success {
 		case true:
