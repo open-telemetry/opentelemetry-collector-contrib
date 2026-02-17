@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/expr-lang/expr v1.17.7
+	github.com/expr-lang/expr v1.17.8
 	github.com/goccy/go-json v0.10.5
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/jpillora/backoff v1.0.0
@@ -80,7 +80,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
-	google.golang.org/grpc v1.78.0 // indirect
+	google.golang.org/grpc v1.79.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
