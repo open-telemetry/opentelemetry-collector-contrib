@@ -18,7 +18,7 @@ $defs:
       device:
         $ref: device_info
   device_info:
-    description: DeviceInfo contains device identification information.
+    description: DeviceInfo follows semantic conventions for device identification
     type: object
     properties:
       host:
