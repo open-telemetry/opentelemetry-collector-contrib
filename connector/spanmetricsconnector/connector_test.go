@@ -3216,3 +3216,84 @@ func BenchmarkConnectorConsumeTraces_WithTracestate_ExponentialHistogram(b *test
 		})
 	}
 }
+
+// buildTraceWithDifferentTracestates builds a trace with 3 spans, each with a different tracestate.
+// This creates a worst-case scenario for the adjusted count cache (all cache misses).
+func buildTraceWithDifferentTracestates() ptrace.Traces {
+	traces := ptrace.NewTraces()
+
+	// Service A: 2 spans with different tracestates
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+					tracestate: "ot=th:8;rv:abcd01", // Different rv value
+				},
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindClient,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
+					tracestate: "ot=th:8;rv:abcd02", // Different rv value
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
+
+	// Service B: 1 span with yet another different tracestate
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+					traceID:    [16]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+					tracestate: "ot=th:8;rv:abcd03", // Different rv value
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
+
+	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
+	return traces
+}
+
+// BenchmarkConnectorConsumeTraces_AdjustedCountCache compares ConsumeTraces performance
+// with adjusted count cache hits for traces with the same tracestate and misses for traces with different tracestates.
+func BenchmarkConnectorConsumeTraces_AdjustedCountCache(b *testing.B) {
+	b.Run("CacheHit", func(b *testing.B) {
+		conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+		require.NoError(b, err)
+
+		traces := buildSampleTraceWithTracestate("ot=th:8;rv:abcd01")
+		ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+		b.ReportAllocs()
+		b.ResetTimer()
+		for b.Loop() {
+			_ = conn.ConsumeTraces(ctx, traces)
+		}
+	})
+
+	b.Run("CacheMiss", func(b *testing.B) {
+		conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+		require.NoError(b, err)
+
+		traces := buildTraceWithDifferentTracestates()
+		ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+		b.ReportAllocs()
+		b.ResetTimer()
+		for b.Loop() {
+			_ = conn.ConsumeTraces(ctx, traces)
+		}
+	})
+}
