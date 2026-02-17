@@ -75,7 +75,7 @@ func mockJobsSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 // second call to jobs api which includes a jobid
-func mockJobsSearchGetResponse(t *testing.T, w http.ResponseWriter, r *http.Request) {
+func mockJobsSearchGetResponse(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusOK
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(status)
@@ -134,7 +134,7 @@ func lookupSearchJobReturn(r *http.Request) []byte {
 }
 
 // mock server create
-func createMockServer(t *testing.T) *httptest.Server {
+func createMockServer() *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		url := r.URL.String()
 		switch {
@@ -151,7 +151,7 @@ func createMockServer(t *testing.T) *httptest.Server {
 		case strings.EqualFold(url, "/services/search/v2/jobs/"):
 			mockJobsSearch(w, r)
 		case strings.Contains(url, "results"):
-			mockJobsSearchGetResponse(t, w, r)
+			mockJobsSearchGetResponse(w, r)
 		default:
 			http.NotFoundHandler().ServeHTTP(w, r)
 		}
@@ -208,7 +208,7 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 }
 
 func TestScraper(t *testing.T) {
-	ts := createMockServer(t)
+	ts := createMockServer()
 	defer ts.Close()
 
 	cfg := createConfig(ts, false)
@@ -237,7 +237,7 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScrapeError(t *testing.T) {
-	ts := createMockServer(t)
+	ts := createMockServer()
 	defer ts.Close()
 
 	cfg := createConfig(ts, true)
