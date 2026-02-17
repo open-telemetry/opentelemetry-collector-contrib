@@ -4,10 +4,10 @@ go 1.25.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.180
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.77.0-devel.0.20260212133403-ddb630015d5e
-	github.com/DataDog/datadog-agent/pkg/proto v0.77.0-devel.0.20260212133403-ddb630015d5e
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.77.0-devel.0.20260212133403-ddb630015d5e
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.77.0-devel.0.20260212133403-ddb630015d5e
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.77.0-devel.0.20260213154712-e02b9359151a
+	github.com/DataDog/datadog-agent/pkg/proto v0.77.0-devel.0.20260213154712-e02b9359151a
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.77.0-devel.0.20260213154712-e02b9359151a
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.77.0-devel.0.20260213154712-e02b9359151a
 	github.com/DataDog/datadog-api-client-go/v2 v2.54.0
 	github.com/DataDog/sketches-go v1.4.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
@@ -43,19 +43,19 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/template v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/otel v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.77.0-devel.0.20260212133403-ddb630015d5e // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/template v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/otel v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.3 // indirect
 	github.com/DataDog/go-sqllexer v0.1.12 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
@@ -139,7 +139,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.50.0 // indirect
-	golang.org/x/oauth2 v0.34.0 // indirect
+	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
