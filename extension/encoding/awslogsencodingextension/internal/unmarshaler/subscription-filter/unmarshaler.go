@@ -124,7 +124,6 @@ func (f *subscriptionFilterUnmarshaler) appendLogs(logs plog.Logs, resourceLogsB
 		logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
 		logRecord.Body().SetStr(event.Message)
 	}
-
 }
 
 // extractResourceKey extracts the resource group key from a log event.
