@@ -42,10 +42,6 @@ jobs:
         if: steps.go-setup.outputs.cache-hit != 'true'
         working-directory: opentelemetry-collector-contrib
         run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        working-directory: opentelemetry-collector-contrib
-        run: make install-tools
       - run: make genotelcontribcol
         working-directory: opentelemetry-collector-contrib
       - run: make otelcontribcol
