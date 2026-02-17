@@ -273,14 +273,14 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.29.0 // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.29.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.29.0 // indirect
-	go.opentelemetry.io/collector/cmd/builder v0.145.1-0.20260212054546-f0da990367b6 // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.145.1-0.20260212054546-f0da990367b6 // indirect
-	go.opentelemetry.io/collector/component v1.51.1-0.20260212054546-f0da990367b6 // indirect
-	go.opentelemetry.io/collector/confmap v1.51.1-0.20260212054546-f0da990367b6 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.51.1-0.20260212054546-f0da990367b6 // indirect
-	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260212054546-f0da990367b6 // indirect
-	go.opentelemetry.io/collector/filter v0.145.1-0.20260212054546-f0da990367b6 // indirect
-	go.opentelemetry.io/collector/pdata v1.51.1-0.20260212054546-f0da990367b6 // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.145.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.145.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/component v1.51.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/confmap v1.51.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.51.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/filter v0.145.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/pdata v1.51.1-0.20260212100729-5a059d1d6718 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
@@ -299,7 +299,7 @@ require (
 	golang.org/x/telemetry v0.0.0-20260209163413-e7419c687ee4 // indirect
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
-	golang.org/x/tools v0.41.0 // indirect
+	golang.org/x/tools v0.42.0 // indirect
 	golang.org/x/vuln v1.1.4 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
