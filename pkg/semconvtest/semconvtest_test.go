@@ -1,7 +1,8 @@
 package semconvtest_test
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,7 +12,13 @@ import (
 )
 
 func TestWeaver(t *testing.T) {
-	weaver, err := semconvtest.NewWeaverContext(t.Context(), semconvtest.NewDefaultWeaverOptions())
+	outputDir := t.TempDir()
+
+	opts := &semconvtest.WeaverOptions{
+		OutputDir: outputDir,
+	}
+
+	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
 	require.NoError(t, err)
 
 	logs := plog.NewLogs()
@@ -23,21 +30,22 @@ func TestWeaver(t *testing.T) {
 
 	time.Sleep(10 * time.Second)
 
-	wLogs, _ := weaver.ContainerLogs()
-	for _, line := range wLogs {
-		fmt.Println(line)
-	}
-
 	err = weaver.TestLogs(logs)
 	require.NoError(t, err)
 
-	time.Sleep(8 * time.Second)
+	err = weaver.Stop()
+	require.NoError(t, err)
 
-	wLogs, _ = weaver.ContainerLogs()
-	for _, line := range wLogs {
-		fmt.Println(line)
-	}
+	// TODO: Replace with fsnotify for proper detection.
+	time.Sleep(5 * time.Second)
 
-	// err = weaver.Shutdown()
-	// require.NoError(t, err)
+	entries, err := os.ReadDir(outputDir)
+	require.NoError(t, err)
+	require.Len(t, entries, 1, "Expected exactly one output file")
+	require.Equal(t, "live_check.json", entries[0].Name())
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "live_check.json"))
+	require.NoError(t, err)
+	require.Contains(t, string(content), "something")
+	require.Contains(t, string(content), "missing_attribute")
 }

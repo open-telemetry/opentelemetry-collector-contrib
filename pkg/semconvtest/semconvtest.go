@@ -5,8 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"go.opentelemetry.io/collector/component"
@@ -24,7 +26,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const DefaultWeaverOTLPListenerPort = "4317/tcp"
+const (
+	DefaultWeaverOTLPListenerPort = "4317/tcp"
+	DefaultWeaverStopPort         = "4320/tcp"
+	containerOutputDir            = "/output"
+)
 
 var (
 	ErrOptionValidation = errors.New("weaver options failed validation")
@@ -36,6 +42,8 @@ type WeaverContext struct {
 	opts            *WeaverOptions
 	exporters       *otlpExporterContext
 	clients         *pdataClientContext
+	outputDir       string
+	stopEndpoint    string
 }
 
 // NewWeaverContext returns a weaver context customized with the provided options.
@@ -61,18 +69,22 @@ func NewWeaverContext(ctx context.Context, opts *WeaverOptions) (*WeaverContext,
 		return nil, err
 	}
 
-	// Upon creating the container, we can gather the host and the mapped port
-	// it chose and use that to construct the pdata clients.
+	// Upon creating the container, we can gather the host and the mapped ports
+	// it chose and use that to construct the pdata clients and stop endpoint.
 	host, err := weaverC.Host(ctx)
 	if err != nil {
 		return nil, err
 	}
-	mappedPort, err := weaverC.MappedPort(ctx, nat.Port(DefaultWeaverOTLPListenerPort))
+	mappedOTLPPort, err := weaverC.MappedPort(ctx, nat.Port(DefaultWeaverOTLPListenerPort))
+	if err != nil {
+		return nil, err
+	}
+	mappedStopPort, err := weaverC.MappedPort(ctx, nat.Port(DefaultWeaverStopPort))
 	if err != nil {
 		return nil, err
 	}
 
-	clients, err := newPdataClientContext(ctx, fmt.Sprintf("%s:%s", host, mappedPort.Port()))
+	clients, err := newPdataClientContext(ctx, fmt.Sprintf("%s:%s", host, mappedOTLPPort.Port()))
 	if err != nil {
 		return nil, err
 	}
@@ -82,17 +94,14 @@ func NewWeaverContext(ctx context.Context, opts *WeaverOptions) (*WeaverContext,
 		weaverContainer: weaverC,
 		opts:            opts,
 		clients:         clients,
+		outputDir:       opts.OutputDir,
+		stopEndpoint:    fmt.Sprintf("http://%s:%s/stop", host, mappedStopPort.Port()),
 	}, nil
 }
 
 func (wc *WeaverContext) Shutdown() error {
-	var errs []error
-	err := wc.exporters.shutdown()
-	errs = append(errs, err)
-	var timeout time.Duration = 10 * time.Second
-	err = wc.weaverContainer.Stop(wc.ctx, &timeout)
-	errs = append(errs, err)
-	return errors.Join(errs...)
+	timeout := 10 * time.Second
+	return wc.weaverContainer.Stop(wc.ctx, &timeout)
 }
 
 func (wc *WeaverContext) ContainerLogs() ([]string, error) {
@@ -109,10 +118,32 @@ func (wc *WeaverContext) ContainerLogs() ([]string, error) {
 	return logs, nil
 }
 
+// Stop sends a POST request to Weaver's /stop endpoint to stop the listener
+// and trigger writing of the output file.
+func (wc *WeaverContext) Stop() error {
+	req, err := http.NewRequestWithContext(wc.ctx, http.MethodPost, wc.stopEndpoint, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create stop request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to call stop endpoint: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("stop endpoint returned status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
 func (wc *WeaverContext) TestLogs(logs plog.Logs) error {
 	// TODO: temp
 	// return wc.exporters.consumeLogs(logs)
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(wc.ctx, 10*time.Second)
+	defer cancel()
 	response, err := wc.clients.consumeLogs(ctx, logs)
 	if err != nil {
 		return err
@@ -126,8 +157,9 @@ func (wc *WeaverContext) TestLogs(logs plog.Logs) error {
 }
 
 type WeaverOptions struct {
-	Version  string
-	Registry string
+	Version   string
+	Registry  string
+	OutputDir string
 }
 
 func NewDefaultWeaverOptions() *WeaverOptions {
@@ -159,8 +191,15 @@ func (opts *WeaverOptions) testContainerOptions() []testcontainers.ContainerCust
 		containerOpts = append(containerOpts, testcontainers.WithCmdArgs(cmdArgs...))
 	}
 
-	// Expose the required port on the container.
-	containerOpts = append(containerOpts, testcontainers.WithExposedPorts(DefaultWeaverOTLPListenerPort))
+	// Expose the required ports on the container.
+	containerOpts = append(containerOpts, testcontainers.WithExposedPorts(DefaultWeaverOTLPListenerPort, DefaultWeaverStopPort))
+
+	// If OutputDir is set, bind mount it into the container.
+	if opts.OutputDir != "" {
+		containerOpts = append(containerOpts, testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
+			hc.Binds = append(hc.Binds, fmt.Sprintf("%s:%s", opts.OutputDir, containerOutputDir))
+		}))
+	}
 
 	return containerOpts
 }
@@ -173,8 +212,11 @@ func (opts *WeaverOptions) cmdArgs() []string {
 	if opts.Registry != "" {
 		args = append(args, "--registry", opts.Registry)
 	}
+
+	if opts.OutputDir != "" {
+		args = append(args, "--output", containerOutputDir)
+	}
 	args = append(args, "--format", "json")
-	fmt.Println(args)
 	return args
 }
 
