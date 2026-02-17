@@ -2,7 +2,6 @@ package semconvtest_test
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -36,15 +35,10 @@ func TestWeaver(t *testing.T) {
 	err = weaver.Stop()
 	require.NoError(t, err)
 
-	// TODO: Replace with fsnotify for proper detection.
-	time.Sleep(5 * time.Second)
-
-	entries, err := os.ReadDir(outputDir)
+	outputFile, err := weaver.WaitForOutput(30 * time.Second)
 	require.NoError(t, err)
-	require.Len(t, entries, 1, "Expected exactly one output file")
-	require.Equal(t, "live_check.json", entries[0].Name())
 
-	content, err := os.ReadFile(filepath.Join(outputDir, "live_check.json"))
+	content, err := os.ReadFile(outputFile)
 	require.NoError(t, err)
 	require.Contains(t, string(content), "something")
 	require.Contains(t, string(content), "missing_attribute")

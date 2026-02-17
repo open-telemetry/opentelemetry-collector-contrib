@@ -3,13 +3,17 @@ package semconvtest
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/fsnotify/fsnotify"
 	"github.com/testcontainers/testcontainers-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -100,8 +104,13 @@ func NewWeaverContext(ctx context.Context, opts *WeaverOptions) (*WeaverContext,
 }
 
 func (wc *WeaverContext) Shutdown() error {
+	var errs []error
+	if wc.clients != nil {
+		errs = append(errs, wc.clients.close())
+	}
 	timeout := 10 * time.Second
-	return wc.weaverContainer.Stop(wc.ctx, &timeout)
+	errs = append(errs, wc.weaverContainer.Stop(wc.ctx, &timeout))
+	return errors.Join(errs...)
 }
 
 func (wc *WeaverContext) ContainerLogs() ([]string, error) {
@@ -126,7 +135,10 @@ func (wc *WeaverContext) Stop() error {
 		return fmt.Errorf("failed to create stop request: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to call stop endpoint: %w", err)
 	}
@@ -137,6 +149,64 @@ func (wc *WeaverContext) Stop() error {
 	}
 
 	return nil
+}
+
+// WaitForOutput watches the output directory for the live_check.json file
+// to be created and returns its path. This should be called after Stop().
+func (wc *WeaverContext) WaitForOutput(timeout time.Duration) (string, error) {
+	if wc.outputDir == "" {
+		return "", errors.New("outputDir not configured")
+	}
+
+	outputFile := filepath.Join(wc.outputDir, "live_check.json")
+
+	// Check if file already exists with valid JSON before watching
+	if data, err := os.ReadFile(outputFile); err == nil && json.Valid(data) {
+		return outputFile, nil
+	}
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return "", fmt.Errorf("failed to create watcher: %w", err)
+	}
+	defer watcher.Close()
+
+	err = watcher.Add(wc.outputDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to watch directory: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(wc.ctx, timeout)
+	defer cancel()
+
+	fileCreated := false
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return "", errors.New("watcher closed")
+			}
+			if event.Name == outputFile {
+				if event.Op.Has(fsnotify.Create) {
+					fileCreated = true
+				}
+				// After file is created, wait for Write events and validate JSON is complete
+				if fileCreated && event.Op.Has(fsnotify.Write) {
+					if data, err := os.ReadFile(outputFile); err == nil && json.Valid(data) {
+						return outputFile, nil
+					}
+					// Keep waiting for more Write events if JSON is not yet valid
+				}
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return "", errors.New("watcher closed")
+			}
+			return "", fmt.Errorf("watcher error: %w", err)
+		case <-ctx.Done():
+			return "", fmt.Errorf("timeout waiting for output file: %w", ctx.Err())
+		}
+	}
 }
 
 func (wc *WeaverContext) TestLogs(logs plog.Logs) error {
@@ -253,6 +323,10 @@ func (clientCtx *pdataClientContext) consumeLogs(ctx context.Context, logs plog.
 func (clientCtx *pdataClientContext) consumeMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetricotlp.ExportResponse, error) {
 	pmetricReq := pmetricotlp.NewExportRequestFromMetrics(metrics)
 	return clientCtx.metrics.Export(ctx, pmetricReq)
+}
+
+func (clientCtx *pdataClientContext) close() error {
+	return clientCtx.clientConn.Close()
 }
 
 func (clientCtx *pdataClientContext) consumeTraces(ctx context.Context, traces ptrace.Traces) (ptraceotlp.ExportResponse, error) {
