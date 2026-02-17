@@ -133,11 +133,11 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 		// Common attributes for both AppRequests and AppDependencies
 		span.SetName(azureTrace.Name)
-		span.Attributes().PutStr("OperationName", azureTrace.OperationName)
-		span.Attributes().PutStr("AppRoleName", azureTrace.AppRoleName)
-		span.Attributes().PutStr("AppRoleInstance", azureTrace.AppRoleInstance)
-		span.Attributes().PutStr("Type", azureTrace.Type)
-		span.Attributes().PutStr("SDKVersion", azureTrace.SDKVersion)
+		span.Attributes().PutStr("operation.name", azureTrace.OperationName)
+		span.Attributes().PutStr("cloud.app.name", azureTrace.AppRoleName)
+		span.Attributes().PutStr("cloud.app.instance", azureTrace.AppRoleInstance)
+		span.Attributes().PutStr("cloud.span.type", azureTrace.Type)
+		span.Attributes().PutStr("azure.client.sdk.version", azureTrace.SDKVersion)
 		switch azureTrace.Success {
 		case true:
 			span.Status().SetCode(ptrace.StatusCodeOk)
@@ -162,10 +162,10 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 			span.Attributes().PutStr(string(conventions.URLPathKey), hostpath)
 			span.Attributes().PutStr(string(conventions.URLSchemeKey), scheme)
 			span.Attributes().PutStr(string(conventions.ClientAddressKey), azureTrace.ClientIP)
-			span.Attributes().PutStr("geo.locality.name", azureTrace.ClientCity)
+			span.Attributes().PutStr("client.geo.locality.name", azureTrace.ClientCity)
 			span.Attributes().PutStr("client.type", azureTrace.ClientType)
-			span.Attributes().PutStr("client.state", azureTrace.ClientStateOrProvince)
-			span.Attributes().PutStr("client.country", azureTrace.ClientCountryOrRegion)
+			span.Attributes().PutStr("client.geo.region.iso_code", azureTrace.ClientStateOrProvince)
+			span.Attributes().PutStr("client.geo.country.iso_code", azureTrace.ClientCountryOrRegion)
 			span.Attributes().PutStr(string(conventions.HTTPResponseStatusCodeKey), azureTrace.ResultCode)
 			span.Attributes().PutDouble(string(conventions.HTTPResponseBodySizeKey), azureTrace.Measurements["Response Size"])
 			span.Attributes().PutDouble(string(conventions.HTTPRequestBodySizeKey), azureTrace.Measurements["Request Size"])
