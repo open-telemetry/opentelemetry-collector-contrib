@@ -79,7 +79,7 @@ func mockJobsSearchGetResponse(t *testing.T, w http.ResponseWriter, r *http.Requ
 	status := http.StatusOK
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(status)
-	_, _ = w.Write(lookupSearchJobReturn(t, r))
+	_, _ = w.Write(lookupSearchJobReturn(r))
 }
 
 // this returns a jobid associated with the specific body
@@ -106,7 +106,7 @@ func getJobsSearchResponse(r *http.Request) []byte {
 
 // this is for when you send in a jobid and wish to read the actual search
 // response
-func lookupSearchJobReturn(t *testing.T, r *http.Request) []byte {
+func lookupSearchJobReturn(r *http.Request) []byte {
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		return []byte(`error`)
