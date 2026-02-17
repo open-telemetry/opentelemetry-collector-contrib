@@ -411,10 +411,15 @@ func BenchmarkClientGet(b *testing.B) {
 
 	ctx := b.Context()
 	testKey := "testKey"
+	testValue := []byte("testValue")
+
+	// Pre-populate so we measure "Get hit" performance
+	require.NoError(b, client.Set(ctx, testKey, testValue))
 
 	for b.Loop() {
-		_, err = client.Get(ctx, testKey)
+		v, err := client.Get(ctx, testKey)
 		require.NoError(b, err)
+		require.Equal(b, testValue, v)
 	}
 }
 
@@ -429,6 +434,12 @@ func BenchmarkClientGet100(b *testing.B) {
 	})
 
 	ctx := b.Context()
+
+	// Pre-populate keys so we measure "hit" batch performance
+	for i := range 100 {
+		key := fmt.Sprintf("testKey-%d", i)
+		require.NoError(b, client.Set(ctx, key, []byte("testValue")))
+	}
 
 	testEntries := make([]*storage.Operation, 100)
 	for i := range 100 {
@@ -492,9 +503,20 @@ func BenchmarkClientDelete(b *testing.B) {
 
 	ctx := b.Context()
 	testKey := "testKey"
+	testValue := []byte("testValue")
 
+	// Setup: insert unique keys so they exist before being deleted
+	// We create b.N distinct keys so each Delete is a delete-hit
+	for i := range b.N {
+		key := fmt.Sprintf("%s-%d", testKey, i)
+		require.NoError(b, client.Set(ctx, key, testValue))
+	}
+
+	i := 0
 	for b.Loop() {
-		require.NoError(b, client.Delete(ctx, testKey))
+		key := fmt.Sprintf("%s-%d", testKey, i)
+		require.NoError(b, client.Delete(ctx, key))
+		i++
 	}
 }
 
@@ -517,11 +539,13 @@ func BenchmarkClientSetLargeDB(b *testing.B) {
 
 	ctx := b.Context()
 
+	// Prefill with large entries
 	for n := range entryCount {
 		testKey = fmt.Sprintf("testKey-%d", n)
 		require.NoError(b, client.Set(ctx, testKey, entry))
 	}
 
+	// Delete them all to build a large freelist / large file
 	for n := range entryCount {
 		testKey = fmt.Sprintf("testKey-%d", n)
 		require.NoError(b, client.Delete(ctx, testKey))
@@ -546,12 +570,9 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
+	// Setup: create large DB
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
-	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
-	})
-
 	ctx := b.Context()
 
 	for n := range entryCount {
@@ -559,8 +580,7 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 		require.NoError(b, client.Set(ctx, testKey, entry))
 	}
 
-	err = client.Close(ctx)
-	require.NoError(b, err)
+	require.NoError(b, client.Close(ctx))
 
 	var tempClient *fileStorageClient
 
@@ -583,11 +603,9 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
+	// Initial setup: create a large DB file with mostly deleted data
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
-	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
-	})
 
 	ctx := b.Context()
 
@@ -604,15 +622,19 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 
 	require.NoError(b, client.Close(ctx))
 
-	for n := 0; b.Loop(); n++ {
+	for n := range b.N {
 		testDbFile := filepath.Join(tempDir, fmt.Sprintf("my_db%d", n))
 		err = os.Link(dbFile, testDbFile)
 		require.NoError(b, err)
+
 		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{}, false)
 		require.NoError(b, err)
+
 		b.StartTimer()
 		require.NoError(b, client.Compact(tempDir, time.Second, 65536))
 		b.StopTimer()
+
+		require.NoError(b, client.Close(ctx))
 	}
 }
 
@@ -625,11 +647,9 @@ func BenchmarkClientCompactDb(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
+	// Setup: fill DB, then delete half of the keys
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
-	b.Cleanup(func() {
-		require.NoError(b, client.Close(b.Context()))
-	})
 
 	ctx := b.Context()
 
@@ -646,14 +666,18 @@ func BenchmarkClientCompactDb(b *testing.B) {
 
 	require.NoError(b, client.Close(ctx))
 
-	for n := 0; b.Loop(); n++ {
+	for n := range b.N {
 		testDbFile := filepath.Join(tempDir, fmt.Sprintf("my_db%d", n))
 		err = os.Link(dbFile, testDbFile)
 		require.NoError(b, err)
+
 		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{}, false)
 		require.NoError(b, err)
+
 		b.StartTimer()
 		require.NoError(b, client.Compact(tempDir, time.Second, 65536))
 		b.StopTimer()
+
+		require.NoError(b, client.Close(ctx))
 	}
 }
