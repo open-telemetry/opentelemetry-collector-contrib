@@ -414,6 +414,10 @@ update-codeowners: generate gengithub
 gencodeowners:
 	$(GITHUBGEN) -skipgithub
 
+.PHONY: codeowners
+codeowners:
+	$(GITHUBGEN) codeowners
+
 .PHONY: generate-chloggen-components
 generate-chloggen-components:
 	$(GITHUBGEN) chloggen-components
