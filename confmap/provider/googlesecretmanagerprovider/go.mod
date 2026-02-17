@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/confmap v1.51.1-0.20260212100729-5a059d1d6718
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.78.0
+	google.golang.org/grpc v1.79.1
 )
 
 require (

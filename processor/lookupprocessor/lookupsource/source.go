@@ -32,10 +32,6 @@ type Source interface {
 	Shutdown(ctx context.Context) error
 }
 
-type SourceOption interface {
-	apply(*sourceImpl)
-}
-
 // NewSource creates a Source from functional components.
 //
 // Parameters:
@@ -60,18 +56,13 @@ func NewSource(
 	typeFunc TypeFunc,
 	start StartFunc,
 	shutdown ShutdownFunc,
-	opts ...SourceOption,
 ) Source {
-	s := &sourceImpl{
+	return &sourceImpl{
 		lookupFn:   lookup,
 		typeFn:     typeFunc,
 		startFn:    start,
 		shutdownFn: shutdown,
 	}
-	for _, opt := range opts {
-		opt.apply(s)
-	}
-	return s
 }
 
 type sourceImpl struct {
