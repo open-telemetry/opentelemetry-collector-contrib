@@ -151,3 +151,45 @@ func TestRatioUint64_PrecisionScalesWithMagnitude(t *testing.T) {
 		})
 	}
 }
+
+var benchSink float64
+
+var ratioInputs = [][2]uint64{
+	{21208754, 33554432},
+	{687397760, 1073741824},
+	{1, 3},
+	{100, 100},
+	{8589934592, 17179869184},
+}
+
+var scaleInputs = [][2]uint64{
+	{12345, 1000},
+	{999, 1000},
+	{15000000, 10000000},
+	{3000000000, 1000000000},
+	{50000, 1000},
+}
+
+func BenchmarkRatioUint64(b *testing.B) {
+	for i := range b.N {
+		benchSink = RatioUint64(ratioInputs[i%len(ratioInputs)][0], ratioInputs[i%len(ratioInputs)][1])
+	}
+}
+
+func BenchmarkRatioUint64_RawDivision(b *testing.B) {
+	for i := range b.N {
+		benchSink = float64(ratioInputs[i%len(ratioInputs)][0]) / float64(ratioInputs[i%len(ratioInputs)][1])
+	}
+}
+
+func BenchmarkScaleUint64(b *testing.B) {
+	for i := range b.N {
+		benchSink = ScaleUint64(scaleInputs[i%len(scaleInputs)][0], scaleInputs[i%len(scaleInputs)][1])
+	}
+}
+
+func BenchmarkScaleUint64_RawDivision(b *testing.B) {
+	for i := range b.N {
+		benchSink = float64(scaleInputs[i%len(scaleInputs)][0]) / float64(scaleInputs[i%len(scaleInputs)][1])
+	}
+}
