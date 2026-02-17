@@ -91,7 +91,7 @@ jobs:
       - name: Link Checker
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         id: lychee
-        uses: lycheeverse/lychee-action@631725aa742da9b8eb5e3541942ab992832223e3 # f613c4a64e50d792e0b31ec34bbcbba12263c6a6
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # f613c4a64e50d792e0b31ec34bbcbba12263c6a6
         with:
           args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
           failIfEmpty: false

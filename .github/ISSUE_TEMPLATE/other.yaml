@@ -187,6 +187,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - pkg/xk8stest
+      - pkg/xstreamencoding
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
