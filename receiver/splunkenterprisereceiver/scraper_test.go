@@ -75,11 +75,11 @@ func mockJobsSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 // second call to jobs api which includes a jobid
-func mockJobsSearchGetResponse(w http.ResponseWriter, r *http.Request) {
+func mockJobsSearchGetResponse(t *testing.T, w http.ResponseWriter, r *http.Request) {
 	status := http.StatusOK
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(status)
-	_, _ = w.Write(lookupSearchJobReturn(r))
+	_, _ = w.Write(lookupSearchJobReturn(t, r))
 }
 
 // this returns a jobid associated with the specific body
@@ -106,7 +106,7 @@ func getJobsSearchResponse(r *http.Request) []byte {
 
 // this is for when you send in a jobid and wish to read the actual search
 // response
-func lookupSearchJobReturn(r *http.Request) []byte {
+func lookupSearchJobReturn(t *testing.T, r *http.Request) []byte {
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		return []byte(`error`)
@@ -124,10 +124,10 @@ func lookupSearchJobReturn(r *http.Request) []byte {
 	case "/services/search/v2/jobs/3/results":
 		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="run_time_avg"><value><text>200.40</text></value></field></result></response>`)
 	case "/services/search/v2/jobs/4/results": // this is the case in which we test pagination
-		if vals.Get("offset") < vals.Get("count") {
-			return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='0'><field k='By'><value><text>101</text></value></field><field k='indexname'><value><text>some_val2</text></value></field></result></results>`)
+		if vals.Get("offset") == "0" {
+			return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='0'><field k='indexname'><value><text>some_val1</text></value></field><field k='By'><value><text>104</text></value></field></result><result offset='1'><field k='indexname'><value><text>some_val5</text></value></field><field k='By'><value><text>105</text></value></field></result></results>`)
 		}
-		return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='101'><field k='By'><value><text>100</text></value></field><field k='indexname'><value><text>some_val2</text></value></field></result></results>`)
+		return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='101'><field k='indexname'><value><text>some_val2</text></value></field><field k='By'><value><text>93</text></value></field></result></results>`)
 	default:
 		return []byte(`error`)
 	}
@@ -136,7 +136,6 @@ func lookupSearchJobReturn(r *http.Request) []byte {
 // mock server create
 func createMockServer(t *testing.T) *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Log(r.URL.String())
 		url := r.URL.String()
 		switch {
 		case strings.EqualFold(url, "/services/server/introspection/indexer?output_mode=json"):
@@ -152,7 +151,7 @@ func createMockServer(t *testing.T) *httptest.Server {
 		case strings.EqualFold(url, "/services/search/v2/jobs/"):
 			mockJobsSearch(w, r)
 		case strings.Contains(url, "results"):
-			mockJobsSearchGetResponse(w, r)
+			mockJobsSearchGetResponse(t, w, r)
 		default:
 			http.NotFoundHandler().ServeHTTP(w, r)
 		}
@@ -229,7 +228,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
-	// golden.WriteMetrics(t, expectedFile, actualMetrics) // run tests with this line whenever metrics are modified
+	golden.WriteMetrics(t, expectedFile, actualMetrics) // run tests with this line whenever metrics are modified
 
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
