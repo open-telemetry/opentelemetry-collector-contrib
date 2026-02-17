@@ -85,10 +85,6 @@ jobs:
         with:
           go-version: oldstable
 
-      - name: Build gotestsum
-        shell: bash
-        run: make "$PWD/.tools/gotestsum"
-
       - name: Run changed tests
         if: needs.changedfiles.outputs.go_tests
         env:
