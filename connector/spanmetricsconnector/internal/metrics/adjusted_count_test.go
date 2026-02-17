@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,10 +80,9 @@ func TestGetStochasticAdjustedCount(t *testing.T) {
 
 func TestGetStochasticAdjustedCount_StatisticalBehavior(t *testing.T) {
 	// Use a fixed seed source for deterministic test results
-	var seedCounter uint64
+	var seedCounter atomic.Uint64
 	SetRNGSeedSourceForTest(func() uint64 {
-		seedCounter++
-		return 12345 + seedCounter
+		return 12345 + seedCounter.Add(1)
 	})
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
@@ -152,10 +152,9 @@ func TestStochasticIncrement(t *testing.T) {
 
 func TestStochasticIncrement_FractionalWeights(t *testing.T) {
 	// Use a fixed seed source for deterministic test results
-	var seedCounter uint64
+	var seedCounter atomic.Uint64
 	SetRNGSeedSourceForTest(func() uint64 {
-		seedCounter++
-		return 54321 + seedCounter
+		return 54321 + seedCounter.Add(1)
 	})
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
@@ -204,10 +203,9 @@ func TestStochasticIncrement_FractionalWeights(t *testing.T) {
 
 func TestStochasticIncrement_StatisticalConvergence(t *testing.T) {
 	// Use a fixed seed source for deterministic test results
-	var seedCounter uint64
+	var seedCounter atomic.Uint64
 	SetRNGSeedSourceForTest(func() uint64 {
-		seedCounter++
-		return 98765 + seedCounter
+		return 98765 + seedCounter.Add(1)
 	})
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
@@ -284,11 +282,10 @@ func TestXorshift64star_DifferentSeeds(t *testing.T) {
 }
 
 func TestPrngPool_Concurrency(t *testing.T) {
-	// Use a fixed seed source for deterministic test results
-	var seedCounter uint64
+	// Use a fixed seed source for deterministic test results (atomic for concurrent access)
+	var seedCounter atomic.Uint64
 	SetRNGSeedSourceForTest(func() uint64 {
-		seedCounter++
-		return 22222 + seedCounter
+		return 22222 + seedCounter.Add(1)
 	})
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
@@ -326,10 +323,9 @@ func TestPrngPool_Concurrency(t *testing.T) {
 
 func TestStochasticDiv_EdgeCases(t *testing.T) {
 	// Use a fixed seed source for deterministic test results
-	var seedCounter uint64
+	var seedCounter atomic.Uint64
 	SetRNGSeedSourceForTest(func() uint64 {
-		seedCounter++
-		return 11111 + seedCounter
+		return 11111 + seedCounter.Add(1)
 	})
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
