@@ -47,6 +47,10 @@ func GetStochasticAdjustedCount(span *ptrace.Span) (uint64, bool) {
 func GetStochasticAdjustedCountWithCache(span *ptrace.Span, cache *AdjustedCountCache) (uint64, bool) {
 	tracestate := span.TraceState().AsRaw()
 
+	if tracestate == "" {
+		return 1, false
+	}
+
 	// Check cache first
 	if cache != nil && tracestate == cache.tracestate {
 		return cache.count, cache.isAdjusted
@@ -94,14 +98,29 @@ func (r *xorshift64star) next() uint64 {
 	return uint64(x) * 0x2545F4914F6CDD1D // The "Scrambler"
 }
 
+// SetRNGSeedSourceForTest sets a custom seed source for testing purposes.
+// This allows tests to get deterministic results from stochastic rounding.
+func SetRNGSeedSourceForTest(seedSourceFunc func() uint64) {
+	seedSource = seedSourceFunc
+}
+
+// ResetRNGSeedSourceForTest resets the seed source to the default.
+func ResetRNGSeedSourceForTest() {
+	seedSource = defaultSeedSource
+}
+
+var defaultSeedSource func() uint64 = func() uint64 {
+	return uint64(time.Now().UnixNano())
+}
 var seedCounter uint64
+var seedSource func() uint64 = defaultSeedSource
 
 // prngPool is used to give each Goroutine its own PRNG state.
 // This avoids global locks and cache-line bouncing.
 var prngPool = sync.Pool{
 	New: func() any {
 		// Use a non-zero seed (crucial for xorshift) that is unique for each Goroutine.
-		s := uint64(time.Now().UnixNano()) ^ atomic.AddUint64(&seedCounter, 1)
+		s := seedSource() ^ atomic.AddUint64(&seedCounter, 1)
 		if s == 0 {
 			s = 1
 		}

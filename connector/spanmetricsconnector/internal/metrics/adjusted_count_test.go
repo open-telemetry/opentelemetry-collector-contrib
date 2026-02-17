@@ -78,6 +78,16 @@ func TestGetStochasticAdjustedCount(t *testing.T) {
 }
 
 func TestGetStochasticAdjustedCount_StatisticalBehavior(t *testing.T) {
+	// Use a fixed seed source for deterministic test results
+	var seedCounter uint64
+	SetRNGSeedSourceForTest(func() uint64 {
+		seedCounter++
+		return 12345 + seedCounter
+	})
+	t.Cleanup(func() {
+		ResetRNGSeedSourceForTest()
+	})
+
 	// Test that over many iterations, the average adjusted count
 	// converges to the expected value for th:c (adjusted count = 4.0)
 	const iterations = 10000
@@ -141,6 +151,16 @@ func TestStochasticIncrement(t *testing.T) {
 }
 
 func TestStochasticIncrement_FractionalWeights(t *testing.T) {
+	// Use a fixed seed source for deterministic test results
+	var seedCounter uint64
+	SetRNGSeedSourceForTest(func() uint64 {
+		seedCounter++
+		return 54321 + seedCounter
+	})
+	t.Cleanup(func() {
+		ResetRNGSeedSourceForTest()
+	})
+
 	// For fractional weights, the result should be either floor or ceil
 	tests := []struct {
 		name      string
@@ -183,6 +203,16 @@ func TestStochasticIncrement_FractionalWeights(t *testing.T) {
 }
 
 func TestStochasticIncrement_StatisticalConvergence(t *testing.T) {
+	// Use a fixed seed source for deterministic test results
+	var seedCounter uint64
+	SetRNGSeedSourceForTest(func() uint64 {
+		seedCounter++
+		return 98765 + seedCounter
+	})
+	t.Cleanup(func() {
+		ResetRNGSeedSourceForTest()
+	})
+
 	// Test that over many iterations, the average converges to the weight
 	tests := []struct {
 		name           string
@@ -254,6 +284,16 @@ func TestXorshift64star_DifferentSeeds(t *testing.T) {
 }
 
 func TestPrngPool_Concurrency(t *testing.T) {
+	// Use a fixed seed source for deterministic test results
+	var seedCounter uint64
+	SetRNGSeedSourceForTest(func() uint64 {
+		seedCounter++
+		return 22222 + seedCounter
+	})
+	t.Cleanup(func() {
+		ResetRNGSeedSourceForTest()
+	})
+
 	// Test that the PRNG pool works correctly under concurrent access
 	const goroutines = 100
 	const iterationsPerGoroutine = 1000
@@ -285,6 +325,16 @@ func TestPrngPool_Concurrency(t *testing.T) {
 }
 
 func TestStochasticDiv_EdgeCases(t *testing.T) {
+	// Use a fixed seed source for deterministic test results
+	var seedCounter uint64
+	SetRNGSeedSourceForTest(func() uint64 {
+		seedCounter++
+		return 11111 + seedCounter
+	})
+	t.Cleanup(func() {
+		ResetRNGSeedSourceForTest()
+	})
+
 	t.Run("very small fraction", func(t *testing.T) {
 		// With a very small fraction (1/1000 = 0.001), we should almost always get the floor
 		const iterations = 1000
