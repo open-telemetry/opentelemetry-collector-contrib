@@ -179,7 +179,7 @@ func TestProcessJobSpans(t *testing.T) {
 func TestNewTraceID(t *testing.T) {
 	tests := []struct {
 		name       string
-		id         int
+		id         int64
 		finishedAt string
 		expectErr  bool
 	}{
@@ -220,7 +220,7 @@ func TestNewTraceID(t *testing.T) {
 func TestNewPipelineSpanID(t *testing.T) {
 	tests := []struct {
 		name       string
-		id         int
+		id         int64
 		finishedAt string
 		expectErr  bool
 	}{
@@ -261,7 +261,7 @@ func TestNewPipelineSpanID(t *testing.T) {
 func TestNewStageSpanID(t *testing.T) {
 	tests := []struct {
 		name      string
-		id        int
+		id        int64
 		stage     string
 		startedAt string
 		expectErr bool
@@ -306,7 +306,7 @@ func TestNewStageSpanID(t *testing.T) {
 func TestNewJobSpanID(t *testing.T) {
 	tests := []struct {
 		name      string
-		id        int
+		id        int64
 		startedAt string
 		expectErr bool
 	}{
@@ -681,14 +681,7 @@ func TestRunnerAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var runner struct {
-				ID          int      `json:"id"`
-				Description string   `json:"description"`
-				Active      bool     `json:"active"`
-				IsShared    bool     `json:"is_shared"`
-				RunnerType  string   `json:"runner_type"`
-				Tags        []string `json:"tags"`
-			}
+			var runner gitlab.PipelineEventBuildRunner
 			err := json.Unmarshal([]byte(tt.runnerData), &runner)
 			require.NoError(t, err)
 
