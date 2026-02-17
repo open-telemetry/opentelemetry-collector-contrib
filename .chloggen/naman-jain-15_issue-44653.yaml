@@ -19,6 +19,8 @@ subtext: |
   When `api_version` is empty or omitted, the Docker client now automatically negotiates
   the highest mutually supported API version with the daemon using `WithAPIVersionNegotiation()`.
   Existing configurations with an explicit `api_version` continue to work unchanged.
+  Note: The previous default behavior pinned the API version to 1.44 when not specified.
+  Now it auto-negotiates with the daemon, which may result in a different API version being used.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -240,19 +241,12 @@ func TestAPIVersionNegotiation(t *testing.T) {
 		DockerAPIVersion: "", // empty triggers auto-negotiation
 	}
 
-	observed, logs := observer.New(zapcore.DebugLevel)
-	cli, err := NewDockerClient(config, zap.New(observed))
+	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
-
-	found := false
-	for _, l := range logs.All() {
-		if strings.Contains(l.Message, "using automatic version negotiation") {
-			found = true
-			break
-		}
-	}
-	assert.True(t, found, "Expected log message about automatic version negotiation")
+	// Simulate a daemon ping response with API version "1.45".
+	cli.client.NegotiateAPIVersionPing(dtypes.Ping{APIVersion: "1.45"})
+	assert.Equal(t, "1.45", cli.client.ClientVersion())
 }
 
 func TestExplicitAPIVersion(t *testing.T) {
@@ -267,20 +261,10 @@ func TestExplicitAPIVersion(t *testing.T) {
 		DockerAPIVersion: "1.44",
 	}
 
-	observed, logs := observer.New(zapcore.DebugLevel)
-	cli, err := NewDockerClient(config, zap.New(observed))
+	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
-
-	found := false
-	for _, l := range logs.All() {
-		if strings.Contains(l.Message, "Using explicitly configured Docker API version") {
-			found = true
-			assert.Equal(t, "1.44", l.ContextMap()["version"])
-			break
-		}
-	}
-	assert.True(t, found, "Expected log message about explicit API version")
+	assert.Equal(t, "1.44", cli.client.ClientVersion())
 }
 
 func TestDefaultConfigUsesNegotiation(t *testing.T) {
