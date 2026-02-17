@@ -102,7 +102,6 @@ components:
     processor:
         - attributes
         - cumulativetodelta
-        - datadogsemantics
         - deltatocumulative
         - deltatorate
         - filter

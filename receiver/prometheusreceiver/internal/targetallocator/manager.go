@@ -95,9 +95,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 	if err != nil {
 		return err
 	}
-	m.wg.Add(1)
-	go func() {
-		defer m.wg.Done()
+	m.wg.Go(func() {
 		targetAllocatorIntervalTicker := time.NewTicker(m.cfg.Interval)
 		for {
 			select {
@@ -114,7 +112,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 				return
 			}
 		}
-	}()
+	})
 	return nil
 }
 
