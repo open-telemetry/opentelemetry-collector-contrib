@@ -25,7 +25,7 @@ require (
 )
 
 require (
-	github.com/SAP/go-hdb v1.14.22
+	github.com/SAP/go-hdb v1.15.0
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.9.6
