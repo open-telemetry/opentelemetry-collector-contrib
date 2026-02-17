@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
@@ -116,15 +117,15 @@ func (s *diskScraper) recordDiskOperationsMetric(now pcommon.Timestamp, ioCounte
 func (s *diskScraper) recordDiskIOTimeMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device := range ioCounters {
 		ioCounter := ioCounters[device]
-		s.mb.RecordSystemDiskIoTimeDataPoint(now, float64(ioCounter.IoTime)/1e3, device)
+		s.mb.RecordSystemDiskIoTimeDataPoint(now, precision.ScaleUint64(ioCounter.IoTime, precision.MillisecondsPerSecond), device)
 	}
 }
 
 func (s *diskScraper) recordDiskOperationTimeMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device := range ioCounters {
 		ioCounter := ioCounters[device]
-		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.ReadTime)/1e3, device, metadata.AttributeDirectionRead)
-		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.WriteTime)/1e3, device, metadata.AttributeDirectionWrite)
+		s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.ScaleUint64(ioCounter.ReadTime, precision.MillisecondsPerSecond), device, metadata.AttributeDirectionRead)
+		s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.ScaleUint64(ioCounter.WriteTime, precision.MillisecondsPerSecond), device, metadata.AttributeDirectionWrite)
 	}
 }
 
