@@ -43,7 +43,7 @@ jobs:
           GOOS=linux GOARCH=s390x make golden
           cp bin/golden_* cmd/golden/
       - name: Build golden
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: cmd/golden
           push: false
@@ -79,7 +79,7 @@ jobs:
           GOOS=linux GOARCH=s390x make golden
           cp bin/golden_* cmd/golden/
       - name: Push golden to Github packages
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: cmd/golden
           push: true
@@ -118,7 +118,7 @@ jobs:
           GOOS=linux GOARCH=s390x make golden
           cp bin/golden_* cmd/golden/
       - name: Push golden to Github packages
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: cmd/golden
           push: true
