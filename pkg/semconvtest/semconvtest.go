@@ -15,11 +15,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/fsnotify/fsnotify"
 	"github.com/testcontainers/testcontainers-go"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -44,7 +39,6 @@ type WeaverContext struct {
 	ctx             context.Context
 	weaverContainer *testcontainers.DockerContainer
 	opts            *WeaverOptions
-	exporters       *otlpExporterContext
 	clients         *pdataClientContext
 	outputDir       string
 	stopEndpoint    string
@@ -210,8 +204,6 @@ func (wc *WeaverContext) WaitForOutput(timeout time.Duration) (string, error) {
 }
 
 func (wc *WeaverContext) TestLogs(logs plog.Logs) error {
-	// TODO: temp
-	// return wc.exporters.consumeLogs(logs)
 	ctx, cancel := context.WithTimeout(wc.ctx, 10*time.Second)
 	defer cancel()
 	response, err := wc.clients.consumeLogs(ctx, logs)
@@ -332,75 +324,4 @@ func (clientCtx *pdataClientContext) close() error {
 func (clientCtx *pdataClientContext) consumeTraces(ctx context.Context, traces ptrace.Traces) (ptraceotlp.ExportResponse, error) {
 	ptraceReq := ptraceotlp.NewExportRequestFromTraces(traces)
 	return clientCtx.traces.Export(ctx, ptraceReq)
-}
-
-type otlpExporterContext struct {
-	ctx     context.Context
-	traces  exporter.Traces
-	metrics exporter.Metrics
-	logs    exporter.Logs
-}
-
-func newOTLPExporterContext(ctx context.Context, endpoint string) (*otlpExporterContext, error) {
-	factory := otlpexporter.NewFactory()
-
-	config := factory.CreateDefaultConfig()
-	exporterConfig := config.(*otlpexporter.Config)
-	exporterConfig.ClientConfig = configgrpc.ClientConfig{
-		Endpoint: endpoint,
-	}
-	set := exporter.Settings{
-		ID:                component.NewID(component.MustNewType("otlp_grpc")),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-	}
-
-	var errs []error
-	var err error
-	exporterCtx := otlpExporterContext{ctx: ctx}
-	exporterCtx.logs, err = factory.CreateLogs(ctx, set, config)
-	errs = append(errs, err)
-	exporterCtx.metrics, err = factory.CreateMetrics(ctx, set, config)
-	errs = append(errs, err)
-	exporterCtx.traces, err = factory.CreateTraces(ctx, set, config)
-	errs = append(errs, err)
-	if err := errors.Join(errs...); err != nil {
-		return nil, err
-	}
-
-	return &exporterCtx, nil
-}
-
-func (exporterCtx *otlpExporterContext) start() error {
-	nopHost := componenttest.NewNopHost()
-	var errs []error
-	err := exporterCtx.logs.Start(exporterCtx.ctx, nopHost)
-	errs = append(errs, err)
-	err = exporterCtx.metrics.Start(exporterCtx.ctx, nopHost)
-	errs = append(errs, err)
-	err = exporterCtx.traces.Start(exporterCtx.ctx, nopHost)
-	errs = append(errs, err)
-	return errors.Join(errs...)
-}
-
-func (exporterCtx *otlpExporterContext) shutdown() error {
-	var errs []error
-	err := exporterCtx.logs.Shutdown(exporterCtx.ctx)
-	errs = append(errs, err)
-	err = exporterCtx.metrics.Shutdown(exporterCtx.ctx)
-	errs = append(errs, err)
-	err = exporterCtx.traces.Shutdown(exporterCtx.ctx)
-	errs = append(errs, err)
-	return errors.Join(errs...)
-}
-
-func (exporterCtx *otlpExporterContext) consumeLogs(logs plog.Logs) error {
-	return exporterCtx.logs.ConsumeLogs(exporterCtx.ctx, logs)
-}
-
-func (exporterCtx *otlpExporterContext) consumeMetrics(metrics pmetric.Metrics) error {
-	return exporterCtx.metrics.ConsumeMetrics(exporterCtx.ctx, metrics)
-}
-
-func (exporterCtx *otlpExporterContext) consumeTraces(traces ptrace.Traces) error {
-	return exporterCtx.traces.ConsumeTraces(exporterCtx.ctx, traces)
 }
