@@ -1,4 +1,4 @@
-include-fragments = true
+include_fragments = true
 
 accept = ["200..=299", "429"]
 
@@ -12,4 +12,4 @@ exclude  = [
 ]
 
 # better to be safe and avoid failures
-max-retries = 6
+max_retries = 6
