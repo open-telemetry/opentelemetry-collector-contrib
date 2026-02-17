@@ -25,7 +25,7 @@ components:
     - connector/roundrobin
     - connector/routing
     - connector/servicegraph
-    - connector/signaltometrics
+    - connector/signal_to_metrics
     - connector/slowsql
     - connector/spanmetrics
     - connector/sum
@@ -179,6 +179,7 @@ components:
     - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
+    - pkg/xstreamencoding
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
@@ -198,7 +199,7 @@ components:
     - processor/hetznerdetector
     - processor/interval
     - processor/isolationforest
-    - processor/k8sattributes
+    - processor/k8s_attributes
     - processor/logdedup
     - processor/logstransform
     - processor/lookup
@@ -330,6 +331,7 @@ components:
     - receiver/tlscheck
     - receiver/udplog
     - receiver/vcenter
+    - receiver/vcr
     - receiver/wavefront
     - receiver/webhookevent
     - receiver/windowseventlog

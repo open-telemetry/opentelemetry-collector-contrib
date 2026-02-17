@@ -1,5 +1,13 @@
 type: object
 properties:
+  auth_mechanism:
+    type: string
+  auth_mechanism_properties:
+    type: object
+    additionalProperties:
+      type: string
+  auth_source:
+    type: string
   direct_connection:
     type: boolean
   hosts:

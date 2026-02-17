@@ -520,16 +520,14 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	for b.Loop() {
 		wg := sync.WaitGroup{}
 		for range 10 {
-			wg.Add(1)
-			go func() {
+			wg.Go(func() {
 				logs := logRecordsToLogs(exampleNLogs(128))
 				logs.MarkReadOnly()
 				err := exp.pushLogsData(b.Context(), logs)
 				if err != nil {
 					b.Logf("Failed pushing logs: %v", err)
 				}
-				wg.Done()
-			}()
+			})
 		}
 
 		wg.Wait()

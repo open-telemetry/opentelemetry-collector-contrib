@@ -10,29 +10,39 @@ status:
 
 resource_attributes:
   aws.volume.id:
-    description: "The id of the AWS Volume"
+    description: "[DEPRECATED] The id of the AWS Volume"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   container.id:
     description: "Container id used to identify container"
     enabled: true
     type: string
   fs.type:
-    description: "The filesystem type of the Volume"
+    description: "[DEPRECATED] The filesystem type of the Volume"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   gce.pd.name:
-    description: "The name of the persistent disk in GCE"
+    description: "[DEPRECATED] The name of the persistent disk in GCE"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.endpoints.name:
-    description: "The endpoint name that details Glusterfs topology"
+    description: "[DEPRECATED] The endpoint name that details Glusterfs topology"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.path:
-    description: "Glusterfs volume path"
+    description: "[DEPRECATED] Glusterfs volume path"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
 
   k8s.container.name:
     description: "Container name used by container runtime"
@@ -67,9 +77,11 @@ resource_attributes:
     enabled: true
     type: string
   partition:
-    description: "The partition in the Volume"
+    description: "[DEPRECATED] The partition in the Volume"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
 attributes:
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
@@ -84,8 +96,7 @@ metrics:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       monotonic: true
@@ -95,8 +106,7 @@ metrics:
     enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -104,8 +114,7 @@ metrics:
     enabled: true
     description: "Container filesystem available"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -113,8 +122,7 @@ metrics:
     enabled: true
     description: "Container filesystem capacity"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -122,8 +130,7 @@ metrics:
     enabled: true
     description: "Container filesystem usage"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -131,8 +138,7 @@ metrics:
     enabled: true
     description: "Container memory available"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -140,8 +146,7 @@ metrics:
     enabled: true
     description: "Container memory major_page_faults"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -149,8 +154,7 @@ metrics:
     enabled: true
     description: "Container memory page_faults"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -158,8 +162,7 @@ metrics:
     enabled: true
     description: "Container memory rss"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -167,8 +170,7 @@ metrics:
     enabled: true
     description: "Container memory usage"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -176,8 +178,7 @@ metrics:
     enabled: true
     description: "Container memory working_set"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -185,8 +186,7 @@ metrics:
     enabled: false
     description: "The time since the container started"
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: true
@@ -196,8 +196,7 @@ metrics:
     enabled: false
     description: "Container cpu utilization as a ratio of the node's capacity"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -205,8 +204,7 @@ metrics:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's limits"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -214,8 +212,7 @@ metrics:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's requests"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -223,8 +220,7 @@ metrics:
     enabled: false
     description: "Container memory utilization as a ratio of the node's capacity"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -232,8 +228,7 @@ metrics:
     enabled: false
     description: "Container memory utilization as a ratio of the container's limits"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -241,8 +236,7 @@ metrics:
     enabled: false
     description: "Container memory utilization as a ratio of the container's requests"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -250,8 +244,7 @@ metrics:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       monotonic: true
@@ -261,8 +254,7 @@ metrics:
     enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -270,8 +262,7 @@ metrics:
     enabled: true
     description: "Node filesystem available"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -279,8 +270,7 @@ metrics:
     enabled: true
     description: "Node filesystem capacity"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -288,8 +278,7 @@ metrics:
     enabled: true
     description: "Node filesystem usage"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -297,8 +286,7 @@ metrics:
     enabled: true
     description: "Node memory available"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -306,8 +294,7 @@ metrics:
     enabled: true
     description: "Node memory major_page_faults"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -315,8 +302,7 @@ metrics:
     enabled: true
     description: "Node memory page_faults"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -324,8 +310,7 @@ metrics:
     enabled: true
     description: "Node memory rss"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -333,8 +318,7 @@ metrics:
     enabled: true
     description: "Node memory usage"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -342,8 +326,7 @@ metrics:
     enabled: true
     description: "Node memory working_set"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -351,8 +334,7 @@ metrics:
     enabled: true
     description: "Node network errors"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: true
@@ -362,8 +344,7 @@ metrics:
     enabled: true
     description: "Node network IO"
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: true
@@ -373,8 +354,7 @@ metrics:
     enabled: false
     description: "The time since the node started"
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: true
@@ -384,8 +364,7 @@ metrics:
     enabled: false
     description: "Pod cpu utilization as a ratio of the node's capacity"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -393,8 +372,7 @@ metrics:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       monotonic: true
@@ -404,8 +382,7 @@ metrics:
     enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -413,8 +390,7 @@ metrics:
     enabled: false
     description: "Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -422,8 +398,7 @@ metrics:
     enabled: false
     description: "Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted."
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -431,8 +406,7 @@ metrics:
     enabled: true
     description: "Pod filesystem available"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -440,8 +414,7 @@ metrics:
     enabled: true
     description: "Pod filesystem capacity"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -449,8 +422,7 @@ metrics:
     enabled: true
     description: "Pod filesystem usage"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -458,8 +430,7 @@ metrics:
     enabled: true
     description: "Pod memory available"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -467,8 +438,7 @@ metrics:
     enabled: true
     description: "Pod memory major_page_faults"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -476,8 +446,7 @@ metrics:
     enabled: false
     description: "Pod memory utilization as a ratio of the node's capacity"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -485,8 +454,7 @@ metrics:
     enabled: true
     description: "Pod memory page_faults"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -494,8 +462,7 @@ metrics:
     enabled: true
     description: "Pod memory rss"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -503,8 +470,7 @@ metrics:
     enabled: true
     description: "Pod memory usage"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -512,8 +478,7 @@ metrics:
     enabled: true
     description: "Pod memory working_set"
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -521,8 +486,7 @@ metrics:
     enabled: false
     description: "Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -530,8 +494,7 @@ metrics:
     enabled: false
     description: "Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted."
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: []
@@ -539,8 +502,7 @@ metrics:
     enabled: true
     description: "Pod network errors"
     unit: "1"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: true
@@ -550,8 +512,7 @@ metrics:
     enabled: true
     description: "Pod network IO"
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: true
@@ -561,8 +522,7 @@ metrics:
     enabled: false
     description: "The time since the pod started"
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: true
@@ -572,8 +532,7 @@ metrics:
     enabled: false
     description: "The number of used bytes in the pod volume."
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -583,8 +542,7 @@ metrics:
     enabled: true
     description: "The number of available bytes in the volume."
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -592,8 +550,7 @@ metrics:
     enabled: true
     description: "The total capacity in bytes of the volume."
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -601,8 +558,7 @@ metrics:
     enabled: true
     description: "The total inodes in the filesystem."
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -610,8 +566,7 @@ metrics:
     enabled: true
     description: "The free inodes in the filesystem."
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []
@@ -619,8 +574,7 @@ metrics:
     enabled: true
     description: "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems."
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes: []

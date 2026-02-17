@@ -16,8 +16,7 @@ tests:
 telemetry:
   metrics:
     gcp.pubsub.input.uncompressed.size:
-      stability:
-        level: development
+      stability: development
       enabled: true
       description: Size of uncompressed incoming log data in bytes (either direct Pub/Sub message payloads or GCS file content retrieved from event notifications).
       unit: By
@@ -27,8 +26,7 @@ telemetry:
       attributes:
         - gcp.gcs.bucket.name
     http.server.request.active.count:
-      stability:
-        level: development
+      stability: development
       enabled: true
       description: Number of active requests.
       unit: "{count}"
@@ -36,8 +34,7 @@ telemetry:
         value_type: int
         monotonic: false
     http.server.request.duration:
-      stability:
-        level: development
+      stability: development
       enabled: true
       description: Duration of requests in seconds.
       unit: s
