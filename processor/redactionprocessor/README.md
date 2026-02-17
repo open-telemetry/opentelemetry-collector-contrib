@@ -239,3 +239,5 @@ The database sanitizer will:
 By default, database query sanitization also applies to span names for client span types. You can disable this behavior by setting `sanitize_span_name: false` in the `db_sanitizer` configuration, which allows you to keep original database query span names while still sanitizing the query values in attributes.
 
 This provides an additional layer of protection when collecting telemetry that includes database operations.
+
+**Trace and metric behaviour:** Database sanitization for spans and metric attributes only runs when the telemetry includes a `db.system.name` or `db.system` attribute and the span kind is `CLIENT` or `SERVER`. This prevents non-database spans from being rewritten. Logs automatically enable a sequential fallback internally, so database attributes without `db.system` can still be sanitized when they appear in log records.

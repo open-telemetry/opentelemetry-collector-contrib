@@ -104,6 +104,16 @@
       "enabled": false
     },
     {
+      "matchPaths": [
+        "exporter/datadogexporter/**",
+        "connector/datadogconnector/**",
+        "internal/datadog/**",
+        "pkg/datadog/**"
+      ],
+      "matchPackagePatterns": ["^github.com/DataDog/datadog-agent"],
+      "enabled": false
+    },
+    {
       "matchManagers": [
         "gomod"
       ],
