@@ -45,6 +45,7 @@ func TestGenerateInstanceID(t *testing.T) {
 		id1 := generateInstanceID("localhost", 27017)
 		id2 := generateInstanceID("localhost", 27017)
 		require.Equal(t, id1, id2, "same inputs should produce same UUID")
+		require.Equal(t, "fd638985-aee9-53f2-95d3-ce3e8483c243", id1)
 	})
 
 	t.Run("unique for different ports", func(t *testing.T) {
