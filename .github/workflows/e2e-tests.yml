@@ -30,7 +30,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          install-tools: "false"
       - name: Generate otelcontribcol files
         run: make genotelcontribcol
       - name: Build Collector
@@ -50,7 +49,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          install-tools: "false"
       - name: Download Collector Binary
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
@@ -71,7 +69,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          install-tools: "false"
       - name: Generate otelcontribcol files
         run: make genotelcontribcol
       - name: Build Docker Image
@@ -111,7 +108,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          install-tools: "false"
       - name: Create kind cluster
         uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
         with:
