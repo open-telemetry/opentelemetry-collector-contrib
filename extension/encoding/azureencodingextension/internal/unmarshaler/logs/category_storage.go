@@ -49,14 +49,14 @@ const (
 
 // storageAuthorizationEntry represents a single authorization decision in Storage logs
 type storageAuthorizationEntry struct {
-	Action            string `json:"action"`
-	RoleAssignmentID  string `json:"roleAssignmentId"`
-	RoleDefinitionID  string `json:"roleDefinitionId"`
-	DenyAssignmentID  string `json:"denyAssignmentId"`
-	Type              string `json:"type"`
-	Result            string `json:"result"`
-	Reason            string `json:"reason"`
-	Principals        []struct {
+	Action           string `json:"action"`
+	RoleAssignmentID string `json:"roleAssignmentId"`
+	RoleDefinitionID string `json:"roleDefinitionId"`
+	DenyAssignmentID string `json:"denyAssignmentId"`
+	Type             string `json:"type"`
+	Result           string `json:"result"`
+	Reason           string `json:"reason"`
+	Principals       []struct {
 		ID   string `json:"id"`
 		Type string `json:"type"`
 	} `json:"principals"`

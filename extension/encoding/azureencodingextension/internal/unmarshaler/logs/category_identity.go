@@ -123,4 +123,3 @@ func (id *azureIdentityBase) PutIdentityAttributes(attrs pcommon.Map) {
 		}
 	}
 }
-
