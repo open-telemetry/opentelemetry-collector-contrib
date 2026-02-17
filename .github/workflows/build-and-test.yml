@@ -320,7 +320,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          install-tools: "false"
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
@@ -345,7 +344,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          install-tools: "false"
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
@@ -404,7 +402,6 @@ jobs:
         with:
           go-version: oldstable
           gomoddownload: "false"
-          install-tools: "false"
       - run: make genotelcontribcol
       - name: Build Examples
         run: make build-examples
@@ -494,7 +491,6 @@ jobs:
         with:
           go-version: oldstable
           gomoddownload: "false"
-          install-tools: "false"
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
@@ -625,6 +621,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          make install-tools
-          ./.tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
+          go tool -modfile=./internal/tools/go.mod go.opentelemetry.io/build-tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
       - run: ./.github/workflows/scripts/check-disk-space.sh
