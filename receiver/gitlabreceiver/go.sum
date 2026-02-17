@@ -135,6 +135,8 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 gitlab.com/gitlab-org/api/client-go v1.31.0 h1:GTsWZO4EeafjmH459DsoeLCE3NTB1gnM6JGrGFcolPE=
 gitlab.com/gitlab-org/api/client-go v1.31.0/go.mod h1:1LZ/6Q075HHVa1u9GBQjt8StFwFTRvfjo596slHmDbo=
+gitlab.com/gitlab-org/api/client-go v1.36.0 h1:2WvXQE/eat5iHNqvPpWwA3yWoz5OKHA2QzA8fzDJU1c=
+gitlab.com/gitlab-org/api/client-go v1.36.0/go.mod h1:txpNttRZAkUa4mmqr9WJh99XT+WtfytQXbswFdMwNsc=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/collector/client v1.51.1-0.20260217094636-d8d07c01912d h1:ljR7O6zECnIfNZQQ5BiLNa/9p9oP9BveOVkgbxYMYyY=
