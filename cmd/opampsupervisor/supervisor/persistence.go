@@ -16,6 +16,7 @@ import (
 
 // persistentState represents persistent state for the supervisor
 type persistentState struct {
+	// InstanceID must be a valid UUID string. If it is not, a new UUIDv7 will be generated automatically.
 	InstanceID             uuid.UUID           `yaml:"instance_id"`
 	LastRemoteConfigStatus *RemoteConfigStatus `yaml:"last_remote_config_status"`
 
@@ -77,6 +78,7 @@ func (p *persistentState) writeState() error {
 
 // loadOrCreatePersistentState attempts to load the persistent state from disk. If it doesn't
 // exist, a new persistent state file is created.
+// instanceID must be a valid UUID string, or an empty string to generate a new UUIDv7 automatically.
 func loadOrCreatePersistentState(file string, instanceID string, logger *zap.Logger) (*persistentState, error) {
 	state, err := loadPersistentState(file, logger)
 	switch {
@@ -111,7 +113,7 @@ func createNewPersistentState(file string, instanceID string, logger *zap.Logger
 	id, err := uuid.Parse(instanceID)
 	if err != nil {
 		if instanceID != "" {
-			logger.Error("Failed to parse instance_id, generating one automatically", zap.Error(err))
+			logger.Warn("Failed to parse instance_id, generating one automatically", zap.Error(err))
 		}
 		id, err = uuid.NewV7()
 		if err != nil {
