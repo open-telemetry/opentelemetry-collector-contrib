@@ -46,9 +46,9 @@ func integrationTest(name string) func(*testing.T) {
 						"discovery.type": "single-node",
 						"ES_JAVA_OPTS":   "-Xms512m -Xmx512m",
 					},
-					WaitingFor: wait.ForHTTP("/").WithPort(nat.Port(elasticPort + "/tcp")).WithStartupTimeout(5 * time.Minute),
+					WaitingFor: wait.ForHTTP("/").WithPort(nat.Port(elasticPort + "/tcp")).WithStartupTimeout(10 * time.Minute),
 				}),
-			scraperinttest.WithCreateContainerTimeout(10*time.Minute),
+			scraperinttest.WithCreateContainerTimeout(15*time.Minute),
 			scraperinttest.WithCustomConfig(
 				func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 					rCfg := cfg.(*Config)
