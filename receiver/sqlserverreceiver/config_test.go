@@ -211,11 +211,11 @@ func TestLoadConfig(t *testing.T) {
 		expected.LogsBuilderConfig = metadata.LogsBuilderConfig{
 			Events: metadata.EventsConfig{
 				DbServerQuerySample: metadata.EventConfig{
-					Enabled:             true,
+					Enabled:            true,
 					CollectionInterval: 60 * time.Second,
 				},
 				DbServerTopQuery: metadata.EventConfig{
-					Enabled:             true,
+					Enabled:            true,
 					CollectionInterval: 120 * time.Second,
 				},
 			},

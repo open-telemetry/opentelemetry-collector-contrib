@@ -61,8 +61,8 @@ type sqlServerScraperHelper struct {
 	db                                *sql.DB
 	mb                                *metadata.MetricsBuilder
 	lb                                *metadata.LogsBuilder
-	cache                            *lru.Cache[string, int64]
-	lastExecutionTimestamp           time.Time
+	cache                             *lru.Cache[string, int64]
+	lastExecutionTimestamp            time.Time
 	lastQuerySampleExecutionTimestamp time.Time
 	obfuscator                        *obfuscator
 	serviceInstanceID                 string
