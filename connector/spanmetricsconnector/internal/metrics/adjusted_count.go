@@ -113,8 +113,10 @@ var defaultSeedSource = func() uint64 {
 	return uint64(time.Now().UnixNano())
 }
 
-var seedCounter uint64
-var seedSource = defaultSeedSource
+var (
+	seedCounter uint64
+	seedSource  = defaultSeedSource
+)
 
 // prngPool is used to give each Goroutine its own PRNG state.
 // This avoids global locks and cache-line bouncing.

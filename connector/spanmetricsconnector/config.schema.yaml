@@ -64,6 +64,9 @@ properties:
   add_resource_attributes:
     description: Add the resource attributes to the resulting metrics (disabled by default) This option enables the old behavior https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103
     type: boolean
+  enable_metrics_sampling_method:
+    description: When true, adds the sampling.method attribute ("extrapolated" or "counted") to metrics. Default is false.
+    type: boolean
   aggregation_cardinality_limit:
     type: integer
   aggregation_temporality:

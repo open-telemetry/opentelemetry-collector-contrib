@@ -536,7 +536,11 @@ func (p *connectorImp) buildAttributes(
 	isAdjustedCount bool,
 ) pcommon.Map {
 	attr := pcommon.NewMap()
-	attr.EnsureCapacity(5 + len(dimensions))
+	capacity := 5 + len(dimensions)
+	if p.config.EnableMetricsSamplingMethod {
+		capacity++
+	}
+	attr.EnsureCapacity(capacity)
 	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
 		attr.PutStr(serviceNameKey, serviceName)
 	}
@@ -572,10 +576,12 @@ func (p *connectorImp) buildAttributes(
 		}
 	}
 
-	if isAdjustedCount {
-		attr.PutStr(metricAttrSamplingMethod, "extrapolated")
-	} else {
-		attr.PutStr(metricAttrSamplingMethod, "counted")
+	if p.config.EnableMetricsSamplingMethod {
+		if isAdjustedCount {
+			attr.PutStr(metricAttrSamplingMethod, "extrapolated")
+		} else {
+			attr.PutStr(metricAttrSamplingMethod, "counted")
+		}
 	}
 
 	addResourceAttributes(&attr, dimensions, span, resourceAttrs)
