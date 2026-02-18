@@ -35,22 +35,10 @@ In package mode every exported struct becomes a definition under `$defs` and the
 
 ## Usage
 
-Build a local binary:
+Run schemagen via the `schemagen` Make target:
 
 ```bash
-make install-tools
-```
-
-After installing the tool you can execute it directly or through the helper Make target.
-
-```bash
-schemagen [flags] path/to/your/package/dir
-```
-
-The repository also provides a convenient wrapper:
-
-```bash
-make schemagen SRC=receiver/foo/somecomponent/
+make schemagen SRC=path/to/your/package/dir
 ```
 
 You can pass any CLI flags through the `FLAGS` variable:

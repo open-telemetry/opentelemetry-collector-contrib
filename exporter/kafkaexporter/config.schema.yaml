@@ -1,0 +1,64 @@
+$defs:
+  signal_config:
+    description: SignalConfig holds signal-specific configuration for the Kafka exporter.
+    type: object
+    properties:
+      encoding:
+        description: Encoding holds the encoding of messages for the signal type. Defaults to "otlp_proto".
+        type: string
+      topic:
+        description: 'Topic holds the name of the Kafka topic to which messages of the signal type should be produced. The default depends on the signal type: - "otlp_spans" for traces - "otlp_metrics" for metrics - "otlp_logs" for logs - "otlp_profiles" for profiles'
+        type: string
+      topic_from_metadata_key:
+        description: TopicFromMetadataKey holds the name of the metadata key to use as the topic name for this signal type. If this is set, it takes precedence over the topic name set in the topic field.
+        type: string
+description: Config defines configuration for Kafka exporter.
+type: object
+properties:
+  encoding:
+    description: 'Encoding holds the encoding of Kafka message values. Encoding has no default. If explicitly specified, it will take precedence over the default values of logs::encoding, metrics::encoding, and traces::encoding. Deprecated [v0.124.0]: use logs::encoding, metrics::encoding, and traces::encoding instead.'
+    type: string
+  include_metadata_keys:
+    description: IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers.
+    type: array
+    items:
+      type: string
+  logs:
+    description: Logs holds configuration about how logs should be sent to Kafka.
+    $ref: signal_config
+  metrics:
+    description: Metrics holds configuration about how metrics should be sent to Kafka.
+    $ref: signal_config
+  partition_logs_by_resource_attributes:
+    description: PartitionLogsByResourceAttributes controls the partitioning of logs messages by resource. If this is true, then the message key will be set to a hash of the resource's identifying attributes.
+    type: boolean
+  partition_logs_by_trace_id:
+    description: PartitionLogsByTraceID controls partitioning of log messages by trace ID only. When enabled, the exporter splits incoming logs per TraceID (using SplitLogs) and sets the Kafka message key to the 16-byte hex string of that TraceID. If a LogRecord has an empty TraceID, the key may be empty and partition selection falls back to the Kafka client’s default strategy. Resource attributes are not used for the key when this option is enabled.
+    type: boolean
+  partition_metrics_by_resource_attributes:
+    description: PartitionMetricsByResourceAttributes controls the partitioning of metrics messages by resource. If this is true, then the message key will be set to a hash of the resource's identifying attributes.
+    type: boolean
+  partition_traces_by_id:
+    description: 'PartitionTracesByID sets the message key of outgoing trace messages to the trace ID. NOTE: this does not have any effect for Jaeger encodings. Jaeger encodings always use use the trace ID for the message key.'
+    type: boolean
+  producer:
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka.producer_config
+  profiles:
+    description: Profiles holds configuration about how profiles should be sent to Kafka.
+    $ref: signal_config
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  topic:
+    description: 'Topic holds the name of the Kafka topic to which data should be exported. Topic has no default. If explicitly specified, it will take precedence over the default values of logs::topic, metrics::topic, and traces::topic. Deprecated [v0.124.0]: use logs::topic, metrics::topic, and traces::topic instead.'
+    type: string
+  topic_from_attribute:
+    description: TopicFromAttribute is the name of the attribute to use as the topic name.
+    type: string
+  traces:
+    description: Traces holds configuration about how traces should be sent to Kafka.
+    $ref: signal_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka.client_config

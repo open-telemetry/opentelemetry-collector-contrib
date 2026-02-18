@@ -1,0 +1,23 @@
+description: Config defines configuration for StatsD receiver.
+type: object
+properties:
+  aggregation_interval:
+    type: string
+    format: duration
+  enable_ip_only_aggregation:
+    type: boolean
+  enable_metric_type:
+    type: boolean
+  enable_simple_tags:
+    type: boolean
+  is_monotonic_counter:
+    type: boolean
+  socket_permissions:
+    description: Will only be used when transport set to 'unixgram'.
+    x-customType: os.file_mode
+  timer_histogram_mapping:
+    type: array
+    items:
+      $ref: ./protocol.timer_histogram_mapping
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confignet.addr_config

@@ -171,13 +171,11 @@ func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) err
 		return err
 	}
 
-	p.shutdownWG.Add(1)
-	go func() {
-		defer p.shutdownWG.Done()
+	p.shutdownWG.Go(func() {
 		if errHTTP := p.server.Serve(lis); errHTTP != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	}()
+	})
 
 	return nil
 }

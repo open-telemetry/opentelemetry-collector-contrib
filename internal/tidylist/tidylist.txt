@@ -156,6 +156,7 @@ extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
 pkg/translator/skywalking
 extension/encoding/skywalkingencodingextension
+pkg/xstreamencoding
 extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
@@ -327,6 +328,7 @@ receiver/tcplogreceiver
 receiver/tlscheckreceiver
 receiver/udplogreceiver
 receiver/vcenterreceiver
+receiver/vcrreceiver
 receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver

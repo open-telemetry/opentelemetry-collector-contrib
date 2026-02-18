@@ -556,3 +556,30 @@ The following fields are common across all log types:
 | `event.http.http_user_agent`   | `user_agent.original`              |
 | `event.http.http_content_type` | `http.request.header.content-type` |
 | `event.http.cookie`            | `http.request.header.cookie`       |
+
+### CloudWatch Logs Subscription Filter record fields
+
+[CloudWatch Logs Subscription Filter](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html) events are mapped to OpenTelemetry logs with the following resource attributes:
+
+| CloudWatch Logs field | Attribute in OpenTelemetry log |
+|-----------------------|--------------------------------|
+| `owner`               | `cloud.account.id`             |
+| `logGroup`            | `aws.log.group.names` (array)  |
+| `logStream`           | `aws.log.stream.names` (array) |
+
+Each log event's `timestamp` is converted to the OpenTelemetry log timestamp, and the `message` is set as the log body.
+
+#### Extracted Fields for Centralized Logging
+
+When using [CloudWatch Logs centralization](https://aws.amazon.com/blogs/mt/simplifying-log-management-using-amazon-cloudwatch-logs-centralization/) to consolidate logs from multiple AWS accounts and regions into a central account, you can enable `emitSystemFields` in your CloudWatch Logs subscription filter to include the original account ID and region in each log event.
+
+To enable extracted fields, set the `emitSystemFields` parameter when creating or updating your CloudWatch Logs subscription filter:
+
+When `emitSystemFields` is enabled, the following fields are extracted and mapped to OpenTelemetry semantic conventions:
+
+| Extracted field  | Attribute in OpenTelemetry log |
+|------------------|--------------------------------|
+| `@aws.account`   | `cloud.account.id`             |
+| `@aws.region`    | `cloud.region`                 |
+
+**Note:** When extracted fields are present, they take precedence over the `owner` field for `cloud.account.id`. Logs with different extracted field values (different account IDs or regions) are automatically grouped into separate `ResourceLogs` to ensure proper resource attribution in OpenTelemetry.

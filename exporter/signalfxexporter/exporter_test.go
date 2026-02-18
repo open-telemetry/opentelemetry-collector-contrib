@@ -1075,16 +1075,6 @@ func TestConsumeMetadataNotStarted(t *testing.T) {
 
 func TestConsumeMetadata(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	converter, err := translation.NewMetricsConverter(
-		zap.NewNop(),
-		nil,
-		cfg.ExcludeMetrics,
-		cfg.IncludeMetrics,
-		cfg.NonAlphanumericDimensionChars,
-		false,
-		true,
-	)
-	require.NoError(t, err)
 	type args struct {
 		metadata []*metadata.MetadataUpdate
 	}
@@ -1386,14 +1376,14 @@ func TestConsumeMetadata(t *testing.T) {
 
 			dimClient := dimensions.NewDimensionClient(
 				dimensions.DimensionClientOptions{
-					Token:             "foo",
-					APIURL:            serverURL,
-					LogUpdates:        true,
-					Logger:            logger,
-					SendDelay:         tt.sendDelay,
-					MaxBuffered:       10,
-					MetricsConverter:  *converter,
-					ExcludeProperties: tt.excludeProperties,
+					Token:                   "foo",
+					APIURL:                  serverURL,
+					LogUpdates:              true,
+					Logger:                  logger,
+					SendDelay:               tt.sendDelay,
+					MaxBuffered:             10,
+					NonAlphanumericDimChars: cfg.NonAlphanumericDimensionChars,
+					ExcludeProperties:       tt.excludeProperties,
 				})
 			dimClient.Start()
 
@@ -1737,26 +1727,16 @@ func TestTLSAPIConnection(t *testing.T) {
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
 
-			converter, err := translation.NewMetricsConverter(
-				zap.NewNop(),
-				nil,
-				nil,
-				nil,
-				"",
-				false,
-				true)
-			require.NoError(t, err)
-
 			dimClient := dimensions.NewDimensionClient(
 				dimensions.DimensionClientOptions{
-					Token:            "",
-					APIURL:           serverURL,
-					LogUpdates:       true,
-					Logger:           logger,
-					SendDelay:        1,
-					MaxBuffered:      10,
-					APITLSConfig:     apiTLSCfg,
-					MetricsConverter: *converter,
+					Token:                   "",
+					APIURL:                  serverURL,
+					LogUpdates:              true,
+					Logger:                  logger,
+					SendDelay:               1,
+					MaxBuffered:             10,
+					APITLSConfig:            apiTLSCfg,
+					NonAlphanumericDimChars: "",
 				})
 			dimClient.Start()
 			defer func() { dimClient.Shutdown() }()

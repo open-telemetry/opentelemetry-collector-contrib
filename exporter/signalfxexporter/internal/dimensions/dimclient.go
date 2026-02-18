@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
@@ -53,9 +52,9 @@ type DimensionClient struct {
 	// For easier unit testing
 	now func() time.Time
 
-	logUpdates       bool
-	logger           *zap.Logger
-	metricsConverter translation.MetricsConverter
+	logUpdates              bool
+	logger                  *zap.Logger
+	nonAlphanumericDimChars string
 	// DefaultProperties will set property key/values unless set explicitly
 	DefaultProperties map[string]string
 	// ExcludeProperties will filter DimensionUpdate content to not submit undesired metadata.
@@ -78,16 +77,16 @@ type DimensionClientOptions struct {
 	SendDelay    time.Duration
 	// In case of having issues sending dimension updates to SignalFx,
 	// buffer a fixed number of updates.
-	MaxBuffered         int
-	MetricsConverter    translation.MetricsConverter
-	DefaultProperties   map[string]string
-	ExcludeProperties   []dpfilters.PropertyFilter
-	MaxConnsPerHost     int
-	MaxIdleConns        int
-	MaxIdleConnsPerHost int
-	IdleConnTimeout     time.Duration
-	Timeout             time.Duration
-	DropTags            bool
+	MaxBuffered             int
+	NonAlphanumericDimChars string
+	DefaultProperties       map[string]string
+	ExcludeProperties       []dpfilters.PropertyFilter
+	MaxConnsPerHost         int
+	MaxIdleConns            int
+	MaxIdleConnsPerHost     int
+	IdleConnTimeout         time.Duration
+	Timeout                 time.Duration
+	DropTags                bool
 }
 
 // NewDimensionClient returns a new client
@@ -112,20 +111,20 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 	sender := NewReqSender(client, 20, map[string]string{"client": "dimension"})
 
 	return &DimensionClient{
-		Token:             options.Token,
-		APIURL:            options.APIURL,
-		sendDelay:         options.SendDelay,
-		delayedSet:        make(map[DimensionKey]*DimensionUpdate),
-		delayedQueue:      make(chan *queuedDimension, options.MaxBuffered),
-		requestSender:     sender,
-		client:            client,
-		now:               time.Now,
-		logger:            options.Logger,
-		logUpdates:        options.LogUpdates,
-		metricsConverter:  options.MetricsConverter,
-		DefaultProperties: options.DefaultProperties,
-		ExcludeProperties: options.ExcludeProperties,
-		dropTags:          options.DropTags,
+		Token:                   options.Token,
+		APIURL:                  options.APIURL,
+		sendDelay:               options.SendDelay,
+		delayedSet:              make(map[DimensionKey]*DimensionUpdate),
+		delayedQueue:            make(chan *queuedDimension, options.MaxBuffered),
+		requestSender:           sender,
+		client:                  client,
+		now:                     time.Now,
+		logger:                  options.Logger,
+		logUpdates:              options.LogUpdates,
+		nonAlphanumericDimChars: options.NonAlphanumericDimChars,
+		DefaultProperties:       options.DefaultProperties,
+		ExcludeProperties:       options.ExcludeProperties,
+		dropTags:                options.DropTags,
 	}
 }
 
