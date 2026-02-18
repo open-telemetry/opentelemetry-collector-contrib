@@ -80,13 +80,11 @@ func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 	pb.RegisterGRPCMdtDialoutServer(y.server, service)
 
-	y.wg.Add(1)
-	go func() {
-		defer y.wg.Done()
+	y.wg.Go(func() {
 		if err := y.server.Serve(listener); err != nil {
 			y.settings.Logger.Error("gRPC server error", zap.Error(err))
 		}
-	}()
+	})
 
 	return nil
 }
