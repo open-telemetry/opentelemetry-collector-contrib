@@ -62,36 +62,37 @@ func NewSubscriptionFilterUnmarshaler(buildInfo component.BuildInfo) unmarshaler
 // Logs are assumed to be gzip-compressed as specified at
 // https://docs.aws.amazon.com/firehose/latest/dev/writing-with-cloudwatch-logs.html.
 func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	var cwLog cloudwatchLogsData
-	decoder := gojson.NewDecoder(reader)
-	if err := decoder.Decode(&cwLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to decode decompressed reader: %w", err)
-	}
-
-	if cwLog.MessageType == "CONTROL_MESSAGE" {
-		return plog.NewLogs(), nil
-	}
-
-	if err := validateLog(cwLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("invalid cloudwatch log: %w", err)
-	}
-
-	return f.createLogs(cwLog), nil
-}
-
-// createLogs creates plog.Logs from the cloudwatchLogsData using a single-pass approach.
-// Events are grouped by their extracted fields (account ID + region).
-// Events with different extracted fields are placed in separate ResourceLogs,
-// while events with identical extracted fields are grouped together.
-// When extracted fields are absent, the Owner field is used as the account ID.
-func (f *subscriptionFilterUnmarshaler) createLogs(cwLog cloudwatchLogsData) plog.Logs {
 	logs := plog.NewLogs()
-
-	// Map to track existing ResourceLogs by key for single-pass processing.
 	resourceLogsByKey := make(map[resourceGroupKey]plog.LogRecordSlice)
 
+	decoder := gojson.NewDecoder(reader)
+	for decoder.More() {
+		var cwLog cloudwatchLogsData
+		if err := decoder.Decode(&cwLog); err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to decode decompressed reader: %w", err)
+		}
+
+		if cwLog.MessageType == "CONTROL_MESSAGE" {
+			continue
+		}
+
+		if err := validateLog(cwLog); err != nil {
+			return plog.Logs{}, fmt.Errorf("invalid cloudwatch log: %w", err)
+		}
+
+		f.appendLogs(logs, resourceLogsByKey, cwLog)
+	}
+
+	return logs, nil
+}
+
+// appendLogs appends log records from cwLog into the given plog.Logs, reusing
+// existing ResourceLogs entries tracked by resourceLogsByKey when possible.
+// Events are grouped by their extracted fields (account ID + region) and
+// by log group/stream combination.
+func (f *subscriptionFilterUnmarshaler) appendLogs(logs plog.Logs, resourceLogsByKey map[resourceGroupKey]plog.LogRecordSlice, cwLog cloudwatchLogsData) {
 	for _, event := range cwLog.LogEvents {
-		key := extractResourceKey(event, cwLog.Owner)
+		key := extractResourceKey(event, cwLog.Owner, cwLog.LogGroup, cwLog.LogStream)
 
 		logRecords, exists := resourceLogsByKey[key]
 		if !exists {
@@ -120,14 +121,14 @@ func (f *subscriptionFilterUnmarshaler) createLogs(cwLog cloudwatchLogsData) plo
 		logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
 		logRecord.Body().SetStr(event.Message)
 	}
-
-	return logs
 }
 
 // extractResourceKey extracts the resource group key from a log event.
 // When extracted fields are present, uses those; otherwise falls back to owner.
-func extractResourceKey(event cloudwatchLogsLogEvent, owner string) resourceGroupKey {
+func extractResourceKey(event cloudwatchLogsLogEvent, owner, logGroup, logStream string) resourceGroupKey {
 	var key resourceGroupKey
+	key.logGroup = logGroup
+	key.logStream = logStream
 	if event.ExtractedFields != nil {
 		if event.ExtractedFields.AccountID != "" {
 			key.accountID = event.ExtractedFields.AccountID

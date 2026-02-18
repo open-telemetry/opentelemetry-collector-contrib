@@ -302,6 +302,10 @@ func clientConfigOpts(cfg configkafka.ClientConfig) []kgo.Opt {
 	if cfg.Metadata.RefreshInterval > 0 {
 		opts = append(opts, kgo.MetadataMaxAge(cfg.Metadata.RefreshInterval))
 	}
+	// Configure connection idle timeout
+	if cfg.ConnIdleTimeout > 0 {
+		opts = append(opts, kgo.ConnIdleTimeout(cfg.ConnIdleTimeout))
+	}
 	// Configure the min/max protocol version if provided
 	if cfg.ProtocolVersion != "" {
 		versions := kversion.FromString(cfg.ProtocolVersion)
