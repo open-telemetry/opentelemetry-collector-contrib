@@ -624,17 +624,18 @@ func (ddr *datadogReceiver) handleSketches(w http.ResponseWriter, req *http.Requ
 
 // handleIntake handles operational calls made by the agent to submit host tags and other metadata to the backend.
 func (ddr *datadogReceiver) handleIntake(w http.ResponseWriter, req *http.Request) {
-	if ddr.config.Intake.Behavior == configIntakeBehaviorSwallow {
+	switch ddr.config.Intake.Behavior {
+	case configIntakeBehaviorSwallow:
 		w.Header().Set("content-type", "text/plain")
 		w.Header().Set("content-length", "8")
 		w.Header().Set("x-content-type-options", "nosniff")
 		// at the time of writing `date` and `strict-transport-security` are also sent as response headers by Datadog
 		// but those are more complicated to set here and do not seem critical to clients so we don't set them
-		w.WriteHeader(202)
-		w.Write([]byte("Accepted"))
-	} else if ddr.intakeReverseProxy == nil {
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write([]byte("Accepted"))
+	case configIntakeBehaviorDisable:
 		http.Error(w, "intake endpoint not enabled", http.StatusMethodNotAllowed)
-	} else {
+	case configIntakeBehaviorProxy:
 		ddr.intakeReverseProxy.ServeHTTP(w, req)
 	}
 }
