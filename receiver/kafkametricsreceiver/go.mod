@@ -88,7 +88,6 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.52.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.52.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.52.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.146.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.146.1 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.146.1 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.146.1 // indirect
