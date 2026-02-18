@@ -129,7 +129,7 @@ func (cfg *Config) Validate() error {
 	if cfg.HashFunction == HMACSHA256 || cfg.HashFunction == HMACSHA512 {
 		key := string(cfg.HMACKey)
 		if key == "" {
-			return fmt.Errorf("hmac_key must not be empty when hash_function is %s", cfg.HashFunction)
+			return fmt.Errorf("hmac_key must not be empty when hash_function is %q", cfg.HashFunction)
 		}
 
 		// Enforce minimum key lengths for security
@@ -139,7 +139,7 @@ func (cfg *Config) Validate() error {
 		}
 
 		if len(key) < minLength {
-			return fmt.Errorf("hmac_key must be at least %d bytes long for %s, got %d bytes", minLength, cfg.HashFunction, len(key))
+			return fmt.Errorf("hmac_key must be at least %d bytes long for %q, got %d bytes", minLength, cfg.HashFunction, len(key))
 		}
 	}
 

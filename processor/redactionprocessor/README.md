@@ -171,7 +171,7 @@ are `md5`, `sha1`, `sha3` (SHA-256), `hmac-sha256`, and `hmac-sha512`.
 
 For enhanced security, especially when dealing with low-entropy data like IP addresses, HMAC (Hash-based Message Authentication Code) hash functions are recommended over simple hash functions like MD5, SHA1, or SHA3.
 
-**Configuration Example:**
+#### Configuration Example
 
 ```yaml
 processors:
@@ -183,23 +183,6 @@ processors:
     hash_function: hmac-sha256  # or hmac-sha512
     hmac_key: "${env:REDACTION_SECRET_KEY}"  # Load from environment variable
     summary: silent
-```
-
-**Key Management:**
-
-```bash
-# Generate a strong random key (do this once and store securely)
-export REDACTION_SECRET_KEY=$(openssl rand -hex 32)
-
-# Use the key when running the collector
-./otelcol-contrib --config=config.yaml
-
-# For production, store keys in:
-# - Kubernetes Secrets
-# - HashiCorp Vault
-# - AWS Secrets Manager
-# - Azure Key Vault
-# Never commit keys to version control!
 ```
 
 The `url_sanitizer` configuration enables sanitization of URLs in specified attributes by removing potentially sensitive information like UUIDs, timestamps, and other non-essential path segments. This is particularly useful for reducing cardinality in telemetry data while preserving the essential parts of URLs for troubleshooting.
