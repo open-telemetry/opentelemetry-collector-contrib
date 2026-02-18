@@ -61,6 +61,27 @@ signal_to_metrics:
         value: "1" # increment by 1 for each profile
 ```
 
+### Error Handling
+
+The `error_mode` configuration option determines how the connector handles errors that occur while processing OTTL expressions:
+
+- `error_mode` (optional): Determines how errors returned from OTTL expressions are handled. Valid values are `propagate`, `ignore`, and `silent`.
+  - `propagate` (default): Errors cause the entire batch to fail and be returned up the pipeline. This will result in the payload being dropped from the collector.
+  - `ignore`: Errors are logged and the specific record that caused the error is skipped, but processing continues for the rest of the batch.
+  - `silent`: Errors are not logged and the specific record that caused the error is skipped, but processing continues for the rest of the batch.
+
+**Example with error handling:**
+
+```yaml
+signaltometrics:
+  error_mode: ignore  # Log errors but continue processing other records
+  spans:
+    - name: span.count
+      description: Count of spans
+      sum:
+        value: Int(AdjustedCount())
+```
+
 ### Metrics types
 
 `signal_to_metrics` produces a variety of metric types by utilizing [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
