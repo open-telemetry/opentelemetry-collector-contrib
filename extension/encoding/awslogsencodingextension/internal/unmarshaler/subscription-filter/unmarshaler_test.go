@@ -151,6 +151,23 @@ func TestUnmarshallCloudwatchLog_SubscriptionFilter(t *testing.T) {
 	}
 }
 
+// TestUnmarshallCloudwatchLog_MultipleJSONObjects verifies that UnmarshalAWSLogs
+// handles multiple concatenated JSON objects in a single reader.
+func TestUnmarshallCloudwatchLog_MultipleJSONObjects(t *testing.T) {
+	t.Parallel()
+
+	filesDirectory := "testdata"
+	reader := readAndCompressLogFile(t, filesDirectory, "multiple_json_objects.json")
+
+	unmarshalerCW := NewSubscriptionFilterUnmarshaler(component.BuildInfo{})
+	logs, err := unmarshalerCW.UnmarshalAWSLogs(reader)
+	require.NoError(t, err)
+
+	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "multiple_json_objects_expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+}
+
 func TestUnmarshallCloudwatchLog_ExtractedFields(t *testing.T) {
 	t.Parallel()
 
