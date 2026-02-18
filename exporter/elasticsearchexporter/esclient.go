@@ -260,13 +260,17 @@ func addrsToURLs(addrs []string) ([]*url.URL, error) {
 	return urls, nil
 }
 
+// createElasticsearchBackoffFunc creates an exponential backoff with equal jitter.
 func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Duration {
 	if !config.Enabled {
 		return nil
 	}
 
 	return func(attempts int) time.Duration {
-		next := min(config.MaxInterval, config.InitialInterval*(1<<(attempts-1)))
+		next := config.InitialInterval << (attempts - 1) // config.InitialInterval * 2 ^ (attempts - 1)
+		if next <= 0 || next > config.MaxInterval {      // guard against overflow
+			next = config.MaxInterval
+		}
 		nextWithJitter := next/2 + time.Duration(rand.Float64()*float64(next/2))
 		return nextWithJitter
 	}
