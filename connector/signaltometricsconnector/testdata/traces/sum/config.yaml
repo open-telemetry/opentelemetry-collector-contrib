@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   spans:
     - name: with_resource_foo_only
       description: Spans with resource attribute including resource.foo as a int sum metric

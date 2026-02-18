@@ -192,6 +192,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - pkg/xk8stest
+      - pkg/xstreamencoding
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
@@ -352,6 +353,7 @@ body:
       - receiver/tlscheck
       - receiver/udplog
       - receiver/vcenter
+      - receiver/vcr
       - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog

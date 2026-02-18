@@ -105,14 +105,11 @@ func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, host co
 	if err != nil {
 		return err
 	}
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
-
+	r.shutdownWG.Go(func() {
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 		}
-	}()
+	})
 	return nil
 }
 
