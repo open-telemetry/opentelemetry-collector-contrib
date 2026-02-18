@@ -226,12 +226,7 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 
 	schema := dp.Scale()
 
-	// Custom bucket native histograms (CBNH) use schema -53.
-	// Per the Prometheus NHCB specification, NHCBs are always presented as classic
-	// histograms for exposition. Only the positive bucket list is used (negative
-	// buckets and zero bucket are unused). Since the OTLP ExponentialHistogramDataPoint
-	// does not carry custom values (bucket boundaries), we convert to a classic
-	// Prometheus histogram using bucket indices as boundaries.
+	// CBNH (schema -53) is converted to classic histogram per Prometheus NHCB spec.
 	if schema == cbnhScale {
 		return c.convertCBNHToClassicHistogram(dp, desc, attributes)
 	}
@@ -285,23 +280,12 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 	return m, nil
 }
 
-// convertCBNHToClassicHistogram converts a Custom Bucket Native Histogram (CBNH,
-// schema -53) ExponentialHistogramDataPoint into a classic Prometheus histogram.
-//
-// Per the Prometheus NHCB specification:
-//   - Only the positive bucket list is used (repurposed for all buckets).
-//   - The negative bucket list and the zero bucket are unused.
-//   - Each bucket index is a 0-based position in the custom values (boundaries) list.
-//   - The bucket at index len(custom_values) is the overflow bucket.
-//
-// Since the OTLP ExponentialHistogramDataPoint does not carry the custom values
-// array (bucket boundaries), bucket indices are used as synthetic boundaries.
-// This preserves count, sum, and per-bucket distribution data.
+// convertCBNHToClassicHistogram converts a CBNH (schema -53) to a classic histogram.
+// Per the Prometheus NHCB spec, only positive buckets are used; bucket indices become boundaries.
 func (c *collector) convertCBNHToClassicHistogram(dp pmetric.ExponentialHistogramDataPoint, desc *prometheus.Desc, attributes []string) (prometheus.Metric, error) {
 	posCounts := dp.Positive().BucketCounts()
 	posOffset := dp.Positive().Offset()
 
-	// Build per-index individual counts from positive buckets.
 	type indexCount struct {
 		index int
 		count uint64
@@ -312,14 +296,10 @@ func (c *collector) convertCBNHToClassicHistogram(dp pmetric.ExponentialHistogra
 		bucketData = append(bucketData, indexCount{index: idx, count: posCounts.At(i)})
 	}
 
-	// Sort by index (should already be sorted, but ensure correctness).
 	sort.Slice(bucketData, func(i, j int) bool {
 		return bucketData[i].index < bucketData[j].index
 	})
 
-	// Build cumulative counts map keyed by float64(index).
-	// The +Inf bucket is implicit in Prometheus classic histograms and covers
-	// observations beyond the highest explicit boundary.
 	cumCount := uint64(0)
 	points := make(map[float64]uint64, len(bucketData))
 	for _, b := range bucketData {
