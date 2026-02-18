@@ -2260,9 +2260,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 	startSignal := make(chan struct{})
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		<-startSignal
 		for i := range 1000 {
 			if i%2 == 0 {
@@ -2271,11 +2269,9 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 				s.remoteConfig.Store(config2)
 			}
 		}
-	}()
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		<-startSignal
 		for range 1000 {
 			cfg := s.remoteConfig.Load()
@@ -2283,7 +2279,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 				_ = cfg.GetConfigHash()
 			}
 		}
-	}()
+	})
 
 	close(startSignal)
 	wg.Wait()

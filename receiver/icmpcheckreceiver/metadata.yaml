@@ -22,40 +22,35 @@ metrics:
   ping.loss.ratio:
     description: The percentage of lost packets.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     unit: "%"
   ping.rtt.avg:
     description: Average round-trip time in milliseconds.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
   ping.rtt.max:
     description: Maximum round-trip time in milliseconds.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
   ping.rtt.min:
     description: Minimum round-trip time in milliseconds.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
   ping.rtt.stddev:
     description: Standard deviation of round-trip time in milliseconds.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms

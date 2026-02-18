@@ -345,13 +345,11 @@ func TestEventConsumeConsistency(t *testing.T) {
 			realTraceID := workerIndexForTraceID(pcommon.TraceID(tt.traceID), 100)
 			var wg sync.WaitGroup
 			for range 50 {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					for range 30 {
 						assert.Equal(t, realTraceID, workerIndexForTraceID(pcommon.TraceID(tt.traceID), 100))
 					}
-				}()
+				})
 			}
 			wg.Wait()
 		})
@@ -403,11 +401,9 @@ func TestEventShutdown(t *testing.T) {
 	assert.Equal(t, 1, em.numEvents())
 
 	shutdownWg := sync.WaitGroup{}
-	shutdownWg.Add(1)
-	go func() {
+	shutdownWg.Go(func() {
 		em.shutdown()
-		shutdownWg.Done()
-	}()
+	})
 
 	wg.Done() // the pending event should be processed
 	// wait for shutdown to process remaining events
@@ -468,11 +464,9 @@ func TestEventShutdownMultipleWorkers(t *testing.T) {
 	}, 1*time.Second, 10*time.Millisecond)
 
 	shutdownWg := sync.WaitGroup{}
-	shutdownWg.Add(1)
-	go func() {
+	shutdownWg.Go(func() {
 		em.shutdown()
-		shutdownWg.Done()
-	}()
+	})
 
 	shutdownWg.Wait()
 

@@ -25,8 +25,7 @@ metrics:
     enabled: true
     description: Disk bytes transferred.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -37,8 +36,7 @@ metrics:
     enabled: true
     description: Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       aggregation_temporality: cumulative
@@ -48,8 +46,7 @@ metrics:
     enabled: true
     description: The number of disk reads/writes merged into single physical disk access operations.
     unit: "{operations}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -59,8 +56,7 @@ metrics:
     enabled: true
     description: Time spent in disk operations.
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       aggregation_temporality: cumulative
@@ -70,8 +66,7 @@ metrics:
     enabled: true
     description: Disk operations count.
     unit: "{operations}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -82,8 +77,7 @@ metrics:
     enabled: true
     description: The queue size of pending I/O operations.
     unit: "{operations}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -93,8 +87,7 @@ metrics:
     enabled: true
     description: Time disk spent activated multiplied by the queue length.
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       aggregation_temporality: cumulative
