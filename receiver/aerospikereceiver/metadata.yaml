@@ -1,4 +1,8 @@
+display_name: Aerospike Receiver
 type: aerospike
+
+description: |
+  The Aerospike receiver is designed to collect performance metrics from one or more Aerospike nodes.
 
 status:
   class: receiver
