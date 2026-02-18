@@ -1,0 +1,64 @@
+$defs:
+  connection_pool:
+    type: object
+    properties:
+      max_idle:
+        x-pointer: true
+        type: integer
+      max_idle_time:
+        x-pointer: true
+        type: string
+        format: duration
+      max_lifetime:
+        x-pointer: true
+        type: string
+        format: duration
+      max_open:
+        x-pointer: true
+        type: integer
+  query_sample_collection:
+    type: object
+    properties:
+      max_rows_per_query:
+        type: integer
+        x-customType: int64
+  top_query_collection:
+    type: object
+    properties:
+      max_explain_each_interval:
+        type: integer
+        x-customType: int64
+      max_rows_per_query:
+        type: integer
+        x-customType: int64
+      query_plan_cache_size:
+        type: integer
+      query_plan_cache_ttl:
+        type: string
+        format: duration
+      top_n_query:
+        type: integer
+        x-customType: int64
+type: object
+properties:
+  databases:
+    type: array
+    items:
+      type: string
+  exclude_databases:
+    type: array
+    items:
+      type: string
+  password:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  username:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: go.opentelemetry.io/collector/config/confignet.addr_config
+  - $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  - $ref: connection_pool
+  - $ref: ./internal/metadata.metrics_builder_config
+  - $ref: ./internal/metadata.logs_builder_config
+  - $ref: query_sample_collection
+  - $ref: top_query_collection

@@ -1,0 +1,32 @@
+$defs:
+  discovery_config:
+    type: object
+    properties:
+      default_annotations:
+        type: object
+        additionalProperties:
+          type: string
+      enabled:
+        type: boolean
+      ignore_receivers:
+        type: array
+        items:
+          type: string
+description: Config defines configuration for receiver_creator.
+type: object
+properties:
+  discovery:
+    $ref: discovery_config
+  resource_attributes:
+    description: ResourceAttributes is a map of default resource attributes to add to each resource object received by this receiver from dynamically created receivers.
+    type: object
+    additionalProperties:
+      type: object
+      additionalProperties:
+        type: string
+  watch_observers:
+    description: WatchObservers are the extensions to listen to endpoints from.
+    type: array
+    items:
+      type: string
+      x-customType: go.opentelemetry.io/collector/component.ID

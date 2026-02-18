@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package redactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
@@ -64,8 +64,14 @@ func createLogsProcessor(
 	next consumer.Logs,
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
+	logCfg := *oCfg
+	// Attributes are defined for metrics and traces:
+	// https://opentelemetry.io/docs/specs/semconv/database/
+	// For logs, we don't rely on the "db.system.name" attribute to
+	// do the sanitization.
+	logCfg.DBSanitizer.AllowFallbackWithoutSystem = true
 
-	red, err := newRedaction(ctx, oCfg, set.Logger)
+	red, err := newRedaction(ctx, &logCfg, set.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
 	}
