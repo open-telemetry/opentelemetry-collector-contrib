@@ -1012,11 +1012,11 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	}
 
 	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion {
-		transformedPod.Labels = pod.Labels
+		transformedPod.Labels = maps.Clone(pod.Labels)
 	}
 
 	if len(rules.Annotations) > 0 {
-		transformedPod.Annotations = pod.Annotations
+		transformedPod.Annotations = maps.Clone(pod.Annotations)
 	}
 
 	if rules.IncludesOwnerMetadata() {
