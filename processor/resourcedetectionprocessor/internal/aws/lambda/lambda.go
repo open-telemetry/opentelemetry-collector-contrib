@@ -64,6 +64,8 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	if runtime.GOOS != "windows" {
 		if accountID, err := os.Readlink(accountIDSymlinkPath); err == nil {
 			d.rb.SetCloudAccountID(accountID)
+		} else {
+			d.logger.Debug("cloud.account.id not available via symlink", zap.Error(err))
 		}
 	}
 
