@@ -110,7 +110,7 @@ func ResetRNGSeedSourceForTest() {
 }
 
 var defaultSeedSource = func() uint64 {
-	return uint64(time.Now().UnixNano())
+	return uint64(time.Now().UnixNano()) ^ atomic.AddUint64(&seedCounter, 1)
 }
 
 var (
@@ -123,7 +123,7 @@ var (
 var prngPool = sync.Pool{
 	New: func() any {
 		// Use a non-zero seed (crucial for xorshift) that is unique for each Goroutine.
-		s := seedSource() ^ atomic.AddUint64(&seedCounter, 1)
+		s := seedSource()
 		if s == 0 {
 			s = 1
 		}
