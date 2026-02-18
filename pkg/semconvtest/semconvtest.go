@@ -218,6 +218,36 @@ func (wc *WeaverContext) TestLogs(logs plog.Logs) error {
 	return nil
 }
 
+func (wc *WeaverContext) TestMetrics(metrics pmetric.Metrics) error {
+	ctx, cancel := context.WithTimeout(wc.ctx, 10*time.Second)
+	defer cancel()
+	response, err := wc.clients.consumeMetrics(ctx, metrics)
+	if err != nil {
+		return err
+	}
+	resJson, err := response.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(resJson))
+	return nil
+}
+
+func (wc *WeaverContext) TestTraces(traces ptrace.Traces) error {
+	ctx, cancel := context.WithTimeout(wc.ctx, 10*time.Second)
+	defer cancel()
+	response, err := wc.clients.consumeTraces(ctx, traces)
+	if err != nil {
+		return err
+	}
+	resJson, err := response.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(resJson))
+	return nil
+}
+
 type WeaverOptions struct {
 	Version   string
 	Registry  string
