@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.4.0
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.17.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.145.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.146.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.52.0
 	go.opentelemetry.io/collector/component/componenttest v0.146.1

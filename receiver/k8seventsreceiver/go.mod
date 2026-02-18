@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seve
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.145.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.145.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.145.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.146.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.52.0
 	go.opentelemetry.io/collector/component/componenttest v0.146.1

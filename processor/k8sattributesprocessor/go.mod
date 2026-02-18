@@ -6,10 +6,10 @@ require (
 	github.com/distribution/reference v0.6.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.145.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.145.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.145.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.145.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.146.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.52.0
 	go.opentelemetry.io/collector/component v1.52.0
