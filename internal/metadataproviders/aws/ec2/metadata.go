@@ -72,7 +72,7 @@ func (c *metadataClient) Tags(ctx context.Context) ([]string, error) {
 	}
 
 	var keys []string
-	for _, key := range strings.Split(tagKeysRaw, "\n") {
+	for key := range strings.SplitSeq(tagKeysRaw, "\n") {
 		key = strings.TrimSpace(key)
 		if key != "" {
 			keys = append(keys, key)

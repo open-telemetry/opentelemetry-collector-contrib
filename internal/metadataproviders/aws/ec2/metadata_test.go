@@ -259,13 +259,13 @@ func TestTags(t *testing.T) {
 		{
 			name: "Realistic AWS tags with colons and mixed naming",
 			tagKeys: map[string]string{
-				"Name":                         "otel-collector-prod",
-				"aws:autoscaling:groupName":    "asg-otel-prod",
+				"Name":                          "otel-collector-prod",
+				"aws:autoscaling:groupName":     "asg-otel-prod",
 				"aws:ec2launchtemplate:id":      "lt-0123456789abcdef0",
 				"aws:ec2launchtemplate:version": "1",
-				"environment":                  "production",
-				"service":                      "opentelemetry-collector",
-				"team":                         "observability",
+				"environment":                   "production",
+				"service":                       "opentelemetry-collector",
+				"team":                          "observability",
 			},
 			expect: []string{
 				"Name",
