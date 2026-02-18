@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `connection_idle_timeout` configuration option to control idle connection timeout.
+note: Add `conn_idle_timeout` configuration option to control when idle connections are not reused and may be closed.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45321]
