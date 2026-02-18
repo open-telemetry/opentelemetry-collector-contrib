@@ -27,7 +27,7 @@ func (s *filesystemsScraper) recordFileSystemUsageMetric(now pcommon.Timestamp, 
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
 			metadata.AttributeStateFree)
 		s.mb.RecordSystemFilesystemUtilizationDataPoint(
-			now, precision.RatioUint64(deviceUsage.usage.Used, deviceUsage.usage.Total),
+			now, precision.RatioUint64(deviceUsage.usage.Used, deviceUsage.usage.Used+deviceUsage.usage.Free),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype)
 	}
