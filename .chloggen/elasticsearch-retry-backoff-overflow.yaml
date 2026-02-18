@@ -1,7 +1,7 @@
 change_type: bug_fix
 component: exporter/elasticsearch
 note: Fix retry exponential backoff overflow handling in Elasticsearch exporter
-issues: [39304]
+issues: [46178]
 subtext: |
   The retry delay growth now guards against duration overflow while preserving
   exponential backoff with jitter, so retries cap correctly at the configured
