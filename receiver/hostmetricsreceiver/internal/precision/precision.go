@@ -5,19 +5,13 @@ package precision // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import "math"
 
-// Common scale factors for use with ScaleUint64.
-const (
-	// MillisecondsPerSecond is used to convert millisecond counters (e.g.
-	// disk I/O times from gopsutil on Linux) to seconds.
-	MillisecondsPerSecond uint64 = 1_000
-
-	// NanosecondsPerSecond is used to convert nanosecond timestamps (e.g.
-	// pcommon.Timestamp differences) to seconds.
-	NanosecondsPerSecond uint64 = 1_000_000_000
-
-	// WindowsPerfCounterUnitsPerSecond is the scale factor for Windows
-	// performance counter time values (100-nanosecond intervals) to seconds.
-	WindowsPerfCounterUnitsPerSecond uint64 = 10_000_000
+var (
+	// ScaleMilliseconds converts millisecond counters to seconds.
+	ScaleMilliseconds = scaleUint64(1_000)
+	// ScaleNanoseconds converts nanosecond counters to seconds.
+	ScaleNanoseconds = scaleUint64(1_000_000_000)
+	// Scale100Nanoseconds converts 100-nanosecond counters (Windows perf counters) to seconds.
+	Scale100Nanoseconds = scaleUint64(10_000_000)
 )
 
 // RatioUint64 computes numerator/denominator and rounds the result to the
@@ -32,18 +26,12 @@ func RatioUint64(numerator, denominator uint64) float64 {
 	return roundRatio(float64(numerator), float64(denominator))
 }
 
-// ScaleUint64 divides numerator by a known constant denominator (e.g.
-// 1000 for milliseconds-to-seconds) and rounds to the denominator's decimal
-// precision. This ensures clean results even when 1/denominator is not exactly
-// representable in binary floating-point (e.g. 1/100). When denominator is
-// zero the native Go float64 division result is returned.
-func ScaleUint64(numerator, denominator uint64) float64 {
-	if denominator == 0 {
-		return float64(numerator) / float64(denominator)
-	}
-	res := float64(numerator) / float64(denominator)
+func scaleUint64(denominator uint64) func(uint64) float64 {
 	mul := float64(denominator)
-	return math.Round(res*mul) / mul
+	return func(numerator uint64) float64 {
+		res := float64(numerator) / mul
+		return math.Round(res*mul) / mul
+	}
 }
 
 func roundRatio(numerator, denominator float64) float64 {

@@ -23,7 +23,7 @@ func (s *diskScraper) recordSystemSpecificDataPoints(now pcommon.Timestamp, ioCo
 func (s *diskScraper) recordDiskWeightedIOTimeMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device := range ioCounters {
 		ioCounter := ioCounters[device]
-		s.mb.RecordSystemDiskWeightedIoTimeDataPoint(now, precision.ScaleUint64(ioCounter.WeightedIO, precision.MillisecondsPerSecond), device)
+		s.mb.RecordSystemDiskWeightedIoTimeDataPoint(now, precision.ScaleMilliseconds(ioCounter.WeightedIO), device)
 	}
 }
 

@@ -18,13 +18,13 @@ func TestRatioUint64(t *testing.T) {
 		expected                float64
 	}{
 		{
-			name:        "issue example 32GB machine",
+			name:        "memory usage 32GB machine",
 			numerator:   21208754,
 			denominator: 33554432,
 			expected:    0.63207012,
 		},
 		{
-			name:        "issue example 1TB machine",
+			name:        "memory usage 1TB machine",
 			numerator:   687397760,
 			denominator: 1073741824,
 			expected:    0.6401890516,
@@ -82,58 +82,89 @@ func TestRatioUint64_ZeroDenominator(t *testing.T) {
 	assert.True(t, math.IsNaN(RatioUint64(0, 0)))
 }
 
-func TestScaleUint64(t *testing.T) {
+func TestScaleMilliseconds(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name                    string
-		numerator, denominator  uint64
-		expected                float64
+		name     string
+		input    uint64
+		expected float64
 	}{
-		{
-			name:        "milliseconds to seconds",
-			numerator:   12345,
-			denominator: 1000,
-			expected:    12.345,
-		},
-		{
-			name:        "jiffies USER_HZ=100",
-			numerator:   12345,
-			denominator: 100,
-			expected:    123.45,
-		},
-		{
-			name:        "zero numerator",
-			numerator:   0,
-			denominator: 1000,
-			expected:    0.0,
-		},
-		{
-			name:        "exact division",
-			numerator:   3000,
-			denominator: 1000,
-			expected:    3.0,
-		},
-		{
-			name:        "windows counter units 1e7",
-			numerator:   15000000,
-			denominator: 10000000,
-			expected:    1.5,
-		},
+		{name: "standard conversion", input: 12345, expected: 12.345},
+		{name: "zero", input: 0, expected: 0.0},
+		{name: "exact division", input: 3000, expected: 3.0},
+		{name: "sub-second", input: 999, expected: 0.999},
+		{name: "one millisecond", input: 1, expected: 0.001},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			actual := ScaleUint64(tt.numerator, tt.denominator)
-			assert.Equal(t, tt.expected, actual)
+			assert.Equal(t, tt.expected, ScaleMilliseconds(tt.input))
 		})
 	}
 }
 
-func TestScaleUint64_ZeroDenominator(t *testing.T) {
+func TestScaleNanoseconds(t *testing.T) {
 	t.Parallel()
-	assert.True(t, math.IsInf(ScaleUint64(100, 0), 1))
-	assert.True(t, math.IsNaN(ScaleUint64(0, 0)))
+	tests := []struct {
+		name     string
+		input    uint64
+		expected float64
+	}{
+		{name: "standard conversion", input: 1_500_000_000, expected: 1.5},
+		{name: "zero", input: 0, expected: 0.0},
+		{name: "large value", input: 3_000_000_000, expected: 3.0},
+		{name: "sub-millisecond", input: 999_999, expected: 0.000999999},
+		{name: "sub-microsecond", input: 999, expected: 0.000000999},
+		{name: "one nanosecond", input: 1, expected: 0.000000001},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.expected, ScaleNanoseconds(tt.input))
+		})
+	}
+}
+
+func TestScale100Nanoseconds(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name     string
+		input    uint64
+		expected float64
+	}{
+		{name: "standard conversion", input: 15_000_000, expected: 1.5},
+		{name: "zero", input: 0, expected: 0.0},
+		{name: "exact division", input: 10_000_000, expected: 1.0},
+		{name: "sub-millisecond", input: 9_999, expected: 0.0009999},
+		{name: "sub-microsecond", input: 9, expected: 0.0000009},
+		{name: "one 100-nanosecond unit", input: 1, expected: 0.0000001},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.expected, Scale100Nanoseconds(tt.input))
+		})
+	}
+}
+
+func TestScaleUint64_CustomDenominator(t *testing.T) {
+	t.Parallel()
+	scale := scaleUint64(100)
+	tests := []struct {
+		name     string
+		input    uint64
+		expected float64
+	}{
+		{name: "jiffies USER_HZ=100", input: 12345, expected: 123.45},
+		{name: "exact division", input: 300, expected: 3.0},
+		{name: "zero", input: 0, expected: 0.0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.expected, scale(tt.input))
+		})
+	}
 }
 
 func TestRatioUint64_PrecisionScalesWithMagnitude(t *testing.T) {
@@ -174,12 +205,12 @@ var ratioInputs = [][2]uint64{
 	{8589934592, 17179869184},
 }
 
-var scaleInputs = [][2]uint64{
-	{12345, 1000},
-	{999, 1000},
-	{15000000, 10000000},
-	{3000000000, 1000000000},
-	{50000, 1000},
+var scaleInputs = []uint64{
+	12345,
+	999,
+	15000000,
+	3000000000,
+	50000,
 }
 
 func BenchmarkRatioUint64(b *testing.B) {
@@ -194,14 +225,14 @@ func BenchmarkRatioUint64_RawDivision(b *testing.B) {
 	}
 }
 
-func BenchmarkScaleUint64(b *testing.B) {
+func BenchmarkScaleMilliseconds(b *testing.B) {
 	for i := range b.N {
-		benchSink = ScaleUint64(scaleInputs[i%len(scaleInputs)][0], scaleInputs[i%len(scaleInputs)][1])
+		benchSink = ScaleMilliseconds(scaleInputs[i%len(scaleInputs)])
 	}
 }
 
-func BenchmarkScaleUint64_RawDivision(b *testing.B) {
+func BenchmarkScaleMilliseconds_RawDivision(b *testing.B) {
 	for i := range b.N {
-		benchSink = float64(scaleInputs[i%len(scaleInputs)][0]) / float64(scaleInputs[i%len(scaleInputs)][1])
+		benchSink = float64(scaleInputs[i%len(scaleInputs)]) / 1000.0
 	}
 }

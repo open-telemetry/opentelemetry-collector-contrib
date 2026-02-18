@@ -165,11 +165,11 @@ func (s *diskScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				s.mb.RecordSystemDiskOperationsDataPoint(now, values[i], instance, metadata.AttributeDirectionWrite)
 			// NOTE: int64-to-uint64 cast is safe because perf counter values are non-negative.
 			case idleTime:
-				s.mb.RecordSystemDiskIoTimeDataPoint(now, precision.ScaleUint64(uint64(now-s.startTime), precision.NanosecondsPerSecond)-precision.ScaleUint64(uint64(values[i]), precision.WindowsPerfCounterUnitsPerSecond), instance)
+				s.mb.RecordSystemDiskIoTimeDataPoint(now, precision.ScaleNanoseconds(uint64(now-s.startTime))-precision.Scale100Nanoseconds(uint64(values[i])), instance)
 			case avgDiskSecsPerRead:
-				s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.ScaleUint64(uint64(values[i]), precision.WindowsPerfCounterUnitsPerSecond), instance, metadata.AttributeDirectionRead)
+				s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.Scale100Nanoseconds(uint64(values[i])), instance, metadata.AttributeDirectionRead)
 			case avgDiskSecsPerWrite:
-				s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.ScaleUint64(uint64(values[i]), precision.WindowsPerfCounterUnitsPerSecond), instance, metadata.AttributeDirectionWrite)
+				s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.Scale100Nanoseconds(uint64(values[i])), instance, metadata.AttributeDirectionWrite)
 			case queueLength:
 				s.mb.RecordSystemDiskPendingOperationsDataPoint(now, values[i], instance)
 			default:
