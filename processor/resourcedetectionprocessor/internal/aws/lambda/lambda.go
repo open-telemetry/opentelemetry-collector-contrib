@@ -23,7 +23,7 @@ const (
 
 	// accountIDSymlinkPath is the path to a symlink whose target is the AWS account ID.
 	// This symlink is created by the opentelemetry-lambda extension layer.
-	accountIDSymlinkPath = "/tmp/.otel-account-id"
+	accountIDSymlinkPath = "/tmp/.otel-aws-account-id"
 
 	// Environment variables that are set when running on AWS Lambda.
 	// https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
