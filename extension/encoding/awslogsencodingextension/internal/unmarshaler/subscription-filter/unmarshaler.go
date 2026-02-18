@@ -66,12 +66,9 @@ func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 	resourceLogsByKey := make(map[resourceGroupKey]plog.LogRecordSlice)
 
 	decoder := gojson.NewDecoder(reader)
-	for {
+	for decoder.More() {
 		var cwLog cloudwatchLogsData
 		if err := decoder.Decode(&cwLog); err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
 			return plog.Logs{}, fmt.Errorf("failed to decode decompressed reader: %w", err)
 		}
 
