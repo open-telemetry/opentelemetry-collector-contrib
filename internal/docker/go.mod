@@ -8,7 +8,7 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/confmap v1.51.1-0.20260217094636-d8d07c01912d
+	go.opentelemetry.io/collector/confmap v1.52.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
@@ -39,7 +39,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260217094636-d8d07c01912d // indirect
+	go.opentelemetry.io/collector/featuregate v1.52.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.24.0 // indirect
