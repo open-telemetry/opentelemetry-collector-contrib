@@ -1,4 +1,7 @@
+display_name: Azure Monitor Receiver
 type: azuremonitor
+
+description: The Azure Monitor Receiver scrapes the Azure Monitor API for resource metrics.
 
 status:
   class: receiver
