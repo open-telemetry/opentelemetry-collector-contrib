@@ -54,10 +54,6 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	conf := cfg.(*Config)
 
-	if len(conf.Devices) == 0 {
-		return &nopMetricsReceiver{}, nil
-	}
-
 	var receivers []receiver.Metrics
 	for _, device := range conf.Devices {
 		connDevice := connection.DeviceConfig{
