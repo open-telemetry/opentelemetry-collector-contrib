@@ -197,6 +197,26 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "Valid configuration with gateway_service",
+			config: Config{
+				API: datadogconfig.APIConfig{
+					Site: datadogconfig.DefaultSite,
+					Key:  "1234567890abcdef1234567890abcdef",
+				},
+				HTTPConfig: &httpserver.Config{
+					ServerConfig: confighttp.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
+					},
+					Path: "/metadata",
+				},
+				GatewayService: "monitoring/otelcol-gateway",
+			},
+			wantErr: nil,
+		},
 	}
 
 	for _, tt := range tests {

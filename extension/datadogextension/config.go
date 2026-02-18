@@ -27,6 +27,12 @@ type Config struct {
 	// DeploymentType indicates the type of deployment (gateway, daemonset, or unknown).
 	// Defaults to "unknown" if not set.
 	DeploymentType string `mapstructure:"deployment_type"`
+	// GatewayService is the name of the k8s Service that fronts this gateway collector.
+	// When set, the extension queries kubectl to retrieve endpoint slice information for
+	// the service and includes it in the reported payload. Supports "service" or
+	// "namespace/service" format; if no namespace is given, the current kubeconfig
+	// context namespace is used. Requires kubectl to be available on the PATH.
+	GatewayService string `mapstructure:"gateway_service"`
 }
 
 // Validate ensures that the configuration is valid.

@@ -55,7 +55,15 @@
     "full_configuration": "{\"receivers\":{\"otlp\":{}},\"exporters\":{\"debug\":{}},\"service\":{\"pipelines\":{\"metrics\":{\"receivers\":[\"otlp\"],\"exporters\":[\"debug\"]}}}}",
     "health_status": "{\"status\":\"healthy\"}",
     "collector_resource_attributes": {},
-    "collector_deployment_type": "gateway"
+    "collector_deployment_type": "gateway",
+    "gateway_info": {
+      "service": "otelcol-gateway",
+      "namespace": "monitoring",
+      "ports": ["4317/TCP", "4318/TCP"],
+      "pods": ["otelcol-pod-abc", "otelcol-pod-def"],
+      "addresses": ["10.0.0.1", "10.0.0.2"],
+      "address_type": "IPv4"
+    }
   },
   "uuid": "123e4567-e89b-12d3-a456-426614174000"
 }

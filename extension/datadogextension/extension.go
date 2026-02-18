@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/gateway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
@@ -89,6 +90,10 @@ type datadogExtension struct {
 
 	// Fields for periodic payload sending
 	payloadSender *payloadSender
+
+	// gatewayLister is used to fetch gateway EndpointSlice information via the Kubernetes API.
+	// Initialized from NewK8sLister when gateway_service is configured; can be swapped in tests.
+	gatewayLister gateway.EndpointSliceLister
 }
 
 var (
@@ -100,7 +105,7 @@ var (
 // NotifyConfig implements the extensioncapabilities.ConfigWatcher interface, which allows
 // this extension to be notified of the Collector's effective configuration.
 // This method is called during startup by the Collector's service after calling Start.
-func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) error {
+func (e *datadogExtension) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
 	e.configs.mutex.Lock()
 	defer e.configs.mutex.Unlock()
 
@@ -146,6 +151,16 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.logger.Warn("Failed to populate active components list", zap.Error(err))
 	} else if activeComponents != nil {
 		otelCollectorPayload.ActiveComponents = *activeComponents
+	}
+
+	// Populate GatewayInfo if a gateway_service is configured.
+	if e.configs.extension.GatewayService != "" && e.gatewayLister != nil {
+		gatewayInfo, err := gateway.FetchGatewayInfo(ctx, e.configs.extension.GatewayService, e.gatewayLister)
+		if err != nil {
+			e.logger.Warn("Failed to fetch gateway endpoint slice info", zap.String("service", e.configs.extension.GatewayService), zap.Error(err))
+		} else {
+			otelCollectorPayload.GatewayInfo = &gatewayInfo
+		}
 	}
 
 	// TODO: Populate HealthStatus from the pkg/status.
@@ -414,6 +429,14 @@ func newExtension(
 			ticker:  ticker,
 			channel: channel,
 		},
+	}
+	if cfg.GatewayService != "" {
+		lister, listerErr := gateway.NewK8sLister()
+		if listerErr != nil {
+			set.Logger.Warn("Failed to create Kubernetes client for gateway service discovery; gateway info will not be collected", zap.Error(listerErr))
+		} else {
+			e.gatewayLister = lister
+		}
 	}
 	return e, nil
 }

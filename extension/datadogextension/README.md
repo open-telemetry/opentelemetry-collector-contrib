@@ -105,6 +105,102 @@ extensions:
     deployment_type: daemonset
 ```
 
+## Gateway Service Discovery
+
+When `deployment_type` is `gateway`, you can set `gateway_service` to the name of the Kubernetes Service that fronts the collector. The extension will query the Kubernetes EndpointSlice API at startup to discover which pods and endpoints back the service, and include that information in the metadata payload sent to Datadog.
+
+**Configuration:**
+
+```yaml
+extensions:
+  datadog:
+    api:
+      key: <YOUR_DATADOG_API_KEY>
+      site: "datadoghq.com"
+    deployment_type: gateway
+    gateway_service: "monitoring/otelcol-gateway"   # namespace/service, or just "service"
+```
+
+- `gateway_service`: The name of the Kubernetes Service. Accepts `"service-name"` or `"namespace/service-name"` format. When no namespace is provided, the extension tries to determine the current namespace from the in-cluster service account (i.e. `/var/run/secrets/kubernetes.io/serviceaccount/namespace`); if that is not available, the API call is made with an empty namespace (which lists across all namespaces).
+
+**What is collected:**
+
+The extension lists EndpointSlices with the label `kubernetes.io/service-name=<service>` using the Kubernetes `discovery.k8s.io/v1` API and populates the following fields in the payload:
+
+| Field | Description |
+|---|---|
+| `service` | The configured service name |
+| `namespace` | Kubernetes namespace |
+| `ports` | Port/protocol strings exposed by the service (e.g. `"4317/TCP"`) |
+| `pods` | Names of the pods currently backing the service |
+| `addresses` | Endpoint IP addresses of the backing pods |
+| `address_type` | Address family: `IPv4`, `IPv6`, or `FQDN` |
+
+If the Kubernetes client cannot be initialized or the API call returns an error, a warning is logged and the payload is sent without gateway info — the rest of the extension continues to function normally.
+
+**Authentication:**
+
+The extension uses the standard Kubernetes client-go authentication chain:
+
+1. **In-cluster** (recommended for production): When the collector runs as a Pod, it automatically uses the Pod's service account token and CA certificate mounted at `/var/run/secrets/kubernetes.io/serviceaccount/`.
+2. **Kubeconfig** (for out-of-cluster use): When not running in a Pod, the extension falls back to the default kubeconfig (typically `~/.kube/config` or the path in `$KUBECONFIG`).
+
+**Kubernetes RBAC:**
+
+The service account running the collector Pod needs permission to list EndpointSlices. Grant it with a `ClusterRole` and `ClusterRoleBinding`:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otelcol-gateway-discovery
+rules:
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otelcol-gateway-discovery
+subjects:
+  - kind: ServiceAccount
+    name: <collector-service-account>
+    namespace: <collector-namespace>
+roleRef:
+  kind: ClusterRole
+  name: otelcol-gateway-discovery
+  apiGroup: rbac.authorization.k8s.io
+```
+
+If `gateway_service` includes an explicit namespace (e.g. `"monitoring/otelcol-gateway"`), a namespace-scoped `Role` / `RoleBinding` is sufficient:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: otelcol-gateway-discovery
+  namespace: monitoring
+rules:
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otelcol-gateway-discovery
+  namespace: monitoring
+subjects:
+  - kind: ServiceAccount
+    name: <collector-service-account>
+    namespace: <collector-namespace>
+roleRef:
+  kind: Role
+  name: otelcol-gateway-discovery
+  apiGroup: rbac.authorization.k8s.io
+```
+
 ## Notes
 - The extension is in active development. Functionality and configuration options may change as Datadog OpenTelemetry monitoring features evolve.
 - Please see [official documentation on Datadog's website](https://docs.datadoghq.com/opentelemetry/integrations/datadog_extension/) for more details.

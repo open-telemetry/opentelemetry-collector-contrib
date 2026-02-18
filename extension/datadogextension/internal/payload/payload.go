@@ -38,6 +38,23 @@ type OtelCollector struct {
 	CollectorResourceAttributes map[string]string  `json:"collector_resource_attributes"`
 	CollectorDeploymentType     string             `json:"collector_deployment_type"` // deployment type: gateway, daemonset, or unknown
 	TTL                         int64              `json:"ttl"`
+	GatewayInfo                 *GatewayInfo       `json:"gateway_info,omitempty"` // k8s service and pod info for gateway deployments
+}
+
+// GatewayInfo contains information about the k8s service and backing pods for a gateway collector.
+type GatewayInfo struct {
+	// Service is the name of the k8s Service.
+	Service string `json:"service"`
+	// Namespace is the k8s namespace of the service.
+	Namespace string `json:"namespace"`
+	// Ports is the list of ports exposed by the k8s Service (e.g. "4317/TCP").
+	Ports []string `json:"ports"`
+	// Pods is the list of pod names backing the k8s Service.
+	Pods []string `json:"pods"`
+	// Addresses is the list of endpoint IP addresses backing the k8s Service.
+	Addresses []string `json:"addresses"`
+	// AddressType indicates the address family used by the endpoint slice (IPv4, IPv6, or FQDN).
+	AddressType string `json:"address_type"`
 }
 
 type CollectorModule struct {

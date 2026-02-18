@@ -400,6 +400,39 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 	assert.Equal(t, "gateway", metadataMap["collector_deployment_type"])
 }
 
+func TestOtelCollectorPayload_GatewayInfo(t *testing.T) {
+	gatewayInfo := &GatewayInfo{
+		Service:     "otelcol-gateway",
+		Namespace:   "monitoring",
+		Ports:       []string{"4317/TCP", "4318/TCP"},
+		Pods:        []string{"otelcol-pod-abc", "otelcol-pod-def"},
+		Addresses:   []string{"10.0.0.1", "10.0.0.2"},
+		AddressType: "IPv4",
+	}
+	oc := &OtelCollectorPayload{
+		Hostname:  "test_host",
+		Timestamp: time.Now().UnixNano(),
+		UUID:      "test-uuid",
+		Metadata: OtelCollector{
+			GatewayInfo: gatewayInfo,
+		},
+	}
+
+	jsonData, err := json.Marshal(oc)
+	require.NoError(t, err)
+
+	var back OtelCollectorPayload
+	require.NoError(t, json.Unmarshal(jsonData, &back))
+	require.NotNil(t, back.Metadata.GatewayInfo)
+	assert.Equal(t, gatewayInfo, back.Metadata.GatewayInfo)
+
+	// When GatewayInfo is nil it should be omitted from JSON.
+	ocNil := &OtelCollectorPayload{Hostname: "h", Metadata: OtelCollector{}}
+	nilJSON, err := json.Marshal(ocNil)
+	require.NoError(t, err)
+	assert.NotContains(t, string(nilJSON), "gateway_info")
+}
+
 func TestPrepareOtelCollectorMetadata_DeploymentType(t *testing.T) {
 	tests := []struct {
 		name           string
