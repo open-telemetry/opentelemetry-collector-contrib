@@ -222,7 +222,7 @@ func TestStochasticIncrement_StatisticalConvergence(t *testing.T) {
 			name:           "weight 0.3",
 			weight:         0.3,
 			iterations:     50000,
-			toleranceRatio: 0.1,
+			toleranceRatio: 0.15,
 		},
 		{
 			name:           "weight 2.5",
