@@ -77,7 +77,7 @@ type ClientConfig struct {
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
 
-	// ConnIdleTimeout specifies the time after which idle connections are closed.
+	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
 	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
 }
 
