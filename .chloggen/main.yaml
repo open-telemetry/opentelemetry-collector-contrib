@@ -1,0 +1,4 @@
+change_type: enhancement
+component: extension/bearertokenauth
+note: Allow comments starting with '#' in the bearer token file.
+issues: [46100]

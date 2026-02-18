@@ -446,3 +446,40 @@ func TestCustomHeaderAuthenticate(t *testing.T) {
 
 	assert.NoError(t, bauth.Shutdown(t.Context()))
 }
+
+func TestBearerTokenFileWithComments(t *testing.T) {
+	scheme := "Bearer"
+	filename := filepath.Join("testdata", t.Name()+".tokens")
+
+	fileContent := "token1 # This is the primary token\n# This is a comment line that should be ignored\n   token2   # This is the secondary token"
+	err := os.WriteFile(filename, []byte(fileContent), 0o600)
+	assert.NoError(t, err)
+	defer os.Remove(filename)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = scheme
+	cfg.Filename = filename
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	assert.NotNil(t, bauth)
+
+	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+
+	credential, err := bauth.PerRPCCredentials()
+	assert.NoError(t, err)
+	md, err := credential.GetRequestMetadata(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, "Bearer token1", md["authorization"])
+
+	ctx := t.Context()
+
+	headers1 := map[string][]string{"authorization": {"Bearer token1"}}
+	_, err = bauth.Authenticate(ctx, headers1)
+	assert.NoError(t, err)
+
+	headers2 := map[string][]string{"authorization": {"Bearer token2"}}
+	_, err = bauth.Authenticate(ctx, headers2)
+	assert.NoError(t, err)
+
+	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
