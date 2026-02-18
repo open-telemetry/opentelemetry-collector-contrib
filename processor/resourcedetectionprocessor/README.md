@@ -265,7 +265,9 @@ from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/U
 The list of the populated resource attributes can be found at [EC2 Detector Resource Attributes](./internal/aws/ec2/documentation.md).
 
 It also can optionally gather tags for the EC2 instance that the collector is running on.
-Note that in order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
+Tags are first fetched via the [Instance Metadata Service (IMDS)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html),
+which requires [instance metadata tags to be enabled](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html#allow-access-to-tags-in-IMDS) on the instance and does not require any IAM permissions.
+If IMDS tag access is not available, the detector falls back to the EC2 `DescribeTags` API, which requires the IAM role assigned to the EC2 instance to include the `ec2:DescribeTags` permission.
 
 EC2 custom configuration example:
 ```yaml

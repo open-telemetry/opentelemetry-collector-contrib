@@ -16,6 +16,12 @@ resourceMetrics:
         - key: cloud.region
           value:
             stringValue: us-east-1
+        - key: ec2.tag.Name
+          value:
+            stringValue: test-instance
+        - key: ec2.tag.Test
+          value:
+            stringValue: test-tag
         - key: host.id
           value:
             stringValue: i-1234567890abcdef0

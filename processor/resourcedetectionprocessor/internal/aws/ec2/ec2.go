@@ -117,19 +117,24 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
-		httpClient := getClientConfig(ctx, d.logger)
-		ec2Client, err := d.ec2ClientBuilder.buildClient(ctx, meta.Region, httpClient)
+		// Try IMDS first (no IAM permissions needed, requires InstanceMetadataTags=enabled)
+		tags, err := fetchIMDSTags(ctx, d.metadataProvider, d.tagKeyRegexes)
 		if err != nil {
-			d.logger.Warn("failed to build ec2 client", zap.Error(err))
-			return res, conventions.SchemaURL, nil
-		}
-		tags, err := fetchEC2Tags(ctx, ec2Client, meta.InstanceID, d.tagKeyRegexes)
-		if err != nil {
-			d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
-		} else {
-			for key, val := range tags {
-				res.Attributes().PutStr(tagPrefix+key, val)
+			// IMDS tags not available, fall back to DescribeTags API
+			d.logger.Debug("failed to fetch tags from IMDS, falling back to EC2 API", zap.Error(err))
+			httpClient := getClientConfig(ctx, d.logger)
+			ec2Client, err := d.ec2ClientBuilder.buildClient(ctx, meta.Region, httpClient)
+			if err != nil {
+				d.logger.Warn("failed to build ec2 client", zap.Error(err))
+				return res, conventions.SchemaURL, nil
 			}
+			tags, err = fetchEC2Tags(ctx, ec2Client, meta.InstanceID, d.tagKeyRegexes)
+			if err != nil {
+				d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
+			}
+		}
+		for key, val := range tags {
+			res.Attributes().PutStr(tagPrefix+key, val)
 		}
 	}
 	return res, conventions.SchemaURL, nil
@@ -160,6 +165,26 @@ func fetchEC2Tags(ctx context.Context, svc ec2.DescribeTagsAPIClient, instanceID
 		if matched {
 			tags[*tag.Key] = *tag.Value
 		}
+	}
+	return tags, nil
+}
+
+func fetchIMDSTags(ctx context.Context, provider ec2provider.Provider, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+	keys, err := provider.Tags(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tags := make(map[string]string)
+	for _, key := range keys {
+		if !regexArrayMatch(tagKeyRegexes, key) {
+			continue
+		}
+		val, err := provider.Tag(ctx, key)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get tag value for key %q: %w", key, err)
+		}
+		tags[key] = val
 	}
 	return tags, nil
 }

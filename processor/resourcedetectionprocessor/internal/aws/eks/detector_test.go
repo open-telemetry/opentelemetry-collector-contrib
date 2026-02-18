@@ -38,6 +38,14 @@ func (m *mockIMDSProvider) InstanceID(_ context.Context) (string, error) {
 	return m.meta.InstanceID, m.err
 }
 
+func (m *mockIMDSProvider) Tags(_ context.Context) ([]string, error) {
+	return nil, m.err
+}
+
+func (m *mockIMDSProvider) Tag(_ context.Context, _ string) (string, error) {
+	return "", m.err
+}
+
 type mockAPIProvider struct {
 	clusterVersion    string
 	clusterVersionErr error

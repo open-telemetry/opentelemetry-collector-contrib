@@ -33,6 +33,9 @@ type mockMetadata struct {
 	retHostname    string
 	retErrHostname error
 
+	retTags    map[string]string
+	retErrTags error
+
 	isAvailable bool
 }
 
@@ -69,6 +72,24 @@ func (mm mockMetadata) Hostname(_ context.Context) (string, error) {
 		return "", mm.retErrHostname
 	}
 	return mm.retHostname, nil
+}
+
+func (mm mockMetadata) Tags(_ context.Context) ([]string, error) {
+	if mm.retErrTags != nil {
+		return nil, mm.retErrTags
+	}
+	keys := make([]string, 0, len(mm.retTags))
+	for k := range mm.retTags {
+		keys = append(keys, k)
+	}
+	return keys, nil
+}
+
+func (mm mockMetadata) Tag(_ context.Context, key string) (string, error) {
+	if val, ok := mm.retTags[key]; ok {
+		return val, nil
+	}
+	return "", errors.New("tag not found: " + key)
 }
 
 func TestNewDetector(t *testing.T) {
@@ -193,7 +214,7 @@ func TestDetector_Detect(t *testing.T) {
 			}(),
 		},
 		{
-			name: "success with tags",
+			name: "success with tags via IMDS",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
@@ -204,6 +225,41 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
+				retTags:     map[string]string{"tag1": "val1", "tag2": "val2"},
+				isAvailable: true,
+			}},
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
+			args:          args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("host.name", "example-hostname")
+				attr.PutStr("ec2.tag.tag1", "val1")
+				attr.PutStr("ec2.tag.tag2", "val2")
+				return res
+			}(),
+		},
+		{
+			name: "success with tags via API fallback when IMDS fails",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname: "example-hostname",
+				retErrTags:  errors.New("IMDS tags not enabled"),
 				isAvailable: true,
 			}},
 			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
@@ -227,7 +283,7 @@ func TestDetector_Detect(t *testing.T) {
 			tagsProvider: &mockClientBuilder{},
 		},
 		{
-			name: "success without tags returned from describeTags",
+			name: "both IMDS and API fail returns resource without tags",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
@@ -238,9 +294,11 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
+				retErrTags:  errors.New("IMDS tags not enabled"),
 				isAvailable: true,
 			}},
-			args: args{ctx: t.Context()},
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$")},
+			args:          args{ctx: t.Context()},
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
