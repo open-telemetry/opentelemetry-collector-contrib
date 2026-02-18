@@ -150,10 +150,8 @@ func (cfg *Config) EffectiveQuerySampleCollectionInterval() time.Duration {
 func (cfg *Config) EffectiveEventsCollectionInterval() time.Duration {
 	var minInterval time.Duration
 	if cfg.Events.DbServerTopQuery.Enabled {
-		iv := cfg.EffectiveTopQueryCollectionInterval()
-		if iv < minInterval {
-			minInterval = iv
-		}
+		minInterval = cfg.EffectiveTopQueryCollectionInterval()
+
 	}
 	if cfg.Events.DbServerQuerySample.Enabled {
 		iv := cfg.EffectiveQuerySampleCollectionInterval()
