@@ -199,7 +199,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -282,7 +282,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -368,7 +368,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -453,7 +453,7 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -572,7 +572,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -666,7 +666,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -782,7 +782,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -868,7 +868,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -954,7 +954,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -1040,7 +1040,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -1126,7 +1126,7 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
 			sr.Fields = nil
-			if sr.count >= sr.TotalCount.Count || (sr.offset+sr.count) >= sr.TotalCount.Count {
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
