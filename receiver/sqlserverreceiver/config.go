@@ -148,21 +148,21 @@ func (cfg *Config) EffectiveQuerySampleCollectionInterval() time.Duration {
 // It is the minimum of the effective collection intervals of all enabled log events (top_query, query_sample).
 // If no events are enabled, returns the global collection_interval.
 func (cfg *Config) EffectiveEventsCollectionInterval() time.Duration {
-	var min time.Duration
+	var minInterval time.Duration
 	if cfg.Events.DbServerTopQuery.Enabled {
 		iv := cfg.EffectiveTopQueryCollectionInterval()
-		if min == 0 || iv < min {
-			min = iv
+		if iv < minInterval {
+			minInterval = iv
 		}
 	}
 	if cfg.Events.DbServerQuerySample.Enabled {
 		iv := cfg.EffectiveQuerySampleCollectionInterval()
-		if min == 0 || iv < min {
-			min = iv
+		if minInterval == 0 || iv < minInterval {
+			minInterval = iv
 		}
 	}
-	if min == 0 {
+	if minInterval == 0 {
 		return cfg.ControllerConfig.CollectionInterval
 	}
-	return min
+	return minInterval
 }
