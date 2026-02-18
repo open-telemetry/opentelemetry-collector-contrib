@@ -38,7 +38,7 @@ properties:
     description: AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
     type: boolean
   disable_scope_info:
-    description: DisableScopeInfo allows disabling the export of the scope info metrics
+    description: DisableScopeInfo allows disabling the export of the scope info labels
     type: boolean
   external_labels:
     description: ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"

@@ -6,7 +6,6 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"fmt"
 	"math"
-	"strconv"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/value"
@@ -17,87 +16,6 @@ import (
 )
 
 const defaultZeroThreshold = 1e-128
-
-func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string,
-) error {
-	var errs error
-	for x := 0; x < dataPoints.Len(); x++ {
-		pt := dataPoints.At(x)
-		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
-		if err != nil {
-			errs = multierr.Append(errs, err)
-			continue
-		}
-
-		// If the sum is unset, it indicates the _sum metric point should be
-		// omitted
-		if pt.HasSum() {
-			// treat sum as a sample in an individual TimeSeries
-			sum := &prompb.Sample{
-				Value:     pt.Sum(),
-				Timestamp: timestamp,
-			}
-			if pt.Flags().NoRecordedValue() {
-				sum.Value = math.Float64frombits(value.StaleNaN)
-			}
-
-			sumlabels := createLabels(baseName+sumStr, baseLabels)
-			c.addSample(sum, sumlabels)
-		}
-
-		// treat count as a sample in an individual TimeSeries
-		count := &prompb.Sample{
-			Value:     float64(pt.Count()),
-			Timestamp: timestamp,
-		}
-		if pt.Flags().NoRecordedValue() {
-			count.Value = math.Float64frombits(value.StaleNaN)
-		}
-
-		countlabels := createLabels(baseName+countStr, baseLabels)
-		c.addSample(count, countlabels)
-
-		// cumulative count for conversion to cumulative histogram
-		var cumulativeCount uint64
-
-		var bucketBounds []bucketBoundsData
-
-		// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
-		for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
-			bound := pt.ExplicitBounds().At(i)
-			cumulativeCount += pt.BucketCounts().At(i)
-			bucket := &prompb.Sample{
-				Value:     float64(cumulativeCount),
-				Timestamp: timestamp,
-			}
-			if pt.Flags().NoRecordedValue() {
-				bucket.Value = math.Float64frombits(value.StaleNaN)
-			}
-			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-			labels := createLabels(baseName+bucketStr, baseLabels, leStr, boundStr)
-			ts := c.addSample(bucket, labels)
-
-			bucketBounds = append(bucketBounds, bucketBoundsData{ts: ts, bound: bound})
-		}
-		// add le=+Inf bucket
-		infBucket := &prompb.Sample{
-			Timestamp: timestamp,
-		}
-		if pt.Flags().NoRecordedValue() {
-			infBucket.Value = math.Float64frombits(value.StaleNaN)
-		} else {
-			infBucket.Value = float64(pt.Count())
-		}
-		infLabels := createLabels(baseName+bucketStr, baseLabels, leStr, pInfStr)
-		ts := c.addSample(infBucket, infLabels)
-
-		bucketBounds = append(bucketBounds, bucketBoundsData{ts: ts, bound: math.Inf(1)})
-		c.addExemplars(pt, bucketBounds)
-	}
-	return errs
-}
 
 func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
 	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string,
