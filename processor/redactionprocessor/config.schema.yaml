@@ -1,0 +1,53 @@
+$defs:
+  hash_function:
+    type: string
+type: object
+properties:
+  allow_all_keys:
+    description: AllowAllKeys is a flag to allow all span attribute keys. Setting this to true disables the AllowedKeys list. The list of BlockedValues is applied regardless. If you just want to block values, set this to true.
+    type: boolean
+  allowed_keys:
+    description: AllowedKeys is a list of allowed span attribute keys. Span attributes not on the list are removed. The list fails closed if it's empty. To allow all keys, you should explicitly set AllowAllKeys
+    type: array
+    items:
+      type: string
+  allowed_values:
+    description: AllowedValues is a list of regular expressions for allowing values of blocked span attributes. Values that match are not masked.
+    type: array
+    items:
+      type: string
+  blocked_key_patterns:
+    description: BlockedKeyPatterns is a list of blocked span attribute key patterns. Span attributes matching the regexes on the list are masked.
+    type: array
+    items:
+      type: string
+  blocked_values:
+    description: BlockedValues is a list of regular expressions for blocking values of allowed span attributes. Values that match are masked.
+    type: array
+    items:
+      type: string
+  db_sanitizer:
+    description: DBSanitizer is a flag to enable database query sanitization.
+    $ref: ./internal/db.db_sanitizer_config
+  hash_function:
+    description: HashFunction defines the function for hashing the values instead of masking them with a fixed string. By default, no hash function is used and masking with a fixed string is performed.
+    $ref: hash_function
+  ignored_key_patterns:
+    description: IgnoredKeyPatterns is a list of attribute key patterns (regex) that are not redacted. attributes matching any of these patterns are allowed to pass through the filter without their values being checked or modified.
+    type: array
+    items:
+      type: string
+  ignored_keys:
+    description: IgnoredKeys is a list of span attribute keys that are not redacted. Span attributes in this list are allowed to pass through the filter without being changed or removed.
+    type: array
+    items:
+      type: string
+  redact_all_types:
+    description: RedactAllTypes of attributes, including those that are not string, by converting to a string representation. By default only string values are redacted.
+    type: boolean
+  summary:
+    description: Summary controls the verbosity level of the diagnostic attributes that the processor adds to the spans when it redacts or masks other attributes. In some contexts a list of redacted attributes leaks information, while it is valuable when integrating and testing a new configuration. Possible values are `debug`, `info`, and `silent`.
+    type: string
+  url_sanitizer:
+    description: URLSanitization is a flag to sanitize URLs by removing UUIDs, timestamps, and other non-essential information
+    $ref: ./internal/url.url_sanitization_config

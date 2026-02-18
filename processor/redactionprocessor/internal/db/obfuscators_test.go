@@ -8,6 +8,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestSQLObfuscator(t *testing.T) {
@@ -244,6 +245,7 @@ func TestMongoObfuscator(t *testing.T) {
 				Enabled: true,
 			},
 		}),
+		logger: zaptest.NewLogger(t),
 	}
 
 	tests := []struct {
@@ -266,6 +268,13 @@ func TestMongoObfuscator(t *testing.T) {
 			expected:      `{"find": "users"}`,
 			attributeKey:  "other.field",
 			shouldProcess: false,
+		},
+		{
+			name:          "non-json value",
+			input:         "/foo/{bar}",
+			expected:      "/foo/{bar}",
+			attributeKey:  "db.statement",
+			shouldProcess: true,
 		},
 	}
 
@@ -304,6 +313,7 @@ func TestOpenSearchObfuscator(t *testing.T) {
 				Enabled: true,
 			},
 		}),
+		logger: zaptest.NewLogger(t),
 	}
 
 	tests := []struct {
@@ -327,6 +337,13 @@ func TestOpenSearchObfuscator(t *testing.T) {
 			attributeKey:  "other.field",
 			shouldProcess: false,
 		},
+		{
+			name:          "non-json value",
+			input:         "/foo/bar",
+			expected:      "/foo/bar",
+			attributeKey:  "db.statement",
+			shouldProcess: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -339,11 +356,14 @@ func TestOpenSearchObfuscator(t *testing.T) {
 	}
 }
 
-func TestValkeyObfuscator(t *testing.T) {
-	o := &valkeyObfuscator{
+func TestRedisObfuscatorWithValkeyConfig(t *testing.T) {
+	o := &redisObfuscator{
 		dbAttributes: dbAttributes{
 			attributes: map[string]bool{
 				"db.statement": true,
+			},
+			dbSystems: map[string]bool{
+				"valkey": true,
 			},
 		},
 		obfuscator: obfuscate.NewObfuscator(obfuscate.Config{
@@ -424,6 +444,7 @@ func TestElasticsearchObfuscator(t *testing.T) {
 				Enabled: true,
 			},
 		}),
+		logger: zaptest.NewLogger(t),
 	}
 
 	tests := []struct {
@@ -447,6 +468,13 @@ func TestElasticsearchObfuscator(t *testing.T) {
 			attributeKey:  "other.field",
 			shouldProcess: false,
 		},
+		{
+			name:          "non-json value",
+			input:         "/svc/resource",
+			expected:      "/svc/resource",
+			attributeKey:  "db.statement",
+			shouldProcess: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -457,4 +485,26 @@ func TestElasticsearchObfuscator(t *testing.T) {
 			assert.Equal(t, tt.shouldProcess, o.ShouldProcessAttribute(tt.attributeKey))
 		})
 	}
+}
+
+func TestSupportsSystemEmptySystem(t *testing.T) {
+	attrs := dbAttributes{
+		attributes: map[string]bool{"db.statement": true},
+		dbSystems:  map[string]bool{"mysql": true},
+	}
+	assert.False(t, attrs.SupportsSystem(""))
+}
+
+func TestSupportsSystemNoSystems(t *testing.T) {
+	attrs := dbAttributes{
+		attributes: map[string]bool{"db.statement": true},
+		dbSystems:  nil,
+	}
+	assert.False(t, attrs.SupportsSystem("mysql"))
+}
+
+func TestIsValidJSONEmptyString(t *testing.T) {
+	assert.False(t, isValidJSON(""))
+	assert.False(t, isValidJSON("   "))
+	assert.False(t, isValidJSON("\t\n"))
 }

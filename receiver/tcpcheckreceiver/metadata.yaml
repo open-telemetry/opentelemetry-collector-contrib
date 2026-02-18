@@ -23,8 +23,7 @@ metrics:
   tcpcheck.duration:
     description: Measures the duration of TCP connection.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
@@ -32,8 +31,7 @@ metrics:
   tcpcheck.error:
     description: Records errors occurring during TCP check.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -43,8 +41,7 @@ metrics:
   tcpcheck.status:
     description: 1 if the TCP client successfully connected, otherwise 0.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "1"

@@ -56,6 +56,7 @@ The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics f
   HANA), _oracle_ (Oracle DB), _tds_ (SapASE/Sybase).
 - `queries` (required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).
 - `telemetry` (optional) Defines settings for the component's own telemetry - logs, metrics or traces.
   - `telemetry.logs` (optional) Defines settings for the component's own logs.

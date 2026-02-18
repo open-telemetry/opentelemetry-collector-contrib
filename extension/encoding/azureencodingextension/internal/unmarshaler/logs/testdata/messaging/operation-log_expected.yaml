@@ -1,0 +1,113 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/XXXX-YYYYY-ZZZZ/RESOURCEGROUPS/TESTGROUP/PROVIDERS/MICROSOFT.SERVICEBUS/NAMESPACES/NAMESPACE
+        - key: cloud.region
+          value:
+            stringValue: East US
+        - key: deployment.environment.name
+          value:
+            stringValue: PROD
+        - key: cloud.account.id
+          value:
+            stringValue: XXXX-YYYYY-ZZZZ
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: OperationalLogs
+              - key: azure.autoscale.unit
+                value:
+                  stringValue: PROD-BL2-002
+              - key: log.record.uid
+                value:
+                  stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6
+              - key: messaging.system
+                value:
+                  stringValue: servicebus
+              - key: azure.operation.name
+                value:
+                  stringValue: Retrieve Namespace
+              - key: client.type
+                value:
+                  stringValue: Resource Provider
+              - key: url.full
+                value:
+                  stringValue: https://mynamespace.servicebus.windows.net/f8096791adb448579ee83d30e006a13e/?api-version=2016-07
+              - key: url.scheme
+                value:
+                  stringValue: https
+              - key: url.domain
+                value:
+                  stringValue: mynamespace.servicebus.windows.net
+              - key: url.path
+                value:
+                  stringValue: /f8096791adb448579ee83d30e006a13e/
+              - key: url.query
+                value:
+                  stringValue: api-version=2016-07
+              - key: azure.service.request.id
+                value:
+                  stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6_G6
+            body: {}
+            timeUnixNano: "1662561695000000000"
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: OperationalLogs
+              - key: azure.autoscale.unit
+                value:
+                  stringValue: PROD-BL2-002
+              - key: log.record.uid
+                value:
+                  stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6
+              - key: messaging.system
+                value:
+                  stringValue: servicebus
+              - key: azure.operation.name
+                value:
+                  stringValue: Retrieve Namespace
+              - key: client.type
+                value:
+                  stringValue: Resource Provider
+              - key: error.type
+                value:
+                  stringValue: Failed
+              - key: url.full
+                value:
+                  stringValue: https://mynamespace.servicebus.windows.net/f8096791adb448579ee83d30e006a13e/?api-version=2016-07
+              - key: url.scheme
+                value:
+                  stringValue: https
+              - key: url.domain
+                value:
+                  stringValue: mynamespace.servicebus.windows.net
+              - key: url.path
+                value:
+                  stringValue: /f8096791adb448579ee83d30e006a13e/
+              - key: url.query
+                value:
+                  stringValue: api-version=2016-07
+              - key: azure.service.request.id
+                value:
+                  stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6_G6
+              - key: error.code
+                value:
+                  stringValue: BadRequest
+              - key: error.message
+                value:
+                  stringValue: SubCode=40000. Partitioning cannot be changed for Queue. To know more visit https://aka.ms/sbResourceMgrExceptions
+            body: {}
+            timeUnixNano: "1662561695000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

@@ -745,6 +745,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 			require.NoError(t, converter.addExponentialHistogramDataPoints(
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metricName,
 			))
