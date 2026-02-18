@@ -42,6 +42,18 @@ func TestRatioUint64(t *testing.T) {
 			expected:    0.0,
 		},
 		{
+			name:        "power of 10 numerator",
+			numerator:   10,
+			denominator: 3,
+			expected:    3.33,
+		},
+		{
+			name:        "power of 10 both",
+			numerator:   100,
+			denominator: 10,
+			expected:    10.0,
+		},
+		{
 			name:        "equal values",
 			numerator:   100,
 			denominator: 100,

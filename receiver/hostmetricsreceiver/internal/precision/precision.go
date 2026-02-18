@@ -48,7 +48,7 @@ func ScaleUint64(numerator, denominator uint64) float64 {
 
 func roundRatio(numerator, denominator float64) float64 {
 	ratio := numerator / denominator
-	sigDigits := int(math.Ceil(math.Log10(math.Max(numerator, denominator))))
+	sigDigits := int(math.Floor(math.Log10(math.Max(numerator, denominator)))) + 1
 	if sigDigits < 1 {
 		sigDigits = 1
 	}
