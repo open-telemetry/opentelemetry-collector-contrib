@@ -110,7 +110,7 @@ func ResetRNGSeedSourceForTest() {
 }
 
 var defaultSeedSource = func() uint64 {
-	return uint64(time.Now().UnixNano()) ^ atomic.AddUint64(&seedCounter, 1)
+	return uint64(time.Now().UnixNano())
 }
 
 var (
@@ -122,8 +122,8 @@ var (
 // This avoids global locks and cache-line bouncing.
 var prngPool = sync.Pool{
 	New: func() any {
-		// Use a non-zero seed (crucial for xorshift) that is unique for each Goroutine.
-		s := seedSource()
+		// Use a non-zero seed (crucial for xorshift) that is unique per RNG.
+		s := seedSource() ^ atomic.AddUint64(&seedCounter, 1)
 		if s == 0 {
 			s = 1
 		}

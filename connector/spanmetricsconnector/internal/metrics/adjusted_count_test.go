@@ -5,7 +5,6 @@ package metrics
 
 import (
 	"sync"
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,11 +78,9 @@ func TestGetStochasticAdjustedCount(t *testing.T) {
 }
 
 func TestGetStochasticAdjustedCount_StatisticalBehavior(t *testing.T) {
-	// Use a fixed seed source for deterministic test results
-	var seedCounter atomic.Uint64
-	SetRNGSeedSourceForTest(func() uint64 {
-		return 12345 + seedCounter.Add(1)
-	})
+	// Use a fixed seed source for deterministic test results.
+	// Prod adds the counter in the pool; we supply only the base.
+	SetRNGSeedSourceForTest(func() uint64 { return 12345 })
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
 	})
@@ -151,11 +148,9 @@ func TestStochasticIncrement(t *testing.T) {
 }
 
 func TestStochasticIncrement_FractionalWeights(t *testing.T) {
-	// Use a fixed seed source for deterministic test results
-	var seedCounter atomic.Uint64
-	SetRNGSeedSourceForTest(func() uint64 {
-		return 54321 + seedCounter.Add(1)
-	})
+	// Use a fixed seed source for deterministic test results.
+	// Prod adds the counter in the pool; we supply only the base.
+	SetRNGSeedSourceForTest(func() uint64 { return 54321 })
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
 	})
@@ -202,11 +197,9 @@ func TestStochasticIncrement_FractionalWeights(t *testing.T) {
 }
 
 func TestStochasticIncrement_StatisticalConvergence(t *testing.T) {
-	// Use a fixed seed source for deterministic test results
-	var seedCounter atomic.Uint64
-	SetRNGSeedSourceForTest(func() uint64 {
-		return 98765 + seedCounter.Add(1)
-	})
+	// Use a fixed seed source for deterministic test results.
+	// Prod adds the counter in the pool; we supply only the base.
+	SetRNGSeedSourceForTest(func() uint64 { return 98765 })
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
 	})
@@ -222,7 +215,7 @@ func TestStochasticIncrement_StatisticalConvergence(t *testing.T) {
 			name:           "weight 0.3",
 			weight:         0.3,
 			iterations:     50000,
-			toleranceRatio: 0.15,
+			toleranceRatio: 0.1,
 		},
 		{
 			name:           "weight 2.5",
@@ -282,11 +275,9 @@ func TestXorshift64star_DifferentSeeds(t *testing.T) {
 }
 
 func TestPrngPool_Concurrency(t *testing.T) {
-	// Use a fixed seed source for deterministic test results (atomic for concurrent access)
-	var seedCounter atomic.Uint64
-	SetRNGSeedSourceForTest(func() uint64 {
-		return 22222 + seedCounter.Add(1)
-	})
+	// Use a fixed seed source for deterministic test results.
+	// Prod adds the counter in the pool; we supply only the base.
+	SetRNGSeedSourceForTest(func() uint64 { return 22222 })
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
 	})
@@ -322,11 +313,9 @@ func TestPrngPool_Concurrency(t *testing.T) {
 }
 
 func TestStochasticDiv_EdgeCases(t *testing.T) {
-	// Use a fixed seed source for deterministic test results
-	var seedCounter atomic.Uint64
-	SetRNGSeedSourceForTest(func() uint64 {
-		return 11111 + seedCounter.Add(1)
-	})
+	// Use a fixed seed source for deterministic test results.
+	// Prod adds the counter in the pool; we supply only the base.
+	SetRNGSeedSourceForTest(func() uint64 { return 11111 })
 	t.Cleanup(func() {
 		ResetRNGSeedSourceForTest()
 	})
