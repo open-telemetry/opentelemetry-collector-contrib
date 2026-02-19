@@ -158,20 +158,20 @@ func (b *bearerTokenAuth) refreshToken() {
 	}
 
 	var validTokens []string
-	// Use scanner to process line by line
 	scanner := bufio.NewScanner(bytes.NewReader(tokenData))
 	for scanner.Scan() {
 		line := scanner.Text()
-		if idx := strings.Index(line, "#"); idx != -1 {
-			line = line[:idx]
-		}
-		token := strings.TrimSpace(line)
+		// Split by whitespace (spaces, tabs, etc.)
+		// strings.Fields handles leading/trailing whitespace and multiple spaces automatically.
+		parts := strings.Fields(line)
 
-		if token != "" {
-			validTokens = append(validTokens, token)
+		// If the line has at least one part, the first part is the token.
+		// Everything else is treated as a comment/ignored.
+		if len(parts) > 0 {
+			validTokens = append(validTokens, parts[0])
 		}
 	}
-	b.setAuthorizationValues(validTokens) 
+	b.setAuthorizationValues(validTokens) // Stores new tokens
 }
 
 func (b *bearerTokenAuth) setAuthorizationValues(tokens []string) {
