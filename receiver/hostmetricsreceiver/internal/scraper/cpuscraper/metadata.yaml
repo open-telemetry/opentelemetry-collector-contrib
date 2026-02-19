@@ -11,9 +11,19 @@ status:
 sem_conv_version: 1.9.0
 
 attributes:
+  core:
+    description: Core number of the CPU.
+    type: string
+    requirement_level: opt_in
+
   cpu:
     description: Logical CPU number starting at 0.
     type: string
+
+  socket:
+    description: Socket number of the CPU.
+    type: string
+    requirement_level: opt_in
 
   state:
     description: Breakdown of CPU usage by type.
@@ -28,7 +38,7 @@ metrics:
     stability: development
     gauge:
       value_type: double
-    attributes: [cpu]
+    attributes: [cpu, socket, core]
 
   system.cpu.logical.count:
     enabled: false
@@ -59,7 +69,7 @@ metrics:
       value_type: double
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [cpu, state]
+    attributes: [cpu, state, socket, core]
 
   system.cpu.utilization:
     enabled: false
@@ -68,4 +78,4 @@ metrics:
     stability: development
     gauge:
       value_type: double
-    attributes: [cpu, state]
+    attributes: [cpu, state, socket, core]

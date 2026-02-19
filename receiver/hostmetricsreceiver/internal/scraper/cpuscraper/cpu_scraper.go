@@ -41,6 +41,8 @@ type cpuScraper struct {
 type cpuInfo struct {
 	frequency float64
 	processor uint
+	socket    string
+	core      string
 }
 
 // newCPUScraper creates a set of CPU related metrics
@@ -95,7 +97,7 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 		}
 		for _, cInfo := range cpuInfos {
-			s.mb.RecordSystemCPUFrequencyDataPoint(now, cInfo.frequency*hzInAMHz, fmt.Sprintf("cpu%d", cInfo.processor))
+			s.mb.RecordSystemCPUFrequencyDataPoint(now, cInfo.frequency*hzInAMHz, fmt.Sprintf("cpu%d", cInfo.processor), cInfo.socket, cInfo.core)
 		}
 	}
 

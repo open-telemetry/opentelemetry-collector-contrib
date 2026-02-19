@@ -52,6 +52,8 @@ func (*cpuScraper) getCPUInfo() ([]cpuInfo, error) {
 		c := cpuInfo{
 			frequency: cInfo.CPUMHz,
 			processor: cInfo.Processor,
+			socket:    cInfo.PhysicalID,
+			core:      cInfo.CoreID,
 		}
 		cpuInfos = append(cpuInfos, c)
 	}
