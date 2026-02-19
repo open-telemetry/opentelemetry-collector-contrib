@@ -15,10 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	keystorego "github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"software.sslmate.com/src/go-pkcs12"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
@@ -110,6 +112,78 @@ func createMockCertFile(t *testing.T, expiry time.Time) string {
 	return tmpFile.Name()
 }
 
+// createMockJKSFile creates a JKS keystore containing a single TrustedCertificateEntry
+// and returns its absolute path.
+func createMockJKSFile(t *testing.T, expiry time.Time, password string) string {
+	t.Helper()
+
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "jks-test.example.com"},
+		Issuer:       pkix.Name{CommonName: "JKSIssuer"},
+		NotBefore:    time.Now().Add(-1 * time.Hour),
+		NotAfter:     expiry,
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
+	require.NoError(t, err)
+
+	ks := keystorego.New()
+	err = ks.SetTrustedCertificateEntry("test-alias", keystorego.TrustedCertificateEntry{
+		Certificate: keystorego.Certificate{
+			Type:    "X.509",
+			Content: certDER,
+		},
+	})
+	require.NoError(t, err)
+
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-keystore-*.jks")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.Remove(tmpFile.Name()) })
+
+	require.NoError(t, ks.Store(tmpFile, []byte(password)))
+	require.NoError(t, tmpFile.Close())
+
+	return tmpFile.Name()
+}
+
+// createMockPKCS12File creates a PKCS#12 keystore with a self-signed leaf certificate
+// and returns its absolute path.
+func createMockPKCS12File(t *testing.T, expiry time.Time, password string) string {
+	t.Helper()
+
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(2),
+		Subject:      pkix.Name{CommonName: "pkcs12-test.example.com"},
+		Issuer:       pkix.Name{CommonName: "PKCS12Issuer"},
+		NotBefore:    time.Now().Add(-1 * time.Hour),
+		NotAfter:     expiry,
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
+	require.NoError(t, err)
+
+	cert, err := x509.ParseCertificate(certDER)
+	require.NoError(t, err)
+
+	pfxData, err := pkcs12.Modern.Encode(privKey, cert, nil, password)
+	require.NoError(t, err)
+
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-keystore-*.p12")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.Remove(tmpFile.Name()) })
+
+	_, err = tmpFile.Write(pfxData)
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	return tmpFile.Name()
+}
+
 func TestScrape_ExpiredEndpointCertificate(t *testing.T) {
 	cfg := &Config{
 		Targets: []*CertificateTarget{
@@ -128,7 +202,7 @@ func TestScrape_ExpiredEndpointCertificate(t *testing.T) {
 	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, metrics.DataPointCount())
+	require.Equal(t, 1, metrics.DataPointCount())
 
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
@@ -139,12 +213,12 @@ func TestScrape_ExpiredEndpointCertificate(t *testing.T) {
 	issuer, _ := attributes.Get("tlscheck.x509.issuer")
 	commonName, _ := attributes.Get("tlscheck.x509.cn")
 
-	assert.Equal(t, "CN=ExpiredIssuer", issuer.AsString())
-	assert.Equal(t, "expired.com", commonName.AsString())
+	require.Equal(t, "CN=ExpiredIssuer", issuer.AsString())
+	require.Equal(t, "expired.com", commonName.AsString())
 
 	// Ensure that timeLeft is negative for an expired cert
 	timeLeft := dp.IntValue()
-	assert.Negative(t, timeLeft, "Time left should be negative for an expired certificate")
+	require.Negative(t, timeLeft, "Time left should be negative for an expired certificate")
 }
 
 func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
@@ -165,7 +239,7 @@ func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
 	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, metrics.DataPointCount())
+	require.Equal(t, 1, metrics.DataPointCount())
 
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
@@ -176,12 +250,12 @@ func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
 	issuer, _ := attributes.Get("tlscheck.x509.issuer")
 	commonName, _ := attributes.Get("tlscheck.x509.cn")
 
-	assert.Equal(t, "CN=NotYetValidIssuer", issuer.AsString())
-	assert.Equal(t, "notyetvalid.com", commonName.AsString())
+	require.Equal(t, "CN=NotYetValidIssuer", issuer.AsString())
+	require.Equal(t, "notyetvalid.com", commonName.AsString())
 
 	// Ensure that timeLeft is positive for a not-yet-valid cert
 	timeLeft := dp.IntValue()
-	assert.Positive(t, timeLeft, "Time left should be positive for a not-yet-valid cert")
+	require.Positive(t, timeLeft, "Time left should be positive for a not-yet-valid cert")
 }
 
 func TestScrape_MultipleEndpoints(t *testing.T) {
@@ -213,7 +287,7 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify we have metrics for all endpoints
-	assert.Equal(t, 3, metrics.ResourceMetrics().Len(), "Should have metrics for all endpoints")
+	require.Equal(t, 3, metrics.ResourceMetrics().Len(), "Should have metrics for all endpoints")
 
 	// Create a map of endpoints to their expected metrics
 	expectedMetrics := map[string]struct {
@@ -259,12 +333,12 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 		issuer, _ := attributes.Get("tlscheck.x509.issuer")
 		commonName, _ := attributes.Get("tlscheck.x509.cn")
 
-		assert.Equal(t, expected.issuer, issuer.AsString(), "Incorrect issuer for target %s", targetStr)
-		assert.Equal(t, expected.commonName, commonName.AsString(), "Incorrect common name for target %s", targetStr)
+		require.Equal(t, expected.issuer, issuer.AsString(), "Incorrect issuer for target %s", targetStr)
+		require.Equal(t, expected.commonName, commonName.AsString(), "Incorrect common name for target %s", targetStr)
 	}
 
 	// Verify we found all expected endpoints
-	assert.Empty(t, expectedMetrics, "All expected endpoints should have been found")
+	require.Empty(t, expectedMetrics, "All expected endpoints should have been found")
 }
 
 func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
@@ -283,7 +357,7 @@ func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
 
 	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
 
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
@@ -291,11 +365,11 @@ func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
 	dp := metric.Gauge().DataPoints().At(0)
 	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
 	require.True(t, exists)
-	assert.Equal(t, caCertFile, target.AsString())
+	require.Equal(t, caCertFile, target.AsString())
 
 	// Verify negative time left on cert
 	timeLeft := dp.IntValue()
-	assert.Negative(t, timeLeft, "Time left should be negative for an expired cert")
+	require.Negative(t, timeLeft, "Time left should be negative for an expired cert")
 }
 
 func TestScrape_ValidFilepathCertificate(t *testing.T) {
@@ -314,7 +388,7 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 
 	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
 
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
@@ -322,18 +396,201 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 	dp := metric.Gauge().DataPoints().At(0)
 	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
 	require.True(t, exists)
-	assert.Equal(t, caCertFile, target.AsString())
+	require.Equal(t, caCertFile, target.AsString())
 
 	// Verify the metric attributes
 	attributes := dp.Attributes()
 	issuer, _ := attributes.Get("tlscheck.x509.issuer")
 	commonName, _ := attributes.Get("tlscheck.x509.cn")
-	assert.Equal(t, "CN=FooIssuer", issuer.AsString(), "Incorrect issuer for target %s", caCertFile)
-	assert.Equal(t, "test.example.com", commonName.AsString(), "Incorrect common name for target %s", caCertFile)
+	require.Equal(t, "CN=FooIssuer", issuer.AsString(), "Incorrect issuer for target %s", caCertFile)
+	require.Equal(t, "test.example.com", commonName.AsString(), "Incorrect common name for target %s", caCertFile)
 
 	// Verify positive time left on cert
 	timeLeft := dp.IntValue()
-	assert.Positive(t, timeLeft, "Time left should be positive for a valid cert")
+	require.Positive(t, timeLeft, "Time left should be positive for a valid cert")
+}
+
+func TestScrape_ValidJKSCertificate(t *testing.T) {
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit")
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   jksFile,
+				FileFormat: FileFormatJKS,
+				Password:   configopaque.String("changeit"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	s := newScraper(cfg, settings, mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	rm := metrics.ResourceMetrics().At(0)
+	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+	require.True(t, exists)
+	require.Equal(t, jksFile, target.AsString())
+
+	dp := rm.ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	commonName, _ := dp.Attributes().Get("tlscheck.x509.cn")
+	require.Equal(t, "jks-test.example.com", commonName.AsString())
+
+	timeLeft := dp.IntValue()
+	require.Positive(t, timeLeft, "Time left should be positive for a valid JKS cert")
+}
+
+func TestScrape_ExpiredJKSCertificate(t *testing.T) {
+	jksFile := createMockJKSFile(t, time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC), "changeit")
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   jksFile,
+				FileFormat: FileFormatJKS,
+				Password:   configopaque.String("changeit"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	require.Negative(t, dp.IntValue(), "Time left should be negative for an expired JKS cert")
+}
+
+func TestScrape_WrongPasswordJKS(t *testing.T) {
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "correct-password")
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   jksFile,
+				FileFormat: FileFormatJKS,
+				Password:   configopaque.String("wrong-password"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.Error(t, err)
+	require.Equal(t, 0, metrics.DataPointCount())
+}
+
+func TestScrape_ValidPKCS12Certificate(t *testing.T) {
+	p12File := createMockPKCS12File(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "test-pass")
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   p12File,
+				FileFormat: FileFormatPKCS12,
+				Password:   configopaque.String("test-pass"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	commonName, _ := dp.Attributes().Get("tlscheck.x509.cn")
+	require.Equal(t, "pkcs12-test.example.com", commonName.AsString())
+	require.Positive(t, dp.IntValue(), "Time left should be positive for a valid PKCS#12 cert")
+}
+
+func TestScrape_ExpiredPKCS12Certificate(t *testing.T) {
+	p12File := createMockPKCS12File(t, time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC), "test-pass")
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   p12File,
+				FileFormat: FileFormatPKCS12,
+				Password:   configopaque.String("test-pass"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	require.Negative(t, dp.IntValue(), "Time left should be negative for an expired PKCS#12 cert")
+}
+
+func TestScrape_WrongPasswordPKCS12(t *testing.T) {
+	p12File := createMockPKCS12File(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "correct")
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   p12File,
+				FileFormat: FileFormatPKCS12,
+				Password:   configopaque.String("wrong"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
+
+	_, err := s.scrape(t.Context())
+	require.Error(t, err)
+}
+
+func TestScrape_AutoDetectJKSByExtension(t *testing.T) {
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit")
+	// FileFormat deliberately omitted; resolveFileFormat infers JKS from ".jks" extension
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath: jksFile,
+				Password: configopaque.String("changeit"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+}
+
+func TestScrape_AutoDetectPKCS12ByExtension(t *testing.T) {
+	p12File := createMockPKCS12File(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "pass")
+	// FileFormat deliberately omitted; resolveFileFormat infers PKCS12 from ".p12" extension
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath: p12File,
+				Password: configopaque.String("pass"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
 }
 
 func TestValidateEndpoint(t *testing.T) {

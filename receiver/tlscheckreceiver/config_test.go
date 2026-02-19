@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
@@ -105,6 +106,73 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errors.New("cannot specify both endpoint and file_path"),
 		},
+		{
+			desc: "valid jks file_format with password",
+			cfg: &Config{
+				Targets: []*CertificateTarget{
+					{
+						FilePath:   tmpFile.Name(),
+						FileFormat: FileFormatJKS,
+						Password:   configopaque.String("changeit"),
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "valid pkcs12 file_format with empty password",
+			cfg: &Config{
+				Targets: []*CertificateTarget{
+					{
+						FilePath:   tmpFile.Name(),
+						FileFormat: FileFormatPKCS12,
+						Password:   configopaque.String(""),
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "valid auto file_format (zero value)",
+			cfg: &Config{
+				Targets: []*CertificateTarget{
+					{
+						FilePath:   tmpFile.Name(),
+						FileFormat: FileFormatAuto,
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "valid pem file_format explicit",
+			cfg: &Config{
+				Targets: []*CertificateTarget{
+					{
+						FilePath:   tmpFile.Name(),
+						FileFormat: FileFormatPEM,
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "invalid file_format value",
+			cfg: &Config{
+				Targets: []*CertificateTarget{
+					{
+						FilePath:   tmpFile.Name(),
+						FileFormat: FileFormat("der"),
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errInvalidFileFormat,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -115,6 +183,34 @@ func TestValidate(t *testing.T) {
 			} else {
 				require.NoError(t, actualErr)
 			}
+		})
+	}
+}
+
+func TestResolveFileFormat(t *testing.T) {
+	testCases := []struct {
+		format   FileFormat
+		path     string
+		expected FileFormat
+	}{
+		{FileFormatAuto, "/etc/certs/server.jks", FileFormatJKS},
+		{FileFormatAuto, "/etc/certs/server.p12", FileFormatPKCS12},
+		{FileFormatAuto, "/etc/certs/server.pfx", FileFormatPKCS12},
+		{FileFormatAuto, "/etc/certs/server.pem", FileFormatPEM},
+		{FileFormatAuto, "/etc/certs/server.crt", FileFormatPEM},
+		{"", "/etc/certs/server.jks", FileFormatJKS},
+		{"", "/etc/certs/server.p12", FileFormatPKCS12},
+		{"", "/etc/certs/server.pem", FileFormatPEM},
+		// Explicit format overrides extension
+		{FileFormatJKS, "/etc/certs/server.pem", FileFormatJKS},
+		{FileFormatPEM, "/etc/certs/server.p12", FileFormatPEM},
+		{FileFormatPKCS12, "/etc/certs/server.jks", FileFormatPKCS12},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.format)+"_"+tc.path, func(t *testing.T) {
+			got := resolveFileFormat(tc.format, tc.path)
+			require.Equal(t, tc.expected, got)
 		})
 	}
 }
