@@ -519,3 +519,202 @@ The number of load balancer ingress points (external IPs/hostnames) assigned to 
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |
 | os.description | The os description used by Kubernetes Node. | Any Str | false |
 | os.type | The os type used by Kubernetes Node. | Any Str | false |
+
+## Entities
+
+The following entities are defined for this component:
+
+### k8s.namespace
+
+A Kubernetes namespace
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.namespace.uid`
+
+**Descriptive Attributes:**
+- `k8s.namespace.name`
+
+### k8s.node
+
+A Kubernetes node
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.node.uid`
+
+**Descriptive Attributes:**
+- `k8s.node.name`
+- `k8s.kubelet.version`
+- `container.runtime`
+- `container.runtime.version`
+- `os.description`
+- `os.type`
+
+### k8s.deployment
+
+A Kubernetes deployment
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.deployment.uid`
+
+**Descriptive Attributes:**
+- `k8s.deployment.name`
+
+### k8s.replicaset
+
+A Kubernetes replicaset
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.replicaset.uid`
+
+**Descriptive Attributes:**
+- `k8s.replicaset.name`
+
+### k8s.statefulset
+
+A Kubernetes statefulset
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.statefulset.uid`
+
+**Descriptive Attributes:**
+- `k8s.statefulset.name`
+
+### k8s.daemonset
+
+A Kubernetes daemonset
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.daemonset.uid`
+
+**Descriptive Attributes:**
+- `k8s.daemonset.name`
+
+### k8s.cronjob
+
+A Kubernetes cronjob
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.cronjob.uid`
+
+**Descriptive Attributes:**
+- `k8s.cronjob.name`
+
+### k8s.job
+
+A Kubernetes job
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.job.uid`
+
+**Descriptive Attributes:**
+- `k8s.job.name`
+
+### k8s.pod
+
+A Kubernetes pod
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.pod.uid`
+
+**Descriptive Attributes:**
+- `k8s.pod.name`
+- `k8s.pod.qos_class`
+
+### k8s.container
+
+A Kubernetes container
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `container.id`
+
+**Descriptive Attributes:**
+- `k8s.container.name`
+- `container.image.name`
+- `container.image.tag`
+- `k8s.container.status.last_terminated_reason`
+
+### k8s.replicationcontroller
+
+A Kubernetes replication controller
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.replicationcontroller.uid`
+
+**Descriptive Attributes:**
+- `k8s.replicationcontroller.name`
+
+### k8s.resourcequota
+
+A Kubernetes resource quota
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.resourcequota.uid`
+
+**Descriptive Attributes:**
+- `k8s.resourcequota.name`
+
+### k8s.service
+
+A Kubernetes service
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.service.uid`
+
+**Descriptive Attributes:**
+- `k8s.service.name`
+- `k8s.service.type`
+- `k8s.service.publish_not_ready_addresses`
+- `k8s.service.traffic_distribution`
+
+### k8s.hpa
+
+A Kubernetes horizontal pod autoscaler
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.hpa.uid`
+
+**Descriptive Attributes:**
+- `k8s.hpa.name`
+- `k8s.hpa.scaletargetref.apiversion`
+- `k8s.hpa.scaletargetref.kind`
+- `k8s.hpa.scaletargetref.name`
+
+### openshift.clusterquota
+
+An OpenShift cluster resource quota
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `openshift.clusterquota.uid`
+
+**Descriptive Attributes:**
+- `openshift.clusterquota.name`
