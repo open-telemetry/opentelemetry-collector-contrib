@@ -16,6 +16,7 @@ import (
 	"time"
 
 	keystorego "github.com/pavlo-v-chernykh/keystore-go/v4"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -202,7 +203,7 @@ func TestScrape_ExpiredEndpointCertificate(t *testing.T) {
 	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
-	require.Equal(t, 1, metrics.DataPointCount())
+	assert.Equal(t, 1, metrics.DataPointCount())
 
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
@@ -213,12 +214,12 @@ func TestScrape_ExpiredEndpointCertificate(t *testing.T) {
 	issuer, _ := attributes.Get("tlscheck.x509.issuer")
 	commonName, _ := attributes.Get("tlscheck.x509.cn")
 
-	require.Equal(t, "CN=ExpiredIssuer", issuer.AsString())
-	require.Equal(t, "expired.com", commonName.AsString())
+	assert.Equal(t, "CN=ExpiredIssuer", issuer.AsString())
+	assert.Equal(t, "expired.com", commonName.AsString())
 
 	// Ensure that timeLeft is negative for an expired cert
 	timeLeft := dp.IntValue()
-	require.Negative(t, timeLeft, "Time left should be negative for an expired certificate")
+	assert.Negative(t, timeLeft, "Time left should be negative for an expired certificate")
 }
 
 func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
@@ -239,7 +240,7 @@ func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
 	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
-	require.Equal(t, 1, metrics.DataPointCount())
+	assert.Equal(t, 1, metrics.DataPointCount())
 
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
@@ -250,12 +251,12 @@ func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
 	issuer, _ := attributes.Get("tlscheck.x509.issuer")
 	commonName, _ := attributes.Get("tlscheck.x509.cn")
 
-	require.Equal(t, "CN=NotYetValidIssuer", issuer.AsString())
-	require.Equal(t, "notyetvalid.com", commonName.AsString())
+	assert.Equal(t, "CN=NotYetValidIssuer", issuer.AsString())
+	assert.Equal(t, "notyetvalid.com", commonName.AsString())
 
 	// Ensure that timeLeft is positive for a not-yet-valid cert
 	timeLeft := dp.IntValue()
-	require.Positive(t, timeLeft, "Time left should be positive for a not-yet-valid cert")
+	assert.Positive(t, timeLeft, "Time left should be positive for a not-yet-valid cert")
 }
 
 func TestScrape_MultipleEndpoints(t *testing.T) {
@@ -287,7 +288,7 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify we have metrics for all endpoints
-	require.Equal(t, 3, metrics.ResourceMetrics().Len(), "Should have metrics for all endpoints")
+	assert.Equal(t, 3, metrics.ResourceMetrics().Len(), "Should have metrics for all endpoints")
 
 	// Create a map of endpoints to their expected metrics
 	expectedMetrics := map[string]struct {
@@ -333,12 +334,12 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 		issuer, _ := attributes.Get("tlscheck.x509.issuer")
 		commonName, _ := attributes.Get("tlscheck.x509.cn")
 
-		require.Equal(t, expected.issuer, issuer.AsString(), "Incorrect issuer for target %s", targetStr)
-		require.Equal(t, expected.commonName, commonName.AsString(), "Incorrect common name for target %s", targetStr)
+		assert.Equal(t, expected.issuer, issuer.AsString(), "Incorrect issuer for target %s", targetStr)
+		assert.Equal(t, expected.commonName, commonName.AsString(), "Incorrect common name for target %s", targetStr)
 	}
 
 	// Verify we found all expected endpoints
-	require.Empty(t, expectedMetrics, "All expected endpoints should have been found")
+	assert.Empty(t, expectedMetrics, "All expected endpoints should have been found")
 }
 
 func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
@@ -357,7 +358,7 @@ func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
 
 	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
@@ -365,11 +366,11 @@ func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
 	dp := metric.Gauge().DataPoints().At(0)
 	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
 	require.True(t, exists)
-	require.Equal(t, caCertFile, target.AsString())
+	assert.Equal(t, caCertFile, target.AsString())
 
 	// Verify negative time left on cert
 	timeLeft := dp.IntValue()
-	require.Negative(t, timeLeft, "Time left should be negative for an expired cert")
+	assert.Negative(t, timeLeft, "Time left should be negative for an expired cert")
 }
 
 func TestScrape_ValidFilepathCertificate(t *testing.T) {
@@ -388,7 +389,7 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 
 	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
@@ -396,18 +397,18 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 	dp := metric.Gauge().DataPoints().At(0)
 	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
 	require.True(t, exists)
-	require.Equal(t, caCertFile, target.AsString())
+	assert.Equal(t, caCertFile, target.AsString())
 
 	// Verify the metric attributes
 	attributes := dp.Attributes()
 	issuer, _ := attributes.Get("tlscheck.x509.issuer")
 	commonName, _ := attributes.Get("tlscheck.x509.cn")
-	require.Equal(t, "CN=FooIssuer", issuer.AsString(), "Incorrect issuer for target %s", caCertFile)
-	require.Equal(t, "test.example.com", commonName.AsString(), "Incorrect common name for target %s", caCertFile)
+	assert.Equal(t, "CN=FooIssuer", issuer.AsString(), "Incorrect issuer for target %s", caCertFile)
+	assert.Equal(t, "test.example.com", commonName.AsString(), "Incorrect common name for target %s", caCertFile)
 
 	// Verify positive time left on cert
 	timeLeft := dp.IntValue()
-	require.Positive(t, timeLeft, "Time left should be positive for a valid cert")
+	assert.Positive(t, timeLeft, "Time left should be positive for a valid cert")
 }
 
 func TestScrape_ValidJKSCertificate(t *testing.T) {
