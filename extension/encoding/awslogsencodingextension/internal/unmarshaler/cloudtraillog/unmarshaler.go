@@ -162,8 +162,7 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 
 	logs, err := streamDecoder.DecodeLogs()
 	if err != nil {
-		//nolint:errorlint
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			// EOF indicates no logs were found, return any logs that's available
 			return logs, nil
 		}
