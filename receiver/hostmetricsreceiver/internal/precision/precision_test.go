@@ -13,9 +13,9 @@ import (
 func TestRatioUint64(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name                    string
-		numerator, denominator  uint64
-		expected                float64
+		name                   string
+		numerator, denominator uint64
+		expected               float64
 	}{
 		{
 			name:        "memory usage 32GB machine",
@@ -170,9 +170,9 @@ func TestScaleUint64_CustomDenominator(t *testing.T) {
 func TestRatioUint64_PrecisionScalesWithMagnitude(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name                    string
-		numerator, denominator  uint64
-		expected                float64
+		name                   string
+		numerator, denominator uint64
+		expected               float64
 	}{
 		{name: "magnitude 1e1", numerator: 1, denominator: 3, expected: 0.3},
 		{name: "magnitude 1e2", numerator: 10, denominator: 30, expected: 0.33},
