@@ -11,6 +11,192 @@ status:
 
 sem_conv_version: 1.18.0
 
+entities:
+  - type: k8s.namespace
+    brief: A Kubernetes namespace
+    stability: development
+    identity:
+      - ref: k8s.namespace.uid
+    description:
+      - ref: k8s.namespace.name
+
+  - type: k8s.node
+    brief: A Kubernetes node
+    stability: development
+    identity:
+      - ref: k8s.node.uid
+    description:
+      - ref: k8s.node.name
+      - ref: k8s.kubelet.version
+      - ref: container.runtime
+      - ref: container.runtime.version
+      - ref: os.description
+      - ref: os.type
+
+  - type: k8s.deployment
+    brief: A Kubernetes deployment
+    stability: development
+    identity:
+      - ref: k8s.deployment.uid
+    description:
+      - ref: k8s.deployment.name
+    relationships:
+      - type: part_of
+        target: k8s.namespace
+
+  - type: k8s.replicaset
+    brief: A Kubernetes replicaset
+    stability: development
+    identity:
+      - ref: k8s.replicaset.uid
+    description:
+      - ref: k8s.replicaset.name
+    relationships:
+      - type: managed_by
+        target: k8s.deployment
+
+  - type: k8s.statefulset
+    brief: A Kubernetes statefulset
+    stability: development
+    identity:
+      - ref: k8s.statefulset.uid
+    description:
+      - ref: k8s.statefulset.name
+    relationships:
+      - type: part_of
+        target: k8s.namespace
+
+  - type: k8s.daemonset
+    brief: A Kubernetes daemonset
+    stability: development
+    identity:
+      - ref: k8s.daemonset.uid
+    description:
+      - ref: k8s.daemonset.name
+    relationships:
+      - type: part_of
+        target: k8s.namespace
+
+  - type: k8s.cronjob
+    brief: A Kubernetes cronjob
+    stability: development
+    identity:
+      - ref: k8s.cronjob.uid
+    description:
+      - ref: k8s.cronjob.name
+    relationships:
+      - type: part_of
+        target: k8s.namespace
+
+  - type: k8s.job
+    brief: A Kubernetes job
+    stability: development
+    identity:
+      - ref: k8s.job.uid
+    description:
+      - ref: k8s.job.name
+    relationships:
+      - type: part_of
+        target: k8s.namespace
+      - type: managed_by
+        target: k8s.cronjob
+
+  - type: k8s.pod
+    brief: A Kubernetes pod
+    stability: development
+    identity:
+      - ref: k8s.pod.uid
+    description:
+      - ref: k8s.pod.name
+      - ref: k8s.pod.qos_class
+    relationships:
+      - type: scheduled_on
+        target: k8s.node
+      - type: part_of
+        target: k8s.namespace
+      - type: managed_by
+        target: k8s.replicaset
+      - type: managed_by
+        target: k8s.statefulset
+      - type: managed_by
+        target: k8s.daemonset
+      - type: managed_by
+        target: k8s.job
+      - type: managed_by
+        target: k8s.replicationcontroller
+
+  - type: k8s.container
+    brief: A Kubernetes container
+    stability: development
+    identity:
+      - ref: container.id
+    description:
+      - ref: k8s.container.name
+      - ref: container.image.name
+      - ref: container.image.tag
+      - ref: k8s.container.status.last_terminated_reason
+    relationships:
+      - type: child_of
+        target: k8s.pod
+
+  - type: k8s.replicationcontroller
+    brief: A Kubernetes replication controller
+    stability: development
+    identity:
+      - ref: k8s.replicationcontroller.uid
+    description:
+      - ref: k8s.replicationcontroller.name
+    relationships:
+      - type: part_of
+        target: k8s.namespace
+
+  - type: k8s.resourcequota
+    brief: A Kubernetes resource quota
+    stability: development
+    identity:
+      - ref: k8s.resourcequota.uid
+    description:
+      - ref: k8s.resourcequota.name
+    relationships:
+      - type: part_of
+        target: k8s.namespace
+
+  - type: k8s.service
+    brief: A Kubernetes service
+    stability: development
+    identity:
+      - ref: k8s.service.uid
+    description:
+      - ref: k8s.service.name
+      - ref: k8s.service.type
+      - ref: k8s.service.publish_not_ready_addresses
+      - ref: k8s.service.traffic_distribution
+    relationships:
+      - type: part_of
+        target: k8s.namespace
+
+  - type: k8s.hpa
+    brief: A Kubernetes horizontal pod autoscaler
+    stability: development
+    identity:
+      - ref: k8s.hpa.uid
+    description:
+      - ref: k8s.hpa.name
+      - ref: k8s.hpa.scaletargetref.apiversion
+      - ref: k8s.hpa.scaletargetref.kind
+      - ref: k8s.hpa.scaletargetref.name
+    relationships:
+      - type: part_of
+        target: k8s.namespace
+
+  - type: openshift.clusterquota
+    brief: An OpenShift cluster resource quota
+    stability: development
+    identity:
+      - ref: openshift.clusterquota.uid
+    description:
+      - ref: openshift.clusterquota.name
+
 resource_attributes:
   container.id:
     description: The container id.
@@ -182,6 +368,31 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.service.name:
+    description: The k8s service name.
+    type: string
+    enabled: true
+
+  k8s.service.publish_not_ready_addresses:
+    description: Whether the Service publishes not-ready endpoints.
+    type: bool
+    enabled: false
+
+  k8s.service.traffic_distribution:
+    description: The traffic distribution policy for the Service (e.g., PreferClose).
+    type: string
+    enabled: false
+
+  k8s.service.type:
+    description: The k8s service type.
+    type: string
+    enabled: true
+
+  k8s.service.uid:
+    description: The k8s service uid.
+    type: string
+    enabled: true
+
   k8s.statefulset.name:
     description: The k8s statefulset name.
     type: string
@@ -239,6 +450,23 @@ attributes:
   k8s.namespace.name:
     description: The k8s namespace name.
     type: string
+  k8s.service.endpoint.address_type:
+    description: The address type of the endpoint.
+    type: string
+    enum:
+      - IPv4
+      - IPv6
+      - FQDN
+  k8s.service.endpoint.condition:
+    description: The condition of the service endpoint.
+    type: string
+    enum:
+      - ready
+      - serving
+      - terminating
+  k8s.service.endpoint.zone:
+    description: The zone of the service endpoint, typically corresponding to a failure domain.
+    type: string
   resource:
     description: the name of the resource on which the quota is applied
     type: string
@@ -248,261 +476,261 @@ metrics:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "{cpu}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
+    entity: k8s.container
   k8s.container.cpu_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "{cpu}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
+    entity: k8s.container
   k8s.container.ephemeralstorage_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.container
   k8s.container.ephemeralstorage_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.container
   k8s.container.memory_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.container
   k8s.container.memory_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.container
   k8s.container.ready:
     enabled: true
     description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
     unit: ""
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.container
   k8s.container.restarts:
     enabled: true
     description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
     unit: "{restart}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.container
   k8s.container.status.reason:
     enabled: false
     description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.
     unit: "{container}"
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     attributes:
       - k8s.container.status.reason
+    entity: k8s.container
   k8s.container.status.state:
     enabled: false
     description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
     unit: "{container}"
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     attributes:
       - k8s.container.status.state
+    entity: k8s.container
   k8s.container.storage_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.container
   k8s.container.storage_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.container
   k8s.cronjob.active_jobs:
     enabled: true
     description: The number of actively running jobs for a cronjob
     unit: "{job}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.cronjob
 
   k8s.daemonset.current_scheduled_nodes:
     enabled: true
     description: Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod
     unit: "{node}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.daemonset
   k8s.daemonset.desired_scheduled_nodes:
     enabled: true
     description: Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)
     unit: "{node}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.daemonset
   k8s.daemonset.misscheduled_nodes:
     enabled: true
     description: Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod
     unit: "{node}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.daemonset
   k8s.daemonset.ready_nodes:
     enabled: true
     description: Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready
     unit: "{node}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.daemonset
 
   k8s.deployment.available:
     enabled: true
     description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.deployment
 
   k8s.deployment.desired:
     enabled: true
     description: Number of desired pods in this deployment
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.deployment
   k8s.hpa.current_replicas:
     enabled: true
     description: Current number of pod replicas managed by this autoscaler.
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.hpa
 
   k8s.hpa.desired_replicas:
     enabled: true
     description: Desired number of pod replicas managed by this autoscaler.
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.hpa
 
   k8s.hpa.max_replicas:
     enabled: true
     description: Maximum number of replicas to which the autoscaler can scale up.
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.hpa
 
   k8s.hpa.min_replicas:
     enabled: true
     description: Minimum number of replicas to which the autoscaler can scale up.
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.hpa
 
   k8s.job.active_pods:
     enabled: true
     description: The number of actively running pods for a job
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.job
   k8s.job.desired_successful_pods:
     enabled: true
     description: The desired number of successfully finished pods the job should be run with
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.job
   k8s.job.failed_pods:
     enabled: true
     description: The number of pods which reached phase Failed for a job
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.job
   k8s.job.max_parallel_pods:
     enabled: true
     description: The max desired number of pods the job should run at any given time
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.job
   k8s.job.successful_pods:
     enabled: true
     description: The number of pods which reached phase Succeeded for a job
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.job
 
   k8s.namespace.phase:
     enabled: true
     description: The current phase of namespaces (1 for active and 0 for terminating)
     unit: ""
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.namespace
 
   k8s.node.condition:
     enabled: false
     description: The condition of a particular Node.
     unit: "{condition}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes:
       - condition
+    entity: k8s.node
   # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled
   # by node_conditions_to_report config option. By default, only k8s.node.condition_ready is enabled.
 
@@ -513,152 +741,175 @@ metrics:
     enabled: true
     description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
     unit: ""
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.pod
   k8s.pod.status_reason:
     enabled: false
     description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
     unit: ""
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.pod
 
   k8s.replicaset.available:
     enabled: true
     description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.replicaset
 
   k8s.replicaset.desired:
     enabled: true
     description: Number of desired pods in this replicaset
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.replicaset
   k8s.replication_controller.available:
     enabled: true
     description: Total number of available pods (ready for at least minReadySeconds) targeted by this replication_controller
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.replicationcontroller
 
   k8s.replication_controller.desired:
     enabled: true
     description: Number of desired pods in this replication_controller
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.replicationcontroller
+
   k8s.resource_quota.hard_limit:
     enabled: true
     description: The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
     unit: "{resource}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes:
       - resource
+    entity: k8s.resourcequota
   k8s.resource_quota.used:
     enabled: true
     description: The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
     unit: "{resource}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes:
       - resource
+    entity: k8s.resourcequota
+
+  k8s.service.endpoint.count:
+    enabled: false
+    description: The number of endpoints for a service, broken down by condition, address type, and zone.
+    unit: "{endpoint}"
+    stability: development
+    gauge:
+      value_type: int
+    attributes:
+      - k8s.service.endpoint.address_type
+      - k8s.service.endpoint.condition
+      - k8s.service.endpoint.zone
+    entity: k8s.service
+
+  k8s.service.load_balancer.ingress.count:
+    enabled: false
+    description: The number of load balancer ingress points (external IPs/hostnames) assigned to the service.
+    unit: "{ingress}"
+    stability: development
+    gauge:
+      value_type: int
+    entity: k8s.service
 
   k8s.statefulset.current_pods:
     enabled: true
     description: The number of pods created by the StatefulSet controller from the StatefulSet version
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.statefulset
 
   k8s.statefulset.desired_pods:
     enabled: true
     description: Number of desired pods in the stateful set (the `spec.replicas` field)
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.statefulset
 
   k8s.statefulset.ready_pods:
     enabled: true
     description: Number of pods created by the stateful set that have the `Ready` condition
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.statefulset
 
   k8s.statefulset.updated_pods:
     enabled: true
     description: Number of pods created by the StatefulSet controller from the StatefulSet version
     unit: "{pod}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
+    entity: k8s.statefulset
 
   openshift.appliedclusterquota.limit:
     enabled: true
     description: The upper limit for a particular resource in a specific namespace.
     unit: "{resource}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes:
       - k8s.namespace.name
       - resource
+    entity: openshift.clusterquota
   openshift.appliedclusterquota.used:
     enabled: true
     description: The usage for a particular resource in a specific namespace.
     unit: "{resource}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes:
       - k8s.namespace.name
       - resource
+    entity: openshift.clusterquota
   openshift.clusterquota.limit:
     enabled: true
     description: The configured upper limit for a particular resource.
     unit: "{resource}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes:
       - resource
+    entity: openshift.clusterquota
   openshift.clusterquota.used:
     enabled: true
     description: The usage for a particular resource with a configured limit.
     unit: "{resource}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     attributes:
       - resource
+    entity: openshift.clusterquota
 
 tests:
   config:

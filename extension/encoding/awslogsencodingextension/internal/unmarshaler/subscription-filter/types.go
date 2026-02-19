@@ -34,9 +34,11 @@ type cloudwatchLogsData struct {
 	LogEvents           []cloudwatchLogsLogEvent `json:"logEvents"`
 }
 
-// resourceGroupKey represents the combination of account ID and region
-// used for grouping log events into separate ResourceLogs.
+// resourceGroupKey represents the combination of account ID, region,
+// log group, and log stream used for grouping log events into separate ResourceLogs.
 type resourceGroupKey struct {
 	accountID string
 	region    string
+	logGroup  string
+	logStream string
 }

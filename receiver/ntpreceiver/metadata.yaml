@@ -19,8 +19,7 @@ metrics:
   ntp.offset:
     description: Time difference between local and NTP server clocks
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "ns"
