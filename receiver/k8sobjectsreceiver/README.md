@@ -245,6 +245,13 @@ spec:
 EOF
 ```
 
+## Compatibility
+
+### Kubernetes Versions
+
+This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L99)
+workflow. These tested versions represent the officially supported Kubernetes versions for this component.
+
 ## Troubleshooting
 
 If receiver returns error similar to below, make sure that resource is added to `ClusterRole`.

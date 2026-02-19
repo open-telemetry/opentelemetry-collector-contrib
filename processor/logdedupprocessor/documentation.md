@@ -10,6 +10,6 @@ The following telemetry is emitted by this component.
 
 Number of log records that were aggregated together.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {records} | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Histogram | Int | Development |

@@ -59,8 +59,7 @@ attributes:
 metrics:
   nsxt.node.cpu.utilization:
     description: The average amount of CPU being used by the node.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: double
@@ -68,8 +67,7 @@ metrics:
     attributes: [class]
   nsxt.node.filesystem.usage:
     description: The amount of storage space used by the node.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -79,16 +77,14 @@ metrics:
     attributes: [disk_state]
   nsxt.node.filesystem.utilization:
     description: The percentage of storage space utilized.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: double
     enabled: true
   nsxt.node.memory.cache.usage:
     description: The size of the node's memory cache.
-    stability:
-      level: development
+    stability: development
     unit: KBy
     sum:
       monotonic: false
@@ -97,8 +93,7 @@ metrics:
     enabled: true
   nsxt.node.memory.usage:
     description: The memory usage of the node.
-    stability:
-      level: development
+    stability: development
     unit: KBy
     sum:
       monotonic: false
@@ -107,8 +102,7 @@ metrics:
     enabled: true
   nsxt.node.network.io:
     description: The number of bytes which have flowed through the network interface.
-    stability:
-      level: development
+    stability: development
     unit: "By"
     sum:
       monotonic: true
@@ -118,8 +112,7 @@ metrics:
     attributes: [direction]
   nsxt.node.network.packet.count:
     description: The number of packets which have flowed through the network interface on the node.
-    stability:
-      level: development
+    stability: development
     unit: "{packets}"
     sum:
       monotonic: true

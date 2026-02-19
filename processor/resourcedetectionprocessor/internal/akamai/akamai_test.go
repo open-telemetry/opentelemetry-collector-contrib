@@ -59,7 +59,7 @@ func TestNewDetector(t *testing.T) {
 func TestAkamaiDetector_Detect_OK(t *testing.T) {
 	const (
 		cloudProvider = "akamai_cloud"
-		cloudPlatform = "akamai_cloud_platform"
+		cloudPlatform = "akamai_cloud.compute"
 		acct          = "acc-eeee-uuuu-iiiii-dddd"
 		id            = 4242
 		label         = "linode-4242"

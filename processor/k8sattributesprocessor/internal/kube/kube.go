@@ -4,7 +4,6 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
-	"fmt"
 	"regexp"
 	"time"
 
@@ -19,8 +18,6 @@ import (
 const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
-	tagStartTime            = "k8s.pod.start_time"
-	tagHostName             = "k8s.pod.hostname"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
@@ -39,7 +36,6 @@ const (
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
-	K8sIPLabelName   = "k8s.pod.ip"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod
@@ -146,7 +142,8 @@ type PodContainers struct {
 type Container struct {
 	Name              string
 	ImageName         string
-	ImageTag          string
+	ImageTag          string   // Legacy: single tag (stable uses ImageTags)
+	ImageTags         []string // Stable: array of tags
 	ServiceInstanceID string
 	ServiceVersion    string
 
@@ -253,7 +250,8 @@ type ExtractionRules struct {
 	ContainerID               bool
 	ContainerImageName        bool
 	ContainerImageRepoDigests bool
-	ContainerImageTag         bool
+	ContainerImageTag         bool // Legacy
+	ContainerImageTags        bool // Stable
 	ClusterUID                bool
 	ServiceNamespace          bool
 	ServiceName               bool
@@ -314,65 +312,72 @@ type FieldExtractionRule struct {
 	From string
 }
 
-func (r *FieldExtractionRule) extractFromPodMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromPodMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	// By default if the From field is not set for labels and annotations we want to extract them from pod
 	if r.From == MetadataFromPod || r.From == "" {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromNamespace {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromNodeMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromNodeMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromNode {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromDeployment {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromStatefulSet {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromDaemonSet {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromJob {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.KeyRegex != nil {
 		for k, v := range metadata {
 			if r.KeyRegex.MatchString(k) && v != "" {
 				var name string
-				if r.HasKeyRegexReference {
+				if r.HasKeyRegexReference && r.Name != "" {
 					var result []byte
 					name = string(r.KeyRegex.ExpandString(result, r.Name, k, r.KeyRegex.FindStringSubmatchIndex(k)))
+					tags[name] = v
 				} else {
-					name = fmt.Sprintf(formatter, k)
+					kv := attrFunc(k, v)
+					tags[string(kv.Key)] = kv.Value.AsString()
 				}
-				tags[name] = v
 			}
 		}
 	} else if v, ok := metadata[r.Key]; ok {
-		tags[r.Name] = r.extractField(v)
+		// Use attrFunc to determine attribute name if no custom name was specified
+		name := r.Name
+		if name == "" {
+			kv := attrFunc(r.Key, v)
+			name = string(kv.Key)
+		}
+		tags[name] = r.extractField(v)
 	}
 }
 

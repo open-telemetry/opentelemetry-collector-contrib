@@ -391,7 +391,7 @@ func Test_createLabelSet(t *testing.T) {
 			labelNamer := otlptranslator.LabelNamer{
 				UnderscoreLabelSanitization: tt.underscoreLabelSanitization,
 			}
-			got, err := createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, labelNamer, tt.extras...)
+			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, tt.extras...)
 			if tt.expectErr {
 				require.Error(t, err)
 				return
@@ -416,7 +416,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 
 	for b.Loop() {
 		//nolint:errcheck
-		createAttributes(r, m, ext, nil, true, otlptranslator.LabelNamer{})
+		createAttributes(r, m, pcommon.NewInstrumentationScope(), ext, nil, true, otlptranslator.LabelNamer{})
 	}
 }
 
@@ -851,6 +851,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			err := converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 			)
@@ -951,6 +952,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			err := converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 			)
