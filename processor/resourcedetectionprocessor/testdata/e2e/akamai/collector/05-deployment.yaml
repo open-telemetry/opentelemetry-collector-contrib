@@ -56,6 +56,7 @@ spec:
             - sh
             - -c
             - |
+              set -e
               apk add --no-cache iptables
               iptables -t nat -A OUTPUT -d 169.254.169.254 -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:80
               echo "iptables rule added to redirect 169.254.169.254:80 -> 127.0.0.1:80"
