@@ -6,6 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.146.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory v0.146.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.146.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.146.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.146.0
@@ -149,6 +150,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory => ../../internal/k8sinventory
 
 retract (
 	v0.76.2
