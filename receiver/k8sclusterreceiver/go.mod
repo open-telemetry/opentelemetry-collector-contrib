@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.146.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.146.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.146.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.146.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.146.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.146.0
@@ -27,6 +28,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.146.1
 	go.opentelemetry.io/collector/filter v0.146.1
 	go.opentelemetry.io/collector/pdata v1.52.0
+	go.opentelemetry.io/collector/pdata/xpdata v0.146.1
 	go.opentelemetry.io/collector/pipeline v1.52.0
 	go.opentelemetry.io/collector/receiver v1.52.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.146.1
@@ -39,8 +41,6 @@ require (
 	k8s.io/apimachinery v0.35.1
 	k8s.io/client-go v0.35.1
 )
-
-require github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.146.0
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
