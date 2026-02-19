@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/statuserr"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -65,7 +65,7 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	// set status code to Unknown, which is not retryable.
 	// See: https://github.com/grpc/grpc-go/blob/v1.59.0/server.go#L1345
 	if err != nil {
-		return ptraceotlp.NewExportResponse(), errors.GetStatusFromError(err)
+		return ptraceotlp.NewExportResponse(), statuserr.GetStatusFromError(err)
 	}
 	return ptraceotlp.NewExportResponse(), nil
 }
