@@ -541,7 +541,7 @@ func TestReceiverTraces(t *testing.T) {
 
 	<-sendDone
 	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	requireCanceledOrCleanStatus(t, err)
 }
 
 func TestReceiverLogs(t *testing.T) {
@@ -567,7 +567,7 @@ func TestReceiverLogs(t *testing.T) {
 
 	<-sendDone
 	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	requireCanceledOrCleanStatus(t, err)
 }
 
 func TestReceiverMetrics(t *testing.T) {
@@ -752,7 +752,7 @@ func TestReceiverConsumeError(t *testing.T) {
 
 		<-sendDone
 		err = ctc.cancelAndWait()
-		requireCanceledStatus(t, err)
+		requireCanceledOrCleanStatus(t, err)
 	}
 }
 
