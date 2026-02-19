@@ -1,4 +1,10 @@
+display_name: Apache Spark Receiver
 type: apachespark
+
+description: |
+  The Apache Spark Receiver fetches metrics for an Apache Spark cluster through the Apache Spark REST API - specifically,
+  the `/metrics/json`, `/api/v1/applications/[app-id]/stages`, `/api/v1/applications/[app-id]/executors`, and
+  `/api/v1/applications/[app-id]/jobs` endpoints.
 
 status:
   class: receiver
