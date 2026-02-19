@@ -30,3 +30,19 @@ var ProcessorK8sattributesEmitV1K8sConventionsFeatureGate = featuregate.GlobalRe
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589"),
 	featuregate.WithRegisterFromVersion("v0.145.0"),
 )
+
+var ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.k8sattributes.telemetry.disableOldFormatMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, old formatted internal telemetry metrics are disabled."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871"),
+	featuregate.WithRegisterFromVersion("v0.146.0"),
+)
+
+var ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.k8sattributes.telemetry.enableNewFormatMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, new formatted internal telemetry metrics are enabled."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871"),
+	featuregate.WithRegisterFromVersion("v0.146.0"),
+)
