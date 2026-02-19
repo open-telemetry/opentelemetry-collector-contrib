@@ -53,14 +53,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordHwStatusDataPoint(ts, 1, "id-val", AttributeStateDegraded, AttributeTypeBattery, "name-val", "parent-val")
+			mb.RecordHwStatusDataPoint(ts, 1, "id-val", "name-val", "parent-val", AttributeStateDegraded, AttributeTypeBattery)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -108,18 +107,18 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("id")
 					assert.True(t, ok)
 					assert.Equal(t, "id-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "degraded", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "battery", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("name")
 					assert.True(t, ok)
 					assert.Equal(t, "name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("parent")
 					assert.True(t, ok)
 					assert.Equal(t, "parent-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "degraded", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.Equal(t, "battery", attrVal.Str())
 				case "hw.temperature":
 					assert.False(t, validatedMetrics["hw.temperature"], "Found a duplicate in the metrics slice: hw.temperature")
 					validatedMetrics["hw.temperature"] = true

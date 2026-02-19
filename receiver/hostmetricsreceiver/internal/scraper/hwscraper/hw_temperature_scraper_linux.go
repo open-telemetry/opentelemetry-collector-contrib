@@ -273,10 +273,10 @@ func (s *hwTemperatureScraper) recordStatusDataPoints(now pcommon.Timestamp, sen
 			now,
 			value,
 			sensor.id,
-			state,
-			metadata.AttributeTypeTemperature,
 			sensor.label,
 			sensor.deviceName,
+			state,
+			metadata.AttributeTypeTemperature,
 		)
 	}
 }

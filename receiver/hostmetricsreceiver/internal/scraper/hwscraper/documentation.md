@@ -16,18 +16,18 @@ metrics:
 
 Temperature in degrees Celsius.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| Cel | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| Cel | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| id | An identifier for the hardware component, unique within the monitored host. | Any Str | false |
-| name | An easily-recognizable name for the hardware component. | Any Str | false |
-| parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | false |
-| sensor_location | Location of the sensor. | Any Str | false |
+| id | An identifier for the hardware component, unique within the monitored host. | Any Str | Recommended |
+| name | An easily-recognizable name for the hardware component. | Any Str | Recommended |
+| parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | Recommended |
+| sensor_location | Location of the sensor. | Any Str | Recommended |
 
 ## Optional Metrics
 
@@ -43,34 +43,34 @@ metrics:
 
 Operational status: 1 (true) or 0 (false) for each of the possible states.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| id | An identifier for the hardware component, unique within the monitored host. | Any Str | false |
-| state | The current state of the component. | Str: ``degraded``, ``failed``, ``needs_cleaning``, ``ok``, ``predicted_failure`` | false |
-| type | Type of the component. | Str: ``battery``, ``cpu``, ``disk_controller``, ``enclosure``, ``fan``, ``gpu``, ``logical_disk``, ``memory``, ``network``, ``physical_disk``, ``power_supply``, ``tape_drive``, ``temperature``, ``voltage``, ``unknown`` | false |
-| name | An easily-recognizable name for the hardware component. | Any Str | false |
-| parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | false |
+| id | An identifier for the hardware component, unique within the monitored host. | Any Str | Recommended |
+| name | An easily-recognizable name for the hardware component. | Any Str | Recommended |
+| parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | Recommended |
+| state | The current state of the component. | Str: ``degraded``, ``failed``, ``needs_cleaning``, ``ok``, ``predicted_failure`` | Recommended |
+| type | Type of the component. | Str: ``battery``, ``cpu``, ``disk_controller``, ``enclosure``, ``fan``, ``gpu``, ``logical_disk``, ``memory``, ``network``, ``physical_disk``, ``power_supply``, ``tape_drive``, ``temperature``, ``voltage``, ``unknown`` | Recommended |
 
 ### hw.temperature.limit
 
 Temperature limit in degrees Celsius.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| Cel | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| Cel | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| id | An identifier for the hardware component, unique within the monitored host. | Any Str | false |
-| limit_type | Type of limit for hardware components. | Str: ``high.critical``, ``high.degraded``, ``low.critical``, ``low.degraded`` | false |
-| name | An easily-recognizable name for the hardware component. | Any Str | false |
-| parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | false |
-| sensor_location | Location of the sensor. | Any Str | false |
+| id | An identifier for the hardware component, unique within the monitored host. | Any Str | Recommended |
+| limit_type | Type of limit for hardware components. | Str: ``high.critical``, ``high.degraded``, ``low.critical``, ``low.degraded`` | Recommended |
+| name | An easily-recognizable name for the hardware component. | Any Str | Recommended |
+| parent | Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller). | Any Str | Recommended |
+| sensor_location | Location of the sensor. | Any Str | Recommended |

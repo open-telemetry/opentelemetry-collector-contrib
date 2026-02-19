@@ -201,7 +201,7 @@ func (m *metricHwStatus) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHwStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, idAttributeValue string, stateAttributeValue string, typeAttributeValue string, nameAttributeValue string, parentAttributeValue string) {
+func (m *metricHwStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, idAttributeValue string, nameAttributeValue string, parentAttributeValue string, stateAttributeValue string, typeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -210,10 +210,10 @@ func (m *metricHwStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Tim
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("id", idAttributeValue)
-	dp.Attributes().PutStr("state", stateAttributeValue)
-	dp.Attributes().PutStr("type", typeAttributeValue)
 	dp.Attributes().PutStr("name", nameAttributeValue)
 	dp.Attributes().PutStr("parent", parentAttributeValue)
+	dp.Attributes().PutStr("state", stateAttributeValue)
+	dp.Attributes().PutStr("type", typeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -234,6 +234,7 @@ func (m *metricHwStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHwStatus(cfg MetricConfig) metricHwStatus {
 	m := metricHwStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -288,6 +289,7 @@ func (m *metricHwTemperature) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHwTemperature(cfg MetricConfig) metricHwTemperature {
 	m := metricHwTemperature{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -343,6 +345,7 @@ func (m *metricHwTemperatureLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHwTemperatureLimit(cfg MetricConfig) metricHwTemperatureLimit {
 	m := metricHwTemperatureLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -480,8 +483,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordHwStatusDataPoint adds a data point to hw.status metric.
-func (mb *MetricsBuilder) RecordHwStatusDataPoint(ts pcommon.Timestamp, val int64, idAttributeValue string, stateAttributeValue AttributeState, typeAttributeValue AttributeType, nameAttributeValue string, parentAttributeValue string) {
-	mb.metricHwStatus.recordDataPoint(mb.startTime, ts, val, idAttributeValue, stateAttributeValue.String(), typeAttributeValue.String(), nameAttributeValue, parentAttributeValue)
+func (mb *MetricsBuilder) RecordHwStatusDataPoint(ts pcommon.Timestamp, val int64, idAttributeValue string, nameAttributeValue string, parentAttributeValue string, stateAttributeValue AttributeState, typeAttributeValue AttributeType) {
+	mb.metricHwStatus.recordDataPoint(mb.startTime, ts, val, idAttributeValue, nameAttributeValue, parentAttributeValue, stateAttributeValue.String(), typeAttributeValue.String())
 }
 
 // RecordHwTemperatureDataPoint adds a data point to hw.temperature metric.
