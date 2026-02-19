@@ -7,8 +7,11 @@ import (
 	"io"
 
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 type AWSUnmarshaler interface {
 	UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error)
+	NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error)
 }

@@ -6,10 +6,10 @@ resourceLogs:
             stringValue: aws
         - key: cloud.region
           value:
-            stringValue: us-east-1
+            stringValue: us-west-2
         - key: cloud.account.id
           value:
-            stringValue: "123456789012"
+            stringValue: "111122223333"
     scopeLogs:
       - logRecords:
           - attributes:
@@ -124,6 +124,16 @@ resourceLogs:
                                     values:
                                       - kvlistValue:
                                           values:
+                                            - key: previousState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 80
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
                                             - key: instanceId
                                               value:
                                                 stringValue: i-EXAMPLEaff4840c22
@@ -137,16 +147,6 @@ resourceLogs:
                                                     - key: name
                                                       value:
                                                         stringValue: pending
-                                            - key: previousState
-                                              value:
-                                                kvlistValue:
-                                                  values:
-                                                    - key: name
-                                                      value:
-                                                        stringValue: stopped
-                                                    - key: code
-                                                      value:
-                                                        doubleValue: 80
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
@@ -166,12 +166,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: name
-                                                      value:
-                                                        stringValue: stopped
                                                     - key: code
                                                       value:
                                                         doubleValue: 80
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -259,12 +259,6 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
-                              - key: path
-                                value:
-                                  stringValue: /
-                              - key: arn
-                                value:
-                                  stringValue: arn:aws:iam::123456789012:user/Richard
                               - key: userId
                                 value:
                                   stringValue: AIDA6ON6E4XEP7EXAMPLE
@@ -274,6 +268,12 @@ resourceLogs:
                               - key: userName
                                 value:
                                   stringValue: Richard
+                              - key: path
+                                value:
+                                  stringValue: /
+                              - key: arn
+                                value:
+                                  stringValue: arn:aws:iam::123456789012:user/Richard
             body: {}
             timeUnixNano: "1689801909000000000"
           - attributes:
@@ -438,13 +438,6 @@ resourceLogs:
                                 value:
                                   kvlistValue:
                                     values:
-                                      - key: baseline
-                                        value:
-                                          kvlistValue:
-                                            values:
-                                              - key: average
-                                                value:
-                                                  doubleValue: 84.410596421
                                       - key: insight
                                         value:
                                           kvlistValue:
@@ -452,6 +445,13 @@ resourceLogs:
                                               - key: average
                                                 value:
                                                   doubleValue: 669
+                                      - key: baseline
+                                        value:
+                                          kvlistValue:
+                                            values:
+                                              - key: average
+                                                value:
+                                                  doubleValue: 84.410596421
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:
@@ -611,15 +611,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: MFAUsed
+                        value:
+                          boolValue: true
                       - key: MobileVersion
                         value:
                           stringValue: "No"
                       - key: LoginTo
                         value:
                           stringValue: https://console.aws.amazon.com/console/home?region=us
-                      - key: MFAUsed
-                        value:
-                          boolValue: true
             body: {}
             timeUnixNano: "1749997800000000000"
           - attributes:

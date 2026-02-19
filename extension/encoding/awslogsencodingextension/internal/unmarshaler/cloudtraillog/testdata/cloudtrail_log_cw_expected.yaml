@@ -85,15 +85,6 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: CipherSuite
-                        value:
-                          stringValue: TLS_AES_128_GCM_SHA256
-                      - key: bytesTransferredIn
-                        value:
-                          doubleValue: 576
-                      - key: SSEApplied
-                        value:
-                          stringValue: Default_SSE_S3
                       - key: AuthenticationMethod
                         value:
                           stringValue: AuthHeader
@@ -106,6 +97,15 @@ resourceLogs:
                       - key: SignatureVersion
                         value:
                           stringValue: SigV4
+                      - key: CipherSuite
+                        value:
+                          stringValue: TLS_AES_128_GCM_SHA256
+                      - key: bytesTransferredIn
+                        value:
+                          doubleValue: 576
+                      - key: SSEApplied
+                        value:
+                          stringValue: Default_SSE_S3
               - key: aws.resources
                 value:
                   arrayValue:

@@ -55,7 +55,10 @@ func init() {
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45459"))
 }
 
-var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
+var (
+	_ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
+	_ encoding.LogsDecoderExtension     = (*encodingExtension)(nil)
+)
 
 type encodingExtension struct {
 	cfg *Config
@@ -70,8 +73,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudWatchLogsSubscriptionFilterV1:
 		if cfg.Format == constants.FormatCloudWatchLogsSubscriptionFilterV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatCloudWatchLogsSubscriptionFilterV1)),
-				zap.String("new_format", string(constants.FormatCloudWatchLogsSubscriptionFilter)),
+				zap.String("old_format", constants.FormatCloudWatchLogsSubscriptionFilterV1),
+				zap.String("new_format", constants.FormatCloudWatchLogsSubscriptionFilter),
 			)
 		}
 		return &encodingExtension{
@@ -81,8 +84,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
 		if cfg.Format == constants.FormatVPCFlowLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatVPCFlowLogV1)),
-				zap.String("new_format", string(constants.FormatVPCFlowLog)),
+				zap.String("old_format", constants.FormatVPCFlowLogV1),
+				zap.String("new_format", constants.FormatVPCFlowLog),
 			)
 		}
 
@@ -100,8 +103,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
 		if cfg.Format == constants.FormatS3AccessLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatS3AccessLogV1)),
-				zap.String("new_format", string(constants.FormatS3AccessLog)),
+				zap.String("old_format", constants.FormatS3AccessLogV1),
+				zap.String("new_format", constants.FormatS3AccessLog),
 			)
 		}
 		return &encodingExtension{
@@ -111,8 +114,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatWAFLog, constants.FormatWAFLogV1:
 		if cfg.Format == constants.FormatWAFLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatWAFLogV1)),
-				zap.String("new_format", string(constants.FormatWAFLog)),
+				zap.String("old_format", constants.FormatWAFLogV1),
+				zap.String("new_format", constants.FormatWAFLog),
 			)
 		}
 		return &encodingExtension{
@@ -122,8 +125,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatCloudTrailLog, constants.FormatCloudTrailLogV1:
 		if cfg.Format == constants.FormatCloudTrailLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatCloudTrailLogV1)),
-				zap.String("new_format", string(constants.FormatCloudTrailLog)),
+				zap.String("old_format", constants.FormatCloudTrailLogV1),
+				zap.String("new_format", constants.FormatCloudTrailLog),
 			)
 		}
 		return &encodingExtension{
@@ -135,8 +138,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
 		if cfg.Format == constants.FormatELBAccessLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatELBAccessLogV1)),
-				zap.String("new_format", string(constants.FormatELBAccessLog)),
+				zap.String("old_format", constants.FormatELBAccessLogV1),
+				zap.String("new_format", constants.FormatELBAccessLog),
 			)
 		}
 		return &encodingExtension{
@@ -249,4 +252,8 @@ func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	}
 
 	return logs, nil
+}
+
+func (e *encodingExtension) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	return e.unmarshaler.NewLogsDecoder(reader, options...)
 }

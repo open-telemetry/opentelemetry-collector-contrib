@@ -6,10 +6,10 @@ resourceLogs:
             stringValue: aws
         - key: cloud.region
           value:
-            stringValue: us-east-1
+            stringValue: us-west-2
         - key: cloud.account.id
           value:
-            stringValue: "123456789012"
+            stringValue: "111122223333"
     scopeLogs:
       - logRecords:
           - attributes:
@@ -111,9 +111,6 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: requestId
-                        value:
-                          stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16
                       - key: instancesSet
                         value:
                           kvlistValue:
@@ -172,6 +169,9 @@ resourceLogs:
                                                     - key: name
                                                       value:
                                                         stringValue: stopped
+                      - key: requestId
+                        value:
+                          stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -359,6 +359,12 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: messageStructure
+                        value:
+                          stringValue: json
+                      - key: messageAttributes
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
                       - key: topicArn
                         value:
                           stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
@@ -366,12 +372,6 @@ resourceLogs:
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
                       - key: subject
-                        value:
-                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
-                      - key: messageStructure
-                        value:
-                          stringValue: json
-                      - key: messageAttributes
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
               - key: aws.response.elements
@@ -418,6 +418,9 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: state
+                        value:
+                          stringValue: Start
                       - key: eventSource
                         value:
                           stringValue: ssm.amazonaws.com
@@ -449,9 +452,6 @@ resourceLogs:
                                               - key: average
                                                 value:
                                                   doubleValue: 669
-                      - key: state
-                        value:
-                          stringValue: Start
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:
@@ -611,15 +611,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: MFAUsed
+                        value:
+                          boolValue: true
                       - key: MobileVersion
                         value:
                           stringValue: "No"
                       - key: LoginTo
                         value:
                           stringValue: https://console.aws.amazon.com/console/home?region=us
-                      - key: MFAUsed
-                        value:
-                          boolValue: true
             body: {}
             timeUnixNano: "1749997800000000000"
           - attributes:

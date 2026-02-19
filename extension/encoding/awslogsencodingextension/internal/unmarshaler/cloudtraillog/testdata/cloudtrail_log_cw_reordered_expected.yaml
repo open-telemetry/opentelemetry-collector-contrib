@@ -65,15 +65,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: key
-                        value:
-                          stringValue: AWSLogs/627286350134/s3/2026-01-28-09-26-59-AB82D7306CDE5EF8
                       - key: bucketName
                         value:
                           stringValue: elastic-sar-bucket-fe44ff52c91b2efa4bccb8e07c85a202
                       - key: Host
                         value:
                           stringValue: s3.eu-west-1.amazonaws.com
+                      - key: key
+                        value:
+                          stringValue: AWSLogs/627286350134/s3/2026-01-28-09-26-59-AB82D7306CDE5EF8
               - key: aws.response.elements
                 value:
                   kvlistValue:
@@ -85,6 +85,9 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: bytesTransferredIn
+                        value:
+                          doubleValue: 576
                       - key: SSEApplied
                         value:
                           stringValue: Default_SSE_S3
@@ -103,9 +106,6 @@ resourceLogs:
                       - key: CipherSuite
                         value:
                           stringValue: TLS_AES_128_GCM_SHA256
-                      - key: bytesTransferredIn
-                        value:
-                          doubleValue: 576
               - key: aws.resources
                 value:
                   arrayValue:
