@@ -171,6 +171,16 @@ otelcol --config=config.yaml --feature-gates --feature-gates=<FEATURE_GATE_ID>
 | `userIdentity.arn`              | `aws.principal.arn`            | `aws.user_identity.principal.arn`             |
 | `userIdentity.type`             | `aws.principal.type`           | `aws.user_identity.principal.type`            |
 
+## Streaming Support
+
+CloudTrail logs support both streaming & non-streaming unmarshaling. The table below summarizes streaming support details for CloudTrail:
+
+| Log Type   | Sub Log Type/Source            | Offset Tracking                   |
+|------------|--------------------------------|-----------------------------------|
+| CloudTrail | S3 records                     | Number of records processed       |
+| CloudTrail | CloudWatch subscription filter | Always 0 (full payload processed) |
+| CloudTrail | Digest record                  | Always 0 (full payload processed) |
+
 ## Produced Records per Format
 
 ### VPC flow log record fields
