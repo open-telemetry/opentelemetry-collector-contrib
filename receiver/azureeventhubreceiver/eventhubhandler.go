@@ -18,7 +18,7 @@ import (
 
 type hubWrapper interface {
 	GetRuntimeInformation(ctx context.Context) (*hubRuntimeInfo, error)
-	Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error)
+	Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool, logger *zap.Logger) (listenerHandleWrapper, error)
 	Close(ctx context.Context) error
 }
 
@@ -98,7 +98,7 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 }
 
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
-	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset)
+	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset, h.settings.Logger)
 	if err != nil {
 		return err
 	}

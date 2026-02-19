@@ -96,6 +96,7 @@ jobs:
         k8s-version:
           - "v1.32.8"
           - "v1.34.0"
+          - "v1.35.0"
         component:
           - receiver/k8sclusterreceiver
           - processor/k8sattributesprocessor

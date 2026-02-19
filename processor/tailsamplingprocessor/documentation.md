@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_tail_sampling_count_spans_sampled
 
-Count of spans that were sampled or not per sampling policy [Development]
+Count of spans that were sampled or not per sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -24,7 +24,7 @@ Count of spans that were sampled or not per sampling policy [Development]
 
 ### otelcol_processor_tail_sampling_count_traces_sampled
 
-Count of traces that were sampled or not per sampling policy [Development]
+Count of traces that were sampled or not per sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -40,7 +40,7 @@ Count of traces that were sampled or not per sampling policy [Development]
 
 ### otelcol_processor_tail_sampling_early_releases_from_cache_decision
 
-Number of spans that were able to be immediately released due to a decision cache hit. [Development]
+Number of spans that were able to be immediately released due to a decision cache hit.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -54,7 +54,7 @@ Number of spans that were able to be immediately released due to a decision cach
 
 ### otelcol_processor_tail_sampling_global_count_traces_sampled
 
-Global count of traces that were sampled or not by at least one policy [Development]
+Global count of traces that were sampled or not by at least one policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -69,7 +69,7 @@ Global count of traces that were sampled or not by at least one policy [Developm
 
 ### otelcol_processor_tail_sampling_new_trace_id_received
 
-Counts the arrival of new traces [Development]
+Counts the arrival of new traces
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -77,7 +77,7 @@ Counts the arrival of new traces [Development]
 
 ### otelcol_processor_tail_sampling_sampling_decision_timer_latency
 
-Latency (in milliseconds) of each run of the sampling decision timer [Development]
+Latency (in milliseconds) of each run of the sampling decision timer
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -85,7 +85,7 @@ Latency (in milliseconds) of each run of the sampling decision timer [Developmen
 
 ### otelcol_processor_tail_sampling_sampling_late_span_age
 
-Time (in seconds) from the sampling decision was taken and the arrival of a late span [Development]
+Time (in seconds) from the sampling decision was taken and the arrival of a late span
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -93,7 +93,7 @@ Time (in seconds) from the sampling decision was taken and the arrival of a late
 
 ### otelcol_processor_tail_sampling_sampling_policy_evaluation_error
 
-Count of sampling policy evaluation errors [Development]
+Count of sampling policy evaluation errors
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -101,7 +101,7 @@ Count of sampling policy evaluation errors [Development]
 
 ### otelcol_processor_tail_sampling_sampling_policy_execution_count
 
-Total number of executions of a specific sampling policy [Development]
+Total number of executions of a specific sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -115,7 +115,7 @@ Total number of executions of a specific sampling policy [Development]
 
 ### otelcol_processor_tail_sampling_sampling_policy_execution_time_sum
 
-Total time spent (in microseconds) executing a specific sampling policy [Development]
+Total time spent (in microseconds) executing a specific sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -129,7 +129,7 @@ Total time spent (in microseconds) executing a specific sampling policy [Develop
 
 ### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
-Count of traces that needed to be dropped before the configured wait time [Development]
+Count of traces that needed to be dropped before the configured wait time
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -137,7 +137,7 @@ Count of traces that needed to be dropped before the configured wait time [Devel
 
 ### otelcol_processor_tail_sampling_sampling_trace_removal_age
 
-Time (in seconds) from arrival of a new trace until its removal from memory [Development]
+Time (in seconds) from arrival of a new trace until its removal from memory
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -145,7 +145,7 @@ Time (in seconds) from arrival of a new trace until its removal from memory [Dev
 
 ### otelcol_processor_tail_sampling_sampling_traces_on_memory
 
-Tracks the number of traces current on memory [Development]
+Tracks the number of traces current on memory
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -153,7 +153,7 @@ Tracks the number of traces current on memory [Development]
 
 ### otelcol_processor_tail_sampling_traces_dropped_too_large
 
-Count of traces that were dropped because they were too large [Development]
+Count of traces that were dropped because they were too large
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

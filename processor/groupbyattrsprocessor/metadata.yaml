@@ -1,4 +1,11 @@
+display_name: Group by Attributes Processor
 type: groupbyattrs
+
+description: |
+  This processor re-associates spans, log records and metric datapoints to a *Resource* that matches with the specified
+  attributes. As a result, all spans, log records or metric datapoints with the same values for the specified attributes
+  are "grouped" under the same *Resource*.
+
 
 status:
   class: processor
@@ -17,24 +24,21 @@ telemetry:
     processor_groupbyattrs_log_groups:
       enabled: true
       description: Distribution of groups extracted for logs
-      stability:
-        level: development
+      stability: development
       unit: "1"
       histogram:
         value_type: int
     processor_groupbyattrs_metric_groups:
       enabled: true
       description: Distribution of groups extracted for metrics
-      stability:
-        level: development
+      stability: development
       unit: "1"
       histogram:
         value_type: int
     processor_groupbyattrs_num_grouped_logs:
       enabled: true
       description: Number of logs that had attributes grouped
-      stability:
-        level: development
+      stability: development
       unit: "1"
       sum:
         value_type: int
@@ -42,8 +46,7 @@ telemetry:
     processor_groupbyattrs_num_grouped_metrics:
       enabled: true
       description: Number of metrics that had attributes grouped
-      stability:
-        level: development
+      stability: development
       unit: "1"
       sum:
         value_type: int
@@ -51,8 +54,7 @@ telemetry:
     processor_groupbyattrs_num_grouped_spans:
       enabled: true
       description: Number of spans that had attributes grouped
-      stability:
-        level: development
+      stability: development
       unit: "1"
       sum:
         value_type: int
@@ -60,8 +62,7 @@ telemetry:
     processor_groupbyattrs_num_non_grouped_logs:
       enabled: true
       description: Number of logs that did not have attributes grouped
-      stability:
-        level: development
+      stability: development
       unit: "1"
       sum:
         value_type: int
@@ -69,8 +70,7 @@ telemetry:
     processor_groupbyattrs_num_non_grouped_metrics:
       enabled: true
       description: Number of metrics that did not have attributes grouped
-      stability:
-        level: development
+      stability: development
       unit: "1"
       sum:
         value_type: int
@@ -78,8 +78,7 @@ telemetry:
     processor_groupbyattrs_num_non_grouped_spans:
       enabled: true
       description: Number of spans that did not have attributes grouped
-      stability:
-        level: development
+      stability: development
       unit: "1"
       sum:
         value_type: int
@@ -87,8 +86,7 @@ telemetry:
     processor_groupbyattrs_span_groups:
       enabled: true
       description: Distribution of groups extracted for spans
-      stability:
-        level: development
+      stability: development
       unit: "1"
       histogram:
         value_type: int
