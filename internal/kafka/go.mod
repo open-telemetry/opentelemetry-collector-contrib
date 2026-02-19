@@ -5,17 +5,17 @@ go 1.25.0
 require (
 	github.com/IBM/sarama v1.46.3
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.145.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.146.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251021233722-4ca18825d8c0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/xdg-go/scram v1.2.0
-	go.opentelemetry.io/collector/component v1.51.1-0.20260217094636-d8d07c01912d
-	go.opentelemetry.io/collector/component/componenttest v0.145.1-0.20260217094636-d8d07c01912d
-	go.opentelemetry.io/collector/config/configcompression v1.51.1-0.20260217094636-d8d07c01912d
-	go.opentelemetry.io/collector/config/configopaque v1.51.1-0.20260217094636-d8d07c01912d
-	go.opentelemetry.io/collector/config/configtls v1.51.1-0.20260217094636-d8d07c01912d
+	go.opentelemetry.io/collector/component v1.52.0
+	go.opentelemetry.io/collector/component/componenttest v0.146.1
+	go.opentelemetry.io/collector/config/configcompression v1.52.0
+	go.opentelemetry.io/collector/config/configopaque v1.52.0
+	go.opentelemetry.io/collector/config/configtls v1.52.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -72,10 +72,10 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/confmap v1.51.1-0.20260217094636-d8d07c01912d // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.145.1-0.20260217094636-d8d07c01912d // indirect
-	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260217094636-d8d07c01912d // indirect
-	go.opentelemetry.io/collector/pdata v1.51.1-0.20260217094636-d8d07c01912d // indirect
+	go.opentelemetry.io/collector/confmap v1.52.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.146.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.52.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.52.0 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
