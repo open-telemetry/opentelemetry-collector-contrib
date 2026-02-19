@@ -247,6 +247,7 @@ func (m *metricSplunkAggregationQueueRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkAggregationQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -341,6 +342,7 @@ func (m *metricSplunkBucketsSearchableStatus) init() {
 	m.data.SetUnit("{count}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkBucketsSearchableStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkIndexerSearchableAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -438,6 +440,7 @@ func (m *metricSplunkDataIndexesExtendedBucketCount) init() {
 	m.data.SetUnit("{buckets}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedBucketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -532,6 +535,7 @@ func (m *metricSplunkDataIndexesExtendedBucketEventCount) init() {
 	m.data.SetUnit("{events}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedBucketEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -629,6 +633,7 @@ func (m *metricSplunkDataIndexesExtendedBucketHotCount) init() {
 	m.data.SetUnit("{buckets}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedBucketHotCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -726,6 +731,7 @@ func (m *metricSplunkDataIndexesExtendedBucketWarmCount) init() {
 	m.data.SetUnit("{buckets}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedBucketWarmCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -823,6 +829,7 @@ func (m *metricSplunkDataIndexesExtendedEventCount) init() {
 	m.data.SetUnit("{events}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -917,6 +924,7 @@ func (m *metricSplunkDataIndexesExtendedRawSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedRawSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1011,6 +1019,7 @@ func (m *metricSplunkDataIndexesExtendedTotalSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedTotalSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1105,6 +1114,7 @@ func (m *metricSplunkHealth) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1202,6 +1212,7 @@ func (m *metricSplunkIndexerAvgRate) init() {
 	m.data.SetUnit("KBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerAvgRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1296,6 +1307,7 @@ func (m *metricSplunkIndexerCPUTime) init() {
 	m.data.SetUnit("{s}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1390,6 +1402,7 @@ func (m *metricSplunkIndexerQueueRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1484,6 +1497,7 @@ func (m *metricSplunkIndexerRawWriteTime) init() {
 	m.data.SetUnit("{s}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerRawWriteTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1578,6 +1592,7 @@ func (m *metricSplunkIndexerRollingrestartStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerRollingrestartStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue bool, splunkRollingorrestartAttributeValue bool, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1675,6 +1690,7 @@ func (m *metricSplunkIndexerThroughput) init() {
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexerStatusAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1769,6 +1785,7 @@ func (m *metricSplunkIndexesAvgSize) init() {
 	m.data.SetUnit("Gb")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesAvgSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1863,6 +1880,7 @@ func (m *metricSplunkIndexesAvgUsage) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesAvgUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -1957,6 +1975,7 @@ func (m *metricSplunkIndexesBucketCount) init() {
 	m.data.SetUnit("{count}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesBucketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2051,6 +2070,7 @@ func (m *metricSplunkIndexesMedianDataAge) init() {
 	m.data.SetUnit("{days}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesMedianDataAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2145,6 +2165,7 @@ func (m *metricSplunkIndexesSize) init() {
 	m.data.SetUnit("Gb")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2239,6 +2260,7 @@ func (m *metricSplunkIoAvgIops) init() {
 	m.data.SetUnit("{iops}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIoAvgIops) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2333,6 +2355,7 @@ func (m *metricSplunkKvstoreBackupStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkKvstoreBackupStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2427,6 +2450,7 @@ func (m *metricSplunkKvstoreReplicationStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2521,6 +2545,7 @@ func (m *metricSplunkKvstoreStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2621,6 +2646,7 @@ func (m *metricSplunkLicenseExpirationSecondsRemaining) init() {
 	m.data.SetUnit("{seconds}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkLicenseExpirationSecondsRemaining) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkLicenseStatusAttributeValue string, splunkLicenseLabelAttributeValue string, splunkLicenseTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2721,6 +2747,7 @@ func (m *metricSplunkLicenseIndexUsage) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkLicenseIndexUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2815,6 +2842,7 @@ func (m *metricSplunkParseQueueRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkParseQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -2909,6 +2937,7 @@ func (m *metricSplunkPipelineSetCount) init() {
 	m.data.SetUnit("KBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkPipelineSetCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3003,6 +3032,7 @@ func (m *metricSplunkSchedulerAvgExecutionLatency) init() {
 	m.data.SetUnit("{ms}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSchedulerAvgExecutionLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3097,6 +3127,7 @@ func (m *metricSplunkSchedulerAvgRunTime) init() {
 	m.data.SetUnit("{ms}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSchedulerAvgRunTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3191,6 +3222,7 @@ func (m *metricSplunkSchedulerCompletionRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSchedulerCompletionRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3285,6 +3317,7 @@ func (m *metricSplunkSearchDuration) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSearchDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3376,6 +3409,7 @@ func (m *metricSplunkSearchInitiation) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSearchInitiation) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3467,6 +3501,7 @@ func (m *metricSplunkSearchStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSearchStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSearchStateAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3561,6 +3596,7 @@ func (m *metricSplunkSearchSuccess) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSearchSuccess) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3652,6 +3688,7 @@ func (m *metricSplunkServerIntrospectionQueuesCurrent) init() {
 	m.data.SetUnit("{queues}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerIntrospectionQueuesCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3746,6 +3783,7 @@ func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3840,6 +3878,7 @@ func (m *metricSplunkServerSearchartifactsAdhoc) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsAdhoc) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -3934,6 +3973,7 @@ func (m *metricSplunkServerSearchartifactsAdhocSize) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsAdhocSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4028,6 +4068,7 @@ func (m *metricSplunkServerSearchartifactsCompleted) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4122,6 +4163,7 @@ func (m *metricSplunkServerSearchartifactsCompletedSize) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsCompletedSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4216,6 +4258,7 @@ func (m *metricSplunkServerSearchartifactsIncomplete) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsIncomplete) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4310,6 +4353,7 @@ func (m *metricSplunkServerSearchartifactsIncompleteSize) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsIncompleteSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4404,6 +4448,7 @@ func (m *metricSplunkServerSearchartifactsInvalid) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsInvalid) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4498,6 +4543,7 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4592,6 +4638,7 @@ func (m *metricSplunkServerSearchartifactsJobCacheSize) init() {
 	m.data.SetUnit("{mb}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsJobCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSearchartifactsCacheTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4689,6 +4736,7 @@ func (m *metricSplunkServerSearchartifactsSavedsearches) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsSavedsearches) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4783,6 +4831,7 @@ func (m *metricSplunkServerSearchartifactsScheduled) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsScheduled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4877,6 +4926,7 @@ func (m *metricSplunkServerSearchartifactsScheduledSize) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsScheduledSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
@@ -4971,6 +5021,7 @@ func (m *metricSplunkTypingQueueRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkTypingQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
