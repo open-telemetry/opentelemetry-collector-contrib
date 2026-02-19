@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
@@ -54,7 +55,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	resourceAttrs.PutStr("k8s.object.api_version", ev.InvolvedObject.APIVersion)
 	resourceAttrs.PutStr("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)
 
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(getEventTimestamp(ev)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(k8sinventory.GetEventTimestamp(ev)))
 
 	// The Message field contains description about the event,
 	// which is best suited for the "Body" of the LogRecordSlice.
