@@ -207,12 +207,12 @@ components:
     - processor/metricstarttime
     - processor/metricstransform
     - processor/novadetector
+    - processor/oracleclouddetector
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
     - processor/resource
     - processor/resourcedetection
-    - processor/resourcedetectionprocessor/oraclecloud
     - processor/scalewaydetector
     - processor/schema
     - processor/span
