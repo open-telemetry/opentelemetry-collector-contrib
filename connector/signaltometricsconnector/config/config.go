@@ -50,6 +50,18 @@ type Config struct {
 	Datapoints []MetricInfo `mapstructure:"datapoints"`
 	Logs       []MetricInfo `mapstructure:"logs"`
 	Profiles   []MetricInfo `mapstructure:"profiles"`
+	// ErrorMode determines how the connector reacts to errors that occur while processing an OTTL
+	// condition or statement during runtime data consumption. This setting does NOT affect errors
+	// during OTTL statement parsing at configuration time - those will always cause startup failures.
+	// Valid values are `propagate`, `ignore`, and `silent`.
+	// `propagate` means the connector returns the error up the pipeline. This will result in the
+	// payload being dropped from the collector.
+	// `ignore` means the connector ignores errors returned by conditions and continues processing.
+	// If an error occurs, the record is skipped and the error is logged.
+	// `silent` means the connector ignores errors returned by conditions and continues processing.
+	// If an error occurs, the record is skipped and the error is not logged.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

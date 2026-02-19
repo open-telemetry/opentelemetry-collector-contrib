@@ -51,8 +51,9 @@ func TestClientConfig(t *testing.T) {
 						Backoff: 5 * time.Second,
 					},
 				},
-				RackID:         "rack1",
-				UseLeaderEpoch: true,
+				RackID:          "rack1",
+				UseLeaderEpoch:  true,
+				ConnIdleTimeout: 5 * time.Minute,
 			},
 		},
 		"sasl_aws_msk_iam_oauthbearer": {
@@ -115,6 +116,13 @@ func TestClientConfig(t *testing.T) {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()
 				cfg.UseLeaderEpoch = false
+				return cfg
+			}(),
+		},
+		"conn_idle_timeout": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.ConnIdleTimeout = 5 * time.Minute
 				return cfg
 			}(),
 		},
