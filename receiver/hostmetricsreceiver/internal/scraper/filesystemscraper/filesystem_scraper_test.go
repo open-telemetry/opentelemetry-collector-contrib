@@ -529,7 +529,7 @@ func TestScrape_UtilizationExcludesReservedBlocks(t *testing.T) {
 	cfg := metadata.DefaultMetricsBuilderConfig()
 	cfg.Metrics.SystemFilesystemUtilization.Enabled = true
 
-	scraper, err := newFileSystemScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{
+	scraper, err := newFileSystemScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
 		MetricsBuilderConfig: cfg,
 	})
 	require.NoError(t, err)
@@ -541,8 +541,8 @@ func TestScrape_UtilizationExcludesReservedBlocks(t *testing.T) {
 		return &disk.UsageStat{Total: 100, Used: 60, Free: 35}, nil
 	}
 
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
-	md, err := scraper.scrape(context.Background())
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	md, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
