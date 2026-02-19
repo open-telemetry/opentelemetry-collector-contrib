@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/otelarrowreceiver
+component: receiver/otelarrow
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Fix OTLP fallback handlers returning codes.Unknown instead of codes.Unavailable for pipeline errors, causing upstream exporters to permanently drop data instead of retrying.
