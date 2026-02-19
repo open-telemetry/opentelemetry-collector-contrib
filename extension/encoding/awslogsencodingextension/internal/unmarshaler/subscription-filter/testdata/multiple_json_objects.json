@@ -1,0 +1,32 @@
+{
+    "messageType": "DATA_MESSAGE",
+    "owner": "123456789012",
+    "logGroup": "/my/first/log/group",
+    "logStream": "/my/first/log/stream",
+    "subscriptionFilters": [
+        "my-account-subscription-to-firehose"
+    ],
+    "logEvents": [
+        {
+            "id": "39494971786919662926967737244165955921131981322179969024",
+            "timestamp": 1771015786034,
+            "message": "some text"
+        }
+    ]
+}
+{
+    "messageType": "DATA_MESSAGE",
+    "owner": "123456789012",
+    "logGroup": "/my/second/log/group",
+    "logStream": "/my/second/log/stream",
+    "subscriptionFilters": [
+        "my-account-subscription-to-firehose"
+    ],
+    "logEvents": [
+        {
+            "id": "39494969221575739759196034780948230027606320717924401152",
+            "timestamp": 1771015671000,
+            "message": "some other text"
+        }
+    ]
+}
