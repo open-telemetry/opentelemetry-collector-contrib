@@ -269,8 +269,6 @@ func TestNewAWSConfigDelegatesToAwsutil(t *testing.T) {
 	})
 
 	// Verify SDK handles config creation for regions across all AWS partitions.
-	// This ensures getServiceEndpoint (tested in server_test.go) and newAWSConfig
-	// both work consistently for partition-specific regions.
 	t.Run("all partitions", func(t *testing.T) {
 		logger := zap.NewNop()
 		t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")

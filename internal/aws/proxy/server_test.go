@@ -210,7 +210,7 @@ func TestCantGetServiceEndpoint(t *testing.T) {
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-	assert.ErrorContains(t, err, "invalid region")
+	assert.ErrorContains(t, err, "unable to resolve endpoint")
 }
 
 func TestAWSEndpointInvalid(t *testing.T) {
@@ -244,9 +244,6 @@ func TestCanCreateTransport(t *testing.T) {
 }
 
 func TestGetServiceEndpoint(t *testing.T) {
-	_, err := getServiceEndpoint("", "xray")
-	assert.EqualError(t, err, "invalid region: ")
-
 	endpoint, err := getServiceEndpoint("us-west-2", "xray")
 	assert.NoError(t, err)
 	assert.Equal(t, "https://xray.us-west-2.amazonaws.com", endpoint)

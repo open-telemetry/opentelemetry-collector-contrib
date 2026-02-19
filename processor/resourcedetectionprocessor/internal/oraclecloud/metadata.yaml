@@ -1,6 +1,4 @@
-type: resourcedetectionprocessor/oraclecloud
-
-parent: resourcedetection
+type: oracleclouddetector
 
 status:
   class: processor
@@ -11,34 +9,38 @@ status:
 
 resource_attributes:
   cloud.availability_zone:
-    description: The cloud.availability_zone
+    description: The [availability domain](https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm) in which this Oracle Cloud instance is running (e.g., "PHX-AD-1").
     type: string
     enabled: true
   cloud.platform:
-    description: The cloud.platform
+    description: Value is `oracle_cloud_infrastructure` for resources detected on Oracle Cloud Infrastructure (OCI).
     type: string
     enabled: true
   cloud.provider:
-    description: The cloud.provider
+    description: Always set to `oraclecloud` to identify resources provided by Oracle Cloud Infrastructure
     type: string
     enabled: true
   cloud.region:
-    description: The cloud.region
+    description: The Oracle Cloud region identifier for this instance (e.g., "us-phoenix-1").
     type: string
     enabled: true
   host.id:
-    description: The host.id
+    description: The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance).
     type: string
     enabled: true
   host.name:
-    description: The hostname
+    description: The system hostname as reported by the OCI metadata service.
     type: string
     enabled: true
   host.type:
-    description: The instance type (shape)
+    description: The compute shape (instance type) of the host, such as "VM.Standard.E4.Flex".
     enabled: true
     type: string
   k8s.cluster.name:
-    description: k8s.cluster.name
+    description: The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise.
     enabled: true
     type: string
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

@@ -43,56 +43,45 @@ DOCKERCMD ?= docker
 
 CURR_MOD := $(shell go list -m | tr '/' '-' )
 
-# In order to help reduce toil related to managing tooling for the open telemetry collector
-# this section of the makefile looks at only requiring command definitions to be defined
-# as part of $(TOOLS_MOD_DIR)/tools.go, following the existing practice.
-# Modifying the tools' `go.mod` file will trigger a rebuild of the tools to help
-# ensure that all contributors are using the most recent version to make builds repeatable everywhere.
-TOOLS_MOD_DIR    := $(SRC_ROOT)/internal/tools
-TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
-TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
-TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
-TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
-CHLOGGEN_CONFIG  := .chloggen/config.yaml
+# Tools are declared in $(TOOLS_MOD_DIR)/go.mod using tool directives.
+TOOLS_MOD_DIR   := $(SRC_ROOT)/internal/tools
+TOOLS_MOD_FILE  := $(TOOLS_MOD_DIR)/go.mod
+
+CHLOGGEN_CONFIG := .chloggen/config.yaml
 
 # no trailing slash
 JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
-.PHONY: install-tools
-install-tools: $(TOOLS_BIN_NAMES)
-
-$(TOOLS_BIN_DIR):
-	mkdir -p $@
-
-$(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
-
-ACTIONLINT          := $(TOOLS_BIN_DIR)/actionlint
-ADDLICENSE          := $(TOOLS_BIN_DIR)/addlicense
-MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
-MISSPELL            := $(TOOLS_BIN_DIR)/misspell -error
-MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
-LINT                := $(TOOLS_BIN_DIR)/golangci-lint
-MULTIMOD            := $(TOOLS_BIN_DIR)/multimod
-CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
-GITHUBGEN           := $(TOOLS_BIN_DIR)/githubgen
-GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
-PORTO               := $(TOOLS_BIN_DIR)/porto
-CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
-CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
-GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
-BUILDER             := $(TOOLS_BIN_DIR)/builder
-GOFUMPT             := $(TOOLS_BIN_DIR)/gofumpt
-GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
-GCI                 := $(TOOLS_BIN_DIR)/gci
-GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
-CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
-MODERNIZE           := $(TOOLS_BIN_DIR)/modernize
-
 # Tools used by go generate commands
-MDATAGEN := $(TOOLS_BIN_DIR)/mdatagen
-# The githubreceiver uses a "go generate" tool that is not used by other components.
-GENQLIENT := $(TOOLS_BIN_DIR)/genqlient
+#
+# We build the tool with GOOS= GOARCH= (i.e. for the host platform), and then
+# execute the binary with the GOOS/GOARCH that the Makefile is being run with.
+# This necessary for linting Windows code on non-Windows platforms, for example.
+GO_TOOL = GOOS= GOARCH= $(GOCMD) tool -modfile=$(TOOLS_MOD_FILE)
+# On Windows, `go tool -n` returns paths with backslashes (e.g. C:\Users\...)
+# which are stripped when passed to the MSYS2/Git Bash shell used by Make.
+# $(subst \,/,...) converts them to forward slashes so the shell can find the binary.
+MDATAGEN            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/mdatagen))
+ACTIONLINT          = $(subst \,/,$(shell $(GO_TOOL) -n github.com/rhysd/actionlint/cmd/actionlint))
+ADDLICENSE          = $(subst \,/,$(shell $(GO_TOOL) -n github.com/google/addlicense))
+MISSPELL            = $(subst \,/,$(shell $(GO_TOOL) -n github.com/client9/misspell/cmd/misspell -error))
+MISSPELL_CORRECTION = $(subst \,/,$(shell $(GO_TOOL) -n github.com/client9/misspell/cmd/misspell -w))
+LINT                = $(subst \,/,$(shell $(GO_TOOL) -n github.com/golangci/golangci-lint/v2/cmd/golangci-lint))
+MULTIMOD            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/multimod))
+CHLOGGEN            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/chloggen))
+GITHUBGEN           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/githubgen))
+GOIMPORTS           = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/tools/cmd/goimports))
+PORTO               = $(subst \,/,$(shell $(GO_TOOL) -n github.com/jcchavezs/porto/cmd/porto))
+CHECKFILE           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/checkfile))
+CROSSLINK           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/crosslink))
+GOJUNIT             = $(subst \,/,$(shell $(GO_TOOL) -n github.com/jstemmer/go-junit-report))
+BUILDER             = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/builder))
+GOFUMPT             = $(subst \,/,$(shell $(GO_TOOL) -n mvdan.cc/gofumpt))
+GOVULNCHECK         = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/vuln/cmd/govulncheck))
+GCI                 = $(subst \,/,$(shell $(GO_TOOL) -n github.com/daixiang0/gci))
+GOTESTSUM           = $(subst \,/,$(shell $(GO_TOOL) -n gotest.tools/gotestsum))
+CHECKAPI            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/checkapi))
+MODERNIZE           = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize))
 
 GOTESTSUM_OPT?= --rerun-fails=1
 
@@ -116,7 +105,7 @@ pwd:
 common: lint test
 
 .PHONY: test
-test: $(GOTESTSUM)
+test:
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT)
 
 # This target is used in scoped tests.
@@ -124,27 +113,27 @@ test: $(GOTESTSUM)
 # and run each changed test two times.
 #
 # This helps us catch flakes more easily before they land on main.
-test-twice: $(GOTESTSUM)
+test-twice:
 	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -count=2
 
 .PHONY: test-with-cover
-test-with-cover: $(GOTESTSUM)
+test-with-cover:
 	mkdir -p $(PWD)/coverage/unit
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT) -cover -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: do-unit-tests-with-cover
-do-unit-tests-with-cover: $(GOTESTSUM)
+do-unit-tests-with-cover:
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT) ./... $(COVER_OPT)
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: test-with-junit
-test-with-junit: $(GOTESTSUM)
+test-with-junit:
 	mkdir -p $(JUNIT_OUT_DIR)
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./...
 
 .PHONY: test-with-junit-and-cover
-test-with-junit-and-cover: $(GOTESTSUM)
+test-with-junit-and-cover:
 	mkdir -p $(COVER_DIR_ABS)
 	mkdir -p $(JUNIT_OUT_DIR)
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./... $(COVER_OPT)
@@ -156,7 +145,7 @@ ifneq (,$(wildcard ./*.go))
 endif
 
 .PHONY: runbuilttest
-runbuilttest: $(GOTESTSUM)
+runbuilttest:
 ifneq (,$(wildcard ./builtunitetest.test))
 	$(GOTESTSUM) --raw-command -- $(GOCMD) tool test2json -p "./..." -t ./builtunitetest.test -test.v -test.failfast -test.timeout $(GOTEST_TIMEOUT)
 endif
@@ -164,7 +153,7 @@ endif
 INTEGRATION_TEST_FILES := $(shell find . -name *integration_test.go)
 INTEGRATION_TESTS := $(if $(INTEGRATION_TEST_FILES),$(shell cat $(INTEGRATION_TEST_FILES) | sed -n "s/func \(Test[A-Za-z0-9_]*\).*/\1/p" | xargs | sed "s/ /|/g"))
 .PHONY: mod-integration-test
-mod-integration-test: $(GOTESTSUM)
+mod-integration-test:
 	@echo "running $(GOCMD) integration test $(INTEGRATION_TESTS) in `pwd`"
 	@if [ -n "$(INTEGRATION_TESTS)" ]; then \
 		$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- -run "$(INTEGRATION_TESTS)" $(GOTEST_OPT_WITH_INTEGRATION); \
@@ -176,7 +165,7 @@ mod-integration-test: $(GOTESTSUM)
 	fi
 
 .PHONY: mod-integration-sudo-test
-mod-integration-sudo-test: $(GOTESTSUM)
+mod-integration-sudo-test:
 	@echo "running $(GOCMD) integration sudo (root/privileged) test $(INTEGRATION_TESTS) in `pwd`"
 	@if [ -n "$(INTEGRATION_TESTS)" ]; then \
 		$(GOTESTSUM) $(GOTESTSUM_OPT) --format standard-verbose --packages="./..." -- -run "$(INTEGRATION_TESTS)" $(GOTEST_OPT_WITH_INTEGRATION_SUDO); \
@@ -185,7 +174,7 @@ mod-integration-sudo-test: $(GOTESTSUM)
 	fi
 
 .PHONY: do-integration-tests-with-cover
-do-integration-tests-with-cover: $(GOTESTSUM)
+do-integration-tests-with-cover:
 	@echo "running $(GOCMD) integration test $(INTEGRATION_TESTS) + coverage in `pwd`"
 	@if [ -n "$(INTEGRATION_TESTS)" ]; then \
 		$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- -run "$(INTEGRATION_TESTS)" $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE); \
@@ -197,11 +186,11 @@ do-integration-tests-with-cover: $(GOTESTSUM)
 	fi
 
 .PHONY: benchmark
-benchmark: $(GOTESTSUM)
+benchmark:
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="$$(find . -name 'go.mod' -not -path '*/third_party/*' -not -path '*/local/*' -type f | xargs dirname | sort | uniq | xargs -L 1 bash -c 'cd $$0 && go list -f "{{ .Dir }}"' | xargs echo)" -- -bench=. -run=notests --tags=$(GO_BUILD_TAGS)
 
 .PHONY: addlicense
-addlicense: $(ADDLICENSE)
+addlicense:
 	@ADDLICENSEOUT=$$(for f in $$($(ALL_SRC_AND_SHELL_CMD)); do \
 		`$(ADDLICENSE_CMD) "$$f" 2>&1`; \
 	done); \
@@ -214,7 +203,7 @@ addlicense: $(ADDLICENSE)
 	fi
 
 .PHONY: checklicense
-checklicense: $(ADDLICENSE)
+checklicense:
 	@licRes=$$(for f in $$($(ALL_SRC_AND_SHELL_CMD)); do \
 		if awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; then \
 			continue; \
@@ -244,56 +233,38 @@ checklinks:
 		--no-progress './**/*.md'
 
 .PHONY: fmt
-fmt: $(GOFUMPT) $(GOIMPORTS)
+fmt:
 	$(GOFUMPT) -l -w -extra .
 	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
-
-.PHONY: generate-tools
-generate-tools: $(GENQLIENT)
-ifeq ($(GOOS),windows)
-	@echo Adding "exe" extensions to generate tools
-	@for f in $^; do \
-		cp -u "$$f" "$$f.exe"; \
-	done
-endif
 
 MDATAGEN_METADATA_YAML?= metadata.yaml
 
 .PHONY: mdatagen
-mdatagen: $(MDATAGEN)
+mdatagen:
 	@$(MDATAGEN) $(MDATAGEN_METADATA_YAML)
 
-# On Windows changing path with absolute path includes ':' even escaping it is not enough to get it to correctly
-# update PATH, so use a relative path when pre-pending to PATH on Windows. Unfortunately, realpath is not portable
-# between mac and GNU based bash so keeping the full path on non-Windows OSes.
-ifeq ($(GOOS),windows)
-    TOOLS_BIN_DIR_PORTABLE?=$(shell realpath --relative-to="$(CURDIR)" "$(TOOLS_BIN_DIR)")
-else
-    TOOLS_BIN_DIR_PORTABLE?=$(TOOLS_BIN_DIR)
-endif
-
 .PHONY: generate
-generate: generate-tools
+generate:
 ifeq ($(CURDIR),$(SRC_ROOT))
-	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 	$(MAKE) gogci
 else
-	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(GOCMD) generate ./...
+	$(GOCMD) generate ./...
 	$(MAKE) fmt
 	$(MAKE) gci
 endif
 
 .PHONY: lint
-lint: $(LINT) checklicense misspell
+lint: checklicense misspell
 	$(LINT) run
 
 .PHONY: govulncheck
-govulncheck: $(GOVULNCHECK)
+govulncheck:
 	$(GOVULNCHECK) ./...
 
 .PHONY: modernize
-modernize: $(MODERNIZE)
+modernize:
 	$(MODERNIZE) -fix -test -tags integration -v -any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr \
 		-omitzero -plusbuild \
 		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
@@ -309,12 +280,12 @@ toolchain:
 	$(GOCMD) get toolchain@none
 
 .PHONY: misspell
-misspell: $(TOOLS_BIN_DIR)/misspell
+misspell:
 	@echo "running $(MISSPELL)"
 	@$(MISSPELL) $$($(ALL_SRC_AND_DOC_CMD))
 
 .PHONY: misspell-correction
-misspell-correction: $(TOOLS_BIN_DIR)/misspell
+misspell-correction:
 	@$(MISSPELL_CORRECTION) $$($(ALL_SRC_AND_DOC_CMD))
 
 .PHONY: moddownload
@@ -322,7 +293,7 @@ moddownload:
 	$(GOCMD) mod download
 
 .PHONY: gci
-gci: $(TOOLS_BIN_DIR)/gci
+gci:
 	@echo "running $(GCI)"
 	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $$($(ALL_SRC_AND_DOC_CMD))
 

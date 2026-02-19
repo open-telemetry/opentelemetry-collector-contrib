@@ -3,7 +3,14 @@ type: signalfx
 status:
   class: receiver
   stability:
-    beta: [metrics, logs]
+    deprecated: [metrics, logs]
+  deprecation:
+    logs:
+      migration: "Use the OTLP receiver instead. This component will be removed in a future release."
+      date: "2026-02-13"
+    metrics:
+      migration: "Use the OTLP receiver instead. This component will be removed in a future release."
+      date: "2026-02-13"
   distributions: [contrib]
   codeowners:
     active: ["dmitryax"]

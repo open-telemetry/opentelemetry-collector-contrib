@@ -193,34 +193,17 @@ func proxyServerTransport(cfg *Config) (*http.Transport, error) {
 	}, nil
 }
 
-// isValidRegion checks that the region is a non-empty string containing only
-// lowercase ASCII letters, digits, and hyphens (valid DNS label characters).
-func isValidRegion(region string) bool {
-	if region == "" {
-		return false
-	}
-	for _, c := range region {
-		if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' {
-			return false
-		}
-	}
-	return true
-}
-
 // getServiceEndpoint returns the AWS service endpoint URL for a given service and region.
 // It leverages the STS EndpointResolverV2 (which internally uses awsrulesfn.GetPartition
 // covering all 8 AWS partitions) to resolve the correct DNS suffix, then replaces the
 // service name in the resolved URL.
 func getServiceEndpoint(region, serviceName string) (string, error) {
-	if !isValidRegion(region) {
-		return "", fmt.Errorf("invalid region: %s", region)
-	}
 	resolver := sts.NewDefaultEndpointResolverV2()
 	endpoint, err := resolver.ResolveEndpoint(context.Background(), sts.EndpointParameters{
 		Region: aws.String(region),
 	})
 	if err != nil {
-		return "", fmt.Errorf("invalid region: %s", region)
+		return "", fmt.Errorf("unable to resolve endpoint for region %q: %w", region, err)
 	}
 	// The STS endpoint URL has the format https://sts.<region>.<dnsSuffix>.
 	// Replace the "sts" service prefix with the target service name.
