@@ -194,6 +194,16 @@ type FieldExtractConfig struct {
 	//       key_regex: kubernetes.io/(.*)
 	//
 	// this will add the `component` and `version` tags to the spans or metrics.
+	// When key_regex is present without tag_name, the default tag name format will be used for each matched key.
+	// For example:
+	//
+	// extract:
+	//   labels:
+	//     - key_regex: environment\.(.*)
+	//       from: pod
+	//
+	// If labels like "environment.prod" and "environment.dev" exist, they will be extracted as
+	// k8s.pod.labels.environment.prod and k8s.pod.labels.environment.dev respectively.
 	TagName string `mapstructure:"tag_name"`
 
 	// Key represents the annotation (or label) name. This must exactly match an annotation (or label) name.

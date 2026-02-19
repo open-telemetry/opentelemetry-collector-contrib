@@ -375,17 +375,13 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return err
 	}
 
-	s.agentWG.Add(1)
-	go func() {
-		defer s.agentWG.Done()
+	s.agentWG.Go(func() {
 		s.runAgentProcess()
-	}()
+	})
 
-	s.customMessageWG.Add(1)
-	go func() {
-		defer s.customMessageWG.Done()
+	s.customMessageWG.Go(func() {
 		s.forwardCustomMessagesToServerLoop()
-	}()
+	})
 
 	return nil
 }
@@ -778,14 +774,12 @@ func (s *Supervisor) startHealthCheckServer() error {
 		return fmt.Errorf("failed to listen on port %d: %w", healthCheckServerPort, err)
 	}
 
-	s.healthCheckServerWG.Add(1)
-	go func() {
-		defer s.healthCheckServerWG.Done()
+	s.healthCheckServerWG.Go(func() {
 		s.telemetrySettings.Logger.Debug("Starting health check server", zap.Int64("port", healthCheckServerPort))
 		if err := s.healthCheckServer.Serve(listener); err != nil && err != http.ErrServerClosed {
 			s.telemetrySettings.Logger.Error("Health check server failed", zap.Error(err))
 		}
-	}()
+	})
 
 	return nil
 }
