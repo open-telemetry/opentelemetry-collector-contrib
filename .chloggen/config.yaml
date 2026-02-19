@@ -240,6 +240,7 @@ components:
     - receiver/azure_event_hub
     - receiver/azureblob
     - receiver/azuremonitor
+    - receiver/bigip
     - receiver/carbon
     - receiver/chrony
     - receiver/ciscoos
