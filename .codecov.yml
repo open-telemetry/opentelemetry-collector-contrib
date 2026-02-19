@@ -345,6 +345,10 @@ component_management:
     name: extension_httpforwarder
     paths:
     - extension/httpforwarderextension/**
+  - component_id: extension_internal_credentialsfile
+    name: extension_internal_credentialsfile
+    paths:
+    - extension/internal/credentialsfile/**
   - component_id: extension_jaegerremotesampling
     name: extension_jaegerremotesampling
     paths:
