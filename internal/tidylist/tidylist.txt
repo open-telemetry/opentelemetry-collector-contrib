@@ -149,6 +149,7 @@ extension/cgroupruntimeextension
 extension/datadogextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
+pkg/xstreamencoding
 extension/encoding/awslogsencodingextension
 extension/encoding/azureencodingextension
 extension/encoding/googlecloudlogentryencodingextension
@@ -156,7 +157,6 @@ extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
 pkg/translator/skywalking
 extension/encoding/skywalkingencodingextension
-pkg/xstreamencoding
 extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
