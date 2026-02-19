@@ -8,11 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/credentials"
@@ -45,9 +45,15 @@ type clientAuthenticator struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	credentials TokenSourceConfiguration
-	logger      *zap.Logger
-	client      *http.Client
+	credentials  TokenSourceConfiguration
+	logger       *zap.Logger
+	client       *http.Client
+	expiryBuffer time.Duration
+
+	// sem is a buffered channel of size 1 used as a context-aware mutex
+	// to protect token access/refresh.
+	sem   chan struct{}
+	token *oauth2.Token
 }
 
 func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
@@ -74,8 +80,10 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 	}
 
 	return &clientAuthenticator{
-		credentials: credentials,
-		logger:      logger,
+		credentials:  credentials,
+		logger:       logger,
+		expiryBuffer: cfg.ExpiryBuffer,
+		sem:          make(chan struct{}, 1),
 		client: &http.Client{
 			Transport: transport,
 			Timeout:   cfg.Timeout,
@@ -96,11 +104,13 @@ type roundTripper struct {
 }
 
 func (rt *roundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	t := &oauth2.Transport{
-		Source: rt.o.contextTokenSource(r.Context()),
-		Base:   rt.base,
+	token, err := rt.o.Token(r.Context())
+	if err != nil {
+		return nil, err
 	}
-	return t.RoundTrip(r)
+	r2 := r.Clone(r.Context())
+	token.SetAuthHeader(r2)
+	return rt.base.RoundTrip(r2)
 }
 
 // PerRPCCredentials returns a gRPC PerRPCCredentials that injects OAuth2 tokens into
@@ -113,32 +123,27 @@ func (o *clientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials
 // Token returns an oauth2.Token, refreshing as needed with the provided context.
 // The returned Token must not be modified.
 func (o *clientAuthenticator) Token(ctx context.Context) (*oauth2.Token, error) {
-	source := o.contextTokenSource(ctx)
-	return source.Token()
-}
+	select {
+	case o.sem <- struct{}{}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	defer func() { <-o.sem }()
 
-// contextTokenSource returns an oauth2.TokenSource that can be used to obtain tokens
-// with the provided context.
-func (o *clientAuthenticator) contextTokenSource(ctx context.Context) errorWrappingTokenSource {
+	if o.token.Valid() && (o.token.Expiry.IsZero() || time.Until(o.token.Expiry) > o.expiryBuffer) {
+		return o.token, nil
+	}
+
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, o.client)
-	return errorWrappingTokenSource{
-		ts:       o.credentials.TokenSource(ctx),
-		tokenURL: o.credentials.TokenEndpoint(),
-	}
-}
-
-type errorWrappingTokenSource struct {
-	ts       oauth2.TokenSource
-	tokenURL string
-}
-
-func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
-	tok, err := ewts.ts.Token()
+	ts := o.credentials.TokenSource(ctx)
+	tok, err := ts.Token()
 	if err != nil {
-		return tok, multierr.Combine(
-			fmt.Errorf("%w (endpoint %q)", errFailedToGetSecurityToken, ewts.tokenURL),
-			err)
+		return nil, fmt.Errorf(
+			"%w (endpoint %q): %w",
+			errFailedToGetSecurityToken, o.credentials.TokenEndpoint(), err,
+		)
 	}
+	o.token = tok
 	return tok, nil
 }
 
