@@ -255,5 +255,8 @@ func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 }
 
 func (e *encodingExtension) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
-	return e.unmarshaler.NewLogsDecoder(reader, options...)
+	if u, ok := e.unmarshaler.(awsunmarshaler.StreamingLogsUnmarshaler); ok {
+		return u.NewLogsDecoder(reader, options...)
+	}
+	return nil, fmt.Errorf("streaming not supported for format %q", e.format)
 }

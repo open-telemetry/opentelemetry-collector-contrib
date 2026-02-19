@@ -33,7 +33,10 @@ type CloudTrailLogUnmarshaler struct {
 	uIDFeatureEnabled bool
 }
 
-var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogUnmarshaler)(nil)
+var (
+	_ unmarshaler.AWSUnmarshaler           = (*CloudTrailLogUnmarshaler)(nil)
+	_ unmarshaler.StreamingLogsUnmarshaler = (*CloudTrailLogUnmarshaler)(nil)
+)
 
 // UserIdentity represents the user identity information in CloudTrail logs
 type UserIdentity struct {
