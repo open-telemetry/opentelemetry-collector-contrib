@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRatioUint64(t *testing.T) {
+func TestRatio(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name                   string
@@ -71,16 +71,16 @@ func TestRatioUint64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			actual := RatioUint64(tt.numerator, tt.denominator)
+			actual := Ratio(tt.numerator, tt.denominator)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
 
-func TestRatioUint64_ZeroDenominator(t *testing.T) {
+func TestRatio_ZeroDenominator(t *testing.T) {
 	t.Parallel()
-	assert.True(t, math.IsInf(RatioUint64(100, 0), 1))
-	assert.True(t, math.IsNaN(RatioUint64(0, 0)))
+	assert.True(t, math.IsInf(Ratio(100, 0), 1))
+	assert.True(t, math.IsNaN(Ratio(0, 0)))
 }
 
 func TestScale(t *testing.T) {
@@ -121,7 +121,7 @@ func TestScale(t *testing.T) {
 	}
 }
 
-func TestRatioUint64_PrecisionScalesWithMagnitude(t *testing.T) {
+func TestRatio_PrecisionScalesWithMagnitude(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name                   string
@@ -143,7 +143,7 @@ func TestRatioUint64_PrecisionScalesWithMagnitude(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			actual := RatioUint64(tt.numerator, tt.denominator)
+			actual := Ratio(tt.numerator, tt.denominator)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
@@ -167,13 +167,13 @@ var scaleInputs = []uint64{
 	50000,
 }
 
-func BenchmarkRatioUint64(b *testing.B) {
+func BenchmarkRatio(b *testing.B) {
 	for i := range b.N {
-		benchSink = RatioUint64(ratioInputs[i%len(ratioInputs)][0], ratioInputs[i%len(ratioInputs)][1])
+		benchSink = Ratio(ratioInputs[i%len(ratioInputs)][0], ratioInputs[i%len(ratioInputs)][1])
 	}
 }
 
-func BenchmarkRatioUint64_RawDivision(b *testing.B) {
+func BenchmarkRatio_RawDivision(b *testing.B) {
 	for i := range b.N {
 		benchSink = float64(ratioInputs[i%len(ratioInputs)][0]) / float64(ratioInputs[i%len(ratioInputs)][1])
 	}

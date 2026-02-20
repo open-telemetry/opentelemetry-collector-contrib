@@ -8,12 +8,12 @@ import (
 	"time"
 )
 
-// RatioUint64 computes numerator/denominator and rounds the result to the
+// Ratio computes numerator/denominator and rounds the result to the
 // number of significant digits supported by the inputs. The significant digit
 // count is derived from the magnitude of the larger operand, matching the
 // information content of the integer inputs. When denominator is zero the
 // native Go float64 division result is returned (NaN for 0/0, +Inf otherwise).
-func RatioUint64(numerator, denominator uint64) float64 {
+func Ratio(numerator, denominator uint64) float64 {
 	if denominator == 0 {
 		return float64(numerator) / float64(denominator)
 	}

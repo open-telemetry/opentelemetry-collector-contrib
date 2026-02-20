@@ -46,16 +46,16 @@ func (s *memoryScraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, mem
 	// TODO: rely on memInfo.Used value once https://github.com/shirou/gopsutil/pull/1882 is released
 	// gopsutil formula: https://github.com/shirou/gopsutil/pull/1882/files#diff-5af8322731595fb792b48f3c38f31ddb24f596cf11a74a9c37b19734597baef6R321
 	if useMemAvailable.IsEnabled() {
-		s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.RatioUint64(memInfo.Total-memInfo.Available, memInfo.Total), metadata.AttributeStateUsed)
+		s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Total-memInfo.Available, memInfo.Total), metadata.AttributeStateUsed)
 	} else {
 		// gopsutil legacy "Used" memory formula = Total - Free - Buffers - Cache
-		s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.RatioUint64(memInfo.Total-memInfo.Free-memInfo.Buffers-memInfo.Cached, memInfo.Total), metadata.AttributeStateUsed)
+		s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Total-memInfo.Free-memInfo.Buffers-memInfo.Cached, memInfo.Total), metadata.AttributeStateUsed)
 	}
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.RatioUint64(memInfo.Free, memInfo.Total), metadata.AttributeStateFree)
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.RatioUint64(memInfo.Buffers, memInfo.Total), metadata.AttributeStateBuffered)
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.RatioUint64(memInfo.Cached, memInfo.Total), metadata.AttributeStateCached)
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.RatioUint64(memInfo.Sreclaimable, memInfo.Total), metadata.AttributeStateSlabReclaimable)
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.RatioUint64(memInfo.Sunreclaim, memInfo.Total), metadata.AttributeStateSlabUnreclaimable)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Free, memInfo.Total), metadata.AttributeStateFree)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Buffers, memInfo.Total), metadata.AttributeStateBuffered)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Cached, memInfo.Total), metadata.AttributeStateCached)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Sreclaimable, memInfo.Total), metadata.AttributeStateSlabReclaimable)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Sunreclaim, memInfo.Total), metadata.AttributeStateSlabUnreclaimable)
 }
 
 func (s *memoryScraper) recordLinuxMemoryAvailableMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
@@ -92,8 +92,8 @@ func (s *memoryScraper) recordLinuxHugePagesMetrics(now pcommon.Timestamp, memIn
 
 	// Record utilization with state attributes as percentage
 	if memInfo.HugePagesTotal != 0 {
-		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, precision.RatioUint64(memInfo.HugePagesFree, memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateFree)
-		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, precision.RatioUint64(memInfo.HugePagesTotal-memInfo.HugePagesFree, memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateUsed)
+		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, precision.Ratio(memInfo.HugePagesFree, memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateFree)
+		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, precision.Ratio(memInfo.HugePagesTotal-memInfo.HugePagesFree, memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateUsed)
 	}
 }
 

@@ -19,8 +19,8 @@ func (s *memoryScraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *
 }
 
 func (s *memoryScraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.RatioUint64(memInfo.Used, memInfo.Total), metadata.AttributeStateUsed)
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.RatioUint64(memInfo.Free, memInfo.Total), metadata.AttributeStateFree)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Used, memInfo.Total), metadata.AttributeStateUsed)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Free, memInfo.Total), metadata.AttributeStateFree)
 }
 
 func (*memoryScraper) recordSystemSpecificMetrics(pcommon.Timestamp, *mem.VirtualMemoryStat) {
