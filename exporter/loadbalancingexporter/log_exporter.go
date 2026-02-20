@@ -5,28 +5,38 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"math/rand/v2"
+	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+)
+
+const (
+	pseudoAttrLogSeverity = "log.severity"
+	pseudoAttrLogBody     = "log.body"
 )
 
 var _ exporter.Logs = (*logExporterImp)(nil)
 
 type logExporterImp struct {
 	loadBalancer *loadBalancer
+	routingKey   routingKey
+	routingAttrs []string
 
 	logger     *zap.Logger
 	started    bool
@@ -53,11 +63,26 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		return nil, err
 	}
 
-	return &logExporterImp{
+	logExporter := logExporterImp{
 		loadBalancer: lb,
+		routingKey:   svcRouting,
 		telemetry:    telemetry,
 		logger:       params.Logger,
-	}, nil
+	}
+
+	switch cfg.(*Config).RoutingKey {
+	case svcRoutingStr, "":
+		logExporter.routingKey = svcRouting
+	case resourceRoutingStr:
+		logExporter.routingKey = resourceRouting
+	case attrRoutingStr:
+		logExporter.routingKey = attrRouting
+		logExporter.routingAttrs = cfg.(*Config).RoutingAttributes
+	default:
+		return nil, fmt.Errorf("unsupported routing_key: %q", cfg.(*Config).RoutingKey)
+	}
+
+	return &logExporter, nil
 }
 
 func (*logExporterImp) Capabilities() consumer.Capabilities {
@@ -80,70 +105,175 @@ func (e *logExporterImp) Shutdown(ctx context.Context) error {
 }
 
 func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	var batches map[string]plog.Logs
+
+	switch e.routingKey {
+	case svcRouting:
+		var errs []error
+		batches, errs = splitLogsByServiceName(ld)
+		if len(errs) > 0 {
+			for _, ee := range errs {
+				e.logger.Error("failed to export log", zap.Error(ee))
+			}
+			if len(batches) == 0 {
+				return consumererror.NewPermanent(errors.Join(errs...))
+			}
+		}
+	case resourceRouting:
+		batches = splitLogsByResourceID(ld)
+	case attrRouting:
+		batches = splitLogsByAttributes(ld, e.routingAttrs)
+	}
+
+	logsByExporter := map[*wrappedExporter]plog.Logs{}
+	exporterEndpoints := map[*wrappedExporter]string{}
+
+	for routingID, lds := range batches {
+		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
+		if err != nil {
+			return err
+		}
+
+		_, ok := logsByExporter[exp]
+		if !ok {
+			exp.consumeWG.Add(1)
+			logsByExporter[exp] = plog.NewLogs()
+			exporterEndpoints[exp] = endpoint
+		}
+
+		mergeLogs(logsByExporter[exp], lds)
+	}
+
 	var errs error
-	batches := batchpersignal.SplitLogs(ld)
-	for _, batch := range batches {
-		errs = multierr.Append(errs, e.consumeLog(ctx, batch))
+	for exp, lds := range logsByExporter {
+		start := time.Now()
+		err := exp.ConsumeLogs(ctx, lds)
+		duration := time.Since(start)
+
+		exp.consumeWG.Done()
+		errs = multierr.Append(errs, err)
+		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+		if err == nil {
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+		} else {
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+			e.logger.Debug("failed to export logs", zap.Error(err))
+		}
 	}
 
 	return errs
 }
 
-func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
-	traceID := traceIDFromLogs(ld)
-	balancingKey := traceID
-	if traceID == pcommon.NewTraceIDEmpty() {
-		// every log may not contain a traceID
-		// generate a random traceID as balancingKey
-		// so the log can be routed to a random backend
-		balancingKey = random()
+func splitLogsByServiceName(ld plog.Logs) (map[string]plog.Logs, []error) {
+	results := map[string]plog.Logs{}
+	var errs []error
+
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rm := ld.ResourceLogs().At(i)
+
+		svc, ok := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey))
+		if !ok {
+			errs = append(errs, fmt.Errorf("unable to get service name from resource log with attributes: %v", rm.Resource().Attributes().AsRaw()))
+			continue
+		}
+
+		newLD := plog.NewLogs()
+		rmClone := newLD.ResourceLogs().AppendEmpty()
+		rm.CopyTo(rmClone)
+
+		key := svc.Str()
+		existing, ok := results[key]
+		if ok {
+			mergeLogs(existing, newLD)
+		} else {
+			results[key] = newLD
+		}
 	}
 
-	le, _, err := e.loadBalancer.exporterAndEndpoint(balancingKey[:])
-	if err != nil {
-		return err
-	}
-
-	le.consumeWG.Add(1)
-	defer le.consumeWG.Done()
-
-	start := time.Now()
-	err = le.ConsumeLogs(ctx, ld)
-	duration := time.Since(start)
-	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(le.endpointAttr))
-	if err == nil {
-		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.successAttr))
-	} else {
-		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.failureAttr))
-		e.logger.Debug("failed to export log", zap.Error(err))
-	}
-
-	return err
+	return results, errs
 }
 
-func traceIDFromLogs(ld plog.Logs) pcommon.TraceID {
-	rl := ld.ResourceLogs()
-	if rl.Len() == 0 {
-		return pcommon.NewTraceIDEmpty()
+func splitLogsByResourceID(ld plog.Logs) map[string]plog.Logs {
+	results := map[string]plog.Logs{}
+
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rm := ld.ResourceLogs().At(i)
+
+		newLD := plog.NewLogs()
+		rmClone := newLD.ResourceLogs().AppendEmpty()
+		rm.CopyTo(rmClone)
+
+		key := identity.OfResource(rm.Resource()).String()
+		existing, ok := results[key]
+		if ok {
+			mergeLogs(existing, newLD)
+		} else {
+			results[key] = newLD
+		}
 	}
 
-	sl := rl.At(0).ScopeLogs()
-	if sl.Len() == 0 {
-		return pcommon.NewTraceIDEmpty()
-	}
-
-	logs := sl.At(0).LogRecords()
-	if logs.Len() == 0 {
-		return pcommon.NewTraceIDEmpty()
-	}
-
-	return logs.At(0).TraceID()
+	return results
 }
 
-func random() pcommon.TraceID {
-	v1 := uint8(rand.IntN(256))
-	v2 := uint8(rand.IntN(256))
-	v3 := uint8(rand.IntN(256))
-	v4 := uint8(rand.IntN(256))
-	return [16]byte{v1, v2, v3, v4}
+func splitLogsByAttributes(ld plog.Logs, attrs []string) map[string]plog.Logs {
+	results := map[string]plog.Logs{}
+
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rm := ld.ResourceLogs().At(i)
+
+		var rKey strings.Builder
+
+		for _, a := range attrs {
+			// resource attributes
+			rAttr, ok := rm.Resource().Attributes().Get(a)
+			if ok {
+				rKey.WriteString(rAttr.Str())
+				continue
+			}
+
+			// scope attributes
+			if rm.ScopeLogs().Len() > 0 {
+				sAttr, ok := rm.ScopeLogs().At(0).Scope().Attributes().Get(a)
+				if ok {
+					rKey.WriteString(sAttr.Str())
+					continue
+				}
+
+				// log record attributes and pseudo attributes
+				if rm.ScopeLogs().At(0).LogRecords().Len() > 0 {
+					lr := rm.ScopeLogs().At(0).LogRecords().At(0)
+
+					if a == pseudoAttrLogSeverity {
+						rKey.WriteString(lr.SeverityText())
+						continue
+					}
+
+					if a == pseudoAttrLogBody {
+						rKey.WriteString(lr.Body().AsString())
+						continue
+					}
+
+					lAttr, ok := lr.Attributes().Get(a)
+					if ok {
+						rKey.WriteString(lAttr.Str())
+						continue
+					}
+				}
+			}
+		}
+
+		newLD := plog.NewLogs()
+		rmClone := newLD.ResourceLogs().AppendEmpty()
+		rm.CopyTo(rmClone)
+
+		key := rKey.String()
+		existing, ok := results[key]
+		if ok {
+			mergeLogs(existing, newLD)
+		} else {
+			results[key] = newLD
+		}
+	}
+
+	return results
 }
