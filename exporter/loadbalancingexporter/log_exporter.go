@@ -130,8 +130,8 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		batches = splitLogsByAttributes(ld, e.routingAttrs)
 	}
 
-	logsByExporter := map[*wrappedExporter]plog.Logs{}
-	exporterEndpoints := map[*wrappedExporter]string{}
+	logsByExporter := make(map[*wrappedExporter]plog.Logs, len(batches))
+	exporterEndpoints := make(map[*wrappedExporter]string, len(batches))
 
 	for routingID, lds := range batches {
 		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
@@ -142,11 +142,11 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		_, ok := logsByExporter[exp]
 		if !ok {
 			exp.consumeWG.Add(1)
-			logsByExporter[exp] = plog.NewLogs()
+			logsByExporter[exp] = lds
 			exporterEndpoints[exp] = endpoint
+		} else {
+			mergeLogs(logsByExporter[exp], lds)
 		}
-
-		mergeLogs(logsByExporter[exp], lds)
 	}
 
 	var errs error
@@ -170,7 +170,7 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func splitLogsByServiceName(ld plog.Logs) (map[string]plog.Logs, []error) {
-	results := map[string]plog.Logs{}
+	results := make(map[string]plog.Logs, ld.ResourceLogs().Len())
 	var errs []error
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
@@ -182,15 +182,13 @@ func splitLogsByServiceName(ld plog.Logs) (map[string]plog.Logs, []error) {
 			continue
 		}
 
-		newLD := plog.NewLogs()
-		rmClone := newLD.ResourceLogs().AppendEmpty()
-		rm.CopyTo(rmClone)
-
 		key := svc.Str()
 		existing, ok := results[key]
 		if ok {
-			mergeLogs(existing, newLD)
+			rm.CopyTo(existing.ResourceLogs().AppendEmpty())
 		} else {
+			newLD := plog.NewLogs()
+			rm.CopyTo(newLD.ResourceLogs().AppendEmpty())
 			results[key] = newLD
 		}
 	}
@@ -199,20 +197,18 @@ func splitLogsByServiceName(ld plog.Logs) (map[string]plog.Logs, []error) {
 }
 
 func splitLogsByResourceID(ld plog.Logs) map[string]plog.Logs {
-	results := map[string]plog.Logs{}
+	results := make(map[string]plog.Logs, ld.ResourceLogs().Len())
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rm := ld.ResourceLogs().At(i)
 
-		newLD := plog.NewLogs()
-		rmClone := newLD.ResourceLogs().AppendEmpty()
-		rm.CopyTo(rmClone)
-
 		key := identity.OfResource(rm.Resource()).String()
 		existing, ok := results[key]
 		if ok {
-			mergeLogs(existing, newLD)
+			rm.CopyTo(existing.ResourceLogs().AppendEmpty())
 		} else {
+			newLD := plog.NewLogs()
+			rm.CopyTo(newLD.ResourceLogs().AppendEmpty())
 			results[key] = newLD
 		}
 	}
@@ -221,7 +217,7 @@ func splitLogsByResourceID(ld plog.Logs) map[string]plog.Logs {
 }
 
 func splitLogsByTraceID(ld plog.Logs) map[string]plog.Logs {
-	results := map[string]plog.Logs{}
+	results := make(map[string]plog.Logs, ld.ResourceLogs().Len())
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rm := ld.ResourceLogs().At(i)
@@ -232,15 +228,12 @@ func splitLogsByTraceID(ld plog.Logs) map[string]plog.Logs {
 		}
 
 		key := traceID.String()
-
-		newLD := plog.NewLogs()
-		rmClone := newLD.ResourceLogs().AppendEmpty()
-		rm.CopyTo(rmClone)
-
 		existing, ok := results[key]
 		if ok {
-			mergeLogs(existing, newLD)
+			rm.CopyTo(existing.ResourceLogs().AppendEmpty())
 		} else {
+			newLD := plog.NewLogs()
+			rm.CopyTo(newLD.ResourceLogs().AppendEmpty())
 			results[key] = newLD
 		}
 	}
@@ -249,12 +242,12 @@ func splitLogsByTraceID(ld plog.Logs) map[string]plog.Logs {
 }
 
 func splitLogsByAttributes(ld plog.Logs, attrs []string) map[string]plog.Logs {
-	results := map[string]plog.Logs{}
+	results := make(map[string]plog.Logs, ld.ResourceLogs().Len())
+	var rKey strings.Builder
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rm := ld.ResourceLogs().At(i)
-
-		var rKey strings.Builder
+		rKey.Reset()
 
 		for _, a := range attrs {
 			// resource attributes
@@ -295,15 +288,13 @@ func splitLogsByAttributes(ld plog.Logs, attrs []string) map[string]plog.Logs {
 			}
 		}
 
-		newLD := plog.NewLogs()
-		rmClone := newLD.ResourceLogs().AppendEmpty()
-		rm.CopyTo(rmClone)
-
 		key := rKey.String()
 		existing, ok := results[key]
 		if ok {
-			mergeLogs(existing, newLD)
+			rm.CopyTo(existing.ResourceLogs().AppendEmpty())
 		} else {
+			newLD := plog.NewLogs()
+			rm.CopyTo(newLD.ResourceLogs().AppendEmpty())
 			results[key] = newLD
 		}
 	}
