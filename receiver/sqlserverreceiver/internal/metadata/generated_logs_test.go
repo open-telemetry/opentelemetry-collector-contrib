@@ -4,9 +4,6 @@ package metadata
 
 import (
 	"context"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"testing"
+	"time"
 )
 
 type eventsTestDataSet int
@@ -35,6 +34,8 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetServerAddress("server.address-val")
 	rb.SetServerPort(11)
 	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
+	rb.SetServiceNamespace("service.namespace-val")
 	rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 	rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
@@ -145,6 +146,8 @@ func TestLogsBuilder(t *testing.T) {
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")

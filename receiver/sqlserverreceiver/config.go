@@ -56,6 +56,12 @@ type Config struct {
 	Server   string              `mapstructure:"server"`
 	Username string              `mapstructure:"username"`
 
+	// ResourceAttributesOverride allows users to override any resource attribute.
+	// This is useful for setting service.instance.id, service.name, and service.namespace
+	// to uniquely identify database instances across environments.
+	// Override priority: resource_attributes_override > auto-generated values
+	ResourceAttributesOverride map[string]string `mapstructure:"resource_attributes_override"`
+
 	// Flag to check if the connection is direct or not. It should only be
 	// used after a successful call to the `Validate` method.
 	isDirectDBConnectionEnabled bool
