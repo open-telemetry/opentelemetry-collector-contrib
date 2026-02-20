@@ -24,8 +24,6 @@ import (
 
 const userAgent = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
 
-var minimumRequiredDockerAPIVersion = MustNewAPIVersion("1.44")
-
 // Container is client.ContainerInspect() response container
 // stats and translated environment string map for potential labels.
 type Container struct {
@@ -47,20 +45,27 @@ type Client struct {
 }
 
 func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
-	version := minimumRequiredDockerAPIVersion
+	clientOpts := []docker.Opt{
+		docker.WithHost(config.Endpoint),
+		docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
+	}
+
 	if config.DockerAPIVersion != "" {
-		var err error
-		if version, err = NewAPIVersion(config.DockerAPIVersion); err != nil {
+		version, err := NewAPIVersion(config.DockerAPIVersion)
+		if err != nil {
 			return nil, err
 		}
+		clientOpts = append(clientOpts, docker.WithVersion(version))
+		logger.Debug("Using explicitly configured Docker API version", zap.String("version", version))
+	} else {
+		clientOpts = append(clientOpts, docker.WithAPIVersionNegotiation())
+		logger.Debug("Docker API version not specified, using automatic version negotiation")
 	}
-	client, err := docker.NewClientWithOpts(
-		append([]docker.Opt{
-			docker.WithHost(config.Endpoint),
-			docker.WithVersion(version),
-			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
-		}, opts...)...,
-	)
+
+	// Append any additional opts passed by caller
+	clientOpts = append(clientOpts, opts...)
+
+	client, err := docker.NewClientWithOpts(clientOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("could not create docker client: %w", err)
 	}
