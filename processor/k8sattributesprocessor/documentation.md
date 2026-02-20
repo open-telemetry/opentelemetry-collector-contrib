@@ -42,13 +42,170 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_otelsvc_k8s_ip_lookup_miss
+### otelcol.k8s.watcher.job.added
 
-Number of times pod by IP lookup failed.
+Number of job add events received
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.job.deleted
+
+Number of job delete events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.job.updated
+
+Number of job update events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.namespace.added
+
+Number of namespace add events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.namespace.deleted
+
+Number of namespace delete events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.namespace.updated
+
+Number of namespace update events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.node.added
+
+Number of node add events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.node.deleted
+
+Number of node delete events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.node.updated
+
+Number of node update events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.pod.added
+
+Number of pod add events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.pod.deleted
+
+Number of pod delete events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.pod.updated
+
+Number of pod update events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.pod_cache.size
+
+Size of cache table containing pod info
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+### otelcol.k8s.watcher.replicaset.added
+
+Number of ReplicaSet add events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.replicaset.deleted
+
+Number of ReplicaSet delete events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.replicaset.updated
+
+Number of ReplicaSet update events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.statefulset.added
+
+Number of statefulset add events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.statefulset.deleted
+
+Number of statefulset delete events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.statefulset.updated
+
+Number of statefulset update events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol_otelsvc_k8s_ip_lookup_miss
+
+[DEPRECATED] Number of times pod by IP lookup failed
+
+> **Deprecated since 0.146.0**
+> Use otelcol.k8s.pod.association instead
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Deprecated since 0.146.0 |
+
+**Deprecation note**: Use otelcol.k8s.pod.association instead
 
 ### otelcol_otelsvc_k8s_namespace_added
 
@@ -163,5 +320,7 @@ This component has the following feature gates:
 | `k8sattr.labelsAnnotationsSingular.allow` | deprecated | When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural | v0.125.0 | v0.145.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774) |
 | `processor.k8sattributes.DontEmitV0K8sConventions` | alpha | When enabled, semconv legacy attributes are disabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
 | `processor.k8sattributes.EmitV1K8sConventions` | alpha | When enabled, semconv stable attributes are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
+| `processor.k8sattributes.telemetry.disableOldFormatMetrics` | alpha | When enabled, old formatted internal telemetry metrics are disabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871) |
+| `processor.k8sattributes.telemetry.enableNewFormatMetrics` | alpha | When enabled, new formatted internal telemetry metrics are enabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
