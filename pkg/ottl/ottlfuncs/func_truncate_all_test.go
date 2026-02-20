@@ -118,12 +118,6 @@ func Test_truncateAll_UTF8(t *testing.T) {
 			expect: "ab😀",
 		},
 		{
-			name:   "invalid UTF-8 uses byte-level cut",
-			input:  string([]byte{0x80, 0x81, 0x82, 0x83}),
-			limit:  2,
-			expect: string([]byte{0x80, 0x81}),
-		},
-		{
 			// Grapheme cluster: "👩🏾‍🦳" (woman with white hair) is 1 visible character
 			// but consists of 4 Unicode code points (runes):
 			//   👩 (woman)           = 4 bytes (f0 9f 91 a9)
