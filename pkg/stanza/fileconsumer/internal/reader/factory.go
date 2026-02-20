@@ -99,6 +99,46 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 
+	// Re-detect file type when compression is enabled.
+	// This handles the case where a file was rotated and then compressed (e.g. test.log → test.log.gz):
+	// fingerprint matching succeeds because the decompressed content of the .gz matches the original
+	// plaintext fingerprint, but the file format has changed. Reusing the old FileType and old
+	// plaintext Offset with a gzip-compressed file causes ReadToEnd to seek to the wrong position
+	// and read raw compressed bytes as plaintext, producing corrupted log entries.
+	// The same applies in reverse (gzip → plaintext).
+	if f.Compression != "" {
+		var newFileType string
+		if compression.IsGzipFile(file, f.Logger) {
+			newFileType = gzipExtension
+		}
+		if newFileType != m.FileType {
+			r.set.Logger.Debug("File format changed after rotation",
+				zap.String("old_file_type", m.FileType),
+				zap.String("new_file_type", newFileType),
+				zap.Int64("old_offset", m.Offset),
+			)
+			if m.FileType == "" && newFileType == gzipExtension {
+				// Plaintext → gzip rotation: the old offset represents the number of
+				// decompressed bytes already consumed. Decompress the .gz
+				// from byte 0 and skip that many decompressed bytes so we only emit
+				// new lines.
+				r.decompressedBytesToSkip = m.Offset
+				// Zero the persisted offset so that if ReadToEnd is skipped (e.g. due to
+				// context cancellation) and Close() is called immediately, the saved
+				// metadata carries Offset=0 rather than the stale plaintext value. A
+				// non-zero Offset with FileType=".gz" on a subsequent poll would be
+				// treated as a compressed-file byte position and corrupt reads.
+				m.Offset = 0
+			} else {
+				// Edge case format transitions (e.g. gzip → plaintext): the old offset
+				// is a compressed file position with no applicable decompressed meaning.
+				// Reset to 0 - NOTE: this may cause potential duplicates.
+				m.Offset = 0
+			}
+			m.FileType = newFileType
+		}
+	}
+
 	if r.Fingerprint.Len() > r.fingerprintSize {
 		// User has reconfigured fingerprint_size
 		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize, r.compression != "", r.set.Logger)

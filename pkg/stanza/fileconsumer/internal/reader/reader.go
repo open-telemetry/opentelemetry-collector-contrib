@@ -41,24 +41,25 @@ type Metadata struct {
 // Reader manages a single file
 type Reader struct {
 	*Metadata
-	set                    component.TelemetrySettings
-	fileName               string
-	file                   *os.File
-	reader                 io.Reader
-	fingerprintSize        int
-	bufPool                *sync.Pool
-	initialBufferSize      int
-	maxLogSize             int
-	headerSplitFunc        bufio.SplitFunc
-	contentSplitFunc       bufio.SplitFunc
-	decoder                *encoding.Decoder
-	headerReader           *header.Reader
-	emitFunc               emit.Callback
-	deleteAtEOF            bool
-	needsUpdateFingerprint bool
-	compression            string
-	acquireFSLock          bool
-	maxBatchSize           int
+	set                     component.TelemetrySettings
+	fileName                string
+	file                    *os.File
+	reader                  io.Reader
+	fingerprintSize         int
+	bufPool                 *sync.Pool
+	initialBufferSize       int
+	maxLogSize              int
+	headerSplitFunc         bufio.SplitFunc
+	contentSplitFunc        bufio.SplitFunc
+	decoder                 *encoding.Decoder
+	headerReader            *header.Reader
+	emitFunc                emit.Callback
+	deleteAtEOF             bool
+	needsUpdateFingerprint  bool
+	compression             string
+	acquireFSLock           bool
+	maxBatchSize            int
+	decompressedBytesToSkip int64
 }
 
 // ReadToEnd will read until the end of the file
@@ -129,14 +130,33 @@ func (r *Reader) createGzipReader() (int64, error) {
 		return 0, err
 	}
 	currentEOF := info.Size()
+
+	// Determine starting position of compressed file. When a plaintext file has been
+	// rotated (compressed), the entire .gz file is a new byte stream and must be
+	// decompressed from byte 0. decompressedBytesToSkip holds the number of bytes
+	// already-consumed in the uncompressed stream to discard.
+	compressedStart := r.Offset
+	if r.decompressedBytesToSkip > 0 {
+		compressedStart = 0
+	}
+
 	// use a gzip Reader with an underlying SectionReader to pick up at the last
 	// offset of a gzip compressed file
-	gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
+	gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, compressedStart, currentEOF-compressedStart))
 	if err != nil {
 		if !errors.Is(err, io.EOF) {
 			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
 		}
 		return 0, err
+	}
+
+	// Skip past already-consumed decompressed bytes so only new lines are processed.
+	if r.decompressedBytesToSkip > 0 {
+		if _, err := io.CopyN(io.Discard, gzipReader, r.decompressedBytesToSkip); err != nil {
+			r.set.Logger.Error("failed to skip already-consumed decompressed bytes", zap.Error(err))
+			return 0, err
+		}
+		r.decompressedBytesToSkip = 0
 	}
 	r.reader = gzipReader
 	return currentEOF, nil
