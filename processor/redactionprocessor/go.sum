@@ -95,6 +95,8 @@ go.opentelemetry.io/collector/component/componentstatus v0.146.1 h1:91kcSsNFFQh6
 go.opentelemetry.io/collector/component/componentstatus v0.146.1/go.mod h1:L//+E5/RLWvRgFcxH8YWJkgtuAhWuOZAi0bP8ffpQYs=
 go.opentelemetry.io/collector/component/componenttest v0.146.1 h1:biVtrJfjLJD22RS5qiDVjupn/yNRrlxok/e1K3j7TgQ=
 go.opentelemetry.io/collector/component/componenttest v0.146.1/go.mod h1:cxbQHpKuqAFbX8jFTVcMBvhzINX9TmsuEfi3GFBvvOs=
+go.opentelemetry.io/collector/config/configopaque v1.52.0 h1:Q9IAUcv18VL8MUtJBNr+Z9M9ZyeN/aQc1TPev2yO5DQ=
+go.opentelemetry.io/collector/config/configopaque v1.52.0/go.mod h1:tJS9ByXwFu9tQqXal2HSryr1SJ0ZzR881FI/U/DfOJs=
 go.opentelemetry.io/collector/confmap v1.52.0 h1:Tp2csSqXyYy42r3OHxHSAg0aGCSQH7J6+EwCt4Kg4vo=
 go.opentelemetry.io/collector/confmap v1.52.0/go.mod h1:j0oKnokAKoLRpr9IxFL+TfO+1bS65z+BFKk5jyz++2A=
 go.opentelemetry.io/collector/confmap/xconfmap v0.146.1 h1:w7svS2W6XNTem+8cOjtj3qX3TcPRcB/GhljRE8Br8NY=
