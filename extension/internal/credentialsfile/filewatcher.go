@@ -5,9 +5,9 @@ package credentialsfile // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync/atomic"
 
@@ -55,8 +55,10 @@ func (w *fileWatcher) Start(ctx context.Context) error {
 	w.doneCH = make(chan struct{})
 	go w.watch(ctx, watcher)
 
-	// Watch the parent directory to handle atomic replacements (e.g., Kubernetes secret mounts).
-	return watcher.Add(filepath.Dir(w.path))
+	// Watch the file itself. For symlinked files (e.g. Kubernetes projected volumes),
+	// fsnotify follows the symlink and watches the underlying inode. On Remove/Chmod
+	// events the watcher is re-added to follow the new symlink target.
+	return watcher.Add(w.path)
 }
 
 func (w *fileWatcher) Shutdown() error {
@@ -81,16 +83,30 @@ func (w *fileWatcher) watch(ctx context.Context, watcher *fsnotify.Watcher) {
 			if !ok {
 				return
 			}
-			if event.Name != w.path {
-				continue
-			}
-			if event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Remove|fsnotify.Chmod) != 0 {
-				if err := w.reload(); err != nil {
-					w.logger.Warn("failed to reload credentials file, keeping last value",
-						zap.String("file", w.path), zap.Error(err))
+			// NOTE: Kubernetes projected volumes use symlinks. When the backing
+			// symlink target is removed, fsnotify may auto-remove the watch.
+			// We must re-add it so it follows the new symlink target.
+			// See: https://martensson.io/go-fsnotify-and-kubernetes-configmaps/
+			if event.Op&(fsnotify.Remove|fsnotify.Chmod) != 0 {
+				if err := watcher.Remove(event.Name); err != nil && !errors.Is(err, fsnotify.ErrNonExistentWatch) {
+					w.logger.Warn("failed to remove watcher", zap.Error(err))
 				}
+				if err := watcher.Add(w.path); err != nil {
+					w.logger.Error("failed to re-add watcher", zap.Error(err))
+				}
+				w.reloadQuietly()
+			}
+			if event.Op&fsnotify.Write != 0 {
+				w.reloadQuietly()
 			}
 		}
+	}
+}
+
+func (w *fileWatcher) reloadQuietly() {
+	if err := w.reload(); err != nil {
+		w.logger.Warn("failed to reload credentials file, keeping last value",
+			zap.String("file", w.path), zap.Error(err))
 	}
 }
 

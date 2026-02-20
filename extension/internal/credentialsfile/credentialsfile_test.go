@@ -6,6 +6,7 @@ package credentialsfile
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -136,4 +137,65 @@ func TestFileWatcher_KeepsLastValueOnDelete(t *testing.T) {
 	// Give the watcher time to process the event
 	time.Sleep(200 * time.Millisecond)
 	assert.Equal(t, "keepme", r.Value())
+}
+
+// TestFileWatcher_UpdatesOnKubernetesSymlinkSwap verifies that the watcher
+// picks up changes when the backing file is rotated using the Kubernetes-style
+// atomic symlink swap used for projected volumes (ConfigMaps, Secrets,
+// serviceAccountToken).
+//
+// Layout:
+//
+//	mountDir/
+//	  .data -> .ts_1   (symlink to timestamped dir)
+//	  .ts_1/
+//	    secret          (actual file)
+//	  secret -> .data/secret  (symlink through .data)
+//
+// On rotation the kubelet creates a new timestamped dir, writes new content,
+// atomically swaps .data via rename, then removes the old timestamped dir.
+func TestFileWatcher_UpdatesOnKubernetesSymlinkSwap(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("Atomic symlink swaps with rename(2) are not supported on Windows")
+	}
+
+	mountDir := t.TempDir()
+
+	// Initial timestamped directory with secret file
+	ts1Dir := filepath.Join(mountDir, ".ts_1")
+	require.NoError(t, os.Mkdir(ts1Dir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(ts1Dir, "secret"), []byte("original"), 0o600))
+
+	// .data -> .ts_1
+	require.NoError(t, os.Symlink(".ts_1", filepath.Join(mountDir, ".data")))
+	// secret -> .data/secret
+	secretFile := filepath.Join(mountDir, "secret")
+	require.NoError(t, os.Symlink(filepath.Join(".data", "secret"), secretFile))
+
+	// Sanity check
+	got, err := os.ReadFile(secretFile)
+	require.NoError(t, err)
+	require.Equal(t, "original", string(got))
+
+	r, err := NewValueResolver("", secretFile, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context()))
+	defer func() { require.NoError(t, r.Shutdown()) }()
+
+	assert.Equal(t, "original", r.Value())
+
+	// Simulate Kubernetes rotation: new timestamped dir, atomic .data swap, old dir removal
+	ts2Dir := filepath.Join(mountDir, ".ts_2")
+	require.NoError(t, os.Mkdir(ts2Dir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(ts2Dir, "secret"), []byte("rotated"), 0o600))
+
+	tmpLink := filepath.Join(mountDir, ".data_tmp")
+	require.NoError(t, os.Symlink(".ts_2", tmpLink))
+	require.NoError(t, os.Rename(tmpLink, filepath.Join(mountDir, ".data")))
+	require.NoError(t, os.RemoveAll(ts1Dir))
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, "rotated", r.Value())
+	}, 5*time.Second, 50*time.Millisecond, "value was not refreshed after symlink rotation")
 }
