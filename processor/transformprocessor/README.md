@@ -275,6 +275,7 @@ In addition to the common OTTL functions, the processor defines its own function
 **Traces only functions**
 
 - [set_semconv_span_name](#set_semconv_span_name)
+- [normalize_genai_attributes](#normalize_genai_attributes)
 
 ### convert_sum_to_gauge
 
@@ -729,6 +730,30 @@ Examples:
 - `set_semconv_span_name("1.37.0")`
 
 - `set_semconv_span_name("1.37.0", "original_span_name")`
+
+### normalize_genai_attributes
+
+`normalize_genai_attributes(semconvVersion, Optional[profiles], Optional[remove_originals])`
+
+The `normalize_genai_attributes()` function maps GenAI telemetry attributes from third-party instrumentation libraries to the official [OTel GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/). This is useful when ingesting traces from libraries like [OpenInference](https://github.com/Arize-ai/openinference), [OpenLLMetry](https://github.com/traceloop/openllmetry), or framework-specific instrumentations (LangChain, CrewAI, PydanticAI) that use non-standard attribute names.
+
+Parameters:
+
+* `semconvVersion` is the target semantic conventions version. `1.39.0` is currently the only supported version.
+* `profiles` is an optional list of mapping profiles to apply. When omitted, all profiles are applied. Supported profiles: `openinference`, `openllmetry`, `langchain`, `crewai`, `pydanticai`. See [profile definitions](internal/traces/func_normalize_genai_attributes.go) for the full attribute mappings.
+* `remove_originals` is an optional boolean (default `false`). When `true`, source attributes are removed after mapping.
+
+The function also performs value mapping for `gen_ai.operation.name` — for example, OpenInference's `openinference.span.kind: "LLM"` becomes `gen_ai.operation.name: "chat"`, and `"AGENT"` becomes `"invoke_agent"`.
+
+Attributes that don't match any mapping profile pass through unchanged.
+
+Examples:
+
+- `normalize_genai_attributes("1.39.0")`
+
+- `normalize_genai_attributes("1.39.0", remove_originals=true)`
+
+- `normalize_genai_attributes("1.39.0", profiles=["openinference", "openllmetry"], remove_originals=true)`
 
 ## Examples
 
