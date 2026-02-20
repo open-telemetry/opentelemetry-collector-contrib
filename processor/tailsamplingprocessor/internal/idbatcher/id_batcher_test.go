@@ -43,6 +43,136 @@ func TestMinBufferedChannels(t *testing.T) {
 	concurrencyTest(t, 1, 0)
 }
 
+func TestMoveToEarlierBatch(t *testing.T) {
+	batcher, err := New(2, 10)
+	require.NoError(t, err, "Failed to create Batcher: %v", err)
+
+	ids := generateSequentialIDs(3)
+	// ids[0] will be fail to be moved (not earlier) after the batcher advances once
+	batchID0 := batcher.AddToCurrentBatch(ids[0])
+	require.EqualValues(t, 2, batchID0)
+
+	// ids[1] will be moved while still in the current batch.
+	batchID1 := batcher.AddToCurrentBatch(ids[1])
+	batchID1 = batcher.MoveToEarlierBatch(ids[1], batchID1, 1)
+	require.EqualValues(t, 1, batchID1)
+
+	// ids[2] will be moved after the batcher advances once
+	batchID2 := batcher.AddToCurrentBatch(ids[2])
+
+	batch, more := batcher.CloseCurrentAndTakeFirstBatch()
+	require.True(t, more)
+	require.Empty(t, batch)
+
+	// Fail to move ids[0]
+	id0Moved := batcher.MoveToEarlierBatch(ids[0], batchID0, 2)
+	require.Equal(t, batchID0, id0Moved)
+
+	// Successfully move ids[2] to the next batch
+	id2Moved := batcher.MoveToEarlierBatch(ids[2], batchID2, 0)
+	require.EqualValues(t, 1, id2Moved)
+
+	batcher.Stop()
+
+	// Second batch contains id[1] and id[2]
+	batch, more = batcher.CloseCurrentAndTakeFirstBatch()
+	require.True(t, more)
+	require.Equal(t, Batch{
+		ids[1]: struct{}{},
+		ids[2]: struct{}{},
+	}, batch)
+
+	// Third batch contains ids[0] (failed to be moved).
+	batch, more = batcher.CloseCurrentAndTakeFirstBatch()
+	require.True(t, more)
+	require.Equal(t, Batch{ids[0]: struct{}{}}, batch)
+
+	// Any remaining batches should be empty as we have processed all ids.
+	for {
+		batch, more = batcher.CloseCurrentAndTakeFirstBatch()
+		require.Empty(t, batch)
+		if !more {
+			break
+		}
+	}
+}
+
+func TestMoveToEarlierBatch_Randomized(t *testing.T) {
+	var (
+		batches        uint64 = 10
+		tracesPerBatch uint64 = 100
+		// Make sure we fill more than the initial batches.
+		traceIDs = 10 * batches * tracesPerBatch
+	)
+	batcher, err := New(batches, tracesPerBatch)
+	require.NoError(t, err, "Failed to create batcher: %v", err)
+	ids := generateSequentialIDs(traceIDs)
+
+	got := Batch{}
+	duplicateIDs := 0
+	processBatch := func() bool {
+		batch, more := batcher.CloseCurrentAndTakeFirstBatch()
+		for id := range batch {
+			if _, ok := got[id]; ok {
+				duplicateIDs++
+			}
+			got[id] = struct{}{}
+		}
+		return more
+	}
+
+	for i, id := range ids {
+		batchID := batcher.AddToCurrentBatch(id)
+		// Spread the ids randomly across all batches including the current batch (+1)
+		batcher.MoveToEarlierBatch(id, batchID, uint64(i)%(batches+1))
+
+		if uint64(i)%tracesPerBatch == tracesPerBatch-1 {
+			require.True(t, processBatch())
+		}
+	}
+	batcher.Stop()
+
+	for processBatch() {
+	}
+
+	require.Zero(t, duplicateIDs, "Found duplicate ids in batcher")
+	require.Len(t, got, len(ids), "Batcher got incorrect count of traces from batches")
+
+	for _, id := range ids {
+		_, ok := got[id]
+		require.True(t, ok, "want id %v but id was not seen", id)
+	}
+}
+
+func TestRemoveFromBatch(t *testing.T) {
+	batcher, err := New(1, 10)
+	require.NoError(t, err, "Failed to create Batcher: %v", err)
+
+	ids := generateSequentialIDs(3)
+	// ids[0] should remain in the batcher.
+	batcher.AddToCurrentBatch(ids[0])
+
+	// ids[1] is moved to an earlier batch and then deleted.
+	batchID := batcher.AddToCurrentBatch(ids[1])
+	batchID = batcher.MoveToEarlierBatch(ids[1], batchID, 0)
+	batcher.RemoveFromBatch(ids[1], batchID)
+
+	// ids[2] is removed from the current batch.
+	batchID = batcher.AddToCurrentBatch(ids[2])
+	batcher.RemoveFromBatch(ids[2], batchID)
+
+	batcher.Stop()
+	// First batch should contain no ids
+	batch, more := batcher.CloseCurrentAndTakeFirstBatch()
+	require.Empty(t, batch)
+	require.True(t, more)
+
+	// Second and final batch should only contain id[0].
+	batch, more = batcher.CloseCurrentAndTakeFirstBatch()
+	require.Equal(t, Batch{ids[0]: struct{}{}}, batch)
+	require.False(t, more)
+}
+
 func BenchmarkConcurrentEnqueue(b *testing.B) {
 	ids := generateSequentialIDs(1)
 	batcher, err := New(10, 100)
