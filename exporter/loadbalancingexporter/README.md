@@ -26,7 +26,7 @@ The options for `routing_key` are: `service`, `traceID`, `metric` (metric name),
 | routing_key | can be used for            |
 | ----------- | -------------------------- |
 | service     | spans, logs, metrics       |
-| traceID     | spans                      |
+| traceID     | spans, logs                |
 | resource    | logs, metrics              |
 | metric      | metrics                    |
 | streamID    | metrics                    |
