@@ -40,42 +40,42 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("cloud.availability_zone")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.availability_zone-val", val.Str())
+				assert.Equal(t, "cloud.availability_zone-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.region-val", val.Str())
+				assert.Equal(t, "cloud.region-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "host.id-val", val.Str())
+				assert.Equal(t, "host.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.type")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "host.type-val", val.Str())
+				assert.Equal(t, "host.type-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cluster.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.cluster.name-val", val.Str())
+				assert.Equal(t, "k8s.cluster.name-val", val.Str())
 			}
 		})
 	}

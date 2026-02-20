@@ -389,7 +389,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 # Start unmaintained components list
 
 exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers
-receiver/bigipreceiver/                                          @open-telemetry/collector-contrib-approvers
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers
 receiver/k8slogreceiver/                                         @open-telemetry/collector-contrib-approvers
 

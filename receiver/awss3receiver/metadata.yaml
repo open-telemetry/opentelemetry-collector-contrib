@@ -1,3 +1,4 @@
+display_name: AWS S3 Receiver
 type: awss3
 
 status:

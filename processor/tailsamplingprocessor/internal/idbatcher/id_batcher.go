@@ -36,7 +36,7 @@ type Batcher interface {
 	// batch that is only a few batches from now. If the current batch will be
 	// processed before the proposed batch it will do nothing. Returns the
 	// batch that the trace will now be a part of (which may stay the same).
-	MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64
+	MoveToEarlierBatch(id pcommon.TraceID, traceCurrentBatch, batchesFromNow uint64) uint64
 
 	// RemoveFromBatch will remove the trace from the given batch.
 	// If the batch is not in the range of batches then it is a noop.
@@ -100,23 +100,31 @@ func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
 	return b.takeID + uint64(len(b.batches))
 }
 
-func (b *batcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64 {
+func (b *batcher) MoveToEarlierBatch(id pcommon.TraceID, traceCurrentBatch, batchesFromNow uint64) uint64 {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
 	proposedBatch := b.takeID + batchesFromNow
 	// Only move the batch if it is earlier.
-	if proposedBatch < currentBatch {
-		currentIdx := currentBatch % uint64(len(b.batches))
-		delete(b.batches[currentIdx], id)
-		proposedIdx := proposedBatch % uint64(len(b.batches))
-		if b.batches[proposedIdx] == nil {
-			b.batches[proposedIdx] = make(Batch, b.newBatchesInitialCapacity)
-		}
-		b.batches[proposedIdx][id] = struct{}{}
-		return proposedBatch
+	if proposedBatch >= traceCurrentBatch {
+		return traceCurrentBatch
 	}
-	return currentBatch
+
+	// Check if the trace's batch is the batch currently being added to.
+	currentBatchID := b.takeID + uint64(len(b.batches))
+	if traceCurrentBatch == currentBatchID {
+		delete(b.currentBatch, id)
+	} else {
+		currentIdx := traceCurrentBatch % uint64(len(b.batches))
+		delete(b.batches[currentIdx], id)
+	}
+
+	proposedIdx := proposedBatch % uint64(len(b.batches))
+	if b.batches[proposedIdx] == nil {
+		b.batches[proposedIdx] = make(Batch, b.newBatchesInitialCapacity)
+	}
+	b.batches[proposedIdx][id] = struct{}{}
+	return proposedBatch
 }
 
 func (b *batcher) RemoveFromBatch(id pcommon.TraceID, batch uint64) {
