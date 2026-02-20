@@ -3,15 +3,9 @@
 
 package precision // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
 
-import "math"
-
-var (
-	// ScaleMilliseconds converts millisecond counters to seconds.
-	ScaleMilliseconds = scaleUint64(1_000)
-	// ScaleNanoseconds converts nanosecond counters to seconds.
-	ScaleNanoseconds = scaleUint64(1_000_000_000)
-	// Scale100Nanoseconds converts 100-nanosecond counters (Windows perf counters) to seconds.
-	Scale100Nanoseconds = scaleUint64(10_000_000)
+import (
+	"math"
+	"time"
 )
 
 // RatioUint64 computes numerator/denominator and rounds the result to the
@@ -26,12 +20,13 @@ func RatioUint64(numerator, denominator uint64) float64 {
 	return roundRatio(float64(numerator), float64(denominator))
 }
 
-func scaleUint64(denominator uint64) func(uint64) float64 {
-	mul := float64(denominator)
-	return func(numerator uint64) float64 {
-		res := float64(numerator) / mul
-		return math.Round(res*mul) / mul
-	}
+// Scale converts a tick count in the given unit to seconds and rounds
+// to the unit's decimal precision. This avoids binary float artifacts
+// like 12345/1000 = 12.345000000000001.
+func Scale(numerator uint64, unit time.Duration) float64 {
+	mul := float64(time.Second / unit)
+	res := float64(numerator) / mul
+	return math.Round(res*mul) / mul
 }
 
 func roundRatio(numerator, denominator float64) float64 {

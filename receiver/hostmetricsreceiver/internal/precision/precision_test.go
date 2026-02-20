@@ -6,6 +6,7 @@ package precision
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -82,87 +83,40 @@ func TestRatioUint64_ZeroDenominator(t *testing.T) {
 	assert.True(t, math.IsNaN(RatioUint64(0, 0)))
 }
 
-func TestScaleMilliseconds(t *testing.T) {
+func TestScale(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name     string
 		input    uint64
+		unit     time.Duration
 		expected float64
 	}{
-		{name: "standard conversion", input: 12345, expected: 12.345},
-		{name: "zero", input: 0, expected: 0.0},
-		{name: "exact division", input: 3000, expected: 3.0},
-		{name: "sub-second", input: 999, expected: 0.999},
-		{name: "one millisecond", input: 1, expected: 0.001},
+		{name: "milliseconds standard", input: 12345, unit: time.Millisecond, expected: 12.345},
+		{name: "milliseconds zero", input: 0, unit: time.Millisecond, expected: 0.0},
+		{name: "milliseconds exact", input: 3000, unit: time.Millisecond, expected: 3.0},
+		{name: "milliseconds sub-second", input: 999, unit: time.Millisecond, expected: 0.999},
+		{name: "milliseconds one", input: 1, unit: time.Millisecond, expected: 0.001},
+		{name: "nanoseconds standard", input: 1_500_000_000, unit: time.Nanosecond, expected: 1.5},
+		{name: "nanoseconds zero", input: 0, unit: time.Nanosecond, expected: 0.0},
+		{name: "nanoseconds large", input: 3_000_000_000, unit: time.Nanosecond, expected: 3.0},
+		{name: "nanoseconds sub-millisecond", input: 999_999, unit: time.Nanosecond, expected: 0.000999999},
+		{name: "nanoseconds sub-microsecond", input: 999, unit: time.Nanosecond, expected: 0.000000999},
+		{name: "nanoseconds one", input: 1, unit: time.Nanosecond, expected: 0.000000001},
+		{name: "100-nanoseconds standard", input: 15_000_000, unit: time.Nanosecond * 100, expected: 1.5},
+		{name: "100-nanoseconds zero", input: 0, unit: time.Nanosecond * 100, expected: 0.0},
+		{name: "100-nanoseconds exact", input: 10_000_000, unit: time.Nanosecond * 100, expected: 1.0},
+		{name: "100-nanoseconds sub-millisecond", input: 9_999, unit: time.Nanosecond * 100, expected: 0.0009999},
+		{name: "100-nanoseconds sub-microsecond", input: 9, unit: time.Nanosecond * 100, expected: 0.0000009},
+		{name: "100-nanoseconds one", input: 1, unit: time.Nanosecond * 100, expected: 0.0000001},
+		{name: "microseconds", input: 12345, unit: time.Microsecond, expected: 0.012345},
+		{name: "10ms jiffies standard", input: 12345, unit: time.Millisecond * 10, expected: 123.45},
+		{name: "10ms jiffies exact", input: 300, unit: time.Millisecond * 10, expected: 3.0},
+		{name: "10ms jiffies zero", input: 0, unit: time.Millisecond * 10, expected: 0.0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.expected, ScaleMilliseconds(tt.input))
-		})
-	}
-}
-
-func TestScaleNanoseconds(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name     string
-		input    uint64
-		expected float64
-	}{
-		{name: "standard conversion", input: 1_500_000_000, expected: 1.5},
-		{name: "zero", input: 0, expected: 0.0},
-		{name: "large value", input: 3_000_000_000, expected: 3.0},
-		{name: "sub-millisecond", input: 999_999, expected: 0.000999999},
-		{name: "sub-microsecond", input: 999, expected: 0.000000999},
-		{name: "one nanosecond", input: 1, expected: 0.000000001},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(t, tt.expected, ScaleNanoseconds(tt.input))
-		})
-	}
-}
-
-func TestScale100Nanoseconds(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name     string
-		input    uint64
-		expected float64
-	}{
-		{name: "standard conversion", input: 15_000_000, expected: 1.5},
-		{name: "zero", input: 0, expected: 0.0},
-		{name: "exact division", input: 10_000_000, expected: 1.0},
-		{name: "sub-millisecond", input: 9_999, expected: 0.0009999},
-		{name: "sub-microsecond", input: 9, expected: 0.0000009},
-		{name: "one 100-nanosecond unit", input: 1, expected: 0.0000001},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(t, tt.expected, Scale100Nanoseconds(tt.input))
-		})
-	}
-}
-
-func TestScaleUint64_CustomDenominator(t *testing.T) {
-	t.Parallel()
-	scale := scaleUint64(100)
-	tests := []struct {
-		name     string
-		input    uint64
-		expected float64
-	}{
-		{name: "jiffies USER_HZ=100", input: 12345, expected: 123.45},
-		{name: "exact division", input: 300, expected: 3.0},
-		{name: "zero", input: 0, expected: 0.0},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(t, tt.expected, scale(tt.input))
+			assert.Equal(t, tt.expected, Scale(tt.input, tt.unit))
 		})
 	}
 }
@@ -225,13 +179,13 @@ func BenchmarkRatioUint64_RawDivision(b *testing.B) {
 	}
 }
 
-func BenchmarkScaleMilliseconds(b *testing.B) {
+func BenchmarkScale(b *testing.B) {
 	for i := range b.N {
-		benchSink = ScaleMilliseconds(scaleInputs[i%len(scaleInputs)])
+		benchSink = Scale(scaleInputs[i%len(scaleInputs)], time.Millisecond)
 	}
 }
 
-func BenchmarkScaleMilliseconds_RawDivision(b *testing.B) {
+func BenchmarkScale_RawDivision(b *testing.B) {
 	for i := range b.N {
 		benchSink = float64(scaleInputs[i%len(scaleInputs)]) / 1000.0
 	}
