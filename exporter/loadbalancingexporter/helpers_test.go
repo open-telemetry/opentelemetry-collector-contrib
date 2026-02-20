@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -87,4 +88,85 @@ func BenchmarkMergeTraces_X500(b *testing.B) {
 
 func BenchmarkMergeTraces_X1000(b *testing.B) {
 	benchMergeTraces(b, 1000)
+}
+
+func TestMergeLogsTwoEmpty(t *testing.T) {
+	expectedEmpty := plog.NewLogs()
+	logs1 := plog.NewLogs()
+	logs2 := plog.NewLogs()
+
+	mergedLogs := mergeLogs(logs1, logs2)
+
+	require.Equal(t, expectedEmpty, mergedLogs)
+}
+
+func TestMergeLogsSingleEmpty(t *testing.T) {
+	expectedLogs := simpleLogs()
+
+	logs1 := plog.NewLogs()
+	logs2 := simpleLogs()
+
+	mergedLogs := mergeLogs(logs1, logs2)
+
+	require.Equal(t, expectedLogs, mergedLogs)
+}
+
+func TestMergeLogs(t *testing.T) {
+	expectedLogs := plog.NewLogs()
+	expectedLogs.ResourceLogs().EnsureCapacity(3)
+	arl := expectedLogs.ResourceLogs().AppendEmpty()
+	arl.Resource().Attributes().PutStr("service.name", "service-name-1")
+	arl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+	brl := expectedLogs.ResourceLogs().AppendEmpty()
+	brl.Resource().Attributes().PutStr("service.name", "service-name-2")
+	brl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+	crl := expectedLogs.ResourceLogs().AppendEmpty()
+	crl.Resource().Attributes().PutStr("service.name", "service-name-3")
+	crl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-3")
+
+	logs1 := plog.NewLogs()
+	logs1.ResourceLogs().EnsureCapacity(2)
+	l1arl := logs1.ResourceLogs().AppendEmpty()
+	l1arl.Resource().Attributes().PutStr("service.name", "service-name-1")
+	l1arl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+	l1brl := logs1.ResourceLogs().AppendEmpty()
+	l1brl.Resource().Attributes().PutStr("service.name", "service-name-2")
+	l1brl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+
+	logs2 := plog.NewLogs()
+	logs2.ResourceLogs().EnsureCapacity(1)
+	l2crl := logs2.ResourceLogs().AppendEmpty()
+	l2crl.Resource().Attributes().PutStr("service.name", "service-name-3")
+	l2crl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-3")
+
+	mergedLogs := mergeLogs(logs1, logs2)
+
+	require.Equal(t, expectedLogs, mergedLogs)
+}
+
+func benchMergeLogs(b *testing.B, logsCount int) {
+	logs1 := plog.NewLogs()
+	logs2 := plog.NewLogs()
+
+	for range logsCount {
+		rl := logs2.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "test-service")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("test log")
+	}
+
+	for b.Loop() {
+		mergeLogs(logs1, logs2)
+	}
+}
+
+func BenchmarkMergeLogs_X100(b *testing.B) {
+	benchMergeLogs(b, 100)
+}
+
+func BenchmarkMergeLogs_X500(b *testing.B) {
+	benchMergeLogs(b, 500)
+}
+
+func BenchmarkMergeLogs_X1000(b *testing.B) {
+	benchMergeLogs(b, 1000)
 }
