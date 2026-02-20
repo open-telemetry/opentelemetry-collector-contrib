@@ -14,16 +14,18 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetBaseURL("base_url-val")
+			rb.SetHostName("host.name-val")
 			rb.SetSystemHostName("system.host_name-val")
+			rb.SetURLFull("url.full-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -36,10 +38,20 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "base_url-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("host.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "host.name-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("system.host_name")
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "system.host_name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("url.full")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "url.full-val", val.Str())
 			}
 		})
 	}

@@ -117,7 +117,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetBaseURL("base_url-val")
+			rb.SetHostName("host.name-val")
 			rb.SetSystemHostName("system.host_name-val")
+			rb.SetURLFull("url.full-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

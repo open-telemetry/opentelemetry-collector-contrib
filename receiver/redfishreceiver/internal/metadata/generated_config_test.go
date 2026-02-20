@@ -41,7 +41,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					BaseURL:        ResourceAttributeConfig{Enabled: true},
+					HostName:       ResourceAttributeConfig{Enabled: true},
 					SystemHostName: ResourceAttributeConfig{Enabled: true},
+					URLFull:        ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -64,7 +66,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					BaseURL:        ResourceAttributeConfig{Enabled: false},
+					HostName:       ResourceAttributeConfig{Enabled: false},
 					SystemHostName: ResourceAttributeConfig{Enabled: false},
+					URLFull:        ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -101,14 +105,18 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				BaseURL:        ResourceAttributeConfig{Enabled: true},
+				HostName:       ResourceAttributeConfig{Enabled: true},
 				SystemHostName: ResourceAttributeConfig{Enabled: true},
+				URLFull:        ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				BaseURL:        ResourceAttributeConfig{Enabled: false},
+				HostName:       ResourceAttributeConfig{Enabled: false},
 				SystemHostName: ResourceAttributeConfig{Enabled: false},
+				URLFull:        ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
