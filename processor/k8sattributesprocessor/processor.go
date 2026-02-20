@@ -290,7 +290,10 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 	}
 	var resourceType string
 
-	if podname, found := resource.Attributes().Get("k8s.pod.name"); found {
+	if _, found := resource.Attributes().Get("map.to.namespace"); found {
+		resourceUuid = kp.GetResourceUuidUsingNamespaceMoid(ctx, resource)
+		resourceType = "namespace"
+	} else if podname, found := resource.Attributes().Get("k8s.pod.name"); found {
 		if resourceUuid = kp.GetResourceUuidUsingPodMoid(ctx, resource); resourceUuid == "" {
 			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("podname", podname.Str()))
 		}
@@ -539,6 +542,22 @@ func (op *kubernetesprocessor) GetResourceUuidUsingCurrentNodeMoid(ctx context.C
 
 	resourceUuid = op.redisClient.GetUuidValueInString(ctx, nodeMoidKey)
 	op.logger.Debug("redis KV ", zap.Any("key", nodeMoidKey), zap.Any("value", resourceUuid))
+	return
+}
+
+func (op *kubernetesprocessor) GetResourceUuidUsingNamespaceMoid(ctx context.Context, resource pcommon.Resource) (resourceUuid string) {
+	var namespace pcommon.Value
+	var found bool
+
+	if namespace, found = resource.Attributes().Get("k8s.namespace.name"); !found {
+		op.logger.Debug("k8s.namespace.name not found in resource attributes hence not able to get resource uuid using namespace moid")
+		return
+	}
+
+	namespaceMoidKey := moid.NewMoid(op.redisConfig.ClusterName).WithNamespaceName(namespace.Str()).NamespaceMoid()
+
+	resourceUuid = op.redisClient.GetUuidValueInString(ctx, namespaceMoidKey)
+	op.logger.Debug("redis KV ", zap.Any("key", namespaceMoidKey), zap.Any("value", resourceUuid))
 	return
 }
 
