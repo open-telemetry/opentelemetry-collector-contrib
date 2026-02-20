@@ -26,7 +26,7 @@ require (
 	go.uber.org/zap v1.27.1
 )
 
-require go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
+require go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0 // indirect
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
