@@ -20,22 +20,20 @@ The following settings are available:
 
 | Setting | Type | Required | Description |
 |---------|------|----------|-------------|
-| `device` | DeviceConfig | Yes | Cisco device to monitor |
+| `devices` | list | Yes | List of Cisco devices to monitor |
 | `collection_interval` | duration | No | How often to collect metrics (default: 60s) |
 | `timeout` | duration | No | SSH connection and command timeout (default: 30s) |
 | `scrapers` | map | Yes | Scrapers to enable |
 
-**Note:** Each receiver instance monitors a single device. To monitor multiple devices, create multiple receiver instances with unique identifiers (e.g., `ciscoos/device1`, `ciscoos/device2`).
-
 ### Device Configuration
 
-Each device configuration contains device information and authentication settings following semantic conventions:
+Each entry in the `devices` list contains device information and authentication settings:
 
 | Setting | Type | Required | Description |
 |---------|------|----------|-------------|
-| `device.host.name` | string | No | Human-readable device name |
-| `device.host.ip` | string | Yes | Device IP address |
-| `device.host.port` | int | Yes | SSH port (typically 22) |
+| `name` | string | No | Human-readable device name |
+| `host` | string | Yes | Device IP address or hostname |
+| `port` | int | Yes | SSH port (typically 22) |
 | `auth.username` | string | Yes | SSH username for authentication |
 | `auth.password` | string | No* | Password for authentication |
 | `auth.key_file` | string | No* | Path to SSH private key file (supports RSA, ECDSA, Ed25519 in PEM or OpenSSH format) |
@@ -94,87 +92,25 @@ All metrics include the following resource attributes following OpenTelemetry se
 
 ```yaml
 receivers:
-  # Example 1: Password authentication
-  ciscoos/switch01:
+  ciscoos:
     collection_interval: 60s
     timeout: 30s
-    device:
-      device:
-        host:
-          name: "core-switch-01"
-          ip: "192.168.1.10"
-          port: 22
-      auth:
-        username: "admin"
-        password: "secure-password"
     scrapers:
       system:
-        metrics:
-          cisco.device.up:
-            enabled: true
-          system.cpu.utilization:
-            enabled: true
-          system.memory.utilization:
-            enabled: true
       interfaces:
-        metrics:
-          system.network.io:
-            enabled: true
-          system.network.errors:
-            enabled: true
-          system.network.packet.dropped:
-            enabled: true
-          system.network.packet.count:
-            enabled: true
-          system.network.interface.status:
-            enabled: true
-
-  # Example 2: SSH key file authentication
-  ciscoos/router01:
-    collection_interval: 60s
-    timeout: 30s
-    device:
-      device:
-        host:
-          name: "edge-router-01"
-          ip: "192.168.1.20"
-          port: 22
-      auth:
-        username: "admin"
-        key_file: "/home/user/.ssh/id_rsa"
-    scrapers:
-      system:
-        metrics:
-          cisco.device.up:
-            enabled: true
-          system.cpu.utilization:
-            enabled: true
-          system.memory.utilization:
-            enabled: true
-
-  # Example 3: Fallback authentication (key file with password backup)
-  ciscoos/firewall01:
-    collection_interval: 60s
-    timeout: 30s
-    device:
-      device:
-        host:
-          name: "firewall-01"
-          ip: "192.168.1.30"
-          port: 22
-      auth:
-        username: "admin"
-        key_file: "/home/user/.ssh/id_rsa"
-        password: "backup-password"  # Used if key auth fails
-    scrapers:
-      system:
-        metrics:
-          cisco.device.up:
-            enabled: true
-          system.cpu.utilization:
-            enabled: true
-          system.memory.utilization:
-            enabled: true
+    devices:
+      - name: "core-switch-01"
+        host: "192.168.1.10"
+        port: 22
+        auth:
+          username: "admin"
+          password: "secure-password"
+      - name: "edge-router-01"
+        host: "192.168.1.20"
+        port: 22
+        auth:
+          username: "admin"
+          key_file: "/home/user/.ssh/id_rsa"
 
 exporters:
   debug:
@@ -182,6 +118,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ciscoos/switch01, ciscoos/router01, ciscoos/firewall01]
+      receivers: [ciscoos]
       exporters: [debug]
 ```

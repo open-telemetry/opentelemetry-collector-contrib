@@ -107,3 +107,104 @@ func TestValidateConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateHMACKey(t *testing.T) {
+	tests := []struct {
+		name          string
+		config        *Config
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "valid HMAC-SHA256 with sufficient key length",
+			config: &Config{
+				HashFunction: HMACSHA256,
+				HMACKey:      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 32 bytes
+			},
+			expectError: false,
+		},
+		{
+			name: "valid HMAC-SHA512 with sufficient key length",
+			config: &Config{
+				HashFunction: HMACSHA512,
+				HMACKey:      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 64 bytes
+			},
+			expectError: false,
+		},
+		{
+			name: "empty key with HMAC-SHA256",
+			config: &Config{
+				HashFunction: HMACSHA256,
+				HMACKey:      "",
+			},
+			expectError:   true,
+			errorContains: "hmac_key must not be empty",
+		},
+		{
+			name: "empty key with HMAC-SHA512",
+			config: &Config{
+				HashFunction: HMACSHA512,
+				HMACKey:      "",
+			},
+			expectError:   true,
+			errorContains: "hmac_key must not be empty",
+		},
+		{
+			name: "key too short for HMAC-SHA256",
+			config: &Config{
+				HashFunction: HMACSHA256,
+				HMACKey:      "short-key",
+			},
+			expectError:   true,
+			errorContains: "hmac_key must be at least 32 bytes long",
+		},
+		{
+			name: "key too short for HMAC-SHA512",
+			config: &Config{
+				HashFunction: HMACSHA512,
+				HMACKey:      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 32 bytes, too short for SHA512
+			},
+			expectError:   true,
+			errorContains: "hmac_key must be at least 64 bytes long",
+		},
+		{
+			name: "no validation for non-HMAC hash functions",
+			config: &Config{
+				HashFunction: MD5,
+				HMACKey:      "",
+			},
+			expectError: false,
+		},
+		{
+			name: "no validation when hash function is None",
+			config: &Config{
+				HashFunction: None,
+				HMACKey:      "",
+			},
+			expectError: false,
+		},
+		{
+			name: "key with special characters is allowed",
+			config: &Config{
+				HashFunction: HMACSHA256,
+				HMACKey:      "!@#$%^&*()_+-=[]{}|;:,.<>?",
+			},
+			expectError:   true,
+			errorContains: "hmac_key must be at least 32 bytes long",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
