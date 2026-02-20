@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
@@ -73,6 +74,8 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	switch cfg.(*Config).RoutingKey {
 	case svcRoutingStr, "":
 		logExporter.routingKey = svcRouting
+	case traceIDRoutingStr:
+		logExporter.routingKey = traceIDRouting
 	case resourceRoutingStr:
 		logExporter.routingKey = resourceRouting
 	case attrRoutingStr:
@@ -108,6 +111,8 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var batches map[string]plog.Logs
 
 	switch e.routingKey {
+	case traceIDRouting:
+		batches = splitLogsByTraceID(ld)
 	case svcRouting:
 		var errs []error
 		batches, errs = splitLogsByServiceName(ld)
@@ -204,6 +209,34 @@ func splitLogsByResourceID(ld plog.Logs) map[string]plog.Logs {
 		rm.CopyTo(rmClone)
 
 		key := identity.OfResource(rm.Resource()).String()
+		existing, ok := results[key]
+		if ok {
+			mergeLogs(existing, newLD)
+		} else {
+			results[key] = newLD
+		}
+	}
+
+	return results
+}
+
+func splitLogsByTraceID(ld plog.Logs) map[string]plog.Logs {
+	results := map[string]plog.Logs{}
+
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rm := ld.ResourceLogs().At(i)
+
+		var traceID pcommon.TraceID
+		if rm.ScopeLogs().Len() > 0 && rm.ScopeLogs().At(0).LogRecords().Len() > 0 {
+			traceID = rm.ScopeLogs().At(0).LogRecords().At(0).TraceID()
+		}
+
+		key := traceID.String()
+
+		newLD := plog.NewLogs()
+		rmClone := newLD.ResourceLogs().AppendEmpty()
+		rm.CopyTo(rmClone)
+
 		existing, ok := results[key]
 		if ok {
 			mergeLogs(existing, newLD)

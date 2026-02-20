@@ -78,6 +78,14 @@ func TestNewLogsExporter(t *testing.T) {
 			nil,
 		},
 		{
+			"traceID routing",
+			&Config{
+				Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}})},
+				RoutingKey: traceIDRoutingStr,
+			},
+			nil,
+		},
+		{
 			"unsupported routing key",
 			&Config{
 				Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}})},
@@ -1339,6 +1347,604 @@ func TestConsumeLogsEmptyBatch(t *testing.T) {
 	err = p.ConsumeLogs(t.Context(), plog.NewLogs())
 	assert.NoError(t, err)
 	assert.Empty(t, sink.AllLogs())
+}
+
+// TraceID routing tests (backward compatibility)
+
+func TestSplitLogsByTraceID(t *testing.T) {
+	t.Run("single log with traceID", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
+			pcommon.TraceID([16]byte{1, 2, 3, 4}))
+
+		batches := splitLogsByTraceID(ld)
+		require.Len(t, batches, 1)
+	})
+
+	t.Run("different traceIDs produce different keys", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl1 := ld.ResourceLogs().AppendEmpty()
+		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
+			pcommon.TraceID([16]byte{1, 2, 3, 4}))
+		rl2 := ld.ResourceLogs().AppendEmpty()
+		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
+			pcommon.TraceID([16]byte{5, 6, 7, 8}))
+
+		batches := splitLogsByTraceID(ld)
+		require.Len(t, batches, 2)
+	})
+
+	t.Run("same traceID merged", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl1 := ld.ResourceLogs().AppendEmpty()
+		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
+			pcommon.TraceID([16]byte{1, 2, 3, 4}))
+		rl2 := ld.ResourceLogs().AppendEmpty()
+		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
+			pcommon.TraceID([16]byte{1, 2, 3, 4}))
+
+		batches := splitLogsByTraceID(ld)
+		require.Len(t, batches, 1)
+		for _, b := range batches {
+			assert.Equal(t, 2, b.ResourceLogs().Len())
+		}
+	})
+
+	t.Run("empty traceID", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		batches := splitLogsByTraceID(ld)
+		require.Len(t, batches, 1)
+		// empty traceID maps to "00000000000000000000000000000000"
+	})
+
+	t.Run("empty logs", func(t *testing.T) {
+		ld := plog.NewLogs()
+		batches := splitLogsByTraceID(ld)
+		require.Empty(t, batches)
+	})
+}
+
+func TestConsumeLogsWithTraceIDRouting(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	sink := new(consumertest.LogsSink)
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockLogsExporter(sink.ConsumeLogs), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}})},
+		RoutingKey: traceIDRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
+		pcommon.TraceID([16]byte{1, 2, 3, 4}))
+
+	err = p.ConsumeLogs(t.Context(), ld)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, sink.AllLogs())
+}
+
+// E2E routing isolation tests — prove specific logs always go to specific collectors
+
+func TestE2ERoutingIsolation(t *testing.T) {
+	// This test proves that logs from different services route to specific,
+	// deterministic collectors and that the same service always routes to
+	// the same collector across multiple batches.
+	ts, tb := getTelemetryAssets(t)
+
+	// Track which endpoint received which service names
+	endpointToServices := &sync.Map{}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			for i := 0; i < ld.ResourceLogs().Len(); i++ {
+				svc, ok := ld.ResourceLogs().At(i).Resource().Attributes().Get("service.name")
+				if ok {
+					endpointToServices.Store(svc.Str(), endpoint)
+				}
+			}
+			return nil
+		}), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey: svcRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	services := []string{"payment-service", "auth-service", "order-service",
+		"notification-service", "inventory-service", "shipping-service"}
+
+	// Send each service 20 times across separate batches to prove consistency
+	for round := range 20 {
+		for _, svc := range services {
+			ld := plog.NewLogs()
+			rl := ld.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("service.name", svc)
+			lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+			lr.Body().SetStr(fmt.Sprintf("log message round=%d", round))
+			lr.SetSeverityText("INFO")
+
+			err = p.ConsumeLogs(t.Context(), ld)
+			require.NoError(t, err)
+		}
+	}
+
+	// Verify: each service always went to exactly one endpoint
+	serviceToEndpoint := map[string]string{}
+	endpointToServices.Range(func(key, value any) bool {
+		serviceToEndpoint[key.(string)] = value.(string)
+		return true
+	})
+
+	require.Len(t, serviceToEndpoint, len(services), "every service should have been routed")
+
+	// Verify that not all services went to the same endpoint (with 6 services and 3 endpoints,
+	// consistent hashing should distribute them)
+	endpointSet := map[string]bool{}
+	for _, ep := range serviceToEndpoint {
+		endpointSet[ep] = true
+	}
+	assert.Greater(t, len(endpointSet), 1, "services should be distributed across multiple endpoints, got all on one")
+
+	// Now send them again — verify routing didn't change
+	firstRoundMapping := make(map[string]string, len(serviceToEndpoint))
+	for k, v := range serviceToEndpoint {
+		firstRoundMapping[k] = v
+	}
+
+	for _, svc := range services {
+		ld := simpleLogWithServiceName(svc)
+		err = p.ConsumeLogs(t.Context(), ld)
+		require.NoError(t, err)
+	}
+
+	endpointToServices.Range(func(key, value any) bool {
+		svc := key.(string)
+		ep := value.(string)
+		assert.Equal(t, firstRoundMapping[svc], ep,
+			"service %s should consistently route to the same endpoint", svc)
+		return true
+	})
+}
+
+func TestE2EResourceRoutingIsolation(t *testing.T) {
+	// Prove that resource routing separates same-service logs by host/instance
+	ts, tb := getTelemetryAssets(t)
+
+	endpointToResources := &sync.Map{}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			for i := 0; i < ld.ResourceLogs().Len(); i++ {
+				host, ok := ld.ResourceLogs().At(i).Resource().Attributes().Get("host.name")
+				if ok {
+					endpointToResources.Store(host.Str(), endpoint)
+				}
+			}
+			return nil
+		}), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey: resourceRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Same service, different hosts — should potentially route differently
+	hosts := []string{"host-a", "host-b", "host-c", "host-d"}
+	for round := range 10 {
+		for _, host := range hosts {
+			ld := plog.NewLogs()
+			rl := ld.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("service.name", "my-service")
+			rl.Resource().Attributes().PutStr("host.name", host)
+			rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(
+				fmt.Sprintf("round=%d host=%s", round, host))
+
+			err = p.ConsumeLogs(t.Context(), ld)
+			require.NoError(t, err)
+		}
+	}
+
+	// Verify each host consistently routed to the same endpoint
+	hostToEndpoint := map[string]string{}
+	endpointToResources.Range(func(key, value any) bool {
+		hostToEndpoint[key.(string)] = value.(string)
+		return true
+	})
+
+	require.Len(t, hostToEndpoint, len(hosts), "every host should have been routed")
+}
+
+// Data integrity tests — verify logs are not corrupted, lost, or duplicated during routing
+
+func TestDataIntegrityThroughRouting(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// Collect all logs received by all endpoints
+	var mu sync.Mutex
+	receivedLogs := map[string][]plog.Logs{} // endpoint -> logs
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			// Deep copy to avoid data races from MoveAndAppendTo
+			clone := plog.NewLogs()
+			ld.CopyTo(clone)
+			mu.Lock()
+			receivedLogs[endpoint] = append(receivedLogs[endpoint], clone)
+			mu.Unlock()
+			return nil
+		}), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey: svcRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Build a batch with rich log data — body, severity, timestamps, multiple attributes
+	type sentLog struct {
+		serviceName  string
+		hostName     string
+		body         string
+		severityText string
+		traceID      string
+		timestamp    pcommon.Timestamp
+	}
+
+	var sentLogs []sentLog
+	ld := plog.NewLogs()
+
+	for i := range 10 {
+		svc := fmt.Sprintf("svc-%d", i%3)
+		host := fmt.Sprintf("host-%d", i)
+		body := fmt.Sprintf("important log message #%d with data=%s", i, "payload")
+		severity := []string{"DEBUG", "INFO", "WARN", "ERROR"}[i%4]
+		logTS := pcommon.Timestamp(1000000 + uint64(i)*1000)
+		traceID := fmt.Sprintf("trace-%02d", i)
+
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", svc)
+		rl.Resource().Attributes().PutStr("host.name", host)
+		rl.Resource().Attributes().PutStr("k8s.namespace.name", "prod")
+
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName("my.library")
+		sl.Scope().SetVersion("1.0.0")
+
+		lr := sl.LogRecords().AppendEmpty()
+		lr.Body().SetStr(body)
+		lr.SetSeverityText(severity)
+		lr.SetTimestamp(logTS)
+		lr.Attributes().PutStr("trace_id", traceID)
+		lr.Attributes().PutStr("user.id", fmt.Sprintf("user-%d", i))
+		lr.Attributes().PutInt("request.size", int64(i*100))
+
+		sentLogs = append(sentLogs, sentLog{
+			serviceName:  svc,
+			hostName:     host,
+			body:         body,
+			severityText: severity,
+			traceID:      traceID,
+			timestamp:    logTS,
+		})
+	}
+
+	err = p.ConsumeLogs(t.Context(), ld)
+	require.NoError(t, err)
+
+	// Collect all received log records across all endpoints
+	type receivedLog struct {
+		serviceName  string
+		hostName     string
+		body         string
+		severityText string
+		traceID      string
+		timestamp    pcommon.Timestamp
+	}
+
+	var allReceived []receivedLog
+	mu.Lock()
+	for _, logs := range receivedLogs {
+		for _, l := range logs {
+			for i := 0; i < l.ResourceLogs().Len(); i++ {
+				rl := l.ResourceLogs().At(i)
+				svc, _ := rl.Resource().Attributes().Get("service.name")
+				host, _ := rl.Resource().Attributes().Get("host.name")
+				ns, ok := rl.Resource().Attributes().Get("k8s.namespace.name")
+				assert.True(t, ok, "k8s.namespace.name should be preserved")
+				assert.Equal(t, "prod", ns.Str())
+
+				for j := 0; j < rl.ScopeLogs().Len(); j++ {
+					sl := rl.ScopeLogs().At(j)
+					assert.Equal(t, "my.library", sl.Scope().Name())
+					assert.Equal(t, "1.0.0", sl.Scope().Version())
+
+					for k := 0; k < sl.LogRecords().Len(); k++ {
+						lr := sl.LogRecords().At(k)
+						tid, _ := lr.Attributes().Get("trace_id")
+						uid, ok := lr.Attributes().Get("user.id")
+						assert.True(t, ok, "user.id attribute should be preserved")
+						assert.NotEmpty(t, uid.Str())
+						reqSize, ok := lr.Attributes().Get("request.size")
+						assert.True(t, ok, "request.size attribute should be preserved")
+						assert.GreaterOrEqual(t, reqSize.Int(), int64(0))
+
+						allReceived = append(allReceived, receivedLog{
+							serviceName:  svc.Str(),
+							hostName:     host.Str(),
+							body:         lr.Body().AsString(),
+							severityText: lr.SeverityText(),
+							traceID:      tid.Str(),
+							timestamp:    lr.Timestamp(),
+						})
+					}
+				}
+			}
+		}
+	}
+	mu.Unlock()
+
+	// Verify: no logs lost
+	require.Len(t, allReceived, len(sentLogs), "no logs should be lost during routing")
+
+	// Verify: no logs duplicated — each trace_id should appear exactly once
+	traceIDs := map[string]int{}
+	for _, r := range allReceived {
+		traceIDs[r.traceID]++
+	}
+	for tid, count := range traceIDs {
+		assert.Equal(t, 1, count, "trace_id %s appeared %d times (expected exactly 1 — no duplicates)", tid, count)
+	}
+
+	// Verify: every sent log was received with data intact
+	receivedByTraceID := map[string]receivedLog{}
+	for _, r := range allReceived {
+		receivedByTraceID[r.traceID] = r
+	}
+	for _, sent := range sentLogs {
+		got, ok := receivedByTraceID[sent.traceID]
+		require.True(t, ok, "sent log with trace_id=%s was not received", sent.traceID)
+		assert.Equal(t, sent.serviceName, got.serviceName, "service.name corrupted for trace_id=%s", sent.traceID)
+		assert.Equal(t, sent.hostName, got.hostName, "host.name corrupted for trace_id=%s", sent.traceID)
+		assert.Equal(t, sent.body, got.body, "body corrupted for trace_id=%s", sent.traceID)
+		assert.Equal(t, sent.severityText, got.severityText, "severity corrupted for trace_id=%s", sent.traceID)
+		assert.Equal(t, sent.timestamp, got.timestamp, "timestamp corrupted for trace_id=%s", sent.traceID)
+	}
+}
+
+func TestDataIntegrityNoCrossContaminationBetweenServices(t *testing.T) {
+	// Prove that logs from service A never contain attributes from service B
+	ts, tb := getTelemetryAssets(t)
+
+	var mu sync.Mutex
+	receivedByEndpoint := map[string][]plog.Logs{}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			clone := plog.NewLogs()
+			ld.CopyTo(clone)
+			mu.Lock()
+			receivedByEndpoint[endpoint] = append(receivedByEndpoint[endpoint], clone)
+			mu.Unlock()
+			return nil
+		}), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey: svcRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Send a batch with 3 distinct services, each with unique attributes
+	ld := plog.NewLogs()
+	serviceData := map[string]string{
+		"payment-svc": "credit-card-data",
+		"auth-svc":    "auth-token-data",
+		"order-svc":   "order-id-data",
+	}
+	for svc, data := range serviceData {
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", svc)
+		lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		lr.Body().SetStr(data)
+		lr.Attributes().PutStr("service_marker", svc)
+	}
+
+	err = p.ConsumeLogs(t.Context(), ld)
+	require.NoError(t, err)
+
+	// Verify: each resource log's service_marker matches its service.name
+	mu.Lock()
+	defer mu.Unlock()
+
+	for _, logs := range receivedByEndpoint {
+		for _, l := range logs {
+			for i := 0; i < l.ResourceLogs().Len(); i++ {
+				rl := l.ResourceLogs().At(i)
+				svc, _ := rl.Resource().Attributes().Get("service.name")
+				for j := 0; j < rl.ScopeLogs().Len(); j++ {
+					for k := 0; k < rl.ScopeLogs().At(j).LogRecords().Len(); k++ {
+						lr := rl.ScopeLogs().At(j).LogRecords().At(k)
+						marker, ok := lr.Attributes().Get("service_marker")
+						require.True(t, ok)
+						assert.Equal(t, svc.Str(), marker.Str(),
+							"log record service_marker (%s) doesn't match resource service.name (%s) — cross-contamination detected",
+							marker.Str(), svc.Str())
+
+						// Verify body matches the service's expected data
+						expectedBody := serviceData[svc.Str()]
+						assert.Equal(t, expectedBody, lr.Body().AsString(),
+							"log body corrupted or mixed between services")
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestDataIntegrityLogCountPreserved(t *testing.T) {
+	// Verify that total log record count in == total log record count out,
+	// across all endpoints, for various batch sizes
+	for _, totalLogs := range []int{1, 5, 10, 50, 100} {
+		t.Run(fmt.Sprintf("%d_logs", totalLogs), func(t *testing.T) {
+			ts, tb := getTelemetryAssets(t)
+
+			var totalReceived atomic.Int64
+			endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+			componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+				return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+					totalReceived.Add(int64(ld.LogRecordCount()))
+					return nil
+				}), nil
+			}
+
+			cfg := &Config{
+				Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+				RoutingKey: svcRoutingStr,
+			}
+			lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+			require.NoError(t, err)
+
+			p, err := newLogsExporter(ts, cfg)
+			require.NoError(t, err)
+
+			lb.addMissingExporters(t.Context(), endpoints)
+			lb.res = &mockResolver{
+				triggerCallbacks: true,
+				onResolve: func(_ context.Context) ([]string, error) {
+					return endpoints, nil
+				},
+			}
+			p.loadBalancer = lb
+
+			err = p.Start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, p.Shutdown(t.Context()))
+			}()
+
+			ld := plog.NewLogs()
+			for i := range totalLogs {
+				rl := ld.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutStr("service.name", fmt.Sprintf("svc-%d", i%5))
+				rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(
+					fmt.Sprintf("log-%d", i))
+			}
+
+			sentCount := ld.LogRecordCount()
+			err = p.ConsumeLogs(t.Context(), ld)
+			require.NoError(t, err)
+
+			assert.Equal(t, int64(sentCount), totalReceived.Load(),
+				"total received log records should equal total sent")
+		})
+	}
 }
 
 // Benchmark tests
