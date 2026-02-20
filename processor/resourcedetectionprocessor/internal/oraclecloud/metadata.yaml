@@ -5,7 +5,7 @@ status:
   stability:
     alpha: [traces, metrics, logs, profiles]
   codeowners:
-    active: [dashpole]
+    active: [dashpole, geekdave]
 
 resource_attributes:
   cloud.availability_zone:
