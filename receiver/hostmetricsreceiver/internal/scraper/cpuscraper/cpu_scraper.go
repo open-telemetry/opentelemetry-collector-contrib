@@ -5,7 +5,6 @@ package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -40,7 +39,7 @@ type cpuScraper struct {
 
 type cpuInfo struct {
 	frequency float64
-	processor uint
+	processor string
 	socket    string
 	core      string
 }
@@ -65,12 +64,20 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
-
-	for _, cpuTime := range cpuTimes {
-		s.recordCPUTimeStateDataPoints(now, cpuTime)
+	cpuInfos, err := s.getCPUInfo()
+	if err != nil {
+		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	err = s.ucal.CalculateAndRecord(now, cpuTimes, s.recordCPUUtilization)
+	for _, cpuTime := range cpuTimes {
+		cpuInfo := cpuInfos[cpuTime.CPU]
+		s.recordCPUTimeStateDataPoints(now, cpuTime, cpuInfo.socket, cpuInfo.core)
+	}
+
+	err = s.ucal.CalculateAndRecord(now, cpuTimes, func(now pcommon.Timestamp, cpuUtilization ucal.CPUUtilization) {
+		cpuInfo := cpuInfos[cpuUtilization.CPU]
+		s.recordCPUUtilization(now, cpuUtilization, cpuInfo.socket, cpuInfo.core)
+	})
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
@@ -92,12 +99,8 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	if s.config.Metrics.SystemCPUFrequency.Enabled {
-		cpuInfos, err := s.getCPUInfo()
-		if err != nil {
-			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
-		}
 		for _, cInfo := range cpuInfos {
-			s.mb.RecordSystemCPUFrequencyDataPoint(now, cInfo.frequency*hzInAMHz, fmt.Sprintf("cpu%d", cInfo.processor), cInfo.socket, cInfo.core)
+			s.mb.RecordSystemCPUFrequencyDataPoint(now, cInfo.frequency*hzInAMHz, cInfo.processor, cInfo.socket, cInfo.core)
 		}
 	}
 
