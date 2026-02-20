@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -50,6 +51,39 @@ func TestNewLogsExporter(t *testing.T) {
 			"empty",
 			&Config{},
 			errNoResolver,
+		},
+		{
+			"service routing",
+			&Config{
+				Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}})},
+				RoutingKey: svcRoutingStr,
+			},
+			nil,
+		},
+		{
+			"resource routing",
+			&Config{
+				Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}})},
+				RoutingKey: resourceRoutingStr,
+			},
+			nil,
+		},
+		{
+			"attributes routing",
+			&Config{
+				Resolver:          ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}})},
+				RoutingKey:        attrRoutingStr,
+				RoutingAttributes: []string{"my.attr"},
+			},
+			nil,
+		},
+		{
+			"unsupported routing key",
+			&Config{
+				Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}})},
+				RoutingKey: "invalid",
+			},
+			fmt.Errorf("unsupported routing_key: %q", "invalid"),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -244,6 +278,7 @@ func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
 func generateSingleLogRecord() plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "test-svc")
 	sl := rl.ScopeLogs().AppendEmpty()
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("test log")
@@ -289,7 +324,7 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 	assert.EqualError(t, res, fmt.Sprintf("unable to export logs, unexpected exporter type: expected exporter.Logs but got %T", newNopMockExporter()))
 }
 
-func TestLogBatchWithTwoTraces(t *testing.T) {
+func TestLogBatchWithTwoServices(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	sink := new(consumertest.LogsSink)
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
@@ -314,56 +349,23 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	first := simpleLogs()
-	second := simpleLogWithID(pcommon.TraceID([16]byte{2, 3, 4, 5}))
+	first := simpleLogWithServiceName("svc-1")
+	second := simpleLogWithServiceName("svc-2")
 	batch := plog.NewLogs()
-	firstTgt := batch.ResourceLogs().AppendEmpty()
-	first.ResourceLogs().At(0).CopyTo(firstTgt)
-	secondTgt := batch.ResourceLogs().AppendEmpty()
-	second.ResourceLogs().At(0).CopyTo(secondTgt)
+	first.ResourceLogs().At(0).CopyTo(batch.ResourceLogs().AppendEmpty())
+	second.ResourceLogs().At(0).CopyTo(batch.ResourceLogs().AppendEmpty())
 
 	// test
 	err = p.ConsumeLogs(t.Context(), batch)
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, sink.AllLogs(), 2)
+	// with a single endpoint, both services route to the same exporter
+	// so we get a single merged ConsumeLogs call
+	assert.Len(t, sink.AllLogs(), 1)
 }
 
-func TestNoLogsInBatch(t *testing.T) {
-	for _, tt := range []struct {
-		desc  string
-		batch plog.Logs
-	}{
-		{
-			"no resource logs",
-			plog.NewLogs(),
-		},
-		{
-			"no instrumentation library logs",
-			func() plog.Logs {
-				batch := plog.NewLogs()
-				batch.ResourceLogs().AppendEmpty()
-				return batch
-			}(),
-		},
-		{
-			"no logs",
-			func() plog.Logs {
-				batch := plog.NewLogs()
-				batch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
-				return batch
-			}(),
-		},
-	} {
-		t.Run(tt.desc, func(t *testing.T) {
-			res := traceIDFromLogs(tt.batch)
-			assert.Equal(t, pcommon.NewTraceIDEmpty(), res)
-		})
-	}
-}
-
-func TestLogsWithoutTraceID(t *testing.T) {
+func TestLogsWithMissingServiceName(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	sink := new(consumertest.LogsSink)
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
@@ -387,15 +389,19 @@ func TestLogsWithoutTraceID(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	// test
-	err = p.ConsumeLogs(t.Context(), simpleLogWithoutID())
+	// test with a log that has no service.name — should return permanent error
+	logWithoutSvc := plog.NewLogs()
+	rl := logWithoutSvc.ResourceLogs().AppendEmpty()
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("test")
 
-	// verify
-	assert.NoError(t, err)
-	assert.Len(t, sink.AllLogs(), 1)
+	err = p.ConsumeLogs(t.Context(), logWithoutSvc)
+
+	// verify — permanent error, no logs exported
+	assert.Error(t, err)
+	assert.Len(t, sink.AllLogs(), 0)
 }
 
-// this test validates that exporter is can concurrently change the endpoints while consuming logs.
+// this test validates that exporter can concurrently change the endpoints while consuming logs.
 func TestConsumeLogs_ConcurrentResolverChange(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	consumeStarted := make(chan struct{})
@@ -551,7 +557,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	var waitWG sync.WaitGroup
-	// keep consuming traces every 2ms
+	// keep consuming logs every 2ms
 	consumeCh := make(chan struct{})
 	go func(ctx context.Context) {
 		ticker := time.NewTicker(2 * time.Millisecond)
@@ -587,30 +593,477 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	waitWG.Wait()
 }
 
+// Split function tests
+
+func TestSplitLogsByServiceName(t *testing.T) {
+	t.Run("single service", func(t *testing.T) {
+		ld := simpleLogWithServiceName("svc-1")
+		batches, errs := splitLogsByServiceName(ld)
+		require.Empty(t, errs)
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "svc-1")
+	})
+
+	t.Run("multiple services", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl1 := ld.ResourceLogs().AppendEmpty()
+		rl1.Resource().Attributes().PutStr("service.name", "svc-1")
+		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+		rl2 := ld.ResourceLogs().AppendEmpty()
+		rl2.Resource().Attributes().PutStr("service.name", "svc-2")
+		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+
+		batches, errs := splitLogsByServiceName(ld)
+		require.Empty(t, errs)
+		require.Len(t, batches, 2)
+		require.Contains(t, batches, "svc-1")
+		require.Contains(t, batches, "svc-2")
+	})
+
+	t.Run("missing service name", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+
+		batches, errs := splitLogsByServiceName(ld)
+		require.Len(t, errs, 1)
+		require.Len(t, batches, 0)
+	})
+
+	t.Run("duplicate service names merged", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl1 := ld.ResourceLogs().AppendEmpty()
+		rl1.Resource().Attributes().PutStr("service.name", "svc-1")
+		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+		rl2 := ld.ResourceLogs().AppendEmpty()
+		rl2.Resource().Attributes().PutStr("service.name", "svc-1")
+		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+
+		batches, errs := splitLogsByServiceName(ld)
+		require.Empty(t, errs)
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "svc-1")
+		assert.Equal(t, 2, batches["svc-1"].ResourceLogs().Len())
+	})
+}
+
+func TestSplitLogsByResourceID(t *testing.T) {
+	t.Run("single resource", func(t *testing.T) {
+		ld := simpleLogWithServiceName("svc-1")
+		batches := splitLogsByResourceID(ld)
+		require.Len(t, batches, 1)
+	})
+
+	t.Run("different resources", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl1 := ld.ResourceLogs().AppendEmpty()
+		rl1.Resource().Attributes().PutStr("service.name", "svc-1")
+		rl1.Resource().Attributes().PutStr("host.name", "host-1")
+		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+		rl2 := ld.ResourceLogs().AppendEmpty()
+		rl2.Resource().Attributes().PutStr("service.name", "svc-1")
+		rl2.Resource().Attributes().PutStr("host.name", "host-2")
+		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+
+		batches := splitLogsByResourceID(ld)
+		require.Len(t, batches, 2)
+	})
+
+	t.Run("identical resources merged", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl1 := ld.ResourceLogs().AppendEmpty()
+		rl1.Resource().Attributes().PutStr("service.name", "svc-1")
+		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+		rl2 := ld.ResourceLogs().AppendEmpty()
+		rl2.Resource().Attributes().PutStr("service.name", "svc-1")
+		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+
+		batches := splitLogsByResourceID(ld)
+		require.Len(t, batches, 1)
+		for _, b := range batches {
+			assert.Equal(t, 2, b.ResourceLogs().Len())
+		}
+	})
+}
+
+func TestSplitLogsByAttributes(t *testing.T) {
+	t.Run("single attribute", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("env", "prod")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+
+		batches := splitLogsByAttributes(ld, []string{"env"})
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "prod")
+	})
+
+	t.Run("multiple attributes composite key", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("env", "prod")
+		rl.Resource().Attributes().PutStr("region", "us-east")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+
+		batches := splitLogsByAttributes(ld, []string{"env", "region"})
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "produs-east")
+	})
+
+	t.Run("missing attribute uses empty string", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+
+		batches := splitLogsByAttributes(ld, []string{"nonexistent"})
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "")
+	})
+
+	t.Run("pseudo attribute log.severity", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+		lr := sl.LogRecords().AppendEmpty()
+		lr.SetSeverityText("ERROR")
+
+		batches := splitLogsByAttributes(ld, []string{"log.severity"})
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "ERROR")
+	})
+
+	t.Run("pseudo attribute log.body", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+		lr := sl.LogRecords().AppendEmpty()
+		lr.Body().SetStr("my log body")
+
+		batches := splitLogsByAttributes(ld, []string{"log.body"})
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "my log body")
+	})
+
+	t.Run("scope attribute", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().Attributes().PutStr("library", "mylib")
+		sl.LogRecords().AppendEmpty().Body().SetStr("log-1")
+
+		batches := splitLogsByAttributes(ld, []string{"library"})
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "mylib")
+	})
+
+	t.Run("log record attribute", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+		lr := sl.LogRecords().AppendEmpty()
+		lr.Attributes().PutStr("user.id", "user-123")
+
+		batches := splitLogsByAttributes(ld, []string{"user.id"})
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "user-123")
+	})
+}
+
+// Routing integration tests
+
+func TestConsumeLogsWithServiceRouting(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	sink := new(consumertest.LogsSink)
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockLogsExporter(sink.ConsumeLogs), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}})},
+		RoutingKey: svcRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	ld := plog.NewLogs()
+	rl1 := ld.ResourceLogs().AppendEmpty()
+	rl1.Resource().Attributes().PutStr("service.name", "svc-1")
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+	rl2 := ld.ResourceLogs().AppendEmpty()
+	rl2.Resource().Attributes().PutStr("service.name", "svc-2")
+	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+
+	err = p.ConsumeLogs(t.Context(), ld)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, sink.AllLogs())
+}
+
+func TestConsumeLogsWithResourceRouting(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	sink := new(consumertest.LogsSink)
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockLogsExporter(sink.ConsumeLogs), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}})},
+		RoutingKey: resourceRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	ld := plog.NewLogs()
+	rl1 := ld.ResourceLogs().AppendEmpty()
+	rl1.Resource().Attributes().PutStr("service.name", "svc-1")
+	rl1.Resource().Attributes().PutStr("host.name", "host-1")
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+	rl2 := ld.ResourceLogs().AppendEmpty()
+	rl2.Resource().Attributes().PutStr("service.name", "svc-1")
+	rl2.Resource().Attributes().PutStr("host.name", "host-2")
+	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+
+	err = p.ConsumeLogs(t.Context(), ld)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, sink.AllLogs())
+}
+
+func TestConsumeLogsWithAttributeRouting(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	sink := new(consumertest.LogsSink)
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockLogsExporter(sink.ConsumeLogs), nil
+	}
+
+	cfg := &Config{
+		Resolver:          ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}})},
+		RoutingKey:        attrRoutingStr,
+		RoutingAttributes: []string{"env"},
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2"})
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	ld := plog.NewLogs()
+	rl1 := ld.ResourceLogs().AppendEmpty()
+	rl1.Resource().Attributes().PutStr("env", "prod")
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+	rl2 := ld.ResourceLogs().AppendEmpty()
+	rl2.Resource().Attributes().PutStr("env", "staging")
+	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+
+	err = p.ConsumeLogs(t.Context(), ld)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, sink.AllLogs())
+}
+
+func TestConsumeLogsConsistentRouting(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	var exporterEndpoints sync.Map
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+			exporterEndpoints.Store(endpoint, true)
+			return nil
+		}), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}})},
+		RoutingKey: svcRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2", "endpoint-3"})
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// send the same service name multiple times
+	for range 10 {
+		ld := simpleLogWithServiceName("consistent-svc")
+		err = p.ConsumeLogs(t.Context(), ld)
+		require.NoError(t, err)
+	}
+
+	// verify all went to the same endpoint
+	count := 0
+	exporterEndpoints.Range(func(_, _ any) bool {
+		count++
+		return true
+	})
+	assert.Equal(t, 1, count, "all logs with the same service name should route to the same endpoint")
+}
+
+// Benchmark tests
+
+func benchConsumeLogs(b *testing.B, routingKey string, endpointsCount, rlCount, slCount, logCount int) {
+	ts, tb := getTelemetryAssets(b)
+
+	sink := new(consumertest.LogsSink)
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockLogsExporter(sink.ConsumeLogs), nil
+	}
+
+	endpoints := []string{}
+	for i := range endpointsCount {
+		endpoints = append(endpoints, fmt.Sprintf("endpoint-%d", i))
+	}
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+		},
+		RoutingKey: routingKey,
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, config, componentFactory, tb)
+	require.NotNil(b, lb)
+	require.NoError(b, err)
+
+	p, err := newLogsExporter(ts, config)
+	require.NotNil(b, p)
+	require.NoError(b, err)
+
+	p.loadBalancer = lb
+
+	err = p.Start(b.Context(), componenttest.NewNopHost())
+	require.NoError(b, err)
+
+	ld := randomBenchLogs(b, rlCount, slCount, logCount)
+
+	for b.Loop() {
+		err = p.ConsumeLogs(b.Context(), ld)
+		require.NoError(b, err)
+	}
+
+	b.StopTimer()
+	err = p.Shutdown(b.Context())
+	require.NoError(b, err)
+}
+
+func BenchmarkConsumeLogs(b *testing.B) {
+	testCases := []struct {
+		routingKey string
+	}{
+		{routingKey: svcRoutingStr},
+		{routingKey: resourceRoutingStr},
+	}
+
+	for _, tc := range testCases {
+		b.Run(tc.routingKey, func(b *testing.B) {
+			for _, endpointCount := range []int{1, 5, 10} {
+				for _, rlCount := range []int{1, 3} {
+					for _, totalLogCount := range []int{100, 500, 1000} {
+						slCount := 1
+						logCount := totalLogCount / slCount / rlCount
+
+						b.Run(fmt.Sprintf("%dE_%dRL_%dSL_%dL", endpointCount, rlCount, slCount, logCount), func(b *testing.B) {
+							benchConsumeLogs(b, tc.routingKey, endpointCount, rlCount, slCount, logCount)
+						})
+					}
+				}
+			}
+		})
+	}
+}
+
+// Helper functions
+
 func randomLogs() plog.Logs {
-	return simpleLogWithID(random())
+	return simpleLogWithServiceName(fmt.Sprintf("svc-%d", rand.IntN(10)))
 }
 
 func simpleLogs() plog.Logs {
-	return simpleLogWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	return simpleLogWithServiceName("test-svc")
+}
+
+func simpleLogWithServiceName(svcName string) plog.Logs {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", svcName)
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty().Body().SetStr("test log")
+
+	return logs
 }
 
 func simpleLogWithID(id pcommon.TraceID) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "test-svc")
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.LogRecords().AppendEmpty().SetTraceID(id)
 
 	return logs
 }
 
-func simpleLogWithoutID() plog.Logs {
-	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
-	sl.LogRecords().AppendEmpty()
-
-	return logs
+func randomBenchLogs(b *testing.B, rlCount, slCount, logCount int) plog.Logs {
+	b.Helper()
+	ld := plog.NewLogs()
+	for i := range rlCount {
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", fmt.Sprintf("svc-%d", i))
+		rl.Resource().Attributes().PutStr("host.name", fmt.Sprintf("host-%d", i))
+		for range slCount {
+			sl := rl.ScopeLogs().AppendEmpty()
+			for range logCount {
+				lr := sl.LogRecords().AppendEmpty()
+				lr.Body().SetStr("benchmark log message")
+				lr.SetSeverityText("INFO")
+			}
+		}
+	}
+	return ld
 }
 
 type mockLogsExporter struct {
