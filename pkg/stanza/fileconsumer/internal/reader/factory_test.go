@@ -268,7 +268,7 @@ func TestNewReaderFromMetadataForRotationWithCompression(t *testing.T) {
 
 	r, err := f.NewReader(plaintextFile, fp)
 	require.NoError(t, err)
-	assert.Equal(t, "", r.FileType, "plaintext file should have empty FileType")
+	assert.Empty(t, r.FileType, "plaintext file should have empty FileType")
 
 	r.ReadToEnd(t.Context())
 	sink.ExpectToken(t, []byte(lines[0]))
@@ -277,7 +277,7 @@ func TestNewReaderFromMetadataForRotationWithCompression(t *testing.T) {
 	// Save metadata: Offset > 0, FileType == "" (plaintext).
 	oldMeta := r.Close()
 	require.Positive(t, oldMeta.Offset, "offset should be > 0 after reading plaintext file")
-	require.Equal(t, "", oldMeta.FileType, "old FileType should be empty (plaintext)")
+	require.Empty(t, oldMeta.FileType, "old FileType should be empty (plaintext)")
 
 	// Simulate rotation+compression — write a .gz containing 4 lines.
 	gzipPath := filepath.Join(tempDir, "test.log.gz")
