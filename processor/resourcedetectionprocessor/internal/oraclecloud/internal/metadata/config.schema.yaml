@@ -6,7 +6,7 @@ $defs:
       enabled:
         type: boolean
   resource_attributes_config:
-    description: ResourceAttributesConfig provides config for resourcedetectionprocessor/oraclecloud resource attributes.
+    description: ResourceAttributesConfig provides config for oracleclouddetector resource attributes.
     type: object
     properties:
       cloud.availability_zone:
