@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -376,6 +377,234 @@ func getLogBodyWithDebugAttrs(outLogs plog.Logs) pcommon.Map {
 		outLogBody.PutInt(redactionIgnoredCount, bodyIgnoredCount.Int())
 	}
 	return outLogBody
+}
+
+func TestRedactSummaryDebugHashHMACSHA256(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowedKeys:        []string{"id", "group", "name", "group.id", "member (id)", "token_some", "api_key_some", "email"},
+			BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			HashFunction:       HMACSHA256,
+			HMACKey:            configopaque.String("test-secret-key-32-bytes-long"),
+			IgnoredKeys:        []string{"safe_attribute"},
+			IgnoredKeyPatterns: []string{"safeRE_attribute.*"},
+			BlockedKeyPatterns: []string{".*token.*", ".*api_key.*"},
+			Summary:            "debug",
+		},
+		allowed: map[string]pcommon.Value{
+			"id":          pcommon.NewValueInt(5),
+			"group.id":    pcommon.NewValueStr("some.valid.id"),
+			"member (id)": pcommon.NewValueStr("some other valid id"),
+		},
+		masked: map[string]pcommon.Value{
+			"name": pcommon.NewValueStr("placeholder 4111111111111111"),
+		},
+		ignored: map[string]pcommon.Value{
+			"safe_attribute":          pcommon.NewValueStr("harmless 4111111111111112"),
+			"safeRE_attribute_id":     pcommon.NewValueStr("safe id"),
+			"safeRE_attribute_source": pcommon.NewValueStr("safe source"),
+		},
+		redacted: map[string]pcommon.Value{
+			"credit_card": pcommon.NewValueStr("4111111111111111"),
+		},
+		blockedKeys: map[string]pcommon.Value{
+			"token_some":   pcommon.NewValueStr("tokenize"),
+			"api_key_some": pcommon.NewValueStr("apinize"),
+		},
+		allowedValues: map[string]pcommon.Value{
+			"email": pcommon.NewValueStr("user@mycompany.com"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
+	outLogBody := getLogBodyWithDebugAttrs(outLogs)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outLogBody,
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		deleted := make([]string, 0, len(tc.redacted))
+		for k := range tc.redacted {
+			_, ok := attr.Get(k)
+			assert.False(t, ok)
+			deleted = append(deleted, k)
+		}
+		redactedKeys, ok := attr.Get(redactionRedactedKeys)
+		assert.True(t, ok)
+		sort.Strings(deleted)
+		assert.Equal(t, strings.Join(deleted, ","), redactedKeys.Str())
+		maskedKeyCount, ok := attr.Get(redactionRedactedCount)
+		assert.True(t, ok)
+		assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
+
+		ignoredKeyCount, ok := attr.Get(redactionIgnoredCount)
+		assert.True(t, ok)
+		assert.Equal(t, int64(len(tc.ignored)), ignoredKeyCount.Int())
+
+		blockedKeys := []string{"api_key_some", "name", "token_some"}
+		maskedKeys, ok := attr.Get(redactionMaskedKeys)
+		assert.True(t, ok)
+		assert.Equal(t, strings.Join(blockedKeys, ","), maskedKeys.Str())
+		maskedValueCount, ok := attr.Get(redactionMaskedCount)
+		assert.True(t, ok)
+		assert.Equal(t, int64(3), maskedValueCount.Int())
+
+		// Verify HMAC-SHA256 produces consistent but different output than plain text
+		value, _ := attr.Get("name")
+		hashedValue := value.Str()
+		assert.NotEqual(t, "placeholder ****", hashedValue)
+		assert.NotEqual(t, "placeholder 4111111111111111", hashedValue)
+		assert.Contains(t, hashedValue, "placeholder ")
+		assert.Len(t, strings.TrimPrefix(hashedValue, "placeholder "), 64) // SHA256 hex = 64 chars
+
+		value, _ = attr.Get("api_key_some")
+		assert.Len(t, value.Str(), 64)
+		value, _ = attr.Get("token_some")
+		assert.Len(t, value.Str(), 64)
+	}
+}
+
+func TestRedactSummaryDebugHashHMACSHA512(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowedKeys:   []string{"id", "group", "name"},
+			BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"}, // IPv4 regex
+			HashFunction:  HMACSHA512,
+			HMACKey:       configopaque.String("test-secret-key-for-hmac-sha512"),
+			Summary:       "debug",
+		},
+		allowed: map[string]pcommon.Value{
+			"id": pcommon.NewValueInt(5),
+		},
+		masked: map[string]pcommon.Value{
+			"name": pcommon.NewValueStr("User from 192.168.1.100"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	value, _ := attr.Get("name")
+	hashedValue := value.Str()
+	// Verify HMAC-SHA512 produces consistent output
+	assert.Contains(t, hashedValue, "User from ")
+	// SHA512 hex output = 128 characters
+	ipPart := strings.TrimPrefix(hashedValue, "User from ")
+	assert.Len(t, ipPart, 128)
+	assert.NotEqual(t, "192.168.1.100", ipPart)
+}
+
+func TestHMACConsistency(t *testing.T) {
+	// Test that same input + same key produces same output
+	config := &Config{
+		AllowedKeys:   []string{"ip_address"},
+		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
+		HashFunction:  HMACSHA256,
+		HMACKey:       configopaque.String("consistent-key-test"),
+		Summary:       "silent",
+	}
+
+	testIP := "192.168.1.100"
+
+	// First run
+	tc1 := testConfig{
+		config: config,
+		masked: map[string]pcommon.Value{
+			"ip_address": pcommon.NewValueStr(testIP),
+		},
+	}
+	out1 := runTest(t, tc1)
+	attr1 := out1.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	value1, _ := attr1.Get("ip_address")
+
+	// Second run with same config
+	tc2 := testConfig{
+		config: config,
+		masked: map[string]pcommon.Value{
+			"ip_address": pcommon.NewValueStr(testIP),
+		},
+	}
+	out2 := runTest(t, tc2)
+	attr2 := out2.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	value2, _ := attr2.Get("ip_address")
+
+	// Verify consistency
+	assert.Equal(t, value1.Str(), value2.Str(), "Same IP with same key should produce same HMAC")
+	assert.NotEqual(t, testIP, value1.Str(), "HMAC output should not match original IP")
+}
+
+func TestHMACDifferentKeys(t *testing.T) {
+	// Test that same input + different keys produce different outputs
+	testIP := "10.0.0.1"
+
+	config1 := &Config{
+		AllowedKeys:   []string{"ip_address"},
+		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
+		HashFunction:  HMACSHA256,
+		HMACKey:       configopaque.String("key-one"),
+		Summary:       "silent",
+	}
+
+	config2 := &Config{
+		AllowedKeys:   []string{"ip_address"},
+		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
+		HashFunction:  HMACSHA256,
+		HMACKey:       configopaque.String("key-two"),
+		Summary:       "silent",
+	}
+
+	tc1 := testConfig{
+		config: config1,
+		masked: map[string]pcommon.Value{
+			"ip_address": pcommon.NewValueStr(testIP),
+		},
+	}
+	out1 := runTest(t, tc1)
+	attr1 := out1.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	value1, _ := attr1.Get("ip_address")
+
+	tc2 := testConfig{
+		config: config2,
+		masked: map[string]pcommon.Value{
+			"ip_address": pcommon.NewValueStr(testIP),
+		},
+	}
+	out2 := runTest(t, tc2)
+	attr2 := out2.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	value2, _ := attr2.Get("ip_address")
+
+	// Verify different keys produce different outputs
+	assert.NotEqual(t, value1.Str(), value2.Str(), "Same IP with different keys should produce different HMACs")
+	assert.NotEqual(t, testIP, value1.Str())
+	assert.NotEqual(t, testIP, value2.Str())
 }
 
 func TestRedactSummaryDebugHashMD5(t *testing.T) {
