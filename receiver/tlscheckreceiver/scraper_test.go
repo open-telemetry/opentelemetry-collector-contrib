@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"software.sslmate.com/src/go-pkcs12"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
@@ -180,6 +182,48 @@ func createMockPKCS12File(t *testing.T, expiry time.Time, password string) strin
 
 	_, err = tmpFile.Write(pfxData)
 	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	return tmpFile.Name()
+}
+
+// createMockJKSFileWithMismatchedEntryPassword creates a JKS whose store-level MAC
+// uses storePassword but whose single PrivateKeyEntry is encrypted with entryPassword.
+// Loading with storePassword succeeds; GetPrivateKeyEntry with storePassword fails on
+// decrypt, exercising the else-branch in scrapeJKS.
+func createMockJKSFileWithMismatchedEntryPassword(t *testing.T, storePassword, entryPassword string) string {
+	t.Helper()
+
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(3),
+		Subject:      pkix.Name{CommonName: "jks-pke-test.example.com"},
+		Issuer:       pkix.Name{CommonName: "JKSPKEIssuer"},
+		NotBefore:    time.Now().Add(-1 * time.Hour),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
+	require.NoError(t, err)
+
+	privKeyDER, err := x509.MarshalPKCS8PrivateKey(privKey)
+	require.NoError(t, err)
+
+	ks := keystorego.New()
+	err = ks.SetPrivateKeyEntry("test-pke-alias", keystorego.PrivateKeyEntry{
+		PrivateKey: privKeyDER,
+		CertificateChain: []keystorego.Certificate{
+			{Type: "X.509", Content: certDER},
+		},
+	}, []byte(entryPassword))
+	require.NoError(t, err)
+
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-keystore-pke-*.jks")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.Remove(tmpFile.Name()) })
+
+	require.NoError(t, ks.Store(tmpFile, []byte(storePassword)))
 	require.NoError(t, tmpFile.Close())
 
 	return tmpFile.Name()
@@ -682,4 +726,41 @@ func TestValidateFilepath(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestScrape_JKSAliasFailsBothLookups(t *testing.T) {
+	// Create a JKS where the store password is "store-pass" but the private key entry
+	// was encrypted with "entry-pass". ks.Load succeeds with "store-pass", but
+	// GetPrivateKeyEntry("alias", "store-pass") fails on decrypt, and
+	// GetTrustedCertificateEntry("alias") fails with ErrWrongEntryType.
+	// This exercises the else-branch in scrapeJKS.
+	jksFile := createMockJKSFileWithMismatchedEntryPassword(t, "store-pass", "entry-pass")
+
+	observerCore, observedLogs := observer.New(zap.DebugLevel)
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   jksFile,
+				FileFormat: FileFormatJKS,
+				Password:   configopaque.String("store-pass"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	settings.Logger = zap.New(observerCore)
+
+	s := newScraper(cfg, settings, mockGetConnectionStateValid)
+	metrics, err := s.scrape(t.Context())
+	require.Error(t, err)
+	require.ErrorContains(t, err, "no parseable certificates found in JKS keystore")
+	require.ErrorContains(t, err, "last alias error")
+	require.Equal(t, 0, metrics.DataPointCount())
+
+	debugLogs := observedLogs.FilterMessage("Failed to read alias from JKS keystore")
+	require.Equal(t, 1, debugLogs.Len())
+	fields := debugLogs.All()[0].ContextMap()
+	require.Equal(t, jksFile, fields["file_path"])
+	require.Equal(t, "test-pke-alias", fields["alias"])
 }

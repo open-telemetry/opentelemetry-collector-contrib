@@ -72,6 +72,14 @@ func validateTarget(ct *CertificateTarget) error {
 		default:
 			return fmt.Errorf("%w: got %q", errInvalidFileFormat, ct.FileFormat)
 		}
+	} else {
+		// Endpoint-based target: file-related options must not be set.
+		if ct.FileFormat != "" {
+			return errors.New(`"file_format" cannot be set when "file_path" is empty (endpoint-based target)`)
+		}
+		if ct.Password != "" {
+			return errors.New(`"password" cannot be set when "file_path" is empty (endpoint-based target)`)
+		}
 	}
 
 	return nil

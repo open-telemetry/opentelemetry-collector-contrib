@@ -153,15 +153,17 @@ func (s *scraper) extractCertMetrics(target string, cert *x509.Certificate, metr
 	timeLeftInt := int64(timeLeft)
 	now := pcommon.NewTimestampFromTime(currentTime)
 
-	mux.Lock()
-	defer mux.Unlock()
-
+	// Build per-certificate metrics outside the critical section to reduce lock contention.
 	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(currentTime)))
 	rb := mb.NewResourceBuilder()
 	rb.SetTlscheckTarget(target)
 	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
 	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
+
+	// Only guard the mutation of the shared metrics object with the mutex.
+	mux.Lock()
 	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
+	mux.Unlock()
 }
 
 func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex, errs chan error) {
@@ -291,6 +293,7 @@ func (s *scraper) scrapeJKS(target *CertificateTarget, metrics *pmetric.Metrics,
 	}
 
 	foundAny := false
+	var lastAliasErr error
 	for _, alias := range aliases {
 		if entry, err := ks.GetTrustedCertificateEntry(alias); err == nil {
 			cert, parseErr := x509.ParseCertificate(entry.Certificate.Content)
@@ -318,11 +321,20 @@ func (s *scraper) scrapeJKS(target *CertificateTarget, metrics *pmetric.Metrics,
 			}
 			s.extractCertMetrics(filePath, cert, metrics, mux)
 			foundAny = true
+		} else {
+			lastAliasErr = err
+			s.settings.Logger.Debug("Failed to read alias from JKS keystore",
+				zap.String("file_path", filePath),
+				zap.String("alias", alias),
+				zap.Error(err))
 		}
 	}
 
 	if !foundAny {
 		err := fmt.Errorf("no parseable certificates found in JKS keystore: %s", filePath)
+		if lastAliasErr != nil {
+			err = fmt.Errorf("%w: last alias error: %w", err, lastAliasErr)
+		}
 		s.settings.Logger.Error(err.Error(), zap.String("file_path", filePath))
 		errs <- err
 	}

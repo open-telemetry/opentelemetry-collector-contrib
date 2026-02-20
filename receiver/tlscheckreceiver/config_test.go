@@ -173,6 +173,32 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errInvalidFileFormat,
 		},
+		{
+			desc: "endpoint with file_format set",
+			cfg: &Config{
+				Targets: []*CertificateTarget{
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "example.com:443"},
+						FileFormat:    FileFormatJKS,
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errors.New(`"file_format" cannot be set when "file_path" is empty (endpoint-based target)`),
+		},
+		{
+			desc: "endpoint with password set",
+			cfg: &Config{
+				Targets: []*CertificateTarget{
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "example.com:443"},
+						Password:      configopaque.String("secret"),
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errors.New(`"password" cannot be set when "file_path" is empty (endpoint-based target)`),
+		},
 	}
 
 	for _, tc := range testCases {
