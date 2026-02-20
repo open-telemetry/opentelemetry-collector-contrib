@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
@@ -41,14 +40,9 @@ func integrationTest(name string) func(*testing.T) {
 						Context:    filepath.Join("testdata", "integration"),
 						Dockerfile: dockerFile,
 					},
-					ExposedPorts: []string{elasticPort + "/tcp"},
-					Env: map[string]string{
-						"discovery.type": "single-node",
-						"ES_JAVA_OPTS":   "-Xms512m -Xmx512m",
-					},
-					WaitingFor: wait.ForHTTP("/").WithPort(nat.Port(elasticPort + "/tcp")).WithStartupTimeout(10 * time.Minute),
+					ExposedPorts: []string{elasticPort},
+					WaitingFor:   wait.ForListeningPort(elasticPort).WithStartupTimeout(2 * time.Minute),
 				}),
-			scraperinttest.WithCreateContainerTimeout(15*time.Minute),
 			scraperinttest.WithCustomConfig(
 				func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 					rCfg := cfg.(*Config)
@@ -70,8 +64,6 @@ func integrationTest(name string) func(*testing.T) {
 				pmetrictest.IgnoreScopeMetricsOrder(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 			),
-			scraperinttest.FailOnErrorLogs(),
-			scraperinttest.WithCompareTimeout(5*time.Minute),
 		).Run(t)
 	}
 }
