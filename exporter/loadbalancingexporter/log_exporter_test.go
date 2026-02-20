@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"math/rand/v2"
 	"net"
 	"sync"
@@ -406,7 +407,7 @@ func TestLogsWithMissingServiceName(t *testing.T) {
 
 	// verify — permanent error, no logs exported
 	assert.Error(t, err)
-	assert.Len(t, sink.AllLogs(), 0)
+	assert.Empty(t, sink.AllLogs())
 }
 
 // this test validates that exporter can concurrently change the endpoints while consuming logs.
@@ -635,7 +636,7 @@ func TestSplitLogsByServiceName(t *testing.T) {
 
 		batches, errs := splitLogsByServiceName(ld)
 		require.Len(t, errs, 1)
-		require.Len(t, batches, 0)
+		require.Empty(t, batches)
 	})
 
 	t.Run("duplicate service names merged", func(t *testing.T) {
@@ -1493,8 +1494,10 @@ func TestE2ERoutingIsolation(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	services := []string{"payment-service", "auth-service", "order-service",
-		"notification-service", "inventory-service", "shipping-service"}
+	services := []string{
+		"payment-service", "auth-service", "order-service",
+		"notification-service", "inventory-service", "shipping-service",
+	}
 
 	// Send each service 20 times across separate batches to prove consistency
 	for round := range 20 {
@@ -1530,9 +1533,7 @@ func TestE2ERoutingIsolation(t *testing.T) {
 
 	// Now send them again — verify routing didn't change
 	firstRoundMapping := make(map[string]string, len(serviceToEndpoint))
-	for k, v := range serviceToEndpoint {
-		firstRoundMapping[k] = v
-	}
+	maps.Copy(firstRoundMapping, serviceToEndpoint)
 
 	for _, svc := range services {
 		ld := simpleLogWithServiceName(svc)
@@ -2036,16 +2037,6 @@ func simpleLogWithServiceName(svcName string) plog.Logs {
 	rl.Resource().Attributes().PutStr("service.name", svcName)
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.LogRecords().AppendEmpty().Body().SetStr("test log")
-
-	return logs
-}
-
-func simpleLogWithID(id pcommon.TraceID) plog.Logs {
-	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("service.name", "test-svc")
-	sl := rl.ScopeLogs().AppendEmpty()
-	sl.LogRecords().AppendEmpty().SetTraceID(id)
 
 	return logs
 }
