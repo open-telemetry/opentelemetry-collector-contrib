@@ -103,7 +103,6 @@ service:
 			receiver.GenConfigYAMLStr(),
 			processorsSections,
 			connector.GenConfigYAMLStr(),
-			
 			pipeline1,
 			sender.ProtocolName(),
 			processorsList,
@@ -146,7 +145,6 @@ service:
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
-		
 		pipeline1,
 		sender.ProtocolName(),
 		processorsList,
