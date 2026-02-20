@@ -766,7 +766,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		actualData.SpanCount += spanCount
 	}
 	if containsRootSpan && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
-		tsp.decisionBatcher.MoveToEarlierBatch(id, actualData.batchID, uint64(tsp.cfg.DecisionWaitAfterRootReceived.Seconds()))
+		actualData.batchID = tsp.decisionBatcher.MoveToEarlierBatch(id, actualData.batchID, uint64(tsp.cfg.DecisionWaitAfterRootReceived.Seconds()))
 	}
 
 	finalDecision := actualData.finalDecision

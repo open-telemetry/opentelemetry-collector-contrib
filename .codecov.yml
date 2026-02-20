@@ -613,10 +613,6 @@ component_management:
     name: receiver_azuremonitor
     paths:
     - receiver/azuremonitorreceiver/**
-  - component_id: receiver_bigip
-    name: receiver_bigip
-    paths:
-    - receiver/bigipreceiver/**
   - component_id: receiver_carbon
     name: receiver_carbon
     paths:
