@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventionsv134 "go.opentelemetry.io/otel/semconv/v1.34.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
 
@@ -61,7 +60,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
-	d.rb.SetCloudPlatform(conventionsv134.CloudPlatformAzureVM.Value.AsString())
+	d.rb.SetCloudPlatform(conventions.CloudPlatformAzureVM.Value.AsString())
 	// Use osProfile.computerName for host.name, falling back to the VM name
 	// if computerName is empty (e.g., VMs created from specialized disks).
 	if compute.OSProfile.ComputerName != "" {
