@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -150,6 +151,66 @@ func TestDisabledTargetInfo(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
+}
+
+func TestTimeoutPrecedence(t *testing.T) {
+	t.Parallel()
+
+	// Get the default timeout value used by the factory
+	defaultCfg := createDefaultConfig().(*Config)
+	defaultHTTPTimeout := defaultCfg.ClientConfig.Timeout
+
+	tests := []struct {
+		name                      string
+		configMap                 map[string]interface{}
+		expectedExporterTimeout   time.Duration
+		expectedHTTPClientTimeout time.Duration
+	}{
+		{
+			name: "only_timeout_set",
+			configMap: map[string]interface{}{
+				"timeout":  "5s",
+				"endpoint": "http://example.com:9009",
+			},
+			expectedExporterTimeout:   5 * time.Second,
+			expectedHTTPClientTimeout: 5 * time.Second,
+		},
+		{
+			name: "only_exporter_timeout_set",
+			configMap: map[string]interface{}{
+				"exporter_timeout": "10s",
+				"endpoint":         "http://example.com:9009",
+			},
+			expectedExporterTimeout:   10 * time.Second,
+			expectedHTTPClientTimeout: defaultHTTPTimeout, // Keeps default HTTP timeout
+		},
+		{
+			name: "both_timeout_and_exporter_timeout_set",
+			configMap: map[string]interface{}{
+				"timeout":          "5s",
+				"exporter_timeout": "10s",
+				"endpoint":         "http://example.com:9009",
+			},
+			expectedExporterTimeout:   10 * time.Second,
+			expectedHTTPClientTimeout: 5 * time.Second,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+
+			conf := confmap.NewFromStringMap(tt.configMap)
+			err := conf.Unmarshal(cfg)
+			require.NoError(t, err, "failed to unmarshal config for test %s", tt.name)
+
+			assert.Equal(t, tt.expectedExporterTimeout, cfg.TimeoutSettings.Timeout,
+				"exporter timeout mismatch for test %s", tt.name)
+			assert.Equal(t, tt.expectedHTTPClientTimeout, cfg.ClientConfig.Timeout,
+				"HTTP client timeout mismatch for test %s", tt.name)
+		})
+	}
 }
 
 func toPtr[T any](val T) *T {
