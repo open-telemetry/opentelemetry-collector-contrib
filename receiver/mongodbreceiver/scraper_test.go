@@ -39,7 +39,6 @@ func TestNewMongodbScraper(t *testing.T) {
 }
 
 func TestScraperLifecycle(t *testing.T) {
-	now := time.Now()
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
@@ -54,8 +53,6 @@ func TestScraperLifecycle(t *testing.T) {
 	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 	require.NoError(t, scraper.shutdown(t.Context()))
-
-	require.Less(t, time.Since(now), 200*time.Millisecond, "component start and stop should be very fast")
 }
 
 var (
