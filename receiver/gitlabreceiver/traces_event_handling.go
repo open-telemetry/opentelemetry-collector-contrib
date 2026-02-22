@@ -103,7 +103,7 @@ func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPi
 	for i := range p.Builds {
 		glJob := glPipelineJob{
 			event:  (*glJobEvent)(&p.Builds[i]),
-			jobURL: baseJobURL + strconv.Itoa(p.Builds[i].ID),
+			jobURL: baseJobURL + strconv.FormatInt(p.Builds[i].ID, 10),
 		}
 
 		if glJob.event.FinishedAt != "" {
@@ -142,7 +142,7 @@ func (*gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, e Gi
 
 // newTraceID creates a deterministic Trace ID based on the provided pipelineID and pipeline finishedAt time.
 // It's not possible to create the traceID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
-func newTraceID(pipelineID int, finishedAt string) (pcommon.TraceID, error) {
+func newTraceID(pipelineID int64, finishedAt string) (pcommon.TraceID, error) {
 	_, err := parseGitlabTime(finishedAt)
 	if err != nil {
 		return pcommon.TraceID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
@@ -163,7 +163,7 @@ func newTraceID(pipelineID int, finishedAt string) (pcommon.TraceID, error) {
 
 // newPipelineSpanID creates a deterministic Parent Span ID based on the provided pipelineID and pipeline finishedAt time.
 // It's not possible to create the pipelineSpanID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
-func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error) {
+func newPipelineSpanID(pipelineID int64, finishedAt string) (pcommon.SpanID, error) {
 	_, err := parseGitlabTime(finishedAt)
 	if err != nil {
 		return pcommon.SpanID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
@@ -179,7 +179,7 @@ func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error
 
 // newStageSpanID creates a deterministic Stage Span ID based on the provided pipelineID, stageName, and stage startedAt time.
 // It's not possible to create the stageSpanID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
-func newStageSpanID(pipelineID int, stageName, startedAt string) (pcommon.SpanID, error) {
+func newStageSpanID(pipelineID int64, stageName, startedAt string) (pcommon.SpanID, error) {
 	if stageName == "" {
 		return pcommon.SpanID{}, errors.New("stageName is empty")
 	}
@@ -198,7 +198,7 @@ func newStageSpanID(pipelineID int, stageName, startedAt string) (pcommon.SpanID
 }
 
 // newJobSpanID creates a deterministic Job Span ID based on the unique jobID
-func newJobSpanID(jobID int, startedAt string) (pcommon.SpanID, error) {
+func newJobSpanID(jobID int64, startedAt string) (pcommon.SpanID, error) {
 	_, err := parseGitlabTime(startedAt)
 	if err != nil {
 		return pcommon.SpanID{}, fmt.Errorf("invalid startedAt timestamp: %w", err)
@@ -357,7 +357,7 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	// CICD
 	attrs.PutStr(string(conventions.CICDPipelineNameKey), e.ObjectAttributes.Name)
 	attrs.PutStr(string(conventions.CICDPipelineResultKey), e.ObjectAttributes.Status)
-	attrs.PutInt(string(conventions.CICDPipelineRunIDKey), int64(e.ObjectAttributes.ID))
+	attrs.PutInt(string(conventions.CICDPipelineRunIDKey), e.ObjectAttributes.ID)
 	attrs.PutStr(string(conventions.CICDPipelineRunURLFullKey), e.ObjectAttributes.URL)
 
 	// Resource attributes for workers are not applicable for GitLab, because GitLab provides worker information on job level
@@ -380,7 +380,7 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 
 	// Merge Request attributes (only for MR-triggered pipelines)
 	if e.MergeRequest.ID != 0 {
-		attrs.PutStr(string(conventions.VCSChangeIDKey), strconv.Itoa(e.MergeRequest.ID))
+		attrs.PutStr(string(conventions.VCSChangeIDKey), strconv.FormatInt(e.MergeRequest.ID, 10))
 		attrs.PutStr(string(conventions.VCSChangeStateKey), e.MergeRequest.State)
 		attrs.PutStr(string(conventions.VCSChangeTitleKey), e.MergeRequest.Title)
 		attrs.PutStr(string(conventions.VCSRefBaseNameKey), e.MergeRequest.TargetBranch)
@@ -406,7 +406,7 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 		attrs.PutStr(AttributeVCSRefHeadRevisionMessage, e.Commit.Message)
 
 		if e.User != nil {
-			attrs.PutInt(AttributeCICDPipelineRunActorID, int64(e.User.ID))
+			attrs.PutInt(AttributeCICDPipelineRunActorID, e.User.ID)
 			attrs.PutStr(AttributeGitLabPipelineRunActorUsername, e.User.Username)
 			attrs.PutStr(AttributeCICDPipelineRunActorName, e.User.Name)
 		}

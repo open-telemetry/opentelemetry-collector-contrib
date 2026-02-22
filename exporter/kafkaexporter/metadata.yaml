@@ -40,8 +40,7 @@ telemetry:
   metrics:
     kafka_broker_closed:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: The total number of connections closed.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
@@ -52,8 +51,7 @@ telemetry:
       attributes: [node_id, server.address]
     kafka_broker_connects:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: The total number of connections opened.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
@@ -64,8 +62,7 @@ telemetry:
       attributes: [node_id, server.address, outcome]
     kafka_broker_throttling_duration:
       enabled: true
-      stability:
-        level: deprecated
+      stability: deprecated
       description: The throttling duration in ms imposed by the broker when exporting messages.
       extended_documentation: Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_throttling_latency.
       optional: true
@@ -77,8 +74,7 @@ telemetry:
         if_enabled: This metric is deprecated in favor of kafka_broker_throttling_latency and will be removed soon.
     kafka_broker_throttling_latency:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: The throttling latency in seconds imposed by the broker when exporting records.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
@@ -89,8 +85,7 @@ telemetry:
       attributes: [node_id, server.address]
     kafka_exporter_bytes:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: The size in bytes of exported records seen by the broker.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
@@ -101,8 +96,7 @@ telemetry:
       attributes: [node_id, server.address, topic, partition, outcome]
     kafka_exporter_bytes_uncompressed:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: The uncompressed size in bytes of exported messages seen by the client.
       unit: By
       sum:
@@ -111,8 +105,7 @@ telemetry:
       attributes: [node_id, server.address, topic, partition, outcome]
     kafka_exporter_latency:
       enabled: true
-      stability:
-        level: deprecated
+      stability: deprecated
       description: The time it took in ms to export a batch of messages.
       extended_documentation: Deprecated in favor of kafka_exporter_write_latency.
       unit: ms
@@ -123,8 +116,7 @@ telemetry:
         if_enabled: This metric is deprecated in favor of kafka_exporter_write_latency and will be removed soon.
     kafka_exporter_messages:
       enabled: true
-      stability:
-        level: deprecated
+      stability: deprecated
       description: The number of exported messages.
       extended_documentation: Deprecated in favor of kafka_exporter_records.
       unit: "1"
@@ -136,8 +128,7 @@ telemetry:
         if_enabled: This metric is deprecated in favor of kafka_exporter_records and will be removed soon.
     kafka_exporter_records:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: The number of exported records.
       unit: "1"
       sum:
@@ -146,8 +137,7 @@ telemetry:
       attributes: [node_id, server.address, topic, partition, outcome]
     kafka_exporter_write_latency:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: The time it took in seconds to export a batch of records.
       unit: s
       histogram:
