@@ -14,3 +14,4 @@
 | host.name | The system hostname as reported by the OCI metadata service. | Any Str | true |
 | host.type | The compute shape (instance type) of the host, such as "VM.Standard.E4.Flex". | Any Str | true |
 | k8s.cluster.name | The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise. | Any Str | true |
+| oracle_cloud.realm | The Oracle Cloud realm | Any Str | true |
