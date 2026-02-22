@@ -30,6 +30,7 @@ Supported options:
 - `url`: Base URL for the Sentry organization (required).
 - `org_slug`: Target organization slug (required).
 - `auth_token`: Authentication token with access to Sentry APIs (required).
+  - requires one of the following scopes: `project:admin` or `project:write`. If your organization has disabled member project creation, the `org:write` or `team:admin` scope is required.
 - `auto_create_projects` (default: `false`): Create missing projects using the first team found in the org.
 - `routing`: Controls how telemetry is mapped to projects.
   - `project_from_attribute`: Resource attribute to use (default: `service.name`).
