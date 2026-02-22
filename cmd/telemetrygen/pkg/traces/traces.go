@@ -161,6 +161,7 @@ func run(c *Config, logger *zap.Logger) error {
 			spanDuration:     c.SpanDuration,
 			allowFailures:    c.AllowExportFailures,
 			numSpanLinks:     c.NumSpanLinks,
+			numSpanEvents:    c.NumSpanEvents,
 			spanContexts:     make([]trace.SpanContext, 0),
 		}
 

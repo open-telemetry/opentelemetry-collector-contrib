@@ -37,6 +37,7 @@ type worker struct {
 	loadSize         int                   // desired minimum size in MB of string data for each generated trace
 	spanDuration     time.Duration         // duration of generated spans
 	numSpanLinks     int                   // number of span links to generate per span
+	numSpanEvents    int                   // number of span events to generate per span
 	logger           *zap.Logger
 	allowFailures    bool                // whether to continue on export failures
 	spanContexts     []trace.SpanContext // collection of span contexts for linking
@@ -95,6 +96,24 @@ func (w *worker) generateSpanLinks() []trace.Link {
 	return links
 }
 
+// addSpanEvents adds events to a span
+func (w *worker) addSpanEvents(span trace.Span) {
+	if w.numSpanEvents <= 0 {
+		return
+	}
+
+	for i := 0; i < w.numSpanEvents; i++ {
+		span.AddEvent(
+			fmt.Sprintf("event-%d", i),
+			trace.WithAttributes(
+				attribute.String("event.type", "generated"),
+				attribute.String("event.message", "hello!"),
+				attribute.Int("event.index", i),
+			),
+		)
+	}
+}
+
 func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 	tracer := otel.Tracer("telemetrygen")
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
@@ -123,6 +142,8 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		for j := 0; j < w.loadSize; j++ {
 			sp.SetAttributes(config.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
 		}
+
+		w.addSpanEvents(sp)
 
 		// Store the parent span context for potential future linking
 		w.addSpanContext(sp.SpanContext())
@@ -155,6 +176,8 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 				trace.WithLinks(childLinks...),
 			)
 			child.SetAttributes(telemetryAttributes...)
+
+			w.addSpanEvents(child)
 
 			// Store the child span context for potential future linking
 			w.addSpanContext(child.SpanContext())

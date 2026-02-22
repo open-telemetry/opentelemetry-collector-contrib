@@ -429,3 +429,68 @@ func configWithMultipleAttributes(qty int, statusCode string) *Config {
 		StatusCode: statusCode,
 	}
 }
+
+func TestSpanEvents(t *testing.T) {
+	tests := []struct {
+		name           string
+		numSpanEvents  int
+		expectedEvents int
+	}{
+		{
+			name:           "no events",
+			numSpanEvents:  0,
+			expectedEvents: 0,
+		},
+		{
+			name:           "single event",
+			numSpanEvents:  1,
+			expectedEvents: 1,
+		},
+		{
+			name:           "multiple events",
+			numSpanEvents:  5,
+			expectedEvents: 5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			syncer := &mockSyncer{}
+
+			tracerProvider := sdktrace.NewTracerProvider()
+			sp := sdktrace.NewSimpleSpanProcessor(syncer)
+			tracerProvider.RegisterSpanProcessor(sp)
+			otel.SetTracerProvider(tracerProvider)
+
+			cfg := &Config{
+				Config: config.Config{
+					WorkerCount: 1,
+				},
+				NumTraces:     1,
+				NumChildSpans: 2,
+				NumSpanEvents: tt.numSpanEvents,
+			}
+
+			require.NoError(t, run(cfg, zap.NewNop()))
+
+			expectedNumSpans := cfg.NumChildSpans + 1 // 1 parent + 2 child spans
+			assert.Len(t, syncer.spans, expectedNumSpans)
+
+			for _, span := range syncer.spans {
+				events := span.Events()
+				assert.Len(t, events, tt.expectedEvents, "span should have %d events", tt.expectedEvents)
+
+				for i, event := range events {
+					assert.Equal(t, fmt.Sprintf("event-%d", i), event.Name)
+					assert.Len(t, event.Attributes, 3, "event should have 3 attributes")
+					for _, attr := range event.Attributes {
+						if attr.Key == "event.message" {
+							assert.Equal(t, "hello!", attr.Value.AsString())
+							break
+						}
+					}
+				}
+			}
+		})
+	}
+}
