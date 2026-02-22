@@ -196,6 +196,10 @@ gomoddownload:
 gotest:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
 
+.PHONY: test-no-race
+test-no-race:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test" GOTEST_RACE_OPT=
+
 .PHONY: gotest-with-cover
 gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"

@@ -263,6 +263,44 @@ jobs:
             echo "Tests passed or were skipped. Continuing."
           fi
 
+  test-no-race-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: [stable, oldstable]
+        runner: [ubuntu-24.04]
+        group:
+          - receiver-0
+          - receiver-1
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
+          - extension
+          - connector
+          - internal
+          - pkg
+          - cmd-0
+          - other
+    runs-on: ${{ matrix.runner }}
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Cache Test Build
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        with:
+          path: ~/.cache/go-build
+          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+      - name: Run Unit Tests Without Race
+        run: make test-no-race GROUP=${{ matrix.group }}
+
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
@@ -279,6 +317,21 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
+  test-no-race:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-24.04
+    needs: [setup-environment, test-no-race-matrix]
+    steps:
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.test-no-race-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
+
   coverage:
     runs-on: ubuntu-24.04
     needs: [unittest]
