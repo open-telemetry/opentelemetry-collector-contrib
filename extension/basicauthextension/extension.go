@@ -189,7 +189,7 @@ type perRPCAuth struct {
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
 func (p *perRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	return p.client.grpcMetadata.Load().(map[string]string), nil
+	return *p.client.grpcMetadata.Load(), nil
 }
 
 // RequireTransportSecurity always returns true for this implementation.
@@ -222,28 +222,25 @@ type basicAuthClient struct {
 	logger           *zap.Logger
 	usernameResolver credentialsfile.ValueResolver
 	passwordResolver credentialsfile.ValueResolver
-	grpcMetadata     atomic.Value // stores map[string]string
+	grpcMetadata     atomic.Pointer[map[string]string]
 }
 
-func (ba *basicAuthClient) updateGRPCMetadata(_ string) {
+func (ba *basicAuthClient) updateGRPCMetadata() {
 	encoded := base64.StdEncoding.EncodeToString([]byte(ba.username() + ":" + ba.password()))
-	ba.grpcMetadata.Store(map[string]string{
+	m := map[string]string{
 		"authorization": fmt.Sprintf("Basic %s", encoded),
-	})
+	}
+	ba.grpcMetadata.Store(&m)
 }
 
 func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 	if ba.clientAuth == nil {
-		return nil
+		return errNoCredentialSource
 	}
-	logger := ba.logger
-	if logger == nil {
-		logger = zap.NewNop()
-	}
-	onChange := ba.updateGRPCMetadata
+	onChange := func(_ string) { ba.updateGRPCMetadata() }
 	ca := ba.clientAuth
 	if ca.Username != "" || ca.UsernameFile != "" {
-		r, err := credentialsfile.NewValueResolver(ca.Username, ca.UsernameFile, logger, credentialsfile.WithOnChange(onChange))
+		r, err := credentialsfile.NewValueResolver(ca.Username, ca.UsernameFile, ba.logger, credentialsfile.WithOnChange(onChange))
 		if err != nil {
 			return err
 		}
@@ -253,7 +250,7 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 		ba.usernameResolver = r
 	}
 	if string(ca.Password) != "" || ca.PasswordFile != "" {
-		r, err := credentialsfile.NewValueResolver(string(ca.Password), ca.PasswordFile, logger, credentialsfile.WithOnChange(onChange))
+		r, err := credentialsfile.NewValueResolver(string(ca.Password), ca.PasswordFile, ba.logger, credentialsfile.WithOnChange(onChange))
 		if err != nil {
 			return err
 		}
@@ -262,7 +259,7 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 		}
 		ba.passwordResolver = r
 	}
-	ba.updateGRPCMetadata("")
+	ba.updateGRPCMetadata()
 	return nil
 }
 

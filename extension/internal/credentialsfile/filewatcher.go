@@ -19,7 +19,7 @@ import (
 // and caching its contents atomically.
 type fileWatcher struct {
 	path       string
-	value      atomic.Value
+	value      atomic.Pointer[string]
 	logger     *zap.Logger
 	onChange   func(string)
 	shutdownCH chan struct{}
@@ -36,7 +36,7 @@ func newFileWatcher(path string, logger *zap.Logger, onChange func(string)) *fil
 
 func (w *fileWatcher) Value() string {
 	if v := w.value.Load(); v != nil {
-		return v.(string)
+		return *v
 	}
 	return ""
 }
@@ -119,7 +119,7 @@ func (w *fileWatcher) reload() error {
 	if val == "" {
 		return fmt.Errorf("credentials file %q is empty", w.path)
 	}
-	w.value.Store(val)
+	w.value.Store(&val)
 	if w.onChange != nil {
 		w.onChange(val)
 	}
