@@ -157,14 +157,21 @@ func TestScraperScrape(t *testing.T) {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
+				adminStatus, err := loadAdminStatusAsMap()
+				require.NoError(t, err)
 				fc.On("GetVersion", mock.Anything).Return(mongo40, nil)
+				fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
+				fc.On("TopStats", mock.Anything).Return(bson.M{}, errors.New("some top stats error"))
 				fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{}, errors.New("some database names error"))
 				return fc
 			},
-			expectedMetricGen: func(*testing.T) pmetric.Metrics {
-				return pmetric.NewMetrics()
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape_no_db_count.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
 			},
-			expectedErr: errors.New("failed to fetch database names: some database names error"),
+			expectedErr: errors.New("failed to fetch top stats metrics: some top stats error; failed to fetch database names: some database names error"),
 		},
 		{
 			desc:       "Failed to fetch collection names",
@@ -623,59 +630,14 @@ func TestCollectMetricsSkipsDatabaseIteration(t *testing.T) {
 }
 
 func TestAllMetricsCategorized(t *testing.T) {
-	// Metrics that require database iteration
-	databaseMetrics := map[string]bool{
-		"MongodbCollectionCount":        true,
-		"MongodbDataSize":               true,
-		"MongodbExtentCount":            true,
-		"MongodbIndexSize":              true,
-		"MongodbIndexCount":             true,
-		"MongodbObjectCount":            true,
-		"MongodbStorageSize":            true,
-		"MongodbIndexAccessCount":       true,
-		"MongodbConnectionCount":        true,
-		"MongodbDocumentOperationCount": true,
-		"MongodbMemoryUsage":            true,
-		"MongodbLockAcquireCount":       true,
-		"MongodbLockAcquireWaitCount":   true,
-		"MongodbLockAcquireTime":        true,
-		"MongodbLockDeadlockCount":      true,
+	// Build lookup maps from the authoritative lists in config.go
+	dbMetrics := make(map[string]bool, len(databaseMetricNames))
+	for _, name := range databaseMetricNames {
+		dbMetrics[name] = true
 	}
-
-	// Admin/server-level metrics that don't require database iteration
-	serverMetrics := map[string]bool{
-		"MongodbActiveReads":         true,
-		"MongodbActiveWrites":        true,
-		"MongodbCacheOperations":     true,
-		"MongodbCommandsRate":        true,
-		"MongodbCursorCount":         true,
-		"MongodbCursorTimeoutCount":  true,
-		"MongodbDatabaseCount":       true,
-		"MongodbDeletesRate":         true,
-		"MongodbFlushesRate":         true,
-		"MongodbGetmoresRate":        true,
-		"MongodbGlobalLockTime":      true,
-		"MongodbHealth":              true,
-		"MongodbInsertsRate":         true,
-		"MongodbNetworkIoReceive":    true,
-		"MongodbNetworkIoTransmit":   true,
-		"MongodbNetworkRequestCount": true,
-		"MongodbOperationCount":      true,
-		"MongodbOperationLatencyTime": true,
-		"MongodbOperationReplCount":  true,
-		"MongodbOperationTime":       true,
-		"MongodbPageFaults":          true,
-		"MongodbQueriesRate":         true,
-		"MongodbReplCommandsPerSec":  true,
-		"MongodbReplDeletesPerSec":   true,
-		"MongodbReplGetmoresPerSec":  true,
-		"MongodbReplInsertsPerSec":   true,
-		"MongodbReplQueriesPerSec":   true,
-		"MongodbReplUpdatesPerSec":   true,
-		"MongodbSessionCount":        true,
-		"MongodbUpdatesRate":         true,
-		"MongodbUptime":              true,
-		"MongodbWtcacheBytesRead":    true,
+	srvMetrics := make(map[string]bool, len(serverMetricNames))
+	for _, name := range serverMetricNames {
+		srvMetrics[name] = true
 	}
 
 	cfg := createDefaultConfig().(*Config)
@@ -685,13 +647,13 @@ func TestAllMetricsCategorized(t *testing.T) {
 		field := cfgType.Field(i)
 		metricName := field.Name
 
-		isDatabaseMetric := databaseMetrics[metricName]
-		isServerMetric := serverMetrics[metricName]
+		isDatabaseMetric := dbMetrics[metricName]
+		isServerMetric := srvMetrics[metricName]
 
 		require.True(t, isDatabaseMetric || isServerMetric,
 			"Metric %s is not categorized as either database or server metric. "+
-				"Please add it to either databaseMetrics or serverMetrics map in TestAllMetricsCategorized, "+
-				"and ensure requiresDatabaseIteration() checks it if it's a database metric.", metricName)
+				"Please add it to either databaseMetricNames or serverMetricNames in config.go, "+
+				"and ensure requiresDatabaseIteration() will pick it up if it's a database metric.", metricName)
 
 		require.False(t, isDatabaseMetric && isServerMetric,
 			"Metric %s is categorized as both database and server metric", metricName)
