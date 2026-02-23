@@ -620,9 +620,10 @@ func (m *metricMongodbCollectionCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbCollectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricMongodbCollectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -630,6 +631,7 @@ func (m *metricMongodbCollectionCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -725,7 +727,7 @@ func (m *metricMongodbConnectionCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionTypeAttributeValue string) {
+func (m *metricMongodbConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionTypeAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -734,6 +736,7 @@ func (m *metricMongodbConnectionCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("type", connectionTypeAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -880,9 +883,10 @@ func (m *metricMongodbDataSize) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbDataSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricMongodbDataSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -890,6 +894,7 @@ func (m *metricMongodbDataSize) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1037,7 +1042,7 @@ func (m *metricMongodbDocumentOperationCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbDocumentOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
+func (m *metricMongodbDocumentOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1046,6 +1051,7 @@ func (m *metricMongodbDocumentOperationCount) recordDataPoint(start pcommon.Time
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("operation", operationAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1088,9 +1094,10 @@ func (m *metricMongodbExtentCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbExtentCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricMongodbExtentCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1098,6 +1105,7 @@ func (m *metricMongodbExtentCount) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1345,7 +1353,7 @@ func (m *metricMongodbIndexAccessCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbIndexAccessCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, collectionAttributeValue string) {
+func (m *metricMongodbIndexAccessCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, collectionAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1354,6 +1362,7 @@ func (m *metricMongodbIndexAccessCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("collection", collectionAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1396,9 +1405,10 @@ func (m *metricMongodbIndexCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbIndexCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricMongodbIndexCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1406,6 +1416,7 @@ func (m *metricMongodbIndexCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1448,9 +1459,10 @@ func (m *metricMongodbIndexSize) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricMongodbIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1458,6 +1470,7 @@ func (m *metricMongodbIndexSize) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1553,7 +1566,7 @@ func (m *metricMongodbLockAcquireCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbLockAcquireCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string) {
+func (m *metricMongodbLockAcquireCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1563,6 +1576,7 @@ func (m *metricMongodbLockAcquireCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
 	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1608,7 +1622,7 @@ func (m *metricMongodbLockAcquireTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbLockAcquireTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string) {
+func (m *metricMongodbLockAcquireTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1618,6 +1632,7 @@ func (m *metricMongodbLockAcquireTime) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
 	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1663,7 +1678,7 @@ func (m *metricMongodbLockAcquireWaitCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbLockAcquireWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string) {
+func (m *metricMongodbLockAcquireWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1673,6 +1688,7 @@ func (m *metricMongodbLockAcquireWaitCount) recordDataPoint(start pcommon.Timest
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
 	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1718,7 +1734,7 @@ func (m *metricMongodbLockDeadlockCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbLockDeadlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string) {
+func (m *metricMongodbLockDeadlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockTypeAttributeValue string, lockModeAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1728,6 +1744,7 @@ func (m *metricMongodbLockDeadlockCount) recordDataPoint(start pcommon.Timestamp
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
 	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1773,7 +1790,7 @@ func (m *metricMongodbMemoryUsage) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryTypeAttributeValue string) {
+func (m *metricMongodbMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryTypeAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1782,6 +1799,7 @@ func (m *metricMongodbMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("type", memoryTypeAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1980,9 +1998,10 @@ func (m *metricMongodbObjectCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbObjectCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricMongodbObjectCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1990,6 +2009,7 @@ func (m *metricMongodbObjectCount) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2700,9 +2720,10 @@ func (m *metricMongodbStorageSize) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbStorageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricMongodbStorageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2710,6 +2731,7 @@ func (m *metricMongodbStorageSize) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3024,12 +3046,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.Database.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.Database.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.MetricsExclude)
-	}
 	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
 	}
@@ -3041,6 +3057,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -3205,8 +3227,8 @@ func (mb *MetricsBuilder) RecordMongodbCacheOperationsDataPoint(ts pcommon.Times
 }
 
 // RecordMongodbCollectionCountDataPoint adds a data point to mongodb.collection.count metric.
-func (mb *MetricsBuilder) RecordMongodbCollectionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbCollectionCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordMongodbCollectionCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricMongodbCollectionCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
 }
 
 // RecordMongodbCommandsRateDataPoint adds a data point to mongodb.commands.rate metric.
@@ -3215,8 +3237,8 @@ func (mb *MetricsBuilder) RecordMongodbCommandsRateDataPoint(ts pcommon.Timestam
 }
 
 // RecordMongodbConnectionCountDataPoint adds a data point to mongodb.connection.count metric.
-func (mb *MetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue AttributeConnectionType) {
-	mb.metricMongodbConnectionCount.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue AttributeConnectionType, dbNamespaceAttributeValue string) {
+	mb.metricMongodbConnectionCount.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
 // RecordMongodbCursorCountDataPoint adds a data point to mongodb.cursor.count metric.
@@ -3230,8 +3252,8 @@ func (mb *MetricsBuilder) RecordMongodbCursorTimeoutCountDataPoint(ts pcommon.Ti
 }
 
 // RecordMongodbDataSizeDataPoint adds a data point to mongodb.data.size metric.
-func (mb *MetricsBuilder) RecordMongodbDataSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbDataSize.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordMongodbDataSizeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricMongodbDataSize.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
 }
 
 // RecordMongodbDatabaseCountDataPoint adds a data point to mongodb.database.count metric.
@@ -3245,13 +3267,13 @@ func (mb *MetricsBuilder) RecordMongodbDeletesRateDataPoint(ts pcommon.Timestamp
 }
 
 // RecordMongodbDocumentOperationCountDataPoint adds a data point to mongodb.document.operation.count metric.
-func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
-	mb.metricMongodbDocumentOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation, dbNamespaceAttributeValue string) {
+	mb.metricMongodbDocumentOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
 // RecordMongodbExtentCountDataPoint adds a data point to mongodb.extent.count metric.
-func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
 }
 
 // RecordMongodbFlushesRateDataPoint adds a data point to mongodb.flushes.rate metric.
@@ -3275,18 +3297,18 @@ func (mb *MetricsBuilder) RecordMongodbHealthDataPoint(ts pcommon.Timestamp, val
 }
 
 // RecordMongodbIndexAccessCountDataPoint adds a data point to mongodb.index.access.count metric.
-func (mb *MetricsBuilder) RecordMongodbIndexAccessCountDataPoint(ts pcommon.Timestamp, val int64, collectionAttributeValue string) {
-	mb.metricMongodbIndexAccessCount.recordDataPoint(mb.startTime, ts, val, collectionAttributeValue)
+func (mb *MetricsBuilder) RecordMongodbIndexAccessCountDataPoint(ts pcommon.Timestamp, val int64, collectionAttributeValue string, dbNamespaceAttributeValue string) {
+	mb.metricMongodbIndexAccessCount.recordDataPoint(mb.startTime, ts, val, collectionAttributeValue, dbNamespaceAttributeValue)
 }
 
 // RecordMongodbIndexCountDataPoint adds a data point to mongodb.index.count metric.
-func (mb *MetricsBuilder) RecordMongodbIndexCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbIndexCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordMongodbIndexCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricMongodbIndexCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
 }
 
 // RecordMongodbIndexSizeDataPoint adds a data point to mongodb.index.size metric.
-func (mb *MetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbIndexSize.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricMongodbIndexSize.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
 }
 
 // RecordMongodbInsertsRateDataPoint adds a data point to mongodb.inserts.rate metric.
@@ -3295,28 +3317,28 @@ func (mb *MetricsBuilder) RecordMongodbInsertsRateDataPoint(ts pcommon.Timestamp
 }
 
 // RecordMongodbLockAcquireCountDataPoint adds a data point to mongodb.lock.acquire.count metric.
-func (mb *MetricsBuilder) RecordMongodbLockAcquireCountDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockAcquireCount.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbLockAcquireCountDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode, dbNamespaceAttributeValue string) {
+	mb.metricMongodbLockAcquireCount.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
 // RecordMongodbLockAcquireTimeDataPoint adds a data point to mongodb.lock.acquire.time metric.
-func (mb *MetricsBuilder) RecordMongodbLockAcquireTimeDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockAcquireTime.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbLockAcquireTimeDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode, dbNamespaceAttributeValue string) {
+	mb.metricMongodbLockAcquireTime.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
 // RecordMongodbLockAcquireWaitCountDataPoint adds a data point to mongodb.lock.acquire.wait_count metric.
-func (mb *MetricsBuilder) RecordMongodbLockAcquireWaitCountDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockAcquireWaitCount.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbLockAcquireWaitCountDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode, dbNamespaceAttributeValue string) {
+	mb.metricMongodbLockAcquireWaitCount.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
 // RecordMongodbLockDeadlockCountDataPoint adds a data point to mongodb.lock.deadlock.count metric.
-func (mb *MetricsBuilder) RecordMongodbLockDeadlockCountDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockDeadlockCount.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbLockDeadlockCountDataPoint(ts pcommon.Timestamp, val int64, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode, dbNamespaceAttributeValue string) {
+	mb.metricMongodbLockDeadlockCount.recordDataPoint(mb.startTime, ts, val, lockTypeAttributeValue.String(), lockModeAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
 // RecordMongodbMemoryUsageDataPoint adds a data point to mongodb.memory.usage metric.
-func (mb *MetricsBuilder) RecordMongodbMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, memoryTypeAttributeValue AttributeMemoryType) {
-	mb.metricMongodbMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, memoryTypeAttributeValue AttributeMemoryType, dbNamespaceAttributeValue string) {
+	mb.metricMongodbMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryTypeAttributeValue.String(), dbNamespaceAttributeValue)
 }
 
 // RecordMongodbNetworkIoReceiveDataPoint adds a data point to mongodb.network.io.receive metric.
@@ -3335,8 +3357,8 @@ func (mb *MetricsBuilder) RecordMongodbNetworkRequestCountDataPoint(ts pcommon.T
 }
 
 // RecordMongodbObjectCountDataPoint adds a data point to mongodb.object.count metric.
-func (mb *MetricsBuilder) RecordMongodbObjectCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbObjectCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordMongodbObjectCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricMongodbObjectCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
 }
 
 // RecordMongodbOperationCountDataPoint adds a data point to mongodb.operation.count metric.
@@ -3405,8 +3427,8 @@ func (mb *MetricsBuilder) RecordMongodbSessionCountDataPoint(ts pcommon.Timestam
 }
 
 // RecordMongodbStorageSizeDataPoint adds a data point to mongodb.storage.size metric.
-func (mb *MetricsBuilder) RecordMongodbStorageSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbStorageSize.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordMongodbStorageSizeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricMongodbStorageSize.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
 }
 
 // RecordMongodbUpdatesRateDataPoint adds a data point to mongodb.updates.rate metric.

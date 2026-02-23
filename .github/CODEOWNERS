@@ -224,7 +224,7 @@ processor/resourcedetectionprocessor/internal/digitalocean/      @open-telemetry
 processor/resourcedetectionprocessor/internal/dynatrace/         @open-telemetry/collector-contrib-approvers @bacherfl @evan-bradley
 processor/resourcedetectionprocessor/internal/hetzner/           @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/openstack/nova/    @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
-processor/resourcedetectionprocessor/internal/oraclecloud/       @open-telemetry/collector-contrib-approvers @dashpole
+processor/resourcedetectionprocessor/internal/oraclecloud/       @open-telemetry/collector-contrib-approvers @dashpole @geekdave
 processor/resourcedetectionprocessor/internal/scaleway/          @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/upcloud/           @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/vultr/             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
