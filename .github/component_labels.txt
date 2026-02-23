@@ -230,6 +230,7 @@ receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
 receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
+receiver/carbonreceiver receiver/carbon
 receiver/chronyreceiver receiver/chrony
 receiver/ciscoosreceiver receiver/ciscoos
 receiver/ciscoosreceiver/internal/scraper/interfacesscraper receiver/ciscoos/internal/scraper/interfaces
@@ -348,5 +349,4 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
-receiver/carbonreceiver receiver/carbon
 receiver/k8slogreceiver receiver/k8slog
