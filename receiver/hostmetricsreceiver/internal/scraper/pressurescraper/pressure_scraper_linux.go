@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	pressureProcDir = "/proc/pressure/"
-	metricsLen      = 4
+	pressureProcPath = "/proc/pressure"
+	metricsLen       = 4
 )
 
 type pressureResource string
@@ -36,29 +36,30 @@ const (
 
 func (s *pressureScraper) recordPressureMetrics(now pcommon.Timestamp) error {
 	var errors scrapererror.ScrapeErrors
+	pressureDir := filepath.Join(s.config.rootPath, pressureProcPath)
 
-	cpuStats, err := getPressureStats(cpuResource)
+	cpuStats, err := getPressureStats(filepath.Join(pressureDir, string(cpuResource)))
 	if err != nil {
 		errors.AddPartial(metricsLen, err)
 	} else if cpuStats != nil {
 		s.recordCPUPressure(now, cpuStats)
 	}
 
-	memStats, err := getPressureStats(memResource)
+	memStats, err := getPressureStats(filepath.Join(pressureDir, string(memResource)))
 	if err != nil {
 		errors.AddPartial(metricsLen, err)
 	} else if memStats != nil {
 		s.recordMemoryPressure(now, memStats)
 	}
 
-	ioStats, err := getPressureStats(ioResource)
+	ioStats, err := getPressureStats(filepath.Join(pressureDir, string(ioResource)))
 	if err != nil {
 		errors.AddPartial(metricsLen, err)
 	} else if ioStats != nil {
 		s.recordIOPressure(now, ioStats)
 	}
 
-	irqStats, err := getPressureStats(irqResource)
+	irqStats, err := getPressureStats(filepath.Join(pressureDir, string(irqResource)))
 	if err != nil {
 		errors.AddPartial(metricsLen, err)
 	} else if irqStats != nil {
@@ -116,8 +117,8 @@ func (s *pressureScraper) recordIRQPressure(now pcommon.Timestamp, stats *Pressu
 	s.mb.RecordSystemIrqLinuxPressureTotalDataPoint(now, int64(stats.full.total), metadata.AttributeSystemPressureStallTypeFull)
 }
 
-func getPressureStats(resource pressureResource) (*PressureResourceStats, error) {
-	f, err := os.Open(path.Join(pressureProcDir, string(resource)))
+func getPressureStats(pressureFile string) (*PressureResourceStats, error) {
+	f, err := os.Open(pressureFile)
 	if err != nil {
 		return nil, err
 	}
