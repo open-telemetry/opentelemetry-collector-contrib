@@ -49,6 +49,7 @@ Available Editors:
 - [delete_index](#delete_index)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
+- [delete_matching_values](#delete_matching_values)
 - [keep_matching_keys](#keep_matching_keys)
 - [flatten](#flatten)
 - [keep_keys](#keep_keys)
@@ -123,6 +124,22 @@ Examples:
 - `delete_matching_keys(log.attributes, "(?i).*password.*")`
 
 - `delete_matching_keys(resource.attributes, "(?i).*password.*")`
+
+### delete_matching_values
+
+`delete_matching_values(target, pattern)`
+
+The `delete_matching_values` function removes all keys from a `pcommon.Map` whose value matches a regex pattern. Non-string values are evaluated dynamically by converting them to strings before matching.
+
+`target` is a path expression to a `pcommon.Map` type field. `pattern` is a regex string.
+
+All keys whose value match the pattern will be deleted from the map.
+
+Examples:
+
+- `delete_matching_values(log.attributes, "^$")` // deletes entries with an empty string
+
+- `delete_matching_values(resource.attributes, "(?i).*redacted.*")`
 
 ### keep_matching_keys
 

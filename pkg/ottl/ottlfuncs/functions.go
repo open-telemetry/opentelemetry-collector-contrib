@@ -13,6 +13,7 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 		// Editors
 		NewDeleteKeyFactory[K](),
 		NewDeleteMatchingKeysFactory[K](),
+		NewDeleteMatchingValuesFactory[K](),
 		NewKeepMatchingKeysFactory[K](),
 		NewFlattenFactory[K](),
 		NewKeepKeysFactory[K](),
