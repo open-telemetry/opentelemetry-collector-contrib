@@ -9,6 +9,22 @@ all_set:
       enabled: true
     system.cpu.linux.pressure.total:
       enabled: true
+    system.io.linux.pressure.10s:
+      enabled: true
+    system.io.linux.pressure.1m:
+      enabled: true
+    system.io.linux.pressure.5m:
+      enabled: true
+    system.io.linux.pressure.total:
+      enabled: true
+    system.irq.linux.pressure.10s:
+      enabled: true
+    system.irq.linux.pressure.1m:
+      enabled: true
+    system.irq.linux.pressure.5m:
+      enabled: true
+    system.irq.linux.pressure.total:
+      enabled: true
     system.memory.linux.pressure.10s:
       enabled: true
     system.memory.linux.pressure.1m:
@@ -26,6 +42,22 @@ none_set:
     system.cpu.linux.pressure.5m:
       enabled: false
     system.cpu.linux.pressure.total:
+      enabled: false
+    system.io.linux.pressure.10s:
+      enabled: false
+    system.io.linux.pressure.1m:
+      enabled: false
+    system.io.linux.pressure.5m:
+      enabled: false
+    system.io.linux.pressure.total:
+      enabled: false
+    system.irq.linux.pressure.10s:
+      enabled: false
+    system.irq.linux.pressure.1m:
+      enabled: false
+    system.irq.linux.pressure.5m:
+      enabled: false
+    system.irq.linux.pressure.total:
       enabled: false
     system.memory.linux.pressure.10s:
       enabled: false

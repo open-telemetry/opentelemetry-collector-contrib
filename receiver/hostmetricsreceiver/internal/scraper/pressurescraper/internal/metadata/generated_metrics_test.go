@@ -72,6 +72,32 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemCPULinuxPressureTotalDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
 
 			allMetricsCount++
+			mb.RecordSystemIoLinuxPressure10sDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
+
+			allMetricsCount++
+			mb.RecordSystemIoLinuxPressure1mDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
+
+			allMetricsCount++
+			mb.RecordSystemIoLinuxPressure5mDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemIoLinuxPressureTotalDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
+
+			allMetricsCount++
+			mb.RecordSystemIrqLinuxPressure10sDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
+
+			allMetricsCount++
+			mb.RecordSystemIrqLinuxPressure1mDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
+
+			allMetricsCount++
+			mb.RecordSystemIrqLinuxPressure5mDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemIrqLinuxPressureTotalDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
+
+			allMetricsCount++
 			mb.RecordSystemMemoryLinuxPressure10sDataPoint(ts, 1, AttributeSystemPressureStallTypeSome)
 
 			allMetricsCount++
@@ -141,7 +167,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.cpu.linux.pressure.5m"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average system CPU pressure (delayed execution due to a lack of resource) over the last 5 minute.", ms.At(i).Description())
+					assert.Equal(t, "Average system CPU pressure (delayed execution due to a lack of resource) over the last 5 minutes.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -156,7 +182,131 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.cpu.linux.pressure.total"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Average system CPU pressure (delayed execution due to a lack of resource) over the last 10 seconds.", ms.At(i).Description())
+					assert.Equal(t, "Total system CPU pressure (delayed execution due to a lack of resource).", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("system.pressure.stall_type")
+					assert.True(t, ok)
+					assert.Equal(t, "some", attrVal.Str())
+				case "system.io.linux.pressure.10s":
+					assert.False(t, validatedMetrics["system.io.linux.pressure.10s"], "Found a duplicate in the metrics slice: system.io.linux.pressure.10s")
+					validatedMetrics["system.io.linux.pressure.10s"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average system IO pressure (delayed execution due to a lack of resource) over the last 10 seconds.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("system.pressure.stall_type")
+					assert.True(t, ok)
+					assert.Equal(t, "some", attrVal.Str())
+				case "system.io.linux.pressure.1m":
+					assert.False(t, validatedMetrics["system.io.linux.pressure.1m"], "Found a duplicate in the metrics slice: system.io.linux.pressure.1m")
+					validatedMetrics["system.io.linux.pressure.1m"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average system IO pressure (delayed execution due to a lack of resource) over the last 1 minute.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("system.pressure.stall_type")
+					assert.True(t, ok)
+					assert.Equal(t, "some", attrVal.Str())
+				case "system.io.linux.pressure.5m":
+					assert.False(t, validatedMetrics["system.io.linux.pressure.5m"], "Found a duplicate in the metrics slice: system.io.linux.pressure.5m")
+					validatedMetrics["system.io.linux.pressure.5m"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average system IO pressure (delayed execution due to a lack of resource) over the last 5 minutes.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("system.pressure.stall_type")
+					assert.True(t, ok)
+					assert.Equal(t, "some", attrVal.Str())
+				case "system.io.linux.pressure.total":
+					assert.False(t, validatedMetrics["system.io.linux.pressure.total"], "Found a duplicate in the metrics slice: system.io.linux.pressure.total")
+					validatedMetrics["system.io.linux.pressure.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total system IO pressure (delayed execution due to a lack of resource).", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("system.pressure.stall_type")
+					assert.True(t, ok)
+					assert.Equal(t, "some", attrVal.Str())
+				case "system.irq.linux.pressure.10s":
+					assert.False(t, validatedMetrics["system.irq.linux.pressure.10s"], "Found a duplicate in the metrics slice: system.irq.linux.pressure.10s")
+					validatedMetrics["system.irq.linux.pressure.10s"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average system IRQ pressure (delayed execution due to a lack of resource) over the last 10 seconds.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("system.pressure.stall_type")
+					assert.True(t, ok)
+					assert.Equal(t, "some", attrVal.Str())
+				case "system.irq.linux.pressure.1m":
+					assert.False(t, validatedMetrics["system.irq.linux.pressure.1m"], "Found a duplicate in the metrics slice: system.irq.linux.pressure.1m")
+					validatedMetrics["system.irq.linux.pressure.1m"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average system IRQ pressure (delayed execution due to a lack of resource) over the last 1 minute.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("system.pressure.stall_type")
+					assert.True(t, ok)
+					assert.Equal(t, "some", attrVal.Str())
+				case "system.irq.linux.pressure.5m":
+					assert.False(t, validatedMetrics["system.irq.linux.pressure.5m"], "Found a duplicate in the metrics slice: system.irq.linux.pressure.5m")
+					validatedMetrics["system.irq.linux.pressure.5m"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average system IRQ pressure (delayed execution due to a lack of resource) over the last 5 minutes.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("system.pressure.stall_type")
+					assert.True(t, ok)
+					assert.Equal(t, "some", attrVal.Str())
+				case "system.irq.linux.pressure.total":
+					assert.False(t, validatedMetrics["system.irq.linux.pressure.total"], "Found a duplicate in the metrics slice: system.irq.linux.pressure.total")
+					validatedMetrics["system.irq.linux.pressure.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total system IRQ pressure (delayed execution due to a lack of resource).", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -203,7 +353,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.memory.linux.pressure.5m"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average system memory pressure (delayed execution due to a lack of resource) over the last 5 minute.", ms.At(i).Description())
+					assert.Equal(t, "Average system memory pressure (delayed execution due to a lack of resource) over the last 5 minutes.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -218,7 +368,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.memory.linux.pressure.total"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Average system memory pressure (delayed execution due to a lack of resource) over the last 10 seconds.", ms.At(i).Description())
+					assert.Equal(t, "Total system memory pressure (delayed execution due to a lack of resource).", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

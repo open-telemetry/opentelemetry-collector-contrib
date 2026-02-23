@@ -1,4 +1,9 @@
-package pressurescraper
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:build linux
+
+package pressurescraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pressurescraper"
 
 import (
 	"bufio"
@@ -8,22 +13,114 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pressurescraper/internal/metadata"
+)
+
+const (
+	pressureProcDir = "/proc/pressure/"
+	metricsLen      = 4
 )
 
 type pressureResource string
 
 const (
-	pressureProcDir                  = "/proc/pressure/"
-	cpuResource     pressureResource = "cpu"
-	memResource     pressureResource = "memory"
+	cpuResource pressureResource = "cpu"
+	memResource pressureResource = "memory"
+	ioResource  pressureResource = "io"
+	irqResource pressureResource = "irq"
 )
+
+func (s *pressureScraper) recordPressureMetrics(now pcommon.Timestamp) error {
+	var errors scrapererror.ScrapeErrors
+
+	cpuStats, err := getPressureStats(cpuResource)
+	if err != nil {
+		errors.AddPartial(metricsLen, err)
+	} else if cpuStats != nil {
+		s.recordCPUPressure(now, cpuStats)
+	}
+
+	memStats, err := getPressureStats(memResource)
+	if err != nil {
+		errors.AddPartial(metricsLen, err)
+	} else if memStats != nil {
+		s.recordMemoryPressure(now, memStats)
+	}
+
+	ioStats, err := getPressureStats(ioResource)
+	if err != nil {
+		errors.AddPartial(metricsLen, err)
+	} else if ioStats != nil {
+		s.recordIOPressure(now, ioStats)
+	}
+
+	irqStats, err := getPressureStats(irqResource)
+	if err != nil {
+		errors.AddPartial(metricsLen, err)
+	} else if irqStats != nil {
+		s.recordIRQPressure(now, irqStats)
+	}
+
+	return errors.Combine()
+}
+
+func (s *pressureScraper) recordCPUPressure(now pcommon.Timestamp, stats *PressureResourceStats) {
+	s.mb.RecordSystemCPULinuxPressure10sDataPoint(now, stats.some.avg10, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemCPULinuxPressure1mDataPoint(now, stats.some.avg60, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemCPULinuxPressure5mDataPoint(now, stats.some.avg300, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemCPULinuxPressureTotalDataPoint(now, int64(stats.some.total), metadata.AttributeSystemPressureStallTypeSome)
+
+	s.mb.RecordSystemCPULinuxPressure10sDataPoint(now, stats.full.avg10, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemCPULinuxPressure1mDataPoint(now, stats.full.avg60, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemCPULinuxPressure5mDataPoint(now, stats.full.avg300, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemCPULinuxPressureTotalDataPoint(now, int64(stats.full.total), metadata.AttributeSystemPressureStallTypeFull)
+}
+
+func (s *pressureScraper) recordMemoryPressure(now pcommon.Timestamp, stats *PressureResourceStats) {
+	s.mb.RecordSystemMemoryLinuxPressure10sDataPoint(now, stats.some.avg10, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemMemoryLinuxPressure1mDataPoint(now, stats.some.avg60, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemMemoryLinuxPressure5mDataPoint(now, stats.some.avg300, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemMemoryLinuxPressureTotalDataPoint(now, int64(stats.some.total), metadata.AttributeSystemPressureStallTypeSome)
+
+	s.mb.RecordSystemMemoryLinuxPressure10sDataPoint(now, stats.full.avg10, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemMemoryLinuxPressure1mDataPoint(now, stats.full.avg60, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemMemoryLinuxPressure5mDataPoint(now, stats.full.avg300, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemMemoryLinuxPressureTotalDataPoint(now, int64(stats.full.total), metadata.AttributeSystemPressureStallTypeFull)
+}
+
+func (s *pressureScraper) recordIOPressure(now pcommon.Timestamp, stats *PressureResourceStats) {
+	s.mb.RecordSystemIoLinuxPressure10sDataPoint(now, stats.some.avg10, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemIoLinuxPressure1mDataPoint(now, stats.some.avg60, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemIoLinuxPressure5mDataPoint(now, stats.some.avg300, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemIoLinuxPressureTotalDataPoint(now, int64(stats.some.total), metadata.AttributeSystemPressureStallTypeSome)
+
+	s.mb.RecordSystemIoLinuxPressure10sDataPoint(now, stats.full.avg10, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemIoLinuxPressure1mDataPoint(now, stats.full.avg60, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemIoLinuxPressure5mDataPoint(now, stats.full.avg300, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemIoLinuxPressureTotalDataPoint(now, int64(stats.full.total), metadata.AttributeSystemPressureStallTypeFull)
+}
+
+func (s *pressureScraper) recordIRQPressure(now pcommon.Timestamp, stats *PressureResourceStats) {
+	s.mb.RecordSystemIrqLinuxPressure10sDataPoint(now, stats.some.avg10, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemIrqLinuxPressure1mDataPoint(now, stats.some.avg60, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemIrqLinuxPressure5mDataPoint(now, stats.some.avg300, metadata.AttributeSystemPressureStallTypeSome)
+	s.mb.RecordSystemIrqLinuxPressureTotalDataPoint(now, int64(stats.some.total), metadata.AttributeSystemPressureStallTypeSome)
+
+	s.mb.RecordSystemIrqLinuxPressure10sDataPoint(now, stats.full.avg10, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemIrqLinuxPressure1mDataPoint(now, stats.full.avg60, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemIrqLinuxPressure5mDataPoint(now, stats.full.avg300, metadata.AttributeSystemPressureStallTypeFull)
+	s.mb.RecordSystemIrqLinuxPressureTotalDataPoint(now, int64(stats.full.total), metadata.AttributeSystemPressureStallTypeFull)
+}
 
 func getPressureStats(resource pressureResource) (*PressureResourceStats, error) {
 	f, err := os.Open(path.Join(pressureProcDir, string(resource)))
 	if err != nil {
 		return nil, err
 	}
-
 	defer f.Close()
 
 	return parsePressureStats(f)
@@ -38,13 +135,12 @@ func parsePressureStats(f io.Reader) (*PressureResourceStats, error) {
 		fields := strings.Fields(line)
 
 		if len(fields) < 5 {
-			return nil, fmt.Errorf("Invalid line (<5 fields): %v", line)
+			return nil, fmt.Errorf("invalid line (<5 fields): %v", line)
 		}
 
 		var stats PressureStats
 
 		for _, field := range fields[1:] {
-			// strings.Cut is the cleanest way to split exactly once
 			key, val, found := strings.Cut(field, "=")
 			if !found {
 				continue
@@ -81,7 +177,7 @@ func parsePressureStats(f io.Reader) (*PressureResourceStats, error) {
 		case "full":
 			resourceStats.full = stats
 		default:
-			continue // Skip lines we don't recognize
+			continue
 		}
 	}
 

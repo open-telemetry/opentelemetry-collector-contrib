@@ -51,6 +51,30 @@ var MetricsInfo = metricsInfo{
 	SystemCPULinuxPressureTotal: metricInfo{
 		Name: "system.cpu.linux.pressure.total",
 	},
+	SystemIoLinuxPressure10s: metricInfo{
+		Name: "system.io.linux.pressure.10s",
+	},
+	SystemIoLinuxPressure1m: metricInfo{
+		Name: "system.io.linux.pressure.1m",
+	},
+	SystemIoLinuxPressure5m: metricInfo{
+		Name: "system.io.linux.pressure.5m",
+	},
+	SystemIoLinuxPressureTotal: metricInfo{
+		Name: "system.io.linux.pressure.total",
+	},
+	SystemIrqLinuxPressure10s: metricInfo{
+		Name: "system.irq.linux.pressure.10s",
+	},
+	SystemIrqLinuxPressure1m: metricInfo{
+		Name: "system.irq.linux.pressure.1m",
+	},
+	SystemIrqLinuxPressure5m: metricInfo{
+		Name: "system.irq.linux.pressure.5m",
+	},
+	SystemIrqLinuxPressureTotal: metricInfo{
+		Name: "system.irq.linux.pressure.total",
+	},
 	SystemMemoryLinuxPressure10s: metricInfo{
 		Name: "system.memory.linux.pressure.10s",
 	},
@@ -70,6 +94,14 @@ type metricsInfo struct {
 	SystemCPULinuxPressure1m       metricInfo
 	SystemCPULinuxPressure5m       metricInfo
 	SystemCPULinuxPressureTotal    metricInfo
+	SystemIoLinuxPressure10s       metricInfo
+	SystemIoLinuxPressure1m        metricInfo
+	SystemIoLinuxPressure5m        metricInfo
+	SystemIoLinuxPressureTotal     metricInfo
+	SystemIrqLinuxPressure10s      metricInfo
+	SystemIrqLinuxPressure1m       metricInfo
+	SystemIrqLinuxPressure5m       metricInfo
+	SystemIrqLinuxPressureTotal    metricInfo
 	SystemMemoryLinuxPressure10s   metricInfo
 	SystemMemoryLinuxPressure1m    metricInfo
 	SystemMemoryLinuxPressure5m    metricInfo
@@ -193,7 +225,7 @@ type metricSystemCPULinuxPressure5m struct {
 // init fills system.cpu.linux.pressure.5m metric with initial data.
 func (m *metricSystemCPULinuxPressure5m) init() {
 	m.data.SetName("system.cpu.linux.pressure.5m")
-	m.data.SetDescription("Average system CPU pressure (delayed execution due to a lack of resource) over the last 5 minute.")
+	m.data.SetDescription("Average system CPU pressure (delayed execution due to a lack of resource) over the last 5 minutes.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -245,7 +277,7 @@ type metricSystemCPULinuxPressureTotal struct {
 // init fills system.cpu.linux.pressure.total metric with initial data.
 func (m *metricSystemCPULinuxPressureTotal) init() {
 	m.data.SetName("system.cpu.linux.pressure.total")
-	m.data.SetDescription("Average system CPU pressure (delayed execution due to a lack of resource) over the last 10 seconds.")
+	m.data.SetDescription("Total system CPU pressure (delayed execution due to a lack of resource).")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -282,6 +314,426 @@ func (m *metricSystemCPULinuxPressureTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPULinuxPressureTotal(cfg MetricConfig) metricSystemCPULinuxPressureTotal {
 	m := metricSystemCPULinuxPressureTotal{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemIoLinuxPressure10s struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.io.linux.pressure.10s metric with initial data.
+func (m *metricSystemIoLinuxPressure10s) init() {
+	m.data.SetName("system.io.linux.pressure.10s")
+	m.data.SetDescription("Average system IO pressure (delayed execution due to a lack of resource) over the last 10 seconds.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemIoLinuxPressure10s) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("system.pressure.stall_type", systemPressureStallTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemIoLinuxPressure10s) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemIoLinuxPressure10s) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemIoLinuxPressure10s(cfg MetricConfig) metricSystemIoLinuxPressure10s {
+	m := metricSystemIoLinuxPressure10s{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemIoLinuxPressure1m struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.io.linux.pressure.1m metric with initial data.
+func (m *metricSystemIoLinuxPressure1m) init() {
+	m.data.SetName("system.io.linux.pressure.1m")
+	m.data.SetDescription("Average system IO pressure (delayed execution due to a lack of resource) over the last 1 minute.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemIoLinuxPressure1m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("system.pressure.stall_type", systemPressureStallTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemIoLinuxPressure1m) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemIoLinuxPressure1m) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemIoLinuxPressure1m(cfg MetricConfig) metricSystemIoLinuxPressure1m {
+	m := metricSystemIoLinuxPressure1m{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemIoLinuxPressure5m struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.io.linux.pressure.5m metric with initial data.
+func (m *metricSystemIoLinuxPressure5m) init() {
+	m.data.SetName("system.io.linux.pressure.5m")
+	m.data.SetDescription("Average system IO pressure (delayed execution due to a lack of resource) over the last 5 minutes.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemIoLinuxPressure5m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("system.pressure.stall_type", systemPressureStallTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemIoLinuxPressure5m) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemIoLinuxPressure5m) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemIoLinuxPressure5m(cfg MetricConfig) metricSystemIoLinuxPressure5m {
+	m := metricSystemIoLinuxPressure5m{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemIoLinuxPressureTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.io.linux.pressure.total metric with initial data.
+func (m *metricSystemIoLinuxPressureTotal) init() {
+	m.data.SetName("system.io.linux.pressure.total")
+	m.data.SetDescription("Total system IO pressure (delayed execution due to a lack of resource).")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemIoLinuxPressureTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemPressureStallTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("system.pressure.stall_type", systemPressureStallTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemIoLinuxPressureTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemIoLinuxPressureTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemIoLinuxPressureTotal(cfg MetricConfig) metricSystemIoLinuxPressureTotal {
+	m := metricSystemIoLinuxPressureTotal{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemIrqLinuxPressure10s struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.irq.linux.pressure.10s metric with initial data.
+func (m *metricSystemIrqLinuxPressure10s) init() {
+	m.data.SetName("system.irq.linux.pressure.10s")
+	m.data.SetDescription("Average system IRQ pressure (delayed execution due to a lack of resource) over the last 10 seconds.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemIrqLinuxPressure10s) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("system.pressure.stall_type", systemPressureStallTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemIrqLinuxPressure10s) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemIrqLinuxPressure10s) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemIrqLinuxPressure10s(cfg MetricConfig) metricSystemIrqLinuxPressure10s {
+	m := metricSystemIrqLinuxPressure10s{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemIrqLinuxPressure1m struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.irq.linux.pressure.1m metric with initial data.
+func (m *metricSystemIrqLinuxPressure1m) init() {
+	m.data.SetName("system.irq.linux.pressure.1m")
+	m.data.SetDescription("Average system IRQ pressure (delayed execution due to a lack of resource) over the last 1 minute.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemIrqLinuxPressure1m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("system.pressure.stall_type", systemPressureStallTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemIrqLinuxPressure1m) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemIrqLinuxPressure1m) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemIrqLinuxPressure1m(cfg MetricConfig) metricSystemIrqLinuxPressure1m {
+	m := metricSystemIrqLinuxPressure1m{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemIrqLinuxPressure5m struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.irq.linux.pressure.5m metric with initial data.
+func (m *metricSystemIrqLinuxPressure5m) init() {
+	m.data.SetName("system.irq.linux.pressure.5m")
+	m.data.SetDescription("Average system IRQ pressure (delayed execution due to a lack of resource) over the last 5 minutes.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemIrqLinuxPressure5m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("system.pressure.stall_type", systemPressureStallTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemIrqLinuxPressure5m) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemIrqLinuxPressure5m) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemIrqLinuxPressure5m(cfg MetricConfig) metricSystemIrqLinuxPressure5m {
+	m := metricSystemIrqLinuxPressure5m{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemIrqLinuxPressureTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.irq.linux.pressure.total metric with initial data.
+func (m *metricSystemIrqLinuxPressureTotal) init() {
+	m.data.SetName("system.irq.linux.pressure.total")
+	m.data.SetDescription("Total system IRQ pressure (delayed execution due to a lack of resource).")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemIrqLinuxPressureTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemPressureStallTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("system.pressure.stall_type", systemPressureStallTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemIrqLinuxPressureTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemIrqLinuxPressureTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemIrqLinuxPressureTotal(cfg MetricConfig) metricSystemIrqLinuxPressureTotal {
+	m := metricSystemIrqLinuxPressureTotal{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -403,7 +855,7 @@ type metricSystemMemoryLinuxPressure5m struct {
 // init fills system.memory.linux.pressure.5m metric with initial data.
 func (m *metricSystemMemoryLinuxPressure5m) init() {
 	m.data.SetName("system.memory.linux.pressure.5m")
-	m.data.SetDescription("Average system memory pressure (delayed execution due to a lack of resource) over the last 5 minute.")
+	m.data.SetDescription("Average system memory pressure (delayed execution due to a lack of resource) over the last 5 minutes.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -455,7 +907,7 @@ type metricSystemMemoryLinuxPressureTotal struct {
 // init fills system.memory.linux.pressure.total metric with initial data.
 func (m *metricSystemMemoryLinuxPressureTotal) init() {
 	m.data.SetName("system.memory.linux.pressure.total")
-	m.data.SetDescription("Average system memory pressure (delayed execution due to a lack of resource) over the last 10 seconds.")
+	m.data.SetDescription("Total system memory pressure (delayed execution due to a lack of resource).")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -512,6 +964,14 @@ type MetricsBuilder struct {
 	metricSystemCPULinuxPressure1m       metricSystemCPULinuxPressure1m
 	metricSystemCPULinuxPressure5m       metricSystemCPULinuxPressure5m
 	metricSystemCPULinuxPressureTotal    metricSystemCPULinuxPressureTotal
+	metricSystemIoLinuxPressure10s       metricSystemIoLinuxPressure10s
+	metricSystemIoLinuxPressure1m        metricSystemIoLinuxPressure1m
+	metricSystemIoLinuxPressure5m        metricSystemIoLinuxPressure5m
+	metricSystemIoLinuxPressureTotal     metricSystemIoLinuxPressureTotal
+	metricSystemIrqLinuxPressure10s      metricSystemIrqLinuxPressure10s
+	metricSystemIrqLinuxPressure1m       metricSystemIrqLinuxPressure1m
+	metricSystemIrqLinuxPressure5m       metricSystemIrqLinuxPressure5m
+	metricSystemIrqLinuxPressureTotal    metricSystemIrqLinuxPressureTotal
 	metricSystemMemoryLinuxPressure10s   metricSystemMemoryLinuxPressure10s
 	metricSystemMemoryLinuxPressure1m    metricSystemMemoryLinuxPressure1m
 	metricSystemMemoryLinuxPressure5m    metricSystemMemoryLinuxPressure5m
@@ -545,6 +1005,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemCPULinuxPressure1m:       newMetricSystemCPULinuxPressure1m(mbc.Metrics.SystemCPULinuxPressure1m),
 		metricSystemCPULinuxPressure5m:       newMetricSystemCPULinuxPressure5m(mbc.Metrics.SystemCPULinuxPressure5m),
 		metricSystemCPULinuxPressureTotal:    newMetricSystemCPULinuxPressureTotal(mbc.Metrics.SystemCPULinuxPressureTotal),
+		metricSystemIoLinuxPressure10s:       newMetricSystemIoLinuxPressure10s(mbc.Metrics.SystemIoLinuxPressure10s),
+		metricSystemIoLinuxPressure1m:        newMetricSystemIoLinuxPressure1m(mbc.Metrics.SystemIoLinuxPressure1m),
+		metricSystemIoLinuxPressure5m:        newMetricSystemIoLinuxPressure5m(mbc.Metrics.SystemIoLinuxPressure5m),
+		metricSystemIoLinuxPressureTotal:     newMetricSystemIoLinuxPressureTotal(mbc.Metrics.SystemIoLinuxPressureTotal),
+		metricSystemIrqLinuxPressure10s:      newMetricSystemIrqLinuxPressure10s(mbc.Metrics.SystemIrqLinuxPressure10s),
+		metricSystemIrqLinuxPressure1m:       newMetricSystemIrqLinuxPressure1m(mbc.Metrics.SystemIrqLinuxPressure1m),
+		metricSystemIrqLinuxPressure5m:       newMetricSystemIrqLinuxPressure5m(mbc.Metrics.SystemIrqLinuxPressure5m),
+		metricSystemIrqLinuxPressureTotal:    newMetricSystemIrqLinuxPressureTotal(mbc.Metrics.SystemIrqLinuxPressureTotal),
 		metricSystemMemoryLinuxPressure10s:   newMetricSystemMemoryLinuxPressure10s(mbc.Metrics.SystemMemoryLinuxPressure10s),
 		metricSystemMemoryLinuxPressure1m:    newMetricSystemMemoryLinuxPressure1m(mbc.Metrics.SystemMemoryLinuxPressure1m),
 		metricSystemMemoryLinuxPressure5m:    newMetricSystemMemoryLinuxPressure5m(mbc.Metrics.SystemMemoryLinuxPressure5m),
@@ -619,6 +1087,14 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSystemCPULinuxPressure1m.emit(ils.Metrics())
 	mb.metricSystemCPULinuxPressure5m.emit(ils.Metrics())
 	mb.metricSystemCPULinuxPressureTotal.emit(ils.Metrics())
+	mb.metricSystemIoLinuxPressure10s.emit(ils.Metrics())
+	mb.metricSystemIoLinuxPressure1m.emit(ils.Metrics())
+	mb.metricSystemIoLinuxPressure5m.emit(ils.Metrics())
+	mb.metricSystemIoLinuxPressureTotal.emit(ils.Metrics())
+	mb.metricSystemIrqLinuxPressure10s.emit(ils.Metrics())
+	mb.metricSystemIrqLinuxPressure1m.emit(ils.Metrics())
+	mb.metricSystemIrqLinuxPressure5m.emit(ils.Metrics())
+	mb.metricSystemIrqLinuxPressureTotal.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxPressure10s.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxPressure1m.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxPressure5m.emit(ils.Metrics())
@@ -662,6 +1138,46 @@ func (mb *MetricsBuilder) RecordSystemCPULinuxPressure5mDataPoint(ts pcommon.Tim
 // RecordSystemCPULinuxPressureTotalDataPoint adds a data point to system.cpu.linux.pressure.total metric.
 func (mb *MetricsBuilder) RecordSystemCPULinuxPressureTotalDataPoint(ts pcommon.Timestamp, val int64, systemPressureStallTypeAttributeValue AttributeSystemPressureStallType) {
 	mb.metricSystemCPULinuxPressureTotal.recordDataPoint(mb.startTime, ts, val, systemPressureStallTypeAttributeValue.String())
+}
+
+// RecordSystemIoLinuxPressure10sDataPoint adds a data point to system.io.linux.pressure.10s metric.
+func (mb *MetricsBuilder) RecordSystemIoLinuxPressure10sDataPoint(ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue AttributeSystemPressureStallType) {
+	mb.metricSystemIoLinuxPressure10s.recordDataPoint(mb.startTime, ts, val, systemPressureStallTypeAttributeValue.String())
+}
+
+// RecordSystemIoLinuxPressure1mDataPoint adds a data point to system.io.linux.pressure.1m metric.
+func (mb *MetricsBuilder) RecordSystemIoLinuxPressure1mDataPoint(ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue AttributeSystemPressureStallType) {
+	mb.metricSystemIoLinuxPressure1m.recordDataPoint(mb.startTime, ts, val, systemPressureStallTypeAttributeValue.String())
+}
+
+// RecordSystemIoLinuxPressure5mDataPoint adds a data point to system.io.linux.pressure.5m metric.
+func (mb *MetricsBuilder) RecordSystemIoLinuxPressure5mDataPoint(ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue AttributeSystemPressureStallType) {
+	mb.metricSystemIoLinuxPressure5m.recordDataPoint(mb.startTime, ts, val, systemPressureStallTypeAttributeValue.String())
+}
+
+// RecordSystemIoLinuxPressureTotalDataPoint adds a data point to system.io.linux.pressure.total metric.
+func (mb *MetricsBuilder) RecordSystemIoLinuxPressureTotalDataPoint(ts pcommon.Timestamp, val int64, systemPressureStallTypeAttributeValue AttributeSystemPressureStallType) {
+	mb.metricSystemIoLinuxPressureTotal.recordDataPoint(mb.startTime, ts, val, systemPressureStallTypeAttributeValue.String())
+}
+
+// RecordSystemIrqLinuxPressure10sDataPoint adds a data point to system.irq.linux.pressure.10s metric.
+func (mb *MetricsBuilder) RecordSystemIrqLinuxPressure10sDataPoint(ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue AttributeSystemPressureStallType) {
+	mb.metricSystemIrqLinuxPressure10s.recordDataPoint(mb.startTime, ts, val, systemPressureStallTypeAttributeValue.String())
+}
+
+// RecordSystemIrqLinuxPressure1mDataPoint adds a data point to system.irq.linux.pressure.1m metric.
+func (mb *MetricsBuilder) RecordSystemIrqLinuxPressure1mDataPoint(ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue AttributeSystemPressureStallType) {
+	mb.metricSystemIrqLinuxPressure1m.recordDataPoint(mb.startTime, ts, val, systemPressureStallTypeAttributeValue.String())
+}
+
+// RecordSystemIrqLinuxPressure5mDataPoint adds a data point to system.irq.linux.pressure.5m metric.
+func (mb *MetricsBuilder) RecordSystemIrqLinuxPressure5mDataPoint(ts pcommon.Timestamp, val float64, systemPressureStallTypeAttributeValue AttributeSystemPressureStallType) {
+	mb.metricSystemIrqLinuxPressure5m.recordDataPoint(mb.startTime, ts, val, systemPressureStallTypeAttributeValue.String())
+}
+
+// RecordSystemIrqLinuxPressureTotalDataPoint adds a data point to system.irq.linux.pressure.total metric.
+func (mb *MetricsBuilder) RecordSystemIrqLinuxPressureTotalDataPoint(ts pcommon.Timestamp, val int64, systemPressureStallTypeAttributeValue AttributeSystemPressureStallType) {
+	mb.metricSystemIrqLinuxPressureTotal.recordDataPoint(mb.startTime, ts, val, systemPressureStallTypeAttributeValue.String())
 }
 
 // RecordSystemMemoryLinuxPressure10sDataPoint adds a data point to system.memory.linux.pressure.10s metric.

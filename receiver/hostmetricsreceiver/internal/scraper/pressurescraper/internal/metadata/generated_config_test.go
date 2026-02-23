@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -30,6 +31,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPULinuxPressure1m:       MetricConfig{Enabled: true},
 					SystemCPULinuxPressure5m:       MetricConfig{Enabled: true},
 					SystemCPULinuxPressureTotal:    MetricConfig{Enabled: true},
+					SystemIoLinuxPressure10s:       MetricConfig{Enabled: true},
+					SystemIoLinuxPressure1m:        MetricConfig{Enabled: true},
+					SystemIoLinuxPressure5m:        MetricConfig{Enabled: true},
+					SystemIoLinuxPressureTotal:     MetricConfig{Enabled: true},
+					SystemIrqLinuxPressure10s:      MetricConfig{Enabled: true},
+					SystemIrqLinuxPressure1m:       MetricConfig{Enabled: true},
+					SystemIrqLinuxPressure5m:       MetricConfig{Enabled: true},
+					SystemIrqLinuxPressureTotal:    MetricConfig{Enabled: true},
 					SystemMemoryLinuxPressure10s:   MetricConfig{Enabled: true},
 					SystemMemoryLinuxPressure1m:    MetricConfig{Enabled: true},
 					SystemMemoryLinuxPressure5m:    MetricConfig{Enabled: true},
@@ -45,6 +54,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPULinuxPressure1m:       MetricConfig{Enabled: false},
 					SystemCPULinuxPressure5m:       MetricConfig{Enabled: false},
 					SystemCPULinuxPressureTotal:    MetricConfig{Enabled: false},
+					SystemIoLinuxPressure10s:       MetricConfig{Enabled: false},
+					SystemIoLinuxPressure1m:        MetricConfig{Enabled: false},
+					SystemIoLinuxPressure5m:        MetricConfig{Enabled: false},
+					SystemIoLinuxPressureTotal:     MetricConfig{Enabled: false},
+					SystemIrqLinuxPressure10s:      MetricConfig{Enabled: false},
+					SystemIrqLinuxPressure1m:       MetricConfig{Enabled: false},
+					SystemIrqLinuxPressure5m:       MetricConfig{Enabled: false},
+					SystemIrqLinuxPressureTotal:    MetricConfig{Enabled: false},
 					SystemMemoryLinuxPressure10s:   MetricConfig{Enabled: false},
 					SystemMemoryLinuxPressure1m:    MetricConfig{Enabled: false},
 					SystemMemoryLinuxPressure5m:    MetricConfig{Enabled: false},

@@ -32,6 +32,14 @@ type MetricsConfig struct {
 	SystemCPULinuxPressure1m       MetricConfig `mapstructure:"system.cpu.linux.pressure.1m"`
 	SystemCPULinuxPressure5m       MetricConfig `mapstructure:"system.cpu.linux.pressure.5m"`
 	SystemCPULinuxPressureTotal    MetricConfig `mapstructure:"system.cpu.linux.pressure.total"`
+	SystemIoLinuxPressure10s       MetricConfig `mapstructure:"system.io.linux.pressure.10s"`
+	SystemIoLinuxPressure1m        MetricConfig `mapstructure:"system.io.linux.pressure.1m"`
+	SystemIoLinuxPressure5m        MetricConfig `mapstructure:"system.io.linux.pressure.5m"`
+	SystemIoLinuxPressureTotal     MetricConfig `mapstructure:"system.io.linux.pressure.total"`
+	SystemIrqLinuxPressure10s      MetricConfig `mapstructure:"system.irq.linux.pressure.10s"`
+	SystemIrqLinuxPressure1m       MetricConfig `mapstructure:"system.irq.linux.pressure.1m"`
+	SystemIrqLinuxPressure5m       MetricConfig `mapstructure:"system.irq.linux.pressure.5m"`
+	SystemIrqLinuxPressureTotal    MetricConfig `mapstructure:"system.irq.linux.pressure.total"`
 	SystemMemoryLinuxPressure10s   MetricConfig `mapstructure:"system.memory.linux.pressure.10s"`
 	SystemMemoryLinuxPressure1m    MetricConfig `mapstructure:"system.memory.linux.pressure.1m"`
 	SystemMemoryLinuxPressure5m    MetricConfig `mapstructure:"system.memory.linux.pressure.5m"`
@@ -50,6 +58,30 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SystemCPULinuxPressureTotal: MetricConfig{
+			Enabled: true,
+		},
+		SystemIoLinuxPressure10s: MetricConfig{
+			Enabled: false,
+		},
+		SystemIoLinuxPressure1m: MetricConfig{
+			Enabled: false,
+		},
+		SystemIoLinuxPressure5m: MetricConfig{
+			Enabled: false,
+		},
+		SystemIoLinuxPressureTotal: MetricConfig{
+			Enabled: true,
+		},
+		SystemIrqLinuxPressure10s: MetricConfig{
+			Enabled: false,
+		},
+		SystemIrqLinuxPressure1m: MetricConfig{
+			Enabled: false,
+		},
+		SystemIrqLinuxPressure5m: MetricConfig{
+			Enabled: false,
+		},
+		SystemIrqLinuxPressureTotal: MetricConfig{
 			Enabled: true,
 		},
 		SystemMemoryLinuxPressure10s: MetricConfig{

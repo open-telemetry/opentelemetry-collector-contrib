@@ -37,7 +37,7 @@ metrics:
 
   system.cpu.linux.pressure.5m:
     enabled: false
-    description: Average system CPU pressure (delayed execution due to a lack of resource) over the last 5 minute.
+    description: Average system CPU pressure (delayed execution due to a lack of resource) over the last 5 minutes.
     unit: "1"
     stability: development
     gauge:
@@ -46,7 +46,83 @@ metrics:
 
   system.cpu.linux.pressure.total:
     enabled: true
-    description: Average system CPU pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+    description: Total system CPU pressure (delayed execution due to a lack of resource).
+    unit: s
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [system.pressure.stall_type]
+
+  system.io.linux.pressure.10s:
+    enabled: false
+    description: Average system IO pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.io.linux.pressure.1m:
+    enabled: false
+    description: Average system IO pressure (delayed execution due to a lack of resource) over the last 1 minute.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.io.linux.pressure.5m:
+    enabled: false
+    description: Average system IO pressure (delayed execution due to a lack of resource) over the last 5 minutes.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.io.linux.pressure.total:
+    enabled: true
+    description: Total system IO pressure (delayed execution due to a lack of resource).
+    unit: s
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [system.pressure.stall_type]
+
+  system.irq.linux.pressure.10s:
+    enabled: false
+    description: Average system IRQ pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.irq.linux.pressure.1m:
+    enabled: false
+    description: Average system IRQ pressure (delayed execution due to a lack of resource) over the last 1 minute.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.irq.linux.pressure.5m:
+    enabled: false
+    description: Average system IRQ pressure (delayed execution due to a lack of resource) over the last 5 minutes.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.irq.linux.pressure.total:
+    enabled: true
+    description: Total system IRQ pressure (delayed execution due to a lack of resource).
     unit: s
     stability: development
     sum:
@@ -75,16 +151,16 @@ metrics:
 
   system.memory.linux.pressure.5m:
     enabled: false
+    description: Average system memory pressure (delayed execution due to a lack of resource) over the last 5 minutes.
     unit: "1"
     stability: development
     gauge:
       value_type: double
     attributes: [system.pressure.stall_type]
-    description: Average system memory pressure (delayed execution due to a lack of resource) over the last 5 minute.
 
   system.memory.linux.pressure.total:
     enabled: true
-    description: Average system memory pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+    description: Total system memory pressure (delayed execution due to a lack of resource).
     unit: s
     stability: development
     sum:

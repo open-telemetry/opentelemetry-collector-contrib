@@ -14,7 +14,35 @@ metrics:
 
 ### system.cpu.linux.pressure.total
 
-Average system CPU pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+Total system CPU pressure (delayed execution due to a lack of resource).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| system.pressure.stall_type | Tasks that were delayed due to lack of resources. | Str: ``some``, ``full`` | Recommended |
+
+### system.io.linux.pressure.total
+
+Total system IO pressure (delayed execution due to a lack of resource).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| system.pressure.stall_type | Tasks that were delayed due to lack of resources. | Str: ``some``, ``full`` | Recommended |
+
+### system.irq.linux.pressure.total
+
+Total system IRQ pressure (delayed execution due to a lack of resource).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -28,7 +56,7 @@ Average system CPU pressure (delayed execution due to a lack of resource) over t
 
 ### system.memory.linux.pressure.total
 
-Average system memory pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+Total system memory pressure (delayed execution due to a lack of resource).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -80,7 +108,91 @@ Average system CPU pressure (delayed execution due to a lack of resource) over t
 
 ### system.cpu.linux.pressure.5m
 
-Average system CPU pressure (delayed execution due to a lack of resource) over the last 5 minute.
+Average system CPU pressure (delayed execution due to a lack of resource) over the last 5 minutes.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| system.pressure.stall_type | Tasks that were delayed due to lack of resources. | Str: ``some``, ``full`` | Recommended |
+
+### system.io.linux.pressure.10s
+
+Average system IO pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| system.pressure.stall_type | Tasks that were delayed due to lack of resources. | Str: ``some``, ``full`` | Recommended |
+
+### system.io.linux.pressure.1m
+
+Average system IO pressure (delayed execution due to a lack of resource) over the last 1 minute.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| system.pressure.stall_type | Tasks that were delayed due to lack of resources. | Str: ``some``, ``full`` | Recommended |
+
+### system.io.linux.pressure.5m
+
+Average system IO pressure (delayed execution due to a lack of resource) over the last 5 minutes.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| system.pressure.stall_type | Tasks that were delayed due to lack of resources. | Str: ``some``, ``full`` | Recommended |
+
+### system.irq.linux.pressure.10s
+
+Average system IRQ pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| system.pressure.stall_type | Tasks that were delayed due to lack of resources. | Str: ``some``, ``full`` | Recommended |
+
+### system.irq.linux.pressure.1m
+
+Average system IRQ pressure (delayed execution due to a lack of resource) over the last 1 minute.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| system.pressure.stall_type | Tasks that were delayed due to lack of resources. | Str: ``some``, ``full`` | Recommended |
+
+### system.irq.linux.pressure.5m
+
+Average system IRQ pressure (delayed execution due to a lack of resource) over the last 5 minutes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -122,7 +234,7 @@ Average system memory pressure (delayed execution due to a lack of resource) ove
 
 ### system.memory.linux.pressure.5m
 
-Average system memory pressure (delayed execution due to a lack of resource) over the last 5 minute.
+Average system memory pressure (delayed execution due to a lack of resource) over the last 5 minutes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
