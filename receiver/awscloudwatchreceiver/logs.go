@@ -428,7 +428,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 
 			numGroups++
 
-			if auto.Tags != nil {
+			if len(auto.Tags) > 0 {
 				tags, err := l.client.ListTagsForResource(ctx, &cloudwatchlogs.ListTagsForResourceInput{
 					ResourceArn: aws.String(*lg.Arn),
 				})
