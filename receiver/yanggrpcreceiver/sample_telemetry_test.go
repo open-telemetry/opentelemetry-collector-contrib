@@ -75,7 +75,7 @@ func TestSampleTelemetryData(t *testing.T) {
 	// Wait until the gRPC server is ready to accept connections instead of using
 	// a fixed sleep, which is unreliable on slow or loaded CI machines.
 	require.Eventually(t, func() bool {
-		conn, err := net.DialTimeout("tcp", "localhost:57404", 100*time.Millisecond)
+		conn, err := net.DialTimeout(string(config.NetAddr.Transport), config.NetAddr.Endpoint, 100*time.Millisecond)
 		if err != nil {
 			return false
 		}
