@@ -98,12 +98,13 @@ type GroupConfig struct {
 
 // AutodiscoverConfig is the configuration for the autodiscovery functionality of log groups
 type AutodiscoverConfig struct {
-	Prefix                string       `mapstructure:"prefix"`
-	Pattern               string       `mapstructure:"pattern"`
-	Limit                 int          `mapstructure:"limit"`
-	Streams               StreamConfig `mapstructure:"streams"`
-	AccountIdentifiers    []string     `mapstructure:"account_identifiers"`
-	IncludeLinkedAccounts *bool        `mapstructure:"include_linked_accounts"`
+	Prefix                string            `mapstructure:"prefix"`
+	Pattern               string            `mapstructure:"pattern"`
+	Limit                 int               `mapstructure:"limit"`
+	Streams               StreamConfig      `mapstructure:"streams"`
+	AccountIdentifiers    []string          `mapstructure:"account_identifiers"`
+	IncludeLinkedAccounts *bool             `mapstructure:"include_linked_accounts"`
+	Tags                  map[string]string `mapstructure:"tags"`
 }
 
 // StreamConfig represents the configuration for the log stream filtering

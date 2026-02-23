@@ -51,6 +51,7 @@ type logsReceiver struct {
 type client interface {
 	DescribeLogGroups(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
 	FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error)
+	ListTagsForResource(ctx context.Context, input *cloudwatchlogs.ListTagsForResourceInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.ListTagsForResourceOutput, error)
 }
 
 type streamNames struct {
@@ -447,6 +448,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			return groups, fmt.Errorf("unable to list log groups: %w", err)
 		}
 
+	logGroupLoop:
 		for i := range dlgResults.LogGroups {
 			lg := &dlgResults.LogGroups[i]
 			if numGroups == auto.Limit {
@@ -457,6 +459,22 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			}
 
 			numGroups++
+
+			if auto.Tags != nil {
+				tags, err := l.client.ListTagsForResource(ctx, &cloudwatchlogs.ListTagsForResourceInput{
+					ResourceArn: aws.String(*lg.Arn),
+				})
+				if err != nil {
+					l.settings.Logger.Error("unable to list tags for resource", zap.Error(err))
+					continue logGroupLoop
+				}
+
+				for k, v := range auto.Tags {
+					if val, ok := tags.Tags[k]; !ok || val != v {
+						continue logGroupLoop
+					}
+				}
+			}
 
 			// default behavior is to collect all if not stream filtered
 			if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
@@ -471,6 +489,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			if len(auto.Streams.Names) > 0 {
 				groups = append(groups, &streamNames{group: *lg.LogGroupName, names: auto.Streams.Names})
 			}
+
 		}
 		nextToken = dlgResults.NextToken
 	}

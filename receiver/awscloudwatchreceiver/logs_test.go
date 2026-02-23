@@ -975,6 +975,85 @@ func TestPollSetsGroupNextStartTimes(t *testing.T) {
 	mc.AssertExpectations(t)
 }
 
+func TestAutodiscoverTags(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.PollInterval = 1 * time.Second
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit:  3,
+			Prefix: "/aws/",
+			Tags: map[string]string{
+				"environment": "production",
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+	mc := &mockClient{}
+	logsRcvr.client = mc
+
+	mc.On("DescribeLogGroups", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+		return input.LogGroupNamePrefix != nil && *input.LogGroupNamePrefix == "/aws/"
+	}), mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
+		LogGroups: []types.LogGroup{
+			{
+				Arn:          aws.String("arn:aws:logs:us-west-1:123456789012:log-group:/aws/working-group"),
+				LogGroupName: aws.String("/aws/working-group"),
+			},
+			{
+				Arn:          aws.String("arn:aws:logs:us-west-1:123456789012:log-group:/aws/not-in-tags-group"),
+				LogGroupName: aws.String("/aws/not-in-tags-group"),
+			},
+		},
+		NextToken: nil,
+	}, nil)
+	mc.On("ListTagsForResource", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.ListTagsForResourceInput) bool {
+		return input.ResourceArn != nil && *input.ResourceArn == "arn:aws:logs:us-west-1:123456789012:log-group:/aws/working-group"
+	}), mock.Anything).Return(&cloudwatchlogs.ListTagsForResourceOutput{
+		Tags: map[string]string{
+			"environment": "production",
+		},
+	}, nil)
+
+	mc.On("ListTagsForResource", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.ListTagsForResourceInput) bool {
+		return input.ResourceArn != nil && *input.ResourceArn == "arn:aws:logs:us-west-1:123456789012:log-group:/aws/not-in-tags-group"
+	}), mock.Anything).Return(&cloudwatchlogs.ListTagsForResourceOutput{
+		Tags: map[string]string{
+			"environment": "development",
+		},
+	}, nil)
+
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return input.LogGroupName != nil && *input.LogGroupName == "/aws/working-group"
+	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
+			{
+				EventId:       aws.String("event1"),
+				LogStreamName: aws.String("stream1"),
+				Message:       aws.String("test message"),
+				Timestamp:     aws.Int64(time.Now().UnixMilli()),
+			},
+		},
+		NextToken: nil,
+	}, nil)
+
+	err := logsRcvr.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	err = logsRcvr.Shutdown(t.Context())
+	require.NoError(t, err)
+}
+
 func defaultMockClient() client {
 	mc := &mockClient{}
 	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
@@ -1051,4 +1130,9 @@ func (mc *mockClient) DescribeLogGroups(ctx context.Context, input *cloudwatchlo
 func (mc *mockClient) FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error) {
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.FilterLogEventsOutput), args.Error(1)
+}
+
+func (mc *mockClient) ListTagsForResource(ctx context.Context, input *cloudwatchlogs.ListTagsForResourceInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.ListTagsForResourceOutput, error) {
+	args := mc.Called(ctx, input, opts)
+	return args.Get(0).(*cloudwatchlogs.ListTagsForResourceOutput), args.Error(1)
 }
