@@ -206,46 +206,22 @@ func (wc *WeaverContext) WaitForOutput(timeout time.Duration) (string, error) {
 func (wc *WeaverContext) TestLogs(logs plog.Logs) error {
 	ctx, cancel := context.WithTimeout(wc.ctx, 10*time.Second)
 	defer cancel()
-	response, err := wc.clients.consumeLogs(ctx, logs)
-	if err != nil {
-		return err
-	}
-	resJson, err := response.MarshalJSON()
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(resJson))
-	return nil
+	_, err := wc.clients.consumeLogs(ctx, logs)
+	return err
 }
 
 func (wc *WeaverContext) TestMetrics(metrics pmetric.Metrics) error {
 	ctx, cancel := context.WithTimeout(wc.ctx, 10*time.Second)
 	defer cancel()
-	response, err := wc.clients.consumeMetrics(ctx, metrics)
-	if err != nil {
-		return err
-	}
-	resJson, err := response.MarshalJSON()
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(resJson))
-	return nil
+	_, err := wc.clients.consumeMetrics(ctx, metrics)
+	return err
 }
 
 func (wc *WeaverContext) TestTraces(traces ptrace.Traces) error {
 	ctx, cancel := context.WithTimeout(wc.ctx, 10*time.Second)
 	defer cancel()
-	response, err := wc.clients.consumeTraces(ctx, traces)
-	if err != nil {
-		return err
-	}
-	resJson, err := response.MarshalJSON()
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(resJson))
-	return nil
+	_, err := wc.clients.consumeTraces(ctx, traces)
+	return err
 }
 
 type WeaverOptions struct {

@@ -151,7 +151,6 @@ type DataPoints struct {
 // UnmarshalJSON implements custom unmarshaling for DataPoints.
 // Weaver serializes this as an untagged enum, so we try each variant.
 func (dp *DataPoints) UnmarshalJSON(data []byte) error {
-	// Try number data points first
 	var numberPoints []SampleNumberDataPoint
 	if err := json.Unmarshal(data, &numberPoints); err == nil && len(numberPoints) > 0 {
 		// Check if it looks like number data points (has "value" field typically)
@@ -159,14 +158,12 @@ func (dp *DataPoints) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	// Try histogram data points
 	var histogramPoints []SampleHistogramDataPoint
 	if err := json.Unmarshal(data, &histogramPoints); err == nil && len(histogramPoints) > 0 {
 		dp.Histogram = histogramPoints
 		return nil
 	}
 
-	// Try exponential histogram data points
 	var expHistogramPoints []SampleExponentialHistogramDataPoint
 	if err := json.Unmarshal(data, &expHistogramPoints); err == nil && len(expHistogramPoints) > 0 {
 		dp.ExponentialHistogram = expHistogramPoints
@@ -201,19 +198,19 @@ type SampleHistogramDataPoint struct {
 
 // SampleExponentialHistogramDataPoint represents an exponential histogram data point.
 type SampleExponentialHistogramDataPoint struct {
-	Attributes      []SampleAttribute                    `json:"attributes,omitempty"`
-	Count           uint64                               `json:"count,omitempty"`
-	Sum             *float64                             `json:"sum,omitempty"`
-	Scale           int32                                `json:"scale,omitempty"`
-	ZeroCount       uint64                               `json:"zero_count,omitempty"`
-	Positive        *SampleExponentialHistogramBuckets   `json:"positive,omitempty"`
-	Negative        *SampleExponentialHistogramBuckets   `json:"negative,omitempty"`
-	Flags           uint32                               `json:"flags,omitempty"`
-	Min             *float64                             `json:"min,omitempty"`
-	Max             *float64                             `json:"max,omitempty"`
-	ZeroThreshold   float64                              `json:"zero_threshold,omitempty"`
-	Exemplars       []SampleExemplar                     `json:"exemplars,omitempty"`
-	LiveCheckResult *LiveCheckResult                     `json:"live_check_result,omitempty"`
+	Attributes      []SampleAttribute                  `json:"attributes,omitempty"`
+	Count           uint64                             `json:"count,omitempty"`
+	Sum             *float64                           `json:"sum,omitempty"`
+	Scale           int32                              `json:"scale,omitempty"`
+	ZeroCount       uint64                             `json:"zero_count,omitempty"`
+	Positive        *SampleExponentialHistogramBuckets `json:"positive,omitempty"`
+	Negative        *SampleExponentialHistogramBuckets `json:"negative,omitempty"`
+	Flags           uint32                             `json:"flags,omitempty"`
+	Min             *float64                           `json:"min,omitempty"`
+	Max             *float64                           `json:"max,omitempty"`
+	ZeroThreshold   float64                            `json:"zero_threshold,omitempty"`
+	Exemplars       []SampleExemplar                   `json:"exemplars,omitempty"`
+	LiveCheckResult *LiveCheckResult                   `json:"live_check_result,omitempty"`
 }
 
 // SampleExponentialHistogramBuckets represents buckets in an exponential histogram.
