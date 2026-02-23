@@ -48,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 							Password: "fooPassword",
 						},
 					},
+					ConnIdleTimeout: 9 * time.Minute,
 				},
 				TopicRegex:         "^topic[0-9]$",
 				TopicsSyncInterval: 100 * time.Millisecond,

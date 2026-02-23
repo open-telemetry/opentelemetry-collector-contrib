@@ -190,6 +190,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - pkg/xk8stest
+      - pkg/xstreamencoding
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
@@ -246,7 +247,6 @@ body:
       - receiver/azureblob
       - receiver/azureeventhub
       - receiver/azuremonitor
-      - receiver/bigip
       - receiver/carbon
       - receiver/chrony
       - receiver/ciscoos
