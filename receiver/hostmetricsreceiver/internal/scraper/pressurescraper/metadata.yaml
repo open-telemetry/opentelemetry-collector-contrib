@@ -1,0 +1,94 @@
+type: pressure
+
+status:
+  class: scraper
+  stability:
+    beta: [metrics]
+  distributions: [core, contrib, k8s]
+  codeowners:
+    active: [dmitryax, braydonk, rogercoll]
+
+sem_conv_version: 1.9.0
+
+attributes:
+  system.pressure.stall_type:
+    description: Tasks that were delayed due to lack of resources.
+    type: string
+    enum: [some, full]
+
+metrics:
+  system.cpu.linux.pressure.10s:
+    enabled: false
+    description: Average system CPU pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.cpu.linux.pressure.1m:
+    enabled: false
+    description: Average system CPU pressure (delayed execution due to a lack of resource) over the last 1 minute.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.cpu.linux.pressure.5m:
+    enabled: false
+    description: Average system CPU pressure (delayed execution due to a lack of resource) over the last 5 minute.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.cpu.linux.pressure.total:
+    enabled: true
+    description: Average system CPU pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+    unit: s
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [system.pressure.stall_type]
+
+  system.memory.linux.pressure.10s:
+    enabled: false
+    description: Average system memory pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.memory.linux.pressure.1m:
+    enabled: false
+    description: Average system memory pressure (delayed execution due to a lack of resource) over the last 1 minute.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+
+  system.memory.linux.pressure.5m:
+    enabled: false
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [system.pressure.stall_type]
+    description: Average system memory pressure (delayed execution due to a lack of resource) over the last 5 minute.
+
+  system.memory.linux.pressure.total:
+    enabled: true
+    description: Average system memory pressure (delayed execution due to a lack of resource) over the last 10 seconds.
+    unit: s
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [system.pressure.stall_type]

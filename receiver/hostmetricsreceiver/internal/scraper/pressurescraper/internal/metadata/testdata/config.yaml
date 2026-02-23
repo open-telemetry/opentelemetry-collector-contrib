@@ -1,0 +1,37 @@
+default:
+all_set:
+  metrics:
+    system.cpu.linux.pressure.10s:
+      enabled: true
+    system.cpu.linux.pressure.1m:
+      enabled: true
+    system.cpu.linux.pressure.5m:
+      enabled: true
+    system.cpu.linux.pressure.total:
+      enabled: true
+    system.memory.linux.pressure.10s:
+      enabled: true
+    system.memory.linux.pressure.1m:
+      enabled: true
+    system.memory.linux.pressure.5m:
+      enabled: true
+    system.memory.linux.pressure.total:
+      enabled: true
+none_set:
+  metrics:
+    system.cpu.linux.pressure.10s:
+      enabled: false
+    system.cpu.linux.pressure.1m:
+      enabled: false
+    system.cpu.linux.pressure.5m:
+      enabled: false
+    system.cpu.linux.pressure.total:
+      enabled: false
+    system.memory.linux.pressure.10s:
+      enabled: false
+    system.memory.linux.pressure.1m:
+      enabled: false
+    system.memory.linux.pressure.5m:
+      enabled: false
+    system.memory.linux.pressure.total:
+      enabled: false
