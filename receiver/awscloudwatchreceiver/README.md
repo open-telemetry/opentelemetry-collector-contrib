@@ -29,7 +29,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | `region`        | *required* | string | The AWS recognized region string                                                                                                                                                                                                                                                  |
 | `profile`       | *optional* | string | The AWS profile used to authenticate, if none is specified the default is chosen from the list of profiles                                                                                                                                                                        |
 | `imds_endpoint` | *optional* | string | A way of specifying a custom URL to be used by the EC2 IMDS client to validate the session. If unset, and the environment variable `AWS_EC2_METADATA_SERVICE_ENDPOINT` has a value the client will use the value of the environment variable as the endpoint for operation calls. |
-| `logs`          | *optional* | `Logs` | Configuration for Logs ingestion of this receiver                                                                                                                                                                                                                                 |
+| `logs`          | *optional* | `Logs` | Configuration for Logs ingestion of this $$receiver                                                                                                                                                                                                                                 |
 | `storage`       | *optional* | string | The ID of a storage extension to be used for state persistence.                                                                                                                                                                                                                   |
 
 ### Logs Parameters
@@ -53,6 +53,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
     - Only one of `prefix` or `pattern` can be specified. If both are omitted, all log streams up to the limit are collected.
   - `account_identifiers`: (optional) A list of AWS account IDs to filter log groups by. Only log groups from the specified accounts will be discovered.
   - `include_linked_accounts`: (optional; default = false) When using a monitoring account, set this to `true` to have autodiscovery return log groups in the accounts listed in `account_identifiers`. If this is `true` and `account_identifiers` contains a `null` value, all log groups in the monitoring account and in all linked source accounts are returned (behavior is handled by the AWS CloudWatch Logs API).
+  - `tags`: (optional) A map of tag key-value pairs. Only log groups that have all specified tags with matching values will be discovered.
   - `streams`: (optional) If `streams` is omitted, then all streams will be attempted to retrieve events from.
     - `names`: A list of full log stream names to filter the discovered log groups to collect from.
     - `prefixes`: A list of prefixes to filter the discovered log groups to collect from.
@@ -90,6 +91,22 @@ awscloudwatch:
         account_identifiers: ["123456789012", "987654321098"]
         include_linked_accounts: true
         prefix: /aws/lambda/
+```
+
+#### Autodiscovery with Tag Filtering Example
+
+```yaml
+awscloudwatch:
+  region: us-west-1
+  logs:
+    poll_interval: 1m
+    groups:
+      autodiscover:
+        limit: 100
+        prefix: /aws/
+        tags:
+          environment: production
+          team: platform
 ```
 
 #### Named Example
