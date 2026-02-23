@@ -77,6 +77,13 @@ func (rb *ResourceBuilder) SetK8sClusterName(val string) {
 	}
 }
 
+// SetOracleCloudRealm sets provided value as "oracle_cloud.realm" attribute.
+func (rb *ResourceBuilder) SetOracleCloudRealm(val string) {
+	if rb.config.OracleCloudRealm.Enabled {
+		rb.res.Attributes().PutStr("oracle_cloud.realm", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
