@@ -323,11 +323,11 @@ func (clientCtx *pdataClientContext) consumeMetrics(ctx context.Context, metrics
 	return clientCtx.metrics.Export(ctx, pmetricReq)
 }
 
-func (clientCtx *pdataClientContext) close() error {
-	return clientCtx.clientConn.Close()
-}
-
 func (clientCtx *pdataClientContext) consumeTraces(ctx context.Context, traces ptrace.Traces) (ptraceotlp.ExportResponse, error) {
 	ptraceReq := ptraceotlp.NewExportRequestFromTraces(traces)
 	return clientCtx.traces.Export(ctx, ptraceReq)
+}
+
+func (clientCtx *pdataClientContext) close() error {
+	return clientCtx.clientConn.Close()
 }

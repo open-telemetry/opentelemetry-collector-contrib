@@ -153,7 +153,6 @@ type DataPoints struct {
 func (dp *DataPoints) UnmarshalJSON(data []byte) error {
 	var numberPoints []SampleNumberDataPoint
 	if err := json.Unmarshal(data, &numberPoints); err == nil && len(numberPoints) > 0 {
-		// Check if it looks like number data points (has "value" field typically)
 		dp.Number = numberPoints
 		return nil
 	}

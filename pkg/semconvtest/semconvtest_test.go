@@ -52,6 +52,7 @@ func TestWeaverLogs(t *testing.T) {
 
 	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
 	require.NoError(t, err)
+	defer func() { require.NoError(t, weaver.Shutdown()) }()
 
 	logs := plog.NewLogs()
 	res := logs.ResourceLogs().AppendEmpty()
@@ -99,6 +100,7 @@ func TestWeaverMetrics(t *testing.T) {
 
 	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
 	require.NoError(t, err)
+	defer func() { require.NoError(t, weaver.Shutdown()) }()
 
 	metrics := pmetric.NewMetrics()
 	res := metrics.ResourceMetrics().AppendEmpty()
@@ -159,6 +161,7 @@ func TestWeaverTraces(t *testing.T) {
 
 	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
 	require.NoError(t, err)
+	defer func() { require.NoError(t, weaver.Shutdown()) }()
 
 	traces := ptrace.NewTraces()
 	res := traces.ResourceSpans().AppendEmpty()
