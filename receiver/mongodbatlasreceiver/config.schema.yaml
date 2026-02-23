@@ -1,0 +1,146 @@
+$defs:
+  access_logs_config:
+    type: object
+    properties:
+      auth_result:
+        x-pointer: true
+        type: boolean
+      enabled:
+        x-pointer: true
+        type: boolean
+      max_pages:
+        type: integer
+        x-customType: int64
+      page_size:
+        type: integer
+        x-customType: int64
+      poll_interval:
+        type: string
+        format: duration
+  alert_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      endpoint:
+        type: string
+      max_pages:
+        type: integer
+        x-customType: int64
+      mode:
+        type: string
+      page_size:
+        type: integer
+        x-customType: int64
+      poll_interval:
+        type: string
+        format: duration
+      projects:
+        description: these parameters are only relevant in retrieval mode
+        type: array
+        items:
+          x-pointer: true
+          $ref: project_config
+      secret:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      tls:
+        x-pointer: true
+        $ref: go.opentelemetry.io/collector/config/configtls.server_config
+  events_config:
+    description: EventsConfig is the configuration options for events collection
+    type: object
+    properties:
+      max_pages:
+        type: integer
+        x-customType: int64
+      organizations:
+        type: array
+        items:
+          x-pointer: true
+          $ref: org_config
+      page_size:
+        type: integer
+        x-customType: int64
+      poll_interval:
+        type: string
+        format: duration
+      projects:
+        type: array
+        items:
+          x-pointer: true
+          $ref: project_config
+      types:
+        type: array
+        items:
+          type: string
+  log_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      projects:
+        type: array
+        items:
+          x-pointer: true
+          $ref: logs_project_config
+  logs_project_config:
+    type: object
+    properties:
+      access_logs:
+        x-pointer: true
+        $ref: access_logs_config
+      collect_audit_logs:
+        type: boolean
+      collect_host_logs:
+        x-pointer: true
+        type: boolean
+    allOf:
+      - $ref: project_config
+  org_config:
+    type: object
+    properties:
+      id:
+        type: string
+  project_config:
+    type: object
+    properties:
+      exclude_clusters:
+        type: array
+        items:
+          type: string
+      include_clusters:
+        type: array
+        items:
+          type: string
+      name:
+        type: string
+type: object
+properties:
+  alerts:
+    $ref: alert_config
+  base_url:
+    type: string
+  events:
+    x-optional: true
+    $ref: events_config
+  granularity:
+    type: string
+  logs:
+    $ref: log_config
+  private_key:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  projects:
+    type: array
+    items:
+      $ref: project_config
+  public_key:
+    type: string
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  storage:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config

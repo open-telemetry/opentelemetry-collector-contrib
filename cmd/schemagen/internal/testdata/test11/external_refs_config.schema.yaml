@@ -1,10 +1,7 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test11
-title: test11 component
 type: object
 allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external#/$defs/TestConfig
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external.test_config
 properties:
   test_nested:
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external#/$defs/TestConfig
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external.test_config
 

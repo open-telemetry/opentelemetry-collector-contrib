@@ -49,8 +49,7 @@ metrics:
   memcached.bytes:
     enabled: true
     description: Current number of bytes used by this server to store items.
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -58,8 +57,7 @@ metrics:
   memcached.commands:
     enabled: true
     description: Commands executed.
-    stability:
-      level: development
+    stability: development
     unit: "{commands}"
     sum:
       value_type: int
@@ -69,8 +67,7 @@ metrics:
   memcached.connections.current:
     enabled: true
     description: The current number of open connections.
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     sum:
       value_type: int
@@ -80,8 +77,7 @@ metrics:
   memcached.connections.total:
     enabled: true
     description: Total number of connections opened since the server started running.
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     sum:
       value_type: int
@@ -91,8 +87,7 @@ metrics:
   memcached.cpu.usage:
     enabled: true
     description: Accumulated user and system time.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: double
@@ -102,8 +97,7 @@ metrics:
   memcached.current_items:
     enabled: true
     description: Number of items currently stored in the cache.
-    stability:
-      level: development
+    stability: development
     unit: "{items}"
     sum:
       value_type: int
@@ -113,8 +107,7 @@ metrics:
   memcached.evictions:
     enabled: true
     description: Cache item evictions.
-    stability:
-      level: development
+    stability: development
     unit: "{evictions}"
     sum:
       value_type: int
@@ -124,8 +117,7 @@ metrics:
   memcached.network:
     enabled: true
     description: Bytes transferred over the network.
-    stability:
-      level: development
+    stability: development
     unit: by
     sum:
       value_type: int
@@ -135,8 +127,7 @@ metrics:
   memcached.operation_hit_ratio:
     enabled: true
     description: Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
-    stability:
-      level: development
+    stability: development
     unit: '%'
     gauge:
       value_type: double
@@ -144,8 +135,7 @@ metrics:
   memcached.operations:
     enabled: true
     description: Operation counts.
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     sum:
       value_type: int
@@ -155,8 +145,7 @@ metrics:
   memcached.threads:
     enabled: true
     description: Number of threads used by the memcached instance.
-    stability:
-      level: development
+    stability: development
     unit: "{threads}"
     sum:
       value_type: int

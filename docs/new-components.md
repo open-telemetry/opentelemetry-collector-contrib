@@ -143,7 +143,7 @@ To donate your component to this repository, follow these steps:
 - Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
 - All components included in the distribution must be included in
-  [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml)
+  [`cmd/otelcontribcol/builder-config.yaml`](../cmd/otelcontribcol/builder-config.yaml)
   and in the respective testing harnesses. To align with the test goal of the
   project, components must be testable within the framework defined within the
   folder. If a component can not be properly tested within the existing
@@ -176,7 +176,7 @@ status:
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package fooreceiver bars.
 package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"

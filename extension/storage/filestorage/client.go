@@ -35,7 +35,8 @@ type fileStorageClient struct {
 	db              *bbolt.DB
 	compactionCfg   *CompactionConfig
 	openTimeout     time.Duration
-	cancel          context.CancelFunc
+	stopCh          chan struct{}
+	wg              sync.WaitGroup
 	closed          bool
 }
 
@@ -64,9 +65,16 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compa
 		return nil, err
 	}
 
-	client := &fileStorageClient{logger: logger, db: db, compactionCfg: compactionCfg, openTimeout: timeout}
+	client := &fileStorageClient{
+		logger:        logger,
+		db:            db,
+		compactionCfg: compactionCfg,
+		openTimeout:   timeout,
+		stopCh:        make(chan struct{}),
+		wg:            sync.WaitGroup{},
+	}
 	if compactionCfg.OnRebound {
-		client.startCompactionLoop(context.Background())
+		client.startCompactionLoop()
 	}
 
 	return client, nil
@@ -140,9 +148,12 @@ func (c *fileStorageClient) Close(_ context.Context) error {
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()
 
-	if c.cancel != nil {
-		c.cancel()
+	if c.closed {
+		return nil
 	}
+
+	close(c.stopCh)
+	c.wg.Wait()
 	c.closed = true
 	return c.db.Close()
 }
@@ -241,10 +252,8 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 }
 
 // startCompactionLoop provides asynchronous compaction function
-func (c *fileStorageClient) startCompactionLoop(ctx context.Context) {
-	ctx, c.cancel = context.WithCancel(ctx)
-
-	go func() {
+func (c *fileStorageClient) startCompactionLoop() {
+	c.wg.Go(func() {
 		c.logger.Debug("starting compaction loop",
 			zap.Duration("compaction_check_interval", c.compactionCfg.CheckInterval))
 
@@ -262,12 +271,12 @@ func (c *fileStorageClient) startCompactionLoop(ctx context.Context) {
 							zap.Error(err))
 					}
 				}
-			case <-ctx.Done():
+			case <-c.stopCh:
 				c.logger.Debug("shutting down compaction loop")
 				return
 			}
 		}
-	}()
+	})
 }
 
 // shouldCompact checks whether the conditions for online compaction are met

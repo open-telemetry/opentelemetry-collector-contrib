@@ -12,8 +12,7 @@ telemetry:
   metrics:
     receiver.googlecloudpubsub.encoding_error:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of times a message couldn't be decoded by the configured encoder
       unit: "1"
       sum:
@@ -24,8 +23,7 @@ telemetry:
         encoder. Each time a message fails to decoded the counter is increased.
     receiver.googlecloudpubsub.stream_restarts:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of times the stream (re)starts due to a Pub/Sub servers connection close
       unit: "1"
       sum:
