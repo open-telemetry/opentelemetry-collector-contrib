@@ -234,7 +234,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver
