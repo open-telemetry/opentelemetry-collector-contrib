@@ -82,7 +82,7 @@ func NewWeaverContext(ctx context.Context, opts *WeaverOptions) (*WeaverContext,
 		return nil, err
 	}
 
-	clients, err := newPdataClientContext(ctx, fmt.Sprintf("%s:%s", host, mappedOTLPPort.Port()))
+	clients, err := newPdataClientContext(fmt.Sprintf("%s:%s", host, mappedOTLPPort.Port()))
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +238,8 @@ func NewDefaultWeaverOptions() *WeaverOptions {
 // This will be called before the testcontainer options are
 // constructed, meaning the construction code can assume
 // valid options.
+//
+// TODO: This is currently not used, validation logic is not there yet
 func (opts *WeaverOptions) validate() error {
 	errs := []error{}
 
@@ -289,21 +291,19 @@ func (opts *WeaverOptions) cmdArgs() []string {
 }
 
 type pdataClientContext struct {
-	ctx        context.Context
 	clientConn *grpc.ClientConn
 	logs       plogotlp.GRPCClient
 	metrics    pmetricotlp.GRPCClient
 	traces     ptraceotlp.GRPCClient
 }
 
-func newPdataClientContext(ctx context.Context, endpoint string) (*pdataClientContext, error) {
+func newPdataClientContext(endpoint string) (*pdataClientContext, error) {
 	clientConn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
 
 	clientContext := pdataClientContext{
-		ctx:        ctx,
 		clientConn: clientConn,
 	}
 	clientContext.logs = plogotlp.NewGRPCClient(clientContext.clientConn)
