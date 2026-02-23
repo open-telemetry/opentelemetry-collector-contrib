@@ -6,6 +6,7 @@ package lookupsource // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"container/list"
 	"context"
+	"errors"
 	"sync"
 	"time"
 )
@@ -21,6 +22,22 @@ type CacheConfig struct {
 	// Set to 0 to disable negative caching.
 	// Default: 0 (disabled)
 	NegativeTTL time.Duration `mapstructure:"negative_ttl"`
+}
+
+func (c CacheConfig) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+	if c.Size <= 0 {
+		return errors.New("cache.size must be greater than 0 when cache is enabled")
+	}
+	if c.TTL < 0 {
+		return errors.New("cache.ttl cannot be negative")
+	}
+	if c.NegativeTTL < 0 {
+		return errors.New("cache.negative_ttl cannot be negative")
+	}
+	return nil
 }
 
 type cacheEntry struct {
@@ -46,13 +63,9 @@ type Cache struct {
 }
 
 func NewCache(cfg CacheConfig) *Cache {
-	size := cfg.Size
-	if size <= 0 {
-		size = 1000
-	}
 	return &Cache{
 		config:  cfg,
-		entries: make(map[string]*cacheEntry, size),
+		entries: make(map[string]*cacheEntry, cfg.Size),
 		order:   list.New(),
 	}
 }
@@ -68,23 +81,29 @@ func (c *Cache) get(key string) (any, bool, bool) {
 		return nil, false, false
 	}
 
-	if entry.isExpired() {
-		c.mu.Lock()
-		// Re-check after acquiring write lock
-		if entry, exists = c.entries[key]; exists && entry.isExpired() {
-			c.removeEntryLocked(entry)
-		}
-		c.mu.Unlock()
-		return nil, false, false
+	if !entry.isExpired() {
+		return entry.value, entry.found, true
 	}
 
-	return entry.value, entry.found, true
+	c.mu.Lock()
+	// Re-check after acquiring write lock
+	if entry, exists = c.entries[key]; exists && entry.isExpired() {
+		c.removeEntryLocked(entry)
+	}
+	c.mu.Unlock()
+	return nil, false, false
 }
 
 // set adds or updates a value in the cache.
 func (c *Cache) set(key string, value any, found bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	// Invalid cache size means this cache cannot store entries.
+	// Config validation should reject this, but keep runtime behavior safe.
+	if c.config.Size <= 0 {
+		return
+	}
 
 	ttl := c.config.TTL
 	if !found {

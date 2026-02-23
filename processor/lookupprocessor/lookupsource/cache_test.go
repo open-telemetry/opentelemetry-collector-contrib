@@ -23,6 +23,77 @@ func TestNewCache(t *testing.T) {
 	assert.Equal(t, 0, cache.Size())
 }
 
+func TestNewCache_InvalidSizeDoesNotStoreEntries(t *testing.T) {
+	cache := NewCache(CacheConfig{Enabled: true, Size: 0})
+	require.NotNil(t, cache)
+	cache.set("key", "value", true)
+	assert.Equal(t, 0, cache.Size())
+}
+
+func TestCacheConfigValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     CacheConfig
+		wantErr bool
+	}{
+		{
+			name: "disabled cache with zero size is valid",
+			cfg: CacheConfig{
+				Enabled: false,
+				Size:    0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "enabled cache requires positive size",
+			cfg: CacheConfig{
+				Enabled: true,
+				Size:    0,
+			},
+			wantErr: true,
+		},
+		{
+			name: "negative ttl is invalid",
+			cfg: CacheConfig{
+				Enabled: true,
+				Size:    1,
+				TTL:     -1 * time.Second,
+			},
+			wantErr: true,
+		},
+		{
+			name: "negative ttl for not found is invalid",
+			cfg: CacheConfig{
+				Enabled:     true,
+				Size:        1,
+				NegativeTTL: -1 * time.Second,
+			},
+			wantErr: true,
+		},
+		{
+			name: "enabled cache with valid config passes",
+			cfg: CacheConfig{
+				Enabled:     true,
+				Size:        100,
+				TTL:         5 * time.Minute,
+				NegativeTTL: 1 * time.Minute,
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestCacheBasicOperations(t *testing.T) {
 	cache := NewCache(CacheConfig{Enabled: true, Size: 100})
 

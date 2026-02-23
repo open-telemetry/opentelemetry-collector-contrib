@@ -28,14 +28,15 @@ func TestConfigValidate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "empty config is valid (uses defaults)",
+			name:    "empty config is invalid",
 			config:  &Config{},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "PTR record type",
 			config: &Config{
 				RecordType: RecordTypePTR,
+				Timeout:    1 * time.Second,
 			},
 			wantErr: false,
 		},
@@ -61,11 +62,29 @@ func TestConfigValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "zero timeout",
+			config: &Config{
+				Timeout: 0,
+			},
+			wantErr: true,
+		},
+		{
 			name: "custom server",
 			config: &Config{
-				Server: "8.8.8.8:53",
+				Timeout: 1 * time.Second,
+				Server:  "8.8.8.8:53",
 			},
 			wantErr: false,
+		},
+		{
+			name: "invalid cache size when enabled",
+			config: &Config{
+				Cache: lookupsource.CacheConfig{
+					Enabled: true,
+					Size:    0,
+				},
+			},
+			wantErr: true,
 		},
 	}
 
@@ -113,7 +132,7 @@ func TestDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	assert.Equal(t, RecordTypePTR, cfg.RecordType)
-	assert.Equal(t, 5*time.Second, cfg.Timeout)
+	assert.Equal(t, 1*time.Second, cfg.Timeout)
 	assert.Empty(t, cfg.Server)
 	assert.True(t, cfg.Cache.Enabled)
 	assert.Equal(t, 10000, cfg.Cache.Size)

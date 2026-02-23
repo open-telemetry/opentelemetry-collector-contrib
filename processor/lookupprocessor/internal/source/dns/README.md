@@ -7,7 +7,7 @@ Performs reverse DNS lookups (PTR records) to resolve IP addresses to hostnames.
 | Field | Description | Default |
 | ----- | ----------- | ------- |
 | `record_type` | DNS record type (currently only `PTR` is supported) | `PTR` |
-| `timeout` | Maximum time to wait for DNS query | `5s` |
+| `timeout` | Maximum time to wait for DNS query (must be `> 0`) | `1s` |
 | `server` | DNS server to use (e.g., `8.8.8.8:53`). Empty uses system resolver | - |
 | `cache.enabled` | Enable caching | `true` |
 | `cache.size` | Maximum cache entries (LRU eviction) | `10000` |

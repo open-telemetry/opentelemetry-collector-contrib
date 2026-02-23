@@ -29,7 +29,7 @@ type Config struct {
 	RecordType RecordType `mapstructure:"record_type"`
 
 	// Timeout is the maximum time to wait for a DNS query.
-	// Default: 5 seconds
+	// Default: 1 second
 	Timeout time.Duration `mapstructure:"timeout"`
 
 	// Server is the DNS server to use (e.g., "8.8.8.8:53").
@@ -50,8 +50,12 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid record_type %q, only PTR is currently supported", c.RecordType)
 	}
 
-	if c.Timeout < 0 {
-		return errors.New("timeout cannot be negative")
+	if c.Timeout <= 0 {
+		return errors.New("timeout must be greater than 0")
+	}
+
+	if err := c.Cache.Validate(); err != nil {
+		return err
 	}
 
 	return nil
@@ -68,7 +72,7 @@ func NewFactory() lookupsource.SourceFactory {
 func createDefaultConfig() lookupsource.SourceConfig {
 	return &Config{
 		RecordType: RecordTypePTR,
-		Timeout:    5 * time.Second,
+		Timeout:    1 * time.Second,
 		Cache: lookupsource.CacheConfig{
 			Enabled:     true,
 			Size:        10000,
@@ -91,16 +95,13 @@ func createSource(
 	}
 
 	timeout := dnsCfg.Timeout
-	if timeout == 0 {
-		timeout = 5 * time.Second
-	}
 
 	var resolver *net.Resolver
 	if dnsCfg.Server != "" {
 		resolver = &net.Resolver{
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
-				d := net.Dialer{Timeout: timeout}
+				d := net.Dialer{}
 				return d.DialContext(ctx, network, dnsCfg.Server)
 			},
 		}

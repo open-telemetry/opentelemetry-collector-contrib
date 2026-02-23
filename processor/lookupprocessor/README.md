@@ -152,7 +152,7 @@ Sources that support external lookups (like DNS) can use the built-in LRU cachin
 | Field | Description | Default |
 | ----- | ----------- | ------- |
 | `cache.enabled` | Enable caching | varies by source |
-| `cache.size` | Maximum number of entries (LRU eviction) | `1000` |
+| `cache.size` | Maximum number of entries (LRU eviction, must be `> 0` when enabled) | varies by source |
 | `cache.ttl` | Time-to-live for successful lookups | `0` (no expiration) |
 | `cache.negative_ttl` | TTL for "not found" results | `0` (disabled) |
 
