@@ -174,6 +174,16 @@ Example rerun comment:
 /rerun
 ```
 
+### Approving Workflows for Outside Contributors
+
+Members of the [triagers](https://github.com/open-telemetry/opentelemetry-collector-contrib?tab=readme-ov-file#triagers), [approvers](https://github.com/open-telemetry/opentelemetry-collector-contrib?tab=readme-ov-file#approvers), or [maintainers](https://github.com/open-telemetry/opentelemetry-collector-contrib?tab=readme-ov-file#maintainers) teams can approve pending GitHub Actions workflow runs for outside contributors by commenting `/workflow-approve` on the pull request. This will approve all workflow runs with an `action_required` conclusion for the PR's latest commit.
+
+Example approve comment:
+
+```
+/workflow-approve
+```
+
 ## Portable Code
 
 In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
