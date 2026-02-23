@@ -35,6 +35,7 @@ type ResourceAttributesConfig struct {
 	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
 	HostType              ResourceAttributeConfig `mapstructure:"host.type"`
 	K8sClusterName        ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
+	OracleCloudRealm      ResourceAttributeConfig `mapstructure:"oracle_cloud.realm"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -61,6 +62,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sClusterName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracleCloudRealm: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
