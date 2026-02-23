@@ -1919,20 +1919,15 @@ func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	c.m.Unlock()
 }
 
-func (c *WatchClient) addOrUpdateReplicaSet(obj any) {
-	rs, ok := obj.(*meta_v1.PartialObjectMetadata)
-	if !ok {
-		c.logger.Error("unexpected ReplicaSet object type", zap.Any("received", obj))
-	}
-
-	uid := string(rs.GetUID())
+func (c *WatchClient) addOrUpdateReplicaSet(replicaSet *meta_v1.PartialObjectMetadata) {
+	uid := string(replicaSet.GetUID())
 	newReplicaSet := &ReplicaSet{
-		Name:      rs.GetName(),
-		Namespace: rs.GetNamespace(),
+		Name:      replicaSet.GetName(),
+		Namespace: replicaSet.GetNamespace(),
 		UID:       uid,
 	}
 
-	for _, owner := range rs.GetOwnerReferences() {
+	for _, owner := range replicaSet.GetOwnerReferences() {
 		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
 			newReplicaSet.Deployment = Deployment{
 				Name: owner.Name,
