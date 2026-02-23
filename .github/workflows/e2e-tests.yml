@@ -58,7 +58,7 @@ jobs:
       - name: Run opampsupervisor e2e tests
         run: |
           cd cmd/opampsupervisor
-          go test -v --tags=e2e
+          make e2e-test
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   docker-build:

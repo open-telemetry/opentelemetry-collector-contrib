@@ -115,13 +115,16 @@ change. For instance:
 
     [processor/tailsampling] fix AND policy
 
+Alternatively, if you have already written a changelog entry, you can set your PR title to `as per changelog` and a
+GitHub Action will automatically generate the PR title and description from your changelog entry YAML file(s). This
+avoids duplicating effort between the changelog entry and the PR description.
+
 ### Description guidelines
 
 When linking to an open issue, if your PR is meant to close said issue, please prefix your issue with one of the
 following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this functionality (and more keyword options) can be found
 [here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
 This will automatically close the issue once your PR has been merged.
-
 
 ## Issue Triaging
 
