@@ -15,6 +15,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
+var (
+	aggregateOnAttributesMissingAttributesWarning = "aggregate_on_attributes called without the attributes argument; attribute filtering is skipped, and datapoints are only merged when their full attribute sets already match. Pass [] to remove all attributes or pass a list to keep specific attributes. This will become an error when the " + aggregateOnAttributesRequireAttributesFeatureGate.ID() + " feature gate is enabled."
+
+	errAggregateOnAttributesAttributesRequired = errors.New("'aggregate_on_attributes' requires the 'attributes' argument when the '" + aggregateOnAttributesRequireAttributesFeatureGate.ID() + "' feature gate is enabled")
+)
+
 type aggregateOnAttributesArguments struct {
 	AggregationFunction string
 	Attributes          ottl.Optional[[]string]
@@ -24,7 +30,7 @@ func newAggregateOnAttributesFactory() ottl.Factory[*ottlmetric.TransformContext
 	return ottl.NewFactory("aggregate_on_attributes", &aggregateOnAttributesArguments{}, createAggregateOnAttributesFunction)
 }
 
-func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
+func createAggregateOnAttributesFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*aggregateOnAttributesArguments)
 
 	if !ok {
@@ -34,6 +40,16 @@ func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Argu
 	t, err := aggregateutil.ConvertToAggregationFunction(args.AggregationFunction)
 	if err != nil {
 		return nil, fmt.Errorf("invalid aggregation function: '%s', valid options: %s", err.Error(), aggregateutil.GetSupportedAggregationFunctionsList())
+	}
+
+	if args.Attributes.IsEmpty() {
+		if aggregateOnAttributesRequireAttributesFeatureGate.IsEnabled() {
+			return nil, errAggregateOnAttributesAttributesRequired
+		}
+
+		if fCtx.Set.Logger != nil {
+			fCtx.Set.Logger.Warn(aggregateOnAttributesMissingAttributesWarning)
+		}
 	}
 
 	return AggregateOnAttributes(t, args.Attributes)

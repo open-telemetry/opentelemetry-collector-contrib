@@ -14,11 +14,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-var UseConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().MustRegister(
-	"processor.transform.ConvertBetweenSumAndGaugeMetricContext",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled will use metric context for conversion between sum and gauge"),
-	featuregate.WithRegisterToVersion("v0.114.0"),
+var (
+	UseConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().MustRegister(
+		"processor.transform.ConvertBetweenSumAndGaugeMetricContext",
+		featuregate.StageStable,
+		featuregate.WithRegisterDescription("When enabled will use metric context for conversion between sum and gauge"),
+		featuregate.WithRegisterToVersion("v0.114.0"),
+	)
+
+	aggregateOnAttributesRequireAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		"transform.aggregateonattributes.requireattributes",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, aggregate_on_attributes requires the attributes argument."),
+		featuregate.WithRegisterFromVersion("v0.147.0"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46049"),
+	)
 )
 
 func DataPointFunctions() map[string]ottl.Factory[*ottldatapoint.TransformContext] {

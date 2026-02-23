@@ -541,11 +541,13 @@ The `aggregate_on_attributes` function aggregates all data points in the metric.
 
 The optional `attributes` argument controls which datapoint attributes are kept before aggregation:
 
-- omitted (`aggregate_on_attributes(function)`): all existing data point attributes are kept. Aggregation only combines data points that already share the same full attribute set.
+- omitted (`aggregate_on_attributes(function)`): all existing data point attributes are kept. Aggregation only combines data points that already share the same full attribute set. A warning is logged because this is effectively a no-op for attribute filtering.
 - `[]` (empty list): all datapoint attributes are removed. Aggregation is performed across all data points in the metric.
 - `[...]` (list of attribute keys): only the specified data point attributes are kept. All other attributes are removed, and aggregation is performed by grouping on the remaining attributes.
 
 **NOTE:** This function is supported only in `metric` context.
+
+**NOTE:** The omitted-argument form can be made invalid by enabling the `transform.aggregateonattributes.requireattributes` feature gate.
 
 The following metric types can be aggregated:
 
@@ -958,3 +960,15 @@ The feature is currently only available for log processing.
   ```
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
+
+### `transform.aggregateonattributes.requireattributes`
+
+The `transform.aggregateonattributes.requireattributes` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) makes the `attributes` argument of `aggregate_on_attributes` required.
+
+When this feature gate is enabled:
+
+- `aggregate_on_attributes("sum")` returns a parse error.
+- Use `aggregate_on_attributes("sum", [])` to remove all datapoint attributes before aggregation.
+- Use `aggregate_on_attributes("sum", ["attr1", "attr2"])` to keep only specific attributes before aggregation.
+
+Run collector: `./otelcol --config config.yaml --feature-gates=transform.aggregateonattributes.requireattributes`

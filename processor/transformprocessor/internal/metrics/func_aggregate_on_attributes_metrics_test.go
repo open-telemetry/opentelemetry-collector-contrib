@@ -9,13 +9,79 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
+
+func Test_createAggregateOnAttributesFunction_MissingAttributes(t *testing.T) {
+	tests := []struct {
+		name       string
+		enabled    bool
+		attributes ottl.Optional[[]string]
+		wantErr    error
+		wantWarn   bool
+	}{
+		{
+			name:       "gate disabled with omitted attributes logs warning",
+			enabled:    false,
+			attributes: ottl.Optional[[]string]{},
+			wantWarn:   true,
+		},
+		{
+			name:       "gate enabled with omitted attributes returns error",
+			enabled:    true,
+			attributes: ottl.Optional[[]string]{},
+			wantErr:    errAggregateOnAttributesAttributesRequired,
+		},
+		{
+			name:       "gate enabled with explicit empty attributes is allowed",
+			enabled:    true,
+			attributes: ottl.NewTestingOptional[[]string]([]string{}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			previousValue := aggregateOnAttributesRequireAttributesFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(aggregateOnAttributesRequireAttributesFeatureGate.ID(), tt.enabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(aggregateOnAttributesRequireAttributesFeatureGate.ID(), previousValue))
+			})
+
+			core, observedLogs := observer.New(zap.WarnLevel)
+			settings := componenttest.NewNopTelemetrySettings()
+			settings.Logger = zap.New(core)
+
+			_, err := createAggregateOnAttributesFunction(
+				ottl.FunctionContext{Set: settings},
+				&aggregateOnAttributesArguments{
+					AggregationFunction: "sum",
+					Attributes:          tt.attributes,
+				},
+			)
+
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+
+			if tt.wantWarn {
+				assert.Equal(t, 1, observedLogs.FilterMessage(aggregateOnAttributesMissingAttributesWarning).Len())
+			} else {
+				assert.Equal(t, 0, observedLogs.FilterMessage(aggregateOnAttributesMissingAttributesWarning).Len())
+			}
+		})
+	}
+}
 
 func Test_aggregateOnAttributes(t *testing.T) {
 	attr := ottl.Optional[[]string]{}
