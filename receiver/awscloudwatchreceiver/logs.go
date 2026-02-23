@@ -457,7 +457,6 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			if len(auto.Streams.Names) > 0 {
 				groups = append(groups, &streamNames{group: *lg.LogGroupName, names: auto.Streams.Names})
 			}
-
 		}
 		nextToken = dlgResults.NextToken
 	}

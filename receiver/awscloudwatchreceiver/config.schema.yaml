@@ -18,6 +18,10 @@ $defs:
         type: string
       streams:
         $ref: stream_config
+      tags:
+        type: object
+        additionalProperties:
+          type: string
   group_config:
     description: GroupConfig is the configuration for log group collection
     type: object
