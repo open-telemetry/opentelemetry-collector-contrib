@@ -63,5 +63,9 @@ $defs:
     properties:
       base_url:
         $ref: resource_attribute_config
+      host.name:
+        $ref: resource_attribute_config
       system.host_name:
+        $ref: resource_attribute_config
+      url.full:
         $ref: resource_attribute_config
