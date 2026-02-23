@@ -1,4 +1,9 @@
+display_name: Active Directory Domain Services Receiver
 type: active_directory_ds
+
+description: |
+  The Active Directory Domain Services Receiver scrapes metrics relating to an Active Directory domain controller using
+  the Windows Performance Counters.
 
 status:
   class: receiver

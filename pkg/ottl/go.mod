@@ -11,17 +11,17 @@ require (
 	github.com/goccy/go-json v0.10.5
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.145.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.145.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.146.0
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	github.com/zeebo/xxh3 v1.1.0
-	go.opentelemetry.io/collector/component v1.51.1-0.20260212100729-5a059d1d6718
-	go.opentelemetry.io/collector/component/componenttest v0.145.1-0.20260212100729-5a059d1d6718
-	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260212100729-5a059d1d6718
-	go.opentelemetry.io/collector/pdata v1.51.1-0.20260212100729-5a059d1d6718
-	go.opentelemetry.io/collector/pdata/pprofile v0.145.1-0.20260212100729-5a059d1d6718
+	go.opentelemetry.io/collector/component v1.52.1-0.20260219223409-66996adfaaf7
+	go.opentelemetry.io/collector/component/componenttest v0.146.2-0.20260219223409-66996adfaaf7
+	go.opentelemetry.io/collector/featuregate v1.52.1-0.20260219223409-66996adfaaf7
+	go.opentelemetry.io/collector/pdata v1.52.1-0.20260219223409-66996adfaaf7
+	go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260219223409-66996adfaaf7
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/trace v1.40.0
 	go.uber.org/goleak v1.3.0
@@ -43,14 +43,14 @@ require (
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.145.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.146.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.40.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

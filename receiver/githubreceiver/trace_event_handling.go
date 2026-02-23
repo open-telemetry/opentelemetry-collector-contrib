@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v81/github"
+	"github.com/google/go-github/v83/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
