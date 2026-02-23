@@ -1,0 +1,33 @@
+{
+  "records": [
+    {
+      "correlationId": "aaaaaaaa-bbbb-cccc-dddd-333333333333",
+      "time": "2025-04-24T14:11:46.4216690Z",
+      "eventDataId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "resourceId": "/SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/RESOURCEGROUPS/EXAMPLE-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/EXAMPLE-FRONTDOOR-PROFILE",
+      "operationName": "Microsoft.Advisor/recommendations/available/action",
+      "resultType": "Active",
+      "properties": {
+        "recommendationSchemaVersion": "1.0",
+        "recommendationCategory": "HighAvailability",
+        "recommendationImpact": "High",
+        "recommendationName": "Consider having at least two origins",
+        "recommendationResourceLink": "https://portal.azure.com/#blade/Microsoft_Azure_Expert/RecommendationListBlade/source/ActivityLog/recommendationTypeId/589ab0b0-1362-44fd-8551-0e7847767600/resourceId/%2Fsubscriptions%2F11111111-1111-1111-1111-111111111111%2Fresourcegroups%2Fexample-frontdoor%2Fproviders%2FMicrosoft.Cdn%2Fprofiles%2Fexample-frontdoor-profile",
+        "recommendationType": "589ab0b0-1362-44fd-8551-0e7847767600"
+      },
+      "location": "global",
+      "level": "Informational",
+      "category": "Recommendation",
+      "operationVersion": "2017-03-31",
+      "resultSignature": "Succeeded",
+      "resultDescription": "A new recommendation is available.",
+      "durationMs": 10,
+      "callerIpAddress": "0.0.0.0",
+      "identity": {
+        "claims": {
+          "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress": "Microsoft.Advisor"
+        }
+      }
+    }
+  ]
+}

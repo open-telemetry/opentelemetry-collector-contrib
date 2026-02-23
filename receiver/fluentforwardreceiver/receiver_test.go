@@ -16,9 +16,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -27,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
 
-func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs, context.CancelFunc) {
+func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs, context.CancelFunc, receiver.Logs) {
 	ctx, cancel := context.WithCancel(t.Context())
 
 	next := new(consumertest.LogsSink)
@@ -43,7 +45,7 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 
 	receiver, err := newFluentReceiver(set, conf, next)
 	require.NoError(t, err)
-	require.NoError(t, receiver.Start(ctx, nil))
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 
 	connect := func() net.Conn {
 		conn, err := net.Dial("tcp", receiver.(*fluentReceiver).listener.Addr().String())
@@ -56,7 +58,7 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 		assert.NoError(t, receiver.Shutdown(ctx))
 	}()
 
-	return connect, next, logObserver, cancel
+	return connect, next, logObserver, cancel, receiver
 }
 
 func waitForConnectionClose(t *testing.T, conn net.Conn) {
@@ -70,7 +72,7 @@ func waitForConnectionClose(t *testing.T, conn net.Conn) {
 
 // Make sure malformed events don't cause panics.
 func TestMessageEventConversionMalformed(t *testing.T) {
-	connect, _, observedLogs, cancel := setupServer(t)
+	connect, _, observedLogs, cancel, _ := setupServer(t)
 	defer cancel()
 
 	eventBytes := parseHexDump("testdata/message-event")
@@ -93,7 +95,7 @@ func TestMessageEventConversionMalformed(t *testing.T) {
 }
 
 func TestMessageEvent(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
+	connect, next, _, cancel, _ := setupServer(t)
 	defer cancel()
 
 	eventBytes := parseHexDump("testdata/message-event")
@@ -123,7 +125,7 @@ func TestMessageEvent(t *testing.T) {
 }
 
 func TestForwardEvent(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
+	connect, next, _, cancel, _ := setupServer(t)
 	defer cancel()
 
 	eventBytes := parseHexDump("testdata/forward-event")
@@ -171,7 +173,7 @@ func TestForwardEvent(t *testing.T) {
 }
 
 func TestEventAcknowledgment(t *testing.T) {
-	connect, _, logs, cancel := setupServer(t)
+	connect, _, logs, cancel, _ := setupServer(t)
 	defer func() { fmt.Printf("%v\n", logs.All()) }()
 	defer cancel()
 
@@ -202,7 +204,7 @@ func TestEventAcknowledgment(t *testing.T) {
 }
 
 func TestForwardPackedEvent(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
+	connect, next, _, cancel, _ := setupServer(t)
 	defer cancel()
 
 	eventBytes := parseHexDump("testdata/forward-packed")
@@ -264,7 +266,7 @@ func TestForwardPackedEvent(t *testing.T) {
 }
 
 func TestForwardPackedCompressedEvent(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
+	connect, next, _, cancel, _ := setupServer(t)
 	defer cancel()
 
 	eventBytes := parseHexDump("testdata/forward-packed-compressed")
@@ -339,7 +341,7 @@ func TestUnixEndpoint(t *testing.T) {
 
 	receiver, err := newFluentReceiver(receivertest.NewNopSettings(metadata.Type), conf, next)
 	require.NoError(t, err)
-	require.NoError(t, receiver.Start(ctx, nil))
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	defer func() { require.NoError(t, receiver.Shutdown(ctx)) }()
 
 	conn, err := net.Dial("unix", receiver.(*fluentReceiver).listener.Addr().String())
@@ -369,7 +371,7 @@ func makeSampleEvent(tag string) []byte {
 }
 
 func TestHighVolume(t *testing.T) {
-	connect, next, _, cancel := setupServer(t)
+	connect, next, _, cancel, _ := setupServer(t)
 	defer cancel()
 
 	const totalRoutines = 8
@@ -404,4 +406,59 @@ func TestHighVolume(t *testing.T) {
 
 		return total == totalRoutines*totalMessagesPerRoutine
 	}, 10*time.Second, 100*time.Millisecond)
+}
+
+// TestReceiverShutdownRefusesNewConnections verifies the graceful shutdown of a receiver, ensuring no new connections can be established afterward.
+func TestReceiverShutdownRefusesNewConnections(t *testing.T) {
+	connect, next, _, cancel, receiver := setupServer(t)
+	defer cancel()
+
+	eventBytes := parseHexDump("testdata/message-event")
+
+	conn := connect()
+	n, err := conn.Write(eventBytes)
+	require.NoError(t, err)
+	require.Equal(t, len(eventBytes), n)
+	require.NoError(t, conn.Close())
+
+	var converted []plog.Logs
+	require.Eventually(t, func() bool {
+		converted = next.AllLogs()
+		return len(converted) == 1
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// shutdown the receiver
+	require.NoError(t, receiver.Shutdown(t.Context()))
+
+	// New connection will be refused
+	_, err = net.Dial("tcp", receiver.(*fluentReceiver).listener.Addr().String())
+	require.Error(t, err)
+}
+
+// TestReceiverShutdownClosesExistingConnections verifies the graceful shutdown of a receiver, ensuring existing connections will be closed.
+func TestReceiverShutdownClosesExistingConnections(t *testing.T) {
+	connect, next, _, cancel, receiver := setupServer(t)
+	defer cancel()
+
+	eventBytes := parseHexDump("testdata/message-event")
+
+	conn := connect()
+	n, err := conn.Write(eventBytes)
+	require.NoError(t, err)
+	require.Equal(t, len(eventBytes), n)
+
+	var converted []plog.Logs
+	require.Eventually(t, func() bool {
+		converted = next.AllLogs()
+		return len(converted) == 1
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// shutdown the receiver
+	require.NoError(t, receiver.Shutdown(t.Context()))
+
+	// Existing connection will be refused
+	require.Eventually(t, func() bool {
+		_, err := conn.Write(eventBytes)
+		return err != nil
+	}, 5*time.Second, 1*time.Second)
 }

@@ -17,13 +17,13 @@ import (
 type spanAttributesProcessor struct {
 	logger   *zap.Logger
 	attrProc *attraction.AttrProc
-	skipExpr expr.BoolExpr[ottlspan.TransformContext]
+	skipExpr expr.BoolExpr[*ottlspan.TransformContext]
 }
 
 // newTracesProcessor returns a processor that modifies attributes of a span.
 // To construct the attributes processors, the use of the factory methods are required
 // in order to validate the inputs.
-func newSpanAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, skipExpr expr.BoolExpr[ottlspan.TransformContext]) *spanAttributesProcessor {
+func newSpanAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, skipExpr expr.BoolExpr[*ottlspan.TransformContext]) *spanAttributesProcessor {
 	return &spanAttributesProcessor{
 		logger:   logger,
 		attrProc: attrProc,
@@ -35,16 +35,16 @@ func (a *spanAttributesProcessor) processTraces(ctx context.Context, td ptrace.T
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		resource := rs.Resource()
 		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			spans := ils.Spans()
-			scope := ils.Scope()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if a.skipExpr != nil {
-					skip, err := a.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ils, rs))
+					tCtx := ottlspan.NewTransformContextPtr(rs, ils, span)
+					skip, err := a.skipExpr.Eval(ctx, tCtx)
+					tCtx.Close()
 					if err != nil {
 						return td, err
 					}

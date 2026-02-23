@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -26,6 +27,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
+
+func init() {
+	// Disable WatchListClient feature gate for tests as fake clientset doesn't support bookmark events
+	// See: https://github.com/kubernetes/kubernetes/issues/129408
+	os.Setenv("KUBE_FEATURE_WatchListClient", "false")
+}
 
 const (
 	dataLen = numContainers*containerMetrics + numPods*podMetrics + numNodes*nodeMetrics + numVolumes*volumeMetrics
@@ -159,7 +166,7 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(t.Context(), nil)
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// we wait until the watcher starts
@@ -238,7 +245,7 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(t.Context(), nil)
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// we wait until the watcher starts

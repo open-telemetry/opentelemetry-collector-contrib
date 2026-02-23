@@ -3,7 +3,8 @@ type: macosunifiedlogging
 status:
   class: receiver
   stability:
-    development: [logs]
+    alpha: [logs]
   codeowners:
-    active: [Caleb-Hurshman]
+    active: [Caleb-Hurshman, atoulme]
+  distributions: [contrib]
   unsupported_platforms: [linux, windows]

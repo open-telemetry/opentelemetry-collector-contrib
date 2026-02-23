@@ -240,6 +240,7 @@ func (m *metricHaproxyActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyActive(cfg MetricConfig) metricHaproxyActive {
 	m := metricHaproxyActive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -289,6 +290,7 @@ func (m *metricHaproxyBackup) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyBackup(cfg MetricConfig) metricHaproxyBackup {
 	m := metricHaproxyBackup{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -340,6 +342,7 @@ func (m *metricHaproxyBytesInput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyBytesInput(cfg MetricConfig) metricHaproxyBytesInput {
 	m := metricHaproxyBytesInput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -391,6 +394,7 @@ func (m *metricHaproxyBytesOutput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyBytesOutput(cfg MetricConfig) metricHaproxyBytesOutput {
 	m := metricHaproxyBytesOutput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -442,6 +446,7 @@ func (m *metricHaproxyClientsCanceled) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyClientsCanceled(cfg MetricConfig) metricHaproxyClientsCanceled {
 	m := metricHaproxyClientsCanceled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -493,6 +498,7 @@ func (m *metricHaproxyCompressionBypass) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyCompressionBypass(cfg MetricConfig) metricHaproxyCompressionBypass {
 	m := metricHaproxyCompressionBypass{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -544,6 +550,7 @@ func (m *metricHaproxyCompressionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyCompressionCount(cfg MetricConfig) metricHaproxyCompressionCount {
 	m := metricHaproxyCompressionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -595,6 +602,7 @@ func (m *metricHaproxyCompressionInput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyCompressionInput(cfg MetricConfig) metricHaproxyCompressionInput {
 	m := metricHaproxyCompressionInput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -646,6 +654,7 @@ func (m *metricHaproxyCompressionOutput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyCompressionOutput(cfg MetricConfig) metricHaproxyCompressionOutput {
 	m := metricHaproxyCompressionOutput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -695,6 +704,7 @@ func (m *metricHaproxyConnectionsAverageTime) emit(metrics pmetric.MetricSlice) 
 
 func newMetricHaproxyConnectionsAverageTime(cfg MetricConfig) metricHaproxyConnectionsAverageTime {
 	m := metricHaproxyConnectionsAverageTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -746,6 +756,7 @@ func (m *metricHaproxyConnectionsErrors) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyConnectionsErrors(cfg MetricConfig) metricHaproxyConnectionsErrors {
 	m := metricHaproxyConnectionsErrors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -795,6 +806,7 @@ func (m *metricHaproxyConnectionsRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyConnectionsRate(cfg MetricConfig) metricHaproxyConnectionsRate {
 	m := metricHaproxyConnectionsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -846,6 +858,7 @@ func (m *metricHaproxyConnectionsRetries) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyConnectionsRetries(cfg MetricConfig) metricHaproxyConnectionsRetries {
 	m := metricHaproxyConnectionsRetries{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -897,6 +910,7 @@ func (m *metricHaproxyConnectionsTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyConnectionsTotal(cfg MetricConfig) metricHaproxyConnectionsTotal {
 	m := metricHaproxyConnectionsTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -948,6 +962,7 @@ func (m *metricHaproxyDowntime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyDowntime(cfg MetricConfig) metricHaproxyDowntime {
 	m := metricHaproxyDowntime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -999,6 +1014,7 @@ func (m *metricHaproxyFailedChecks) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyFailedChecks(cfg MetricConfig) metricHaproxyFailedChecks {
 	m := metricHaproxyFailedChecks{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1048,6 +1064,7 @@ func (m *metricHaproxyRequestsAverageTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyRequestsAverageTime(cfg MetricConfig) metricHaproxyRequestsAverageTime {
 	m := metricHaproxyRequestsAverageTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1099,6 +1116,7 @@ func (m *metricHaproxyRequestsDenied) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyRequestsDenied(cfg MetricConfig) metricHaproxyRequestsDenied {
 	m := metricHaproxyRequestsDenied{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1150,6 +1168,7 @@ func (m *metricHaproxyRequestsErrors) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyRequestsErrors(cfg MetricConfig) metricHaproxyRequestsErrors {
 	m := metricHaproxyRequestsErrors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1201,6 +1220,7 @@ func (m *metricHaproxyRequestsQueued) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyRequestsQueued(cfg MetricConfig) metricHaproxyRequestsQueued {
 	m := metricHaproxyRequestsQueued{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1250,6 +1270,7 @@ func (m *metricHaproxyRequestsRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyRequestsRate(cfg MetricConfig) metricHaproxyRequestsRate {
 	m := metricHaproxyRequestsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1301,6 +1322,7 @@ func (m *metricHaproxyRequestsRedispatched) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyRequestsRedispatched(cfg MetricConfig) metricHaproxyRequestsRedispatched {
 	m := metricHaproxyRequestsRedispatched{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1354,6 +1376,7 @@ func (m *metricHaproxyRequestsTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyRequestsTotal(cfg MetricConfig) metricHaproxyRequestsTotal {
 	m := metricHaproxyRequestsTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1403,6 +1426,7 @@ func (m *metricHaproxyResponsesAverageTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyResponsesAverageTime(cfg MetricConfig) metricHaproxyResponsesAverageTime {
 	m := metricHaproxyResponsesAverageTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1454,6 +1478,7 @@ func (m *metricHaproxyResponsesDenied) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyResponsesDenied(cfg MetricConfig) metricHaproxyResponsesDenied {
 	m := metricHaproxyResponsesDenied{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1505,6 +1530,7 @@ func (m *metricHaproxyResponsesErrors) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyResponsesErrors(cfg MetricConfig) metricHaproxyResponsesErrors {
 	m := metricHaproxyResponsesErrors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1556,6 +1582,7 @@ func (m *metricHaproxyServerSelectedTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyServerSelectedTotal(cfg MetricConfig) metricHaproxyServerSelectedTotal {
 	m := metricHaproxyServerSelectedTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1605,6 +1632,7 @@ func (m *metricHaproxySessionsAverage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxySessionsAverage(cfg MetricConfig) metricHaproxySessionsAverage {
 	m := metricHaproxySessionsAverage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1654,6 +1682,7 @@ func (m *metricHaproxySessionsCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxySessionsCount(cfg MetricConfig) metricHaproxySessionsCount {
 	m := metricHaproxySessionsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1703,6 +1732,7 @@ func (m *metricHaproxySessionsLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxySessionsLimit(cfg MetricConfig) metricHaproxySessionsLimit {
 	m := metricHaproxySessionsLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1752,6 +1782,7 @@ func (m *metricHaproxySessionsRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxySessionsRate(cfg MetricConfig) metricHaproxySessionsRate {
 	m := metricHaproxySessionsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1803,6 +1834,7 @@ func (m *metricHaproxySessionsTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxySessionsTotal(cfg MetricConfig) metricHaproxySessionsTotal {
 	m := metricHaproxySessionsTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1852,6 +1884,7 @@ func (m *metricHaproxyWeight) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyWeight(cfg MetricConfig) metricHaproxyWeight {
 	m := metricHaproxyWeight{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

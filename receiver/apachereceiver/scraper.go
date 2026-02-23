@@ -49,7 +49,7 @@ func newApacheScraper(
 }
 
 func (r *apacheScraper) start(ctx context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(ctx, host, r.settings)
+	httpClient, err := r.cfg.ToClient(ctx, host.GetExtensions(), r.settings)
 	if err != nil {
 		return err
 	}

@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -75,8 +76,13 @@ func TestExtensionLifecycle(t *testing.T) {
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-				Path:         "/test-path",
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -148,8 +154,13 @@ func TestNotifyConfig(t *testing.T) {
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-				Path:         "/test-path",
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -196,8 +207,13 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	cfg := &Config{
 		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-			Path:         "/test-path",
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:0",
+				},
+			},
+			Path: "/test-path",
 		},
 	}
 
@@ -238,8 +254,13 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 	cfg := &Config{
 		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-			Path:         "/test-path",
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:0",
+				},
+			},
+			Path: "/test-path",
 		},
 	}
 
@@ -291,8 +312,13 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-				Path:         "/test-path",
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -328,8 +354,13 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-				Path:         "/test-path",
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -363,8 +394,13 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-				Path:         "/test-path",
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -405,6 +441,80 @@ func TestSimpleInterfaceMethods(t *testing.T) {
 	assert.NotPanics(t, func() { ext.ComponentStatusChanged(nil, nil) })
 }
 
+func TestExtension_DeploymentTypeInPayload(t *testing.T) {
+	tests := []struct {
+		name           string
+		deploymentType string
+		expected       string
+	}{
+		{
+			name:           "gateway deployment type",
+			deploymentType: "gateway",
+			expected:       "gateway",
+		},
+		{
+			name:           "daemonset deployment type",
+			deploymentType: "daemonset",
+			expected:       "daemonset",
+		},
+		{
+			name:           "unknown deployment type",
+			deploymentType: "unknown",
+			expected:       "unknown",
+		},
+		{
+			name:           "empty defaults to unknown",
+			deploymentType: "",
+			expected:       "unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			set := extension.Settings{
+				TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+				BuildInfo:         component.BuildInfo{Version: "1.2.3"},
+			}
+			hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+			uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+			cfg := &Config{
+				API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+				HTTPConfig: &httpserver.Config{
+					ServerConfig: confighttp.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:0",
+						},
+					},
+					Path: "/test-path",
+				},
+				DeploymentType: tt.deploymentType,
+			}
+
+			// Validate will set the default if empty
+			err := cfg.Validate()
+			require.NoError(t, err)
+
+			ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+			require.NoError(t, err)
+			ext.serializer = &mockSerializer{}
+			require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+			// Minimal config to trigger NotifyConfig
+			conf := confmap.NewFromStringMap(map[string]any{})
+			err = ext.NotifyConfig(t.Context(), conf)
+			require.NoError(t, err)
+
+			// Verify the deployment type is set correctly in the payload
+			require.NotNil(t, ext.otelCollectorMetadata)
+			assert.Equal(t, tt.expected, ext.otelCollectorMetadata.CollectorDeploymentType, "CollectorDeploymentType should be set correctly")
+
+			// Cleanup
+			assert.NoError(t, ext.Shutdown(t.Context()))
+		})
+	}
+}
+
 func TestRealUUIDProvider(t *testing.T) {
 	p := &realUUIDProvider{}
 	uuid := p.NewString()
@@ -423,8 +533,13 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-				Path:         "/test-path",
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -476,8 +591,13 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-				Path:         "/test-path",
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -531,8 +651,13 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-				Path:         "/test-path",
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -593,8 +718,13 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{Endpoint: "localhost:0"},
-				Path:         "/test-path",
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -706,6 +836,39 @@ func (m *mockSerializer) Stop() {
 	m.state = defaultforwarder.Stopped
 }
 
+func (*mockSerializer) SendSeriesWithMetadata(_ metrics.Series) error {
+	// Mock implementation for tests - just return success
+	return nil
+}
+
+// trackingMockSerializer is a mock serializer that tracks series sent
+type trackingMockSerializer struct {
+	mockSerializer
+	mu         sync.RWMutex
+	seriesSent []metrics.Series
+}
+
+func (m *trackingMockSerializer) SendSeriesWithMetadata(series metrics.Series) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.seriesSent = append(m.seriesSent, series)
+	return nil
+}
+
+func (m *trackingMockSerializer) GetSeriesSent() []metrics.Series {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	result := make([]metrics.Series, len(m.seriesSent))
+	copy(result, m.seriesSent)
+	return result
+}
+
+func (m *trackingMockSerializer) ClearSeriesSent() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.seriesSent = nil
+}
+
 func (m *mockSerializer) State() uint32 {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -778,4 +941,230 @@ func (m *failAfterFirstCallSerializer) GetCallCount() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.callCount
+}
+
+func TestExtensionLivenessMetric(t *testing.T) {
+	t.Run("sends liveness metric with configured hostname", func(t *testing.T) {
+		// Create tracking mock serializer
+		mockSerializer := &trackingMockSerializer{}
+		mockSerializer.state = defaultforwarder.Started
+
+		// Create extension with test config
+		cfg := &Config{
+			API: datadogconfig.APIConfig{
+				Key:  "test-api-key-1234567890123456",
+				Site: "datadoghq.com",
+			},
+			Hostname: "test-hostname-configured",
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
+			},
+		}
+
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.BuildInfo{
+				Version: "test-version",
+				Command: "test-collector",
+			},
+		}
+
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname-configured"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+
+		// Replace serializer with mock
+		ext.serializer = mockSerializer
+
+		// Manually send liveness metric
+		err = ext.sendLivenessMetric(t.Context())
+		require.NoError(t, err)
+
+		// Verify metric was sent to serializer
+		allSeries := mockSerializer.GetSeriesSent()
+		require.GreaterOrEqual(t, len(allSeries), 1, "expected at least one series to be sent")
+
+		// Find the liveness metric in the sent series
+		var livenessMetric *metrics.Serie
+		for _, seriesList := range allSeries {
+			for _, serie := range seriesList {
+				if serie.Name == "otel.datadog_extension.running" {
+					livenessMetric = serie
+					break
+				}
+			}
+			if livenessMetric != nil {
+				break
+			}
+		}
+
+		require.NotNil(t, livenessMetric, "liveness metric not found in sent series")
+
+		// Verify the metric properties
+		assert.Equal(t, "otel.datadog_extension.running", livenessMetric.Name)
+		assert.Equal(t, "test-hostname-configured", livenessMetric.Host)
+		assert.Len(t, livenessMetric.Points, 1)
+		assert.Equal(t, 1.0, livenessMetric.Points[0].Value)
+
+		// Verify tags using CompositeTags.Find method
+		assert.True(t, livenessMetric.Tags.Find(func(tag string) bool { return tag == "version:test-version" }), "expected version tag")
+		assert.True(t, livenessMetric.Tags.Find(func(tag string) bool { return tag == "command:test-collector" }), "expected command tag")
+		assert.True(t, livenessMetric.Tags.Find(func(tag string) bool { return tag == "hostname_source:config" }), "expected hostname_source tag")
+	})
+
+	t.Run("sends liveness metric with inferred hostname", func(t *testing.T) {
+		// Create tracking mock serializer
+		mockSerializer := &trackingMockSerializer{}
+		mockSerializer.state = defaultforwarder.Started
+
+		// Create extension without configured hostname
+		cfg := &Config{
+			API: datadogconfig.APIConfig{
+				Key:  "test-api-key-1234567890123456",
+				Site: "datadoghq.com",
+			},
+			// No Hostname set - will be inferred
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
+			},
+		}
+
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.BuildInfo{
+				Version: "test-version",
+				Command: "test-collector",
+			},
+		}
+
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "inferred-hostname"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+
+		// Replace serializer with mock
+		ext.serializer = mockSerializer
+
+		// Manually send liveness metric
+		err = ext.sendLivenessMetric(t.Context())
+		require.NoError(t, err)
+
+		// Verify metric was sent to serializer
+		allSeries := mockSerializer.GetSeriesSent()
+		require.GreaterOrEqual(t, len(allSeries), 1, "expected at least one series to be sent")
+
+		// Find the liveness metric in the sent series
+		var livenessMetric *metrics.Serie
+		for _, seriesList := range allSeries {
+			for _, serie := range seriesList {
+				if serie.Name == "otel.datadog_extension.running" {
+					livenessMetric = serie
+					break
+				}
+			}
+			if livenessMetric != nil {
+				break
+			}
+		}
+
+		require.NotNil(t, livenessMetric, "liveness metric not found in sent series")
+
+		// Verify the metric properties
+		assert.Equal(t, "otel.datadog_extension.running", livenessMetric.Name)
+		assert.Equal(t, "inferred-hostname", livenessMetric.Host)
+
+		// Verify hostname_source tag is "inferred" using CompositeTags.Find method
+		assert.True(t, livenessMetric.Tags.Find(func(tag string) bool { return tag == "hostname_source:inferred" }), "expected hostname_source:inferred tag")
+	})
+
+	t.Run("liveness metric sent periodically", func(t *testing.T) {
+		// Create tracking mock serializer
+		mockSerializer := &trackingMockSerializer{}
+		mockSerializer.state = defaultforwarder.Started
+
+		// Create extension
+		cfg := &Config{
+			API: datadogconfig.APIConfig{
+				Key:  "test-api-key-1234567890123456",
+				Site: "datadoghq.com",
+			},
+			Hostname: "test-hostname",
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path: "/test-path",
+			},
+		}
+
+		set := extension.Settings{
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.BuildInfo{Version: "test-version", Command: "test-collector"},
+		}
+
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname"}}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+
+		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+
+		// Replace serializer with mock
+		ext.serializer = mockSerializer
+
+		// Start the extension
+		err = ext.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+
+		// Trigger NotifyConfig which starts periodic sending
+		err = ext.NotifyConfig(t.Context(), confmap.New())
+		require.NoError(t, err)
+
+		// Wait a bit for the initial liveness metric to be sent
+		time.Sleep(200 * time.Millisecond)
+
+		// Verify initial liveness metric was sent on startup
+		allSeries := mockSerializer.GetSeriesSent()
+		require.GreaterOrEqual(t, len(allSeries), 1, "expected at least one series to be sent on startup")
+
+		// Find the liveness metric
+		foundLiveness := false
+		for _, seriesList := range allSeries {
+			for _, serie := range seriesList {
+				if serie.Name == "otel.datadog_extension.running" {
+					foundLiveness = true
+					assert.Equal(t, "test-hostname", serie.Host)
+					break
+				}
+			}
+			if foundLiveness {
+				break
+			}
+		}
+		assert.True(t, foundLiveness, "liveness metric should have been sent on startup")
+
+		// Cleanup
+		err = ext.Shutdown(t.Context())
+		require.NoError(t, err)
+	})
 }

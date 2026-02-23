@@ -1,0 +1,23 @@
+$defs:
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+    type: object
+    properties:
+      resource_attributes:
+        $ref: resource_attributes_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for azuremonitor resource attributes.
+    type: object
+    properties:
+      azuremonitor.subscription:
+        $ref: resource_attribute_config
+      azuremonitor.subscription_id:
+        $ref: resource_attribute_config
+      azuremonitor.tenant_id:
+        $ref: resource_attribute_config

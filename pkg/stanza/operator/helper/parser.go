@@ -6,11 +6,12 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // NewParserConfig creates a new parser config with default values
@@ -172,7 +173,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction, write WriteFunction) error {
 	value, ok := entry.Get(p.ParseFrom)
 	if !ok {
-		err := stanza_errors.NewError(
+		err := stanzaerrors.NewError(
 			"Entry is missing the expected parse_from field.",
 			"Ensure that all incoming entries contain the parse_from field.",
 			"parse_from", p.ParseFrom.String(),
@@ -186,7 +187,7 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 	}
 
 	if err := entry.Set(p.ParseTo, newValue); err != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(err, "set parse_to"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("set parse_to: %w", err), write)
 	}
 
 	if p.BodyField != nil {
@@ -217,16 +218,16 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 
 	// Handle parsing errors after attempting to parse all
 	if timeParseErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(timeParseErr, "time parser"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("time parser: %w", timeParseErr), write)
 	}
 	if severityParseErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(severityParseErr, "severity parser"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("severity parser: %w", severityParseErr), write)
 	}
 	if traceParseErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(traceParseErr, "trace parser"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("trace parser: %w", traceParseErr), write)
 	}
 	if scopeNameParserErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(scopeNameParserErr, "scope_name parser"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("scope_name parser: %w", scopeNameParserErr), write)
 	}
 	return nil
 }

@@ -1,0 +1,101 @@
+$defs:
+  attribute_connection_op:
+    description: AttributeConnectionOp specifies the value connection_op attribute.
+    type: integer
+  attribute_connection_type:
+    description: AttributeConnectionType specifies the value connection_type attribute.
+    type: integer
+  attribute_index_type:
+    description: AttributeIndexType specifies the value index_type attribute.
+    type: integer
+  attribute_namespace_component:
+    description: AttributeNamespaceComponent specifies the value namespace_component attribute.
+    type: integer
+  attribute_query_result:
+    description: AttributeQueryResult specifies the value query_result attribute.
+    type: integer
+  attribute_query_type:
+    description: AttributeQueryType specifies the value query_type attribute.
+    type: integer
+  attribute_scan_result:
+    description: AttributeScanResult specifies the value scan_result attribute.
+    type: integer
+  attribute_scan_type:
+    description: AttributeScanType specifies the value scan_type attribute.
+    type: integer
+  attribute_transaction_result:
+    description: AttributeTransactionResult specifies the value transaction_result attribute.
+    type: integer
+  attribute_transaction_type:
+    description: AttributeTransactionType specifies the value transaction_type attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for aerospike metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for aerospike metrics.
+    type: object
+    properties:
+      aerospike.namespace.disk.available:
+        $ref: metric_config
+      aerospike.namespace.geojson.region_query_cells:
+        $ref: metric_config
+      aerospike.namespace.geojson.region_query_false_positive:
+        $ref: metric_config
+      aerospike.namespace.geojson.region_query_points:
+        $ref: metric_config
+      aerospike.namespace.geojson.region_query_requests:
+        $ref: metric_config
+      aerospike.namespace.memory.free:
+        $ref: metric_config
+      aerospike.namespace.memory.usage:
+        $ref: metric_config
+      aerospike.namespace.query.count:
+        $ref: metric_config
+      aerospike.namespace.scan.count:
+        $ref: metric_config
+      aerospike.namespace.transaction.count:
+        $ref: metric_config
+      aerospike.node.connection.count:
+        $ref: metric_config
+      aerospike.node.connection.open:
+        $ref: metric_config
+      aerospike.node.memory.free:
+        $ref: metric_config
+      aerospike.node.query.tracked:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for aerospike resource attributes.
+    type: object
+    properties:
+      aerospike.namespace:
+        $ref: resource_attribute_config
+      aerospike.node.name:
+        $ref: resource_attribute_config

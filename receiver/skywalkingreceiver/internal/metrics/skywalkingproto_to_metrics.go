@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -40,8 +40,8 @@ func SwMetricsToMetrics(collection *agent.JVMMetricCollection) pmetric.Metrics {
 func jvmMetricToResource(serviceName, serviceInstance string, resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	attrs.EnsureCapacity(2)
-	attrs.PutStr(string(semconv.ServiceNameKey), serviceName)
-	attrs.PutStr(string(semconv.ServiceInstanceIDKey), serviceInstance)
+	attrs.PutStr(string(conventions.ServiceNameKey), serviceName)
+	attrs.PutStr(string(conventions.ServiceInstanceIDKey), serviceInstance)
 }
 
 func jvmMetricToResourceMetrics(jvmMetric *agent.JVMMetric, sm pmetric.ScopeMetrics) {

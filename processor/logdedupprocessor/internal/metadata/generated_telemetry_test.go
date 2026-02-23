@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/metric"
 	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
@@ -62,14 +63,11 @@ func TestProviders(t *testing.T) {
 }
 
 func TestNewTelemetryBuilder(t *testing.T) {
-	set := component.TelemetrySettings{
-		MeterProvider:  mockMeterProvider{},
-		TracerProvider: mockTracerProvider{},
-	}
+	set := componenttest.NewNopTelemetrySettings()
 	applied := false
-	_, err := NewTelemetryBuilder(set, func(b *TelemetryBuilder) {
+	_, err := NewTelemetryBuilder(set, telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
 		applied = true
-	})
+	}))
 	require.NoError(t, err)
 	require.True(t, applied)
 }

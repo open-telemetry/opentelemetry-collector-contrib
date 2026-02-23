@@ -24,6 +24,32 @@ See PostgreSQL documentation for [supported versions](https://www.postgresql.org
 
 The monitoring user must be granted `SELECT` on `pg_stat_database`.
 
+> [!NOTE]
+> The feature gate `receiver.postgresql.separateSchemaAttr` addresses an inconsistency in how schema names
+> are reported across different metric types. When enabled, schema names are consistently reported in a
+> dedicated `postgresql.schema.name` resource attribute.
+>
+> **Status:** Alpha (disabled by default)
+>
+> **When disabled (default behavior):**
+> - Table metrics: `postgresql.table.name = "schema_name.table_name"` (schema included)
+> - Index metrics: `postgresql.table.name = "table_name"` (schema **missing**)
+> - Function metrics: Schema reported separately in some cases
+>
+> **When enabled (recommended for consistency):**
+> - All metrics consistently use:
+>   - `postgresql.schema.name = "schema_name"`
+>   - `postgresql.table.name = "table_name"`
+>
+> This ensures reliable correlation of metrics when tables with identical names exist across different schemas.
+> To enable:
+>
+> ```bash
+> otelcol-contrib --feature-gates=receiver.postgresql.separateSchemaAttr
+> ```
+>
+> See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559 for more details.
+
 ## Configuration
 
 The following settings are required to create a database connection:
@@ -94,7 +120,7 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_statements`.
-- `top_n_query`: (optional, default=1000) The maximum number of active queries to report (to the next consumer) in a single run.
+- `top_n_query`: (optional, default=200) The maximum number of active queries to report (to the next consumer) in a single run.
 - `max_explain_each_interval`: (optional, default=1000). The maximum number of explain query to be sent in each scrape interval. The top query 
 collection would not get the query plan directly. Instead, we need to mimic the query in the database and get the query plan from database 
 separately. This could lead some resources usage and limit this will reduce the impact on your database.

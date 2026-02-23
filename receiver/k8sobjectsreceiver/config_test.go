@@ -12,10 +12,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/filter"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
@@ -35,14 +37,14 @@ func TestLoadConfig(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name:          "pods",
-						Mode:          PullMode,
+						Mode:          k8sinventory.PullMode,
 						Interval:      time.Hour,
 						FieldSelector: "status.phase=Running",
 						LabelSelector: "environment in (production),tier in (frontend)",
 					},
 					{
 						Name:       "events",
-						Mode:       WatchMode,
+						Mode:       k8sinventory.WatchMode,
 						Namespaces: []string{"default"},
 						Group:      "events.k8s.io",
 						ExcludeWatchType: []apiWatch.EventType{
@@ -61,13 +63,13 @@ func TestLoadConfig(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name:            "pods",
-						Mode:            PullMode,
+						Mode:            k8sinventory.PullMode,
 						ResourceVersion: "1",
 						Interval:        time.Hour,
 					},
 					{
 						Name:     "events",
-						Mode:     PullMode,
+						Mode:     k8sinventory.PullMode,
 						Interval: time.Hour,
 					},
 				},
@@ -82,14 +84,14 @@ func TestLoadConfig(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name:            "events",
-						Mode:            WatchMode,
+						Mode:            k8sinventory.WatchMode,
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "",
 					},
 					{
 						Name:            "events",
-						Mode:            WatchMode,
+						Mode:            k8sinventory.WatchMode,
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "2",
@@ -150,7 +152,7 @@ func TestValidate(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: PullMode,
+						Mode: k8sinventory.PullMode,
 						ExcludeWatchType: []apiWatch.EventType{
 							apiWatch.Deleted,
 						},
@@ -177,7 +179,7 @@ func TestValidate(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: PullMode,
+						Mode: k8sinventory.PullMode,
 					},
 				},
 			},
@@ -209,7 +211,7 @@ func TestDeepCopy(t *testing.T) {
 				Name:             "pods",
 				Group:            "group",
 				Namespaces:       []string{"default"},
-				Mode:             PullMode,
+				Mode:             k8sinventory.PullMode,
 				FieldSelector:    "status.phase=Running",
 				LabelSelector:    "environment in (production),tier in (frontend)",
 				Interval:         time.Hour,
@@ -234,7 +236,7 @@ func TestDeepCopy(t *testing.T) {
 			actual.Name = "changed"
 			actual.Group = "changed"
 			actual.Namespaces[0] = "changed"
-			actual.Mode = WatchMode
+			actual.Mode = k8sinventory.WatchMode
 			actual.FieldSelector = "changed"
 			actual.LabelSelector = "changed"
 			actual.Interval = time.Minute
@@ -273,7 +275,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: WatchMode,
+						Mode: k8sinventory.WatchMode,
 					},
 				},
 			},
@@ -286,7 +288,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: WatchMode,
+						Mode: k8sinventory.WatchMode,
 					},
 				},
 			},
@@ -299,7 +301,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: PullMode,
+						Mode: k8sinventory.PullMode,
 					},
 				},
 			},
@@ -312,10 +314,27 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
-						Mode: WatchMode,
+						Mode: k8sinventory.WatchMode,
 					},
 				},
 			},
+		},
+		{
+			desc: "namespaces and exclude_namespaces both set is invalid",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:       "pods",
+						Mode:       k8sinventory.WatchMode,
+						Namespaces: []string{"default"},
+						ExcludeNamespaces: []filter.Config{{
+							Regex: "namespace-to-ignore",
+						}},
+					},
+				},
+			},
+			expectedErr: "namespaces and exclude_namespaces cannot both be set at the same time",
 		},
 	}
 

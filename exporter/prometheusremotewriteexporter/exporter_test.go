@@ -19,7 +19,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/prometheus/prometheus/config"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -124,7 +124,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
+			cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 			prwe, err := newPRWExporter(cfg, tt.set)
 
 			if tt.returnErrorOnCreate {
@@ -214,7 +214,7 @@ func Test_Start(t *testing.T) {
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.ClientConfig = tt.clientSettings
-			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
+			cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 
 			prwe, err := newPRWExporter(cfg, tt.set)
 			assert.NoError(t, err)
@@ -241,11 +241,9 @@ func Test_Shutdown(t *testing.T) {
 	require.NoError(t, err)
 	errChan := make(chan error, 5)
 	for range 5 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			errChan <- prwe.PushMetrics(t.Context(), pmetric.NewMetrics())
-		}()
+		})
 	}
 	wg.Wait()
 	close(errChan)
@@ -757,12 +755,12 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					if tt.enableSendingRW2 {
-						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV2
+						cfg.RemoteWriteProtoMsg = remoteapi.WriteV2MessageType
 						oldValue := enableSendingRW2FeatureGate.IsEnabled()
 						testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, tt.enableSendingRW2)
 						defer testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, oldValue)
 					} else {
-						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
+						cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 					}
 
 					if useWAL {

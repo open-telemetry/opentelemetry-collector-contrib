@@ -13,8 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 )
 
 func TestGetMetadata(t *testing.T) {
@@ -132,10 +130,10 @@ func TestGetMetadata(t *testing.T) {
 			assert.Equal(t, tt.containerName, md.Metadata[containerName])
 			assert.Equal(t, tt.containerImageName, md.Metadata[containerImageName])
 			assert.Equal(t, tt.containerImageTag, md.Metadata[containerImageTag])
-			assert.Equal(t, tt.podName, md.Metadata[constants.K8sKeyPodName])
-			assert.Equal(t, tt.podUID, md.Metadata[constants.K8sKeyPodUID])
-			assert.Equal(t, tt.namespaceName, md.Metadata[constants.K8sKeyNamespaceName])
-			assert.Equal(t, tt.nodeName, md.Metadata[constants.K8sKeyNodeName])
+			assert.Equal(t, tt.podName, md.Metadata["k8s.pod.name"])
+			assert.Equal(t, tt.podUID, md.Metadata["k8s.pod.uid"])
+			assert.Equal(t, tt.namespaceName, md.Metadata["k8s.namespace.name"])
+			assert.Equal(t, tt.nodeName, md.Metadata["k8s.node.name"])
 		})
 	}
 }

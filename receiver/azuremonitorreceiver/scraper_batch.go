@@ -36,13 +36,14 @@ type azureType struct {
 
 func newBatchScraper(conf *Config, settings receiver.Settings) *azureBatchScraper {
 	return &azureBatchScraper{
-		cfg:                   conf,
-		receiverSettings:      settings,
-		settings:              settings.TelemetrySettings,
-		mutex:                 &sync.Mutex{},
-		time:                  &timeWrapper{},
-		clientOptionsResolver: newClientOptionsResolver(conf.Cloud),
-		mbs:                   newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		cfg:                          conf,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		mutex:                        &sync.Mutex{},
+		time:                         &timeWrapper{},
+		clientOptionsResolver:        newClientOptionsResolver(conf.Cloud),
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(conf.Services),
 	}
 }
 
@@ -62,9 +63,10 @@ type azureBatchScraper struct {
 	regions map[string]map[string]struct{}
 	mbs     concurrentMetricsBuilderMap[*metadata.MetricsBuilder]
 
-	mutex                 *sync.Mutex
-	time                  timeNowIface
-	clientOptionsResolver ClientOptionsResolver
+	mutex                        *sync.Mutex
+	time                         timeNowIface
+	clientOptionsResolver        ClientOptionsResolver
+	storageAccountSpecificConfig storageAccountSpecificConfig
 }
 
 func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) (*azmetrics.Client, error) {
@@ -268,7 +270,7 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 			s.settings.Logger.Error("failed to get Azure Resources data", zap.Error(err))
 			return
 		}
-		for _, resource := range nextResult.Value {
+		for _, resource := range s.processResources(nextResult.Value) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -305,6 +307,44 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 
 	s.subscriptions[subscriptionID].resourcesUpdated = time.Now()
 	maps.Copy(s.resourceTypes[subscriptionID], resourceTypes)
+}
+
+// processResources is a workaround specially done for the storageAccount metrics.
+// Every StorageAccount resources have some implicit sub resources (/blobServices/default, fileServices/default, etc...) that are not returned by the API.
+// We need to add them manually to the resources and resourceTypes map.
+// Note that we add these virtual sub resources only if the user has asked the sub resource types explicitly in the services config.
+// Example:
+// For each resource with id .../Microsoft.Storage/storageAccount/myResource of type Microsoft.Storage/storageAccount,
+// It will create a virtual resource with id .../Microsoft.Storage/storageAccount/myResource/blobServices/default of type Microsoft.Storage/storageAccounts/blobServices.
+// TODO: duplicate
+func (s *azureBatchScraper) processResources(resources []*armresources.GenericResourceExpanded) []*armresources.GenericResourceExpanded {
+	var subTypeResources []*armresources.GenericResourceExpanded
+	for _, resource := range resources {
+		subTypeResources = append(subTypeResources, resource)
+		if resource != nil && resource.Type != nil && *resource.Type == storageAccountType {
+			if s.storageAccountSpecificConfig.askedBlobServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/blobServices", fmt.Sprintf("%s/blobServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+			if s.storageAccountSpecificConfig.askedFileServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/fileServices", fmt.Sprintf("%s/fileServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+			if s.storageAccountSpecificConfig.askedQueueServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/queueServices", fmt.Sprintf("%s/queueServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+			if s.storageAccountSpecificConfig.askedTableServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/tableServices", fmt.Sprintf("%s/tableServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+		}
+	}
+	return subTypeResources
 }
 
 // TODO: duplicate
@@ -351,7 +391,7 @@ func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Cont
 
 		for _, v := range nextResult.Value {
 			metricName := *v.Name.Value
-			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics)
+			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
 			if len(metricAggregations) == 0 {
 				continue
 			}

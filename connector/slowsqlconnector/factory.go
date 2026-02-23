@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package slowsqlconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/slowsqlconnector"
 
@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/slowsqlconnector/internal/metadata"
 )
@@ -30,9 +30,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Threshold: time.Millisecond * 500,
 		DBSystem: []string{
-			conventions.DBSystemH2.Value.AsString(), conventions.DBSystemMongoDB.Value.AsString(),
-			conventions.DBSystemMySQL.Value.AsString(), conventions.DBSystemOracle.Value.AsString(),
-			conventions.DBSystemPostgreSQL.Value.AsString(), conventions.DBSystemMariaDB.Value.AsString(),
+			conventions.DBSystemNameH2database.Value.AsString(), conventions.DBSystemNameMongoDB.Value.AsString(),
+			conventions.DBSystemNameMySQL.Value.AsString(), conventions.DBSystemNameOracleDB.Value.AsString(),
+			conventions.DBSystemNamePostgreSQL.Value.AsString(), conventions.DBSystemNameMariaDB.Value.AsString(),
 		},
 		Dimensions: []Dimension{},
 	}

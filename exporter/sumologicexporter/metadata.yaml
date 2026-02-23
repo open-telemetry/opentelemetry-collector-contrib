@@ -1,4 +1,5 @@
 type: sumologic
+display_name: Sumo Logic Exporter
 
 status:
   class: exporter
@@ -6,8 +7,8 @@ status:
     beta: [metrics, logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [rnishtala-sumo, chan-tim-sumo, echlebek, amdprophet]
-    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek]
+    active: [rnishtala-sumo, pankaj101A, jagan2221]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, chan-tim-sumo, echlebek, amdprophet]
 
 # TODO: Update the exporter to pass the tests
 tests:
@@ -17,8 +18,7 @@ telemetry:
   metrics:
     exporter_requests_bytes:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Total size of requests (in bytes)
       unit: By
       sum:
@@ -26,8 +26,7 @@ telemetry:
         monotonic: true
     exporter_requests_duration:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Duration of HTTP requests (in milliseconds)
       unit: ms
       sum:
@@ -35,8 +34,7 @@ telemetry:
         monotonic: true
     exporter_requests_records:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Total size of requests (in number of records)
       unit: "{records}"
       sum:
@@ -44,8 +42,7 @@ telemetry:
         monotonic: true
     exporter_requests_sent:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of requests
       unit: "1"
       sum:

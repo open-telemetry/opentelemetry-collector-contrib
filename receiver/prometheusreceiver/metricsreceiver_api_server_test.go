@@ -15,13 +15,9 @@ import (
 	api_v1 "github.com/prometheus/prometheus/web/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 type apiResponse struct {
@@ -55,32 +51,28 @@ func TestPrometheusAPIServer(t *testing.T) {
 		"localhost:9091": nil,
 	}
 	for endpoint := range endpointsToReceivers {
-		ctx := t.Context()
 		mp, cfg, err := setupMockPrometheus(targets...)
 		require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 		defer mp.Close()
-
-		require.NoError(t, err)
-		receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
-			PrometheusConfig: cfg,
-			APIServer: APIServer{
-				Enabled: true,
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: endpoint,
-				},
-			},
-		}, new(consumertest.MetricsSink))
-		require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
-		endpointsToReceivers[endpoint] = receiver
-
-		require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 		t.Cleanup(func() {
-			require.NoError(t, receiver.Shutdown(ctx))
 			response, err := callAPI(endpoint, "/scrape_pools")
 			require.Error(t, err)
 			require.Nil(t, response)
 		})
 
+		receiver, _ := newTestReceiver(t, &Config{
+			PrometheusConfig: cfg,
+			APIServer: APIServer{
+				Enabled: true,
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  endpoint,
+					},
+				},
+			},
+		})
+		endpointsToReceivers[endpoint] = receiver
 		mp.wg.Wait()
 	}
 

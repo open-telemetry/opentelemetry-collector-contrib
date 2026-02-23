@@ -19,6 +19,8 @@ datadog/nositeandallendpoints:
     endpoint: "tracesendpoint:1234"
   logs:
     endpoint: "logsendpoint:1234"
+  orchestrator_explorer:
+    endpoint: "orchestratorexplorerendpoint:1234"
 
 datadog/siteandnoendpoints:
   api:
@@ -51,3 +53,11 @@ datadog/siteandallendpoints:
     endpoint: "tracesendpoint:1234"
   logs:
     endpoint: "logsendpoint:1234"
+  orchestrator_explorer:
+    endpoint: "orchestratorexplorerendpoint:1234"
+
+datadog/siteandorchestratorexplorerendpoint:
+  api:
+    site: datadoghq.eu
+  orchestrator_explorer:
+    endpoint: "orchestratorexplorerendpoint:1234"

@@ -1,0 +1,33 @@
+{
+    "records": [
+        {
+            "Level": 5,
+            "category": "Alert",
+            "location": "global",
+            "resourceId": "/SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/RESOURCEGROUPS/EXAMPLE-RESOURCE-GROUP/PROVIDERS/MICROSOFT.CLASSICCOMPUTE/DOMAINNAMES/EXAMPLE-RESOURCE-GROUP/SLOTS/PRODUCTION/ROLES/EVENT.BACKGROUNDJOBSWORKER.RAZZLE",
+            "time": "2017-07-21T09:24:13.522192Z",
+            "level": "Informational",
+            "correlationId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/example-resource-group/providers/microsoft.insights/alertrules/examplealert/incidents/L3N1YnNjcmlwdGlvbnMvZGY2MDJjOWMtN2FhMC00MDdkLWE2ZmItZWIyMGM4YmQxMTkyL3Jlc291cmNlR3JvdXBzL0NzbUV2ZW50RE9HRk9PRC1XZXN0VVMvcHJvdmlkZXJzL21pY3Jvc29mdC5pbnNpZ2h0cy9hbGVydHJ1bGVzL2V4YW1wbGVhbGVydDA2MzYzNjIyNTg1MzUyMjE5MjA=",
+            "operationName": "MICROSOFT.INSIGHTS/ALERTRULES/ACTIVATED/ACTION",
+            "resultType": "Activated",
+            "properties": {
+                "webHookUri": "https://example.com/webhook/alert",
+                "RuleUri": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/example-resource-group/providers/microsoft.insights/alertrules/examplealert",
+                "RuleName": "examplealert",
+                "RuleDescription": "Alert triggered when CPU usage exceeds threshold",
+                "Threshold": "80",
+                "WindowSizeInMinutes": "10",
+                "Aggregation": "Average",
+                "Operator": "GreaterThan",
+                "MetricName": "Percentage CPU",
+                "MetricUnit": "Percent"
+            },
+            "tenantId": "22222222-2222-2222-2222-222222222222",
+            "identity": {
+                "claims": {
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/spn": "Microsoft.Insights/alertRules"
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,24 @@
+description: Config represents the receiver config settings within the collector's config.yaml
+type: object
+properties:
+  hostname:
+    description: The hostname or IP address that the listener will bind to
+    type: string
+  port:
+    description: The port that the listener will bind to
+    type: integer
+  queue_size:
+    description: The size of the queue that the listener will use This is a buffer that will hold flow messages before they are processed by a worker
+    type: integer
+  scheme:
+    description: The scheme defines the type of flow data that the listener will receive The scheme must be one of sflow, netflow, or flow
+    type: string
+  send_raw:
+    description: SendRaw determines whether to send raw flow messages instead of parsing them
+    type: boolean
+  sockets:
+    description: The number of sockets that the listener will use
+    type: integer
+  workers:
+    description: The number of workers that the listener will use to decode incoming flow messages By default it will be two times the number of sockets Ideally set this to the number of CPU cores
+    type: integer

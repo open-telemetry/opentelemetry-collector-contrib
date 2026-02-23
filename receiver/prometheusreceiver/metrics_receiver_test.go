@@ -4,6 +4,7 @@
 package prometheusreceiver
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -17,12 +18,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
@@ -1470,153 +1471,6 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 	testComponent(t, targets, nil)
 }
 
-var startTimeMetricPage = `
-# HELP go_threads Number of OS threads created
-# TYPE go_threads gauge
-go_threads 19
-# HELP http_requests_total The total number of HTTP requests.
-# TYPE http_requests_total counter
-http_requests_total{method="post",code="200"} 100
-http_requests_total{method="post",code="400"} 5
-# HELP http_request_duration_seconds A histogram of the request duration.
-# TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{le="0.05"} 1000
-http_request_duration_seconds_bucket{le="0.5"} 1500
-http_request_duration_seconds_bucket{le="1"} 2000
-http_request_duration_seconds_bucket{le="+Inf"} 2500
-http_request_duration_seconds_sum 5000
-http_request_duration_seconds_count 2500
-# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
-# TYPE rpc_duration_seconds summary
-rpc_duration_seconds{quantile="0.01"} 1
-rpc_duration_seconds{quantile="0.9"} 5
-rpc_duration_seconds{quantile="0.99"} 8
-rpc_duration_seconds_sum 5000
-rpc_duration_seconds_count 1000
-# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
-# TYPE process_start_time_seconds gauge
-process_start_time_seconds 400.8
-`
-
-var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nanos: 800000000}
-
-// 6 metrics + 5 internal metrics
-const numStartTimeMetricPageTimeseries = 11
-
-func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
-	verifyNumValidScrapeResults(t, td, result)
-	numTimeseries := 0
-	for _, rm := range result {
-		metrics := getMetrics(rm)
-		for i := range metrics {
-			timestamp := startTimeMetricPageStartTimestamp
-			switch metrics[i].Type() {
-			case pmetric.MetricTypeGauge:
-				timestamp = nil
-				for j := 0; j < metrics[i].Gauge().DataPoints().Len(); j++ {
-					time := metrics[i].Gauge().DataPoints().At(j).StartTimestamp()
-					assert.Equal(t, timestamp.AsTime(), time.AsTime())
-					numTimeseries++
-				}
-
-			case pmetric.MetricTypeSum:
-				for j := 0; j < metrics[i].Sum().DataPoints().Len(); j++ {
-					assert.Equal(t, timestamp.AsTime(), metrics[i].Sum().DataPoints().At(j).StartTimestamp().AsTime())
-					numTimeseries++
-				}
-
-			case pmetric.MetricTypeHistogram:
-				for j := 0; j < metrics[i].Histogram().DataPoints().Len(); j++ {
-					assert.Equal(t, timestamp.AsTime(), metrics[i].Histogram().DataPoints().At(j).StartTimestamp().AsTime())
-					numTimeseries++
-				}
-
-			case pmetric.MetricTypeSummary:
-				for j := 0; j < metrics[i].Summary().DataPoints().Len(); j++ {
-					assert.Equal(t, timestamp.AsTime(), metrics[i].Summary().DataPoints().At(j).StartTimestamp().AsTime())
-					numTimeseries++
-				}
-			case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
-			}
-		}
-		assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
-	}
-}
-
-// TestStartTimeMetric validates that timeseries have start time set to 'process_start_time_seconds'
-func TestStartTimeMetric(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.RemoveStartTimeAdjustment", false)
-	require.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.RemoveStartTimeAdjustment", true)
-	}()
-	targets := []*testData{
-		{
-			name: "target1",
-			pages: []mockPrometheusResponse{
-				{code: 200, data: startTimeMetricPage},
-			},
-			validateFunc: verifyStartTimeMetricPage,
-		},
-	}
-	testComponent(t, targets, func(c *Config) {
-		c.UseStartTimeMetric = true
-	})
-}
-
-var startTimeMetricRegexPage = `
-# HELP go_threads Number of OS threads created
-# TYPE go_threads gauge
-go_threads 19
-# HELP http_requests_total The total number of HTTP requests.
-# TYPE http_requests_total counter
-http_requests_total{method="post",code="200"} 100
-http_requests_total{method="post",code="400"} 5
-# HELP http_request_duration_seconds A histogram of the request duration.
-# TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{le="0.05"} 1000
-http_request_duration_seconds_bucket{le="0.5"} 1500
-http_request_duration_seconds_bucket{le="1"} 2000
-http_request_duration_seconds_bucket{le="+Inf"} 2500
-http_request_duration_seconds_sum 5000
-http_request_duration_seconds_count 2500
-# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
-# TYPE rpc_duration_seconds summary
-rpc_duration_seconds{quantile="0.01"} 1
-rpc_duration_seconds{quantile="0.9"} 5
-rpc_duration_seconds{quantile="0.99"} 8
-rpc_duration_seconds_sum 5000
-rpc_duration_seconds_count 1000
-# HELP example_process_start_time_seconds Start time of the process since unix epoch in seconds.
-# TYPE example_process_start_time_seconds gauge
-example_process_start_time_seconds 400.8
-`
-
-// TestStartTimeMetricRegex validates that timeseries have start time regex set to 'process_start_time_seconds'
-func TestStartTimeMetricRegex(t *testing.T) {
-	t.Skip("Skipping test since it is flaky, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42684.")
-	targets := []*testData{
-		{
-			name: "target1",
-			pages: []mockPrometheusResponse{
-				{code: 200, data: startTimeMetricRegexPage},
-			},
-			validateFunc: verifyStartTimeMetricPage,
-		},
-		{
-			name: "target2",
-			pages: []mockPrometheusResponse{
-				{code: 200, data: startTimeMetricPage},
-			},
-			validateFunc: verifyStartTimeMetricPage,
-		},
-	}
-	testComponent(t, targets, func(c *Config) {
-		c.StartTimeMetricRegex = "^(.+_)*process_start_time_seconds$"
-		c.UseStartTimeMetric = true
-	})
-}
-
 // metric type is defined as 'untyped' in the first metric
 // and, type hint is missing in the 2nd metric
 var untypedMetrics = `
@@ -1766,21 +1620,39 @@ scrape_configs:
       - %s
         `, strings.TrimPrefix(svr.URL, "http://")), promslog.NewNopLogger())
 	require.NoError(t, err)
+
 	set := receivertest.NewNopSettings(metadata.Type)
-	receiver, err := newPrometheusReceiver(set, &Config{
-		PrometheusConfig: (*PromConfig)(cfg),
-	}, new(consumertest.MetricsSink))
+	_, _ = newTestReceiverSettings(t, &Config{PrometheusConfig: (*PromConfig)(cfg)}, set)
+
+	gotUA := <-uaCh
+	require.Contains(t, gotUA, set.BuildInfo.Command)
+	require.Contains(t, gotUA, set.BuildInfo.Version)
+}
+
+func newTestReceiver(t *testing.T, cfg *Config) (*pReceiver, *consumertest.MetricsSink) {
+	set := receivertest.NewNopSettings(metadata.Type)
+	return newTestReceiverSettings(t, cfg, set)
+}
+
+func newTestReceiverSettings(t *testing.T, cfg *Config, set receiver.Settings) (*pReceiver, *consumertest.MetricsSink) {
+	sink := new(consumertest.MetricsSink)
+	return newTestReceiverSettingsConsumer(t, cfg, set, sink), sink
+}
+
+func newTestReceiverSettingsConsumer(t *testing.T, cfg *Config, set receiver.Settings, next consumer.Metrics) *pReceiver {
+	receiver, err := newPrometheusReceiver(set, cfg, next)
 	require.NoError(t, err)
 
 	ctx := t.Context()
-
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, receiver.start(ctx, componenttest.NewNopHost(),
+		prometheusComponentTestOptions{
+			discovery: prometheusDiscoveryTestOptions{updatert: 50 * time.Millisecond},
+			scrape:    prometheusScrapeTestOptions{discoveryReloadInterval: 50 * time.Millisecond},
+		},
+	))
 	t.Cleanup(func() {
-		require.NoError(t, receiver.Shutdown(ctx))
+		require.NoError(t, receiver.Shutdown(context.WithoutCancel(ctx)))
+		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()))
 	})
-
-	gotUA := <-uaCh
-
-	require.Contains(t, gotUA, set.BuildInfo.Command)
-	require.Contains(t, gotUA, set.BuildInfo.Version)
+	return receiver
 }

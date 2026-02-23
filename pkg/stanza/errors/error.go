@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated [v0.146.0]:  Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors" instead.
 package errors // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 
 import (
@@ -61,7 +62,7 @@ func WithDetails(err error, keyValues ...string) AgentError {
 	return NewError(err.Error(), "", keyValues...)
 }
 
-// Wrap adds context to the description for richer logs
+// Deprecated: [v0.143.0] use fmt.Errorf with %w.
 func Wrap(err error, context string) AgentError {
 	var agentErr AgentError
 	if errors.As(err, &agentErr) {

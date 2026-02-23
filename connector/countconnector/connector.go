@@ -32,12 +32,12 @@ type count struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spansMetricDefs      map[string]metricDef[ottlspan.TransformContext]
-	spanEventsMetricDefs map[string]metricDef[ottlspanevent.TransformContext]
-	metricsMetricDefs    map[string]metricDef[ottlmetric.TransformContext]
-	dataPointsMetricDefs map[string]metricDef[ottldatapoint.TransformContext]
-	logsMetricDefs       map[string]metricDef[ottllog.TransformContext]
-	profilesMetricDefs   map[string]metricDef[ottlprofile.TransformContext]
+	spansMetricDefs      map[string]metricDef[*ottlspan.TransformContext]
+	spanEventsMetricDefs map[string]metricDef[*ottlspanevent.TransformContext]
+	metricsMetricDefs    map[string]metricDef[*ottlmetric.TransformContext]
+	dataPointsMetricDefs map[string]metricDef[*ottldatapoint.TransformContext]
+	logsMetricDefs       map[string]metricDef[*ottllog.TransformContext]
+	profilesMetricDefs   map[string]metricDef[*ottlprofile.TransformContext]
 }
 
 func (*count) Capabilities() consumer.Capabilities {
@@ -51,8 +51,8 @@ func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resourceSpan := td.ResourceSpans().At(i)
 		resourceAttrs := resourceSpan.Resource().Attributes()
-		spansCounter := newCounter[ottlspan.TransformContext](c.spansMetricDefs)
-		spanEventsCounter := newCounter[ottlspanevent.TransformContext](c.spanEventsMetricDefs)
+		spansCounter := newCounter[*ottlspan.TransformContext](c.spansMetricDefs)
+		spanEventsCounter := newCounter[*ottlspanevent.TransformContext](c.spanEventsMetricDefs)
 
 		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
 			scopeSpan := resourceSpan.ScopeSpans().At(j)
@@ -62,14 +62,16 @@ func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 				span := scopeSpan.Spans().At(k)
 				spansCounter.updateTimestamp(span.StartTimestamp())
 				spansCounter.updateTimestamp(span.EndTimestamp())
-				sCtx := ottlspan.NewTransformContext(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+				sCtx := ottlspan.NewTransformContextPtr(resourceSpan, scopeSpan, span)
 				multiError = errors.Join(multiError, spansCounter.update(ctx, span.Attributes(), scopeAttrs, resourceAttrs, sCtx))
+				sCtx.Close()
 
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					spanEventsCounter.updateTimestamp(event.Timestamp())
-					eCtx := ottlspanevent.NewTransformContext(event, span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+					eCtx := ottlspanevent.NewTransformContextPtr(resourceSpan, scopeSpan, span, event)
 					multiError = errors.Join(multiError, spanEventsCounter.update(ctx, event.Attributes(), scopeAttrs, resourceAttrs, eCtx))
+					eCtx.Close()
 				}
 			}
 		}
@@ -101,8 +103,8 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		resourceMetric := md.ResourceMetrics().At(i)
 		resourceAttrs := resourceMetric.Resource().Attributes()
-		metricsCounter := newCounter[ottlmetric.TransformContext](c.metricsMetricDefs)
-		dataPointsCounter := newCounter[ottldatapoint.TransformContext](c.dataPointsMetricDefs)
+		metricsCounter := newCounter[*ottlmetric.TransformContext](c.metricsMetricDefs)
+		dataPointsCounter := newCounter[*ottldatapoint.TransformContext](c.dataPointsMetricDefs)
 
 		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
 			scopeMetrics := resourceMetric.ScopeMetrics().At(j)
@@ -110,8 +112,9 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
-				mCtx := ottlmetric.NewTransformContext(metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+				mCtx := ottlmetric.NewTransformContextPtr(resourceMetric, scopeMetrics, metric)
 				multiError = errors.Join(multiError, metricsCounter.update(ctx, pcommon.NewMap(), scopeAttrs, resourceAttrs, mCtx))
+				mCtx.Close()
 
 				//exhaustive:enforce
 				switch metric.Type() {
@@ -120,40 +123,45 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 					for i := 0; i < dps.Len(); i++ {
 						dp := dps.At(i)
 						dataPointsCounter.updateTimestamp(dp.Timestamp())
-						dCtx := ottldatapoint.NewTransformContext(dp, metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dp)
 						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dp.Attributes(), scopeAttrs, resourceAttrs, dCtx))
+						dCtx.Close()
 					}
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
 						dp := dps.At(i)
 						dataPointsCounter.updateTimestamp(dp.Timestamp())
-						dCtx := ottldatapoint.NewTransformContext(dp, metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dp)
 						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dp.Attributes(), scopeAttrs, resourceAttrs, dCtx))
+						dCtx.Close()
 					}
 				case pmetric.MetricTypeSummary:
 					dps := metric.Summary().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
 						dp := dps.At(i)
 						dataPointsCounter.updateTimestamp(dp.Timestamp())
-						dCtx := ottldatapoint.NewTransformContext(dp, metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dp)
 						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dp.Attributes(), scopeAttrs, resourceAttrs, dCtx))
+						dCtx.Close()
 					}
 				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
 						dp := dps.At(i)
 						dataPointsCounter.updateTimestamp(dp.Timestamp())
-						dCtx := ottldatapoint.NewTransformContext(dp, metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dp)
 						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dp.Attributes(), scopeAttrs, resourceAttrs, dCtx))
+						dCtx.Close()
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dps := metric.ExponentialHistogram().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
 						dp := dps.At(i)
 						dataPointsCounter.updateTimestamp(dp.Timestamp())
-						dCtx := ottldatapoint.NewTransformContext(dp, metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource(), scopeMetrics, resourceMetric)
+						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dp)
 						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dp.Attributes(), scopeAttrs, resourceAttrs, dCtx))
+						dCtx.Close()
 					}
 				case pmetric.MetricTypeEmpty:
 					multiError = errors.Join(multiError, fmt.Errorf("metric %q: invalid metric type: %v", metric.Name(), metric.Type()))
@@ -188,7 +196,7 @@ func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		resourceLog := ld.ResourceLogs().At(i)
 		resourceAttrs := resourceLog.Resource().Attributes()
-		counter := newCounter[ottllog.TransformContext](c.logsMetricDefs)
+		counter := newCounter[*ottllog.TransformContext](c.logsMetricDefs)
 
 		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
 			scopeLogs := resourceLog.ScopeLogs().At(j)
@@ -197,8 +205,9 @@ func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
 				logRecord := scopeLogs.LogRecords().At(k)
 				counter.updateTimestamp(logRecord.Timestamp())
-				lCtx := ottllog.NewTransformContext(logRecord, scopeLogs.Scope(), resourceLog.Resource(), scopeLogs, resourceLog)
+				lCtx := ottllog.NewTransformContextPtr(resourceLog, scopeLogs, logRecord)
 				multiError = errors.Join(multiError, counter.update(ctx, logRecord.Attributes(), scopeAttrs, resourceAttrs, lCtx))
+				lCtx.Close()
 			}
 		}
 
@@ -228,7 +237,7 @@ func (c *count) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error
 	for i := 0; i < ld.ResourceProfiles().Len(); i++ {
 		resourceProfile := ld.ResourceProfiles().At(i)
 		resourceAttrs := resourceProfile.Resource().Attributes()
-		counter := newCounter[ottlprofile.TransformContext](c.profilesMetricDefs)
+		counter := newCounter[*ottlprofile.TransformContext](c.profilesMetricDefs)
 
 		for j := 0; j < resourceProfile.ScopeProfiles().Len(); j++ {
 			scopeProfile := resourceProfile.ScopeProfiles().At(j)
@@ -237,9 +246,10 @@ func (c *count) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error
 			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
 				profile := scopeProfile.Profiles().At(k)
 				counter.updateTimestamp(profile.Time())
-				pCtx := ottlprofile.NewTransformContext(profile, ld.Dictionary(), scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
+				pCtx := ottlprofile.NewTransformContextPtr(resourceProfile, scopeProfile, profile, ld.Dictionary())
 				attributes := pprofile.FromAttributeIndices(ld.Dictionary().AttributeTable(), profile, ld.Dictionary())
 				multiError = errors.Join(multiError, counter.update(ctx, attributes, scopeAttrs, resourceAttrs, pCtx))
+				pCtx.Close()
 			}
 		}
 

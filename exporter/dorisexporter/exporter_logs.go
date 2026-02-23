@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -102,12 +102,12 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 		resource := resourceLogs.Resource()
 		resourceAttributes := resource.Attributes()
 		serviceName := ""
-		v, ok := resourceAttributes.Get(string(semconv.ServiceNameKey))
+		v, ok := resourceAttributes.Get(string(conventions.ServiceNameKey))
 		if ok {
 			serviceName = v.AsString()
 		}
 		serviceInstance := ""
-		v, ok = resourceAttributes.Get(string(semconv.ServiceInstanceIDKey))
+		v, ok = resourceAttributes.Get(string(conventions.ServiceInstanceIDKey))
 		if ok {
 			serviceInstance = v.AsString()
 		}

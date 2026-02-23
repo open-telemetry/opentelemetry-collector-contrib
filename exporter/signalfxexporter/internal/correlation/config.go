@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	conventions "go.opentelemetry.io/otel/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 )

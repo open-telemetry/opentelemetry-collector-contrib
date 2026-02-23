@@ -615,6 +615,15 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return newStandardPMapGetter[K](arg)
+	case strings.HasPrefix(name, "PSliceGetSetter"):
+		if argVal.Literal == nil || argVal.Literal.Path == nil {
+			return nil, errors.New("must be a path")
+		}
+		pathGetSetter, err := p.buildGetSetterFromPath(argVal.Literal.Path)
+		if err != nil {
+			return nil, err
+		}
+		return newStandardPSliceGetSetter[K](pathGetSetter)
 	case strings.HasPrefix(name, "PSliceGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {

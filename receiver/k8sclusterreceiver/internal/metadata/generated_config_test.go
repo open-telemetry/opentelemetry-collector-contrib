@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -65,6 +64,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sReplicationControllerDesired:     MetricConfig{Enabled: true},
 					K8sResourceQuotaHardLimit:           MetricConfig{Enabled: true},
 					K8sResourceQuotaUsed:                MetricConfig{Enabled: true},
+					K8sServiceEndpointCount:             MetricConfig{Enabled: true},
+					K8sServiceLoadBalancerIngressCount:  MetricConfig{Enabled: true},
 					K8sStatefulsetCurrentPods:           MetricConfig{Enabled: true},
 					K8sStatefulsetDesiredPods:           MetricConfig{Enabled: true},
 					K8sStatefulsetReadyPods:             MetricConfig{Enabled: true},
@@ -109,6 +110,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sReplicationcontrollerUID:            ResourceAttributeConfig{Enabled: true},
 					K8sResourcequotaName:                   ResourceAttributeConfig{Enabled: true},
 					K8sResourcequotaUID:                    ResourceAttributeConfig{Enabled: true},
+					K8sServiceName:                         ResourceAttributeConfig{Enabled: true},
+					K8sServicePublishNotReadyAddresses:     ResourceAttributeConfig{Enabled: true},
+					K8sServiceTrafficDistribution:          ResourceAttributeConfig{Enabled: true},
+					K8sServiceType:                         ResourceAttributeConfig{Enabled: true},
+					K8sServiceUID:                          ResourceAttributeConfig{Enabled: true},
 					K8sStatefulsetName:                     ResourceAttributeConfig{Enabled: true},
 					K8sStatefulsetUID:                      ResourceAttributeConfig{Enabled: true},
 					OpenshiftClusterquotaName:              ResourceAttributeConfig{Enabled: true},
@@ -160,6 +166,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sReplicationControllerDesired:     MetricConfig{Enabled: false},
 					K8sResourceQuotaHardLimit:           MetricConfig{Enabled: false},
 					K8sResourceQuotaUsed:                MetricConfig{Enabled: false},
+					K8sServiceEndpointCount:             MetricConfig{Enabled: false},
+					K8sServiceLoadBalancerIngressCount:  MetricConfig{Enabled: false},
 					K8sStatefulsetCurrentPods:           MetricConfig{Enabled: false},
 					K8sStatefulsetDesiredPods:           MetricConfig{Enabled: false},
 					K8sStatefulsetReadyPods:             MetricConfig{Enabled: false},
@@ -204,6 +212,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sReplicationcontrollerUID:            ResourceAttributeConfig{Enabled: false},
 					K8sResourcequotaName:                   ResourceAttributeConfig{Enabled: false},
 					K8sResourcequotaUID:                    ResourceAttributeConfig{Enabled: false},
+					K8sServiceName:                         ResourceAttributeConfig{Enabled: false},
+					K8sServicePublishNotReadyAddresses:     ResourceAttributeConfig{Enabled: false},
+					K8sServiceTrafficDistribution:          ResourceAttributeConfig{Enabled: false},
+					K8sServiceType:                         ResourceAttributeConfig{Enabled: false},
+					K8sServiceUID:                          ResourceAttributeConfig{Enabled: false},
 					K8sStatefulsetName:                     ResourceAttributeConfig{Enabled: false},
 					K8sStatefulsetUID:                      ResourceAttributeConfig{Enabled: false},
 					OpenshiftClusterquotaName:              ResourceAttributeConfig{Enabled: false},
@@ -279,6 +292,11 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sReplicationcontrollerUID:            ResourceAttributeConfig{Enabled: true},
 				K8sResourcequotaName:                   ResourceAttributeConfig{Enabled: true},
 				K8sResourcequotaUID:                    ResourceAttributeConfig{Enabled: true},
+				K8sServiceName:                         ResourceAttributeConfig{Enabled: true},
+				K8sServicePublishNotReadyAddresses:     ResourceAttributeConfig{Enabled: true},
+				K8sServiceTrafficDistribution:          ResourceAttributeConfig{Enabled: true},
+				K8sServiceType:                         ResourceAttributeConfig{Enabled: true},
+				K8sServiceUID:                          ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetName:                     ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetUID:                      ResourceAttributeConfig{Enabled: true},
 				OpenshiftClusterquotaName:              ResourceAttributeConfig{Enabled: true},
@@ -324,6 +342,11 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sReplicationcontrollerUID:            ResourceAttributeConfig{Enabled: false},
 				K8sResourcequotaName:                   ResourceAttributeConfig{Enabled: false},
 				K8sResourcequotaUID:                    ResourceAttributeConfig{Enabled: false},
+				K8sServiceName:                         ResourceAttributeConfig{Enabled: false},
+				K8sServicePublishNotReadyAddresses:     ResourceAttributeConfig{Enabled: false},
+				K8sServiceTrafficDistribution:          ResourceAttributeConfig{Enabled: false},
+				K8sServiceType:                         ResourceAttributeConfig{Enabled: false},
+				K8sServiceUID:                          ResourceAttributeConfig{Enabled: false},
 				K8sStatefulsetName:                     ResourceAttributeConfig{Enabled: false},
 				K8sStatefulsetUID:                      ResourceAttributeConfig{Enabled: false},
 				OpenshiftClusterquotaName:              ResourceAttributeConfig{Enabled: false},

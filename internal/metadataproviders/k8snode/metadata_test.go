@@ -30,7 +30,7 @@ func TestNewProvider(t *testing.T) {
 }
 
 func TestNodeUID(t *testing.T) {
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	err := setupNodes(client)
 	assert.NoError(t, err)
 

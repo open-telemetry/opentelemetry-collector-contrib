@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}
+    spec:
+      serviceAccountName: {{ .Name }}-sa
+      containers:
+        - name: consul-agent
+          image: hashicorp/consul:latest
+          args:
+            - "agent"
+            - "-dev"
+            - "-client=0.0.0.0"
+            - "-datacenter=dc1"
+          env:
+            - name: CONSUL_LOCAL_CONFIG
+              value: '{"node_meta": {"region": "us-west-1", "zone": "us-west-1a", "instance_type": "t3.medium"}}'
+          ports:
+            - containerPort: 8500
+              name: http
+          readinessProbe:
+            exec:
+              command:
+                - consul
+                - members
+            periodSeconds: 5
+        - name: otelcol
+          image: otelcontribcol:latest
+          imagePullPolicy: Never
+          args:
+            - "--config=/conf/relay"
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-config
+            items:
+              - key: relay
+                path: relay

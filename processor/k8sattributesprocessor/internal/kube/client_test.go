@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -32,10 +31,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-	return fake.NewSimpleClientset(), nil
+	return fake.NewClientset(), nil
 }
 
 func newPodIdentifier(from, name, value string) PodIdentifier {
@@ -371,7 +371,6 @@ func TestPodCreate(t *testing.T) {
 func TestPodAddOutOfSync(t *testing.T) {
 	c, _ := newTestClient(t)
 	c.Associations = append(c.Associations, Association{
-		Name: "name",
 		Sources: []AssociationSource{
 			{
 				From: ResourceSource,
@@ -854,6 +853,13 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "nodeUID",
+			rules: ExtractionRules{
+				NodeUID: true,
+			},
+			attributes: map[string]string{},
+		},
+		{
 			name: "labels",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{
@@ -1014,6 +1020,39 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.labels.label1": "lv1",
+				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.label.label1": "lv1",
+				"k8s.pod.label.label2": "k1=v1 k5=v5 extra!",
+			},
+			singularFeatureGate: true,
+		},
+		{
 			name:  "service-name",
 			rules: serviceRules,
 			attributes: map[string]string{
@@ -1068,9 +1107,11 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1082,6 +1123,11 @@ func TestExtractionRules(t *testing.T) {
 			maps.Copy(podCopy.Annotations, tc.additionalAnnotations)
 			maps.Copy(podCopy.Labels, tc.additionalLabels)
 			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
+
+			if tc.rules.Node || tc.rules.NodeUID {
+				assert.Equal(t, podCopy.Spec.NodeName, transformedPod.Spec.NodeName, "NodeName should be preserved when Node or NodeUID rule is enabled")
+			}
+
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
 			c.handlePodAdd(transformedPod)
@@ -1254,6 +1300,36 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 	}
 }
 
+func TestRemoveUnnecessaryPodData_ClonesLabelsAndAnnotations(t *testing.T) {
+	rules := ExtractionRules{
+		Labels:      []FieldExtractionRule{{From: MetadataFromPod}},
+		Annotations: []FieldExtractionRule{{From: MetadataFromPod}},
+	}
+
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Labels: map[string]string{
+				"app": "web",
+			},
+			Annotations: map[string]string{
+				"anno": "value",
+			},
+		},
+	}
+
+	transformed := removeUnnecessaryPodData(pod, rules)
+
+	pod.Labels["new"] = "label"
+	pod.Annotations["new"] = "annotation"
+
+	_, ok := transformed.Labels["new"]
+	assert.False(t, ok)
+	_, ok = transformed.Annotations["new"]
+	assert.False(t, ok)
+	assert.Equal(t, "web", transformed.Labels["app"])
+	assert.Equal(t, "value", transformed.Annotations["anno"])
+}
+
 func TestNamespaceExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
@@ -1363,13 +1439,46 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			},
 			singularFeatureGate: true,
 		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.labels.label1": "lv1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.label.label1": "lv1",
+			},
+			singularFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1621,13 +1730,46 @@ func TestNodeExtractionRules(t *testing.T) {
 			},
 			singularFeatureGate: true,
 		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.labels.label1": "lv1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.label.label1": "lv1",
+			},
+			singularFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1722,6 +1864,21 @@ func TestDeploymentExtractionRules(t *testing.T) {
 			},
 			attributes: map[string]string{
 				"k8s.deployment.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromDeployment,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.deployment.label.label1": "lv1",
 			},
 		},
 	}
@@ -1861,6 +2018,21 @@ func TestStatefulSetExtractionRules(t *testing.T) {
 				"k8s.statefulset.annotation.annotation1": "av1",
 			},
 		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromStatefulSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.label.label1": "lv1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1957,6 +2129,21 @@ func TestDaemonSetExtractionRules(t *testing.T) {
 				"k8s.daemonset.annotation.annotation1": "av1",
 			},
 		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromDaemonSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.label.label1": "lv1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -2051,6 +2238,21 @@ func TestJobExtractionRules(t *testing.T) {
 			},
 			attributes: map[string]string{
 				"k8s.job.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.job.label.label1": "lv1",
 			},
 		},
 	}
@@ -2558,6 +2760,383 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			// normally the informer does this, but fully emulating the informer in this test is annoying
 			transformedPod := removeUnnecessaryPodData(tt.pod, c.Rules)
 			assert.Equal(t, tt.want, c.extractPodContainersAttributes(transformedPod))
+		})
+	}
+}
+
+func Test_extractPodContainersAttributes_WithFeatureGates(t *testing.T) {
+	pod := api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
+		Spec: api_v1.PodSpec{
+			Containers: []api_v1.Container{
+				{
+					Name:  "container1",
+					Image: "example.com:5000/test/image1:0.1.0",
+				},
+				{
+					Name:  "container2",
+					Image: "example.com:81/image2@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
+				},
+				{
+					Name:  "container3",
+					Image: "example-website.com/image3:1.0@sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d",
+				},
+			},
+			InitContainers: []api_v1.Container{
+				{
+					Name:  "init_container",
+					Image: "test/init-image",
+				},
+			},
+		},
+		Status: api_v1.PodStatus{
+			ContainerStatuses: []api_v1.ContainerStatus{
+				{
+					Name:         "container1",
+					ContainerID:  "containerd://container1-id-123",
+					ImageID:      "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da",
+					RestartCount: 0,
+				},
+				{
+					Name:         "container2",
+					ContainerID:  "containerd://container2-id-456",
+					RestartCount: 2,
+				},
+				{
+					Name:         "container3",
+					ContainerID:  "containerd://container3-id-abc",
+					ImageID:      "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
+					RestartCount: 2,
+				},
+			},
+			InitContainerStatuses: []api_v1.ContainerStatus{
+				{
+					Name:         "init_container",
+					ContainerID:  "containerd://init-container-id-789",
+					ImageID:      "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b",
+					RestartCount: 0,
+				},
+			},
+		},
+	}
+	tests := []struct {
+		name  string
+		rules ExtractionRules
+		want  PodContainers
+	}{
+		{
+			name: "container-image-tags-stable-enabled",
+			rules: ExtractionRules{
+				ContainerImageTags: true,
+			},
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123": {
+						ImageTags: []string{"0.1.0"},
+					},
+					"container2-id-456": {
+						ImageTags: []string{"latest"},
+					},
+					"container3-id-abc": {
+						ImageTags: []string{"1.0"},
+					},
+					"init-container-id-789": {
+						ImageTags: []string{"latest"},
+					},
+				},
+				ByName: map[string]*Container{
+					"container1": {
+						ImageTags: []string{"0.1.0"},
+					},
+					"container2": {
+						ImageTags: []string{"latest"},
+					},
+					"container3": {
+						ImageTags: []string{"1.0"},
+					},
+					"init_container": {
+						ImageTags: []string{"latest"},
+					},
+				},
+			},
+		},
+		{
+			name: "container-image-tag-and-tags-both-stable-enabled",
+			rules: ExtractionRules{
+				ContainerImageTag:  true,
+				ContainerImageTags: true,
+			},
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123": {
+						ImageTag:  "0.1.0",
+						ImageTags: []string{"0.1.0"},
+					},
+					"container2-id-456": {
+						ImageTag:  "latest",
+						ImageTags: []string{"latest"},
+					},
+					"container3-id-abc": {
+						ImageTag:  "1.0",
+						ImageTags: []string{"1.0"},
+					},
+					"init-container-id-789": {
+						ImageTag:  "latest",
+						ImageTags: []string{"latest"},
+					},
+				},
+				ByName: map[string]*Container{
+					"container1": {
+						ImageTag:  "0.1.0",
+						ImageTags: []string{"0.1.0"},
+					},
+					"container2": {
+						ImageTag:  "latest",
+						ImageTags: []string{"latest"},
+					},
+					"container3": {
+						ImageTag:  "1.0",
+						ImageTags: []string{"1.0"},
+					},
+					"init_container": {
+						ImageTag:  "latest",
+						ImageTags: []string{"latest"},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Enable stable attributes for these tests
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+			}()
+
+			c := WatchClient{Rules: tt.rules}
+			transformedPod := removeUnnecessaryPodData(&pod, c.Rules)
+			assert.Equal(t, tt.want, c.extractPodContainersAttributes(transformedPod))
+		})
+	}
+}
+
+func Test_extractPodContainersAttributes_NoTag(t *testing.T) {
+	pod := api_v1.Pod{
+		Spec: api_v1.PodSpec{
+			Containers: []api_v1.Container{
+				{
+					Name:  "test-container",
+					Image: "test/image",
+				},
+			},
+		},
+	}
+	tests := []struct {
+		name  string
+		rules ExtractionRules
+		want  PodContainers
+	}{
+		{
+			name: "container-image-tags-no-tag",
+			rules: ExtractionRules{
+				ContainerImageTags: true,
+			},
+			want: PodContainers{
+				ByID: map[string]*Container{},
+				ByName: map[string]*Container{
+					"test-container": {
+						ImageTags: []string{"latest"}, // default tag when none specified
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Enable stable attributes for these tests
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+			}()
+
+			c := WatchClient{Rules: tt.rules}
+			transformedPod := removeUnnecessaryPodData(&pod, c.Rules)
+			assert.Equal(t, tt.want, c.extractPodContainersAttributes(transformedPod))
+		})
+	}
+}
+
+func Test_extractPodContainersAttributes_FeatureGates(t *testing.T) {
+	pod := api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
+		Spec: api_v1.PodSpec{
+			Containers: []api_v1.Container{
+				{
+					Name:  "container1",
+					Image: "example.com:5000/test/image1:0.1.0",
+				},
+				{
+					Name:  "container2",
+					Image: "example.com:81/image2@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
+				},
+			},
+		},
+		Status: api_v1.PodStatus{
+			ContainerStatuses: []api_v1.ContainerStatus{
+				{
+					Name:         "container1",
+					ContainerID:  "containerd://container1-id-123",
+					RestartCount: 0,
+				},
+				{
+					Name:         "container2",
+					ContainerID:  "containerd://container2-id-456",
+					RestartCount: 2,
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name               string
+		rules              ExtractionRules
+		enableStable       bool
+		disableLegacy      bool
+		wantImageTag       bool
+		wantImageTags      bool
+		expectedContainer1 *Container
+		expectedContainer2 *Container
+	}{
+		{
+			name: "legacy-only",
+			rules: ExtractionRules{
+				ContainerImageTag:  true,
+				ContainerImageTags: true,
+			},
+			enableStable:  false,
+			disableLegacy: false,
+			wantImageTag:  true,
+			wantImageTags: false,
+			expectedContainer1: &Container{
+				ImageTag: "0.1.0",
+			},
+			expectedContainer2: &Container{
+				ImageTag: "latest",
+			},
+		},
+		{
+			name: "stable-only",
+			rules: ExtractionRules{
+				ContainerImageTag:  true,
+				ContainerImageTags: true,
+			},
+			enableStable:  true,
+			disableLegacy: true,
+			wantImageTag:  false,
+			wantImageTags: true,
+			expectedContainer1: &Container{
+				ImageTags: []string{"0.1.0"},
+			},
+			expectedContainer2: &Container{
+				ImageTags: []string{"latest"},
+			},
+		},
+		{
+			name: "both-legacy-and-stable",
+			rules: ExtractionRules{
+				ContainerImageTag:  true,
+				ContainerImageTags: true,
+			},
+			enableStable:  true,
+			disableLegacy: false,
+			wantImageTag:  true,
+			wantImageTags: true,
+			expectedContainer1: &Container{
+				ImageTag:  "0.1.0",
+				ImageTags: []string{"0.1.0"},
+			},
+			expectedContainer2: &Container{
+				ImageTag:  "latest",
+				ImageTags: []string{"latest"},
+			},
+		},
+		{
+			name: "only-imagetag-rule-stable",
+			rules: ExtractionRules{
+				ContainerImageTag: true,
+			},
+			enableStable:       true,
+			disableLegacy:      true,
+			wantImageTag:       false,
+			wantImageTags:      false,
+			expectedContainer1: &Container{},
+			expectedContainer2: &Container{},
+		},
+		{
+			name: "only-imagetags-rule-legacy",
+			rules: ExtractionRules{
+				ContainerImageTags: true,
+			},
+			enableStable:       false,
+			disableLegacy:      false,
+			wantImageTag:       false,
+			wantImageTags:      false,
+			expectedContainer1: &Container{},
+			expectedContainer2: &Container{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.enableStable {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+				}()
+			}
+			if tt.disableLegacy {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+				}()
+			}
+
+			c := WatchClient{Rules: tt.rules}
+			transformedPod := removeUnnecessaryPodData(&pod, c.Rules)
+			got := c.extractPodContainersAttributes(transformedPod)
+
+			// Check container1
+			assert.NotNil(t, got.ByName["container1"])
+			if tt.wantImageTag {
+				assert.Equal(t, tt.expectedContainer1.ImageTag, got.ByName["container1"].ImageTag)
+			} else {
+				assert.Empty(t, got.ByName["container1"].ImageTag)
+			}
+			if tt.wantImageTags {
+				assert.Equal(t, tt.expectedContainer1.ImageTags, got.ByName["container1"].ImageTags)
+			} else {
+				assert.Nil(t, got.ByName["container1"].ImageTags)
+			}
+
+			// Check container2
+			assert.NotNil(t, got.ByName["container2"])
+			if tt.wantImageTag {
+				assert.Equal(t, tt.expectedContainer2.ImageTag, got.ByName["container2"].ImageTag)
+			} else {
+				assert.Empty(t, got.ByName["container2"].ImageTag)
+			}
+			if tt.wantImageTags {
+				assert.Equal(t, tt.expectedContainer2.ImageTags, got.ByName["container2"].ImageTags)
+			} else {
+				assert.Nil(t, got.ByName["container2"].ImageTags)
+			}
 		})
 	}
 }
@@ -3148,7 +3727,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.K8SPodUIDKey),
+							Name: "k8s.pod.uid",
 						},
 					},
 				},
@@ -3177,7 +3756,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
+							Name: "container.id",
 						},
 					},
 				},
@@ -3222,7 +3801,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
+							Name: "container.id",
 						},
 						{
 							From: ConnectionSource,
@@ -3749,11 +4328,11 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 
 			// Check the result
 			if tt.expectedDeploymentName != "" {
-				deploymentName, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				deploymentName, exists := attributes["k8s.deployment.name"]
 				assert.True(t, exists, "Expected deployment name to be extracted")
 				assert.Equal(t, tt.expectedDeploymentName, deploymentName)
 			} else {
-				_, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				_, exists := attributes["k8s.deployment.name"]
 				assert.False(t, exists, "Expected no deployment name to be extracted")
 			}
 		})
@@ -3814,4 +4393,236 @@ func TestDeploymentHashSuffixPattern(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestHandleDeploymentUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		DeploymentName: true,
+	}
+
+	deployment := &apps_v1.Deployment{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-deployment",
+			Namespace: "default",
+			UID:       "deployment-uid-123",
+		},
+	}
+
+	// Add initial deployment
+	c.handleDeploymentAdd(deployment)
+	assert.Len(t, c.Deployments, 1)
+
+	// Update deployment
+	updatedDeployment := &apps_v1.Deployment{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-deployment-updated",
+			Namespace: "default",
+			UID:       "deployment-uid-123",
+		},
+	}
+	c.handleDeploymentUpdate(deployment, updatedDeployment)
+
+	// Verify update
+	d, ok := c.GetDeployment(string(updatedDeployment.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-deployment-updated", d.Name)
+}
+
+func TestHandleDeploymentDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	deployment := &apps_v1.Deployment{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-deployment",
+			Namespace: "default",
+			UID:       "deployment-uid-123",
+		},
+	}
+
+	// Add deployment
+	c.handleDeploymentAdd(deployment)
+	assert.Len(t, c.Deployments, 1)
+
+	// Delete deployment
+	c.handleDeploymentDelete(deployment)
+
+	// Verify deletion
+	_, ok := c.GetDeployment(string(deployment.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.Deployments)
+}
+
+func TestHandleStatefulSetUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		StatefulSetName: true,
+	}
+
+	statefulset := &apps_v1.StatefulSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-statefulset",
+			Namespace: "default",
+			UID:       "statefulset-uid-123",
+		},
+	}
+
+	// Add initial statefulset
+	c.handleStatefulSetAdd(statefulset)
+	assert.Len(t, c.StatefulSets, 1)
+
+	// Update statefulset
+	updatedStatefulSet := &apps_v1.StatefulSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-statefulset-updated",
+			Namespace: "default",
+			UID:       "statefulset-uid-123",
+		},
+	}
+	c.handleStatefulSetUpdate(statefulset, updatedStatefulSet)
+
+	// Verify update
+	s, ok := c.GetStatefulSet(string(updatedStatefulSet.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-statefulset-updated", s.Name)
+}
+
+func TestHandleStatefulSetDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	statefulset := &apps_v1.StatefulSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-statefulset",
+			Namespace: "default",
+			UID:       "statefulset-uid-123",
+		},
+	}
+
+	// Add statefulset
+	c.handleStatefulSetAdd(statefulset)
+	assert.Len(t, c.StatefulSets, 1)
+
+	// Delete statefulset
+	c.handleStatefulSetDelete(statefulset)
+
+	// Verify deletion
+	_, ok := c.GetStatefulSet(string(statefulset.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.StatefulSets)
+}
+
+func TestHandleDaemonSetUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		DaemonSetName: true,
+	}
+
+	daemonset := &apps_v1.DaemonSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-daemonset",
+			Namespace: "default",
+			UID:       "daemonset-uid-123",
+		},
+	}
+
+	// Add initial daemonset
+	c.handleDaemonSetAdd(daemonset)
+	assert.Len(t, c.DaemonSets, 1)
+
+	// Update daemonset
+	updatedDaemonSet := &apps_v1.DaemonSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-daemonset-updated",
+			Namespace: "default",
+			UID:       "daemonset-uid-123",
+		},
+	}
+	c.handleDaemonSetUpdate(daemonset, updatedDaemonSet)
+
+	// Verify update
+	d, ok := c.GetDaemonSet(string(updatedDaemonSet.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-daemonset-updated", d.Name)
+}
+
+func TestHandleDaemonSetDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	daemonset := &apps_v1.DaemonSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-daemonset",
+			Namespace: "default",
+			UID:       "daemonset-uid-123",
+		},
+	}
+
+	// Add daemonset
+	c.handleDaemonSetAdd(daemonset)
+	assert.Len(t, c.DaemonSets, 1)
+
+	// Delete daemonset
+	c.handleDaemonSetDelete(daemonset)
+
+	// Verify deletion
+	_, ok := c.GetDaemonSet(string(daemonset.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.DaemonSets)
+}
+
+func TestHandleJobUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		JobName: true,
+	}
+
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-job",
+			Namespace: "default",
+			UID:       "job-uid-123",
+		},
+	}
+
+	// Add initial job
+	c.handleJobAdd(job)
+	assert.Len(t, c.Jobs, 1)
+
+	// Update job
+	updatedJob := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-job-updated",
+			Namespace: "default",
+			UID:       "job-uid-123",
+		},
+	}
+	c.handleJobUpdate(job, updatedJob)
+
+	// Verify update
+	j, ok := c.GetJob(string(updatedJob.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-job-updated", j.Name)
+}
+
+func TestHandleJobDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-job",
+			Namespace: "default",
+			UID:       "job-uid-123",
+		},
+	}
+
+	// Add job
+	c.handleJobAdd(job)
+	assert.Len(t, c.Jobs, 1)
+
+	// Delete job
+	c.handleJobDelete(job)
+
+	// Verify deletion
+	_, ok := c.GetJob(string(job.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.Jobs)
 }

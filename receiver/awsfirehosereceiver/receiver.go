@@ -122,7 +122,7 @@ func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) err
 	}
 
 	var err error
-	fmr.server, err = fmr.config.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ToServer(ctx, host.GetExtensions(), fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
 		return fmt.Errorf("failed to initialize HTTP server: %w", err)
 	}
@@ -132,14 +132,11 @@ func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) err
 	if err != nil {
 		return fmt.Errorf("failed to start listening for HTTP requests: %w", err)
 	}
-	fmr.shutdownWG.Add(1)
-	go func() {
-		defer fmr.shutdownWG.Done()
-
+	fmr.shutdownWG.Go(func() {
 		if errHTTP := fmr.server.Serve(listener); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }

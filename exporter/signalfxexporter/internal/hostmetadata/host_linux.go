@@ -10,12 +10,12 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"regexp"
 
-	"golang.org/x/net/context"
 	"golang.org/x/sys/unix"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"

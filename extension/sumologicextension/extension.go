@@ -334,7 +334,7 @@ func (se *SumologicExtension) getHTTPClient(
 ) (*http.Client, error) {
 	httpClient, err := httpClientSettings.ToClient(
 		ctx,
-		se.host,
+		se.host.GetExtensions(),
 		componenttest.NewNopTelemetrySettings(),
 	)
 	if err != nil {

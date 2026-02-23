@@ -424,13 +424,13 @@ func TestReqToLog(t *testing.T) {
 				// Create multiple JSON objects that together exceed 64KB
 				// This reproduces the issue from PR #41350 where large payloads fail
 				var buf bytes.Buffer
-				for i := 0; i < 800; i++ {
+				for i := range 800 {
 					// Each JSON object is ~100 bytes, total ~80KB (exceeds 64KB default limit)
 					buf.WriteString(`{"event":"webhook","index":`)
 					buf.WriteString(string(rune('0' + (i % 10))))
 					buf.WriteString(`,"data":"`)
 					// Add padding
-					for j := 0; j < 60; j++ {
+					for range 60 {
 						buf.WriteByte('X')
 					}
 					buf.WriteString(`"}`)
@@ -521,7 +521,7 @@ func TestReqToLog(t *testing.T) {
 			_ = testConfig.Validate()
 
 			// receiver will fail to create if endpoint is empty
-			testConfig.Endpoint = "localhost:8080"
+			testConfig.NetAddr.Endpoint = "localhost:8080"
 			receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *testConfig, consumertest.NewNop())
 			require.NoError(t, err)
 			eventReceiver := receiver.(*eventReceiver)

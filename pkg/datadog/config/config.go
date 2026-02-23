@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -72,8 +73,8 @@ type TagsConfig struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`        // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	confighttp.ClientConfig   `mapstructure:",squash"`                                 // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
@@ -175,10 +176,6 @@ func (c *Config) Validate() error {
 
 	if c.HostMetadata.ReporterPeriod < 5*time.Minute {
 		return errors.New("reporter_period must be 5 minutes or higher")
-	}
-
-	if err := c.OrchestratorExplorer.Validate(); err != nil {
-		return err
 	}
 
 	return nil
@@ -326,6 +323,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("logs::endpoint") {
 		c.Logs.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
+	if !configMap.IsSet("orchestrator_explorer::endpoint") {
+		c.OrchestratorExplorer.Endpoint = fmt.Sprintf("https://orchestrator.%s/api/v2/orchmanif", c.API.Site)
+	}
 
 	// Return an error if an endpoint is explicitly set to ""
 	if c.Metrics.Endpoint == "" || c.Traces.Endpoint == "" || c.Logs.Endpoint == "" {
@@ -355,7 +355,7 @@ func CreateDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -411,6 +411,9 @@ func CreateDefaultConfig() component.Config {
 		},
 
 		OrchestratorExplorer: OrchestratorExplorerConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
+			},
 			Enabled: false,
 		},
 

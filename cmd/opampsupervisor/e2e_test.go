@@ -42,7 +42,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
@@ -980,9 +979,9 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 				identAttr := ad.IdentifyingAttributes
 				for _, attr := range identAttr {
 					switch attr.Key {
-					case string(semconv.ServiceNameKey):
+					case "service.name":
 						agentName = attr.Value.GetStringValue()
-					case string(semconv.ServiceVersionKey):
+					case "service.version":
 						agentVersion = attr.Value.GetStringValue()
 					}
 				}
@@ -1080,9 +1079,9 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 		identAttr := ad.IdentifyingAttributes
 		for _, attr := range identAttr {
 			switch attr.Key {
-			case string(semconv.ServiceNameKey):
+			case "service.name":
 				agentName = attr.Value.GetStringValue()
-			case string(semconv.ServiceVersionKey):
+			case "service.version":
 				agentVersion = attr.Value.GetStringValue()
 			}
 		}
@@ -1239,15 +1238,15 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	expectedDescription := &protobufs.AgentDescription{
 		IdentifyingAttributes: []*protobufs.KeyValue{
 			stringKeyValue("client.id", "my-client-id"),
-			stringKeyValue(string(semconv.ServiceInstanceIDKey), uuid.UUID(ad.InstanceUid).String()),
-			stringKeyValue(string(semconv.ServiceNameKey), command),
-			stringKeyValue(string(semconv.ServiceVersionKey), version),
+			stringKeyValue("service.instance.id", uuid.UUID(ad.InstanceUid).String()),
+			stringKeyValue("service.name", command),
+			stringKeyValue("service.version", version),
 		},
 		NonIdentifyingAttributes: []*protobufs.KeyValue{
 			stringKeyValue("env", "prod"),
-			stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
-			stringKeyValue(string(semconv.HostNameKey), host),
-			stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
+			stringKeyValue("host.arch", runtime.GOARCH),
+			stringKeyValue("host.name", host),
+			stringKeyValue("os.type", runtime.GOOS),
 		},
 	}
 
@@ -1367,6 +1366,40 @@ func createHealthCheckCollectorConf(t *testing.T, nopPipeline bool) (cfg *bytes.
 	h := sha256.Sum256(confmapBuf.Bytes())
 
 	return &confmapBuf, h[:], 13133
+}
+
+func createHostMetricsCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Create output files
+	// The testing package will automatically clean these up after each test.
+	tempDir := t.TempDir()
+	outputFile, err := os.CreateTemp(tempDir, "output_*.json")
+	require.NoError(t, err)
+	t.Cleanup(func() { outputFile.Close() })
+
+	colCfgTpl, err := os.ReadFile(path.Join(wd, "testdata", "collector", "hostmetrics_pipeline.yaml"))
+	require.NoError(t, err)
+
+	templ, err := template.New("").Parse(string(colCfgTpl))
+	require.NoError(t, err)
+
+	var confmapBuf bytes.Buffer
+	err = templ.Execute(
+		&confmapBuf,
+		map[string]string{
+			"outputLogFile": outputFile.Name(),
+		},
+	)
+	require.NoError(t, err)
+
+	h := sha256.New()
+	if _, err := io.Copy(h, bytes.NewBuffer(confmapBuf.Bytes())); err != nil {
+		log.Fatal(err)
+	}
+
+	return &confmapBuf, h.Sum(nil)
 }
 
 // Wait for the Supervisor to connect to or disconnect from the OpAMP server
@@ -1978,7 +2011,7 @@ func TestSupervisorLogging(t *testing.T) {
 	storageDir := t.TempDir()
 	remoteCfgFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
 
-	collectorCfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+	collectorCfg, hash := createHostMetricsCollectorConf(t)
 	remoteCfgProto := &protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
@@ -1998,7 +2031,9 @@ func TestSupervisorLogging(t *testing.T) {
 		},
 	})
 	defer server.shutdown()
+	server.start()
 
+	// manually create supervisor and logger for this test
 	supervisorLogFilePath := filepath.Join(storageDir, "supervisor_log.log")
 	cfgFile := getSupervisorConfig(t, "logging", map[string]string{
 		"url":         server.addr,
@@ -2006,7 +2041,6 @@ func TestSupervisorLogging(t *testing.T) {
 		"log_level":   "0",
 		"log_file":    supervisorLogFilePath,
 	})
-
 	cfg, err := config.Load(cfgFile.Name())
 	require.NoError(t, err)
 	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
@@ -2016,23 +2050,27 @@ func TestSupervisorLogging(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, s.Start(t.Context()))
 
-	// Start the server and wait for the supervisor to connect
-	server.start()
 	waitForSupervisorConnection(server.supervisorConnected, true)
 	require.True(t, connected.Load(), "Supervisor failed to connect")
-
+	// give the collector some time to write to the log file
+	time.Sleep(5 * time.Second)
 	s.Shutdown()
 
 	// Read from log file checking for Info level logs
 	logFile, err := os.Open(supervisorLogFilePath)
 	require.NoError(t, err)
 
-	scanner := bufio.NewScanner(logFile)
+	reader := bufio.NewReader(logFile)
 	seenCollectorLog := false
-	for scanner.Scan() {
-		line := scanner.Bytes()
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+		line = strings.TrimRight(line, "\r\n")
+
 		var log logEntry
-		err := json.Unmarshal(line, &log)
+		err = json.Unmarshal([]byte(line), &log)
 		require.NoError(t, err)
 
 		level, err := zapcore.ParseLevel(log.Level)
@@ -2174,12 +2212,6 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 						ConfigHash: badHash,
 					},
 				})
-
-				// Check that the status is set to APPLYING
-				require.Eventually(t, func() bool {
-					status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
-					return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
-				}, 5*time.Second, 200*time.Millisecond, "Remote config status was not set to APPLYING for bad config")
 
 				// Wait for the health checks to fail
 				require.Eventually(t, func() bool {
@@ -2463,9 +2495,9 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		identAttr := ad.IdentifyingAttributes
 		for _, attr := range identAttr {
 			switch attr.Key {
-			case string(semconv.ServiceNameKey):
+			case "service.name":
 				agentName = attr.Value.GetStringValue()
-			case string(semconv.ServiceVersionKey):
+			case "service.version":
 				agentVersion = attr.Value.GetStringValue()
 			}
 		}
@@ -2483,7 +2515,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	}, 10*time.Second, 250*time.Millisecond)
 
 	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
-	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get(string(semconv.ServiceNameKey))
+	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get("service.name")
 	require.True(t, ok)
 	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
 

@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/prometheus/prometheus/config"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -44,6 +44,8 @@ type Config struct {
 	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
+	// "ExcludeServiceAttributes" - If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes,
+	// which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// WAL enables persisting metrics to a write-ahead-log before sending to the remote storage.
@@ -59,7 +61,7 @@ type Config struct {
 	SendMetadata bool `mapstructure:"send_metadata"`
 
 	// RemoteWriteProtoMsg controls whether prometheus remote write v1 or v2 is sent.
-	RemoteWriteProtoMsg config.RemoteWriteProtoMsg `mapstructure:"protobuf_message,omitempty"`
+	RemoteWriteProtoMsg remoteapi.WriteMessageType `mapstructure:"protobuf_message,omitempty"`
 }
 
 type TargetInfo struct {
@@ -127,7 +129,7 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
-	if !enableSendingRW2FeatureGate.IsEnabled() && cfg.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
+	if !enableSendingRW2FeatureGate.IsEnabled() && cfg.RemoteWriteProtoMsg == remoteapi.WriteV2MessageType {
 		return fmt.Errorf("remote write v2 is only supported with the feature gate %s", enableSendingRW2FeatureGate.ID())
 	}
 

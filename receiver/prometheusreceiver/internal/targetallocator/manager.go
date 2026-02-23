@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -32,29 +33,31 @@ import (
 )
 
 type Manager struct {
-	settings               receiver.Settings
-	shutdown               chan struct{}
-	cfg                    *Config
-	promCfg                *promconfig.Config
-	initialScrapeConfigs   []*promconfig.ScrapeConfig
-	scrapeManager          *scrape.Manager
-	discoveryManager       *discovery.Manager
-	enableNativeHistograms bool
+	settings             receiver.Settings
+	shutdown             chan struct{}
+	cfg                  *Config
+	promCfg              *promconfig.Config
+	initialScrapeConfigs []*promconfig.ScrapeConfig
+	scrapeManager        *scrape.Manager
+	discoveryManager     *discovery.Manager
+	wg                   sync.WaitGroup
 
 	// configUpdateCount tracks how many times the config has changed, for
 	// testing.
 	configUpdateCount *atomic.Int64
+	// configUpdated is signaled after each config update, for testing.
+	configUpdated chan struct{}
 }
 
-func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, enableNativeHistograms bool) *Manager {
+func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config) *Manager {
 	return &Manager{
-		shutdown:               make(chan struct{}),
-		settings:               set,
-		cfg:                    cfg,
-		promCfg:                promCfg,
-		initialScrapeConfigs:   promCfg.ScrapeConfigs,
-		enableNativeHistograms: enableNativeHistograms,
-		configUpdateCount:      &atomic.Int64{},
+		shutdown:             make(chan struct{}),
+		settings:             set,
+		cfg:                  cfg,
+		promCfg:              promCfg,
+		initialScrapeConfigs: promCfg.ScrapeConfigs,
+		configUpdateCount:    &atomic.Int64{},
+		configUpdated:        make(chan struct{}, 10),
 	}
 }
 
@@ -70,7 +73,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		// the target allocator is disabled
 		return nil
 	}
-	httpClient, err := m.cfg.ToClient(ctx, host, m.settings.TelemetrySettings)
+	httpClient, err := m.cfg.ToClient(ctx, host.GetExtensions(), m.settings.TelemetrySettings)
 	if err != nil {
 		m.settings.Logger.Error("Failed to create http client", zap.Error(err))
 		return err
@@ -92,7 +95,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 	if err != nil {
 		return err
 	}
-	go func() {
+	m.wg.Go(func() {
 		targetAllocatorIntervalTicker := time.NewTicker(m.cfg.Interval)
 		for {
 			select {
@@ -109,12 +112,13 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 				return
 			}
 		}
-	}()
+	})
 	return nil
 }
 
 func (m *Manager) Shutdown() {
 	close(m.shutdown)
+	m.wg.Wait()
 }
 
 // sync request jobs from targetAllocator and update underlying receiver, if the response does not match the provided compareHash.
@@ -192,21 +196,18 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 
 	if m.configUpdateCount != nil {
 		m.configUpdateCount.Add(1)
+		select {
+		case m.configUpdated <- struct{}{}:
+		default:
+		}
 	}
 	return hash, nil
 }
 
 func (m *Manager) applyCfg() error {
 	scrapeConfigs, err := m.promCfg.GetScrapeConfigs()
-	truePtr := true
 	if err != nil {
 		return fmt.Errorf("could not get scrape configs: %w", err)
-	}
-	if !m.enableNativeHistograms {
-		// Enforce scraping classic histograms to avoid dropping them.
-		for _, scrapeConfig := range m.promCfg.ScrapeConfigs {
-			scrapeConfig.AlwaysScrapeClassicHistograms = &truePtr
-		}
 	}
 
 	if err := m.scrapeManager.ApplyConfig(m.promCfg); err != nil {
@@ -232,6 +233,7 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -239,12 +241,8 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 	}
 
 	jobToScrapeConfig := map[string]*promconfig.ScrapeConfig{}
-	envReplacedBody := instantiateShard(body)
+	envReplacedBody := instantiateShard(body, os.LookupEnv)
 	err = yaml.Unmarshal(envReplacedBody, &jobToScrapeConfig)
-	if err != nil {
-		return nil, err
-	}
-	err = resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -252,8 +250,9 @@ func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[stri
 }
 
 // instantiateShard inserts the SHARD environment variable in the returned configuration
-func instantiateShard(body []byte) []byte {
-	shard, ok := os.LookupEnv("SHARD")
+func instantiateShard(body []byte, lookup func(string) (string, bool)) []byte {
+	shard, ok := lookup("SHARD")
+
 	if !ok {
 		shard = "0"
 	}

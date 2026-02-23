@@ -18,6 +18,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
+	containertagsbuffer "github.com/DataDog/datadog-agent/pkg/trace/containertags"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"github.com/DataDog/datadog-agent/pkg/trace/writer"
@@ -163,11 +164,9 @@ func (*factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params expor
 	if err != nil {
 		return nil, err
 	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		agnt.Run()
-	}()
+	})
 	return agnt, nil
 }
 
@@ -200,9 +199,7 @@ func (*factory) createDefaultConfig() component.Config {
 
 func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				select {
 				case <-ctx.Done():
@@ -225,7 +222,7 @@ func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, sta
 					statsWriter.Write(sp)
 				}
 			}
-		}()
+		})
 	}
 }
 
@@ -266,7 +263,8 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 	timingReporter := timing.New(metricsClient)
-	statsWriter := writer.NewStatsWriter(acfg, telemetry.NewNoopCollector(), metricsClient, timingReporter)
+	containerTagsBuffer := containertagsbuffer.NewContainerTagsBuffer(acfg, metricsClient)
+	statsWriter := writer.NewStatsWriter(acfg, telemetry.NewNoopCollector(), metricsClient, timingReporter, containerTagsBuffer)
 
 	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
 	go statsWriter.Run()

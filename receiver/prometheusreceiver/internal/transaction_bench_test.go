@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -89,7 +88,6 @@ func benchmarkAppendHistogram(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		tx := newBenchmarkTransaction(b)
-		tx.enableNativeHistograms = true
 		b.StartTimer()
 
 		for j := range labelSets {
@@ -149,9 +147,6 @@ func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScop
 		// Setup: Create transaction and append all data (not timed)
 		b.StopTimer()
 		tx := newBenchmarkTransaction(b)
-		if useNativeHistograms {
-			tx.enableNativeHistograms = true
-		}
 
 		if withTargetInfo {
 			targetInfoLabels := createTargetInfoLabels()
@@ -187,7 +182,6 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 
 	sink := new(consumertest.MetricsSink)
 	settings := receivertest.NewNopSettings(metadata.Type)
-	adjuster := &noOpAdjuster{}
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.MustNewID("prometheus"),
 		Transport:              "http",
@@ -199,13 +193,11 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 
 	tx := newTransaction(
 		benchCtx,
-		adjuster,
 		sink,
 		labels.EmptyLabels(), // no external labels
 		settings,
 		obsrecv,
 		false, // trimSuffixes
-		false, // enableNativeHistograms (not needed for Append benchmark)
 		false, // useMetadata
 	)
 
@@ -219,11 +211,11 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 func generateLabelSets(seriesCount, cardinality int) []labels.Labels {
 	result := make([]labels.Labels, seriesCount)
 
-	for i := 0; i < seriesCount; i++ {
+	for i := range seriesCount {
 		lbls := labels.NewBuilder(labels.EmptyLabels())
 		lbls.Set(model.MetricNameLabel, fmt.Sprintf("metric_%d", i))
 
-		for j := 0; j < cardinality; j++ {
+		for j := range cardinality {
 			lbls.Set(fmt.Sprintf("label_%d", j), fmt.Sprintf("value_%d_%d", i, j))
 		}
 
@@ -238,7 +230,7 @@ func generateLabelSets(seriesCount, cardinality int) []labels.Labels {
 func generateNativeHistograms(count int) []*histogram.Histogram {
 	result := make([]*histogram.Histogram, count)
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// Use tsdbutil.GenerateTestHistogram to create realistic native histograms
 		// The parameter controls the histogram ID, which varies the bucket counts slightly
 		result[i] = tsdbutil.GenerateTestHistogram(int64(i))
@@ -271,14 +263,6 @@ func createScopeInfoLabels() labels.Labels {
 		prometheus.ScopeVersionLabelKey: "1.0.0",
 		"scope_attribute":               "test_value",
 	})
-}
-
-// noOpAdjuster is a MetricsAdjuster that doesn't modify metrics.
-// This isolates the transaction performance from adjustment overhead.
-type noOpAdjuster struct{}
-
-func (*noOpAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
-	return nil
 }
 
 // mockMetadataStore is a minimal implementation of scrape.MetricMetadataStore for testing

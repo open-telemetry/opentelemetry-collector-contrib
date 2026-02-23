@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -169,10 +168,10 @@ func TestHistogramsAreRetrieved(t *testing.T) {
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
 				res.Attributes().PutStr("kr0", "vr0")
-				res.Attributes().PutStr(string(conventions.CloudAccountIDKey), "1234")
-				res.Attributes().PutStr(string(conventions.CloudRegionKey), "us-west-2")
-				res.Attributes().PutStr(string(conventions.HostIDKey), "i-abcd")
-				res.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+				res.Attributes().PutStr("cloud.account.id", "1234")
+				res.Attributes().PutStr("cloud.region", "us-west-2")
+				res.Attributes().PutStr("host.id", "i-abcd")
+				res.Attributes().PutStr("cloud.provider", "aws")
 				ilms := rm.ScopeMetrics()
 				ilms.EnsureCapacity(3)
 				ilm := ilms.AppendEmpty()
@@ -197,10 +196,10 @@ func TestHistogramsAreRetrieved(t *testing.T) {
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
 				res.Attributes().PutStr("kr0", "vr0")
-				res.Attributes().PutStr(string(conventions.CloudAccountIDKey), "1234")
-				res.Attributes().PutStr(string(conventions.CloudRegionKey), "us-west-2")
-				res.Attributes().PutStr(string(conventions.HostIDKey), "i-abcd")
-				res.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+				res.Attributes().PutStr("cloud.account.id", "1234")
+				res.Attributes().PutStr("cloud.region", "us-west-2")
+				res.Attributes().PutStr("host.id", "i-abcd")
+				res.Attributes().PutStr("cloud.provider", "aws")
 				res.Attributes().PutStr("AWSUniqueId", "i-abcd_us-west-2_1234")
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.SetSchemaUrl("Scope SchemaUrl")

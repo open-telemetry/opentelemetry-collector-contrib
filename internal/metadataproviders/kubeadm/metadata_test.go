@@ -26,7 +26,7 @@ func TestNewProvider(t *testing.T) {
 }
 
 func TestClusterName(t *testing.T) {
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	err := setupConfigMap(client)
 	assert.NoError(t, err)
 
@@ -71,7 +71,7 @@ func TestClusterName(t *testing.T) {
 }
 
 func TestClusterUID(t *testing.T) {
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	err := setupNamespace(client)
 	assert.NoError(t, err)
 
@@ -118,7 +118,7 @@ func setupConfigMap(client *fake.Clientset) error {
 			Namespace: "ns",
 		},
 		Data: map[string]string{
-			"clusterName": "myClusterName",
+			"ClusterConfiguration": "clusterName: myClusterName",
 		},
 	}
 	_, err := client.CoreV1().ConfigMaps("ns").Create(context.Background(), cm, metav1.CreateOptions{})

@@ -24,16 +24,24 @@ const (
 var (
 	errCtxMissingEndpointType = errors.New("context was passed without the endpoint type included")
 	errEndpointTypeNotFound   = errors.New("requested client is not configured and could not be found in splunkEntClient")
-	errNoClientFound          = errors.New("no client corresponding to the endpoint type was found")
 )
-
-// Type wrapper for accessing context value
-type endpointType string
 
 // Wrapper around splunkClientMap to avoid awkward reference/dereference stuff that arises when using maps in golang
 type splunkEntClient struct {
 	clients splunkClientMap
 }
+
+func (c *splunkEntClient) newClientNotFoundError(eptType, apiEndpoint string) error {
+	availableTypes := make([]string, 0, len(c.clients))
+	for k := range c.clients {
+		availableTypes = append(availableTypes, k)
+	}
+	return fmt.Errorf("no client found for instance type '%s' when accessing '%s'. Instance types able to scrape this endpoint type: [%s]",
+		strings.Join(availableTypes, ", "), apiEndpoint, eptType)
+}
+
+// Type wrapper for accessing context value
+type endpointType string
 
 // The splunkEntClient is made up of a number of splunkClients defined for each configured endpoint
 type splunkClientMap map[string]splunkClient
@@ -56,7 +64,7 @@ func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s co
 	// we already checked that url.Parse does not fail in cfg.Validate()
 	if cfg.IdxEndpoint.Endpoint != "" {
 		e, _ = url.Parse(cfg.IdxEndpoint.Endpoint)
-		c, err = cfg.IdxEndpoint.ToClient(ctx, h, s)
+		c, err = cfg.IdxEndpoint.ToClient(ctx, h.GetExtensions(), s)
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +75,7 @@ func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s co
 	}
 	if cfg.SHEndpoint.Endpoint != "" {
 		e, _ = url.Parse(cfg.SHEndpoint.Endpoint)
-		c, err = cfg.SHEndpoint.ToClient(ctx, h, s)
+		c, err = cfg.SHEndpoint.ToClient(ctx, h.GetExtensions(), s)
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +86,7 @@ func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s co
 	}
 	if cfg.CMEndpoint.Endpoint != "" {
 		e, _ = url.Parse(cfg.CMEndpoint.Endpoint)
-		c, err = cfg.CMEndpoint.ToClient(ctx, h, s)
+		c, err = cfg.CMEndpoint.ToClient(ctx, h.GetExtensions(), s)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +115,7 @@ func (c *splunkEntClient) createRequest(eptType string, sr *searchResponse) (req
 				return nil, err
 			}
 		} else {
-			return nil, errNoClientFound
+			return nil, c.newClientNotFoundError(eptType, fmt.Sprintf("search response: %+v", sr))
 		}
 
 		// reader for the response data
@@ -147,7 +155,7 @@ func (c *splunkEntClient) createAPIRequest(eptType, apiEndpoint string) (req *ht
 	if e, ok := c.clients[eptType]; ok {
 		u = e.endpoint.String() + apiEndpoint
 	} else {
-		return nil, errNoClientFound
+		return nil, c.newClientNotFoundError(eptType, apiEndpoint)
 	}
 
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)

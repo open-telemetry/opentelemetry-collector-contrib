@@ -13,17 +13,19 @@ components:
     - cmd/opampsupervisor
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
+    - cmd/schemagen
     - cmd/telemetrygen
     - connector/count
     - connector/datadog
     - connector/exceptions
     - connector/failover
     - connector/grafanacloud
+    - connector/metricsaslogs
     - connector/otlpjson
     - connector/roundrobin
     - connector/routing
     - connector/servicegraph
-    - connector/signaltometrics
+    - connector/signal_to_metrics
     - connector/slowsql
     - connector/spanmetrics
     - connector/sum
@@ -38,7 +40,6 @@ components:
     - exporter/azuredataexplorer
     - exporter/azuremonitor
     - exporter/bmchelix
-    - exporter/carbon
     - exporter/cassandra
     - exporter/clickhouse
     - exporter/coralogix
@@ -82,6 +83,7 @@ components:
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awslogs_encoding
     - extension/awsproxy
+    - extension/azure_encoding
     - extension/azureauth
     - extension/basicauth
     - extension/bearertokenauth
@@ -134,6 +136,8 @@ components:
     - internal/grpcutil
     - internal/healthcheck
     - internal/k8sconfig
+    - internal/k8sinventory
+    - internal/k8sleaderelectortest
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
@@ -166,16 +170,18 @@ components:
     - pkg/translator/azurelogs
     - pkg/translator/jaeger
     - pkg/translator/loki
-    - pkg/translator/opencensus
     - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
     - pkg/translator/skywalking
+    - pkg/translator/splunk
     - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
+    - pkg/xstreamencoding
     - processor/akamaidetector
+    - processor/alibabaecsdetector
     - processor/attributes
     - processor/azuredetector
     - processor/coralogix
@@ -193,19 +199,20 @@ components:
     - processor/hetznerdetector
     - processor/interval
     - processor/isolationforest
-    - processor/k8sattributes
+    - processor/k8s_attributes
     - processor/logdedup
     - processor/logstransform
+    - processor/lookup
     - processor/metricsgeneration
     - processor/metricstarttime
     - processor/metricstransform
     - processor/novadetector
+    - processor/oracleclouddetector
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
     - processor/resource
     - processor/resourcedetection
-    - processor/resourcedetectionprocessor/oraclecloud
     - processor/scalewaydetector
     - processor/schema
     - processor/span
@@ -230,10 +237,9 @@ components:
     - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
+    - receiver/azure_event_hub
     - receiver/azureblob
-    - receiver/azureeventhub
     - receiver/azuremonitor
-    - receiver/bigip
     - receiver/carbon
     - receiver/chrony
     - receiver/ciscoos
@@ -279,7 +285,7 @@ components:
     - receiver/macosunifiedlogging
     - receiver/memcached
     - receiver/mongodb
-    - receiver/mongodbatlas
+    - receiver/mongodb_atlas
     - receiver/mysql
     - receiver/namedpipe
     - receiver/netflow
@@ -324,6 +330,7 @@ components:
     - receiver/tlscheck
     - receiver/udplog
     - receiver/vcenter
+    - receiver/vcr
     - receiver/wavefront
     - receiver/webhookevent
     - receiver/windowseventlog

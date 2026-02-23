@@ -263,8 +263,8 @@ func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected
 		errs = multierr.Append(errs, fmt.Errorf("keepFrames does not match expected '%s', actual '%s'", expected.OriginalPayload().AsRaw(), actual.OriginalPayload().AsRaw()))
 	}
 
-	if expected.Duration() != actual.Duration() {
-		errs = multierr.Append(errs, fmt.Errorf("duration doesn't match expected: %d, actual: %d", expected.Duration(), actual.Duration()))
+	if expected.DurationNano() != actual.DurationNano() {
+		errs = multierr.Append(errs, fmt.Errorf("duration doesn't match expected: %d, actual: %d", expected.DurationNano(), actual.DurationNano()))
 	}
 
 	if expected.Period() != actual.Period() {
@@ -375,6 +375,14 @@ func CompareProfileSample(expected, actual pprofile.Sample) error {
 
 	if !reflect.DeepEqual(expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()) {
 		errs = multierr.Append(errs, fmt.Errorf("expected attributes '%v', got '%v'", expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()))
+	}
+
+	if !reflect.DeepEqual(expected.LinkIndex(), actual.LinkIndex()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected link_index '%v', got '%v'", expected.LinkIndex(), actual.LinkIndex()))
+	}
+
+	if !reflect.DeepEqual(expected.StackIndex(), actual.StackIndex()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected stack_index '%v', got '%v'", expected.StackIndex(), actual.StackIndex()))
 	}
 
 	return errs

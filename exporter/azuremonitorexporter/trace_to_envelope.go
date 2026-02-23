@@ -16,7 +16,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -122,6 +122,8 @@ func spanToEnvelopes(
 	applyResourcesToDataProperties(dataProperties, resourceAttributes)
 	applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
 	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+	applyApplicationTagsToEnvelope(envelope, resourceAttributes)
+	applyDeviceTagsToEnvelope(envelope, resourceAttributes)
 	applyInternalSdkVersionTagToEnvelope(envelope)
 	applyLinksToDataProperties(dataProperties, span.Links(), logger)
 
@@ -169,7 +171,9 @@ func spanToEnvelopes(
 		applyResourcesToDataProperties(dataProperties, resourceAttributes)
 		applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
 		applyCloudTagsToEnvelope(spanEventEnvelope, resourceAttributes)
-		applyInternalSdkVersionTagToEnvelope(envelope)
+		applyApplicationTagsToEnvelope(spanEventEnvelope, resourceAttributes)
+		applyDeviceTagsToEnvelope(spanEventEnvelope, resourceAttributes)
+		applyInternalSdkVersionTagToEnvelope(spanEventEnvelope)
 
 		// Sanitize the base data, the envelope and envelope tags
 		sanitize(dataSanitizeFunc, logger)

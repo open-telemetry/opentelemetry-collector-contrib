@@ -60,7 +60,7 @@ func TestBrokerScraperStart(t *testing.T) {
 	bs, err := createBrokerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
-	assert.NoError(t, bs.Start(t.Context(), nil))
+	assert.NoError(t, bs.Start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {

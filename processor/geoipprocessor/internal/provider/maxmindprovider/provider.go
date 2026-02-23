@@ -7,9 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
+	"net/netip"
 
-	"github.com/oschwald/geoip2-golang"
+	"github.com/oschwald/geoip2-golang/v2"
 	"go.opentelemetry.io/otel/attribute"
 
 	conventions "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/convention"
@@ -43,7 +43,7 @@ func newMaxMindProvider(cfg *Config) (*maxMindProvider, error) {
 }
 
 // Location implements provider.GeoIPProvider for MaxMind. If a non City database type is used or no metadata is found in the database, an error will be returned.
-func (g *maxMindProvider) Location(_ context.Context, ipAddress net.IP) (attribute.Set, error) {
+func (g *maxMindProvider) Location(_ context.Context, ipAddress netip.Addr) (attribute.Set, error) {
 	switch g.geoReader.Metadata().DatabaseType {
 	case geoIP2CityDBType, geoLite2CityDBType:
 		attrs, err := g.cityAttributes(ipAddress)
@@ -68,7 +68,7 @@ func (g *maxMindProvider) Close(context.Context) error {
 }
 
 // cityAttributes returns a list of key-values containing geographical metadata associated to the provided IP. The key names are populated using the internal geo IP conventions package. If an invalid or nil IP is provided, an error is returned.
-func (g *maxMindProvider) cityAttributes(ipAddress net.IP) (*[]attribute.KeyValue, error) {
+func (g *maxMindProvider) cityAttributes(ipAddress netip.Addr) (*[]attribute.KeyValue, error) {
 	attributes := make([]attribute.KeyValue, 0, 11)
 
 	city, err := g.geoReader.City(ipAddress)
@@ -84,12 +84,12 @@ func (g *maxMindProvider) cityAttributes(ipAddress net.IP) (*[]attribute.KeyValu
 	}
 
 	// city
-	appendIfNotEmpty(conventions.AttributeGeoCityName, city.City.Names[g.langCode])
+	appendIfNotEmpty(conventions.AttributeGeoCityName, city.City.Names.English)
 	// country
-	appendIfNotEmpty(conventions.AttributeGeoCountryName, city.Country.Names[g.langCode])
-	appendIfNotEmpty(conventions.AttributeGeoCountryIsoCode, city.Country.IsoCode)
+	appendIfNotEmpty(conventions.AttributeGeoCountryName, city.Country.Names.English)
+	appendIfNotEmpty(conventions.AttributeGeoCountryIsoCode, city.Country.ISOCode)
 	// continent
-	appendIfNotEmpty(conventions.AttributeGeoContinentName, city.Continent.Names[g.langCode])
+	appendIfNotEmpty(conventions.AttributeGeoContinentName, city.Continent.Names.English)
 	appendIfNotEmpty(conventions.AttributeGeoContinentCode, city.Continent.Code)
 	// postal code
 	appendIfNotEmpty(conventions.AttributeGeoPostalCode, city.Postal.Code)
@@ -97,14 +97,14 @@ func (g *maxMindProvider) cityAttributes(ipAddress net.IP) (*[]attribute.KeyValu
 	if len(city.Subdivisions) > 0 {
 		// The most specific subdivision is located at the last array position, see https://github.com/maxmind/GeoIP2-java/blob/2fe4c65424fed2c3c2449e5530381b6452b0560f/src/main/java/com/maxmind/geoip2/model/AbstractCityResponse.java#L112
 		mostSpecificSubdivision := city.Subdivisions[len(city.Subdivisions)-1]
-		appendIfNotEmpty(conventions.AttributeGeoRegionName, mostSpecificSubdivision.Names[g.langCode])
-		appendIfNotEmpty(conventions.AttributeGeoRegionIsoCode, mostSpecificSubdivision.IsoCode)
+		appendIfNotEmpty(conventions.AttributeGeoRegionName, mostSpecificSubdivision.Names.English)
+		appendIfNotEmpty(conventions.AttributeGeoRegionIsoCode, mostSpecificSubdivision.ISOCode)
 	}
 
 	// location
 	appendIfNotEmpty(conventions.AttributeGeoTimezone, city.Location.TimeZone)
-	if city.Location.Latitude != 0 && city.Location.Longitude != 0 {
-		attributes = append(attributes, attribute.Float64(conventions.AttributeGeoLocationLat, city.Location.Latitude), attribute.Float64(conventions.AttributeGeoLocationLon, city.Location.Longitude))
+	if city.Location.Latitude != nil && city.Location.Longitude != nil {
+		attributes = append(attributes, attribute.Float64(conventions.AttributeGeoLocationLat, *city.Location.Latitude), attribute.Float64(conventions.AttributeGeoLocationLon, *city.Location.Longitude))
 	}
 
 	return &attributes, err

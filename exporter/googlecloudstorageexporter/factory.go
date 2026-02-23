@@ -17,9 +17,14 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 
 func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
-	return newGCSExporter(ctx, config.(*Config), set.Logger)
+	return newGCSExporter(ctx, config.(*Config), set.Logger, signalTypeLogs)
+}
+
+func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
+	return newGCSExporter(ctx, config.(*Config), set.Logger, signalTypeTraces)
 }

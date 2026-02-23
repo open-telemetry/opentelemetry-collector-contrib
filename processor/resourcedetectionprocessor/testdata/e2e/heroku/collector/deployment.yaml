@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}
+    spec:
+      serviceAccountName: {{ .Name }}-sa
+      containers:
+        - name: otelcol
+          image: otelcontribcol:latest
+          imagePullPolicy: Never
+          env:
+            - name: HEROKU_DYNO_ID
+              value: "test-dyno-id-12345"
+            - name: HEROKU_APP_ID
+              value: "test-app-id-67890"
+            - name: HEROKU_APP_NAME
+              value: "test-heroku-app"
+            - name: HEROKU_RELEASE_VERSION
+              value: "v123"
+            - name: HEROKU_RELEASE_CREATED_AT
+              value: "2024-01-15T10:00:00Z"
+            - name: HEROKU_SLUG_COMMIT
+              value: "abc123def456"
+          args:
+            - "--config=/conf/relay"
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-config
+            items:
+              - key: relay
+                path: relay

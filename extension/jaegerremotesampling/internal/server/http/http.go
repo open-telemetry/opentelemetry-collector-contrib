@@ -56,7 +56,7 @@ func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerCo
 
 func (h *SamplingHTTPServer) Start(ctx context.Context, host component.Host) error {
 	var err error
-	h.srv, err = h.settings.ToServer(ctx, host, h.telemetry, h.mux)
+	h.srv, err = h.settings.ToServer(ctx, host.GetExtensions(), h.telemetry, h.mux)
 	if err != nil {
 		return err
 	}
@@ -67,14 +67,11 @@ func (h *SamplingHTTPServer) Start(ctx context.Context, host component.Host) err
 		return err
 	}
 
-	h.shutdownWG.Add(1)
-	go func() {
-		defer h.shutdownWG.Done()
-
+	h.shutdownWG.Go(func() {
 		if err := h.srv.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	}()
+	})
 
 	return nil
 }

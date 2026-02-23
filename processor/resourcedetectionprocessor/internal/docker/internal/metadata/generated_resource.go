@@ -21,6 +21,20 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetContainerImageName sets provided value as "container.image.name" attribute.
+func (rb *ResourceBuilder) SetContainerImageName(val string) {
+	if rb.config.ContainerImageName.Enabled {
+		rb.res.Attributes().PutStr("container.image.name", val)
+	}
+}
+
+// SetContainerName sets provided value as "container.name" attribute.
+func (rb *ResourceBuilder) SetContainerName(val string) {
+	if rb.config.ContainerName.Enabled {
+		rb.res.Attributes().PutStr("container.name", val)
+	}
+}
+
 // SetHostName sets provided value as "host.name" attribute.
 func (rb *ResourceBuilder) SetHostName(val string) {
 	if rb.config.HostName.Enabled {

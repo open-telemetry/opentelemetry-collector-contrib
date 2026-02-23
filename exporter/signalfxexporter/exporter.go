@@ -11,9 +11,11 @@ import (
 	"net/http"
 	"sync"
 
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -50,15 +52,16 @@ func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.Metadat
 }
 
 type signalfxExporter struct {
-	config             *Config
-	version            string
-	logger             *zap.Logger
-	telemetrySettings  component.TelemetrySettings
-	pushMetricsData    func(ctx context.Context, md pmetric.Metrics) (droppedTimeSeries int, err error)
-	pushLogsData       func(ctx context.Context, ld plog.Logs) (droppedLogRecords int, err error)
-	hostMetadataSyncer *hostmetadata.Syncer
-	converter          *translation.MetricsConverter
-	dimClient          *dimensions.DimensionClient
+	config                 *Config
+	version                string
+	logger                 *zap.Logger
+	telemetrySettings      component.TelemetrySettings
+	pushMetricsData        func(ctx context.Context, md pmetric.Metrics) (droppedTimeSeries int, err error)
+	hostMetadataSyncer     *hostmetadata.Syncer
+	converter              *translation.MetricsConverter
+	dimClient              *dimensions.DimensionClient
+	eventClient            *sfxEventClient
+	entityEventTransformer *dimensions.EntityEventTransformer
 }
 
 // newSignalFxExporter returns a new SignalFx exporter.
@@ -126,6 +129,20 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
 
+	if err := se.startDimensionClient(ctx); err != nil {
+		return err
+	}
+
+	if se.config.SyncHostMetadata {
+		envMap := gopsutilenv.SetGoPsutilEnvVars(se.config.RootPath)
+		se.hostMetadataSyncer = hostmetadata.NewSyncer(se.logger, se.dimClient, envMap)
+	}
+	se.pushMetricsData = dpClient.pushMetricsData
+
+	return nil
+}
+
+func (se *signalfxExporter) startDimensionClient(ctx context.Context) error {
 	apiTLSCfg, err := se.config.APITLSs.LoadTLSConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
@@ -144,27 +161,20 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			LogUpdates:   se.config.LogDimensionUpdates,
 			Logger:       se.logger,
 			// Duration to wait between property updates.
-			SendDelay:           se.config.DimensionClient.SendDelay,
-			MaxBuffered:         se.config.DimensionClient.MaxBuffered,
-			MetricsConverter:    *se.converter,
-			ExcludeProperties:   se.config.ExcludeProperties,
-			MaxConnsPerHost:     se.config.DimensionClient.MaxConnsPerHost,
-			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,
-			MaxIdleConnsPerHost: se.config.DimensionClient.MaxIdleConnsPerHost,
-			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
-			Timeout:             se.config.DimensionClient.Timeout,
-			DropTags:            se.config.DimensionClient.DropTags,
+			SendDelay:               se.config.DimensionClient.SendDelay,
+			MaxBuffered:             se.config.DimensionClient.MaxBuffered,
+			NonAlphanumericDimChars: se.config.NonAlphanumericDimensionChars,
+			DefaultProperties:       se.config.DefaultProperties,
+			ExcludeProperties:       se.config.ExcludeProperties,
+			MaxConnsPerHost:         se.config.DimensionClient.MaxConnsPerHost,
+			MaxIdleConns:            se.config.DimensionClient.MaxIdleConns,
+			MaxIdleConnsPerHost:     se.config.DimensionClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:         se.config.DimensionClient.IdleConnTimeout,
+			Timeout:                 se.config.DimensionClient.Timeout,
+			DropTags:                se.config.DimensionClient.DropTags,
 		})
 	dimClient.Start()
-
-	var hms *hostmetadata.Syncer
-	if se.config.SyncHostMetadata {
-		envMap := gopsutilenv.SetGoPsutilEnvVars(se.config.RootPath)
-		hms = hostmetadata.NewSyncer(se.logger, dimClient, envMap)
-	}
 	se.dimClient = dimClient
-	se.pushMetricsData = dpClient.pushMetricsData
-	se.hostMetadataSyncer = hms
 	return nil
 }
 
@@ -180,10 +190,11 @@ func newEventExporter(config *Config, createSettings exporter.Settings) (*signal
 	}
 
 	return &signalfxExporter{
-		config:            config,
-		version:           createSettings.BuildInfo.Version,
-		logger:            createSettings.Logger,
-		telemetrySettings: createSettings.TelemetrySettings,
+		config:                 config,
+		version:                createSettings.BuildInfo.Version,
+		logger:                 createSettings.Logger,
+		telemetrySettings:      createSettings.TelemetrySettings,
+		entityEventTransformer: dimensions.NewEntityEventTransformer(config.DefaultProperties),
 	}, nil
 }
 
@@ -210,14 +221,20 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 		accessTokenPassthrough: se.config.AccessTokenPassthrough,
 	}
 
-	se.pushLogsData = eventClient.pushLogsData
+	// Initialize dimension client for entity event processing if entity events processing is enabled.
+	if entityEventsFeatureGate.IsEnabled() {
+		if err := se.startDimensionClient(ctx); err != nil {
+			return err
+		}
+	}
+	se.eventClient = eventClient
 	return nil
 }
 
 func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
 	se.config.TLS = se.config.IngestTLSs
 
-	return se.config.ToClient(ctx, host, se.telemetrySettings)
+	return se.config.ToClient(ctx, host.GetExtensions(), se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -229,8 +246,63 @@ func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics)
 }
 
 func (se *signalfxExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	_, err := se.pushLogsData(ctx, ld)
-	return err
+	rls := ld.ResourceLogs()
+	if rls.Len() == 0 {
+		return nil
+	}
+
+	var sfxEvents []*sfxpb.Event
+
+	for i := 0; i < rls.Len(); i++ {
+		rl := rls.At(i)
+		ills := rl.ScopeLogs()
+		for j := 0; j < ills.Len(); j++ {
+			sl := ills.At(j)
+
+			// Process logs that represent entity events and skip regular event conversion
+			if entityEventsFeatureGate.IsEnabled() && isEntityEventScope(sl) {
+				err := se.processEntityEvents(sl.LogRecords())
+				if err != nil {
+					return fmt.Errorf("failed to process entity events: %w", err)
+				}
+				continue
+			}
+
+			events, _ := translation.LogRecordSliceToSignalFxV2(se.logger, sl.LogRecords(), rl.Resource().Attributes())
+			sfxEvents = append(sfxEvents, events...)
+		}
+	}
+
+	if len(sfxEvents) > 0 {
+		err := se.eventClient.pushEvents(ctx, rls.At(0), sfxEvents)
+		if err != nil {
+			return fmt.Errorf("failed to push events: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (se *signalfxExporter) processEntityEvents(logs plog.LogRecordSlice) error {
+	entityEventsSlice := metadata.NewEntityEventsSliceFromLogs(logs)
+	for i := 0; i < entityEventsSlice.Len(); i++ {
+		entityEvent := entityEventsSlice.At(i)
+
+		dimUpdate, err := se.entityEventTransformer.TransformEntityEvent(entityEvent)
+		if dimUpdate == nil {
+			if err != nil {
+				se.logger.Warn("Failed to transform entity event to dimension update", zap.Error(err))
+			}
+			continue
+		}
+
+		// Failure to accept dimension likely means exceeded buffer. Reject all further
+		// dimension updates for this export cycle.
+		if err := se.dimClient.AcceptDimension(dimUpdate); err != nil {
+			return fmt.Errorf("failed to accept dimension update: %w", err)
+		}
+	}
+	return nil
 }
 
 func (se *signalfxExporter) shutdown(_ context.Context) error {
@@ -249,6 +321,11 @@ func (se *signalfxExporter) pushMetadata(metadata []*metadata.MetadataUpdate) er
 		return errNotStarted
 	}
 	return se.dimClient.PushMetadata(metadata)
+}
+
+func isEntityEventScope(sl plog.ScopeLogs) bool {
+	marker, ok := sl.Scope().Attributes().Get(metadata.SemconvOtelEntityEventAsScope)
+	return ok && marker.Type() == pcommon.ValueTypeBool && marker.Bool()
 }
 
 func buildHeaders(config *Config, version string) map[string]string {

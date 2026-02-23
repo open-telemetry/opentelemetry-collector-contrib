@@ -136,28 +136,26 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		cln, cerr := sr.config.CollectorHTTPSettings.ToListener(ctx)
 		if cerr != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %w",
-				sr.config.CollectorHTTPSettings.Endpoint, cerr)
+				sr.config.CollectorHTTPSettings.NetAddr.Endpoint, cerr)
 		}
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/v3/segments", sr.traceReceiver.HTTPHandler).Methods(http.MethodPost)
-		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(ctx, host, sr.settings.TelemetrySettings, nr)
+		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(ctx, host.GetExtensions(), sr.settings.TelemetrySettings, nr)
 		if cerr != nil {
 			return cerr
 		}
 
-		sr.goroutines.Add(1)
-		go func() {
-			defer sr.goroutines.Done()
+		sr.goroutines.Go(func() {
 			if errHTTP := sr.collectorServer.Serve(cln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 			}
-		}()
+		})
 	}
 
 	if sr.collectorGRPCEnabled() {
 		var err error
-		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(ctx, host, sr.settings.TelemetrySettings)
+		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(ctx, host.GetExtensions(), sr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}
@@ -181,13 +179,11 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		v3.RegisterCLRMetricReportServiceServer(sr.grpc, &clrService{})
 		v3.RegisterBrowserPerfServiceServer(sr.grpc, sr.dummyReportService)
 
-		sr.goroutines.Add(1)
-		go func() {
-			defer sr.goroutines.Done()
+		sr.goroutines.Go(func() {
 			if errGrpc := sr.grpc.Serve(gln); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 			}
-		}()
+		})
 	}
 
 	return nil

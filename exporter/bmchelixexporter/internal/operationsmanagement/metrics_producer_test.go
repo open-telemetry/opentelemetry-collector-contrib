@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -133,7 +132,7 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 
 	// First datapoint
 	dp1 := dps.AppendEmpty()
-	dp1.Attributes().PutStr(string(conventions.HostNameKey), "test-hostname")
+	dp1.Attributes().PutStr("host.name", "test-hostname")
 	dp1.Attributes().PutStr("entityName", "test-entity-1")
 	dp1.Attributes().PutStr("entityTypeId", "test-entity-type-id")
 	dp1.Attributes().PutStr("instanceName", "test-entity-Name-1")
@@ -142,7 +141,7 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 
 	// Second datapoint
 	dp2 := dps.AppendEmpty()
-	dp2.Attributes().PutStr(string(conventions.HostNameKey), "test-hostname")
+	dp2.Attributes().PutStr("host.name", "test-hostname")
 	dp2.Attributes().PutStr("entityName", "test-entity-2")
 	dp2.Attributes().PutStr("entityTypeId", "test-entity-type-id")
 	dp2.Attributes().PutStr("instanceName", "test-entity-Name-2")

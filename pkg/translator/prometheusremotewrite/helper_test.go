@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -392,7 +391,7 @@ func Test_createLabelSet(t *testing.T) {
 			labelNamer := otlptranslator.LabelNamer{
 				UnderscoreLabelSanitization: tt.underscoreLabelSanitization,
 			}
-			got, err := createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, labelNamer, tt.extras...)
+			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, tt.extras...)
 			if tt.expectErr {
 				require.Error(t, err)
 				return
@@ -417,7 +416,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 
 	for b.Loop() {
 		//nolint:errcheck
-		createAttributes(r, m, ext, nil, true, otlptranslator.LabelNamer{})
+		createAttributes(r, m, pcommon.NewInstrumentationScope(), ext, nil, true, otlptranslator.LabelNamer{})
 	}
 }
 
@@ -617,9 +616,9 @@ func Test_getPromExemplarsV2(t *testing.T) {
 
 func TestAddResourceTargetInfo(t *testing.T) {
 	resourceAttrMap := map[string]any{
-		string(conventions.ServiceNameKey):       "service-name",
-		string(conventions.ServiceNamespaceKey):  "service-namespace",
-		string(conventions.ServiceInstanceIDKey): "service-instance-id",
+		"service.name":        "service-name",
+		"service.namespace":   "service-namespace",
+		"service.instance.id": "service-instance-id",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
 	require.NoError(t, resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap))
@@ -628,11 +627,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	require.NoError(t, resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap))
 	// service.name is an identifying resource attribute.
 	resourceWithOnlyServiceName := pcommon.NewResource()
-	resourceWithOnlyServiceName.Attributes().PutStr(string(conventions.ServiceNameKey), "service-name")
+	resourceWithOnlyServiceName.Attributes().PutStr("service.name", "service-name")
 	resourceWithOnlyServiceName.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	// service.instance.id is an identifying resource attribute.
 	resourceWithOnlyServiceID := pcommon.NewResource()
-	resourceWithOnlyServiceID.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), "service-instance-id")
+	resourceWithOnlyServiceID.Attributes().PutStr("service.instance.id", "service-instance-id")
 	resourceWithOnlyServiceID.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	for _, tc := range []struct {
 		desc       string
@@ -852,6 +851,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			err := converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 			)
@@ -952,6 +952,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			err := converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 			)

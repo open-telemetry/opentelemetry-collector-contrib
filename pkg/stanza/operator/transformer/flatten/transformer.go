@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -46,7 +45,7 @@ func (t *Transformer[T]) Transform(entry *entry.Entry) error {
 		// The field we were asked to flatten was not a map, so put it back
 		err := entry.Set(t.Field, val)
 		if err != nil {
-			return errors.Wrap(err, "reset non-map field")
+			return fmt.Errorf("reset non-map field: %w", err)
 		}
 		return fmt.Errorf("apply flatten: field %s is not a map", t.Field)
 	}

@@ -28,7 +28,7 @@ resourceMetrics:
         - key: env-var-metric-label
           value:
             stringValue: env-var
-    schemaUrl: https://opentelemetry.io/schemas/1.27.0
+    schemaUrl: https://opentelemetry.io/schemas/1.38.0
     scopeMetrics:
       - metrics:
           - description: Number of bytes transferred to/from the disk by the group and descendant groups.

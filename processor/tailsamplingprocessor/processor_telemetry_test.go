@@ -927,7 +927,7 @@ func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 	controller := newTestTSPController()
 
 	// Use this instead of the default no-op cache
-	c, err := cache.NewLRUDecisionCache[bool](200)
+	c, err := cache.NewLRUDecisionCache(200)
 	require.NoError(t, err)
 
 	cfg := Config{

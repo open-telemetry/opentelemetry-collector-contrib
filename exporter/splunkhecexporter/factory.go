@@ -9,16 +9,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 const (
@@ -76,25 +77,17 @@ func createDefaultConfig() component.Config {
 		ClientConfig:            clientConfig,
 		SplunkAppName:           defaultSplunkAppName,
 		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
-		QueueSettings:           exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:           configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
 		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
 		MaxEventSize:            defaultMaxEventSize,
-		OtelAttrsToHec: splunk.HecToOtelAttrs{
-			Source:     splunk.DefaultSourceLabel,
-			SourceType: splunk.DefaultSourceTypeLabel,
-			Index:      splunk.DefaultIndexLabel,
-			Host:       string(conventions.HostNameKey),
-		},
-		HecFields: OtelToHecFields{
-			SeverityText:   splunk.DefaultSeverityTextLabel,
-			SeverityNumber: splunk.DefaultSeverityNumberLabel,
-		},
-		HealthPath:            splunk.DefaultHealthPath,
-		HecHealthCheckEnabled: false,
-		ExportRaw:             false,
+		OtelAttrsToHec:          translator.DefaultHecToOtelAttrs(),
+		HecFields:               translator.DefaultOtelToHecFields(),
+		HealthPath:              splunk.DefaultHealthPath,
+		HecHealthCheckEnabled:   false,
+		ExportRaw:               false,
 		Telemetry: HecTelemetry{
 			Enabled:              false,
 			OverrideMetricsNames: map[string]string{},

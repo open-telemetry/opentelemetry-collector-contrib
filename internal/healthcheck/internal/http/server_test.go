@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.uber.org/goleak"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
@@ -153,6 +156,16 @@ type teststep struct {
 }
 
 func TestStatus(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	// They don't accept context.Context and are managed by the transport's lifecycle,
+	// not our test lifecycle. They'll be cleaned up when the transport is garbage collected.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
 	var server *Server
 	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
@@ -169,7 +182,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -386,7 +402,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -808,7 +827,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1032,7 +1054,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1398,7 +1423,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1619,7 +1647,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1983,7 +2014,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2207,7 +2241,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2573,7 +2610,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2600,7 +2640,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2634,7 +2677,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2680,7 +2726,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2697,7 +2746,10 @@ func TestStatus(t *testing.T) {
 			name: "legacy - default response",
 			legacyConfig: LegacyConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Path: "/status",
 			},
@@ -2816,7 +2868,10 @@ func TestStatus(t *testing.T) {
 			name: "legacy - custom response",
 			legacyConfig: LegacyConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Path:         "/status",
 				ResponseBody: &ResponseBodyConfig{Healthy: "ALL OK", Unhealthy: "NOT OK"},
@@ -2945,16 +3000,31 @@ func TestStatus(t *testing.T) {
 			)
 
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
+			ts := httptest.NewServer(server.mux)
 
-			var url string
+			// Ensure cleanup happens in the correct order
+			defer func() {
+				ts.Close()
+				http.DefaultTransport.(*http.Transport).CloseIdleConnections()
+				require.NoError(t, server.Shutdown(t.Context()))
+			}()
+
+			var path string
 			if tc.legacyConfig.UseV2 {
-				url = fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Status.Path)
+				path = tc.config.Status.Path
 			} else {
-				url = fmt.Sprintf("http://%s%s", tc.legacyConfig.Endpoint, tc.legacyConfig.Path)
+				path = tc.legacyConfig.Path
 			}
+			url := ts.URL + path
 
-			client := &http.Client{}
+			// Create a custom client with aggressive timeouts
+			client := &http.Client{
+				Timeout: 100 * time.Millisecond,
+				Transport: &http.Transport{
+					DisableKeepAlives: true,
+					MaxConnsPerHost:   1,
+				},
+			}
 
 			for _, ts := range tc.teststeps {
 				if ts.step != nil {
@@ -2968,21 +3038,29 @@ func TestStatus(t *testing.T) {
 
 				var err error
 				var resp *http.Response
+				var body []byte
 
 				if ts.eventually {
 					assert.EventuallyWithT(t, func(tt *assert.CollectT) {
-						resp, err = client.Get(stepURL)
-						require.NoError(tt, err)
-						assert.Equal(tt, ts.expectedStatusCode, resp.StatusCode)
+						localResp, localErr := client.Get(stepURL)
+						require.NoError(tt, localErr)
+						defer localResp.Body.Close()
+						assert.Equal(tt, ts.expectedStatusCode, localResp.StatusCode)
 					}, time.Second, 10*time.Millisecond)
+					// Make a final request to get the body for assertions
+					resp, err = client.Get(stepURL)
+					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 				} else {
 					resp, err = client.Get(stepURL)
 					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 					assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
 				}
-
-				body, err := io.ReadAll(resp.Body)
-				require.NoError(t, err)
 
 				assert.Contains(t, string(body), ts.expectedBody)
 
@@ -3046,6 +3124,16 @@ func assertStatusSimple(
 }
 
 func TestConfig(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	// They don't accept context.Context and are managed by the transport's lifecycle,
+	// not our test lifecycle. They'll be cleaned up when the transport is garbage collected.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
 	var server *Server
 	confMap, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -3063,7 +3151,10 @@ func TestConfig(t *testing.T) {
 			name: "config not notified",
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{
 					Enabled: true,
@@ -3080,7 +3171,10 @@ func TestConfig(t *testing.T) {
 			name: "config notified",
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{
 					Enabled: true,
@@ -3100,7 +3194,10 @@ func TestConfig(t *testing.T) {
 			name: "config disabled",
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{
 					Enabled: false,
@@ -3123,10 +3220,27 @@ func TestConfig(t *testing.T) {
 			)
 
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
+			ts := httptest.NewServer(server.mux)
 
-			client := &http.Client{}
-			url := fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Config.Path)
+			// Ensure cleanup happens in the correct order
+			defer func() {
+				ts.Close()
+				require.NoError(t, server.Shutdown(t.Context()))
+			}()
+
+			// Use a single client for all requests in this test
+			transport := &http.Transport{
+				DisableKeepAlives:   true,
+				MaxIdleConnsPerHost: -1,
+				DisableCompression:  true,
+				MaxConnsPerHost:     -1,
+				IdleConnTimeout:     1 * time.Millisecond,
+				TLSHandshakeTimeout: 1 * time.Millisecond,
+			}
+			client := &http.Client{Transport: transport}
+			defer transport.CloseIdleConnections()
+
+			url := ts.URL + tc.config.Config.Path
 
 			if tc.setup != nil {
 				tc.setup()
@@ -3138,6 +3252,7 @@ func TestConfig(t *testing.T) {
 
 			body, err := io.ReadAll(resp.Body)
 			require.NoError(t, err)
+			defer resp.Body.Close()
 			assert.Equal(t, tc.expectedBody, body)
 		})
 	}

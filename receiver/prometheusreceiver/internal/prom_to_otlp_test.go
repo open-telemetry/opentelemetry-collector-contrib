@@ -9,7 +9,6 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 type jobInstanceDefinition struct {
@@ -24,34 +23,34 @@ func makeK8sResource(jobInstance *jobInstanceDefinition, def *k8sResourceDefinit
 	resource := makeResourceWithJobInstanceScheme(jobInstance, true)
 	attrs := resource.Attributes()
 	if def.podName != "" {
-		attrs.PutStr(string(conventions.K8SPodNameKey), def.podName)
+		attrs.PutStr("k8s.pod.name", def.podName)
 	}
 	if def.podUID != "" {
-		attrs.PutStr(string(conventions.K8SPodUIDKey), def.podUID)
+		attrs.PutStr("k8s.pod.uid", def.podUID)
 	}
 	if def.container != "" {
-		attrs.PutStr(string(conventions.K8SContainerNameKey), def.container)
+		attrs.PutStr("k8s.container.name", def.container)
 	}
 	if def.node != "" {
-		attrs.PutStr(string(conventions.K8SNodeNameKey), def.node)
+		attrs.PutStr("k8s.node.name", def.node)
 	}
 	if def.rs != "" {
-		attrs.PutStr(string(conventions.K8SReplicaSetNameKey), def.rs)
+		attrs.PutStr("k8s.replicaset.name", def.rs)
 	}
 	if def.ds != "" {
-		attrs.PutStr(string(conventions.K8SDaemonSetNameKey), def.ds)
+		attrs.PutStr("k8s.daemonset.name", def.ds)
 	}
 	if def.ss != "" {
-		attrs.PutStr(string(conventions.K8SStatefulSetNameKey), def.ss)
+		attrs.PutStr("k8s.statefulset.name", def.ss)
 	}
 	if def.job != "" {
-		attrs.PutStr(string(conventions.K8SJobNameKey), def.job)
+		attrs.PutStr("k8s.job.name", def.job)
 	}
 	if def.cronjob != "" {
-		attrs.PutStr(string(conventions.K8SCronJobNameKey), def.cronjob)
+		attrs.PutStr("k8s.cronjob.name", def.cronjob)
 	}
 	if def.ns != "" {
-		attrs.PutStr(string(conventions.K8SNamespaceNameKey), def.ns)
+		attrs.PutStr("k8s.namespace.name", def.ns)
 	}
 	return resource
 }

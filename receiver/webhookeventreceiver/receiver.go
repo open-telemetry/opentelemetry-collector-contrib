@@ -111,7 +111,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
-	er.server, err = er.cfg.ToServer(ctx, host, er.settings.TelemetrySettings, router)
+	er.server, err = er.cfg.ToServer(ctx, host.GetExtensions(), er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
@@ -131,13 +131,11 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	er.server.WriteTimeout = writeTimeout
 
 	// shutdown
-	er.shutdownWG.Add(1)
-	go func() {
-		defer er.shutdownWG.Done()
+	er.shutdownWG.Go(func() {
 		if errHTTP := er.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }

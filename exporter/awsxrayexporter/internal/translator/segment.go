@@ -8,7 +8,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"regexp"
 	"strings"
@@ -575,6 +577,11 @@ func convertToAmazonTraceID(traceID pcommon.TraceID, skipTimestampValidation boo
 
 	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))
 
+	// Build the X-Ray trace ID format: 1-{hex(epoch)}-{identifier}
+	// Ensure we have enough space in the content array
+	if len(content) < traceIDLength {
+		return "", errors.New("content array too small")
+	}
 	content[0] = '1'
 	content[1] = '-'
 	hex.Encode(content[2:10], b[0:4])
@@ -685,9 +692,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 					// if unable to unmarshal, keep the original key/value
 					defaultMetadata[key] = value.Str()
 				case strings.EqualFold(namespace, defaultMetadataNamespace):
-					for k, v := range metaVal {
-						defaultMetadata[k] = v
-					}
+					maps.Copy(defaultMetadata, metaVal)
 				default:
 					metadata[namespace] = metaVal
 				}
@@ -770,10 +775,10 @@ func makeEndTimeAndInProgress(span ptrace.Span, attributes pcommon.Map) (*float6
 
 func trimAwsSdkPrefix(name string, span ptrace.Span) string {
 	if isAwsSdkSpan(span) {
-		if strings.HasPrefix(name, "AWS.SDK.") {
-			return strings.TrimPrefix(name, "AWS.SDK.")
-		} else if strings.HasPrefix(name, "AWS::") {
-			return strings.TrimPrefix(name, "AWS::")
+		if after, ok := strings.CutPrefix(name, "AWS.SDK."); ok {
+			return after
+		} else if after, ok := strings.CutPrefix(name, "AWS::"); ok {
+			return after
 		}
 	}
 	return name

@@ -5,7 +5,6 @@ package samplingpolicy // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -13,16 +12,10 @@ import (
 
 // TraceData stores the sampling related trace data.
 type TraceData struct {
-	// Arrival time the first span for the trace was received.
-	ArrivalTime time.Time
-	// DecisionTime time when sampling decision was taken.
-	DecisionTime time.Time
 	// SpanCount track the number of spans on the trace.
 	SpanCount int64
 	// ReceivedBatches stores all the batches received for the trace.
 	ReceivedBatches ptrace.Traces
-	// FinalDecision.
-	FinalDecision Decision
 }
 
 // Decision gives the status of sampling decision.
@@ -46,9 +39,13 @@ const (
 	Error
 	// InvertSampled is used on the invert match flow and indicates to sample
 	// the data.
+	//
+	// Deprecated: Drop policies should be used instead of invert decisions.
 	InvertSampled
 	// InvertNotSampled is used on the invert match flow and indicates to not
 	// sample the data.
+	//
+	// Deprecated: Drop policies should be used instead of invert decisions.
 	InvertNotSampled
 )
 

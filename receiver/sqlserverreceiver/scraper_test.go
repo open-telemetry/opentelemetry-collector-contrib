@@ -232,19 +232,19 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
-	cached, val := scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", -1)
+	cached, val := scraper.cacheAndDiff("query_hash", "query_plan_hash", "procedure_id", "column", -1)
 	assert.False(t, cached)
 	assert.Equal(t, int64(0), val)
 
-	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", 1)
+	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "procedure_id", "column", 1)
 	assert.False(t, cached)
 	assert.Equal(t, int64(1), val)
 
-	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", 1)
+	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "procedure_id", "column", 1)
 	assert.True(t, cached)
 	assert.Equal(t, int64(0), val)
 
-	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", 3)
+	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "procedure_id", "column", 3)
 	assert.True(t, cached)
 	assert.Equal(t, int64(2), val)
 }
@@ -370,6 +370,81 @@ func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.Strin
 	return queryResults, nil
 }
 
+func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	assert.NotNil(t, scraper.cache)
+
+	const totalElapsedTime = "total_elapsed_time"
+	const rowsReturned = "total_rows"
+	const totalWorkerTime = "total_worker_time"
+	const logicalReads = "total_logical_reads"
+	const physicalReads = "total_physical_reads"
+	const executionCount = "execution_count"
+	const totalGrant = "total_grant_kb"
+
+	scraper.client = mockClient{
+		instanceName:        scraper.config.InstanceName,
+		SQL:                 scraper.sqlQuery,
+		maxQuerySampleCount: 1000,
+		lookbackTime:        20,
+		topQueryCount:       200,
+	}
+
+	_, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "expectedQueryTextAndPlanQuery.yaml")
+	expectedLogs, _ := golden.ReadLogs(expectedFile)
+
+	queryHash, _ := expectedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("sqlserver.query_hash")
+	planHash, _ := expectedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("sqlserver.query_plan_hash")
+	keyPrefix := queryHash.Str() + "-" + planHash.Str()
+
+	tetValue, ok := scraper.cache.Get(keyPrefix + "-" + totalElapsedTime)
+	assert.True(t, ok, "Expected to find elapsed time in cache right after the first collection")
+	assert.Equal(t, 3846, int(tetValue))
+
+	rtValue, ok := scraper.cache.Get(keyPrefix + "-" + rowsReturned)
+	assert.True(t, ok, "Expected to find rowsReturned in cache right after the first collection")
+	assert.Equal(t, 2, int(rtValue))
+
+	twtValue, ok := scraper.cache.Get(keyPrefix + "-" + totalWorkerTime)
+	assert.True(t, ok, "Expected to find totalWorkerTime in cache right after the first collection")
+	assert.Equal(t, 3845, int(twtValue))
+
+	lrValue, ok := scraper.cache.Get(keyPrefix + "-" + logicalReads)
+	assert.True(t, ok, "Expected to find logicalReads in cache right after the first collection")
+	assert.Equal(t, 3, int(lrValue))
+
+	prValue, ok := scraper.cache.Get(keyPrefix + "-" + physicalReads)
+	assert.True(t, ok, "Expected to find physicalReads in cache right after the first collection")
+	assert.Equal(t, 5, int(prValue))
+
+	ecValue, ok := scraper.cache.Get(keyPrefix + "-" + executionCount)
+	assert.True(t, ok, "Expected to find executionCount in cache right after the first collection")
+	assert.Equal(t, 6, int(ecValue))
+
+	tgValue, ok := scraper.cache.Get(keyPrefix + "-" + totalGrant)
+	assert.True(t, ok, "Expected to find totalGrant in cache right after the first collection")
+	assert.Equal(t, 3096, int(tgValue))
+}
+
 func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
@@ -401,14 +476,15 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 846)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, rowsReturned, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalWrites, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, physicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, executionCount, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 845)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalGrant, 1)
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 846)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
 
 	scraper.client = mockClient{
 		instanceName:        scraper.config.InstanceName,
@@ -460,14 +536,15 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, rowsReturned, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalWrites, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, physicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, executionCount, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalGrant, 1)
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
 
 	scraper.client = mockInvalidClient{
 		mockClient: mockClient{
@@ -481,17 +558,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	actualLogs, err := scraper.ScrapeLogs(t.Context())
 	assert.Error(t, err)
 
-	expectedFile := "expectedQueryTextAndPlanQueryWithInvalidData.yaml"
-
-	// Uncomment line below to re-generate expected logs.
-	// golden.WriteLogs(t, filepath.Join("testdata", expectedFile), actualLogs)
-
-	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", expectedFile))
-	assert.NoError(t, err)
-
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
-	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
-	assert.NoError(t, errs)
+	assert.Zero(t, actualLogs.LogRecordCount(), "If the metrics does not hold meaningful values then those records need not be exported by the receiver")
 }
 
 func TestRecordDatabaseSampleQuery(t *testing.T) {

@@ -23,6 +23,7 @@ body:
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
+      - cmd/schemagen
       - cmd/telemetrygen
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
@@ -33,6 +34,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/metricsaslogs
       - connector/otlpjson
       - connector/roundrobin
       - connector/routing
@@ -52,7 +54,6 @@ body:
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/bmchelix
-      - exporter/carbon
       - exporter/cassandra
       - exporter/clickhouse
       - exporter/coralogix
@@ -102,6 +103,7 @@ body:
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
       - extension/encoding/awslogsencoding
+      - extension/encoding/azureencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
@@ -148,6 +150,8 @@ body:
       - internal/grpcutil
       - internal/healthcheck
       - internal/k8sconfig
+      - internal/k8sinventory
+      - internal/k8sleaderelectortest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -180,15 +184,16 @@ body:
       - pkg/translator/faro
       - pkg/translator/jaeger
       - pkg/translator/loki
-      - pkg/translator/opencensus
       - pkg/translator/pprof
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
       - pkg/translator/skywalking
+      - pkg/translator/splunk
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - pkg/xk8stest
+      - pkg/xstreamencoding
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
@@ -205,6 +210,7 @@ body:
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
+      - processor/lookup
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
@@ -214,6 +220,7 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/alibaba/ecs
       - processor/resourcedetection/internal/azure
       - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
@@ -243,7 +250,6 @@ body:
       - receiver/azureblob
       - receiver/azureeventhub
       - receiver/azuremonitor
-      - receiver/bigip
       - receiver/carbon
       - receiver/chrony
       - receiver/ciscoos
@@ -347,6 +353,7 @@ body:
       - receiver/tlscheck
       - receiver/udplog
       - receiver/vcenter
+      - receiver/vcr
       - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog

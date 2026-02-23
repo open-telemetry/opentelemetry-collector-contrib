@@ -167,3 +167,110 @@ func Test_fakeNamespaceInformer(t *testing.T) {
 	store := i.GetStore()
 	assert.NoError(t, store.Add(api_v1.Namespace{}))
 }
+
+func Test_newReplicaSetSharedInformer(t *testing.T) {
+	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	require.NoError(t, err)
+	informer := newReplicaSetSharedInformer(client, "testns")
+	assert.NotNil(t, informer)
+}
+
+func Test_replicasetListFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	listFunc := replicasetListFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := listFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_replicasetWatchFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	watchFunc := replicasetWatchFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := watchFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_deploymentListFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	listFunc := deploymentListFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := listFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_deploymentWatchFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	watchFunc := deploymentWatchFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := watchFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_statefulsetListFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	listFunc := statefulsetListFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := listFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_statefulsetWatchFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	watchFunc := statefulsetWatchFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := watchFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_daemonsetListFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	listFunc := daemonsetListFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := listFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_daemonsetWatchFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	watchFunc := daemonsetWatchFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := watchFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_jobListFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	listFunc := jobListFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := listFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_jobWatchFuncWithSelectors(t *testing.T) {
+	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	watchFunc := jobWatchFuncWithSelectors(c, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := watchFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}

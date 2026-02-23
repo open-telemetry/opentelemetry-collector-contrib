@@ -1,0 +1,9 @@
+description: Config defines configuration for Google Cloud exporter.
+type: object
+properties:
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - x-customType: github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector.config
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

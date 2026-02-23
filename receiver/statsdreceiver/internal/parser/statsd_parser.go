@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
@@ -345,6 +345,15 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		return err
 	}
 
+	// Discard NaN and infinite values for all metric types
+	if math.IsNaN(parsedMetric.asFloat) || math.IsInf(parsedMetric.asFloat, 0) {
+		reason := "NaN"
+		if math.IsInf(parsedMetric.asFloat, 0) {
+			reason = "infinite"
+		}
+		return fmt.Errorf("discarding metric %q: invalid %s value", parsedMetric.description.name, reason)
+	}
+
 	addrKey := newNetAddr(addr)
 	if p.enableIPOnlyAggregation {
 		addrKey = newIPOnlyNetAddr(addr)
@@ -530,7 +539,7 @@ func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) 
 			containerID := strings.TrimPrefix(part, "c:")
 
 			if containerID != "" {
-				kvs = append(kvs, attribute.String(string(semconv.ContainerIDKey), containerID))
+				kvs = append(kvs, attribute.String(string(conventions.ContainerIDKey), containerID))
 			}
 		case strings.HasPrefix(part, "T"):
 			// As per DogStatD protocol v1.3:

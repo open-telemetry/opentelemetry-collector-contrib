@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -38,6 +39,7 @@ func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.
 		1,
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("server.address", meta.Host),
 			attribute.String("outcome", outcome),
 		),
 	)
@@ -51,6 +53,7 @@ func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ ne
 		1,
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("server.address", meta.Host),
 		),
 	)
 }
@@ -64,6 +67,7 @@ func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, thrott
 		throttleInterval.Milliseconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("server.address", meta.Host),
 		),
 	)
 	fpm.tb.KafkaBrokerThrottlingLatency.Record(
@@ -71,13 +75,19 @@ func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, thrott
 		throttleInterval.Seconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("server.address", meta.Host),
 		),
 	)
 }
 
 var _ kgo.HookBrokerE2E = FranzProducerMetrics{}
 
-func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, _ int16, e2e kgo.BrokerE2E) {
+func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, key int16, e2e kgo.BrokerE2E) {
+	// Do not pollute producer metrics with non-produce requests
+	if kmsg.Key(key) != kmsg.Produce {
+		return
+	}
+
 	outcome := "success"
 	if e2e.Err() != nil {
 		outcome = "failure"
@@ -88,6 +98,7 @@ func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, _ int16, e2
 		e2e.DurationE2E().Milliseconds()+e2e.WriteWait.Milliseconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("server.address", meta.Host),
 			attribute.String("outcome", outcome),
 		),
 	)
@@ -96,6 +107,7 @@ func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, _ int16, e2
 		e2e.DurationE2E().Seconds()+e2e.WriteWait.Seconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("server.address", meta.Host),
 			attribute.String("outcome", outcome),
 		),
 	)
@@ -108,6 +120,7 @@ var _ kgo.HookProduceBatchWritten = FranzProducerMetrics{}
 func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, topic string, partition int32, m kgo.ProduceBatchMetrics) {
 	attrs := []attribute.KeyValue{
 		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		attribute.String("server.address", meta.Host),
 		attribute.String("topic", topic),
 		attribute.Int64("partition", int64(partition)),
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),

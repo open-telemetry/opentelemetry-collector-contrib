@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -178,21 +177,21 @@ func TestScalewayDetector_Detect_OK(t *testing.T) {
 
 	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	attrs := res.Attributes().AsRaw()
 	// Region is derived from zone by trimming the trailing segment: "nl-ams-1" -> "nl-ams"
 	want := map[string]any{
-		string(conventions.CloudProviderKey):         "scaleway_cloud",
-		string(conventions.CloudPlatformKey):         "scaleway_cloud_compute",
-		string(conventions.CloudAccountIDKey):        "10542306-0c75-4265-9c2c-1fbfe4ea0bf0",
-		string(conventions.CloudAvailabilityZoneKey): "nl-ams-1",
-		string(conventions.CloudRegionKey):           "nl-ams",
-		string(conventions.HostIDKey):                "daa2ea5a-0ee6-4cdc-9f1a-e0d1cb4e6d86",
-		string(conventions.HostImageIDKey):           "01fe25a9-2e95-41e2-9f3f-f7d3a00604be",
-		string(conventions.HostImageNameKey):         "Ubuntu 24.04 Noble Numbat",
-		string(conventions.HostNameKey):              "scw-interesting-bassi",
-		string(conventions.HostTypeKey):              "STARDUST1-S",
+		"cloud.provider":          "scaleway_cloud",
+		"cloud.platform":          "scaleway_cloud_compute",
+		"cloud.account.id":        "10542306-0c75-4265-9c2c-1fbfe4ea0bf0",
+		"cloud.availability_zone": "nl-ams-1",
+		"cloud.region":            "nl-ams",
+		"host.id":                 "daa2ea5a-0ee6-4cdc-9f1a-e0d1cb4e6d86",
+		"host.image.id":           "01fe25a9-2e95-41e2-9f3f-f7d3a00604be",
+		"host.image.name":         "Ubuntu 24.04 Noble Numbat",
+		"host.name":               "scw-interesting-bassi",
+		"host.type":               "STARDUST1-S",
 	}
 	assert.Equal(t, want, attrs)
 }

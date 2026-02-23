@@ -7,7 +7,7 @@
 // representations.
 //
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // This receiver is only compatible with Windows.
 package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
+	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -388,6 +388,9 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 	var err error
 	var handlerFn func(context.Context, *pubsubpb.ReceivedMessage) error
 	compression := uncompressed
+	if receiver.config.Compression == "gzip" {
+		compression = gZip
+	}
 	if receiver.tracesConsumer != nil {
 		handlerFn = func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
 			payload := message.Message.Data

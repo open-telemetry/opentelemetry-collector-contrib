@@ -559,6 +559,9 @@ func (s *sender) sendOTLPMetrics(ctx context.Context, md pmetric.Metrics) error 
 	if s.config.DecomposeOtlpHistograms {
 		md = decomposeHistograms(md)
 	}
+	if s.config.DecomposeOtlpSummaries {
+		md = decomposeSummaries(md)
+	}
 
 	body, err := metricsMarshaler.MarshalMetrics(md)
 	if err != nil {

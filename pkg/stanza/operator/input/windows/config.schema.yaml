@@ -1,0 +1,47 @@
+$defs:
+  config:
+    description: Config is the configuration of a windows event log operator.
+    type: object
+    properties:
+      channel:
+        type: string
+      exclude_providers:
+        type: array
+        items:
+          type: string
+      ignore_channel_errors:
+        type: boolean
+      include_log_record_original:
+        type: boolean
+      max_events_per_poll:
+        type: integer
+      max_reads:
+        type: integer
+      poll_interval:
+        type: string
+        format: duration
+      query:
+        x-pointer: true
+        type: string
+      raw:
+        type: boolean
+      remote:
+        $ref: remote_config
+      start_at:
+        type: string
+      suppress_rendering_info:
+        type: boolean
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
+  remote_config:
+    description: RemoteConfig is the configuration for a remote server.
+    type: object
+    properties:
+      domain:
+        type: string
+      password:
+        type: string
+      server:
+        type: string
+      username:
+        type: string

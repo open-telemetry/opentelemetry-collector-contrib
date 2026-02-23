@@ -52,12 +52,12 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 		httpSettings:  cfg.ClientConfig,
 		model:         model,
 		config:        cfg,
-		indexResolver: newIndexResolver(),
+		indexResolver: newIndexResolver("ss4o_logs", cfg.Dataset, cfg.Namespace),
 	}
 }
 
 func (l *logExporter) Start(ctx context.Context, host component.Host) error {
-	httpClient, err := l.httpSettings.ToClient(ctx, host, l.telemetry)
+	httpClient, err := l.httpSettings.ToClient(ctx, host.GetExtensions(), l.telemetry)
 	if err != nil {
 		return err
 	}
@@ -72,18 +72,15 @@ func (l *logExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	indexer := newLogBulkIndexer("", l.bulkAction, l.model)
+	indexer := newLogBulkIndexer(l.bulkAction, l.model)
 	startErr := indexer.start(l.client)
 	if startErr != nil {
 		return startErr
 	}
 
-	// Resolve index name using the common index resolver
+	// Use timestamp for index resolution
 	logTimestamp := time.Now() // Replace with actual log timestamp extraction
-	indexName := l.indexResolver.ResolveLogIndex(l.config, ld, logTimestamp)
-
-	indexer.index = indexName
-	indexer.submit(ctx, ld)
+	indexer.submit(ctx, ld, l.indexResolver, l.config, logTimestamp)
 	indexer.close(ctx)
 	return indexer.joinedError()
 }

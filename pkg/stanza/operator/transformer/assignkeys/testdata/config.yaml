@@ -10,3 +10,8 @@ assign_keys_attributes:
   type: assign_keys
   field: attributes.input
   keys: ["foo", "bar"]
+on_error_drop:
+  type: assign_keys
+  field: body
+  keys: ["foo", "bar"]
+  on_error: drop

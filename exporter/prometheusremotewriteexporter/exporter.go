@@ -18,8 +18,8 @@ import (
 
 	"github.com/cenkalti/backoff/v5"
 	"github.com/golang/snappy"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/otlptranslator"
-	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -138,7 +138,7 @@ type prwExporter struct {
 	wal                 *prweWAL
 	exporterSettings    prometheusremotewrite.Settings
 	telemetry           prwTelemetry
-	RemoteWriteProtoMsg config.RemoteWriteProtoMsg
+	RemoteWriteProtoMsg remoteapi.WriteMessageType
 
 	// When concurrency is enabled, concurrent goroutines would potentially
 	// fight over the same batchState object. To avoid this, we use a pool
@@ -192,6 +192,9 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	if cfg.MaxBatchRequestParallelism != nil {
 		concurrency = *cfg.MaxBatchRequestParallelism
 	}
+	if concurrency < 1 {
+		concurrency = 1
+	}
 
 	// Set the desired number of consumers as a metric for the exporter.
 	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
@@ -230,7 +233,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 
 // Start creates the prometheus client
 func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
-	prwe.client, err = prwe.clientSettings.ToClient(ctx, host, prwe.settings)
+	prwe.client, err = prwe.clientSettings.ToClient(ctx, host.GetExtensions(), prwe.settings)
 	if err != nil {
 		return err
 	}
@@ -295,9 +298,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 		// If feature flag was enabled check if we want to send RW1 or RW2.
 		switch prwe.RemoteWriteProtoMsg {
-		case config.RemoteWriteProtoMsgV1:
+		case remoteapi.WriteV1MessageType:
 			return prwe.pushMetricsV1(ctx, md)
-		case config.RemoteWriteProtoMsgV2:
+		case remoteapi.WriteV2MessageType:
 			return prwe.pushMetricsV2(ctx, md)
 		default:
 			return fmt.Errorf("unsupported remote-write protobuf message: %v", prwe.RemoteWriteProtoMsg)
@@ -441,10 +444,10 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 
 		switch {
 		// If feature flag not enabled support only RW1
-		case !enableSendingRW2FeatureGate.IsEnabled(), prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV1:
+		case !enableSendingRW2FeatureGate.IsEnabled(), prwe.RemoteWriteProtoMsg == remoteapi.WriteV1MessageType:
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-		case prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2:
+		case prwe.RemoteWriteProtoMsg == remoteapi.WriteV2MessageType:
 			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		default:
@@ -466,7 +469,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 		// If the header is missing, it suggests that the endpoint does not support RW2 or the
 		// implementation is not compliant with the specification. Reference:
 		// https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#required-written-response-headers
-		if enableSendingRW2FeatureGate.IsEnabled() && prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
+		if enableSendingRW2FeatureGate.IsEnabled() && prwe.RemoteWriteProtoMsg == remoteapi.WriteV2MessageType {
 			prwe.handleWrittenHeaders(ctx, resp)
 		}
 
