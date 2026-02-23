@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -155,20 +156,6 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
-	var dbNames []string
-	var err error
-
-	// Skip database iteration if no database-level metrics are enabled
-	if s.requiresDatabaseIteration() {
-		dbNames, err = s.client.ListDatabaseNames(ctx, bson.D{})
-		if err != nil {
-			errs.AddPartial(1, fmt.Errorf("failed to fetch database names: %w", err))
-			return
-		}
-	} else {
-		s.logger.Debug("Skipping database iteration as all database-level metrics are disabled")
-	}
-
 	serverStatus, sErr := s.client.ServerStatus(ctx, "admin")
 	if sErr != nil {
 		errs.Add(fmt.Errorf("failed to fetch server status: %w", sErr))
@@ -181,14 +168,30 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-
-	if len(dbNames) > 0 {
-		s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
-	}
 	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
 
-	// Collect metrics for each database
+	// Fetch database names and record the count before emitting the admin resource,
+	// so the database count metric lands on the admin resource alongside other server metrics.
+	// Database iteration is skipped entirely if no database-level metrics are enabled.
+	var dbNames []string
+	if s.requiresDatabaseIteration() {
+		var err error
+		dbNames, err = s.client.ListDatabaseNames(ctx, bson.D{})
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf("failed to fetch database names: %w", err))
+		} else {
+			s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
+		}
+	} else {
+		s.logger.Debug("Skipping database iteration as all database-level metrics are disabled")
+	}
+
+	rb := s.mb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+
 	for _, dbName := range dbNames {
 		s.collectDatabase(ctx, now, dbName, errs)
 		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
@@ -201,45 +204,21 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 			s.collectIndexStats(ctx, now, dbName, collectionName, errs)
 		}
 	}
-
-	// Emit single resource for the server
-	rb := s.mb.NewResourceBuilder()
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
-	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // requiresDatabaseIteration checks if any metrics that require database iteration are enabled.
 // Returns true if we need to call ListDatabaseNames, DBStats, ListCollectionNames, or IndexStats.
+// The authoritative list of database-level metrics is databaseMetricNames in config.go.
 func (s *mongodbScraper) requiresDatabaseIteration() bool {
-	// Database-level metrics (require DBStats command)
-	if s.config.Metrics.MongodbCollectionCount.Enabled ||
-		s.config.Metrics.MongodbDataSize.Enabled ||
-		s.config.Metrics.MongodbExtentCount.Enabled ||
-		s.config.Metrics.MongodbIndexSize.Enabled ||
-		s.config.Metrics.MongodbIndexCount.Enabled ||
-		s.config.Metrics.MongodbObjectCount.Enabled ||
-		s.config.Metrics.MongodbStorageSize.Enabled {
-		return true
+	metricsVal := reflect.ValueOf(s.config.Metrics)
+	for _, name := range databaseMetricNames {
+		field := metricsVal.FieldByName(name)
+		if field.IsValid() {
+			if enabled := field.FieldByName("Enabled"); enabled.IsValid() && enabled.Bool() {
+				return true
+			}
+		}
 	}
-
-	// Collection-level metrics (require ListCollectionNames + IndexStats commands)
-	if s.config.Metrics.MongodbIndexAccessCount.Enabled {
-		return true
-	}
-
-	// Per-database server metrics (require per-database ServerStatus command)
-	if s.config.Metrics.MongodbConnectionCount.Enabled ||
-		s.config.Metrics.MongodbDocumentOperationCount.Enabled ||
-		s.config.Metrics.MongodbMemoryUsage.Enabled ||
-		s.config.Metrics.MongodbLockAcquireCount.Enabled ||
-		s.config.Metrics.MongodbLockAcquireWaitCount.Enabled ||
-		s.config.Metrics.MongodbLockAcquireTime.Enabled ||
-		s.config.Metrics.MongodbLockDeadlockCount.Enabled {
-		return true
-	}
-
 	return false
 }
 

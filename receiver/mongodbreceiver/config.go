@@ -21,6 +21,65 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
+// databaseMetricNames lists the MetricsConfig field names that require database iteration
+// (ListDatabaseNames, DBStats, ListCollectionNames, or IndexStats commands).
+// This is the single source of truth used by requiresDatabaseIteration and tests.
+var databaseMetricNames = []string{
+	"MongodbCollectionCount",
+	"MongodbDataSize",
+	"MongodbExtentCount",
+	"MongodbIndexSize",
+	"MongodbIndexCount",
+	"MongodbObjectCount",
+	"MongodbStorageSize",
+	"MongodbIndexAccessCount",
+	"MongodbConnectionCount",
+	"MongodbDocumentOperationCount",
+	"MongodbMemoryUsage",
+	"MongodbLockAcquireCount",
+	"MongodbLockAcquireWaitCount",
+	"MongodbLockAcquireTime",
+	"MongodbLockDeadlockCount",
+}
+
+// serverMetricNames lists the MetricsConfig field names that only require admin-level
+// server commands and do not need database iteration.
+// This is the single source of truth used by requiresDatabaseIteration and tests.
+var serverMetricNames = []string{
+	"MongodbActiveReads",
+	"MongodbActiveWrites",
+	"MongodbCacheOperations",
+	"MongodbCommandsRate",
+	"MongodbCursorCount",
+	"MongodbCursorTimeoutCount",
+	"MongodbDatabaseCount",
+	"MongodbDeletesRate",
+	"MongodbFlushesRate",
+	"MongodbGetmoresRate",
+	"MongodbGlobalLockTime",
+	"MongodbHealth",
+	"MongodbInsertsRate",
+	"MongodbNetworkIoReceive",
+	"MongodbNetworkIoTransmit",
+	"MongodbNetworkRequestCount",
+	"MongodbOperationCount",
+	"MongodbOperationLatencyTime",
+	"MongodbOperationReplCount",
+	"MongodbOperationTime",
+	"MongodbPageFaults",
+	"MongodbQueriesRate",
+	"MongodbReplCommandsPerSec",
+	"MongodbReplDeletesPerSec",
+	"MongodbReplGetmoresPerSec",
+	"MongodbReplInsertsPerSec",
+	"MongodbReplQueriesPerSec",
+	"MongodbReplUpdatesPerSec",
+	"MongodbSessionCount",
+	"MongodbUpdatesRate",
+	"MongodbUptime",
+	"MongodbWtcacheBytesRead",
+}
+
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
