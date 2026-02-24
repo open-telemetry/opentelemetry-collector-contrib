@@ -1,4 +1,4 @@
-display_name: Google Pubsub Receiver
+display_name: Google Pub/Sub Receiver
 type: googlecloudpubsub
 
 description: |
