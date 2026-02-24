@@ -117,11 +117,15 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
-		// Try IMDS first (no IAM permissions needed, requires InstanceMetadataTags=enabled)
-		tags, err := fetchIMDSTags(ctx, d.metadataProvider, d.tagKeyRegexes)
-		if err != nil {
-			// IMDS tags not available, fall back to DescribeTags API
-			d.logger.Debug("failed to fetch tags from IMDS, falling back to EC2 API", zap.Error(err))
+		var tags map[string]string
+		if metadata.ProcessorResourcedetectionEc2GetTagsFromIMDSFeatureGate.IsEnabled() {
+			// Gate enabled: use IMDS only (no IAM permissions needed, requires InstanceMetadataTags=enabled)
+			tags, err = fetchIMDSTags(ctx, d.metadataProvider, d.tagKeyRegexes)
+			if err != nil {
+				d.logger.Warn("failed to fetch tags from IMDS", zap.Error(err))
+			}
+		} else {
+			// Gate disabled: use EC2 DescribeTags API only (old behavior)
 			httpClient := getClientConfig(ctx, d.logger)
 			ec2Client, err := d.ec2ClientBuilder.buildClient(ctx, meta.Region, httpClient)
 			if err != nil {

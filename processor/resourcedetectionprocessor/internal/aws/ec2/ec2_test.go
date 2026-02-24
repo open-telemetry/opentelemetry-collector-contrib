@@ -16,6 +16,7 @@ import (
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
@@ -182,6 +183,7 @@ func TestDetector_Detect(t *testing.T) {
 		wantErr               bool
 		tagsProvider          ec2ifaceBuilder
 		failOnMissingMetadata bool
+		gateEnabled           bool
 	}{
 		{
 			name: "success",
@@ -214,7 +216,7 @@ func TestDetector_Detect(t *testing.T) {
 			}(),
 		},
 		{
-			name: "success with tags via IMDS",
+			name: "success with tags via IMDS (FG enabled)",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
@@ -246,44 +248,10 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("ec2.tag.tag2", "val2")
 				return res
 			}(),
+			gateEnabled: true,
 		},
 		{
-			name: "success with tags via API fallback when IMDS fails",
-			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc: imds.InstanceIdentityDocument{
-					Region:           "us-west-2",
-					AccountID:        "account1234",
-					AvailabilityZone: "us-west-2a",
-					InstanceID:       "i-abcd1234",
-					ImageID:          "abcdef",
-					InstanceType:     "c4.xlarge",
-				},
-				retHostname: "example-hostname",
-				retErrTags:  errors.New("IMDS tags not enabled"),
-				isAvailable: true,
-			}},
-			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
-			args:          args{ctx: t.Context()},
-			want: func() pcommon.Resource {
-				res := pcommon.NewResource()
-				attr := res.Attributes()
-				attr.PutStr("cloud.account.id", "account1234")
-				attr.PutStr("cloud.provider", "aws")
-				attr.PutStr("cloud.platform", "aws_ec2")
-				attr.PutStr("cloud.region", "us-west-2")
-				attr.PutStr("cloud.availability_zone", "us-west-2a")
-				attr.PutStr("host.id", "i-abcd1234")
-				attr.PutStr("host.image.id", "abcdef")
-				attr.PutStr("host.type", "c4.xlarge")
-				attr.PutStr("host.name", "example-hostname")
-				attr.PutStr("ec2.tag.tag1", "val1")
-				attr.PutStr("ec2.tag.tag2", "val2")
-				return res
-			}(),
-			tagsProvider: &mockClientBuilder{},
-		},
-		{
-			name: "both IMDS and API fail returns resource without tags",
+			name: "IMDS fails returns resource without tags (FG enabled)",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
@@ -313,7 +281,75 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("host.name", "example-hostname")
 				return res
 			}(),
+			gateEnabled: true,
+		},
+		{
+			name: "success with tags via EC2 API only (FG disabled)",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname: "example-hostname",
+				isAvailable: true,
+			}},
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
+			args:          args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("host.name", "example-hostname")
+				attr.PutStr("ec2.tag.tag1", "val1")
+				attr.PutStr("ec2.tag.tag2", "val2")
+				return res
+			}(),
+			tagsProvider: &mockClientBuilder{},
+			gateEnabled:  false,
+		},
+		{
+			name: "EC2 API fails returns resource without tags (FG disabled)",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname: "example-hostname",
+				isAvailable: true,
+			}},
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$")},
+			args:          args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("host.name", "example-hostname")
+				return res
+			}(),
 			tagsProvider: &mockClientBuilderError{},
+			gateEnabled:  false,
 		},
 		{
 			name: "endpoint not available",
@@ -364,6 +400,14 @@ func TestDetector_Detect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if len(tt.tagKeyRegexes) != 0 {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					metadata.ProcessorResourcedetectionEc2GetTagsFromIMDSFeatureGate.ID(), tt.gateEnabled))
+				t.Cleanup(func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(
+						metadata.ProcessorResourcedetectionEc2GetTagsFromIMDSFeatureGate.ID(), true))
+				})
+			}
 			d := &Detector{
 				metadataProvider:      tt.fields.metadataProvider,
 				logger:                zap.NewNop(),

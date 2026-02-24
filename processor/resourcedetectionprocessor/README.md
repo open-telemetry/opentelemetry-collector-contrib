@@ -265,9 +265,14 @@ from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/U
 The list of the populated resource attributes can be found at [EC2 Detector Resource Attributes](./internal/aws/ec2/documentation.md).
 
 It also can optionally gather tags for the EC2 instance that the collector is running on.
-Tags are first fetched via the [Instance Metadata Service (IMDS)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html),
+By default, tags are fetched via the [Instance Metadata Service (IMDS)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html),
 which requires [instance metadata tags to be enabled](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html#allow-access-to-tags-in-IMDS) on the instance and does not require any IAM permissions.
-If IMDS tag access is not available, the detector falls back to the EC2 `DescribeTags` API, which requires the IAM role assigned to the EC2 instance to include the `ec2:DescribeTags` permission.
+Alternatively, tags can be fetched via the EC2 `DescribeTags` API, which requires the IAM role assigned to the EC2 instance to include the `ec2:DescribeTags` permission.
+
+> **Note:** Tag retrieval behavior is controlled by the `processor.resourcedetection.ec2.getTagsFromIMDS` feature gate (enabled by default at Beta stage).
+> When **enabled**, tags are fetched exclusively from IMDS — no IAM permissions needed, but requires `InstanceMetadataTags=enabled` on the instance.
+> When **disabled**, tags are fetched exclusively via the EC2 `DescribeTags` API, which is the legacy behavior.
+> To revert to the legacy behavior, start the collector with `--feature-gates=-processor.resourcedetection.ec2.getTagsFromIMDS`.
 
 EC2 custom configuration example:
 ```yaml
