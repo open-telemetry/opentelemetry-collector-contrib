@@ -44,7 +44,7 @@ var (
 )
 
 const (
-	defaultListWatchTimeout = 1 * time.Second
+	defaultListWatchTimeout = 1 * time.Minute
 )
 
 type k8sResolver struct {

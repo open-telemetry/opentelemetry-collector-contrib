@@ -433,6 +433,12 @@ func newFakeClientWithAllResources() *fake.Clientset {
 				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
 			},
 		},
+		{
+			GroupVersion: "discovery.k8s.io/v1",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.EndpointSlice),
+			},
+		},
 	}
 	return client
 }
