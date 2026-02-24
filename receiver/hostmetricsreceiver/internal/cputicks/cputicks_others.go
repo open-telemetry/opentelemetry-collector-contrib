@@ -3,4 +3,4 @@
 
 //go:build !linux
 
-package cputicks
+package cputicks // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/cputicks"
