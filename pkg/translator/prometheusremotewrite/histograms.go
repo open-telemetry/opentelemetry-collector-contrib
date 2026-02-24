@@ -77,12 +77,6 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		Schema:    scale,
 
 		ZeroCount: &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
-		ZeroThreshold: func() float64 {
-			if p.ZeroThreshold() != 0 {
-				return p.ZeroThreshold()
-			}
-			return defaultZeroThreshold
-		}(),
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
@@ -90,6 +84,12 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		NegativeDeltas: nDeltas,
 
 		Timestamp: convertTimeStamp(p.Timestamp()),
+	}
+
+	if p.ZeroThreshold() != 0 {
+		h.ZeroThreshold = p.ZeroThreshold()
+	} else {
+		h.ZeroThreshold = defaultZeroThreshold
 	}
 
 	if p.Flags().NoRecordedValue() {
