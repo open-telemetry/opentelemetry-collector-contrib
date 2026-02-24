@@ -24,6 +24,14 @@ receiver should be used to monitor a cluster.
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) and [documentation.md](./documentation.md).
 
+### Service Metrics (Disabled by default)
+
+The receiver collects service endpoint metrics (`k8s.service.endpoint.count`) from the `discovery.k8s.io` EndpointSlice API and LoadBalancer ingress metrics (`k8s.service.load_balancer.ingress.count`).
+
+**Note:** Enabling endpoint metrics requires additional RBAC permissions for `endpointslices` in the `discovery.k8s.io` API group. See the [RBAC](#rbac) section for details.
+
+Refer to [documentation.md](./documentation.md) for detailed information on these metrics and their semantics.
+
 ## Configuration
 
 The following settings are required:
@@ -156,7 +164,7 @@ for the format of emitted log records.
 
 ### Kubernetes Versions
 
-This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L98)
+This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L99)
 workflow. These tested versions represent the officially supported Kubernetes versions for this component.
 
 ## Example
@@ -239,6 +247,14 @@ rules:
   - replicationcontrollers/status
   - resourcequotas
   - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
   verbs:
   - get
   - list
@@ -334,6 +350,14 @@ rules:
       - replicationcontrollers/status
       - resourcequotas
       - services
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
     verbs:
       - get
       - list

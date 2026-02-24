@@ -12,17 +12,19 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - ArthurSens
+    - axw
     - braydonk
-    - ChrsMark
     - crobert-1
     - dashpole
     - dehaansa
-    - mwear
     - fatsheep9146
+    - pjanotti
+    - VihasMakwana
     # Maintainers
     - andrzej-stencel
     - atoulme
     - bogdandrutu
+    - ChrsMark
     - codeboten
     - dmitryax
     - edmocosta

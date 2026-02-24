@@ -24,7 +24,7 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HostIdentifiers:      []string{"host.id"},
+		HostIdentifiers:      []string{"host.id", "k8s.node.uid", "k8s.node.name"},
 		MetricsFlushInterval: 60 * time.Second,
 	}
 }
