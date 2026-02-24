@@ -5,6 +5,7 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"strconv"
+	"strings"
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -313,7 +314,7 @@ type azurePolicyLog struct {
 func (r *azurePolicyLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {
 	// Parse isComplianceCheck as boolean
 	if r.Properties.IsComplianceCheck != "" {
-		isComplianceCheck := r.Properties.IsComplianceCheck == "True" || r.Properties.IsComplianceCheck == "true"
+		isComplianceCheck := strings.EqualFold(r.Properties.IsComplianceCheck, "true")
 		attrs.PutBool(attributeAzurePolicyIsComplianceCheck, isComplianceCheck)
 	}
 
