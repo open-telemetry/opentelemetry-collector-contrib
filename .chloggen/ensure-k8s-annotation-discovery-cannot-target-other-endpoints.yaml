@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/receiver_creator, receiver/tlscheck
+component: receiver/tlscheck
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add a Discoverable interface to the receiver creator that discovered receivers can implement to provide custom endpoint validation during k8s annotation-based discovery. This ensures that annotation-provided configurations can only target the discovered endpoint, preventing receivers from being configured to scrape arbitrary external endpoints.
