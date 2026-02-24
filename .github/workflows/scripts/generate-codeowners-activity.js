@@ -390,9 +390,7 @@ async function main({ github, context }) {
   const { pathToLabel, allLabels } = parseComponentLabels(labelsPath);
   const labelToOwners = buildLabelToCodeOwners(pathToOwners, pathToLabel);
   // Only consider PRs/issues that have at least one of the focus component labels
-  const componentLabels = FOCUS_COMPONENT_LABELS.size > 0
-    ? new Set([...allLabels].filter(isAllowedLabel))
-    : allLabels;
+  const componentLabels = new Set([...allLabels].filter(isAllowedLabel));
 
   const prs30 = await searchIssuesAndPrs(octokit, 'is:pr', lookbackData.thirtyDaysAgo, lookbackData.midnightYesterday);
   progress(`Fetched ${prs30.length} PRs (30 days). Processing...`);
