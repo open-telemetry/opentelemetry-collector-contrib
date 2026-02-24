@@ -265,6 +265,145 @@ Attribute `elasticsearch.index` will be removed from the final document if exist
 | Metrics   | :white_check_mark: |
 | Profiles  | :white_check_mark: |
 
+##### OTel mapping mode: log document structure
+
+```json
+{
+  "@timestamp": "<log_timestamp or observed_timestamp>",
+  "observed_timestamp": "<observed_timestamp>",
+  "data_stream": {
+    "type": "logs",
+    "dataset": "<dataset>",
+    "namespace": "<namespace>"
+  },
+  "severity_text": "<severity_text>",
+  "severity_number": 9,
+  "trace_id": "<hex_trace_id>",
+  "span_id": "<hex_span_id>",
+  "dropped_attributes_count": 0,
+  "event_name": "<event_name>",
+  "attributes": {
+    "<attribute_key>": "<attribute_value>"
+  },
+  "resource": {
+    "schema_url": "<schema_url>",
+    "dropped_attributes_count": 0,
+    "attributes": {
+      "<attribute_key>": "<attribute_value>"
+    }
+  },
+  "scope": {
+    "schema_url": "<schema_url>",
+    "name": "<scope_name>",
+    "version": "<scope_version>",
+    "dropped_attributes_count": 0,
+    "attributes": {
+      "<attribute_key>": "<attribute_value>"
+    }
+  },
+  "body": {
+    "text": "<body_string>"
+  }
+}
+```
+
+The `body` field uses `text` key for string bodies. For structured (map) bodies, it uses the `structured` key instead.
+
+##### OTel mapping mode: span document structure
+
+```json
+{
+  "@timestamp": "<start_timestamp>",
+  "data_stream": {
+    "type": "traces",
+    "dataset": "<dataset>.otel",
+    "namespace": "<namespace>"
+  },
+  "trace_id": "<hex_trace_id>",
+  "span_id": "<hex_span_id>",
+  "trace_state": "<trace_state>",
+  "parent_span_id": "<hex_parent_span_id>",
+  "name": "<span_name>",
+  "kind": "<span_kind>",
+  "duration": 1000000,
+  "dropped_attributes_count": 0,
+  "dropped_events_count": 0,
+  "dropped_links_count": 0,
+  "attributes": {
+    "<attribute_key>": "<attribute_value>"
+  },
+  "links": [
+    {
+      "trace_id": "<hex_trace_id>",
+      "span_id": "<hex_span_id>",
+      "trace_state": "<trace_state>",
+      "dropped_attributes_count": 0,
+      "attributes": {
+        "<attribute_key>": "<attribute_value>"
+      }
+    }
+  ],
+  "status": {
+    "message": "<status_message>",
+    "code": "<Ok|Error>"
+  },
+  "resource": { },
+  "scope": { }
+}
+```
+
+The `duration` field is in nanoseconds (end timestamp minus start timestamp).
+
+##### OTel mapping mode: span event document structure
+
+Span events are indexed as **separate documents** with `data_stream.type` set to `logs`.
+
+```json
+{
+  "@timestamp": "<event_timestamp>",
+  "data_stream": {
+    "type": "logs",
+    "dataset": "<dataset>.otel",
+    "namespace": "<namespace>"
+  },
+  "trace_id": "<hex_trace_id>",
+  "span_id": "<hex_parent_span_id>",
+  "dropped_attributes_count": 0,
+  "event_name": "<event_name>",
+  "attributes": {
+    "<attribute_key>": "<attribute_value>",
+    "event.name": "<event_name>"
+  },
+  "resource": { },
+  "scope": { }
+}
+```
+
+##### OTel mapping mode: metric document structure
+
+Multiple data points that share the same resource, scope, and attributes are grouped into a single document. The `metrics` object contains one key per metric name.
+
+```json
+{
+  "@timestamp": "<timestamp_epoch_ms>",
+  "start_timestamp": "<start_timestamp_epoch_ms>",
+  "unit": "<unit>",
+  "data_stream": {
+    "type": "metrics",
+    "dataset": "<dataset>.otel",
+    "namespace": "<namespace>"
+  },
+  "attributes": {
+    "<attribute_key>": "<attribute_value>"
+  },
+  "resource": { },
+  "scope": { },
+  "metrics": {
+    "<metric_name>": "<metric_value>"
+  }
+}
+```
+
 #### ECS mapping mode
 
 > [!WARNING]
@@ -280,6 +419,66 @@ This mode may be used for compatibility with existing dashboards that work with 
 | Traces    | :white_check_mark: |
 | Metrics   | :white_check_mark: |
 | Profiles  | :no_entry_sign:    |
+
+##### ECS mapping mode: log document structure
+
+Resource, scope, and log record attributes are mapped to ECS field names as described in the [ECS Mapping](#ecs-mapping) section. Any attribute without a mapping is placed at the top level using its original name.
+
+```json
+{
+  "@timestamp": "<log_timestamp or observed_timestamp>",
+  "data_stream": {
+    "type": "logs",
+    "dataset": "<dataset>",
+    "namespace": "<namespace>"
+  },
+  "trace.id": "<hex_trace_id>",
+  "span.id": "<hex_span_id>",
+  "event.severity": 9,
+  "log.level": "<severity_text>",
+  "message": "<body_string>",
+  "<ecs_field>": "<value>"
+}
+```
+
+##### ECS mapping mode: span document structure
+
+```json
+{
+  "@timestamp": "<start_timestamp>",
+  "data_stream": {
+    "type": "traces",
+    "dataset": "<dataset>",
+    "namespace": "<namespace>"
+  },
+  "trace.id": "<hex_trace_id>",
+  "span.id": "<hex_span_id>",
+  "span.name": "<span_name>",
+  "parent.id": "<hex_parent_span_id>",
+  "event.outcome": "success",
+  "span.links": [ ],
+  "span.kind": "<INTERNAL|SERVER|CLIENT|PRODUCER|CONSUMER>",
+  "<ecs_field>": "<value>"
+}
+```
+
+##### ECS mapping mode: metric document structure
+
+Multiple data points that share the same resource and attributes are grouped into a single document. Each metric value is placed directly at the top level using the metric name as the field key.
+
+```json
+{
+  "@timestamp": "<timestamp>",
+  "data_stream": {
+    "type": "metrics",
+    "dataset": "<dataset>",
+    "namespace": "<namespace>"
+  },
+  "<attribute_key>": "<attribute_value>",
+  "<ecs_resource_field>": "<value>",
+  "<metric_name>": "<metric_value>"
+}
+```
 
 #### Bodymap mapping mode
 
@@ -298,6 +497,16 @@ the Elasticsearch document structure.
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
 
+##### Bodymap mapping mode: log document structure
+
+The log record body (which must be of type `Map`) is serialized directly as the Elasticsearch document. No other fields are added. The body map contents become the top-level fields of the indexed document.
+
+```json
+{
+  "<body_map_key>": "<body_map_value>"
+}
+```
+
 #### Default (none) mapping mode
 
 In the `none` mapping mode the Elasticsearch Exporter produces documents with the original
@@ -309,6 +518,59 @@ field names of from the OTLP data structures.
 | Traces    | :white_check_mark: |
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
+
+##### Default (none) mapping mode: log document structure
+
+```json
+{
+  "@timestamp": "<log_timestamp or observed_timestamp>",
+  "TraceId": "<hex_trace_id>",
+  "SpanId": "<hex_span_id>",
+  "TraceFlags": 0,
+  "SeverityText": "<severity_text>",
+  "SeverityNumber": 9,
+  "Body": "<body>",
+  "Resource": {
+    "<attribute_key>": "<attribute_value>"
+  },
+  "Scope": {
+    "name": "<scope_name>",
+    "version": "<scope_version>",
+    "<attribute_key>": "<attribute_value>"
+  },
+  "Attributes": {
+    "<attribute_key>": "<attribute_value>"
+  }
+}
+```
+
+##### Default (none) mapping mode: span document structure
+
+```json
+{
+  "@timestamp": "<start_timestamp>",
+  "EndTimestamp": "<end_timestamp>",
+  "TraceId": "<hex_trace_id>",
+  "SpanId": "<hex_span_id>",
+  "ParentSpanId": "<hex_parent_span_id>",
+  "Name": "<span_name>",
+  "Kind": "<span_kind>",
+  "TraceStatus": 0,
+  "TraceStatusDescription": "<status_message>",
+  "Link": "[{\"traceID\":\"...\",\"spanID\":\"...\",\"attribute\":{}}]",
+  "Resource": {
+    "<attribute_key>": "<attribute_value>"
+  },
+  "Duration": 1000,
+  "Scope": { },
+  "Attributes": {
+    "<attribute_key>": "<attribute_value>"
+  },
+  "Events": [ ]
+}
+```
+
+The `Duration` field is in microseconds. `Events` contains the span events embedded within the span document (not as separate documents).
 
 #### Raw mapping mode
 
@@ -325,6 +587,48 @@ The `raw` mapping mode is identical to `none`, except for two differences:
 | Traces    | :white_check_mark: |
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
+
+##### Raw mapping mode: log document structure
+
+Same as `none` mode, but log record attributes are placed directly at the root level (no `Attributes.` prefix):
+
+```json
+{
+  "@timestamp": "<log_timestamp or observed_timestamp>",
+  "TraceId": "<hex_trace_id>",
+  "SpanId": "<hex_span_id>",
+  "TraceFlags": 0,
+  "SeverityText": "<severity_text>",
+  "SeverityNumber": 9,
+  "Body": "<body>",
+  "Resource": { },
+  "Scope": { },
+  "<attribute_key>": "<attribute_value>"
+}
+```
+
+##### Raw mapping mode: span document structure
+
+Same as `none` mode, but span attributes are placed at the root level (no `Attributes.` prefix) and span events are embedded without the `Events.` prefix:
+
+```json
+{
+  "@timestamp": "<start_timestamp>",
+  "EndTimestamp": "<end_timestamp>",
+  "TraceId": "<hex_trace_id>",
+  "SpanId": "<hex_span_id>",
+  "ParentSpanId": "<hex_parent_span_id>",
+  "Name": "<span_name>",
+  "Kind": "<span_kind>",
+  "TraceStatus": 0,
+  "TraceStatusDescription": "<status_message>",
+  "Link": "[ ]",
+  "Resource": { },
+  "Duration": 1000,
+  "Scope": { },
+  "<attribute_key>": "<attribute_value>"
+}
+```
 
 ### Elasticsearch ingest pipeline
 
