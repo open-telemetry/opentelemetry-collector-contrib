@@ -8,26 +8,35 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/credentials"
-	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 )
 
 var (
 	_ extension.Extension      = (*clientAuthenticator)(nil)
 	_ extensionauth.HTTPClient = (*clientAuthenticator)(nil)
 	_ extensionauth.GRPCClient = (*clientAuthenticator)(nil)
+	_ ContextTokenSource       = (*clientAuthenticator)(nil)
 )
+
+// errFailedToGetSecurityToken indicates a problem communicating with OAuth2 server.
+var errFailedToGetSecurityToken = errors.New("failed to get security token from token endpoint")
 
 type TokenSourceConfiguration interface {
 	TokenSource(context.Context) oauth2.TokenSource
 	TokenEndpoint() string
+}
+
+// ContextTokenSource provides an interface for obtaining an *oauth2.Token,
+// with the given context.
+type ContextTokenSource interface {
+	Token(context.Context) (*oauth2.Token, error)
 }
 
 // clientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
@@ -36,21 +45,16 @@ type clientAuthenticator struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	credentials TokenSourceConfiguration
-	logger      *zap.Logger
-	client      *http.Client
+	credentials  TokenSourceConfiguration
+	logger       *zap.Logger
+	client       *http.Client
+	expiryBuffer time.Duration
+
+	// sem is a buffered channel of size 1 used as a context-aware mutex
+	// to protect token access/refresh.
+	sem   chan struct{}
+	token *oauth2.Token
 }
-
-type errorWrappingTokenSource struct {
-	ts       oauth2.TokenSource
-	tokenURL string
-}
-
-// errorWrappingTokenSource implements TokenSource
-var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
-
-// errFailedToGetSecurityToken indicates a problem communicating with OAuth2 server.
-var errFailedToGetSecurityToken = errors.New("failed to get security token from token endpoint")
 
 func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
@@ -76,8 +80,10 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 	}
 
 	return &clientAuthenticator{
-		credentials: credentials,
-		logger:      logger,
+		credentials:  credentials,
+		logger:       logger,
+		expiryBuffer: cfg.ExpiryBuffer,
+		sem:          make(chan struct{}, 1),
 		client: &http.Client{
 			Transport: transport,
 			Timeout:   cfg.Timeout,
@@ -85,37 +91,84 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 	}, nil
 }
 
-func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
-	tok, err := ewts.ts.Token()
+// RoundTripper wraps the provided base http.RoundTripper with an oauth2.Transport
+// that injects OAuth2 tokens into outgoing HTTP requests. The returned RoundTripper
+// will refresh tokens as needed using the context of the outgoing HTTP request.
+func (o *clientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return &roundTripper{o: o, base: base}, nil
+}
+
+type roundTripper struct {
+	o    *clientAuthenticator
+	base http.RoundTripper
+}
+
+func (rt *roundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	token, err := rt.o.Token(r.Context())
 	if err != nil {
-		return tok, multierr.Combine(
-			fmt.Errorf("%w (endpoint %q)", errFailedToGetSecurityToken, ewts.tokenURL),
-			err)
+		return nil, err
 	}
+	r2 := r.Clone(r.Context())
+	token.SetAuthHeader(r2)
+	return rt.base.RoundTrip(r2)
+}
+
+// PerRPCCredentials returns a gRPC PerRPCCredentials that injects OAuth2 tokens into
+// outgoing gRPC requests. The returned PerRPCCredentials will refresh tokens as needed
+// using the request context.
+func (o *clientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	return &perRPCCredentials{o: o}, nil
+}
+
+// Token returns an oauth2.Token, refreshing as needed with the provided context.
+// The returned Token must not be modified.
+func (o *clientAuthenticator) Token(ctx context.Context) (*oauth2.Token, error) {
+	select {
+	case o.sem <- struct{}{}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	defer func() { <-o.sem }()
+
+	if o.token.Valid() && (o.token.Expiry.IsZero() || time.Until(o.token.Expiry) > o.expiryBuffer) {
+		return o.token, nil
+	}
+
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, o.client)
+	ts := o.credentials.TokenSource(ctx)
+	tok, err := ts.Token()
+	if err != nil {
+		return nil, fmt.Errorf(
+			"%w (endpoint %q): %w",
+			errFailedToGetSecurityToken, o.credentials.TokenEndpoint(), err,
+		)
+	}
+	o.token = tok
 	return tok, nil
 }
 
-// RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
-// also auto refreshes OAuth tokens as needed.
-func (o *clientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
-	return &oauth2.Transport{
-		Source: errorWrappingTokenSource{
-			ts:       o.credentials.TokenSource(ctx),
-			tokenURL: o.credentials.TokenEndpoint(),
-		},
-		Base: base,
+// perRPCCredentials is based on google.golang.org/grpc/credentials/oauth.TokenSource,
+// but passes through the request context.
+type perRPCCredentials struct {
+	o *clientAuthenticator
+}
+
+// GetRequestMetadata gets the request metadata as a map from a TokenSource.
+func (c *perRPCCredentials) GetRequestMetadata(ctx context.Context, _ ...string) (map[string]string, error) {
+	token, err := c.o.Token(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ri, _ := credentials.RequestInfoFromContext(ctx)
+	if err = credentials.CheckSecurityLevel(ri.AuthInfo, credentials.PrivacyAndIntegrity); err != nil {
+		return nil, fmt.Errorf("unable to transfer PerRPCCredentials: %w", err)
+	}
+	return map[string]string{
+		"authorization": token.Type() + " " + token.AccessToken,
 	}, nil
 }
 
-// PerRPCCredentials returns gRPC PerRPCCredentials that supports "client-credential" OAuth flow. The underneath
-// oauth2.clientcredentials.Config instance will manage tokens performing auto refresh as necessary.
-func (o *clientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
-	return grpcOAuth.TokenSource{
-		TokenSource: errorWrappingTokenSource{
-			ts:       o.credentials.TokenSource(ctx),
-			tokenURL: o.credentials.TokenEndpoint(),
-		},
-	}, nil
+// RequireTransportSecurity indicates whether the credentials requires transport security.
+func (*perRPCCredentials) RequireTransportSecurity() bool {
+	return true
 }

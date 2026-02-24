@@ -30,7 +30,6 @@ internal/common
 # Start unmaintained components list
 
 exporter/alibabacloudlogserviceexporter
-receiver/carbonreceiver
 receiver/k8slogreceiver
 
 # End unmaintained components list
