@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -17,17 +18,17 @@ import (
 
 func TestNormalizeGenaiAttributes_AllProfiles(t *testing.T) {
 	span := ptrace.NewSpan()
-	span.Attributes().PutStr("llm.token_count.prompt", "100")
+	span.Attributes().PutInt("llm.token_count.prompt", 100)
 	span.Attributes().PutStr("llm.model_name", "gpt-4")
 	span.Attributes().PutStr("openinference.span.kind", "LLM")
-	span.Attributes().PutStr("agent_role", "researcher")
+	span.Attributes().PutStr("agent.name", "researcher")
 
 	lookupTable := buildGenaiLookupTable(allProfileNames)
 	normalizeGenaiAttributes(span, lookupTable, false)
 
 	val, ok := span.Attributes().Get("gen_ai.usage.input_tokens")
 	require.True(t, ok)
-	assert.Equal(t, "100", val.Str())
+	assert.Equal(t, int64(100), val.Int())
 
 	val, ok = span.Attributes().Get("gen_ai.request.model")
 	require.True(t, ok)
@@ -48,7 +49,7 @@ func TestNormalizeGenaiAttributes_AllProfiles(t *testing.T) {
 
 func TestNormalizeGenaiAttributes_RemoveOriginals(t *testing.T) {
 	span := ptrace.NewSpan()
-	span.Attributes().PutStr("llm.usage.prompt_tokens", "200")
+	span.Attributes().PutInt("llm.usage.prompt_tokens", 200)
 	span.Attributes().PutStr("llm.request.model", "claude-3")
 
 	lookupTable := buildGenaiLookupTable([]string{"openllmetry"})
@@ -97,8 +98,8 @@ func TestNormalizeGenaiAttributes_ValueMapping(t *testing.T) {
 
 func TestNormalizeGenaiAttributes_SpecificProfiles(t *testing.T) {
 	span := ptrace.NewSpan()
-	span.Attributes().PutStr("llm.token_count.prompt", "100")  // openinference
-	span.Attributes().PutStr("llm.usage.prompt_tokens", "200") // openllmetry
+	span.Attributes().PutInt("llm.token_count.prompt", 100)  // openinference
+	span.Attributes().PutInt("llm.usage.prompt_tokens", 200) // openllmetry
 
 	// Only enable openinference
 	lookupTable := buildGenaiLookupTable([]string{"openinference"})
@@ -107,11 +108,25 @@ func TestNormalizeGenaiAttributes_SpecificProfiles(t *testing.T) {
 	// openinference mapping should apply
 	val, ok := span.Attributes().Get("gen_ai.usage.input_tokens")
 	require.True(t, ok)
-	assert.Equal(t, "100", val.Str())
+	assert.Equal(t, int64(100), val.Int())
 
 	// openllmetry source should be untouched
 	_, ok = span.Attributes().Get("llm.usage.prompt_tokens")
 	assert.True(t, ok)
+}
+
+func TestNormalizeGenaiAttributes_WrapSlice(t *testing.T) {
+	span := ptrace.NewSpan()
+	span.Attributes().PutStr("llm.response.finish_reason", "stop")
+
+	lookupTable := buildGenaiLookupTable([]string{"openllmetry"})
+	normalizeGenaiAttributes(span, lookupTable, true)
+
+	val, ok := span.Attributes().Get("gen_ai.response.finish_reasons")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeSlice, val.Type())
+	assert.Equal(t, 1, val.Slice().Len())
+	assert.Equal(t, "stop", val.Slice().At(0).Str())
 }
 
 func TestNormalizeGenaiAttributes_NoGenaiSpan(t *testing.T) {
@@ -150,7 +165,7 @@ func TestCreateNormalizeGenaiAttributesFunction_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	span := ptrace.NewSpan()
-	span.Attributes().PutStr("llm.token_count.prompt", "50")
+	span.Attributes().PutInt("llm.token_count.prompt", 50)
 	span.Attributes().PutStr("openinference.span.kind", "AGENT")
 
 	tCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), span)
@@ -159,7 +174,7 @@ func TestCreateNormalizeGenaiAttributesFunction_Integration(t *testing.T) {
 
 	val, ok := span.Attributes().Get("gen_ai.usage.input_tokens")
 	require.True(t, ok)
-	assert.Equal(t, "50", val.Str())
+	assert.Equal(t, int64(50), val.Int())
 
 	val, ok = span.Attributes().Get("gen_ai.operation.name")
 	require.True(t, ok)

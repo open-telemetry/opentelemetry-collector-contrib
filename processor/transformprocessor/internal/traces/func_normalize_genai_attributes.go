@@ -60,27 +60,43 @@ func createNormalizeGenaiAttributesFunction(_ ottl.FunctionContext, oArgs ottl.A
 	}, nil
 }
 
-func normalizeGenaiAttributes(span ptrace.Span, lookupTable map[string]string, removeOriginals bool) {
+func normalizeGenaiAttributes(span ptrace.Span, lookupTable map[string]genaiTarget, removeOriginals bool) {
 	attrs := span.Attributes()
 
-	var renames []struct{ from, to string }
+	type rename struct {
+		from   string
+		target genaiTarget
+	}
+	renames := make([]rename, 0, len(lookupTable))
 	attrs.Range(func(k string, _ pcommon.Value) bool {
 		if target, ok := lookupTable[k]; ok {
-			renames = append(renames, struct{ from, to string }{k, target})
+			renames = append(renames, rename{k, target})
 		}
 		return true
 	})
 
+	if len(renames) == 0 {
+		return
+	}
+
 	for _, r := range renames {
 		if val, ok := attrs.Get(r.from); ok {
-			if val.Type() == pcommon.ValueTypeStr {
-				if transformed := transformGenaiValue(r.to, val.Str()); transformed != val.Str() {
-					attrs.PutStr(r.to, transformed)
+			// Skip if target attribute already exists (e.g. multiple source attrs map to same target)
+			if _, exists := attrs.Get(r.target.key); exists {
+				continue
+			}
+			if r.target.wrapSlice && val.Type() == pcommon.ValueTypeStr {
+				arr := attrs.PutEmptySlice(r.target.key)
+				arr.AppendEmpty().SetStr(val.Str())
+			} else if val.Type() == pcommon.ValueTypeStr {
+				strVal := val.Str()
+				if transformed := transformGenaiValue(r.target.key, strVal); transformed != strVal {
+					attrs.PutStr(r.target.key, transformed)
 				} else {
-					val.CopyTo(attrs.PutEmpty(r.to))
+					val.CopyTo(attrs.PutEmpty(r.target.key))
 				}
 			} else {
-				val.CopyTo(attrs.PutEmpty(r.to))
+				val.CopyTo(attrs.PutEmpty(r.target.key))
 			}
 			if removeOriginals {
 				attrs.Remove(r.from)
@@ -92,71 +108,68 @@ func normalizeGenaiAttributes(span ptrace.Span, lookupTable map[string]string, r
 // --- Mapping data ---
 
 type genaiMapping struct {
-	from string
-	to   string
+	from      string
+	to        string
+	wrapSlice bool // when true, wrap scalar string value into a single-element string slice
 }
 
-var allProfileNames = []string{"openinference", "openllmetry", "langchain", "crewai", "pydanticai"}
+var allProfileNames = []string{"openinference", "openllmetry"}
 
 var profileRegistry = map[string][]genaiMapping{
+	// OpenInference: https://github.com/Arize-ai/openinference/blob/main/spec/semantic_conventions.md
 	"openinference": {
-		{"llm.token_count.prompt", "gen_ai.usage.input_tokens"},
-		{"llm.token_count.completion", "gen_ai.usage.output_tokens"},
-		{"llm.model_name", "gen_ai.request.model"},
-		{"llm.provider", "gen_ai.provider.name"},
-		{"llm.system", "gen_ai.system"},
-		{"llm.input_messages", "gen_ai.input.messages"},
-		{"llm.output_messages", "gen_ai.output.messages"},
-		{"embedding.model_name", "gen_ai.request.model"},
-		{"tool.name", "gen_ai.tool.name"},
-		{"tool.description", "gen_ai.tool.description"},
-		{"tool_call.function.arguments", "gen_ai.tool.call.arguments"},
-		{"tool_call.id", "gen_ai.tool.call.id"},
-		{"reranker.model_name", "gen_ai.request.model"},
-		{"agent.name", "gen_ai.agent.name"},
-		{"session.id", "gen_ai.conversation.id"},
-		{"openinference.span.kind", "gen_ai.operation.name"},
+		{from: "llm.token_count.prompt", to: "gen_ai.usage.input_tokens"},
+		{from: "llm.token_count.completion", to: "gen_ai.usage.output_tokens"},
+		{from: "llm.model_name", to: "gen_ai.request.model"},
+		{from: "llm.provider", to: "gen_ai.provider.name"},
+		{from: "llm.input_messages", to: "gen_ai.input.messages"},
+		{from: "llm.output_messages", to: "gen_ai.output.messages"},
+		{from: "embedding.model_name", to: "gen_ai.request.model"},
+		{from: "tool.name", to: "gen_ai.tool.name"},
+		{from: "tool.description", to: "gen_ai.tool.description"},
+		{from: "tool_call.function.arguments", to: "gen_ai.tool.call.arguments"},
+		{from: "tool_call.id", to: "gen_ai.tool.call.id"},
+		{from: "reranker.model_name", to: "gen_ai.request.model"},
+		{from: "agent.name", to: "gen_ai.agent.name"},
+		{from: "session.id", to: "gen_ai.conversation.id"},
+		{from: "openinference.span.kind", to: "gen_ai.operation.name"},
 	},
+	// OpenLLMetry: https://www.traceloop.com/docs/openllmetry/contributing/semantic-conventions
 	"openllmetry": {
-		{"llm.usage.prompt_tokens", "gen_ai.usage.input_tokens"},
-		{"llm.usage.completion_tokens", "gen_ai.usage.output_tokens"},
-		{"llm.request.model", "gen_ai.request.model"},
-		{"llm.response.model", "gen_ai.response.model"},
-		{"llm.request.max_tokens", "gen_ai.request.max_tokens"},
-		{"llm.request.temperature", "gen_ai.request.temperature"},
-		{"llm.request.top_p", "gen_ai.request.top_p"},
-		{"llm.top_k", "gen_ai.request.top_k"},
-		{"llm.frequency_penalty", "gen_ai.request.frequency_penalty"},
-		{"llm.presence_penalty", "gen_ai.request.presence_penalty"},
-		{"llm.chat.stop_sequences", "gen_ai.request.stop_sequences"},
-		{"llm.request.functions", "gen_ai.tool.definitions"},
-		{"llm.response.finish_reason", "gen_ai.response.finish_reasons"},
-		{"llm.response.stop_reason", "gen_ai.response.finish_reasons"},
-		{"llm.request.type", "gen_ai.operation.name"},
-		{"traceloop.span.kind", "gen_ai.operation.name"},
-		{"traceloop.entity.name", "gen_ai.agent.name"},
-		{"traceloop.entity.input", "gen_ai.input.messages"},
-		{"traceloop.entity.output", "gen_ai.output.messages"},
-		{"traceloop.association.properties", "gen_ai.conversation.id"},
-	},
-	"langchain": {
-		{"lc.metadata.thread_id", "gen_ai.conversation.id"},
-		{"langgraph.node.name", "gen_ai.agent.name"},
-	},
-	"crewai": {
-		{"agent_role", "gen_ai.agent.name"},
-		{"crew_id", "gen_ai.conversation.id"},
-	},
-	"pydanticai": {
-		{"agent_name", "gen_ai.agent.name"},
+		{from: "llm.usage.prompt_tokens", to: "gen_ai.usage.input_tokens"},
+		{from: "llm.usage.completion_tokens", to: "gen_ai.usage.output_tokens"},
+		{from: "llm.request.model", to: "gen_ai.request.model"},
+		{from: "llm.response.model", to: "gen_ai.response.model"},
+		{from: "llm.request.max_tokens", to: "gen_ai.request.max_tokens"},
+		{from: "llm.request.temperature", to: "gen_ai.request.temperature"},
+		{from: "llm.request.top_p", to: "gen_ai.request.top_p"},
+		{from: "llm.top_k", to: "gen_ai.request.top_k"},
+		{from: "llm.frequency_penalty", to: "gen_ai.request.frequency_penalty"},
+		{from: "llm.presence_penalty", to: "gen_ai.request.presence_penalty"},
+		{from: "llm.chat.stop_sequences", to: "gen_ai.request.stop_sequences"},
+		{from: "llm.request.functions", to: "gen_ai.tool.definitions"},
+		{from: "llm.response.finish_reason", to: "gen_ai.response.finish_reasons", wrapSlice: true},
+		{from: "llm.response.stop_reason", to: "gen_ai.response.finish_reasons", wrapSlice: true},
+		{from: "llm.request.type", to: "gen_ai.operation.name"},
+		{from: "traceloop.span.kind", to: "gen_ai.operation.name"},
+		{from: "traceloop.entity.name", to: "gen_ai.agent.name"},
+		{from: "traceloop.entity.input", to: "gen_ai.input.messages"},
+		{from: "traceloop.entity.output", to: "gen_ai.output.messages"},
 	},
 }
 
-func buildGenaiLookupTable(profiles []string) map[string]string {
-	table := make(map[string]string)
+type genaiTarget struct {
+	key       string
+	wrapSlice bool
+}
+
+// buildGenaiLookupTable merges mappings from the selected profiles into a single lookup table.
+// If multiple profiles map the same source attribute to different targets, the last profile wins.
+func buildGenaiLookupTable(profiles []string) map[string]genaiTarget {
+	table := make(map[string]genaiTarget)
 	for _, name := range profiles {
 		for _, m := range profileRegistry[name] {
-			table[m.from] = m.to
+			table[m.from] = genaiTarget{key: m.to, wrapSlice: m.wrapSlice}
 		}
 	}
 	return table
@@ -168,7 +181,7 @@ var operationNameValues = map[string]string{
 	// OpenInference span kinds
 	"LLM": "chat", "EMBEDDING": "embeddings", "CHAIN": "invoke_agent",
 	"RETRIEVER": "retrieval", "RERANKER": "retrieval", "TOOL": "execute_tool",
-	"AGENT": "invoke_agent", "GUARDRAIL": "guardrail", "EVALUATOR": "evaluate",
+	"AGENT": "invoke_agent",
 	"PROMPT": "text_completion",
 	// OpenLLMetry traceloop.span.kind
 	"workflow": "invoke_agent", "task": "invoke_agent", "agent": "invoke_agent", "tool": "execute_tool",
@@ -176,17 +189,20 @@ var operationNameValues = map[string]string{
 	"completion": "text_completion", "chat": "chat", "rerank": "retrieval", "embedding": "embeddings",
 }
 
+// operationNameValuesNormalized is built at init with lowercased keys for case-insensitive lookup.
+var operationNameValuesNormalized = func() map[string]string {
+	m := make(map[string]string, len(operationNameValues))
+	for k, v := range operationNameValues {
+		m[strings.ToLower(k)] = v
+	}
+	return m
+}()
+
 func transformGenaiValue(targetKey string, value string) string {
 	if targetKey != "gen_ai.operation.name" {
 		return value
 	}
-	if mapped, ok := operationNameValues[value]; ok {
-		return mapped
-	}
-	if mapped, ok := operationNameValues[strings.ToUpper(value)]; ok {
-		return mapped
-	}
-	if mapped, ok := operationNameValues[strings.ToLower(value)]; ok {
+	if mapped, ok := operationNameValuesNormalized[strings.ToLower(value)]; ok {
 		return mapped
 	}
 	return value
