@@ -24,21 +24,7 @@ The journald receiver has specific requirements that must be met:
 
 ### journalctl Binary Requirement
 
-The journald receiver **requires the journalctl binary** to be available in the container or on the system.
-
-**Why journalctl is required:**
-- Journal files use a binary format that changes between systemd versions
-- Direct file parsing requires exact systemd version matching between host and container
-- journalctl handles format compatibility, rotation, and integrity checking
-
-**Container Image Requirements:**
-- Install the systemd package (which contains journalctl)
-- Recommended minimum: systemd 245+
-- Use Ubuntu 24.04 (systemd 255) or Debian 12 (systemd 252) for best compatibility
-
-**Common Errors:**
-- `journalctl: executable file not found` → systemd not installed in the container
-- `Journal file uses an unsupported feature` → systemd version too old
+The journald receiver **requires the journalctl binary** to be available in the container or on the system. This is because the receiver uses journalctl to read logs from the systemd journal. The receiver does not implement its own journal reading logic and relies on journalctl for this functionality.
 
 ### Permissions
 
@@ -203,9 +189,9 @@ which is going to effectively retrieve all entries which matches the following s
 
 ## Performance Considerations
 
-### start_at Setting
+### start_at parameter
 
-The `start_at` configuration has significant performance implications:
+The `start_at` configuration parameter has significant performance implications:
 
 - **`end` (default - recommended for production)**: Reads only new entries after collector start
   - Minimal startup impact
@@ -215,35 +201,10 @@ The `start_at` configuration has significant performance implications:
   - Can cause 10-60 second startup delay
   - High CPU/memory usage during catchup
 
-### Resource Guidelines
-
-```yaml
-# Development/Testing
-resources:
-  requests:
-    memory: 128Mi
-    cpu: 100m
-  limits:
-    memory: 512Mi
-    cpu: 500m
-
-# Production (unfiltered)
-resources:
-  requests:
-    memory: 256Mi
-    cpu: 200m
-  limits:
-    memory: 1Gi
-    cpu: 1000m
-```
-
 ### Unit Filtering Impact
 
-- **Unfiltered**: Reads all systemd units (kubelet, containerd, every pod)
-  - 100-1000+ entries/second in busy clusters
+- **Unfiltered**: Reads all systemd units
 - **Filtered**: Reads only specified units
-  - 10-100 entries/second typically
-  - Significantly reduces resource usage
 
 ## Setup and Deployment
 
@@ -252,156 +213,37 @@ resources:
 Journal file locations differ between traditional systems and containerized environments:
 
 **Traditional Systems:**
+
 - Persistent journal: `/var/log/journal/`
 - Requires `Storage=persistent` in journald.conf
 
 **Container Platforms (kind, minikube, k3s, most Kubernetes clusters):**
+
 - Volatile journal: `/run/log/journal/`
 - Default `Storage=volatile` or `Storage=auto` with missing `/var/log/journal`
 
-**Discovery Commands:**
+**Discovery Command:**
+
 ```bash
 # Find journal location
 journalctl --header | grep "File path"
-
-# Or check both locations
-ls -la /var/log/journal /run/log/journal
 ```
-
-⚠️ **Important**: Most users encounter "empty directory" errors when mounting `/var/log/journal` in container environments. Always verify the actual journal location on your system.
 
 ### Docker & Kubernetes
 
-When running otelcol in a container:
+When running otelcol in a container, you need:
 
-1. The container must run as a user that has permission to access the logs (typically root)
-2. The correct journal directory must be mounted (usually `/run/log/journal` in containerized environments)
-3. The `journalctl` binary must be present in the container
-4. Systemd version compatibility between host and container must be considered
+1. Root permissions (journal files are root-owned)
+2. The journal directory mounted (usually `/run/log/journal` in containerized environments)
+3. The `journalctl` binary available
 
-⚠️ **Important**: The official otelcol images do not contain the journalctl binary. You must use one of the approaches below.
+#### Option 1: Bundle journalctl in your image (Recommended)
 
-### Kubernetes Security Requirements
+Build a collector image that includes journalctl. See the example `Dockerfile` in [`examples/container`](examples/container/README.md) with step-by-step instructions for Kubernetes deployments.
 
-**Minimum Requirements:**
-- Run as root (`runAsUser: 0`) - journal files are root-owned
-- Read access to `/run/log/journal` (requires root permission level)
-- Required capabilities:
-  - `CAP_DAC_READ_SEARCH`: Read any file regardless of permissions
-  - `CAP_SYS_PTRACE`: Required by journalctl for some operations
+This works well if your hosts run similar systemd versions.
 
-**Option 1: Specific Capabilities (Recommended)**
-```yaml
-securityContext:
-  runAsUser: 0
-  capabilities:
-    add:
-      - DAC_READ_SEARCH
-      - SYS_PTRACE
-```
-
-**Option 2: Privileged Mode (Easiest, Least Secure)**
-```yaml
-securityContext:
-  privileged: true
-  runAsUser: 0
-```
-
-**Option 3: Security Context Constraints (OpenShift)**
-Create a custom SCC with required capabilities and bind to the service account.
-
-### Kubernetes Volume Mount Configuration
-
-**Minimal Required Mount:**
-```yaml
-volumeMounts:
-  - name: run-journal
-    mountPath: /run/log/journal
-    readOnly: true
-
-volumes:
-  - name: run-journal
-    hostPath:
-      path: /run/log/journal
-      # Note: Do not specify type: Directory in kind/minikube
-      # These platforms use symlinks which fail strict type checking
-```
-
-**What NOT to mount:**
-- ❌ Entire `/run` directory - overly permissive
-- ❌ Entire `/var` directory - unnecessary access
-- ❌ `/etc/machine-id` - not required if directory is explicitly specified
-- ❌ Host `/usr/bin/journalctl` - causes library dependency issues
-
-### Deployment Architecture
-
-**DaemonSet Pattern (Recommended for Production):**
-- Deploys one collector pod per node
-- Each pod reads that node's journal
-- Required for complete cluster-wide log collection
-- journald is node-scoped, not cluster-scoped
-
-```yaml
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: otel-collector-journald
-spec:
-  selector:
-    matchLabels:
-      app: otel-collector-journald
-  template:
-    metadata:
-      labels:
-        app: otel-collector-journald
-    spec:
-      containers:
-      - name: otel-collector
-        # Use image with journalctl installed
-        image: your-otel-collector-with-journalctl:latest
-        securityContext:
-          runAsUser: 0
-          capabilities:
-            add:
-              - DAC_READ_SEARCH
-              - SYS_PTRACE
-        volumeMounts:
-        - name: run-journal
-          mountPath: /run/log/journal
-          readOnly: true
-        resources:
-          requests:
-            memory: 256Mi
-            cpu: 200m
-          limits:
-            memory: 1Gi
-            cpu: 1000m
-      volumes:
-      - name: run-journal
-        hostPath:
-          path: /run/log/journal
-```
-
-**Deployment Pattern (Development/Testing):**
-- Single pod
-- Only collects logs from one node
-- Simpler for debugging
-- Not suitable for multi-node production clusters
-
-**When to Use Each:**
-- **Single-node clusters** (kind, minikube, Docker Desktop): Deployment is sufficient
-- **Multi-node production clusters**: DaemonSet required
-- **Testing/debugging**: Start with Deployment, move to DaemonSet for production
-
-### Providing journalctl to the Container
-
-The next two sections describe approaches for providing the journalctl binary to the collector when running in a container.
-
-#### Bundling journalctl with the collector
-
-If the container only needs to run on a limited set of hosts for which there is a common compatible version of journalctl, then you can build a collector container that includes journalctl. There is a simple example with a step-by-step, including a `Dockerfile` in [`examples/container`](examples/container/README.md).
-
-#### Invoking journalctl from a mounted chroot
+#### Option 2: Use host's journalctl via chroot
 
 Some collector containers need to work across a variety of arbitrary hosts that may be running mutually incompatible versions of journalctl, making it difficult to select a single version of journalctl to bundle into the container.
 
@@ -442,6 +284,26 @@ if the permissions are set correctly you will see some logs, otherwise a clear e
 
 ## Troubleshooting
 
+### Kubernetes Security Requirements
+
+**Minimum Requirements:**
+
+- Run as root (`runAsUser: 0`) - journal files are root-owned
+- Read access to `/run/log/journal` (requires root permission level)
+- Required capabilities:
+  - `CAP_DAC_READ_SEARCH`: Read any file regardless of permissions
+  - `CAP_SYS_PTRACE`: Required by journalctl for some operations
+
+**Recommended security context:**
+```yaml
+securityContext:
+  runAsUser: 0
+  capabilities:
+    add:
+      - DAC_READ_SEARCH
+      - SYS_PTRACE
+```
+
 ### Common Errors and Solutions
 
 | Error Message | Cause | Solution |
@@ -481,45 +343,3 @@ kubectl get pod <pod> -o jsonpath='{.spec.containers[0].securityContext}'
 # 8. Verify capabilities (from within pod)
 kubectl exec -it <pod> -- grep Cap /proc/self/status
 ```
-
-### Debug Checklist
-
-If logs are not appearing:
-
-1. ✅ Is `journalctl` installed in the container? (`which journalctl`)
-2. ✅ Is the correct journal directory mounted? (Check `/run/log/journal` vs `/var/log/journal`)
-3. ✅ Can journalctl read logs manually? (`journalctl -n 10`)
-4. ✅ Is the pod running as root? (`id` should show `uid=0`)
-5. ✅ Are the required capabilities present? (Check `CAP_DAC_READ_SEARCH`)
-6. ✅ Is the directory mount non-empty? (`ls -la /run/log/journal`)
-7. ✅ Are there any errors in collector logs? (`kubectl logs <pod>`)
-8. ✅ Is `start_at: end` preventing historical logs from showing? (Try `start_at: beginning` for testing)
-
-## When to Use journald Receiver
-
-### Good Use Cases
-
-- Collecting systemd service logs specifically
-- Need for systemd metadata enrichment (`_SYSTEMD_UNIT`, `_PID`, `_HOSTNAME`, etc.)
-- Already using OTel Collector for metrics/traces (unified collection architecture)
-- Require correlation with system-level events
-- Node-level debugging and troubleshooting
-
-### Consider Alternatives
-
-- **Container logs only**: Use [filelogreceiver](../filelogreceiver/README.md) with `/var/log/pods`
-- **General cluster logging**: Fluentd/Fluent Bit may be simpler with less privilege requirements
-- **Cloud environments**: Native cloud logging (CloudWatch Logs, Google Cloud Logging, Azure Monitor)
-- **Security-sensitive environments**: Sidecar pattern over node-level collection
-- **Minimal privilege requirements**: Solutions that don't require root access
-
-### Comparison with Alternatives
-
-| Aspect | journald receiver | Fluent Bit | filelogreceiver |
-|--------|------------------|------------|------------------|
-| **Privileges** | Requires root + capabilities | Configurable, can run unprivileged | Typically less privileged |
-| **Scope** | System-wide (all systemd units) | System-wide or pod-level | Per-directory |
-| **Metadata** | Rich systemd metadata | Kubernetes metadata | Basic file metadata |
-| **Setup Complexity** | Moderate (needs journalctl binary, security config) | Low to moderate | Low |
-| **Container Logs** | Via systemd journal | Direct from container runtime | Direct from log files |
-| **Use Case** | System and service logs | General logging | Application logs |
