@@ -4,6 +4,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: mongodb-host-1
+        - key: service.instance.id
+          value:
+            stringValue: 8ab7c64b-866c-5cae-aa55-67d463988c7f
     scopeMetrics:
       - metrics:
           - description: The number of existing databases.

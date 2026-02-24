@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -226,4 +227,47 @@ func portableEndpoint(addr string) string {
 		endpoint = fmt.Sprintf("npipe://%s", strings.ReplaceAll(addr, "\\", "/"))
 	}
 	return endpoint
+}
+
+func TestAPIVersionNegotiation(t *testing.T) {
+	listener, addr := testListener(t)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	config := &Config{
+		Endpoint:         portableEndpoint(addr),
+		Timeout:          50 * time.Millisecond,
+		DockerAPIVersion: "", // empty triggers auto-negotiation
+	}
+
+	cli, err := NewDockerClient(config, zap.NewNop())
+	assert.NotNil(t, cli)
+	assert.NoError(t, err)
+	// Simulate a daemon ping response with API version "1.45".
+	cli.client.NegotiateAPIVersionPing(dtypes.Ping{APIVersion: "1.45"})
+	assert.Equal(t, "1.45", cli.client.ClientVersion())
+}
+
+func TestExplicitAPIVersion(t *testing.T) {
+	listener, addr := testListener(t)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	config := &Config{
+		Endpoint:         portableEndpoint(addr),
+		Timeout:          50 * time.Millisecond,
+		DockerAPIVersion: "1.44",
+	}
+
+	cli, err := NewDockerClient(config, zap.NewNop())
+	assert.NotNil(t, cli)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.44", cli.client.ClientVersion())
+}
+
+func TestDefaultConfigUsesNegotiation(t *testing.T) {
+	config := NewDefaultConfig()
+	assert.Empty(t, config.DockerAPIVersion, "Default config should have empty DockerAPIVersion for auto-negotiation")
 }

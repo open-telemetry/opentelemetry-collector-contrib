@@ -119,7 +119,7 @@ type jwtGrantTypeConfig struct {
 // TokenSource returns a JWT TokenSource using the configuration
 // in c and the HTTP client from the provided context.
 func (c *jwtGrantTypeConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
-	return oauth2.ReuseTokenSource(nil, jwtSource{ctx, c})
+	return jwtSource{ctx, c}
 }
 
 func (c *jwtGrantTypeConfig) TokenEndpoint() string {

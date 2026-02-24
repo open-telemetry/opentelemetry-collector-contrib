@@ -1,4 +1,9 @@
+display_name: CouchDB Receiver
 type: couchdb
+
+description: |
+  This receiver fetches stats from a couchdb server using the `/_node/{node-name}/_stats/couchdb`
+  [endpoint](https://docs.couchdb.org/en/latest/api/server/common.html#node-node-name-stats).
 
 status:
   class: receiver
@@ -37,16 +42,14 @@ metrics:
   couchdb.average_request_time:
     enabled: true
     description: The average duration of a served request.
-    stability:
-      level: development
+    stability: development
     unit: ms
     gauge:
       value_type: double
   couchdb.database.open:
     enabled: true
     description: The number of open databases.
-    stability:
-      level: development
+    stability: development
     unit: "{databases}"
     sum:
       value_type: int
@@ -55,8 +58,7 @@ metrics:
   couchdb.database.operations:
     enabled: true
     description: The number of database operations.
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     sum:
       value_type: int
@@ -66,8 +68,7 @@ metrics:
   couchdb.file_descriptor.open:
     enabled: true
     description: The number of open file descriptors.
-    stability:
-      level: development
+    stability: development
     unit: "{files}"
     sum:
       value_type: int
@@ -76,8 +77,7 @@ metrics:
   couchdb.httpd.bulk_requests:
     enabled: true
     description: The number of bulk requests.
-    stability:
-      level: development
+    stability: development
     unit: "{requests}"
     sum:
       value_type: int
@@ -86,8 +86,7 @@ metrics:
   couchdb.httpd.requests:
     enabled: true
     description: The number of HTTP requests by method.
-    stability:
-      level: development
+    stability: development
     unit: "{requests}"
     sum:
       value_type: int
@@ -97,8 +96,7 @@ metrics:
   couchdb.httpd.responses:
     enabled: true
     description: The number of each HTTP status code.
-    stability:
-      level: development
+    stability: development
     unit: "{responses}"
     sum:
       value_type: int
@@ -108,8 +106,7 @@ metrics:
   couchdb.httpd.views:
     enabled: true
     description: The number of views read.
-    stability:
-      level: development
+    stability: development
     unit: "{views}"
     sum:
       value_type: int

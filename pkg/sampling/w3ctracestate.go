@@ -233,11 +233,11 @@ func isValidW3CKey(key string) bool {
 		return false
 	}
 
-	atIdx := strings.IndexByte(key, '@')
-	if atIdx >= 0 {
+	before, after, ok := strings.Cut(key, "@")
+	if ok {
 		// Multi-tenant key
-		tenant := key[:atIdx]
-		system := key[atIdx+1:]
+		tenant := before
+		system := after
 
 		if tenant == "" || system == "" {
 			return false
