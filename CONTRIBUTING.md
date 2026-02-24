@@ -7,7 +7,7 @@ before you begin your work with the contrib Collector.
 ## Local Testing
 
 To manually test your changes, follow these steps to build and run the contrib
-Collector locally. Ensure that you execute these commands from the root of the 
+Collector locally. Ensure that you execute these commands from the root of the
 repository:
 
 1. Build the Collector:
@@ -174,11 +174,21 @@ Example rerun comment:
 /rerun
 ```
 
+### Approving Workflows for Outside Contributors
+
+Members of the [triagers](./README.md#triagers), [approvers](./README.md#approvers), or [maintainers](./README.md#maintainers) teams can approve pending GitHub Actions workflow runs for outside contributors by commenting `/workflow-approve` on the pull request. This will approve all workflow runs with an `action_required` conclusion for the PR's latest commit.
+
+Example approve comment:
+
+```
+/workflow-approve
+```
+
 ## Portable Code
 
 In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
 
-* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions. 
+* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions.
 
 * Avoid hard-coding platform-specific values. Use environment variables or configuration files for storing platform-specific values.
 
@@ -196,13 +206,13 @@ In order to ensure compatibility with different operating systems, code should b
     filePath := Configuration.Get("data_file_path")
     ```
 
-* Be mindful of 
-  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths. 
+* Be mindful of
+  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths.
   - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
 
-* Test your implementation thoroughly on different platforms if possible and fix any issues. 
+* Test your implementation thoroughly on different platforms if possible and fix any issues.
 
-With above guidelines, you can write code that is more portable and easier to maintain across different platforms. 
+With above guidelines, you can write code that is more portable and easier to maintain across different platforms.
 
 ## Donating New Components
 
