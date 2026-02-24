@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: pkg/xk8stest
+
+note: Display pod events on collector startup timeout for easier diagnosis of e2e failures.
+
+issues: [46305]
+
+subtext:
+
+change_logs: [api]
