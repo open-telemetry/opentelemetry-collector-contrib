@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-if [[ -z "${PR_NUMBER:-}" || -z "${COMMENT:-}" || -z "${SENDER:-}" || "${ORG_TOKEN:-}" ]]; then
+if [[ -z "${PR_NUMBER:-}" || -z "${COMMENT:-}" || -z "${SENDER:-}" || -z "${ORG_TOKEN:-}" ]]; then
     echo "PR_NUMBER, COMMENT, SENDER or ORG_TOKEN not set"
     exit 0
 fi
