@@ -1,0 +1,5 @@
+change_type: enhancement
+component: exporter/signalfx
+note: Preserve 'k8s.service.' property names on the 'k8s.service.uid' dimension instead of converting them to 'kubernetes_service_' prefix.
+issues: [46291]
+change_logs: [user]

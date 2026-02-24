@@ -16,7 +16,7 @@ spec:
       serviceAccountName: {{ .Name }}-sa
       containers:
         - name: consul-agent
-          image: hashicorp/consul:latest
+          image: hashicorp/consul:1.22.3
           args:
             - "agent"
             - "-dev"
