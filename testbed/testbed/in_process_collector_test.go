@@ -43,7 +43,7 @@ service:
             exporter:
               prometheus:
                 host: '127.0.0.1'
-                port: 0
+                port: %d
 `
 	config := fmt.Sprintf(
 		format,
@@ -51,6 +51,7 @@ service:
 		receiver.GenConfigYAMLStr(),
 		sender.ProtocolName(),
 		receiver.ProtocolName(),
+		testutil.GetAvailablePort(t),
 	)
 	configCleanup, cfgErr := runner.PrepareConfig(t, config)
 	defer configCleanup()

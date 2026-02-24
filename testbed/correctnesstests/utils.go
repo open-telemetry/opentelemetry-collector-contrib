@@ -84,7 +84,7 @@ service:
             exporter:
               prometheus:
                 host: '127.0.0.1'
-                port: 0
+                port: %d
     logs:
       level: "debug"
   extensions:
@@ -103,6 +103,7 @@ service:
 			receiver.GenConfigYAMLStr(),
 			processorsSections,
 			connector.GenConfigYAMLStr(),
+			testutil.GetAvailablePort(tb),
 			pipeline1,
 			sender.ProtocolName(),
 			processorsList,
@@ -129,7 +130,7 @@ service:
             exporter:
               prometheus:
                 host: '127.0.0.1'
-                port: 0
+                port: %d
     logs:
       level: "debug"
   extensions:
@@ -145,6 +146,7 @@ service:
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
+		testutil.GetAvailablePort(tb),
 		pipeline1,
 		sender.ProtocolName(),
 		processorsList,
