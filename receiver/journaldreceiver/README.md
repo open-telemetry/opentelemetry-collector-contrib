@@ -295,6 +295,7 @@ if the permissions are set correctly you will see some logs, otherwise a clear e
   - `CAP_SYS_PTRACE`: Required by journalctl for some operations
 
 **Recommended security context:**
+
 ```yaml
 securityContext:
   runAsUser: 0
