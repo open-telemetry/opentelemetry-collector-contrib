@@ -735,15 +735,15 @@ Examples:
 
 `normalize_genai_attributes(semconvVersion, Optional[profiles], Optional[remove_originals])`
 
-The `normalize_genai_attributes()` function maps GenAI telemetry attributes from third-party instrumentation libraries to the official [OTel GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/). This is useful when ingesting traces from libraries like [OpenInference](https://github.com/Arize-ai/openinference), [OpenLLMetry](https://github.com/traceloop/openllmetry), or framework-specific instrumentations (LangChain, CrewAI, PydanticAI) that use non-standard attribute names.
+The `normalize_genai_attributes()` function maps GenAI telemetry attributes from [OpenInference](https://github.com/Arize-ai/openinference) and [OpenLLMetry](https://github.com/traceloop/openllmetry) to the official [OTel GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/). These instrumentation libraries cover 60+ GenAI frameworks (LangChain, CrewAI, Strands, etc.) but use non-standard attribute names.
 
 Parameters:
 
 * `semconvVersion` is the target semantic conventions version. `1.39.0` is currently the only supported version.
-* `profiles` is an optional list of mapping profiles to apply. When omitted, all profiles are applied. Supported profiles: `openinference`, `openllmetry`, `langchain`, `crewai`, `pydanticai`. See [profile definitions](internal/traces/func_normalize_genai_attributes.go) for the full attribute mappings.
+* `profiles` is an optional list of mapping profiles to apply. When omitted, all profiles are applied. Supported profiles: `openinference`, `openllmetry`. See [profile definitions](internal/traces/func_normalize_genai_attributes.go) for the full attribute mappings.
 * `remove_originals` is an optional boolean (default `false`). When `true`, source attributes are removed after mapping.
 
-The function also performs value mapping for `gen_ai.operation.name` — for example, OpenInference's `openinference.span.kind: "LLM"` becomes `gen_ai.operation.name: "chat"`, and `"AGENT"` becomes `"invoke_agent"`.
+The function also performs value mapping for `gen_ai.operation.name` (e.g. OpenInference's `"LLM"` becomes `"chat"`, `"AGENT"` becomes `"invoke_agent"`) and type conversion where needed (e.g. `llm.response.finish_reason` string is wrapped into a `gen_ai.response.finish_reasons` string array).
 
 Attributes that don't match any mapping profile pass through unchanged.
 
@@ -753,7 +753,7 @@ Examples:
 
 - `normalize_genai_attributes("1.39.0", remove_originals=true)`
 
-- `normalize_genai_attributes("1.39.0", profiles=["openinference", "openllmetry"], remove_originals=true)`
+- `normalize_genai_attributes("1.39.0", profiles=["openinference"], remove_originals=true)`
 
 ## Examples
 
