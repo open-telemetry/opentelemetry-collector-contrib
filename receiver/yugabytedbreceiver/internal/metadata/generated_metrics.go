@@ -81,6 +81,7 @@ func (m *metricYugabytedbActiveUsersCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricYugabytedbActiveUsersCount(cfg MetricConfig) metricYugabytedbActiveUsersCount {
 	m := metricYugabytedbActiveUsersCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -133,6 +134,7 @@ func (m *metricYugabytedbConnectionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricYugabytedbConnectionCount(cfg MetricConfig) metricYugabytedbConnectionCount {
 	m := metricYugabytedbConnectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -182,6 +184,7 @@ func (m *metricYugabytedbPgStatActivityActiveConnections) emit(metrics pmetric.M
 
 func newMetricYugabytedbPgStatActivityActiveConnections(cfg MetricConfig) metricYugabytedbPgStatActivityActiveConnections {
 	m := metricYugabytedbPgStatActivityActiveConnections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -231,6 +234,7 @@ func (m *metricYugabytedbPgStatActivityRunningQueries) emit(metrics pmetric.Metr
 
 func newMetricYugabytedbPgStatActivityRunningQueries(cfg MetricConfig) metricYugabytedbPgStatActivityRunningQueries {
 	m := metricYugabytedbPgStatActivityRunningQueries{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

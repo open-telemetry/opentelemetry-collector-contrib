@@ -24,8 +24,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [connection.user]
-    stability:
-      level: alpha
+    stability: alpha
   yugabytedb.connection.count:
     enabled: true
     description: The number of database connections by state and user.
@@ -33,21 +32,18 @@ metrics:
     gauge:
       value_type: int
     attributes: [connection.state, connection.user]
-    stability:
-      level: alpha
+    stability: alpha
   yugabytedb.pg_stat_activity.active_connections:
     enabled: true
     description: The total number of active connections to YugabyteDB.
     unit: "{connections}"
     gauge:
       value_type: int
-    stability:
-      level: alpha
+    stability: alpha
   yugabytedb.pg_stat_activity.running_queries:
     enabled: true
     description: The number of currently running queries in YugabyteDB.
     unit: "{queries}"
     gauge:
       value_type: int
-    stability:
-      level: alpha
+    stability: alpha
