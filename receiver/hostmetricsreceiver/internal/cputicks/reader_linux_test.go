@@ -6,7 +6,6 @@
 package cputicks
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -87,7 +86,7 @@ processes 12345
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
 			path := filepath.Join(dir, "stat")
-			require.NoError(t, os.WriteFile(path, []byte(tt.content), 0600))
+			require.NoError(t, os.WriteFile(path, []byte(tt.content), 0o600))
 
 			r := &reader{path: path, ticksPerSecond: 100}
 			actual, err := r.ReadAll(t.Context())
@@ -134,11 +133,10 @@ func BenchmarkReadAll(b *testing.B) {
 		b.Skip("/proc/stat not available")
 	}
 	r := NewReader(100)
-	ctx := context.Background()
 
 	b.ResetTimer()
 	for range b.N {
-		_, err := r.ReadAll(ctx)
+		_, err := r.ReadAll(b.Context())
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -149,11 +147,10 @@ func BenchmarkReadAll_Gopsutil(b *testing.B) {
 	if _, err := os.Stat("/proc/stat"); err != nil {
 		b.Skip("/proc/stat not available")
 	}
-	ctx := context.Background()
 
 	b.ResetTimer()
 	for range b.N {
-		_, err := cpu.TimesWithContext(ctx, true)
+		_, err := cpu.TimesWithContext(b.Context(), true)
 		if err != nil {
 			b.Fatal(err)
 		}
