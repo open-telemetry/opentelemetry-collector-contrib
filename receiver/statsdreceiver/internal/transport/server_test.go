@@ -59,11 +59,9 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			transferChan := make(chan Metric, 10)
 
 			wgListenAndServe := sync.WaitGroup{}
-			wgListenAndServe.Add(1)
-			go func() {
-				defer wgListenAndServe.Done()
+			wgListenAndServe.Go(func() {
 				assert.Error(t, srv.ListenAndServe(mc, mr, transferChan))
-			}()
+			})
 
 			runtime.Gosched()
 

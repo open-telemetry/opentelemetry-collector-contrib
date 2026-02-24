@@ -154,9 +154,7 @@ func (a *alertsReceiver) startPolling(ctx context.Context, storageClient storage
 	}
 
 	t := time.NewTicker(a.pollInterval)
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
+	a.wg.Go(func() {
 		for {
 			select {
 			case <-t.C:
@@ -169,7 +167,7 @@ func (a *alertsReceiver) startPolling(ctx context.Context, storageClient storage
 				return
 			}
 		}
-	}()
+	})
 
 	return nil
 }
@@ -228,11 +226,8 @@ func (a *alertsReceiver) startListening(ctx context.Context, host component.Host
 		return err
 	}
 
-	a.wg.Add(1)
 	if a.tlsSettings != nil {
-		go func() {
-			defer a.wg.Done()
-
+		a.wg.Go(func() {
 			a.telemetrySettings.Logger.Debug("Starting ServeTLS",
 				zap.String("address", a.addr),
 				zap.String("certfile", a.tlsSettings.CertFile),
@@ -246,11 +241,9 @@ func (a *alertsReceiver) startListening(ctx context.Context, host component.Host
 				a.telemetrySettings.Logger.Error("ServeTLS failed", zap.Error(err))
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-		}()
+		})
 	} else {
-		go func() {
-			defer a.wg.Done()
-
+		a.wg.Go(func() {
 			a.telemetrySettings.Logger.Debug("Starting Serve", zap.String("address", a.addr))
 
 			err := a.server.Serve(l)
@@ -260,7 +253,7 @@ func (a *alertsReceiver) startListening(ctx context.Context, host component.Host
 			if err != http.ErrServerClosed {
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-		}()
+		})
 	}
 	return nil
 }

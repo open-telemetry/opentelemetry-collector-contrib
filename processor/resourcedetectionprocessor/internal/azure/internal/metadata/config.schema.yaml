@@ -1,0 +1,33 @@
+$defs:
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for azuredetector resource attributes.
+    type: object
+    properties:
+      azure.resourcegroup.name:
+        $ref: resource_attribute_config
+      azure.vm.name:
+        $ref: resource_attribute_config
+      azure.vm.scaleset.name:
+        $ref: resource_attribute_config
+      azure.vm.size:
+        $ref: resource_attribute_config
+      cloud.account.id:
+        $ref: resource_attribute_config
+      cloud.availability_zone:
+        $ref: resource_attribute_config
+      cloud.platform:
+        $ref: resource_attribute_config
+      cloud.provider:
+        $ref: resource_attribute_config
+      cloud.region:
+        $ref: resource_attribute_config
+      host.id:
+        $ref: resource_attribute_config
+      host.name:
+        $ref: resource_attribute_config

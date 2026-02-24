@@ -10,6 +10,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
+	alibabaecs "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
@@ -54,6 +55,9 @@ type Config struct {
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors
 type DetectorConfig struct {
+	// AlibabaECSConfig contains user-specified configurations for the Alibaba Cloud ECS detector
+	AlibabaECSConfig alibabaecs.Config `mapstructure:"alibaba_ecs"`
+
 	// EC2Config contains user-specified configurations for the EC2 detector
 	EC2Config ec2.Config `mapstructure:"ec2"`
 
@@ -126,6 +130,7 @@ type DetectorConfig struct {
 
 func detectorCreateDefaultConfig() DetectorConfig {
 	return DetectorConfig{
+		AlibabaECSConfig:       alibabaecs.CreateDefaultConfig(),
 		EC2Config:              ec2.CreateDefaultConfig(),
 		ECSConfig:              ecs.CreateDefaultConfig(),
 		EKSConfig:              eks.CreateDefaultConfig(),
@@ -154,6 +159,8 @@ func detectorCreateDefaultConfig() DetectorConfig {
 
 func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) internal.DetectorConfig {
 	switch detectorType {
+	case alibabaecs.TypeStr:
+		return d.AlibabaECSConfig
 	case ec2.TypeStr:
 		return d.EC2Config
 	case ecs.TypeStr:

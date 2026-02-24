@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
@@ -87,22 +86,8 @@ const (
 )
 
 const (
-	updateCollectorMetadataID    = "extension.sumologic.updateCollectorMetadata"
-	updateCollectorMetadataStage = featuregate.StageAlpha
-
 	DefaultHeartbeatInterval = 15 * time.Second
 )
-
-var updateCollectorMetadataFeatureGate *featuregate.Gate
-
-func init() {
-	updateCollectorMetadataFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		updateCollectorMetadataID,
-		updateCollectorMetadataStage,
-		featuregate.WithRegisterDescription("When enabled, the collector will update its Sumo Logic metadata on startup."),
-		featuregate.WithRegisterReferenceURL("https://github.com/SumoLogic/sumologic-otel-collector/pull/858"),
-	)
-}
 
 // SumologicExtension implements extensionauth.HTTPClient
 var (
@@ -174,7 +159,7 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 		logger:            logger,
 		hashKey:           hashKey,
 		credentialsStore:  credentialsStore,
-		updateMetadata:    updateCollectorMetadataFeatureGate.IsEnabled(),
+		updateMetadata:    conf.UpdateMetadata,
 		closeChan:         make(chan struct{}),
 		backOff:           backOff,
 		id:                id,

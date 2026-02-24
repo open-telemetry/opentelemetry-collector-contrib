@@ -1,4 +1,10 @@
+display_name: Azure Logs/Traces/Metrics Encoding Extension
 type: azure_encoding
+
+description: >
+  This extension is designed for unmarshaling logs/traces/metrics encoded in specific format
+  produced by [Azure Diagnostic Settings Export](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings) or
+  [Azure Data Collection Rules (DCRs)](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-overview)
 
 status:
   disable_codecov_badge: true

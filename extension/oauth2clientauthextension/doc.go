@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package oauth2clientauthextension implements `cauth.Client`
 // This extension provides OAuth2 Client Credentials flow authenticator for HTTP and gRPC based exporters.

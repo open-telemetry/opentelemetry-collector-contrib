@@ -1,0 +1,20 @@
+$defs:
+  pass_through:
+    type: object
+    properties:
+      gauge:
+        description: Gauge is a flag that determines whether gauge metrics should be passed through as they are or aggregated.
+        type: boolean
+      summary:
+        description: Summary is a flag that determines whether summary metrics should be passed through as they are or aggregated.
+        type: boolean
+description: Config defines the configuration for the processor.
+type: object
+properties:
+  interval:
+    description: Interval is the time interval at which the processor will aggregate metrics.
+    type: string
+    format: duration
+  pass_through:
+    description: PassThrough is a configuration that determines whether gauge and summary metrics should be passed through as they are or aggregated.
+    $ref: pass_through

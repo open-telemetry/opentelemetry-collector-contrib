@@ -1,0 +1,36 @@
+$defs:
+  aws_config:
+    description: AWSConfig contains AWS specific configuration such as awskinesis stream, region, etc.
+    type: object
+    properties:
+      kinesis_endpoint:
+        type: string
+      region:
+        type: string
+      role:
+        type: string
+      stream_name:
+        type: string
+  encoding:
+    type: object
+    properties:
+      compression:
+        type: string
+      name:
+        type: string
+description: Config contains the main configuration options for the awskinesis exporter
+type: object
+properties:
+  aws:
+    $ref: aws_config
+  max_record_size:
+    type: integer
+  max_records_per_batch:
+    type: integer
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  - $ref: encoding

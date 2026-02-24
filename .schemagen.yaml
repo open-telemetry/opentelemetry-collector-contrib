@@ -11,6 +11,9 @@ mappings:
   go.opentelemetry.io/collector/component:
     ID:
       schemaType: string
+  github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator:
+    Config:
+      schemaType: ""
   golang.org/x/time/rate:
     Limit:
       schemaType: number

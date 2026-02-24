@@ -1,0 +1,59 @@
+$defs:
+  event_hub_config:
+    description: EventHubConfig defines the configuration for an Azure Event Hub when using authentication.
+    type: object
+    properties:
+      name:
+        description: Name is the name of the Event Hub.
+        type: string
+      namespace:
+        description: Namespace is the fully qualified namespace of the Event Hub.
+        type: string
+  time_format:
+    type: object
+    properties:
+      logs:
+        type: array
+        items:
+          type: string
+      metrics:
+        type: array
+        items:
+          type: string
+      traces:
+        type: array
+        items:
+          type: string
+type: object
+properties:
+  apply_semantic_conventions:
+    type: boolean
+  auth:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  connection:
+    type: string
+  event_hub:
+    $ref: event_hub_config
+  format:
+    type: string
+  group:
+    type: string
+  max_poll_events:
+    type: integer
+  metric_aggregation:
+    type: string
+  offset:
+    type: string
+  partition:
+    type: string
+  poll_rate:
+    description: azeventhub lib specific
+    type: integer
+  storage:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  time_formats:
+    $ref: time_format

@@ -254,9 +254,7 @@ func TestTelemetry(t *testing.T) {
 
 	var wg sync.WaitGroup
 	makeRequest := func() {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			resp, err := http.Post(
 				server.URL,
 				"application/json",
@@ -268,7 +266,7 @@ func TestTelemetry(t *testing.T) {
 				assert.NoError(t, errBody)
 			}()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
-		}()
+		})
 	}
 	pauseRequest := func() {
 		<-started

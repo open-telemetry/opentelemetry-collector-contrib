@@ -1,0 +1,187 @@
+$defs:
+  attribute_active_pending_request_state:
+    description: AttributeActivePendingRequestState specifies the value active_pending_request_state attribute.
+    type: integer
+  attribute_column_memory_subtype:
+    description: AttributeColumnMemorySubtype specifies the value column_memory_subtype attribute.
+    type: integer
+  attribute_column_memory_type:
+    description: AttributeColumnMemoryType specifies the value column_memory_type attribute.
+    type: integer
+  attribute_connection_status:
+    description: AttributeConnectionStatus specifies the value connection_status attribute.
+    type: integer
+  attribute_cpu_type:
+    description: AttributeCPUType specifies the value cpu_type attribute.
+    type: integer
+  attribute_disk_state_used_free:
+    description: AttributeDiskStateUsedFree specifies the value disk_state_used_free attribute.
+    type: integer
+  attribute_host_swap_state:
+    description: AttributeHostSwapState specifies the value host_swap_state attribute.
+    type: integer
+  attribute_internal_external_request_type:
+    description: AttributeInternalExternalRequestType specifies the value internal_external_request_type attribute.
+    type: integer
+  attribute_memory_state_used_free:
+    description: AttributeMemoryStateUsedFree specifies the value memory_state_used_free attribute.
+    type: integer
+  attribute_row_memory_type:
+    description: AttributeRowMemoryType specifies the value row_memory_type attribute.
+    type: integer
+  attribute_schema_memory_type:
+    description: AttributeSchemaMemoryType specifies the value schema_memory_type attribute.
+    type: integer
+  attribute_schema_operation_type:
+    description: AttributeSchemaOperationType specifies the value schema_operation_type attribute.
+    type: integer
+  attribute_schema_record_type:
+    description: AttributeSchemaRecordType specifies the value schema_record_type attribute.
+    type: integer
+  attribute_service_memory_used_type:
+    description: AttributeServiceMemoryUsedType specifies the value service_memory_used_type attribute.
+    type: integer
+  attribute_service_status:
+    description: AttributeServiceStatus specifies the value service_status attribute.
+    type: integer
+  attribute_thread_status:
+    description: AttributeThreadStatus specifies the value thread_status attribute.
+    type: integer
+  attribute_transaction_type:
+    description: AttributeTransactionType specifies the value transaction_type attribute.
+    type: integer
+  attribute_volume_operation_type:
+    description: AttributeVolumeOperationType specifies the value volume_operation_type attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for saphana metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for saphana metrics.
+    type: object
+    properties:
+      saphana.alert.count:
+        $ref: metric_config
+      saphana.backup.latest:
+        $ref: metric_config
+      saphana.column.memory.used:
+        $ref: metric_config
+      saphana.component.memory.used:
+        $ref: metric_config
+      saphana.connection.count:
+        $ref: metric_config
+      saphana.cpu.used:
+        $ref: metric_config
+      saphana.disk.size.current:
+        $ref: metric_config
+      saphana.host.memory.current:
+        $ref: metric_config
+      saphana.host.swap.current:
+        $ref: metric_config
+      saphana.instance.code_size:
+        $ref: metric_config
+      saphana.instance.memory.current:
+        $ref: metric_config
+      saphana.instance.memory.shared.allocated:
+        $ref: metric_config
+      saphana.instance.memory.used.peak:
+        $ref: metric_config
+      saphana.license.expiration.time:
+        $ref: metric_config
+      saphana.license.limit:
+        $ref: metric_config
+      saphana.license.peak:
+        $ref: metric_config
+      saphana.network.request.average_time:
+        $ref: metric_config
+      saphana.network.request.count:
+        $ref: metric_config
+      saphana.network.request.finished.count:
+        $ref: metric_config
+      saphana.replication.average_time:
+        $ref: metric_config
+      saphana.replication.backlog.size:
+        $ref: metric_config
+      saphana.replication.backlog.time:
+        $ref: metric_config
+      saphana.row_store.memory.used:
+        $ref: metric_config
+      saphana.schema.memory.used.current:
+        $ref: metric_config
+      saphana.schema.memory.used.max:
+        $ref: metric_config
+      saphana.schema.operation.count:
+        $ref: metric_config
+      saphana.schema.record.compressed.count:
+        $ref: metric_config
+      saphana.schema.record.count:
+        $ref: metric_config
+      saphana.service.code_size:
+        $ref: metric_config
+      saphana.service.count:
+        $ref: metric_config
+      saphana.service.memory.compactors.allocated:
+        $ref: metric_config
+      saphana.service.memory.compactors.freeable:
+        $ref: metric_config
+      saphana.service.memory.effective_limit:
+        $ref: metric_config
+      saphana.service.memory.heap.current:
+        $ref: metric_config
+      saphana.service.memory.limit:
+        $ref: metric_config
+      saphana.service.memory.shared.current:
+        $ref: metric_config
+      saphana.service.memory.used:
+        $ref: metric_config
+      saphana.service.stack_size:
+        $ref: metric_config
+      saphana.service.thread.count:
+        $ref: metric_config
+      saphana.transaction.blocked:
+        $ref: metric_config
+      saphana.transaction.count:
+        $ref: metric_config
+      saphana.uptime:
+        $ref: metric_config
+      saphana.volume.operation.count:
+        $ref: metric_config
+      saphana.volume.operation.size:
+        $ref: metric_config
+      saphana.volume.operation.time:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for saphana resource attributes.
+    type: object
+    properties:
+      db.system:
+        $ref: resource_attribute_config
+      saphana.host:
+        $ref: resource_attribute_config

@@ -1,0 +1,5 @@
+description: Config is the configuration for the unroll processor.
+type: object
+properties:
+  recursive:
+    type: boolean

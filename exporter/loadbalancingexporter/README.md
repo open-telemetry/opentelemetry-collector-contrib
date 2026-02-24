@@ -97,7 +97,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
 * The `k8s` node accepts the following optional properties:
   * `service` Kubernetes service to resolve, e.g. `lb-svc.lb-ns`. If no namespace is specified, an attempt will be made to infer the namespace for this collector, and if this fails it will fall back to the `default` namespace.
   * `ports` port to be used for exporting the traces to the addresses resolved from `service`. If `ports` is not specified, the default port 4317 is used. When multiple ports are specified, two backends are added to the load balancer as if they were at different pods.
-  * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
+  * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1m` will be used.
   * `return_hostnames` will return hostnames instead of IPs. This is useful in certain situations like using istio in sidecar mode. To use this feature, the `service` must be a headless `Service`, pointing at a `StatefulSet`, and the `service` must be what is specified under `.spec.serviceName` in the `StatefulSet`.
   * **RBAC requirement:** the Collector pod must run with a service account that is allowed to `get`, `list`, and `watch` `discovery.k8s.io/v1` `EndpointSlice` objects in the target namespace; otherwise the resolver cache remains empty and the exporter logs `couldn't find the exporter for the endpoint ""`.
 * The `aws_cloud_map` node accepts the following properties:
