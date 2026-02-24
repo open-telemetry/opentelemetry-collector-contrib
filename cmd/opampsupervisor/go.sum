@@ -152,6 +152,8 @@ github.com/lightstep/go-expohisto v1.0.0 h1:UPtTS1rGdtehbbAF7o/dhkWLTDI73UifG8Lb
 github.com/lightstep/go-expohisto v1.0.0/go.mod h1:xDXD0++Mu2FOaItXtdDfksfgxfV0z1TMPa+e/EUd0cs=
 github.com/lufia/plan9stats v0.0.0-20251013123823-9fd1530e3ec3 h1:PwQumkgq4/acIiZhtifTV5OUqqiP82UAl0h87xj/l9k=
 github.com/lufia/plan9stats v0.0.0-20251013123823-9fd1530e3ec3/go.mod h1:autxFIvghDt3jPTLoqZ9OZ7s9qTGNAWmYCjVFWPX/zg=
+github.com/madflojo/testcerts v1.5.0 h1:GhQllyAiGzXVZU+i8O/cQkPTHzN59RxMGtm3uETgXnU=
+github.com/madflojo/testcerts v1.5.0/go.mod h1:MW8sh39gLnkKh4K0Nc55AyHEDl9l/FBLDUsQhpmkuo0=
 github.com/magefile/mage v1.15.0 h1:BvGheCMAsG3bWUDbZ8AyXXpCNwU9u5CB6sM+HNb9HYg=
 github.com/magefile/mage v1.15.0/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
 github.com/michel-laterman/proxy-connect-dialer-go v0.1.0 h1:Q8asukpmyrEheocd+R+6YEI4jcm62sHHalgTMG+LoLw=
@@ -174,8 +176,8 @@ github.com/mostynb/go-grpc-compression v1.2.3 h1:42/BKWMy0KEJGSdWvzqIyOZ95YcR9mL
 github.com/mostynb/go-grpc-compression v1.2.3/go.mod h1:AghIxF3P57umzqM9yz795+y1Vjs47Km/Y2FE6ouQ7Lg=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/open-telemetry/opamp-go v0.22.0 h1:7UnsQgFFS7ffM09JQk+9aGVBAAlsLfcooZ9xvSYwxWM=
-github.com/open-telemetry/opamp-go v0.22.0/go.mod h1:339N71soCPrhHywbAcKUZJDODod581ZOxCpTkrl3zYQ=
+github.com/open-telemetry/opamp-go v0.23.0 h1:k7h7w/muprut9/DAhUC4anX4v7hIdgO02gIsSjV4uq0=
+github.com/open-telemetry/opamp-go v0.23.0/go.mod h1:DIIVdkLefdqPW5L+4I2twmAicVrTB0Bp5XJAfedZzAM=
 github.com/open-telemetry/otel-arrow/go v0.46.0 h1:J34xMBfkJqzl8r0u9GnMJUtPd/pLy65OA6sZxGZy1Ug=
 github.com/open-telemetry/otel-arrow/go v0.46.0/go.mod h1:N+UPu9aKbbooffR4QZqo+xNMaOxcaMN5u2W/boGEYYI=
 github.com/openzipkin/zipkin-go v0.4.3 h1:9EGwpqkgnwdEIJ+Od7QVSEIH+ocmm5nPat0G7sjsSdg=
