@@ -6,8 +6,11 @@ package redactionprocessor // import "github.com/open-telemetry/opentelemetry-co
 //nolint:gosec
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"hash"
@@ -15,6 +18,7 @@ import (
 	"sort"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -389,6 +393,10 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 			return hashString(match, sha3.New256())
 		case MD5:
 			return hashString(match, md5.New())
+		case HMACSHA256:
+			return hashStringHMAC(match, s.config.HMACKey, sha256.New)
+		case HMACSHA512:
+			return hashStringHMAC(match, s.config.HMACKey, sha512.New)
 		default:
 			return "****"
 		}
@@ -399,6 +407,12 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 func hashString(input string, hasher hash.Hash) string {
 	hasher.Write([]byte(input))
 	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func hashStringHMAC(input string, key configopaque.String, newHash func() hash.Hash) string {
+	h := hmac.New(newHash, []byte(string(key)))
+	h.Write([]byte(input))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // addMetaAttrs adds diagnostic information about redacted or masked attribute keys

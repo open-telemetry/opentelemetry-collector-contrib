@@ -525,6 +525,35 @@ func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric 
 		pcommon.NewValueStr(metadata.AttributeStateReserved.String()))
 }
 
+func TestScrape_UtilizationExcludesReservedBlocks(t *testing.T) {
+	cfg := metadata.DefaultMetricsBuilderConfig()
+	cfg.Metrics.SystemFilesystemUtilization.Enabled = true
+
+	scraper, err := newFileSystemScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
+		MetricsBuilderConfig: cfg,
+	})
+	require.NoError(t, err)
+
+	scraper.partitions = func(context.Context, bool) ([]disk.PartitionStat, error) {
+		return []disk.PartitionStat{{Device: "/dev/sda1", Mountpoint: "/", Fstype: "ext4"}}, nil
+	}
+	scraper.usage = func(context.Context, string) (*disk.UsageStat, error) {
+		return &disk.UsageStat{Total: 100, Used: 60, Free: 35}, nil
+	}
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	m, err := findMetricByName(metrics, "system.filesystem.utilization")
+	require.NoError(t, err)
+	require.Equal(t, 1, m.Gauge().DataPoints().Len())
+
+	actual := m.Gauge().DataPoints().At(0).DoubleValue()
+	assert.Equal(t, 0.63, actual, "utilization should be Used/(Used+Free), not Used/Total")
+}
+
 func isUnix() bool {
 	return slices.Contains([]string{"linux", "darwin", "freebsd", "openbsd", "solaris"}, runtime.GOOS)
 }

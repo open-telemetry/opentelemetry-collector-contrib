@@ -23,7 +23,8 @@ func getDimensionUpdateFromMetadata(
 	metadata metadata.MetadataUpdate,
 	nonAlphanumericDimChars string,
 ) *DimensionUpdate {
-	properties, tags := getPropertiesAndTags(defaults, metadata)
+	skipSanitization := metadata.ResourceIDKey == "k8s.service.uid"
+	properties, tags := getPropertiesAndTags(defaults, metadata, skipSanitization)
 
 	return &DimensionUpdate{
 		Name:       FilterKeyChars(metadata.ResourceIDKey, nonAlphanumericDimChars),
@@ -45,7 +46,7 @@ func sanitizeProperty(property string) string {
 	return property
 }
 
-func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdate) (map[string]*string, map[string]bool) {
+func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdate, skipSanitization bool) (map[string]*string, map[string]bool) {
 	properties := map[string]*string{}
 	tags := map[string]bool{}
 
@@ -54,7 +55,10 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 	}
 
 	for label, val := range kmu.MetadataToAdd {
-		key := sanitizeProperty(label)
+		key := label
+		if !skipSanitization {
+			key = sanitizeProperty(label)
+		}
 		if key == "" {
 			continue
 		}
@@ -68,7 +72,10 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 	}
 
 	for label, val := range kmu.MetadataToRemove {
-		key := sanitizeProperty(label)
+		key := label
+		if !skipSanitization {
+			key = sanitizeProperty(label)
+		}
 		if key == "" {
 			continue
 		}
@@ -81,7 +88,10 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 	}
 
 	for label, val := range kmu.MetadataToUpdate {
-		key := sanitizeProperty(label)
+		key := label
+		if !skipSanitization {
+			key = sanitizeProperty(label)
+		}
 		if key == "" {
 			continue
 		}
