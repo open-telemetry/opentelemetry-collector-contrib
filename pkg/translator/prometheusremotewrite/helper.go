@@ -179,10 +179,14 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 
 	if !disableScopeInfo {
 		if scope.Name() != "" {
-			l["otel_scope_name"] = scope.Name()
+			if key, err := labelNamer.Build("otel_scope_name"); err == nil {
+				l[key] = scope.Name()
+			}
 		}
 		if scope.Version() != "" {
-			l["otel_scope_version"] = scope.Version()
+			if key, err := labelNamer.Build("otel_scope_version"); err == nil {
+				l[key] = scope.Version()
+			}
 		}
 		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
 			key, err := labelNamer.Build("otel_scope_" + k)
