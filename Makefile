@@ -196,9 +196,13 @@ gomoddownload:
 gotest:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
 
-.PHONY: test-no-race
-test-no-race:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test" GOTEST_RACE_OPT=
+# gotest-no-race runs only packages that have //go:build !race test files,
+# without the race detector. This is much cheaper than running the full suite
+# twice — most modules will skip immediately.
+.PHONY: gotest-no-race
+gotest-no-race:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-no-race"
+
 
 .PHONY: gotest-with-cover
 gotest-with-cover:
