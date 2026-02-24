@@ -1,4 +1,9 @@
+display_name: CouchDB Receiver
 type: couchdb
+
+description: |
+  This receiver fetches stats from a couchdb server using the `/_node/{node-name}/_stats/couchdb`
+  [endpoint](https://docs.couchdb.org/en/latest/api/server/common.html#node-node-name-stats).
 
 status:
   class: receiver

@@ -3,10 +3,17 @@ $defs:
     description: CertificateTarget represents a target for certificate checking, which can be either a network endpoint or a local file
     type: object
     properties:
+      file_format:
+        $ref: file_format
       file_path:
         type: string
+      password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
     allOf:
       - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
+  file_format:
+    description: FileFormat represents the format of a local certificate file.
+    type: string
 description: Config defines the configuration for the various elements of the receiver agent.
 type: object
 properties:

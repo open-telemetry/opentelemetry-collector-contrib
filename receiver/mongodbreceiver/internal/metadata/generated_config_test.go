@@ -75,9 +75,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbWtcacheBytesRead:       MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					Database:      ResourceAttributeConfig{Enabled: true},
-					ServerAddress: ResourceAttributeConfig{Enabled: true},
-					ServerPort:    ResourceAttributeConfig{Enabled: true},
+					ServerAddress:     ResourceAttributeConfig{Enabled: true},
+					ServerPort:        ResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -134,9 +134,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbWtcacheBytesRead:       MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					Database:      ResourceAttributeConfig{Enabled: false},
-					ServerAddress: ResourceAttributeConfig{Enabled: false},
-					ServerPort:    ResourceAttributeConfig{Enabled: false},
+					ServerAddress:     ResourceAttributeConfig{Enabled: false},
+					ServerPort:        ResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -172,17 +172,17 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				Database:      ResourceAttributeConfig{Enabled: true},
-				ServerAddress: ResourceAttributeConfig{Enabled: true},
-				ServerPort:    ResourceAttributeConfig{Enabled: true},
+				ServerAddress:     ResourceAttributeConfig{Enabled: true},
+				ServerPort:        ResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				Database:      ResourceAttributeConfig{Enabled: false},
-				ServerAddress: ResourceAttributeConfig{Enabled: false},
-				ServerPort:    ResourceAttributeConfig{Enabled: false},
+				ServerAddress:     ResourceAttributeConfig{Enabled: false},
+				ServerPort:        ResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

@@ -1,4 +1,7 @@
+display_name: File Stats Receiver
 type: filestats
+
+description: The File Stats receiver collects metrics from files specified with a glob pattern.
 
 status:
   class: receiver
