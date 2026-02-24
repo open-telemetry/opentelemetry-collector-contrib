@@ -14,7 +14,6 @@ attributes:
   core:
     description: Core number of the CPU.
     type: string
-    requirement_level: recommended
 
   cpu:
     description: Logical CPU number starting at 0.
@@ -23,7 +22,6 @@ attributes:
   socket:
     description: Socket number of the CPU.
     type: string
-    requirement_level: recommended
 
   state:
     description: Breakdown of CPU usage by type.
