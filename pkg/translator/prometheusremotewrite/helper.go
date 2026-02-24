@@ -186,10 +186,9 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 		}
 		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
 			key, err := labelNamer.Build("otel_scope_" + k)
-			if err != nil {
-				return true
+			if err == nil {
+				l[key] = v.AsString()
 			}
-			l[key] = v.AsString()
 			return true
 		})
 	}
