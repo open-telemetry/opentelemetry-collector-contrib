@@ -169,8 +169,7 @@ The Elasticsearch exporter supports several document schemas and preprocessing
 behaviours, which may be configured through the following settings:
 
 - `mapping`:
-  - `mode` (DEPRECATED) The mapping mode if supplied via config file is deprecated and will soon be ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`.
-
+  - `mode` (DEPRECATED): The mapping mode if supplied via config file is ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`.
   - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
 
 The mapping mode can be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
