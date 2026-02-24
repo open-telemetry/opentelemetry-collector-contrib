@@ -93,3 +93,58 @@ func assertCPUFrequencyMetricValid(t *testing.T, metric pmetric.Metric) {
 		require.GreaterOrEqual(t, dp.DoubleValue(), 0.0, "CPU frequency should be non-negative")
 	}
 }
+
+func TestScrape_CpuTopologyAttributes(t *testing.T) {
+	type testCase struct {
+		name               string
+		getDataPoint       func(pmetric.Metric) pmetric.NumberDataPoint
+	}
+
+	testCases := []testCase{
+		{
+			name: "system.cpu.frequency",
+			getDataPoint: func(m pmetric.Metric) pmetric.NumberDataPoint {
+				return m.Gauge().DataPoints().At(0)
+			},
+		},
+		{
+			name: "system.cpu.time",
+			getDataPoint: func(m pmetric.Metric) pmetric.NumberDataPoint {
+				return m.Sum().DataPoints().At(0)
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.DefaultMetricsBuilderConfig()
+			cfg.Metrics.SystemCPUTime.Enabled = true
+			cfg.Metrics.SystemCPUFrequency.Enabled = true
+
+			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
+				&Config{MetricsBuilderConfig: cfg})
+
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize CPU scraper")
+
+			md, err := scraper.scrape(t.Context())
+			require.NoError(t, err, "Failed to scrape metrics")
+
+			require.Equal(t, 1, md.MetricCount(), "Expected 1 metric")
+
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			metric := metrics.At(0)
+
+			require.Greater(t, metric.Gauge().DataPoints().Len(), 0, "Should have at least one data point")
+			dp := test.getDataPoint(metric)
+
+			socketAttr, hasSocket := dp.Attributes().Get("socket")
+			require.True(t, hasSocket, "Data point should have 'socket' attribute")
+			require.NotEmpty(t, socketAttr.Str(), "Socket attribute should not be empty")
+
+			coreAttr, hasCore := dp.Attributes().Get("core")
+			require.True(t, hasCore, "Data point should have 'core' attribute")
+			require.NotEmpty(t, coreAttr.Str(), "Core attribute should not be empty")
+		})
+	}
+}
