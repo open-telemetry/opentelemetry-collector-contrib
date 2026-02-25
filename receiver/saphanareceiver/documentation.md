@@ -24,7 +24,7 @@ Number of current alerts.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| rating | The alert rating. | Any Str | Recommended |
+| rating | The alert rating. | Any Str | Required |
 
 ### saphana.backup.latest
 
@@ -46,8 +46,8 @@ The memory used in all columns.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of column store memory. | Str: ``main``, ``delta`` | Recommended |
-| subtype | The subtype of column store memory. | Str: ``data``, ``dict``, ``index``, ``misc`` | Recommended |
+| type | The type of column store memory. | Str: ``main``, ``delta`` | Required |
+| subtype | The subtype of column store memory. | Str: ``data``, ``dict``, ``index``, ``misc`` | Required |
 
 ### saphana.component.memory.used
 
@@ -61,7 +61,7 @@ The memory used in components.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| component | The SAP HANA component. | Any Str | Recommended |
+| component | The SAP HANA component. | Any Str | Required |
 
 ### saphana.connection.count
 
@@ -75,7 +75,7 @@ The number of current connections.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The connection status. | Str: ``running``, ``idle``, ``queueing`` | Recommended |
+| status | The connection status. | Str: ``running``, ``idle``, ``queueing`` | Required |
 
 ### saphana.cpu.used
 
@@ -89,7 +89,7 @@ Total CPU time spent.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of cpu. | Str: ``user``, ``system``, ``io_wait``, ``idle`` | Recommended |
+| type | The type of cpu. | Str: ``user``, ``system``, ``io_wait``, ``idle`` | Required |
 
 ### saphana.disk.size.current
 
@@ -103,9 +103,9 @@ The disk size.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| path | The SAP HANA disk path. | Any Str | Recommended |
-| usage_type | The SAP HANA disk & volume usage type. | Any Str | Recommended |
-| state | The state of the disk storage. | Str: ``used``, ``free`` | Recommended |
+| path | The SAP HANA disk path. | Any Str | Required |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str | Required |
+| state | The state of the disk storage. | Str: ``used``, ``free`` | Required |
 
 ### saphana.host.memory.current
 
@@ -119,7 +119,7 @@ The amount of physical memory on the host.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The state of memory. | Str: ``used``, ``free`` | Recommended |
+| state | The state of memory. | Str: ``used``, ``free`` | Required |
 
 ### saphana.host.swap.current
 
@@ -133,7 +133,7 @@ The amount of swap space on the host.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The state of swap data. | Str: ``used``, ``free`` | Recommended |
+| state | The state of swap data. | Str: ``used``, ``free`` | Required |
 
 ### saphana.instance.code_size
 
@@ -155,7 +155,7 @@ The size of the memory pool for all SAP HANA processes.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The state of memory. | Str: ``used``, ``free`` | Recommended |
+| state | The state of memory. | Str: ``used``, ``free`` | Required |
 
 ### saphana.instance.memory.shared.allocated
 
@@ -185,8 +185,8 @@ The amount of time remaining before license expiration.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| system | The SAP HANA system. | Any Str | Recommended |
-| product | The SAP HANA product. | Any Str | Recommended |
+| system | The SAP HANA system. | Any Str | Required |
+| product | The SAP HANA product. | Any Str | Required |
 
 ### saphana.license.limit
 
@@ -200,8 +200,8 @@ The allowed product usage as specified by the license (for example, main memory)
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| system | The SAP HANA system. | Any Str | Recommended |
-| product | The SAP HANA product. | Any Str | Recommended |
+| system | The SAP HANA system. | Any Str | Required |
+| product | The SAP HANA product. | Any Str | Required |
 
 ### saphana.license.peak
 
@@ -215,8 +215,8 @@ The peak product usage value during last 13 months, measured periodically.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| system | The SAP HANA system. | Any Str | Recommended |
-| product | The SAP HANA product. | Any Str | Recommended |
+| system | The SAP HANA system. | Any Str | Required |
+| product | The SAP HANA product. | Any Str | Required |
 
 ### saphana.network.request.average_time
 
@@ -238,7 +238,7 @@ The number of active and pending service requests.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | The state of network request. | Str: ``active``, ``pending`` | Recommended |
+| state | The state of network request. | Str: ``active``, ``pending`` | Required |
 
 ### saphana.network.request.finished.count
 
@@ -252,7 +252,7 @@ The number of service requests that have completed.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of network request. | Str: ``internal``, ``external`` | Recommended |
+| type | The type of network request. | Str: ``internal``, ``external`` | Required |
 
 ### saphana.replication.average_time
 
@@ -266,10 +266,10 @@ The average amount of time consumed replicating a log.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| primary | The primary SAP HANA host in replication. | Any Str | Recommended |
-| secondary | The secondary SAP HANA host in replication. | Any Str | Recommended |
-| port | The SAP HANA port. | Any Str | Recommended |
-| mode | The replication mode. | Any Str | Recommended |
+| primary | The primary SAP HANA host in replication. | Any Str | Required |
+| secondary | The secondary SAP HANA host in replication. | Any Str | Required |
+| port | The SAP HANA port. | Any Str | Required |
+| mode | The replication mode. | Any Str | Required |
 
 ### saphana.replication.backlog.size
 
@@ -283,10 +283,10 @@ The current replication backlog size.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| primary | The primary SAP HANA host in replication. | Any Str | Recommended |
-| secondary | The secondary SAP HANA host in replication. | Any Str | Recommended |
-| port | The SAP HANA port. | Any Str | Recommended |
-| mode | The replication mode. | Any Str | Recommended |
+| primary | The primary SAP HANA host in replication. | Any Str | Required |
+| secondary | The secondary SAP HANA host in replication. | Any Str | Required |
+| port | The SAP HANA port. | Any Str | Required |
+| mode | The replication mode. | Any Str | Required |
 
 ### saphana.replication.backlog.time
 
@@ -300,10 +300,10 @@ The current replication backlog.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| primary | The primary SAP HANA host in replication. | Any Str | Recommended |
-| secondary | The secondary SAP HANA host in replication. | Any Str | Recommended |
-| port | The SAP HANA port. | Any Str | Recommended |
-| mode | The replication mode. | Any Str | Recommended |
+| primary | The primary SAP HANA host in replication. | Any Str | Required |
+| secondary | The secondary SAP HANA host in replication. | Any Str | Required |
+| port | The SAP HANA port. | Any Str | Required |
+| mode | The replication mode. | Any Str | Required |
 
 ### saphana.row_store.memory.used
 
@@ -317,7 +317,7 @@ The used memory for all row tables.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of row store memory. | Str: ``fixed``, ``variable`` | Recommended |
+| type | The type of row store memory. | Str: ``fixed``, ``variable`` | Required |
 
 ### saphana.schema.memory.used.current
 
@@ -331,8 +331,8 @@ The memory size for all tables in schema.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
-| type | The type of schema memory. | Str: ``main``, ``delta``, ``history_main``, ``history_delta`` | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
+| type | The type of schema memory. | Str: ``main``, ``delta``, ``history_main``, ``history_delta`` | Required |
 
 ### saphana.schema.memory.used.max
 
@@ -346,7 +346,7 @@ The estimated maximum memory consumption for all fully loaded tables in schema (
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
 
 ### saphana.schema.operation.count
 
@@ -360,8 +360,8 @@ The number of operations done on all tables in schema.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
-| type | The type of operation. | Str: ``read``, ``write``, ``merge`` | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
+| type | The type of operation. | Str: ``read``, ``write``, ``merge`` | Required |
 
 ### saphana.schema.record.compressed.count
 
@@ -375,7 +375,7 @@ The number of entries in main during the last optimize compression run for all t
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
 
 ### saphana.schema.record.count
 
@@ -389,8 +389,8 @@ The number of records for all tables in schema.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
-| type | The type of schema record. | Str: ``main``, ``delta``, ``history_main``, ``history_delta`` | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
+| type | The type of schema record. | Str: ``main``, ``delta``, ``history_main``, ``history_delta`` | Required |
 
 ### saphana.service.code_size
 
@@ -404,7 +404,7 @@ The service code size, including shared libraries.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service | The SAP HANA service. | Any Str | Recommended |
+| service | The SAP HANA service. | Any Str | Required |
 
 ### saphana.service.count
 
@@ -418,7 +418,7 @@ The number of services in a given status.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The status of services. | Str: ``active``, ``inactive`` | Recommended |
+| status | The status of services. | Str: ``active``, ``inactive`` | Required |
 
 ### saphana.service.memory.compactors.allocated
 
@@ -432,7 +432,7 @@ The part of the memory pool that can potentially (if unpinned) be freed during a
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service | The SAP HANA service. | Any Str | Recommended |
+| service | The SAP HANA service. | Any Str | Required |
 
 ### saphana.service.memory.compactors.freeable
 
@@ -446,7 +446,7 @@ The memory that can be freed during a memory shortage.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service | The SAP HANA service. | Any Str | Recommended |
+| service | The SAP HANA service. | Any Str | Required |
 
 ### saphana.service.memory.effective_limit
 
@@ -460,7 +460,7 @@ The effective maximum memory pool size, calculated considering the pool sizes of
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service | The SAP HANA service. | Any Str | Recommended |
+| service | The SAP HANA service. | Any Str | Required |
 
 ### saphana.service.memory.heap.current
 
@@ -474,8 +474,8 @@ The size of the heap portion of the memory pool.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service | The SAP HANA service. | Any Str | Recommended |
-| state | The state of memory. | Str: ``used``, ``free`` | Recommended |
+| service | The SAP HANA service. | Any Str | Required |
+| state | The state of memory. | Str: ``used``, ``free`` | Required |
 
 ### saphana.service.memory.limit
 
@@ -489,7 +489,7 @@ The configured maximum memory pool size.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service | The SAP HANA service. | Any Str | Recommended |
+| service | The SAP HANA service. | Any Str | Required |
 
 ### saphana.service.memory.shared.current
 
@@ -503,8 +503,8 @@ The size of the shared portion of the memory pool.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service | The SAP HANA service. | Any Str | Recommended |
-| state | The state of memory. | Str: ``used``, ``free`` | Recommended |
+| service | The SAP HANA service. | Any Str | Required |
+| state | The state of memory. | Str: ``used``, ``free`` | Required |
 
 ### saphana.service.memory.used
 
@@ -518,8 +518,8 @@ The used memory from the operating system perspective.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service | The SAP HANA service. | Any Str | Recommended |
-| type | The type of service memory. | Str: ``logical``, ``physical`` | Recommended |
+| service | The SAP HANA service. | Any Str | Required |
+| type | The type of service memory. | Str: ``logical``, ``physical`` | Required |
 
 ### saphana.service.stack_size
 
@@ -533,7 +533,7 @@ The service stack size.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| service | The SAP HANA service. | Any Str | Recommended |
+| service | The SAP HANA service. | Any Str | Required |
 
 ### saphana.service.thread.count
 
@@ -547,7 +547,7 @@ The number of service threads in a given status.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The status of threads. | Str: ``active``, ``inactive`` | Recommended |
+| status | The status of threads. | Str: ``active``, ``inactive`` | Required |
 
 ### saphana.transaction.blocked
 
@@ -569,7 +569,7 @@ The number of transactions.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The transaction type. | Str: ``update``, ``commit``, ``rollback`` | Recommended |
+| type | The transaction type. | Str: ``update``, ``commit``, ``rollback`` | Required |
 
 ### saphana.uptime
 
@@ -583,8 +583,8 @@ The uptime of the database.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| system | The SAP HANA system. | Any Str | Recommended |
-| database | The SAP HANA database. | Any Str | Recommended |
+| system | The SAP HANA system. | Any Str | Required |
+| database | The SAP HANA database. | Any Str | Required |
 
 ### saphana.volume.operation.count
 
@@ -598,9 +598,9 @@ The number of operations executed.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| path | The SAP HANA disk path. | Any Str | Recommended |
-| usage_type | The SAP HANA disk & volume usage type. | Any Str | Recommended |
-| type | The type of operation. | Str: ``read``, ``write`` | Recommended |
+| path | The SAP HANA disk path. | Any Str | Required |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str | Required |
+| type | The type of operation. | Str: ``read``, ``write`` | Required |
 
 ### saphana.volume.operation.size
 
@@ -614,9 +614,9 @@ The size of operations executed.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| path | The SAP HANA disk path. | Any Str | Recommended |
-| usage_type | The SAP HANA disk & volume usage type. | Any Str | Recommended |
-| type | The type of operation. | Str: ``read``, ``write`` | Recommended |
+| path | The SAP HANA disk path. | Any Str | Required |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str | Required |
+| type | The type of operation. | Str: ``read``, ``write`` | Required |
 
 ### saphana.volume.operation.time
 
@@ -630,9 +630,9 @@ The time spent executing operations.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| path | The SAP HANA disk path. | Any Str | Recommended |
-| usage_type | The SAP HANA disk & volume usage type. | Any Str | Recommended |
-| type | The type of operation. | Str: ``read``, ``write`` | Recommended |
+| path | The SAP HANA disk path. | Any Str | Required |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str | Required |
+| type | The type of operation. | Str: ``read``, ``write`` | Required |
 
 ## Resource Attributes
 

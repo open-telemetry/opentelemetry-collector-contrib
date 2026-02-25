@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,57 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["SaphanaAlertCount"] = mb.metricSaphanaAlertCount.config.AggregationStrategy
+			aggMap["SaphanaBackupLatest"] = mb.metricSaphanaBackupLatest.config.AggregationStrategy
+			aggMap["SaphanaColumnMemoryUsed"] = mb.metricSaphanaColumnMemoryUsed.config.AggregationStrategy
+			aggMap["SaphanaComponentMemoryUsed"] = mb.metricSaphanaComponentMemoryUsed.config.AggregationStrategy
+			aggMap["SaphanaConnectionCount"] = mb.metricSaphanaConnectionCount.config.AggregationStrategy
+			aggMap["SaphanaCPUUsed"] = mb.metricSaphanaCPUUsed.config.AggregationStrategy
+			aggMap["SaphanaDiskSizeCurrent"] = mb.metricSaphanaDiskSizeCurrent.config.AggregationStrategy
+			aggMap["SaphanaHostMemoryCurrent"] = mb.metricSaphanaHostMemoryCurrent.config.AggregationStrategy
+			aggMap["SaphanaHostSwapCurrent"] = mb.metricSaphanaHostSwapCurrent.config.AggregationStrategy
+			aggMap["SaphanaInstanceCodeSize"] = mb.metricSaphanaInstanceCodeSize.config.AggregationStrategy
+			aggMap["SaphanaInstanceMemoryCurrent"] = mb.metricSaphanaInstanceMemoryCurrent.config.AggregationStrategy
+			aggMap["SaphanaInstanceMemorySharedAllocated"] = mb.metricSaphanaInstanceMemorySharedAllocated.config.AggregationStrategy
+			aggMap["SaphanaInstanceMemoryUsedPeak"] = mb.metricSaphanaInstanceMemoryUsedPeak.config.AggregationStrategy
+			aggMap["SaphanaLicenseExpirationTime"] = mb.metricSaphanaLicenseExpirationTime.config.AggregationStrategy
+			aggMap["SaphanaLicenseLimit"] = mb.metricSaphanaLicenseLimit.config.AggregationStrategy
+			aggMap["SaphanaLicensePeak"] = mb.metricSaphanaLicensePeak.config.AggregationStrategy
+			aggMap["SaphanaNetworkRequestAverageTime"] = mb.metricSaphanaNetworkRequestAverageTime.config.AggregationStrategy
+			aggMap["SaphanaNetworkRequestCount"] = mb.metricSaphanaNetworkRequestCount.config.AggregationStrategy
+			aggMap["SaphanaNetworkRequestFinishedCount"] = mb.metricSaphanaNetworkRequestFinishedCount.config.AggregationStrategy
+			aggMap["SaphanaReplicationAverageTime"] = mb.metricSaphanaReplicationAverageTime.config.AggregationStrategy
+			aggMap["SaphanaReplicationBacklogSize"] = mb.metricSaphanaReplicationBacklogSize.config.AggregationStrategy
+			aggMap["SaphanaReplicationBacklogTime"] = mb.metricSaphanaReplicationBacklogTime.config.AggregationStrategy
+			aggMap["SaphanaRowStoreMemoryUsed"] = mb.metricSaphanaRowStoreMemoryUsed.config.AggregationStrategy
+			aggMap["SaphanaSchemaMemoryUsedCurrent"] = mb.metricSaphanaSchemaMemoryUsedCurrent.config.AggregationStrategy
+			aggMap["SaphanaSchemaMemoryUsedMax"] = mb.metricSaphanaSchemaMemoryUsedMax.config.AggregationStrategy
+			aggMap["SaphanaSchemaOperationCount"] = mb.metricSaphanaSchemaOperationCount.config.AggregationStrategy
+			aggMap["SaphanaSchemaRecordCompressedCount"] = mb.metricSaphanaSchemaRecordCompressedCount.config.AggregationStrategy
+			aggMap["SaphanaSchemaRecordCount"] = mb.metricSaphanaSchemaRecordCount.config.AggregationStrategy
+			aggMap["SaphanaServiceCodeSize"] = mb.metricSaphanaServiceCodeSize.config.AggregationStrategy
+			aggMap["SaphanaServiceCount"] = mb.metricSaphanaServiceCount.config.AggregationStrategy
+			aggMap["SaphanaServiceMemoryCompactorsAllocated"] = mb.metricSaphanaServiceMemoryCompactorsAllocated.config.AggregationStrategy
+			aggMap["SaphanaServiceMemoryCompactorsFreeable"] = mb.metricSaphanaServiceMemoryCompactorsFreeable.config.AggregationStrategy
+			aggMap["SaphanaServiceMemoryEffectiveLimit"] = mb.metricSaphanaServiceMemoryEffectiveLimit.config.AggregationStrategy
+			aggMap["SaphanaServiceMemoryHeapCurrent"] = mb.metricSaphanaServiceMemoryHeapCurrent.config.AggregationStrategy
+			aggMap["SaphanaServiceMemoryLimit"] = mb.metricSaphanaServiceMemoryLimit.config.AggregationStrategy
+			aggMap["SaphanaServiceMemorySharedCurrent"] = mb.metricSaphanaServiceMemorySharedCurrent.config.AggregationStrategy
+			aggMap["SaphanaServiceMemoryUsed"] = mb.metricSaphanaServiceMemoryUsed.config.AggregationStrategy
+			aggMap["SaphanaServiceStackSize"] = mb.metricSaphanaServiceStackSize.config.AggregationStrategy
+			aggMap["SaphanaServiceThreadCount"] = mb.metricSaphanaServiceThreadCount.config.AggregationStrategy
+			aggMap["SaphanaTransactionBlocked"] = mb.metricSaphanaTransactionBlocked.config.AggregationStrategy
+			aggMap["SaphanaTransactionCount"] = mb.metricSaphanaTransactionCount.config.AggregationStrategy
+			aggMap["SaphanaUptime"] = mb.metricSaphanaUptime.config.AggregationStrategy
+			aggMap["SaphanaVolumeOperationCount"] = mb.metricSaphanaVolumeOperationCount.config.AggregationStrategy
+			aggMap["SaphanaVolumeOperationSize"] = mb.metricSaphanaVolumeOperationSize.config.AggregationStrategy
+			aggMap["SaphanaVolumeOperationTime"] = mb.metricSaphanaVolumeOperationTime.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,188 +124,370 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaAlertCountDataPoint(ts, "1", "alert_rating-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaAlertCountDataPoint(ts, "3", "alert_rating-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaBackupLatestDataPoint(ts, "1")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaBackupLatestDataPoint(ts, "3")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "1", AttributeColumnMemoryTypeMain, AttributeColumnMemorySubtypeData)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "3", AttributeColumnMemoryTypeMain, AttributeColumnMemorySubtypeData)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "1", "component-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "3", "component-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaConnectionCountDataPoint(ts, "1", AttributeConnectionStatusRunning)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaConnectionCountDataPoint(ts, "3", AttributeConnectionStatusRunning)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaCPUUsedDataPoint(ts, "1", AttributeCPUTypeUser)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaCPUUsedDataPoint(ts, "3", AttributeCPUTypeUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeDiskStateUsedFreeUsed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "3", "path-val", "disk_usage_type-val", AttributeDiskStateUsedFreeUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "3", AttributeMemoryStateUsedFreeUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaHostSwapCurrentDataPoint(ts, "1", AttributeHostSwapStateUsed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaHostSwapCurrentDataPoint(ts, "3", AttributeHostSwapStateUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaInstanceCodeSizeDataPoint(ts, "1")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaInstanceCodeSizeDataPoint(ts, "3")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "3", AttributeMemoryStateUsedFreeUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaInstanceMemorySharedAllocatedDataPoint(ts, "1")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaInstanceMemorySharedAllocatedDataPoint(ts, "3")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts, "1")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts, "3")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaLicenseExpirationTimeDataPoint(ts, "1", "system-val", "product-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaLicenseExpirationTimeDataPoint(ts, "3", "system-val", "product-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaLicenseLimitDataPoint(ts, "1", "system-val", "product-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaLicenseLimitDataPoint(ts, "3", "system-val", "product-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaLicensePeakDataPoint(ts, "1", "system-val", "product-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaLicensePeakDataPoint(ts, "3", "system-val", "product-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(ts, "1")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(ts, "3")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaNetworkRequestCountDataPoint(ts, "1", AttributeActivePendingRequestStateActive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaNetworkRequestCountDataPoint(ts, "3", AttributeActivePendingRequestStateActive)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "1", AttributeInternalExternalRequestTypeInternal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "3", AttributeInternalExternalRequestTypeInternal)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "3", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "3", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "3", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "1", AttributeRowMemoryTypeFixed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "3", AttributeRowMemoryTypeFixed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "1", "schema-val", AttributeSchemaMemoryTypeMain)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "3", "schema-val", AttributeSchemaMemoryTypeMain)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "1", "schema-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "3", "schema-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaOperationCountDataPoint(ts, "1", "schema-val", AttributeSchemaOperationTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaSchemaOperationCountDataPoint(ts, "3", "schema-val", AttributeSchemaOperationTypeRead)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "1", "schema-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "3", "schema-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaRecordCountDataPoint(ts, "1", "schema-val", AttributeSchemaRecordTypeMain)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaSchemaRecordCountDataPoint(ts, "3", "schema-val", AttributeSchemaRecordTypeMain)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceCodeSizeDataPoint(ts, "1", "service-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceCodeSizeDataPoint(ts, "3", "service-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceCountDataPoint(ts, "1", AttributeServiceStatusActive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceCountDataPoint(ts, "3", AttributeServiceStatusActive)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "1", "service-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "3", "service-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "1", "service-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "3", "service-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "1", "service-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "3", "service-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "3", "service-val", AttributeMemoryStateUsedFreeUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "1", "service-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "3", "service-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "3", "service-val", AttributeMemoryStateUsedFreeUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "1", "service-val", AttributeServiceMemoryUsedTypeLogical)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "3", "service-val", AttributeServiceMemoryUsedTypeLogical)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceStackSizeDataPoint(ts, "1", "service-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceStackSizeDataPoint(ts, "3", "service-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceThreadCountDataPoint(ts, "1", AttributeThreadStatusActive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaServiceThreadCountDataPoint(ts, "3", AttributeThreadStatusActive)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaTransactionBlockedDataPoint(ts, "1")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaTransactionBlockedDataPoint(ts, "3")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaTransactionCountDataPoint(ts, "1", AttributeTransactionTypeUpdate)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaTransactionCountDataPoint(ts, "3", AttributeTransactionTypeUpdate)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaUptimeDataPoint(ts, "1", "system-val", "database-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaUptimeDataPoint(ts, "3", "system-val", "database-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaVolumeOperationCountDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaVolumeOperationCountDataPoint(ts, "3", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "3", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "3", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetDbSystem("db.system-val")
 			rb.SetSaphanaHost("saphana.host-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSaphanaAlertCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaBackupLatest.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaColumnMemoryUsed.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaComponentMemoryUsed.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaConnectionCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaCPUUsed.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaDiskSizeCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaHostMemoryCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaHostSwapCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaInstanceCodeSize.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaInstanceMemoryCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaInstanceMemorySharedAllocated.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaInstanceMemoryUsedPeak.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaLicenseExpirationTime.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaLicenseLimit.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaLicensePeak.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaNetworkRequestAverageTime.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaNetworkRequestCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaNetworkRequestFinishedCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaReplicationAverageTime.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaReplicationBacklogSize.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaReplicationBacklogTime.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaRowStoreMemoryUsed.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaSchemaMemoryUsedCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaSchemaMemoryUsedMax.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaSchemaOperationCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaSchemaRecordCompressedCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaSchemaRecordCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceCodeSize.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceMemoryCompactorsAllocated.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceMemoryCompactorsFreeable.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceMemoryEffectiveLimit.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceMemoryHeapCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceMemoryLimit.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceMemorySharedCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceMemoryUsed.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceStackSize.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaServiceThreadCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaTransactionBlocked.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaTransactionCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaUptime.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaVolumeOperationCount.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaVolumeOperationSize.aggDataPoints)
+				assert.Empty(t, mb.metricSaphanaVolumeOperationTime.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -273,828 +509,2079 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "saphana.alert.count":
-					assert.False(t, validatedMetrics["saphana.alert.count"], "Found a duplicate in the metrics slice: saphana.alert.count")
-					validatedMetrics["saphana.alert.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of current alerts.", ms.At(i).Description())
-					assert.Equal(t, "{alerts}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("rating")
-					assert.True(t, ok)
-					assert.Equal(t, "alert_rating-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.alert.count"], "Found a duplicate in the metrics slice: saphana.alert.count")
+						validatedMetrics["saphana.alert.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of current alerts.", ms.At(i).Description())
+						assert.Equal(t, "{alerts}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("rating")
+						assert.True(t, ok)
+						assert.Equal(t, "alert_rating-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.alert.count"], "Found a duplicate in the metrics slice: saphana.alert.count")
+						validatedMetrics["saphana.alert.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of current alerts.", ms.At(i).Description())
+						assert.Equal(t, "{alerts}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.alert.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("rating")
+						assert.True(t, ok)
+					}
 				case "saphana.backup.latest":
-					assert.False(t, validatedMetrics["saphana.backup.latest"], "Found a duplicate in the metrics slice: saphana.backup.latest")
-					validatedMetrics["saphana.backup.latest"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The age of the latest backup by start time.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.backup.latest"], "Found a duplicate in the metrics slice: saphana.backup.latest")
+						validatedMetrics["saphana.backup.latest"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The age of the latest backup by start time.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["saphana.backup.latest"], "Found a duplicate in the metrics slice: saphana.backup.latest")
+						validatedMetrics["saphana.backup.latest"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The age of the latest backup by start time.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.backup.latest"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "saphana.column.memory.used":
-					assert.False(t, validatedMetrics["saphana.column.memory.used"], "Found a duplicate in the metrics slice: saphana.column.memory.used")
-					validatedMetrics["saphana.column.memory.used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The memory used in all columns.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "main", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("subtype")
-					assert.True(t, ok)
-					assert.Equal(t, "data", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.column.memory.used"], "Found a duplicate in the metrics slice: saphana.column.memory.used")
+						validatedMetrics["saphana.column.memory.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory used in all columns.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "main", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("subtype")
+						assert.True(t, ok)
+						assert.Equal(t, "data", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.column.memory.used"], "Found a duplicate in the metrics slice: saphana.column.memory.used")
+						validatedMetrics["saphana.column.memory.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory used in all columns.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.column.memory.used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("subtype")
+						assert.True(t, ok)
+					}
 				case "saphana.component.memory.used":
-					assert.False(t, validatedMetrics["saphana.component.memory.used"], "Found a duplicate in the metrics slice: saphana.component.memory.used")
-					validatedMetrics["saphana.component.memory.used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The memory used in components.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("component")
-					assert.True(t, ok)
-					assert.Equal(t, "component-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.component.memory.used"], "Found a duplicate in the metrics slice: saphana.component.memory.used")
+						validatedMetrics["saphana.component.memory.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory used in components.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("component")
+						assert.True(t, ok)
+						assert.Equal(t, "component-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.component.memory.used"], "Found a duplicate in the metrics slice: saphana.component.memory.used")
+						validatedMetrics["saphana.component.memory.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory used in components.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.component.memory.used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("component")
+						assert.True(t, ok)
+					}
 				case "saphana.connection.count":
-					assert.False(t, validatedMetrics["saphana.connection.count"], "Found a duplicate in the metrics slice: saphana.connection.count")
-					validatedMetrics["saphana.connection.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of current connections.", ms.At(i).Description())
-					assert.Equal(t, "{connections}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("status")
-					assert.True(t, ok)
-					assert.Equal(t, "running", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.connection.count"], "Found a duplicate in the metrics slice: saphana.connection.count")
+						validatedMetrics["saphana.connection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of current connections.", ms.At(i).Description())
+						assert.Equal(t, "{connections}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+						assert.Equal(t, "running", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.connection.count"], "Found a duplicate in the metrics slice: saphana.connection.count")
+						validatedMetrics["saphana.connection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of current connections.", ms.At(i).Description())
+						assert.Equal(t, "{connections}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.connection.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+					}
 				case "saphana.cpu.used":
-					assert.False(t, validatedMetrics["saphana.cpu.used"], "Found a duplicate in the metrics slice: saphana.cpu.used")
-					validatedMetrics["saphana.cpu.used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total CPU time spent.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "user", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.cpu.used"], "Found a duplicate in the metrics slice: saphana.cpu.used")
+						validatedMetrics["saphana.cpu.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total CPU time spent.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "user", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.cpu.used"], "Found a duplicate in the metrics slice: saphana.cpu.used")
+						validatedMetrics["saphana.cpu.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total CPU time spent.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.cpu.used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.disk.size.current":
-					assert.False(t, validatedMetrics["saphana.disk.size.current"], "Found a duplicate in the metrics slice: saphana.disk.size.current")
-					validatedMetrics["saphana.disk.size.current"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The disk size.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("path")
-					assert.True(t, ok)
-					assert.Equal(t, "path-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("usage_type")
-					assert.True(t, ok)
-					assert.Equal(t, "disk_usage_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.disk.size.current"], "Found a duplicate in the metrics slice: saphana.disk.size.current")
+						validatedMetrics["saphana.disk.size.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The disk size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("path")
+						assert.True(t, ok)
+						assert.Equal(t, "path-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("usage_type")
+						assert.True(t, ok)
+						assert.Equal(t, "disk_usage_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "used", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.disk.size.current"], "Found a duplicate in the metrics slice: saphana.disk.size.current")
+						validatedMetrics["saphana.disk.size.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The disk size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.disk.size.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("path")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("usage_type")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("state")
+						assert.True(t, ok)
+					}
 				case "saphana.host.memory.current":
-					assert.False(t, validatedMetrics["saphana.host.memory.current"], "Found a duplicate in the metrics slice: saphana.host.memory.current")
-					validatedMetrics["saphana.host.memory.current"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of physical memory on the host.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.host.memory.current"], "Found a duplicate in the metrics slice: saphana.host.memory.current")
+						validatedMetrics["saphana.host.memory.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of physical memory on the host.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "used", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.host.memory.current"], "Found a duplicate in the metrics slice: saphana.host.memory.current")
+						validatedMetrics["saphana.host.memory.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of physical memory on the host.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.host.memory.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+					}
 				case "saphana.host.swap.current":
-					assert.False(t, validatedMetrics["saphana.host.swap.current"], "Found a duplicate in the metrics slice: saphana.host.swap.current")
-					validatedMetrics["saphana.host.swap.current"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of swap space on the host.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.host.swap.current"], "Found a duplicate in the metrics slice: saphana.host.swap.current")
+						validatedMetrics["saphana.host.swap.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of swap space on the host.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "used", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.host.swap.current"], "Found a duplicate in the metrics slice: saphana.host.swap.current")
+						validatedMetrics["saphana.host.swap.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of swap space on the host.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.host.swap.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+					}
 				case "saphana.instance.code_size":
-					assert.False(t, validatedMetrics["saphana.instance.code_size"], "Found a duplicate in the metrics slice: saphana.instance.code_size")
-					validatedMetrics["saphana.instance.code_size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The instance code size, including shared libraries of SAP HANA processes.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.instance.code_size"], "Found a duplicate in the metrics slice: saphana.instance.code_size")
+						validatedMetrics["saphana.instance.code_size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The instance code size, including shared libraries of SAP HANA processes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["saphana.instance.code_size"], "Found a duplicate in the metrics slice: saphana.instance.code_size")
+						validatedMetrics["saphana.instance.code_size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The instance code size, including shared libraries of SAP HANA processes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.instance.code_size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "saphana.instance.memory.current":
-					assert.False(t, validatedMetrics["saphana.instance.memory.current"], "Found a duplicate in the metrics slice: saphana.instance.memory.current")
-					validatedMetrics["saphana.instance.memory.current"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The size of the memory pool for all SAP HANA processes.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.instance.memory.current"], "Found a duplicate in the metrics slice: saphana.instance.memory.current")
+						validatedMetrics["saphana.instance.memory.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The size of the memory pool for all SAP HANA processes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "used", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.instance.memory.current"], "Found a duplicate in the metrics slice: saphana.instance.memory.current")
+						validatedMetrics["saphana.instance.memory.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The size of the memory pool for all SAP HANA processes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.instance.memory.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+					}
 				case "saphana.instance.memory.shared.allocated":
-					assert.False(t, validatedMetrics["saphana.instance.memory.shared.allocated"], "Found a duplicate in the metrics slice: saphana.instance.memory.shared.allocated")
-					validatedMetrics["saphana.instance.memory.shared.allocated"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The shared memory size of SAP HANA processes.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.instance.memory.shared.allocated"], "Found a duplicate in the metrics slice: saphana.instance.memory.shared.allocated")
+						validatedMetrics["saphana.instance.memory.shared.allocated"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The shared memory size of SAP HANA processes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["saphana.instance.memory.shared.allocated"], "Found a duplicate in the metrics slice: saphana.instance.memory.shared.allocated")
+						validatedMetrics["saphana.instance.memory.shared.allocated"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The shared memory size of SAP HANA processes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.instance.memory.shared.allocated"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "saphana.instance.memory.used.peak":
-					assert.False(t, validatedMetrics["saphana.instance.memory.used.peak"], "Found a duplicate in the metrics slice: saphana.instance.memory.used.peak")
-					validatedMetrics["saphana.instance.memory.used.peak"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.instance.memory.used.peak"], "Found a duplicate in the metrics slice: saphana.instance.memory.used.peak")
+						validatedMetrics["saphana.instance.memory.used.peak"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["saphana.instance.memory.used.peak"], "Found a duplicate in the metrics slice: saphana.instance.memory.used.peak")
+						validatedMetrics["saphana.instance.memory.used.peak"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.instance.memory.used.peak"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "saphana.license.expiration.time":
-					assert.False(t, validatedMetrics["saphana.license.expiration.time"], "Found a duplicate in the metrics slice: saphana.license.expiration.time")
-					validatedMetrics["saphana.license.expiration.time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time remaining before license expiration.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system")
-					assert.True(t, ok)
-					assert.Equal(t, "system-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("product")
-					assert.True(t, ok)
-					assert.Equal(t, "product-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.license.expiration.time"], "Found a duplicate in the metrics slice: saphana.license.expiration.time")
+						validatedMetrics["saphana.license.expiration.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The amount of time remaining before license expiration.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("system")
+						assert.True(t, ok)
+						assert.Equal(t, "system-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("product")
+						assert.True(t, ok)
+						assert.Equal(t, "product-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.license.expiration.time"], "Found a duplicate in the metrics slice: saphana.license.expiration.time")
+						validatedMetrics["saphana.license.expiration.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The amount of time remaining before license expiration.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.license.expiration.time"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("system")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("product")
+						assert.True(t, ok)
+					}
 				case "saphana.license.limit":
-					assert.False(t, validatedMetrics["saphana.license.limit"], "Found a duplicate in the metrics slice: saphana.license.limit")
-					validatedMetrics["saphana.license.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The allowed product usage as specified by the license (for example, main memory).", ms.At(i).Description())
-					assert.Equal(t, "{licenses}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system")
-					assert.True(t, ok)
-					assert.Equal(t, "system-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("product")
-					assert.True(t, ok)
-					assert.Equal(t, "product-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.license.limit"], "Found a duplicate in the metrics slice: saphana.license.limit")
+						validatedMetrics["saphana.license.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The allowed product usage as specified by the license (for example, main memory).", ms.At(i).Description())
+						assert.Equal(t, "{licenses}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("system")
+						assert.True(t, ok)
+						assert.Equal(t, "system-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("product")
+						assert.True(t, ok)
+						assert.Equal(t, "product-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.license.limit"], "Found a duplicate in the metrics slice: saphana.license.limit")
+						validatedMetrics["saphana.license.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The allowed product usage as specified by the license (for example, main memory).", ms.At(i).Description())
+						assert.Equal(t, "{licenses}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.license.limit"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("system")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("product")
+						assert.True(t, ok)
+					}
 				case "saphana.license.peak":
-					assert.False(t, validatedMetrics["saphana.license.peak"], "Found a duplicate in the metrics slice: saphana.license.peak")
-					validatedMetrics["saphana.license.peak"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The peak product usage value during last 13 months, measured periodically.", ms.At(i).Description())
-					assert.Equal(t, "{licenses}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system")
-					assert.True(t, ok)
-					assert.Equal(t, "system-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("product")
-					assert.True(t, ok)
-					assert.Equal(t, "product-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.license.peak"], "Found a duplicate in the metrics slice: saphana.license.peak")
+						validatedMetrics["saphana.license.peak"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The peak product usage value during last 13 months, measured periodically.", ms.At(i).Description())
+						assert.Equal(t, "{licenses}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("system")
+						assert.True(t, ok)
+						assert.Equal(t, "system-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("product")
+						assert.True(t, ok)
+						assert.Equal(t, "product-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.license.peak"], "Found a duplicate in the metrics slice: saphana.license.peak")
+						validatedMetrics["saphana.license.peak"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The peak product usage value during last 13 months, measured periodically.", ms.At(i).Description())
+						assert.Equal(t, "{licenses}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.license.peak"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("system")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("product")
+						assert.True(t, ok)
+					}
 				case "saphana.network.request.average_time":
-					assert.False(t, validatedMetrics["saphana.network.request.average_time"], "Found a duplicate in the metrics slice: saphana.network.request.average_time")
-					validatedMetrics["saphana.network.request.average_time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The average response time calculated over recent requests", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.network.request.average_time"], "Found a duplicate in the metrics slice: saphana.network.request.average_time")
+						validatedMetrics["saphana.network.request.average_time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The average response time calculated over recent requests", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["saphana.network.request.average_time"], "Found a duplicate in the metrics slice: saphana.network.request.average_time")
+						validatedMetrics["saphana.network.request.average_time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The average response time calculated over recent requests", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["saphana.network.request.average_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "saphana.network.request.count":
-					assert.False(t, validatedMetrics["saphana.network.request.count"], "Found a duplicate in the metrics slice: saphana.network.request.count")
-					validatedMetrics["saphana.network.request.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of active and pending service requests.", ms.At(i).Description())
-					assert.Equal(t, "{requests}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.network.request.count"], "Found a duplicate in the metrics slice: saphana.network.request.count")
+						validatedMetrics["saphana.network.request.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of active and pending service requests.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "active", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.network.request.count"], "Found a duplicate in the metrics slice: saphana.network.request.count")
+						validatedMetrics["saphana.network.request.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of active and pending service requests.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.network.request.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+					}
 				case "saphana.network.request.finished.count":
-					assert.False(t, validatedMetrics["saphana.network.request.finished.count"], "Found a duplicate in the metrics slice: saphana.network.request.finished.count")
-					validatedMetrics["saphana.network.request.finished.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of service requests that have completed.", ms.At(i).Description())
-					assert.Equal(t, "{requests}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "internal", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.network.request.finished.count"], "Found a duplicate in the metrics slice: saphana.network.request.finished.count")
+						validatedMetrics["saphana.network.request.finished.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of service requests that have completed.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "internal", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.network.request.finished.count"], "Found a duplicate in the metrics slice: saphana.network.request.finished.count")
+						validatedMetrics["saphana.network.request.finished.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of service requests that have completed.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.network.request.finished.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.replication.average_time":
-					assert.False(t, validatedMetrics["saphana.replication.average_time"], "Found a duplicate in the metrics slice: saphana.replication.average_time")
-					validatedMetrics["saphana.replication.average_time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The average amount of time consumed replicating a log.", ms.At(i).Description())
-					assert.Equal(t, "us", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("primary")
-					assert.True(t, ok)
-					assert.Equal(t, "primary_host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("secondary")
-					assert.True(t, ok)
-					assert.Equal(t, "secondary_host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("port")
-					assert.True(t, ok)
-					assert.Equal(t, "port-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mode")
-					assert.True(t, ok)
-					assert.Equal(t, "replication_mode-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.replication.average_time"], "Found a duplicate in the metrics slice: saphana.replication.average_time")
+						validatedMetrics["saphana.replication.average_time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The average amount of time consumed replicating a log.", ms.At(i).Description())
+						assert.Equal(t, "us", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("primary")
+						assert.True(t, ok)
+						assert.Equal(t, "primary_host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("secondary")
+						assert.True(t, ok)
+						assert.Equal(t, "secondary_host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("port")
+						assert.True(t, ok)
+						assert.Equal(t, "port-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+						assert.Equal(t, "replication_mode-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.replication.average_time"], "Found a duplicate in the metrics slice: saphana.replication.average_time")
+						validatedMetrics["saphana.replication.average_time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The average amount of time consumed replicating a log.", ms.At(i).Description())
+						assert.Equal(t, "us", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["saphana.replication.average_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("primary")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("secondary")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("port")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+					}
 				case "saphana.replication.backlog.size":
-					assert.False(t, validatedMetrics["saphana.replication.backlog.size"], "Found a duplicate in the metrics slice: saphana.replication.backlog.size")
-					validatedMetrics["saphana.replication.backlog.size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The current replication backlog size.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("primary")
-					assert.True(t, ok)
-					assert.Equal(t, "primary_host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("secondary")
-					assert.True(t, ok)
-					assert.Equal(t, "secondary_host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("port")
-					assert.True(t, ok)
-					assert.Equal(t, "port-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mode")
-					assert.True(t, ok)
-					assert.Equal(t, "replication_mode-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.replication.backlog.size"], "Found a duplicate in the metrics slice: saphana.replication.backlog.size")
+						validatedMetrics["saphana.replication.backlog.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The current replication backlog size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("primary")
+						assert.True(t, ok)
+						assert.Equal(t, "primary_host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("secondary")
+						assert.True(t, ok)
+						assert.Equal(t, "secondary_host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("port")
+						assert.True(t, ok)
+						assert.Equal(t, "port-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+						assert.Equal(t, "replication_mode-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.replication.backlog.size"], "Found a duplicate in the metrics slice: saphana.replication.backlog.size")
+						validatedMetrics["saphana.replication.backlog.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The current replication backlog size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.replication.backlog.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("primary")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("secondary")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("port")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+					}
 				case "saphana.replication.backlog.time":
-					assert.False(t, validatedMetrics["saphana.replication.backlog.time"], "Found a duplicate in the metrics slice: saphana.replication.backlog.time")
-					validatedMetrics["saphana.replication.backlog.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The current replication backlog.", ms.At(i).Description())
-					assert.Equal(t, "us", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("primary")
-					assert.True(t, ok)
-					assert.Equal(t, "primary_host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("secondary")
-					assert.True(t, ok)
-					assert.Equal(t, "secondary_host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("port")
-					assert.True(t, ok)
-					assert.Equal(t, "port-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mode")
-					assert.True(t, ok)
-					assert.Equal(t, "replication_mode-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.replication.backlog.time"], "Found a duplicate in the metrics slice: saphana.replication.backlog.time")
+						validatedMetrics["saphana.replication.backlog.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The current replication backlog.", ms.At(i).Description())
+						assert.Equal(t, "us", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("primary")
+						assert.True(t, ok)
+						assert.Equal(t, "primary_host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("secondary")
+						assert.True(t, ok)
+						assert.Equal(t, "secondary_host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("port")
+						assert.True(t, ok)
+						assert.Equal(t, "port-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+						assert.Equal(t, "replication_mode-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.replication.backlog.time"], "Found a duplicate in the metrics slice: saphana.replication.backlog.time")
+						validatedMetrics["saphana.replication.backlog.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The current replication backlog.", ms.At(i).Description())
+						assert.Equal(t, "us", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.replication.backlog.time"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("primary")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("secondary")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("port")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+					}
 				case "saphana.row_store.memory.used":
-					assert.False(t, validatedMetrics["saphana.row_store.memory.used"], "Found a duplicate in the metrics slice: saphana.row_store.memory.used")
-					validatedMetrics["saphana.row_store.memory.used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The used memory for all row tables.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "fixed", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.row_store.memory.used"], "Found a duplicate in the metrics slice: saphana.row_store.memory.used")
+						validatedMetrics["saphana.row_store.memory.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The used memory for all row tables.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "fixed", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.row_store.memory.used"], "Found a duplicate in the metrics slice: saphana.row_store.memory.used")
+						validatedMetrics["saphana.row_store.memory.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The used memory for all row tables.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.row_store.memory.used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.schema.memory.used.current":
-					assert.False(t, validatedMetrics["saphana.schema.memory.used.current"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.current")
-					validatedMetrics["saphana.schema.memory.used.current"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The memory size for all tables in schema.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.Equal(t, "schema-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "main", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.schema.memory.used.current"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.current")
+						validatedMetrics["saphana.schema.memory.used.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory size for all tables in schema.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+						assert.Equal(t, "schema-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "main", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.schema.memory.used.current"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.current")
+						validatedMetrics["saphana.schema.memory.used.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory size for all tables in schema.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.schema.memory.used.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.schema.memory.used.max":
-					assert.False(t, validatedMetrics["saphana.schema.memory.used.max"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.max")
-					validatedMetrics["saphana.schema.memory.used.max"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.Equal(t, "schema-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.schema.memory.used.max"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.max")
+						validatedMetrics["saphana.schema.memory.used.max"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+						assert.Equal(t, "schema-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.schema.memory.used.max"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.max")
+						validatedMetrics["saphana.schema.memory.used.max"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.schema.memory.used.max"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+					}
 				case "saphana.schema.operation.count":
-					assert.False(t, validatedMetrics["saphana.schema.operation.count"], "Found a duplicate in the metrics slice: saphana.schema.operation.count")
-					validatedMetrics["saphana.schema.operation.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of operations done on all tables in schema.", ms.At(i).Description())
-					assert.Equal(t, "{operations}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.Equal(t, "schema-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.schema.operation.count"], "Found a duplicate in the metrics slice: saphana.schema.operation.count")
+						validatedMetrics["saphana.schema.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations done on all tables in schema.", ms.At(i).Description())
+						assert.Equal(t, "{operations}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+						assert.Equal(t, "schema-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.schema.operation.count"], "Found a duplicate in the metrics slice: saphana.schema.operation.count")
+						validatedMetrics["saphana.schema.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations done on all tables in schema.", ms.At(i).Description())
+						assert.Equal(t, "{operations}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.schema.operation.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.schema.record.compressed.count":
-					assert.False(t, validatedMetrics["saphana.schema.record.compressed.count"], "Found a duplicate in the metrics slice: saphana.schema.record.compressed.count")
-					validatedMetrics["saphana.schema.record.compressed.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of entries in main during the last optimize compression run for all tables in schema.", ms.At(i).Description())
-					assert.Equal(t, "{records}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.Equal(t, "schema-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.schema.record.compressed.count"], "Found a duplicate in the metrics slice: saphana.schema.record.compressed.count")
+						validatedMetrics["saphana.schema.record.compressed.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of entries in main during the last optimize compression run for all tables in schema.", ms.At(i).Description())
+						assert.Equal(t, "{records}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+						assert.Equal(t, "schema-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.schema.record.compressed.count"], "Found a duplicate in the metrics slice: saphana.schema.record.compressed.count")
+						validatedMetrics["saphana.schema.record.compressed.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of entries in main during the last optimize compression run for all tables in schema.", ms.At(i).Description())
+						assert.Equal(t, "{records}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.schema.record.compressed.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+					}
 				case "saphana.schema.record.count":
-					assert.False(t, validatedMetrics["saphana.schema.record.count"], "Found a duplicate in the metrics slice: saphana.schema.record.count")
-					validatedMetrics["saphana.schema.record.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of records for all tables in schema.", ms.At(i).Description())
-					assert.Equal(t, "{records}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.Equal(t, "schema-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "main", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.schema.record.count"], "Found a duplicate in the metrics slice: saphana.schema.record.count")
+						validatedMetrics["saphana.schema.record.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of records for all tables in schema.", ms.At(i).Description())
+						assert.Equal(t, "{records}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+						assert.Equal(t, "schema-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "main", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.schema.record.count"], "Found a duplicate in the metrics slice: saphana.schema.record.count")
+						validatedMetrics["saphana.schema.record.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of records for all tables in schema.", ms.At(i).Description())
+						assert.Equal(t, "{records}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.schema.record.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.service.code_size":
-					assert.False(t, validatedMetrics["saphana.service.code_size"], "Found a duplicate in the metrics slice: saphana.service.code_size")
-					validatedMetrics["saphana.service.code_size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The service code size, including shared libraries.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("service")
-					assert.True(t, ok)
-					assert.Equal(t, "service-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.code_size"], "Found a duplicate in the metrics slice: saphana.service.code_size")
+						validatedMetrics["saphana.service.code_size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The service code size, including shared libraries.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						assert.Equal(t, "service-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.code_size"], "Found a duplicate in the metrics slice: saphana.service.code_size")
+						validatedMetrics["saphana.service.code_size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The service code size, including shared libraries.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.code_size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+					}
 				case "saphana.service.count":
-					assert.False(t, validatedMetrics["saphana.service.count"], "Found a duplicate in the metrics slice: saphana.service.count")
-					validatedMetrics["saphana.service.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of services in a given status.", ms.At(i).Description())
-					assert.Equal(t, "{services}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("status")
-					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.count"], "Found a duplicate in the metrics slice: saphana.service.count")
+						validatedMetrics["saphana.service.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of services in a given status.", ms.At(i).Description())
+						assert.Equal(t, "{services}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+						assert.Equal(t, "active", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.count"], "Found a duplicate in the metrics slice: saphana.service.count")
+						validatedMetrics["saphana.service.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of services in a given status.", ms.At(i).Description())
+						assert.Equal(t, "{services}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+					}
 				case "saphana.service.memory.compactors.allocated":
-					assert.False(t, validatedMetrics["saphana.service.memory.compactors.allocated"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.allocated")
-					validatedMetrics["saphana.service.memory.compactors.allocated"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("service")
-					assert.True(t, ok)
-					assert.Equal(t, "service-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.memory.compactors.allocated"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.allocated")
+						validatedMetrics["saphana.service.memory.compactors.allocated"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						assert.Equal(t, "service-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.memory.compactors.allocated"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.allocated")
+						validatedMetrics["saphana.service.memory.compactors.allocated"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.memory.compactors.allocated"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+					}
 				case "saphana.service.memory.compactors.freeable":
-					assert.False(t, validatedMetrics["saphana.service.memory.compactors.freeable"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.freeable")
-					validatedMetrics["saphana.service.memory.compactors.freeable"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The memory that can be freed during a memory shortage.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("service")
-					assert.True(t, ok)
-					assert.Equal(t, "service-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.memory.compactors.freeable"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.freeable")
+						validatedMetrics["saphana.service.memory.compactors.freeable"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory that can be freed during a memory shortage.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						assert.Equal(t, "service-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.memory.compactors.freeable"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.freeable")
+						validatedMetrics["saphana.service.memory.compactors.freeable"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory that can be freed during a memory shortage.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.memory.compactors.freeable"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+					}
 				case "saphana.service.memory.effective_limit":
-					assert.False(t, validatedMetrics["saphana.service.memory.effective_limit"], "Found a duplicate in the metrics slice: saphana.service.memory.effective_limit")
-					validatedMetrics["saphana.service.memory.effective_limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The effective maximum memory pool size, calculated considering the pool sizes of other processes.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("service")
-					assert.True(t, ok)
-					assert.Equal(t, "service-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.memory.effective_limit"], "Found a duplicate in the metrics slice: saphana.service.memory.effective_limit")
+						validatedMetrics["saphana.service.memory.effective_limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The effective maximum memory pool size, calculated considering the pool sizes of other processes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						assert.Equal(t, "service-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.memory.effective_limit"], "Found a duplicate in the metrics slice: saphana.service.memory.effective_limit")
+						validatedMetrics["saphana.service.memory.effective_limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The effective maximum memory pool size, calculated considering the pool sizes of other processes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.memory.effective_limit"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+					}
 				case "saphana.service.memory.heap.current":
-					assert.False(t, validatedMetrics["saphana.service.memory.heap.current"], "Found a duplicate in the metrics slice: saphana.service.memory.heap.current")
-					validatedMetrics["saphana.service.memory.heap.current"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The size of the heap portion of the memory pool.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("service")
-					assert.True(t, ok)
-					assert.Equal(t, "service-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.memory.heap.current"], "Found a duplicate in the metrics slice: saphana.service.memory.heap.current")
+						validatedMetrics["saphana.service.memory.heap.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The size of the heap portion of the memory pool.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						assert.Equal(t, "service-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "used", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.memory.heap.current"], "Found a duplicate in the metrics slice: saphana.service.memory.heap.current")
+						validatedMetrics["saphana.service.memory.heap.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The size of the heap portion of the memory pool.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.memory.heap.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("state")
+						assert.True(t, ok)
+					}
 				case "saphana.service.memory.limit":
-					assert.False(t, validatedMetrics["saphana.service.memory.limit"], "Found a duplicate in the metrics slice: saphana.service.memory.limit")
-					validatedMetrics["saphana.service.memory.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The configured maximum memory pool size.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("service")
-					assert.True(t, ok)
-					assert.Equal(t, "service-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.memory.limit"], "Found a duplicate in the metrics slice: saphana.service.memory.limit")
+						validatedMetrics["saphana.service.memory.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The configured maximum memory pool size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						assert.Equal(t, "service-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.memory.limit"], "Found a duplicate in the metrics slice: saphana.service.memory.limit")
+						validatedMetrics["saphana.service.memory.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The configured maximum memory pool size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.memory.limit"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+					}
 				case "saphana.service.memory.shared.current":
-					assert.False(t, validatedMetrics["saphana.service.memory.shared.current"], "Found a duplicate in the metrics slice: saphana.service.memory.shared.current")
-					validatedMetrics["saphana.service.memory.shared.current"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The size of the shared portion of the memory pool.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("service")
-					assert.True(t, ok)
-					assert.Equal(t, "service-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.memory.shared.current"], "Found a duplicate in the metrics slice: saphana.service.memory.shared.current")
+						validatedMetrics["saphana.service.memory.shared.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The size of the shared portion of the memory pool.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						assert.Equal(t, "service-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "used", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.memory.shared.current"], "Found a duplicate in the metrics slice: saphana.service.memory.shared.current")
+						validatedMetrics["saphana.service.memory.shared.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The size of the shared portion of the memory pool.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.memory.shared.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("state")
+						assert.True(t, ok)
+					}
 				case "saphana.service.memory.used":
-					assert.False(t, validatedMetrics["saphana.service.memory.used"], "Found a duplicate in the metrics slice: saphana.service.memory.used")
-					validatedMetrics["saphana.service.memory.used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The used memory from the operating system perspective.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("service")
-					assert.True(t, ok)
-					assert.Equal(t, "service-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "logical", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.memory.used"], "Found a duplicate in the metrics slice: saphana.service.memory.used")
+						validatedMetrics["saphana.service.memory.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The used memory from the operating system perspective.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						assert.Equal(t, "service-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "logical", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.memory.used"], "Found a duplicate in the metrics slice: saphana.service.memory.used")
+						validatedMetrics["saphana.service.memory.used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The used memory from the operating system perspective.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.memory.used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.service.stack_size":
-					assert.False(t, validatedMetrics["saphana.service.stack_size"], "Found a duplicate in the metrics slice: saphana.service.stack_size")
-					validatedMetrics["saphana.service.stack_size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The service stack size.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("service")
-					assert.True(t, ok)
-					assert.Equal(t, "service-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.stack_size"], "Found a duplicate in the metrics slice: saphana.service.stack_size")
+						validatedMetrics["saphana.service.stack_size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The service stack size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+						assert.Equal(t, "service-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.stack_size"], "Found a duplicate in the metrics slice: saphana.service.stack_size")
+						validatedMetrics["saphana.service.stack_size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The service stack size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.stack_size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("service")
+						assert.True(t, ok)
+					}
 				case "saphana.service.thread.count":
-					assert.False(t, validatedMetrics["saphana.service.thread.count"], "Found a duplicate in the metrics slice: saphana.service.thread.count")
-					validatedMetrics["saphana.service.thread.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of service threads in a given status.", ms.At(i).Description())
-					assert.Equal(t, "{threads}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("status")
-					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.service.thread.count"], "Found a duplicate in the metrics slice: saphana.service.thread.count")
+						validatedMetrics["saphana.service.thread.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of service threads in a given status.", ms.At(i).Description())
+						assert.Equal(t, "{threads}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+						assert.Equal(t, "active", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.service.thread.count"], "Found a duplicate in the metrics slice: saphana.service.thread.count")
+						validatedMetrics["saphana.service.thread.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of service threads in a given status.", ms.At(i).Description())
+						assert.Equal(t, "{threads}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.service.thread.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+					}
 				case "saphana.transaction.blocked":
-					assert.False(t, validatedMetrics["saphana.transaction.blocked"], "Found a duplicate in the metrics slice: saphana.transaction.blocked")
-					validatedMetrics["saphana.transaction.blocked"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of transactions waiting for a lock.", ms.At(i).Description())
-					assert.Equal(t, "{transactions}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.transaction.blocked"], "Found a duplicate in the metrics slice: saphana.transaction.blocked")
+						validatedMetrics["saphana.transaction.blocked"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of transactions waiting for a lock.", ms.At(i).Description())
+						assert.Equal(t, "{transactions}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["saphana.transaction.blocked"], "Found a duplicate in the metrics slice: saphana.transaction.blocked")
+						validatedMetrics["saphana.transaction.blocked"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of transactions waiting for a lock.", ms.At(i).Description())
+						assert.Equal(t, "{transactions}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.transaction.blocked"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "saphana.transaction.count":
-					assert.False(t, validatedMetrics["saphana.transaction.count"], "Found a duplicate in the metrics slice: saphana.transaction.count")
-					validatedMetrics["saphana.transaction.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of transactions.", ms.At(i).Description())
-					assert.Equal(t, "{transactions}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "update", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.transaction.count"], "Found a duplicate in the metrics slice: saphana.transaction.count")
+						validatedMetrics["saphana.transaction.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of transactions.", ms.At(i).Description())
+						assert.Equal(t, "{transactions}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "update", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.transaction.count"], "Found a duplicate in the metrics slice: saphana.transaction.count")
+						validatedMetrics["saphana.transaction.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of transactions.", ms.At(i).Description())
+						assert.Equal(t, "{transactions}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.transaction.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.uptime":
-					assert.False(t, validatedMetrics["saphana.uptime"], "Found a duplicate in the metrics slice: saphana.uptime")
-					validatedMetrics["saphana.uptime"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The uptime of the database.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system")
-					assert.True(t, ok)
-					assert.Equal(t, "system-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.Equal(t, "database-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.uptime"], "Found a duplicate in the metrics slice: saphana.uptime")
+						validatedMetrics["saphana.uptime"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The uptime of the database.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("system")
+						assert.True(t, ok)
+						assert.Equal(t, "system-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database")
+						assert.True(t, ok)
+						assert.Equal(t, "database-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.uptime"], "Found a duplicate in the metrics slice: saphana.uptime")
+						validatedMetrics["saphana.uptime"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The uptime of the database.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.uptime"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("system")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("database")
+						assert.True(t, ok)
+					}
 				case "saphana.volume.operation.count":
-					assert.False(t, validatedMetrics["saphana.volume.operation.count"], "Found a duplicate in the metrics slice: saphana.volume.operation.count")
-					validatedMetrics["saphana.volume.operation.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of operations executed.", ms.At(i).Description())
-					assert.Equal(t, "{operations}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("path")
-					assert.True(t, ok)
-					assert.Equal(t, "path-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("usage_type")
-					assert.True(t, ok)
-					assert.Equal(t, "disk_usage_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.volume.operation.count"], "Found a duplicate in the metrics slice: saphana.volume.operation.count")
+						validatedMetrics["saphana.volume.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations executed.", ms.At(i).Description())
+						assert.Equal(t, "{operations}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("path")
+						assert.True(t, ok)
+						assert.Equal(t, "path-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("usage_type")
+						assert.True(t, ok)
+						assert.Equal(t, "disk_usage_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.volume.operation.count"], "Found a duplicate in the metrics slice: saphana.volume.operation.count")
+						validatedMetrics["saphana.volume.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations executed.", ms.At(i).Description())
+						assert.Equal(t, "{operations}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.volume.operation.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("path")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("usage_type")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.volume.operation.size":
-					assert.False(t, validatedMetrics["saphana.volume.operation.size"], "Found a duplicate in the metrics slice: saphana.volume.operation.size")
-					validatedMetrics["saphana.volume.operation.size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The size of operations executed.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("path")
-					assert.True(t, ok)
-					assert.Equal(t, "path-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("usage_type")
-					assert.True(t, ok)
-					assert.Equal(t, "disk_usage_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.volume.operation.size"], "Found a duplicate in the metrics slice: saphana.volume.operation.size")
+						validatedMetrics["saphana.volume.operation.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The size of operations executed.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("path")
+						assert.True(t, ok)
+						assert.Equal(t, "path-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("usage_type")
+						assert.True(t, ok)
+						assert.Equal(t, "disk_usage_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.volume.operation.size"], "Found a duplicate in the metrics slice: saphana.volume.operation.size")
+						validatedMetrics["saphana.volume.operation.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The size of operations executed.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.volume.operation.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("path")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("usage_type")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				case "saphana.volume.operation.time":
-					assert.False(t, validatedMetrics["saphana.volume.operation.time"], "Found a duplicate in the metrics slice: saphana.volume.operation.time")
-					validatedMetrics["saphana.volume.operation.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The time spent executing operations.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("path")
-					assert.True(t, ok)
-					assert.Equal(t, "path-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("usage_type")
-					assert.True(t, ok)
-					assert.Equal(t, "disk_usage_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["saphana.volume.operation.time"], "Found a duplicate in the metrics slice: saphana.volume.operation.time")
+						validatedMetrics["saphana.volume.operation.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The time spent executing operations.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("path")
+						assert.True(t, ok)
+						assert.Equal(t, "path-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("usage_type")
+						assert.True(t, ok)
+						assert.Equal(t, "disk_usage_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["saphana.volume.operation.time"], "Found a duplicate in the metrics slice: saphana.volume.operation.time")
+						validatedMetrics["saphana.volume.operation.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The time spent executing operations.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["saphana.volume.operation.time"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("path")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("usage_type")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+					}
 				}
 			}
 		})

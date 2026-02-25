@@ -3,6 +3,9 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
@@ -11,6 +14,11 @@ import (
 type MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []string `mapstructure:"attributes"`
+	definedAttributes   []string
+	requiredAttributes  []string
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -22,9 +30,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+	for _, val := range ms.EnabledAttributes {
+		if !slices.Contains(ms.definedAttributes, val) {
+			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		}
+	}
+
+	for _, val := range ms.requiredAttributes {
+		if !slices.Contains(ms.EnabledAttributes, val) {
+			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		}
+	}
+
+	if ms.AggregationStrategy != AggregationStrategySum &&
+		ms.AggregationStrategy != AggregationStrategyAvg &&
+		ms.AggregationStrategy != AggregationStrategyMin &&
+		ms.AggregationStrategy != AggregationStrategyMax {
+		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for saphana metrics.
@@ -80,138 +111,363 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		SaphanaAlertCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"rating"},
+			definedAttributes:   []string{"rating"},
+			EnabledAttributes:   []string{"rating"},
 		},
 		SaphanaBackupLatest: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		SaphanaColumnMemoryUsed: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"type", "subtype"},
+			definedAttributes:   []string{"type", "subtype"},
+			EnabledAttributes:   []string{"type", "subtype"},
 		},
 		SaphanaComponentMemoryUsed: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"component"},
+			definedAttributes:   []string{"component"},
+			EnabledAttributes:   []string{"component"},
 		},
 		SaphanaConnectionCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"status"},
+			definedAttributes:   []string{"status"},
+			EnabledAttributes:   []string{"status"},
 		},
 		SaphanaCPUUsed: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"type"},
+			definedAttributes:   []string{"type"},
+			EnabledAttributes:   []string{"type"},
 		},
 		SaphanaDiskSizeCurrent: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"path", "usage_type", "state"},
+			definedAttributes:   []string{"path", "usage_type", "state"},
+			EnabledAttributes:   []string{"path", "usage_type", "state"},
 		},
 		SaphanaHostMemoryCurrent: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"state"},
+			definedAttributes:   []string{"state"},
+			EnabledAttributes:   []string{"state"},
 		},
 		SaphanaHostSwapCurrent: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"state"},
+			definedAttributes:   []string{"state"},
+			EnabledAttributes:   []string{"state"},
 		},
 		SaphanaInstanceCodeSize: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		SaphanaInstanceMemoryCurrent: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"state"},
+			definedAttributes:   []string{"state"},
+			EnabledAttributes:   []string{"state"},
 		},
 		SaphanaInstanceMemorySharedAllocated: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		SaphanaInstanceMemoryUsedPeak: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		SaphanaLicenseExpirationTime: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"system", "product"},
+			definedAttributes:   []string{"system", "product"},
+			EnabledAttributes:   []string{"system", "product"},
 		},
 		SaphanaLicenseLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"system", "product"},
+			definedAttributes:   []string{"system", "product"},
+			EnabledAttributes:   []string{"system", "product"},
 		},
 		SaphanaLicensePeak: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"system", "product"},
+			definedAttributes:   []string{"system", "product"},
+			EnabledAttributes:   []string{"system", "product"},
 		},
 		SaphanaNetworkRequestAverageTime: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		SaphanaNetworkRequestCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"state"},
+			definedAttributes:   []string{"state"},
+			EnabledAttributes:   []string{"state"},
 		},
 		SaphanaNetworkRequestFinishedCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"type"},
+			definedAttributes:   []string{"type"},
+			EnabledAttributes:   []string{"type"},
 		},
 		SaphanaReplicationAverageTime: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"primary", "secondary", "port", "mode"},
+			definedAttributes:   []string{"primary", "secondary", "port", "mode"},
+			EnabledAttributes:   []string{"primary", "secondary", "port", "mode"},
 		},
 		SaphanaReplicationBacklogSize: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"primary", "secondary", "port", "mode"},
+			definedAttributes:   []string{"primary", "secondary", "port", "mode"},
+			EnabledAttributes:   []string{"primary", "secondary", "port", "mode"},
 		},
 		SaphanaReplicationBacklogTime: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"primary", "secondary", "port", "mode"},
+			definedAttributes:   []string{"primary", "secondary", "port", "mode"},
+			EnabledAttributes:   []string{"primary", "secondary", "port", "mode"},
 		},
 		SaphanaRowStoreMemoryUsed: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"type"},
+			definedAttributes:   []string{"type"},
+			EnabledAttributes:   []string{"type"},
 		},
 		SaphanaSchemaMemoryUsedCurrent: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"schema", "type"},
+			definedAttributes:   []string{"schema", "type"},
+			EnabledAttributes:   []string{"schema", "type"},
 		},
 		SaphanaSchemaMemoryUsedMax: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"schema"},
+			definedAttributes:   []string{"schema"},
+			EnabledAttributes:   []string{"schema"},
 		},
 		SaphanaSchemaOperationCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"schema", "type"},
+			definedAttributes:   []string{"schema", "type"},
+			EnabledAttributes:   []string{"schema", "type"},
 		},
 		SaphanaSchemaRecordCompressedCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"schema"},
+			definedAttributes:   []string{"schema"},
+			EnabledAttributes:   []string{"schema"},
 		},
 		SaphanaSchemaRecordCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"schema", "type"},
+			definedAttributes:   []string{"schema", "type"},
+			EnabledAttributes:   []string{"schema", "type"},
 		},
 		SaphanaServiceCodeSize: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"service"},
+			definedAttributes:   []string{"service"},
+			EnabledAttributes:   []string{"service"},
 		},
 		SaphanaServiceCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"status"},
+			definedAttributes:   []string{"status"},
+			EnabledAttributes:   []string{"status"},
 		},
 		SaphanaServiceMemoryCompactorsAllocated: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"service"},
+			definedAttributes:   []string{"service"},
+			EnabledAttributes:   []string{"service"},
 		},
 		SaphanaServiceMemoryCompactorsFreeable: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"service"},
+			definedAttributes:   []string{"service"},
+			EnabledAttributes:   []string{"service"},
 		},
 		SaphanaServiceMemoryEffectiveLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"service"},
+			definedAttributes:   []string{"service"},
+			EnabledAttributes:   []string{"service"},
 		},
 		SaphanaServiceMemoryHeapCurrent: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"service", "state"},
+			definedAttributes:   []string{"service", "state"},
+			EnabledAttributes:   []string{"service", "state"},
 		},
 		SaphanaServiceMemoryLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"service"},
+			definedAttributes:   []string{"service"},
+			EnabledAttributes:   []string{"service"},
 		},
 		SaphanaServiceMemorySharedCurrent: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"service", "state"},
+			definedAttributes:   []string{"service", "state"},
+			EnabledAttributes:   []string{"service", "state"},
 		},
 		SaphanaServiceMemoryUsed: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"service", "type"},
+			definedAttributes:   []string{"service", "type"},
+			EnabledAttributes:   []string{"service", "type"},
 		},
 		SaphanaServiceStackSize: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"service"},
+			definedAttributes:   []string{"service"},
+			EnabledAttributes:   []string{"service"},
 		},
 		SaphanaServiceThreadCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"status"},
+			definedAttributes:   []string{"status"},
+			EnabledAttributes:   []string{"status"},
 		},
 		SaphanaTransactionBlocked: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		SaphanaTransactionCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"type"},
+			definedAttributes:   []string{"type"},
+			EnabledAttributes:   []string{"type"},
 		},
 		SaphanaUptime: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"system", "database"},
+			definedAttributes:   []string{"system", "database"},
+			EnabledAttributes:   []string{"system", "database"},
 		},
 		SaphanaVolumeOperationCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"path", "usage_type", "type"},
+			definedAttributes:   []string{"path", "usage_type", "type"},
+			EnabledAttributes:   []string{"path", "usage_type", "type"},
 		},
 		SaphanaVolumeOperationSize: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"path", "usage_type", "type"},
+			definedAttributes:   []string{"path", "usage_type", "type"},
+			EnabledAttributes:   []string{"path", "usage_type", "type"},
 		},
 		SaphanaVolumeOperationTime: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"path", "usage_type", "type"},
+			definedAttributes:   []string{"path", "usage_type", "type"},
+			EnabledAttributes:   []string{"path", "usage_type", "type"},
 		},
 	}
 }
