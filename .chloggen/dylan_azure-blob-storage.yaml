@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/azureblob
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add options for the Azure Blob receiver to poll for new blobs instead of using Event Hub.
+note: Enable the Azure Blob receiver to poll for new blobs when the Event Hub endpoint is not configured.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45717]
@@ -15,7 +15,11 @@ issues: [45717]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  The Azure Blob receiver now supports a polling-based ingestion mode that is automatically
+  enabled when no Event Hub endpoint is configured. Instead of relying on
+  event-driven notifications, it periodically checks the storage container
+  for new blobs to ingest.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
