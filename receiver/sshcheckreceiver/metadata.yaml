@@ -9,6 +9,8 @@ status:
     active: [ishaish103]
     emeritus: [nslaughter]
 
+reaggregation_enabled: true
+
 resource_attributes:
   ssh.endpoint:
     description: Full SSH endpoint

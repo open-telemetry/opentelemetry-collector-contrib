@@ -3,16 +3,45 @@ all_set:
   metrics:
     sshcheck.duration:
       enabled: true
+      attributes: []
     sshcheck.error:
       enabled: true
+      attributes: ["error.message"]
     sshcheck.sftp_duration:
       enabled: true
+      attributes: []
     sshcheck.sftp_error:
       enabled: true
+      attributes: ["error.message"]
     sshcheck.sftp_status:
       enabled: true
+      attributes: []
     sshcheck.status:
       enabled: true
+      attributes: []
+  resource_attributes:
+    ssh.endpoint:
+      enabled: true
+reaggregate_set:
+  metrics:
+    sshcheck.duration:
+      enabled: true
+      attributes: []
+    sshcheck.error:
+      enabled: true
+      attributes: []
+    sshcheck.sftp_duration:
+      enabled: true
+      attributes: []
+    sshcheck.sftp_error:
+      enabled: true
+      attributes: []
+    sshcheck.sftp_status:
+      enabled: true
+      attributes: []
+    sshcheck.status:
+      enabled: true
+      attributes: []
   resource_attributes:
     ssh.endpoint:
       enabled: true
@@ -20,16 +49,22 @@ none_set:
   metrics:
     sshcheck.duration:
       enabled: false
+      attributes: []
     sshcheck.error:
       enabled: false
+      attributes: ["error.message"]
     sshcheck.sftp_duration:
       enabled: false
+      attributes: []
     sshcheck.sftp_error:
       enabled: false
+      attributes: ["error.message"]
     sshcheck.sftp_status:
       enabled: false
+      attributes: []
     sshcheck.status:
       enabled: false
+      attributes: []
   resource_attributes:
     ssh.endpoint:
       enabled: false

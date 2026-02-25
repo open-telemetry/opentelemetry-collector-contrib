@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,12 +27,36 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SshcheckDuration:     MetricConfig{Enabled: true},
-					SshcheckError:        MetricConfig{Enabled: true},
-					SshcheckSftpDuration: MetricConfig{Enabled: true},
-					SshcheckSftpError:    MetricConfig{Enabled: true},
-					SshcheckSftpStatus:   MetricConfig{Enabled: true},
-					SshcheckStatus:       MetricConfig{Enabled: true},
+					SshcheckDuration: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					SshcheckError: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"error.message"},
+					},
+					SshcheckSftpDuration: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					SshcheckSftpError: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"error.message"},
+					},
+					SshcheckSftpStatus: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					SshcheckStatus: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SSHEndpoint: ResourceAttributeConfig{Enabled: true},
@@ -42,12 +67,36 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SshcheckDuration:     MetricConfig{Enabled: false},
-					SshcheckError:        MetricConfig{Enabled: false},
-					SshcheckSftpDuration: MetricConfig{Enabled: false},
-					SshcheckSftpError:    MetricConfig{Enabled: false},
-					SshcheckSftpStatus:   MetricConfig{Enabled: false},
-					SshcheckStatus:       MetricConfig{Enabled: false},
+					SshcheckDuration: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					SshcheckError: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"error.message"},
+					},
+					SshcheckSftpDuration: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					SshcheckSftpError: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"error.message"},
+					},
+					SshcheckSftpStatus: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					SshcheckStatus: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SSHEndpoint: ResourceAttributeConfig{Enabled: false},
