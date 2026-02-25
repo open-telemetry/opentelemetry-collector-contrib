@@ -3,30 +3,89 @@ all_set:
   metrics:
     apache.connections.async:
       enabled: true
+      attributes: ["connection_state"]
     apache.cpu.load:
       enabled: true
+      attributes: []
     apache.cpu.time:
       enabled: true
+      attributes: ["level","mode"]
     apache.current_connections:
       enabled: true
+      attributes: []
     apache.load.1:
       enabled: true
+      attributes: []
     apache.load.15:
       enabled: true
+      attributes: []
     apache.load.5:
       enabled: true
+      attributes: []
     apache.request.time:
       enabled: true
+      attributes: []
     apache.requests:
       enabled: true
+      attributes: []
     apache.scoreboard:
       enabled: true
+      attributes: ["state"]
     apache.traffic:
       enabled: true
+      attributes: []
     apache.uptime:
       enabled: true
+      attributes: []
     apache.workers:
       enabled: true
+      attributes: ["state"]
+  resource_attributes:
+    apache.server.name:
+      enabled: true
+    apache.server.port:
+      enabled: true
+reaggregate_set:
+  metrics:
+    apache.connections.async:
+      enabled: true
+      attributes: []
+    apache.cpu.load:
+      enabled: true
+      attributes: []
+    apache.cpu.time:
+      enabled: true
+      attributes: []
+    apache.current_connections:
+      enabled: true
+      attributes: []
+    apache.load.1:
+      enabled: true
+      attributes: []
+    apache.load.15:
+      enabled: true
+      attributes: []
+    apache.load.5:
+      enabled: true
+      attributes: []
+    apache.request.time:
+      enabled: true
+      attributes: []
+    apache.requests:
+      enabled: true
+      attributes: []
+    apache.scoreboard:
+      enabled: true
+      attributes: []
+    apache.traffic:
+      enabled: true
+      attributes: []
+    apache.uptime:
+      enabled: true
+      attributes: []
+    apache.workers:
+      enabled: true
+      attributes: []
   resource_attributes:
     apache.server.name:
       enabled: true
@@ -36,30 +95,43 @@ none_set:
   metrics:
     apache.connections.async:
       enabled: false
+      attributes: ["connection_state"]
     apache.cpu.load:
       enabled: false
+      attributes: []
     apache.cpu.time:
       enabled: false
+      attributes: ["level","mode"]
     apache.current_connections:
       enabled: false
+      attributes: []
     apache.load.1:
       enabled: false
+      attributes: []
     apache.load.15:
       enabled: false
+      attributes: []
     apache.load.5:
       enabled: false
+      attributes: []
     apache.request.time:
       enabled: false
+      attributes: []
     apache.requests:
       enabled: false
+      attributes: []
     apache.scoreboard:
       enabled: false
+      attributes: ["state"]
     apache.traffic:
       enabled: false
+      attributes: []
     apache.uptime:
       enabled: false
+      attributes: []
     apache.workers:
       enabled: false
+      attributes: ["state"]
   resource_attributes:
     apache.server.name:
       enabled: false

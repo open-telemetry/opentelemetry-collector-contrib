@@ -13,6 +13,8 @@ status:
     active: [colelaven, ishleenk17]
     emeritus: [djaglowski]
 
+reaggregation_enabled: true
+
 resource_attributes:
   apache.server.name:
     description: The name of the Apache HTTP server.
@@ -27,6 +29,7 @@ attributes:
   connection_state:
     description: The asynchronous connection state reported by Apache's server-status.
     type: string
+    requirement_level: recommended
     enum:
       - writing
       - keepalive
@@ -35,6 +38,7 @@ attributes:
     name_override: level
     description: Level of processes.
     type: string
+    requirement_level: recommended
     enum:
       - self
       - children
@@ -42,6 +46,7 @@ attributes:
     name_override: mode
     description: Mode of processes.
     type: string
+    requirement_level: recommended
     enum:
       - system
       - user
@@ -49,6 +54,7 @@ attributes:
     name_override: state
     description: The state of a connection.
     type: string
+    requirement_level: recommended
     enum:
       - open
       - waiting
@@ -66,6 +72,7 @@ attributes:
     name_override: state
     description: The state of workers.
     type: string
+    requirement_level: recommended
     enum:
       - busy
       - idle
