@@ -8,6 +8,8 @@ status:
   codeowners:
     active: [atoulme, michael-burt, chengchuanpeng, yanfeng1992]
 
+reaggregation_enabled: true
+
 resource_attributes:
 
 attributes:
@@ -15,9 +17,11 @@ attributes:
     description: Error code recorded during check
     type: string
     enum: [connection_refused, connection_timeout, invalid_endpoint, network_unreachable, unknown_error]
+    requirement_level: required
   tcpcheck.endpoint:
     description: TCP endpoint
     type: string
+    requirement_level: required
 
 metrics:
   tcpcheck.duration:

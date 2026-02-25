@@ -3,15 +3,32 @@ all_set:
   metrics:
     tcpcheck.duration:
       enabled: true
+      attributes: ["tcpcheck.endpoint"]
     tcpcheck.error:
       enabled: true
+      attributes: ["tcpcheck.endpoint","error.code"]
     tcpcheck.status:
       enabled: true
+      attributes: ["tcpcheck.endpoint"]
+reaggregate_set:
+  metrics:
+    tcpcheck.duration:
+      enabled: true
+      attributes: ["tcpcheck.endpoint"]
+    tcpcheck.error:
+      enabled: true
+      attributes: ["tcpcheck.endpoint","error.code"]
+    tcpcheck.status:
+      enabled: true
+      attributes: ["tcpcheck.endpoint"]
 none_set:
   metrics:
     tcpcheck.duration:
       enabled: false
+      attributes: ["tcpcheck.endpoint"]
     tcpcheck.error:
       enabled: false
+      attributes: ["tcpcheck.endpoint","error.code"]
     tcpcheck.status:
       enabled: false
+      attributes: ["tcpcheck.endpoint"]
