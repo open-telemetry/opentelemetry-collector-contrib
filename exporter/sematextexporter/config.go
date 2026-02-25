@@ -4,6 +4,7 @@
 package sematextexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -59,9 +60,19 @@ type LogsConfig struct {
 
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
-	if !strings.EqualFold(cfg.Region, euRegion) && !strings.EqualFold(cfg.Region, usRegion) && !strings.EqualFold(cfg.Region, "") {
+	// Region is required
+	if cfg.Region == "" {
+		return errors.New("region is required. please specify either 'EU' or 'US'")
+	}
+	if !strings.EqualFold(cfg.Region, euRegion) && !strings.EqualFold(cfg.Region, usRegion) {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
+
+	// At least one app_token (metrics or logs) must be provided
+	if cfg.MetricsConfig.AppToken == "" && cfg.LogsConfig.AppToken == "" {
+		return errors.New("at least one app_token must be provided (metrics.app_token or logs.app_token)")
+	}
+
 	if !isValidUUID(cfg.MetricsConfig.AppToken) && cfg.MetricsConfig.AppToken != "" {
 		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.MetricsConfig.AppToken)
 	}
