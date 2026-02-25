@@ -8,7 +8,7 @@ type TaskMetadata struct {
 	AvailabilityZone        string                   `json:"AvailabilityZone,omitempty"`
 	Cluster                 string                   `json:"Cluster,omitempty"`
 	Containers              []ContainerMetadata      `json:"Containers,omitempty"`
-	EphemeralStorageMetrics *EphemeralStorageMetrics  `json:"EphemeralStorageMetrics,omitempty"`
+	EphemeralStorageMetrics *EphemeralStorageMetrics `json:"EphemeralStorageMetrics,omitempty"`
 	Family                  string                   `json:"Family,omitempty"`
 	KnownStatus             string                   `json:"KnownStatus,omitempty"`
 	LaunchType              string                   `json:"LaunchType,omitempty"`
