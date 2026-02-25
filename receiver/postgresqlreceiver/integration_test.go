@@ -246,7 +246,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	assert.True(t, found, "Expected to find a log record with the query text")
 	assert.True(t, ns.newestQueryTimestamp > 0)
 
-	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, 60*time.Second)
+	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, time.Minute)
 	assert.NoError(t, err)
 	logRecords = firstTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found = false
@@ -273,7 +273,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
 
-	collectionInterval := 60 * time.Second
+	collectionInterval := time.Minute
 	ns.lastExecutionTimestamp = ns.lastExecutionTimestamp.Add(-collectionInterval)
 	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, collectionInterval)
 	assert.NoError(t, err)

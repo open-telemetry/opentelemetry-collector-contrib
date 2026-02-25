@@ -220,11 +220,14 @@ func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval t
 		return true
 	}
 
-	if collectionTime.Sub(p.lastExecutionTimestamp) < interval {
-		p.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
-		return false
+	if collectionTime.Sub(p.lastExecutionTimestamp) >= interval {
+		return true
 	}
-	return true
+
+	p.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed." +
+		"last collection time: " + p.lastExecutionTimestamp.String() + ", current collection time: " + collectionTime.String() +
+		", collection interval: " + interval.String())
+	return false
 }
 
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
