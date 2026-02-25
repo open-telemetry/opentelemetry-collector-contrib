@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,16 +27,56 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					VcsChangeCount:          MetricConfig{Enabled: true},
-					VcsChangeDuration:       MetricConfig{Enabled: true},
-					VcsChangeTimeToApproval: MetricConfig{Enabled: true},
-					VcsChangeTimeToMerge:    MetricConfig{Enabled: true},
-					VcsContributorCount:     MetricConfig{Enabled: true},
-					VcsRefCount:             MetricConfig{Enabled: true},
-					VcsRefLinesDelta:        MetricConfig{Enabled: true},
-					VcsRefRevisionsDelta:    MetricConfig{Enabled: true},
-					VcsRefTime:              MetricConfig{Enabled: true},
-					VcsRepositoryCount:      MetricConfig{Enabled: true},
+					VcsChangeCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.change.state", "vcs.repository.name"},
+					},
+					VcsChangeDuration: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.change.state"},
+					},
+					VcsChangeTimeToApproval: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name"},
+					},
+					VcsChangeTimeToMerge: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name"},
+					},
+					VcsContributorCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name"},
+					},
+					VcsRefCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.type"},
+					},
+					VcsRefLinesDelta: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.ref.head.type", "vcs.ref.base.name", "vcs.ref.base.type", "vcs.line_change.type"},
+					},
+					VcsRefRevisionsDelta: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.ref.head.type", "vcs.ref.base.name", "vcs.ref.base.type", "vcs.revision_delta.direction"},
+					},
+					VcsRefTime: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.ref.head.type"},
+					},
+					VcsRepositoryCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					VcsOwnerName:    ResourceAttributeConfig{Enabled: true},
@@ -47,16 +88,56 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					VcsChangeCount:          MetricConfig{Enabled: false},
-					VcsChangeDuration:       MetricConfig{Enabled: false},
-					VcsChangeTimeToApproval: MetricConfig{Enabled: false},
-					VcsChangeTimeToMerge:    MetricConfig{Enabled: false},
-					VcsContributorCount:     MetricConfig{Enabled: false},
-					VcsRefCount:             MetricConfig{Enabled: false},
-					VcsRefLinesDelta:        MetricConfig{Enabled: false},
-					VcsRefRevisionsDelta:    MetricConfig{Enabled: false},
-					VcsRefTime:              MetricConfig{Enabled: false},
-					VcsRepositoryCount:      MetricConfig{Enabled: false},
+					VcsChangeCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.change.state", "vcs.repository.name"},
+					},
+					VcsChangeDuration: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.change.state"},
+					},
+					VcsChangeTimeToApproval: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name"},
+					},
+					VcsChangeTimeToMerge: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name"},
+					},
+					VcsContributorCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name"},
+					},
+					VcsRefCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.type"},
+					},
+					VcsRefLinesDelta: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.ref.head.type", "vcs.ref.base.name", "vcs.ref.base.type", "vcs.line_change.type"},
+					},
+					VcsRefRevisionsDelta: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.ref.head.type", "vcs.ref.base.name", "vcs.ref.base.type", "vcs.revision_delta.direction"},
+					},
+					VcsRefTime: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"vcs.repository.url.full", "vcs.repository.name", "vcs.ref.head.name", "vcs.ref.head.type"},
+					},
+					VcsRepositoryCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					VcsOwnerName:    ResourceAttributeConfig{Enabled: false},
