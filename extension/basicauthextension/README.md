@@ -28,7 +28,9 @@ The following are the configuration options:
 - `htpasswd.file`:  The path to the htpasswd file.
 - `htpasswd.inline`: The htpasswd file inline content.
 - `client_auth.username`: Username to use for client authentication.
+- `client_auth.username_file`: Path to a file containing the username. If set, takes precedence over `username`. The file is watched for changes, allowing rotation without restarting the collector.
 - `client_auth.password`: Password to use for client authentication.
+- `client_auth.password_file`: Path to a file containing the password. If set, takes precedence over `password`. The file is watched for changes, allowing rotation without restarting the collector.
 
 To configure the extension as a server authenticator, either one of `htpasswd.file` or `htpasswd.inline` has to be set. If both are configured, `htpasswd.inline` credentials take precedence.
 
@@ -49,6 +51,12 @@ extensions:
     client_auth: 
       username: username
       password: password
+
+  # File-based credentials (watched for changes, enabling rotation without restart)
+  basicauth/client_from_files:
+    client_auth:
+      username_file: /etc/secrets/username
+      password_file: /etc/secrets/password
 
 receivers:
   otlp:
