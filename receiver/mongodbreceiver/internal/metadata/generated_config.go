@@ -3,6 +3,9 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
@@ -11,6 +14,11 @@ import (
 type MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []string `mapstructure:"attributes"`
+	definedAttributes   []string
+	requiredAttributes  []string
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -22,9 +30,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+	for _, val := range ms.EnabledAttributes {
+		if !slices.Contains(ms.definedAttributes, val) {
+			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		}
+	}
+
+	for _, val := range ms.requiredAttributes {
+		if !slices.Contains(ms.EnabledAttributes, val) {
+			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		}
+	}
+
+	if ms.AggregationStrategy != AggregationStrategySum &&
+		ms.AggregationStrategy != AggregationStrategyAvg &&
+		ms.AggregationStrategy != AggregationStrategyMin &&
+		ms.AggregationStrategy != AggregationStrategyMax {
+		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for mongodb metrics.
@@ -82,144 +113,379 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		MongodbActiveReads: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbActiveWrites: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbCacheOperations: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"type"},
+			EnabledAttributes:   []string{"type"},
 		},
 		MongodbCollectionCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"db.namespace"},
+			EnabledAttributes:   []string{"db.namespace"},
 		},
 		MongodbCommandsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbConnectionCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"type", "db.namespace"},
+			EnabledAttributes:   []string{"type", "db.namespace"},
 		},
 		MongodbCursorCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbCursorTimeoutCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbDataSize: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"db.namespace"},
+			EnabledAttributes:   []string{"db.namespace"},
 		},
 		MongodbDatabaseCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbDeletesRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbDocumentOperationCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"operation", "db.namespace"},
+			EnabledAttributes:   []string{"operation", "db.namespace"},
 		},
 		MongodbExtentCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"db.namespace"},
+			EnabledAttributes:   []string{"db.namespace"},
 		},
 		MongodbFlushesRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbGetmoresRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbGlobalLockTime: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbHealth: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbIndexAccessCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"collection", "db.namespace"},
+			EnabledAttributes:   []string{"collection", "db.namespace"},
 		},
 		MongodbIndexCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"db.namespace"},
+			EnabledAttributes:   []string{"db.namespace"},
 		},
 		MongodbIndexSize: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"db.namespace"},
+			EnabledAttributes:   []string{"db.namespace"},
 		},
 		MongodbInsertsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbLockAcquireCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"lock_type", "lock_mode", "db.namespace"},
+			EnabledAttributes:   []string{"lock_type", "lock_mode", "db.namespace"},
 		},
 		MongodbLockAcquireTime: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"lock_type", "lock_mode", "db.namespace"},
+			EnabledAttributes:   []string{"lock_type", "lock_mode", "db.namespace"},
 		},
 		MongodbLockAcquireWaitCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"lock_type", "lock_mode", "db.namespace"},
+			EnabledAttributes:   []string{"lock_type", "lock_mode", "db.namespace"},
 		},
 		MongodbLockDeadlockCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"lock_type", "lock_mode", "db.namespace"},
+			EnabledAttributes:   []string{"lock_type", "lock_mode", "db.namespace"},
 		},
 		MongodbMemoryUsage: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"type", "db.namespace"},
+			EnabledAttributes:   []string{"type", "db.namespace"},
 		},
 		MongodbNetworkIoReceive: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbNetworkIoTransmit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbNetworkRequestCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbObjectCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"db.namespace"},
+			EnabledAttributes:   []string{"db.namespace"},
 		},
 		MongodbOperationCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"operation"},
+			EnabledAttributes:   []string{"operation"},
 		},
 		MongodbOperationLatencyTime: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"operation"},
+			EnabledAttributes:   []string{"operation"},
 		},
 		MongodbOperationReplCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"operation"},
+			EnabledAttributes:   []string{"operation"},
 		},
 		MongodbOperationTime: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"operation"},
+			EnabledAttributes:   []string{"operation"},
 		},
 		MongodbPageFaults: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbQueriesRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbReplCommandsPerSec: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbReplDeletesPerSec: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbReplGetmoresPerSec: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbReplInsertsPerSec: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbReplQueriesPerSec: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbReplUpdatesPerSec: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbSessionCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbStorageSize: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"db.namespace"},
+			EnabledAttributes:   []string{"db.namespace"},
 		},
 		MongodbUpdatesRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbUptime: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		MongodbWtcacheBytesRead: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 	}
 }
