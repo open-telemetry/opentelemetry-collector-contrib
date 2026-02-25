@@ -58,6 +58,9 @@ const (
 	attributeStorageRead  = "storage.read_bytes"
 	attributeStorageWrite = "storage.write_bytes"
 
+	attributeEphemeralStorageUtilized = "ephemeral_storage.utilized"
+	attributeEphemeralStorageReserved = "ephemeral_storage.reserved"
+
 	attributeDuration = "duration"
 
 	unitBytes       = "Bytes"

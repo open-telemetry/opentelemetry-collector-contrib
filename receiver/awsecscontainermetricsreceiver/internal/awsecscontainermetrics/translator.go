@@ -48,6 +48,13 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, times
 	appendIntSum(prefix+attributeStorageRead, unitBytes, int64(m.StorageReadBytes), timestamp, ilms.AppendEmpty())
 	appendIntSum(prefix+attributeStorageWrite, unitBytes, int64(m.StorageWriteBytes), timestamp, ilms.AppendEmpty())
 
+	// Ephemeral storage metrics are only available at the task level.
+	// They represent the shared ephemeral storage for the entire Fargate task.
+	if prefix == taskPrefix {
+		appendIntGauge(prefix+attributeEphemeralStorageUtilized, unitMegaBytes, m.EphemeralStorageUtilized, timestamp, ilms.AppendEmpty())
+		appendIntGauge(prefix+attributeEphemeralStorageReserved, unitMegaBytes, m.EphemeralStorageReserved, timestamp, ilms.AppendEmpty())
+	}
+
 	return md
 }
 
