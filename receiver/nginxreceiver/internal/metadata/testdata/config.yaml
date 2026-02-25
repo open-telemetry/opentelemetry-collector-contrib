@@ -3,19 +3,41 @@ all_set:
   metrics:
     nginx.connections_accepted:
       enabled: true
+      attributes: []
     nginx.connections_current:
       enabled: true
+      attributes: ["state"]
     nginx.connections_handled:
       enabled: true
+      attributes: []
     nginx.requests:
       enabled: true
+      attributes: []
+reaggregate_set:
+  metrics:
+    nginx.connections_accepted:
+      enabled: true
+      attributes: []
+    nginx.connections_current:
+      enabled: true
+      attributes: []
+    nginx.connections_handled:
+      enabled: true
+      attributes: []
+    nginx.requests:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     nginx.connections_accepted:
       enabled: false
+      attributes: []
     nginx.connections_current:
       enabled: false
+      attributes: ["state"]
     nginx.connections_handled:
       enabled: false
+      attributes: []
     nginx.requests:
       enabled: false
+      attributes: []
