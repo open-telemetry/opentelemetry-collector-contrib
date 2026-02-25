@@ -27,7 +27,7 @@ The options for `routing_key` are: `service`, `traceID`, `metric` (metric name),
 | resource    | metrics              |
 | metric      | metrics              |
 | streamID    | metrics              |
-| attributes  | spans                |
+| attributes  | spans, metrics       |
 
 If no `routing_key` is configured, the default routing mechanism is `traceID`  for traces, while `service` is the default for metrics. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend.
 
@@ -97,7 +97,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
 * The `k8s` node accepts the following optional properties:
   * `service` Kubernetes service to resolve, e.g. `lb-svc.lb-ns`. If no namespace is specified, an attempt will be made to infer the namespace for this collector, and if this fails it will fall back to the `default` namespace.
   * `ports` port to be used for exporting the traces to the addresses resolved from `service`. If `ports` is not specified, the default port 4317 is used. When multiple ports are specified, two backends are added to the load balancer as if they were at different pods.
-  * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
+  * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1m` will be used.
   * `return_hostnames` will return hostnames instead of IPs. This is useful in certain situations like using istio in sidecar mode. To use this feature, the `service` must be a headless `Service`, pointing at a `StatefulSet`, and the `service` must be what is specified under `.spec.serviceName` in the `StatefulSet`.
   * **RBAC requirement:** the Collector pod must run with a service account that is allowed to `get`, `list`, and `watch` `discovery.k8s.io/v1` `EndpointSlice` objects in the target namespace; otherwise the resolver cache remains empty and the exporter logs `couldn't find the exporter for the endpoint ""`.
 * The `aws_cloud_map` node accepts the following properties:
@@ -118,7 +118,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
     * `TODO`: Feature request [29771](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29771) aims to cover the pagination for this scenario
 * The `routing_key` property is used to specify how to route values (spans or metrics) to exporters based on different parameters. This functionality is currently enabled only for `trace` and `metric` pipeline types. It supports one of the following values:
   * `service`: Routes values based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate.
-  * `attributes`: Routes based on values in the attributes of the traces. This is similar to service, but useful for situations in which a single service overwhelms any given instance of the collector, and should be split over multiple collectors. In addition to resource / span attributes, `span.kind`, `span.name` (the top level properties of a span) are also supported.
+  * `attributes`: Routes based on values in attributes. This is similar to service, but useful for situations in which a single service overwhelms any given instance of the collector, and should be split over multiple collectors. For traces, resource / scope / span attributes plus `span.kind` and `span.name` (top-level span fields) are supported. For metrics, resource / scope / datapoint attributes are supported.
   * `traceID`: Routes spans based on their `traceID`. Invalid for metrics.
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
   * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data
