@@ -1,3 +1,4 @@
+display_name: Google Pub/Sub Push Receiver
 type: googlecloudpubsubpush
 
 status:

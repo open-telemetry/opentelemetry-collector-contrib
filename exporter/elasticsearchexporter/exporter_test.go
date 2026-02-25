@@ -74,9 +74,7 @@ func TestExporterLogs(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestLogsExporter(t, server.URL)
 		logs := newLogsWithAttributes(
 			// record attrs
 			map[string]any{
@@ -92,7 +90,8 @@ func TestExporterLogs(t *testing.T) {
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 		rec.WaitItems(1)
 	})
 
@@ -175,9 +174,7 @@ func TestExporterLogs(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "bodymap"
-				})
+				exporter := newTestLogsExporter(t, server.URL)
 				logs := plog.NewLogs()
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
@@ -185,7 +182,8 @@ func TestExporterLogs(t *testing.T) {
 				logRecord := logRecords.AppendEmpty()
 				tt.body().CopyTo(logRecord.Body())
 
-				mustSendLogs(t, exporter, logs)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"bodymap"}})})
+				mustSendLogsWithCtx(ctx, t, exporter, logs)
 				rec.WaitItems(1)
 			})
 		}
@@ -212,11 +210,9 @@ func TestExporterLogs(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "bodymap"
-		})
-
-		err := exporter.ConsumeLogs(t.Context(), logs)
+		exporter := newTestLogsExporter(t, server.URL)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"bodymap"}})})
+		err := exporter.ConsumeLogs(ctx, logs)
 		assert.NoError(t, err)
 		rec.WaitItems(1)
 	})
@@ -233,7 +229,6 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
 			cfg.LogsIndex = "index"
 			// deduplication is always performed except in otel mapping mode -
 			// there is no other configuration that controls it
@@ -243,7 +238,8 @@ func TestExporterLogs(t *testing.T) {
 			nil,
 			nil,
 		)
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 		rec.WaitItems(1)
 	})
 
@@ -256,7 +252,6 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "raw"
 			cfg.LogsIndex = "index"
 			// deduplication is always performed - there is no configuration that controls it
 		})
@@ -267,7 +262,8 @@ func TestExporterLogs(t *testing.T) {
 			nil,
 			nil,
 		)
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"raw"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 		rec.WaitItems(1)
 	})
 
@@ -328,9 +324,7 @@ func TestExporterLogs(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestLogsExporter(t, server.URL)
 		logs := newLogsWithAttributes(
 			map[string]any{
 				"elasticsearch.index": index,
@@ -343,7 +337,8 @@ func TestExporterLogs(t *testing.T) {
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 
 		docs := rec.WaitItems(1)
 		doc := docs[0]
@@ -362,9 +357,7 @@ func TestExporterLogs(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "none"
-		})
+		exporter := newTestLogsExporter(t, server.URL)
 		logs := newLogsWithAttributes(
 			map[string]any{
 				elasticsearch.DataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
@@ -376,7 +369,8 @@ func TestExporterLogs(t *testing.T) {
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 
 		rec.WaitItems(1)
 	})
@@ -477,9 +471,7 @@ func TestExporterLogs(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "otel"
-				})
+				exporter := newTestLogsExporter(t, server.URL)
 				recordAttrs := map[string]any{
 					"data_stream.dataset": "attr.dataset",
 					"attr.foo":            "attr.foo.value",
@@ -497,7 +489,8 @@ func TestExporterLogs(t *testing.T) {
 					},
 				)
 				tc.body.CopyTo(logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
-				mustSendLogs(t, exporter, logs)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendLogsWithCtx(ctx, t, exporter, logs)
 
 				expected := []itemRequest{
 					{
@@ -596,11 +589,10 @@ func TestExporterLogs(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "otel"
-				})
+				exporter := newTestLogsExporter(t, server.URL)
 
-				mustSendLogs(t, exporter, newLogsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendLogsWithCtx(ctx, t, exporter, newLogsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
 
 				rec.WaitItems(1)
 
@@ -827,14 +819,18 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
 		for i := range 3 {
-			logRecord := plog.NewLogRecord()
+			// build logs from record and send with mapping mode in client metadata
+			logs := plog.NewLogs()
+			rl := logs.ResourceLogs().AppendEmpty()
+			sl := rl.ScopeLogs().AppendEmpty()
+			logRecord := sl.LogRecords().AppendEmpty()
 			logRecord.Attributes().PutInt("idx", int64(i))
-			mustSendLogRecords(t, exporter, logRecord)
+			mustSendLogsWithCtx(ctx, t, exporter, logs)
 		}
 
 		wg.Wait() // <- this blocks forever if the event is not retried
@@ -873,39 +869,50 @@ func TestExporterLogs(t *testing.T) {
 			},
 		}
 
+		mappingModes := []string{"scope_attribute", "client_metadata"}
+
 		for _, tt := range tableTests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				rec := newBulkRecorder()
-				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-					rec.Record(docs)
+			for _, modeName := range mappingModes {
+				t.Run(tt.name+"/"+modeName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
 
-					if tt.expectedDocID == "" {
-						assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
-					} else {
-						assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+						if tt.expectedDocID == "" {
+							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+						} else {
+							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+						}
+
+						// Ensure the document id attribute is removed from the final document.
+						assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+						cfg.LogsDynamicID.Enabled = true
+					})
+					logs := newLogsWithAttributes(
+						tt.recordAttrs,
+						nil,
+						nil,
+					)
+					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+
+					var ctx context.Context
+					switch modeName {
+					case "scope_attribute":
+						logs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("elastic.mapping.mode", "otel")
+						ctx = t.Context()
+					case "client_metadata":
+						ctx = client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
 					}
+					mustSendLogsWithCtx(ctx, t, exporter, logs)
 
-					// Ensure the document id attribute is removed from the final document.
-					assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
-					return itemsAllOK(docs)
+					rec.WaitItems(1)
 				})
-
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.LogsDynamicID.Enabled = true
-				})
-				logs := newLogsWithAttributes(
-					tt.recordAttrs,
-					map[string]any{
-						"elastic.mapping.mode": "otel",
-					},
-					map[string]any{},
-				)
-				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-				mustSendLogs(t, exporter, logs)
-
-				rec.WaitItems(1)
-			})
+			}
 		}
 	})
 
@@ -967,7 +974,6 @@ func TestExporterLogs(t *testing.T) {
 					})
 
 					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-						cfg.Mapping.Mode = "otel"
 						cfg.LogsDynamicPipeline.Enabled = true
 						cfgFn(cfg)
 					})
@@ -977,13 +983,55 @@ func TestExporterLogs(t *testing.T) {
 						map[string]any{},
 					)
 					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-					mustSendLogs(t, exporter, logs)
+					ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+					mustSendLogsWithCtx(ctx, t, exporter, logs)
 
 					rec.WaitItems(1)
 				})
 			}
 		}
 	})
+}
+
+func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
+	rec := newBulkRecorder()
+	server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+		rec.Record(docs)
+		// Ensure the produced index corresponds to OTel mapping (contains ".otel-")
+		require.GreaterOrEqual(t, len(docs), 1)
+		assert.Contains(t, string(docs[0].Action), ".otel-")
+		return itemsAllOK(docs)
+	})
+	params := exportertest.NewNopSettings(metadata.Type)
+
+	// create config that sets Mapping.Mode (deprecated) to ecs
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoints = []string{server.URL}
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.Mapping.Mode = "ecs"
+	})
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	f := NewFactory()
+	exp, err := f.CreateLogs(t.Context(), params, cfg)
+	require.NoError(t, err)
+
+	// start exporter so bulk indexers are initialized
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, exp.Shutdown(t.Context()))
+	}()
+
+	// send a simple log record without any client metadata or scope attribute
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+	lr.Body().SetStr("hello")
+
+	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
+	rec.WaitItems(1)
 }
 
 func TestExporterMetrics(t *testing.T) {
@@ -994,19 +1042,18 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
 		dpSum := pmetric.NewNumberDataPoint()
 		dpSum.SetDoubleValue(123.456)
 		dpSum.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-2 * time.Second)))
-		mustSendMetricSumDataPoints(t, exporter, dpSum)
+		mustSendMetricSumDataPointsWithCtx(ctx, t, exporter, dpSum)
 
 		dpGauge := pmetric.NewNumberDataPoint()
 		dpGauge.SetDoubleValue(123.456)
 		// Keep timestamp different to avoid metric grouping putting them in same doc
 		dpGauge.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
-		mustSendMetricGaugeDataPoints(t, exporter, dpGauge)
+		mustSendMetricGaugeDataPointsWithCtx(ctx, t, exporter, dpGauge)
 
 		rec.WaitItems(2)
 	})
@@ -1019,9 +1066,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 		metrics := newMetricsWithAttributes(
 			map[string]any{
 				"elasticsearch.index": index,
@@ -1033,7 +1078,8 @@ func TestExporterMetrics(t *testing.T) {
 				"elasticsearch.index": "ignored",
 			},
 		)
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		docs := rec.WaitItems(1)
 		doc := docs[0]
@@ -1052,9 +1098,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 		metrics := newMetricsWithAttributes(
 			map[string]any{
 				elasticsearch.DataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
@@ -1066,7 +1110,8 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		)
 		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		rec.WaitItems(1)
 	})
@@ -1078,13 +1123,13 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		// Explicitly set scope mapping mode to ecs for this test.
+		scopeA.Scope().Attributes().PutStr(elasticsearch.MappingModeAttributeName, "ecs")
 		metricSlice := scopeA.Metrics()
 		fooMetric := metricSlice.AppendEmpty()
 		fooMetric.SetName("metric.foo")
@@ -1099,7 +1144,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
 		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1122,9 +1168,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1143,7 +1187,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.Negative().SetOffset(1)
 		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1161,9 +1206,7 @@ func TestExporterMetrics(t *testing.T) {
 			return nil, nil
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1178,7 +1221,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
 		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 
-		err := exporter.ConsumeMetrics(t.Context(), metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		err := exporter.ConsumeMetrics(ctx, metrics)
 		assert.NoError(t, err)
 	})
 
@@ -1188,9 +1232,7 @@ func TestExporterMetrics(t *testing.T) {
 			return nil, nil
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1209,7 +1251,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.Negative().SetOffset(1)
 		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
 
-		err := exporter.ConsumeMetrics(t.Context(), metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		err := exporter.ConsumeMetrics(ctx, metrics)
 		assert.NoError(t, err)
 	})
 
@@ -1220,9 +1263,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1248,7 +1289,8 @@ func TestExporterMetrics(t *testing.T) {
 		barOtherDp := barDps.AppendEmpty()
 		barOtherDp.SetDoubleValue(1.0)
 
-		err := exporter.ConsumeMetrics(t.Context(), metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		err := exporter.ConsumeMetrics(ctx, metrics)
 		assert.NoError(t, err)
 
 		expected := []itemRequest{
@@ -1272,9 +1314,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1342,7 +1382,8 @@ func TestExporterMetrics(t *testing.T) {
 		summaryDp.SetCount(1)
 		summaryDp.SetSum(1.5)
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1419,11 +1460,9 @@ func TestExporterMetrics(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "otel"
-				})
-
-				mustSendMetrics(t, exporter, newMetricsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
+				exporter := newTestMetricsExporter(t, server.URL)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendMetricsWithCtx(ctx, t, exporter, newMetricsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
 				rec.WaitItems(1)
 
 				assert.Len(t, rec.Items(), 1)
@@ -1442,10 +1481,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
+		exporter := newTestMetricsExporter(t, server.URL)
 		metrics := pmetric.NewMetrics()
 		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
 		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
@@ -1464,7 +1500,8 @@ func TestExporterMetrics(t *testing.T) {
 			"elasticsearch.mapping.hints": []string{"_doc_count"},
 		})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1483,9 +1520,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
@@ -1514,7 +1549,8 @@ func TestExporterMetrics(t *testing.T) {
 			"elasticsearch.mapping.hints": []string{"_doc_count", "aggregate_metric_double"},
 		})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1537,9 +1573,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
@@ -1557,7 +1591,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooBarBazMetric.SetName("foo.bar.baz")
 		fooBarBazMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1576,9 +1611,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1595,7 +1628,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooOtherDp.SetSum(2)
 		fooOtherDp.SetCount(3)
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1715,11 +1749,9 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 				return itemsAllOK(docs)
 			})
 
-			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-				cfg.Mapping.Mode = "ecs"
-			})
-
-			mustSendMetrics(t, exporter, metrics)
+			exporter := newTestMetricsExporter(t, server.URL)
+			ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+			mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 			assertDocsInIndices(t, map[string]int{
 				"metrics-generic-bar":                 2, // AA, BA
@@ -1737,11 +1769,9 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 				return itemsAllOK(docs)
 			})
 
-			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-				cfg.Mapping.Mode = "otel"
-			})
-
-			mustSendMetrics(t, exporter, metrics)
+			exporter := newTestMetricsExporter(t, server.URL)
+			ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+			mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 			assertDocsInIndices(t, map[string]int{
 				"metrics-generic.otel-bar":                 4, // AA->bar, AC->bar, BA->bar, BB->bar
@@ -1837,9 +1867,7 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resource := metrics.ResourceMetrics().AppendEmpty()
@@ -1855,7 +1883,8 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		// a=b overwrites a=b in resource attribute
 		addMetric(scope.Metrics(), "baz", []kv{{k: "a", v: "b"}})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -1880,9 +1909,7 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = mode
-				})
+				exporter := newTestMetricsExporter(t, server.URL)
 
 				metrics := pmetric.NewMetrics()
 				resourceA := metrics.ResourceMetrics().AppendEmpty()
@@ -2031,9 +2058,7 @@ func TestExporterTraces(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestTracesExporter(t, server.URL)
 
 		traces := newTracesWithAttributes(
 			map[string]any{
@@ -2048,7 +2073,8 @@ func TestExporterTraces(t *testing.T) {
 		)
 		event := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
 		event.Attributes().PutStr("elasticsearch.index", eventIndex)
-		mustSendTraces(t, exporter, traces)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendTracesWithCtx(ctx, t, exporter, traces)
 
 		docs := rec.WaitItems(2)
 		doc := docs[0]
@@ -2071,11 +2097,11 @@ func TestExporterTraces(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "none"
-		})
+		exporter := newTestTracesExporter(t, server.URL)
 
-		mustSendTraces(t, exporter, newTracesWithAttributes(
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}})})
+
+		mustSendTracesWithCtx(ctx, t, exporter, newTracesWithAttributes(
 			map[string]any{
 				elasticsearch.DataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
 			},
@@ -2143,9 +2169,7 @@ func TestExporterTraces(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestTracesExporter(t, server.URL)
 
 		traces := ptrace.NewTraces()
 		resourceSpans := traces.ResourceSpans()
@@ -2188,7 +2212,8 @@ func TestExporterTraces(t *testing.T) {
 			"link.attr.foo": "link.attr.bar",
 		})
 
-		mustSendTraces(t, exporter, traces)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendTracesWithCtx(ctx, t, exporter, traces)
 
 		expected := []itemRequest{
 			{
@@ -2247,11 +2272,7 @@ func TestExporterTraces(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				configs := []func(cfg *Config){
-					func(cfg *Config) {
-						cfg.Mapping.Mode = "otel"
-					},
-				}
+				configs := []func(cfg *Config){}
 				if tc.config != nil {
 					configs = append(configs, tc.config)
 				}
@@ -2262,7 +2283,8 @@ func TestExporterTraces(t *testing.T) {
 				spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
 				spanEvent.SetName("some_event_name")
 				fillAttributeMap(spanEvent.Attributes(), tc.spanEventAttrs)
-				mustSendTraces(t, exporter, traces)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendTracesWithCtx(ctx, t, exporter, traces)
 
 				rec.WaitItems(2)
 				var spanEventDocs []itemRequest
@@ -2330,14 +2352,13 @@ func TestExporterTraces(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "otel"
-				})
+				exporter := newTestTracesExporter(t, server.URL)
 
 				traces := newTracesWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs)
 				spanEventAttrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty().Attributes()
 				fillAttributeMap(spanEventAttrs, tc.recordAttrs)
-				mustSendTraces(t, exporter, traces)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendTracesWithCtx(ctx, t, exporter, traces)
 
 				rec.WaitItems(2)
 
@@ -2612,7 +2633,6 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 
 	setAllowedMappingModes := func(cfg *Config) {
 		cfg.Mapping.AllowedModes = []string{"ecs", "otel"}
-		cfg.Mapping.Mode = "otel"
 	}
 
 	type checkFunc func(_ *testing.T, doc []byte, signal string)
@@ -3148,7 +3168,7 @@ func mustSendLogsWithCtx(
 	require.NoError(t, err)
 }
 
-func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+func mustSendMetricSumDataPointsWithCtx(ctx context.Context, t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	metric := scopeMetrics.Metrics().AppendEmpty()
@@ -3157,10 +3177,10 @@ func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPo
 	for _, dataPoint := range dataPoints {
 		dataPoint.CopyTo(metric.Sum().DataPoints().AppendEmpty())
 	}
-	mustSendMetrics(t, exporter, metrics)
+	mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 }
 
-func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+func mustSendMetricGaugeDataPointsWithCtx(ctx context.Context, t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	metric := scopeMetrics.Metrics().AppendEmpty()
@@ -3169,7 +3189,7 @@ func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, data
 	for _, dataPoint := range dataPoints {
 		dataPoint.CopyTo(metric.Gauge().DataPoints().AppendEmpty())
 	}
-	mustSendMetrics(t, exporter, metrics)
+	mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 }
 
 func mustSendMetrics(t *testing.T, exporter exporter.Metrics, metrics pmetric.Metrics) {

@@ -26,7 +26,8 @@ type Config struct {
 	// A list of filters whose matching images are to be excluded. Supports literals, globs, and regex.
 	ExcludedImages []string `mapstructure:"excluded_images"`
 
-	// Docker client API version.
+	// Docker client API version. If empty, the client will auto-negotiate
+	// the API version with the Docker daemon using version negotiation.
 	DockerAPIVersion string `mapstructure:"api_version"`
 }
 
@@ -67,11 +68,11 @@ func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, 
 
 // NewDefaultConfig creates a new config with default values
 // to be used when creating a docker client
+// DockerAPIVersion is intentionally left empty for auto-negotiation.
 func NewDefaultConfig() *Config {
 	cfg := &Config{
-		Endpoint:         client.DefaultDockerHost,
-		Timeout:          5 * time.Second,
-		DockerAPIVersion: minimumRequiredDockerAPIVersion,
+		Endpoint: client.DefaultDockerHost,
+		Timeout:  5 * time.Second,
 	}
 
 	return cfg

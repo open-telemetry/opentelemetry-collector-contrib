@@ -5,7 +5,7 @@ status:
   stability:
     development: [metrics]
   codeowners:
-    active: [steven-freed]
+    active: [steven-freed, khushijain21]
 
 resource_attributes:
   base_url:
