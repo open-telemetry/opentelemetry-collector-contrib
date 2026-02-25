@@ -6,6 +6,8 @@ description: |
   the `/metrics/json`, `/api/v1/applications/[app-id]/stages`, `/api/v1/applications/[app-id]/executors`, and
   `/api/v1/applications/[app-id]/jobs` endpoints.
 
+reaggregation_enabled: true
+
 status:
   class: receiver
   stability:
@@ -19,31 +21,38 @@ resource_attributes:
     description: The ID of the application for which the metric was recorded.
     type: string
     enabled: true
+    requirement_level: required
   spark.application.name:
     description: The name of the application for which the metric was recorded.
     type: string
     enabled: true
+    requirement_level: required
   spark.executor.id:
     description: The ID of the executor for which the metric was recorded.
     type: string
     enabled: true
+    requirement_level: required
   spark.job.id:
     description: The ID of the job for which the metric was recorded.
     type: int
     enabled: true
+    requirement_level: required
   spark.stage.attempt.id:
     description: The ID of the stage attempt for which the metric was recorded.
     type: int
     enabled: false
+    requirement_level: required
   spark.stage.id:
     description: The ID of the application stage for which the metric was recorded.
     type: int
     enabled: true
+    requirement_level: required
 
 attributes:
   direction:
     description: Whether the metric is in regards to input or output operations.
     type: string
+    requirement_level: recommended
     enum:
       - in
       - out
@@ -51,12 +60,14 @@ attributes:
     name_override: result
     description: The result of the executor tasks for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - completed
       - failed
   gc_type:
     description: The type of the garbage collection performed for the metric.
     type: string
+    requirement_level: recommended
     enum:
       - major
       - minor
@@ -64,6 +75,7 @@ attributes:
     name_override: result
     description: The result of the job stages or tasks for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - completed
       - failed
@@ -71,6 +83,7 @@ attributes:
   location:
     description: The location of the memory for which the metric was recorded..
     type: string
+    requirement_level: recommended
     enum:
       - on_heap
       - off_heap
@@ -78,6 +91,7 @@ attributes:
     name_override: type
     description: The type of pool memory for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - direct
       - mapped
@@ -85,12 +99,14 @@ attributes:
     name_override: status
     description: The status of the DAGScheduler stages for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - waiting
       - running
   source:
     description: The source from which data was fetched for the metric.
     type: string
+    requirement_level: recommended
     enum:
       - local
       - remote
@@ -114,6 +130,7 @@ attributes:
     name_override: result
     description: The result of the stage tasks for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - completed
       - failed
@@ -121,6 +138,7 @@ attributes:
   state:
     description: The state of the memory for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - used
       - free
