@@ -26,13 +26,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpFrequencyOffset: MetricConfig{Enabled: true},
-					NtpSkew:            MetricConfig{Enabled: true},
-					NtpStratum:         MetricConfig{Enabled: true},
-					NtpTimeCorrection:  MetricConfig{Enabled: true},
-					NtpTimeLastOffset:  MetricConfig{Enabled: true},
-					NtpTimeRmsOffset:   MetricConfig{Enabled: true},
-					NtpTimeRootDelay:   MetricConfig{Enabled: true},
+					NtpFrequencyOffset: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
+					NtpSkew: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					NtpStratum: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					NtpTimeCorrection: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
+					NtpTimeLastOffset: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
+					NtpTimeRmsOffset: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
+					NtpTimeRootDelay: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
 				},
 			},
 		},
@@ -40,13 +68,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpFrequencyOffset: MetricConfig{Enabled: false},
-					NtpSkew:            MetricConfig{Enabled: false},
-					NtpStratum:         MetricConfig{Enabled: false},
-					NtpTimeCorrection:  MetricConfig{Enabled: false},
-					NtpTimeLastOffset:  MetricConfig{Enabled: false},
-					NtpTimeRmsOffset:   MetricConfig{Enabled: false},
-					NtpTimeRootDelay:   MetricConfig{Enabled: false},
+					NtpFrequencyOffset: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
+					NtpSkew: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					NtpStratum: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					NtpTimeCorrection: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
+					NtpTimeLastOffset: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
+					NtpTimeRmsOffset: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
+					NtpTimeRootDelay: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"leap.status"},
+					},
 				},
 			},
 		},

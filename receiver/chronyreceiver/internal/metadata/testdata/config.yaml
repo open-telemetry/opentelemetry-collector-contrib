@@ -3,31 +3,68 @@ all_set:
   metrics:
     ntp.frequency.offset:
       enabled: true
+      attributes: ["leap.status"]
     ntp.skew:
       enabled: true
+      attributes: []
     ntp.stratum:
       enabled: true
+      attributes: []
     ntp.time.correction:
       enabled: true
+      attributes: ["leap.status"]
     ntp.time.last_offset:
       enabled: true
+      attributes: ["leap.status"]
     ntp.time.rms_offset:
       enabled: true
+      attributes: ["leap.status"]
     ntp.time.root_delay:
       enabled: true
+      attributes: ["leap.status"]
+reaggregate_set:
+  metrics:
+    ntp.frequency.offset:
+      enabled: true
+      attributes: ["leap.status"]
+    ntp.skew:
+      enabled: true
+      attributes: []
+    ntp.stratum:
+      enabled: true
+      attributes: []
+    ntp.time.correction:
+      enabled: true
+      attributes: ["leap.status"]
+    ntp.time.last_offset:
+      enabled: true
+      attributes: ["leap.status"]
+    ntp.time.rms_offset:
+      enabled: true
+      attributes: ["leap.status"]
+    ntp.time.root_delay:
+      enabled: true
+      attributes: ["leap.status"]
 none_set:
   metrics:
     ntp.frequency.offset:
       enabled: false
+      attributes: ["leap.status"]
     ntp.skew:
       enabled: false
+      attributes: []
     ntp.stratum:
       enabled: false
+      attributes: []
     ntp.time.correction:
       enabled: false
+      attributes: ["leap.status"]
     ntp.time.last_offset:
       enabled: false
+      attributes: ["leap.status"]
     ntp.time.rms_offset:
       enabled: false
+      attributes: ["leap.status"]
     ntp.time.root_delay:
       enabled: false
+      attributes: ["leap.status"]
