@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,7 +27,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpOffset: MetricConfig{Enabled: true},
+					NtpOffset: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					NtpHost: ResourceAttributeConfig{Enabled: true},
@@ -37,7 +42,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpOffset: MetricConfig{Enabled: false},
+					NtpOffset: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					NtpHost: ResourceAttributeConfig{Enabled: false},
