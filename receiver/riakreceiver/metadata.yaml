@@ -9,6 +9,8 @@ status:
     active: [armstrmi]
     seeking_new: true
 
+reaggregation_enabled: true
+
 resource_attributes:
   riak.node.name:
     description: The name this node uses to identify itself.
@@ -23,12 +25,14 @@ attributes:
       - read
       - write
       - delete
+    requirement_level: required
   request:
     description: The request operation type.
     type: string
     enum:
       - put
       - get
+    requirement_level: required
 
 metrics:
   riak.memory.limit:

@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,12 +27,36 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RiakMemoryLimit:              MetricConfig{Enabled: true},
-					RiakNodeOperationCount:       MetricConfig{Enabled: true},
-					RiakNodeOperationTimeMean:    MetricConfig{Enabled: true},
-					RiakNodeReadRepairCount:      MetricConfig{Enabled: true},
-					RiakVnodeIndexOperationCount: MetricConfig{Enabled: true},
-					RiakVnodeOperationCount:      MetricConfig{Enabled: true},
+					RiakMemoryLimit: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					RiakNodeOperationCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"request"},
+					},
+					RiakNodeOperationTimeMean: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"request"},
+					},
+					RiakNodeReadRepairCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					RiakVnodeIndexOperationCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"operation"},
+					},
+					RiakVnodeOperationCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"request"},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					RiakNodeName: ResourceAttributeConfig{Enabled: true},
@@ -42,12 +67,36 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RiakMemoryLimit:              MetricConfig{Enabled: false},
-					RiakNodeOperationCount:       MetricConfig{Enabled: false},
-					RiakNodeOperationTimeMean:    MetricConfig{Enabled: false},
-					RiakNodeReadRepairCount:      MetricConfig{Enabled: false},
-					RiakVnodeIndexOperationCount: MetricConfig{Enabled: false},
-					RiakVnodeOperationCount:      MetricConfig{Enabled: false},
+					RiakMemoryLimit: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					RiakNodeOperationCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"request"},
+					},
+					RiakNodeOperationTimeMean: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"request"},
+					},
+					RiakNodeReadRepairCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					RiakVnodeIndexOperationCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"operation"},
+					},
+					RiakVnodeOperationCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"request"},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					RiakNodeName: ResourceAttributeConfig{Enabled: false},
