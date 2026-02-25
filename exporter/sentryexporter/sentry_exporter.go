@@ -38,7 +38,7 @@ var (
 )
 
 const (
-	maxProjects              = 1000
+	maxProjects              = 1000 // only prevents auto-creation when total number of seen projects (existing + created) reaches this number
 	projectCreationQueueSize = 1000
 	timeout                  = 5 * time.Second
 )
