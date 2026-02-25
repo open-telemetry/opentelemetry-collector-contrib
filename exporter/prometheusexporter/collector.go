@@ -226,9 +226,11 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 
 	schema := dp.Scale()
 
-	// CBNH (schema -53) is converted to classic histogram per Prometheus NHCB spec.
+	// Schema -53 (CBNH) is already supported via the classic histogram path.
+	// The Prometheus receiver converts NHCB to OTLP classic Histogram (not ExponentialHistogram),
+	// which is then handled by convertDoubleHistogram.
 	if schema == cbnhScale {
-		return c.convertCBNHToClassicHistogram(dp, desc, attributes)
+		return nil, errors.New("unexpected ExponentialHistogram with schema -53; CBNH is supported via classic histogram")
 	}
 	if schema < -4 {
 		return nil, fmt.Errorf("cannot convert exponential to native histogram: scale must be >= -4, was %d", schema)
@@ -270,55 +272,6 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		created,
 		attributes...,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	if c.sendTimestamps {
-		return prometheus.NewMetricWithTimestamp(dp.Timestamp().AsTime(), m), nil
-	}
-	return m, nil
-}
-
-// convertCBNHToClassicHistogram converts a CBNH (schema -53) to a classic histogram.
-// Per the Prometheus NHCB spec, only positive buckets are used; bucket indices become boundaries.
-func (c *collector) convertCBNHToClassicHistogram(dp pmetric.ExponentialHistogramDataPoint, desc *prometheus.Desc, attributes []string) (prometheus.Metric, error) {
-	posCounts := dp.Positive().BucketCounts()
-	posOffset := dp.Positive().Offset()
-
-	type indexCount struct {
-		index int
-		count uint64
-	}
-	bucketData := make([]indexCount, 0, posCounts.Len())
-	for i := 0; i < posCounts.Len(); i++ {
-		idx := int(posOffset) + i
-		bucketData = append(bucketData, indexCount{index: idx, count: posCounts.At(i)})
-	}
-
-	sort.Slice(bucketData, func(i, j int) bool {
-		return bucketData[i].index < bucketData[j].index
-	})
-
-	cumCount := uint64(0)
-	points := make(map[float64]uint64, len(bucketData))
-	for _, b := range bucketData {
-		cumCount += b.count
-		points[float64(b.index)] = cumCount
-	}
-
-	sumVal := 0.0
-	if dp.HasSum() {
-		sumVal = dp.Sum()
-	}
-
-	var m prometheus.Metric
-	var err error
-	if dp.StartTimestamp().AsTime().Unix() > 0 {
-		m, err = prometheus.NewConstHistogramWithCreatedTimestamp(desc, dp.Count(), sumVal, points, dp.StartTimestamp().AsTime(), attributes...)
-	} else {
-		m, err = prometheus.NewConstHistogram(desc, dp.Count(), sumVal, points, attributes...)
-	}
 	if err != nil {
 		return nil, err
 	}
