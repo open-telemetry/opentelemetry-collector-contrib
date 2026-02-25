@@ -19,7 +19,16 @@ data:
     receivers:
       k8s_cluster:
         namespace: my-namespace
-        
+        metrics:
+          k8s.service.endpoint.count:
+            enabled: true
+          k8s.service.load_balancer.ingress.count:
+            enabled: true
+        resource_attributes:
+          k8s.service.traffic_distribution:
+            enabled: true
+          k8s.service.publish_not_ready_addresses:
+            enabled: true
     service:
       telemetry:
         logs:

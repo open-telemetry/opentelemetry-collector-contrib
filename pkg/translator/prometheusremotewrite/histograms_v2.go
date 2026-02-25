@@ -28,7 +28,7 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 			continue
 		}
 
-		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, model.MetricNameLabel, name)
+		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue

@@ -67,7 +67,7 @@ func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
 
 	err = e.detectSchemaFeatures(ctx)
 	if err != nil {
-		return fmt.Errorf("schema detection: %w", err)
+		e.logger.Error("schema detection failed", zap.Error(err))
 	}
 
 	e.renderInsertLogsJSONSQL()

@@ -126,6 +126,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          make install-tools
-          ./.tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
+          go tool -modfile=./internal/tools/go.mod go.opentelemetry.io/build-tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
       - run: ./.github/workflows/scripts/check-disk-space.sh

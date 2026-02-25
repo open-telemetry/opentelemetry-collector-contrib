@@ -25,8 +25,7 @@ metrics:
     enabled: false
     description: Current frequency of the CPU core in Hz.
     unit: "Hz"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: [cpu]
@@ -35,8 +34,7 @@ metrics:
     enabled: false
     description: Number of available logical CPUs.
     unit: "{cpu}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: false
@@ -46,8 +44,7 @@ metrics:
     enabled: false
     description: Number of available physical CPUs.
     unit: "{cpu}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: false
@@ -57,8 +54,7 @@ metrics:
     enabled: true
     description: Total seconds each logical CPU spent on each mode.
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       aggregation_temporality: cumulative
@@ -69,8 +65,7 @@ metrics:
     enabled: false
     description: Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: [cpu, state]

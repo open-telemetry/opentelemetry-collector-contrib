@@ -7,6 +7,8 @@ package elasticsearchreceiver
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"path/filepath"
 	"testing"
 	"time"
@@ -29,32 +31,39 @@ func TestIntegration(t *testing.T) {
 func integrationTest(name string) func(*testing.T) {
 	dockerFile := fmt.Sprintf("Dockerfile.elasticsearch.%s", name)
 	expectedFile := fmt.Sprintf("expected.%s.yaml", name)
-	return scraperinttest.NewIntegrationTest(
-		NewFactory(),
-		scraperinttest.WithContainerRequest(
-			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "integration"),
-					Dockerfile: dockerFile,
-				},
-				ExposedPorts: []string{elasticPort},
-				WaitingFor:   wait.ForListeningPort(elasticPort).WithStartupTimeout(2 * time.Minute),
-			}),
-		scraperinttest.WithCustomConfig(
-			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
-				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = 2 * time.Second
-				rCfg.Endpoint = fmt.Sprintf("http://%s:%s", ci.Host(t), ci.MappedPort(t, elasticPort))
-			}),
-		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", expectedFile)),
-		scraperinttest.WithCompareOptions(
-			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-		),
-	).Run
+	return func(t *testing.T) {
+		scraperinttest.NewIntegrationTest(
+			NewFactory(),
+			scraperinttest.WithContainerRequest(
+				testcontainers.ContainerRequest{
+					FromDockerfile: testcontainers.FromDockerfile{
+						Context:    filepath.Join("testdata", "integration"),
+						Dockerfile: dockerFile,
+					},
+					ExposedPorts: []string{elasticPort},
+					WaitingFor:   wait.ForListeningPort(elasticPort).WithStartupTimeout(2 * time.Minute),
+				}),
+			scraperinttest.WithCustomConfig(
+				func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+					rCfg := cfg.(*Config)
+					rCfg.CollectionInterval = 2 * time.Second
+
+					u := url.URL{
+						Scheme: "http",
+						Host:   net.JoinHostPort(ci.Host(t), ci.MappedPort(t, elasticPort)),
+					}
+					rCfg.Endpoint = u.String()
+				}),
+			scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", expectedFile)),
+			scraperinttest.WithCompareOptions(
+				pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"),
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+			),
+		).Run(t)
+	}
 }

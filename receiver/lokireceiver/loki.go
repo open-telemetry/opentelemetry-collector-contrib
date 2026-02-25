@@ -42,6 +42,8 @@ type lokiReceiver struct {
 	serverHTTP   *http.Server
 	serverGRPC   *grpc.Server
 	shutdownWG   sync.WaitGroup
+	httpAddr     string
+	grpcAddr     string
 
 	obsrepGRPC *receiverhelper.ObsReport
 	obsrepHTTP *receiverhelper.ObsReport
@@ -128,14 +130,12 @@ func (r *lokiReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	if err != nil {
 		return err
 	}
-	r.shutdownWG.Add(1)
-
-	go func() {
-		defer r.shutdownWG.Done()
+	r.httpAddr = listener.Addr().String()
+	r.shutdownWG.Go(func() {
 		if errHTTP := r.serverHTTP.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 	return nil
 }
 
@@ -145,14 +145,12 @@ func (r *lokiReceiver) startGRPCServer(ctx context.Context, host component.Host)
 	if err != nil {
 		return err
 	}
-	r.shutdownWG.Add(1)
-
-	go func() {
-		defer r.shutdownWG.Done()
+	r.grpcAddr = listener.Addr().String()
+	r.shutdownWG.Go(func() {
 		if errGRPC := r.serverGRPC.Serve(listener); !errors.Is(errGRPC, grpc.ErrServerStopped) && errGRPC != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGRPC))
 		}
-	}()
+	})
 	return nil
 }
 

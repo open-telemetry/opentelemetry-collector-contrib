@@ -86,7 +86,7 @@ properties:
   resolver:
     $ref: resolver_settings
   routing_attributes:
-    description: RoutingAttributes creates a composite routing key, based on several resource attributes of the application. Supports all attributes available (both resource and span), as well as the pseudo attributes "span.kind" and "span.name".
+    description: RoutingAttributes creates a composite routing key from the listed attributes. For traces, attributes can come from resource, scope, or span, plus the pseudo attributes "span.kind" and "span.name". For metrics, attributes can come from resource, scope, or datapoint attributes.
     type: array
     items:
       type: string

@@ -90,6 +90,7 @@ For more information about the maintainer role, see the [community repository](h
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
+- [Joshua MacDonald](https://github.com/jmacd), Microsoft
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic

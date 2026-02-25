@@ -124,19 +124,18 @@ func lookupSearchJobReturn(r *http.Request) []byte {
 	case "/services/search/v2/jobs/3/results":
 		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="run_time_avg"><value><text>200.40</text></value></field></result></response>`)
 	case "/services/search/v2/jobs/4/results": // this is the case in which we test pagination
-		if vals.Get("offset") < vals.Get("count") {
-			return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='0'><field k='By'><value><text>101</text></value></field><field k='indexname'><value><text>some_val2</text></value></field></result></results>`)
+		if vals.Get("offset") == "0" {
+			return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='0'><field k='indexname'><value><text>some_val1</text></value></field><field k='By'><value><text>104</text></value></field></result><result offset='1'><field k='indexname'><value><text>some_val5</text></value></field><field k='By'><value><text>105</text></value></field></result></results>`)
 		}
-		return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='101'><field k='By'><value><text>100</text></value></field><field k='indexname'><value><text>some_val2</text></value></field></result></results>`)
+		return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='101'><field k='indexname'><value><text>some_val2</text></value></field><field k='By'><value><text>93</text></value></field></result></results>`)
 	default:
 		return []byte(`error`)
 	}
 }
 
 // mock server create
-func createMockServer(t *testing.T) *httptest.Server {
+func createMockServer() *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Log(r.URL.String())
 		url := r.URL.String()
 		switch {
 		case strings.EqualFold(url, "/services/server/introspection/indexer?output_mode=json"):
@@ -167,24 +166,25 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	} else {
 		endpoint = ts.URL
 	}
-	metricsettings := metadata.MetricsBuilderConfig{}
+	metricsCfg := metadata.DefaultMetricsBuilderConfig()
 	// in the future add more metrics
-	metricsettings.Metrics.SplunkIndexerThroughput.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedEventCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedRawSize.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
-	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
-	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
-	metricsettings.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
-	metricsettings.Metrics.SplunkIndexerCPUTime.Enabled = true
-	metricsettings.Metrics.SplunkIoAvgIops.Enabled = true
-	metricsettings.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
-	metricsettings.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
-	metricsettings.Metrics.SplunkLicenseIndexUsage.Enabled = true
+	metricsCfg.Metrics.SplunkHealth.Enabled = false
+	metricsCfg.Metrics.SplunkIndexerThroughput.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedEventCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedRawSize.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
+	metricsCfg.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
+	metricsCfg.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
+	metricsCfg.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
+	metricsCfg.Metrics.SplunkIndexerCPUTime.Enabled = true
+	metricsCfg.Metrics.SplunkIoAvgIops.Enabled = true
+	metricsCfg.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
+	metricsCfg.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
+	metricsCfg.Metrics.SplunkLicenseIndexUsage.Enabled = true
 	return &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
@@ -203,13 +203,13 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
 		},
-		MetricsBuilderConfig: metricsettings,
+		MetricsBuilderConfig: metricsCfg,
 		VersionInfo:          false,
 	}
 }
 
 func TestScraper(t *testing.T) {
-	ts := createMockServer(t)
+	ts := createMockServer()
 	defer ts.Close()
 
 	cfg := createConfig(ts, false)
@@ -238,7 +238,7 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScrapeError(t *testing.T) {
-	ts := createMockServer(t)
+	ts := createMockServer()
 	defer ts.Close()
 
 	cfg := createConfig(ts, true)
