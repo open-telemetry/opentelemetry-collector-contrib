@@ -10,6 +10,8 @@ status:
     emeritus: [Hemansh31]
   unsupported_platforms: [darwin, windows]
 
+reaggregation_enabled: true
+
 resource_attributes:
   systemd.unit.name:
     description: Name of the systemd unit
@@ -21,6 +23,7 @@ attributes:
     description: Breakdown of CPU usage by type.
     type: string
     enum: [system, user]
+    requirement_level: required
 
   systemd.unit.active_state:
     description: The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units)
@@ -34,6 +37,7 @@ attributes:
       - deactivating
       - maintenance
       - refreshing
+    requirement_level: required
 
 metrics:
   systemd.service.cpu.time:
