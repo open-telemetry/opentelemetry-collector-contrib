@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,20 +27,76 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					AerospikeNamespaceDiskAvailable:                   MetricConfig{Enabled: true},
-					AerospikeNamespaceGeojsonRegionQueryCells:         MetricConfig{Enabled: true},
-					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{Enabled: true},
-					AerospikeNamespaceGeojsonRegionQueryPoints:        MetricConfig{Enabled: true},
-					AerospikeNamespaceGeojsonRegionQueryRequests:      MetricConfig{Enabled: true},
-					AerospikeNamespaceMemoryFree:                      MetricConfig{Enabled: true},
-					AerospikeNamespaceMemoryUsage:                     MetricConfig{Enabled: true},
-					AerospikeNamespaceQueryCount:                      MetricConfig{Enabled: true},
-					AerospikeNamespaceScanCount:                       MetricConfig{Enabled: true},
-					AerospikeNamespaceTransactionCount:                MetricConfig{Enabled: true},
-					AerospikeNodeConnectionCount:                      MetricConfig{Enabled: true},
-					AerospikeNodeConnectionOpen:                       MetricConfig{Enabled: true},
-					AerospikeNodeMemoryFree:                           MetricConfig{Enabled: true},
-					AerospikeNodeQueryTracked:                         MetricConfig{Enabled: true},
+					AerospikeNamespaceDiskAvailable: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceGeojsonRegionQueryCells: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceGeojsonRegionQueryPoints: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceGeojsonRegionQueryRequests: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceMemoryFree: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceMemoryUsage: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"component"},
+					},
+					AerospikeNamespaceQueryCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "index", "result"},
+					},
+					AerospikeNamespaceScanCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "result"},
+					},
+					AerospikeNamespaceTransactionCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "result"},
+					},
+					AerospikeNodeConnectionCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "operation"},
+					},
+					AerospikeNodeConnectionOpen: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type"},
+					},
+					AerospikeNodeMemoryFree: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNodeQueryTracked: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					AerospikeNamespace: ResourceAttributeConfig{Enabled: true},
@@ -51,20 +108,76 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					AerospikeNamespaceDiskAvailable:                   MetricConfig{Enabled: false},
-					AerospikeNamespaceGeojsonRegionQueryCells:         MetricConfig{Enabled: false},
-					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{Enabled: false},
-					AerospikeNamespaceGeojsonRegionQueryPoints:        MetricConfig{Enabled: false},
-					AerospikeNamespaceGeojsonRegionQueryRequests:      MetricConfig{Enabled: false},
-					AerospikeNamespaceMemoryFree:                      MetricConfig{Enabled: false},
-					AerospikeNamespaceMemoryUsage:                     MetricConfig{Enabled: false},
-					AerospikeNamespaceQueryCount:                      MetricConfig{Enabled: false},
-					AerospikeNamespaceScanCount:                       MetricConfig{Enabled: false},
-					AerospikeNamespaceTransactionCount:                MetricConfig{Enabled: false},
-					AerospikeNodeConnectionCount:                      MetricConfig{Enabled: false},
-					AerospikeNodeConnectionOpen:                       MetricConfig{Enabled: false},
-					AerospikeNodeMemoryFree:                           MetricConfig{Enabled: false},
-					AerospikeNodeQueryTracked:                         MetricConfig{Enabled: false},
+					AerospikeNamespaceDiskAvailable: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceGeojsonRegionQueryCells: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceGeojsonRegionQueryPoints: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceGeojsonRegionQueryRequests: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceMemoryFree: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNamespaceMemoryUsage: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"component"},
+					},
+					AerospikeNamespaceQueryCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "index", "result"},
+					},
+					AerospikeNamespaceScanCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "result"},
+					},
+					AerospikeNamespaceTransactionCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "result"},
+					},
+					AerospikeNodeConnectionCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "operation"},
+					},
+					AerospikeNodeConnectionOpen: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type"},
+					},
+					AerospikeNodeMemoryFree: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					AerospikeNodeQueryTracked: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					AerospikeNamespace: ResourceAttributeConfig{Enabled: false},

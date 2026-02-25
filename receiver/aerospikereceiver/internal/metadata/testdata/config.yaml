@@ -3,32 +3,95 @@ all_set:
   metrics:
     aerospike.namespace.disk.available:
       enabled: true
+      attributes: []
     aerospike.namespace.geojson.region_query_cells:
       enabled: true
+      attributes: []
     aerospike.namespace.geojson.region_query_false_positive:
       enabled: true
+      attributes: []
     aerospike.namespace.geojson.region_query_points:
       enabled: true
+      attributes: []
     aerospike.namespace.geojson.region_query_requests:
       enabled: true
+      attributes: []
     aerospike.namespace.memory.free:
       enabled: true
+      attributes: []
     aerospike.namespace.memory.usage:
       enabled: true
+      attributes: ["component"]
     aerospike.namespace.query.count:
       enabled: true
+      attributes: ["type","index","result"]
     aerospike.namespace.scan.count:
       enabled: true
+      attributes: ["type","result"]
     aerospike.namespace.transaction.count:
       enabled: true
+      attributes: ["type","result"]
     aerospike.node.connection.count:
       enabled: true
+      attributes: ["type","operation"]
     aerospike.node.connection.open:
       enabled: true
+      attributes: ["type"]
     aerospike.node.memory.free:
       enabled: true
+      attributes: []
     aerospike.node.query.tracked:
       enabled: true
+      attributes: []
+  resource_attributes:
+    aerospike.namespace:
+      enabled: true
+    aerospike.node.name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    aerospike.namespace.disk.available:
+      enabled: true
+      attributes: []
+    aerospike.namespace.geojson.region_query_cells:
+      enabled: true
+      attributes: []
+    aerospike.namespace.geojson.region_query_false_positive:
+      enabled: true
+      attributes: []
+    aerospike.namespace.geojson.region_query_points:
+      enabled: true
+      attributes: []
+    aerospike.namespace.geojson.region_query_requests:
+      enabled: true
+      attributes: []
+    aerospike.namespace.memory.free:
+      enabled: true
+      attributes: []
+    aerospike.namespace.memory.usage:
+      enabled: true
+      attributes: []
+    aerospike.namespace.query.count:
+      enabled: true
+      attributes: []
+    aerospike.namespace.scan.count:
+      enabled: true
+      attributes: []
+    aerospike.namespace.transaction.count:
+      enabled: true
+      attributes: []
+    aerospike.node.connection.count:
+      enabled: true
+      attributes: []
+    aerospike.node.connection.open:
+      enabled: true
+      attributes: []
+    aerospike.node.memory.free:
+      enabled: true
+      attributes: []
+    aerospike.node.query.tracked:
+      enabled: true
+      attributes: []
   resource_attributes:
     aerospike.namespace:
       enabled: true
@@ -38,32 +101,46 @@ none_set:
   metrics:
     aerospike.namespace.disk.available:
       enabled: false
+      attributes: []
     aerospike.namespace.geojson.region_query_cells:
       enabled: false
+      attributes: []
     aerospike.namespace.geojson.region_query_false_positive:
       enabled: false
+      attributes: []
     aerospike.namespace.geojson.region_query_points:
       enabled: false
+      attributes: []
     aerospike.namespace.geojson.region_query_requests:
       enabled: false
+      attributes: []
     aerospike.namespace.memory.free:
       enabled: false
+      attributes: []
     aerospike.namespace.memory.usage:
       enabled: false
+      attributes: ["component"]
     aerospike.namespace.query.count:
       enabled: false
+      attributes: ["type","index","result"]
     aerospike.namespace.scan.count:
       enabled: false
+      attributes: ["type","result"]
     aerospike.namespace.transaction.count:
       enabled: false
+      attributes: ["type","result"]
     aerospike.node.connection.count:
       enabled: false
+      attributes: ["type","operation"]
     aerospike.node.connection.open:
       enabled: false
+      attributes: ["type"]
     aerospike.node.memory.free:
       enabled: false
+      attributes: []
     aerospike.node.query.tracked:
       enabled: false
+      attributes: []
   resource_attributes:
     aerospike.namespace:
       enabled: false

@@ -4,6 +4,8 @@ type: aerospike
 description: |
   The Aerospike receiver is designed to collect performance metrics from one or more Aerospike nodes.
 
+reaggregation_enabled: true
+
 status:
   class: receiver
   stability:
@@ -25,10 +27,12 @@ resource_attributes:
   aerospike.namespace:
     description: Name of the Aerospike namespace
     enabled: true
+    requirement_level: required
     type: string
   aerospike.node.name:
     description: Name of the Aerospike node collected from
     enabled: true
+    requirement_level: required
     type: string
 
 attributes:
@@ -36,6 +40,7 @@ attributes:
     name_override: operation
     description: Operation performed with a connection (open or close)
     type: string
+    requirement_level: recommended
     enum:
       - close
       - open
@@ -44,6 +49,7 @@ attributes:
     name_override: type
     description: Type of connection to an Aerospike node
     type: string
+    requirement_level: recommended
     enum:
       - client
       - fabric
@@ -52,6 +58,7 @@ attributes:
     name_override: index
     description: Type of index the operation was performed on
     type: string
+    requirement_level: recommended
     enum:
       - primary
       - secondary
@@ -59,6 +66,7 @@ attributes:
     name_override: component
     description: Individual component of a namespace
     type: string
+    requirement_level: recommended
     enum:
       - data
       - index
@@ -68,6 +76,7 @@ attributes:
     name_override: result
     description: Result of a query operation performed on a namespace
     type: string
+    requirement_level: recommended
     enum:
       - abort
       - complete
@@ -77,6 +86,7 @@ attributes:
     name_override: type
     description: Type of query operation performed on a namespace
     type: string
+    requirement_level: recommended
     enum:
       - aggregation
       - basic
@@ -89,6 +99,7 @@ attributes:
     name_override: result
     description: Result of a scan operation performed on a namespace
     type: string
+    requirement_level: recommended
     enum:
       - abort
       - complete
@@ -97,6 +108,7 @@ attributes:
     name_override: type
     description: Type of scan operation performed on a namespace
     type: string
+    requirement_level: recommended
     enum:
       - aggregation
       - basic
@@ -106,6 +118,7 @@ attributes:
     name_override: result
     description: Result of a transaction performed on a namespace
     type: string
+    requirement_level: recommended
     enum:
       - error
       - filtered_out
@@ -116,6 +129,7 @@ attributes:
     name_override: type
     description: Type of transaction performed on a namespace
     type: string
+    requirement_level: recommended
     enum:
       - delete
       - read
