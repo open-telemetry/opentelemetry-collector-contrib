@@ -505,6 +505,7 @@ Available Converters:
 - [IsMatch](#ismatch)
 - [IsList](#islist)
 - [IsString](#isstring)
+- [IsNil](#isnil)
 - [Keys](#keys)
 - [Len](#len)
 - [Log](#log)
@@ -1388,6 +1389,22 @@ Examples:
 - `IsString(log.body)`
 
 - `IsString(resource.attributes["maybe a string"])`
+
+### IsNil
+
+`IsNil(value)`
+
+The `IsNil` Converter returns true if the given value is nil.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is `nil` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsNil(resource.attributes["maybe nil"])`
+
+- `IsNil(log.body)`
 
 ### Keys
 
