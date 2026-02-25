@@ -9,6 +9,8 @@ status:
   codeowners:
     active: [dmitryax, crobert-1, atoulme]
 
+reaggregation_enabled: true
+
 resource_attributes:
   host.name:
     description: The host name of Oracle Server
@@ -27,150 +29,198 @@ attributes:
   client.address:
     description: Hostname or address of the client.
     type: string
+    requirement_level: required
   client.port:
     description: TCP port used by the client.
     type: int
+    requirement_level: required
   db.namespace:
     description: The database name.
     type: string
+    requirement_level: required
   db.query.text:
     description: The text of the database query being executed.
     type: string
+    requirement_level: required
   db.server.name:
     description: The name of the server hosting the database.
     type: string
+    requirement_level: required
   db.system.name:
     description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
+    requirement_level: required
   network.peer.address:
     description: IP address of the peer client.
     type: string
+    requirement_level: required
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
+    requirement_level: required
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
+    requirement_level: required
   oracledb.buffer_gets:
     description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
     type: int
+    requirement_level: required
   oracledb.child_address:
     description: Address of the child cursor.
     type: string
+    requirement_level: required
   oracledb.child_number:
     description: The child number of the query.
     type: string
+    requirement_level: required
   oracledb.cluster_wait_time:
     description: Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta).
     type: double
+    requirement_level: required
   oracledb.concurrency_wait_time:
     description: Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta).
     type: double
+    requirement_level: required
   oracledb.cpu_time:
     description: Total time (in seconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta).
     type: double
+    requirement_level: required
   oracledb.direct_reads:
     description: The number of direct path reads performed by a query — i.e., data blocks read directly from disk into the session’s memory (reporting delta).
     type: int
+    requirement_level: required
   oracledb.direct_writes:
     description: The number of direct path write operations, where data is written directly to disk from user memory (reporting delta).
     type: int
+    requirement_level: required
   oracledb.disk_reads:
     description: The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta).
     type: int
+    requirement_level: required
   oracledb.duration_sec:
     description: Total time taken by a database query to execute.
     type: double
+    requirement_level: required
 
   oracledb.elapsed_time:
     description: The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta).
     type: double
+    requirement_level: required
   oracledb.event:
     description: The specific wait event that a query or session is currently experiencing.
     type: string
+    requirement_level: required
   oracledb.executions:
     description: The number of times a specific SQL query has been executed (reporting delta).
     type: int
+    requirement_level: required
   oracledb.module:
     description: Logical module name of the client application that initiated a query or session.
     type: string
+    requirement_level: required
   oracledb.osuser:
     description: Name of the operating system user that initiated or is running the Oracle database session.
     type: string
+    requirement_level: required
   oracledb.physical_read_bytes:
     description: The total number of bytes read from disk by a query (reporting delta).
     type: int
+    requirement_level: required
   oracledb.physical_read_requests:
     description: The number of physical I/O read operations performed by a query (reporting delta).
     type: int
+    requirement_level: required
   oracledb.physical_write_bytes:
     description: The total number of bytes written to disk by a query (reporting delta).
     type: int
+    requirement_level: required
   oracledb.physical_write_requests:
     description: The number of times a query requested to write data to disk (reporting delta).
     type: int
+    requirement_level: required
   oracledb.plan_hash_value:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
+    requirement_level: required
   oracledb.procedure_id:
     description: The identifier of the stored procedure or function being executed by the query.
     type: int
+    requirement_level: required
   oracledb.procedure_name:
     description: Name of the database object that a query is accessing.
     type: string
+    requirement_level: required
   oracledb.procedure_type:
     description: Type of the database object that a query is accessing.
     type: string
+    requirement_level: required
   oracledb.process:
     description: The operating system process ID (PID) associated with a session.
     type: string
+    requirement_level: required
   oracledb.program:
     description: Name of the client program or tool that initiated the Oracle database session.
     type: string
+    requirement_level: required
   oracledb.query_plan:
     description: The query execution plan used by the SQL Server.
     type: string
+    requirement_level: required
   oracledb.rows_processed:
     description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
     type: int
+    requirement_level: required
   oracledb.schemaname:
     description: Oracle schema under which SQL statements are being executed
     type: string
+    requirement_level: required
   oracledb.serial:
     description: Serial number associated with a session.
     type: string
+    requirement_level: required
   oracledb.sid:
     description: ID of the Oracle Server session.
     type: string
+    requirement_level: required
   oracledb.sql_id:
     description: The SQL ID of the query.
     type: string
+    requirement_level: required
   oracledb.state:
     description: Current state of the query or the session executing it.
     type: string
+    requirement_level: required
   oracledb.status:
     description: Execution state or result of a database query or session.
     type: string
+    requirement_level: required
   oracledb.user_io_wait_time:
     description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
     type: double
+    requirement_level: required
   oracledb.wait_class:
     description: The category of wait events a query or session is currently experiencing in Oracle Database.
     type: string
+    requirement_level: required
   session_status:
     description: Session status
     type: string
+    requirement_level: required
   session_type:
     description: Session type
     type: string
+    requirement_level: required
   tablespace_name:
     description: Tablespace name
     type: string
+    requirement_level: required
   # attributes for events
   ## top query
   user.name:
     description: Database user name under which a session is connected to
     type: string
+    requirement_level: required
 
 events:
   db.server.query_sample:
