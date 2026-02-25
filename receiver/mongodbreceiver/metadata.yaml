@@ -9,6 +9,8 @@ status:
     active: [justinianvoss22, dyl10s, ishleenk17]
     seeking_new: true
 
+reaggregation_enabled: true
+
 resource_attributes:
   database:
     description: The name of a database.
@@ -28,10 +30,12 @@ attributes:
   collection:
     description: The name of a collection.
     type: string
+    requirement_level: recommended
   connection_type:
     name_override: type
     description: The status of the connection.
     type: string
+    requirement_level: recommended
     enum:
       - active
       - available
@@ -39,6 +43,7 @@ attributes:
   lock_mode:
     description: The mode of Lock which denotes the degree of access
     type: string
+    requirement_level: recommended
     enum:
       - shared
       - exclusive
@@ -48,6 +53,7 @@ attributes:
   lock_type:
     description: The Resource over which the Lock controls access
     type: string
+    requirement_level: recommended
     enum:
       - parallel_batch_write_mode
       - replication_state_transition
@@ -61,12 +67,14 @@ attributes:
     name_override: type
     description: The type of memory used.
     type: string
+    requirement_level: recommended
     enum:
       - resident
       - virtual
   operation:
     description: The MongoDB operation being counted.
     type: string
+    requirement_level: recommended
     enum:
       - insert
       - query
@@ -78,6 +86,7 @@ attributes:
     name_override: operation
     description: The MongoDB operation with regards to latency
     type: string
+    requirement_level: required
     enum:
       - read
       - write
@@ -85,6 +94,7 @@ attributes:
   type:
     description: The result of a cache request.
     type: string
+    requirement_level: recommended
     enum:
       - hit
       - miss

@@ -380,7 +380,7 @@ The latency of operations.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` | Recommended |
+| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` | Required |
 
 ### mongodb.operation.repl.count
 

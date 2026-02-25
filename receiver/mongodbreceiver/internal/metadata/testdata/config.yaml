@@ -3,98 +3,295 @@ all_set:
   metrics:
     mongodb.active.reads:
       enabled: true
+      attributes: []
     mongodb.active.writes:
       enabled: true
+      attributes: []
     mongodb.cache.operations:
       enabled: true
+      attributes: ["type"]
     mongodb.collection.count:
       enabled: true
+      attributes: []
     mongodb.commands.rate:
       enabled: true
+      attributes: []
     mongodb.connection.count:
       enabled: true
+      attributes: ["type"]
     mongodb.cursor.count:
       enabled: true
+      attributes: []
     mongodb.cursor.timeout.count:
       enabled: true
+      attributes: []
     mongodb.data.size:
       enabled: true
+      attributes: []
     mongodb.database.count:
       enabled: true
+      attributes: []
     mongodb.deletes.rate:
       enabled: true
+      attributes: []
     mongodb.document.operation.count:
       enabled: true
+      attributes: ["operation"]
     mongodb.extent.count:
       enabled: true
+      attributes: []
     mongodb.flushes.rate:
       enabled: true
+      attributes: []
     mongodb.getmores.rate:
       enabled: true
+      attributes: []
     mongodb.global_lock.time:
       enabled: true
+      attributes: []
     mongodb.health:
       enabled: true
+      attributes: []
     mongodb.index.access.count:
       enabled: true
+      attributes: ["collection"]
     mongodb.index.count:
       enabled: true
+      attributes: []
     mongodb.index.size:
       enabled: true
+      attributes: []
     mongodb.inserts.rate:
       enabled: true
+      attributes: []
     mongodb.lock.acquire.count:
       enabled: true
+      attributes: ["lock_type","lock_mode"]
     mongodb.lock.acquire.time:
       enabled: true
+      attributes: ["lock_type","lock_mode"]
     mongodb.lock.acquire.wait_count:
       enabled: true
+      attributes: ["lock_type","lock_mode"]
     mongodb.lock.deadlock.count:
       enabled: true
+      attributes: ["lock_type","lock_mode"]
     mongodb.memory.usage:
       enabled: true
+      attributes: ["type"]
     mongodb.network.io.receive:
       enabled: true
+      attributes: []
     mongodb.network.io.transmit:
       enabled: true
+      attributes: []
     mongodb.network.request.count:
       enabled: true
+      attributes: []
     mongodb.object.count:
       enabled: true
+      attributes: []
     mongodb.operation.count:
       enabled: true
+      attributes: ["operation"]
     mongodb.operation.latency.time:
       enabled: true
+      attributes: ["operation"]
     mongodb.operation.repl.count:
       enabled: true
+      attributes: ["operation"]
     mongodb.operation.time:
       enabled: true
+      attributes: ["operation"]
     mongodb.page_faults:
       enabled: true
+      attributes: []
     mongodb.queries.rate:
       enabled: true
+      attributes: []
     mongodb.repl_commands_per_sec:
       enabled: true
+      attributes: []
     mongodb.repl_deletes_per_sec:
       enabled: true
+      attributes: []
     mongodb.repl_getmores_per_sec:
       enabled: true
+      attributes: []
     mongodb.repl_inserts_per_sec:
       enabled: true
+      attributes: []
     mongodb.repl_queries_per_sec:
       enabled: true
+      attributes: []
     mongodb.repl_updates_per_sec:
       enabled: true
+      attributes: []
     mongodb.session.count:
       enabled: true
+      attributes: []
     mongodb.storage.size:
       enabled: true
+      attributes: []
     mongodb.updates.rate:
       enabled: true
+      attributes: []
     mongodb.uptime:
       enabled: true
+      attributes: []
     mongodb.wtcache.bytes.read:
       enabled: true
+      attributes: []
+  resource_attributes:
+    database:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
+      enabled: true
+reaggregate_set:
+  metrics:
+    mongodb.active.reads:
+      enabled: true
+      attributes: []
+    mongodb.active.writes:
+      enabled: true
+      attributes: []
+    mongodb.cache.operations:
+      enabled: true
+      attributes: []
+    mongodb.collection.count:
+      enabled: true
+      attributes: []
+    mongodb.commands.rate:
+      enabled: true
+      attributes: []
+    mongodb.connection.count:
+      enabled: true
+      attributes: []
+    mongodb.cursor.count:
+      enabled: true
+      attributes: []
+    mongodb.cursor.timeout.count:
+      enabled: true
+      attributes: []
+    mongodb.data.size:
+      enabled: true
+      attributes: []
+    mongodb.database.count:
+      enabled: true
+      attributes: []
+    mongodb.deletes.rate:
+      enabled: true
+      attributes: []
+    mongodb.document.operation.count:
+      enabled: true
+      attributes: []
+    mongodb.extent.count:
+      enabled: true
+      attributes: []
+    mongodb.flushes.rate:
+      enabled: true
+      attributes: []
+    mongodb.getmores.rate:
+      enabled: true
+      attributes: []
+    mongodb.global_lock.time:
+      enabled: true
+      attributes: []
+    mongodb.health:
+      enabled: true
+      attributes: []
+    mongodb.index.access.count:
+      enabled: true
+      attributes: []
+    mongodb.index.count:
+      enabled: true
+      attributes: []
+    mongodb.index.size:
+      enabled: true
+      attributes: []
+    mongodb.inserts.rate:
+      enabled: true
+      attributes: []
+    mongodb.lock.acquire.count:
+      enabled: true
+      attributes: []
+    mongodb.lock.acquire.time:
+      enabled: true
+      attributes: []
+    mongodb.lock.acquire.wait_count:
+      enabled: true
+      attributes: []
+    mongodb.lock.deadlock.count:
+      enabled: true
+      attributes: []
+    mongodb.memory.usage:
+      enabled: true
+      attributes: []
+    mongodb.network.io.receive:
+      enabled: true
+      attributes: []
+    mongodb.network.io.transmit:
+      enabled: true
+      attributes: []
+    mongodb.network.request.count:
+      enabled: true
+      attributes: []
+    mongodb.object.count:
+      enabled: true
+      attributes: []
+    mongodb.operation.count:
+      enabled: true
+      attributes: []
+    mongodb.operation.latency.time:
+      enabled: true
+      attributes: ["operation"]
+    mongodb.operation.repl.count:
+      enabled: true
+      attributes: []
+    mongodb.operation.time:
+      enabled: true
+      attributes: []
+    mongodb.page_faults:
+      enabled: true
+      attributes: []
+    mongodb.queries.rate:
+      enabled: true
+      attributes: []
+    mongodb.repl_commands_per_sec:
+      enabled: true
+      attributes: []
+    mongodb.repl_deletes_per_sec:
+      enabled: true
+      attributes: []
+    mongodb.repl_getmores_per_sec:
+      enabled: true
+      attributes: []
+    mongodb.repl_inserts_per_sec:
+      enabled: true
+      attributes: []
+    mongodb.repl_queries_per_sec:
+      enabled: true
+      attributes: []
+    mongodb.repl_updates_per_sec:
+      enabled: true
+      attributes: []
+    mongodb.session.count:
+      enabled: true
+      attributes: []
+    mongodb.storage.size:
+      enabled: true
+      attributes: []
+    mongodb.updates.rate:
+      enabled: true
+      attributes: []
+    mongodb.uptime:
+      enabled: true
+      attributes: []
+    mongodb.wtcache.bytes.read:
+      enabled: true
+      attributes: []
   resource_attributes:
     database:
       enabled: true
@@ -106,98 +303,145 @@ none_set:
   metrics:
     mongodb.active.reads:
       enabled: false
+      attributes: []
     mongodb.active.writes:
       enabled: false
+      attributes: []
     mongodb.cache.operations:
       enabled: false
+      attributes: ["type"]
     mongodb.collection.count:
       enabled: false
+      attributes: []
     mongodb.commands.rate:
       enabled: false
+      attributes: []
     mongodb.connection.count:
       enabled: false
+      attributes: ["type"]
     mongodb.cursor.count:
       enabled: false
+      attributes: []
     mongodb.cursor.timeout.count:
       enabled: false
+      attributes: []
     mongodb.data.size:
       enabled: false
+      attributes: []
     mongodb.database.count:
       enabled: false
+      attributes: []
     mongodb.deletes.rate:
       enabled: false
+      attributes: []
     mongodb.document.operation.count:
       enabled: false
+      attributes: ["operation"]
     mongodb.extent.count:
       enabled: false
+      attributes: []
     mongodb.flushes.rate:
       enabled: false
+      attributes: []
     mongodb.getmores.rate:
       enabled: false
+      attributes: []
     mongodb.global_lock.time:
       enabled: false
+      attributes: []
     mongodb.health:
       enabled: false
+      attributes: []
     mongodb.index.access.count:
       enabled: false
+      attributes: ["collection"]
     mongodb.index.count:
       enabled: false
+      attributes: []
     mongodb.index.size:
       enabled: false
+      attributes: []
     mongodb.inserts.rate:
       enabled: false
+      attributes: []
     mongodb.lock.acquire.count:
       enabled: false
+      attributes: ["lock_type","lock_mode"]
     mongodb.lock.acquire.time:
       enabled: false
+      attributes: ["lock_type","lock_mode"]
     mongodb.lock.acquire.wait_count:
       enabled: false
+      attributes: ["lock_type","lock_mode"]
     mongodb.lock.deadlock.count:
       enabled: false
+      attributes: ["lock_type","lock_mode"]
     mongodb.memory.usage:
       enabled: false
+      attributes: ["type"]
     mongodb.network.io.receive:
       enabled: false
+      attributes: []
     mongodb.network.io.transmit:
       enabled: false
+      attributes: []
     mongodb.network.request.count:
       enabled: false
+      attributes: []
     mongodb.object.count:
       enabled: false
+      attributes: []
     mongodb.operation.count:
       enabled: false
+      attributes: ["operation"]
     mongodb.operation.latency.time:
       enabled: false
+      attributes: ["operation"]
     mongodb.operation.repl.count:
       enabled: false
+      attributes: ["operation"]
     mongodb.operation.time:
       enabled: false
+      attributes: ["operation"]
     mongodb.page_faults:
       enabled: false
+      attributes: []
     mongodb.queries.rate:
       enabled: false
+      attributes: []
     mongodb.repl_commands_per_sec:
       enabled: false
+      attributes: []
     mongodb.repl_deletes_per_sec:
       enabled: false
+      attributes: []
     mongodb.repl_getmores_per_sec:
       enabled: false
+      attributes: []
     mongodb.repl_inserts_per_sec:
       enabled: false
+      attributes: []
     mongodb.repl_queries_per_sec:
       enabled: false
+      attributes: []
     mongodb.repl_updates_per_sec:
       enabled: false
+      attributes: []
     mongodb.session.count:
       enabled: false
+      attributes: []
     mongodb.storage.size:
       enabled: false
+      attributes: []
     mongodb.updates.rate:
       enabled: false
+      attributes: []
     mongodb.uptime:
       enabled: false
+      attributes: []
     mongodb.wtcache.bytes.read:
       enabled: false
+      attributes: []
   resource_attributes:
     database:
       enabled: false
