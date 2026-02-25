@@ -16,12 +16,13 @@ issues: [45988]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Previously, Manager.Start() performed a synchronous glob walk of all matching files
-  before returning. This blocked the collector from reporting readiness, causing pods to
+  Previously, a synchronous glob walk of all matching files
+  was performed during component start. This blocked the collector from reporting readiness, causing pods to
   remain in Not Ready state for extended periods when many files matched the configured
   glob patterns. The call was purely for logging a warning and the result was discarded.
   The first poll cycle already performs the same glob walk, so the duplicate call has been
   removed.
+  The warning "no files match the configured criteria" is no longer logged. It is still logged at debug level on the first (and each subsequent) poll.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
