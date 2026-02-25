@@ -82,7 +82,7 @@ func (h *communityIDHash) normalize() {
 func (h *communityIDHash) compute() string {
 	flowTupleCap := 8 + len(h.srcIPBytes) + len(h.dstIPBytes)
 	flowTuple := make([]byte, 2, flowTupleCap)
-	
+
 	// Add seed (2 bytes, network order)
 	binary.BigEndian.PutUint16(flowTuple, h.seed)
 
