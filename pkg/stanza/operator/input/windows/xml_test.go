@@ -595,8 +595,8 @@ func TestUnmarshalWithIllegalXMLChars(t *testing.T) {
 	require.Len(t, event.EventData.Data, 1)
 	require.Equal(t, "FileVersion", event.EventData.Data[0].Name)
 	require.Equal(t, "1.0.0", event.EventData.Data[0].Value)
-	// Original should also not contain the illegal character
-	require.NotContains(t, event.Original, "\x01")
+	// Original preserves the raw input verbatim, so the illegal character is still present.
+	require.Contains(t, event.Original, "\x01")
 }
 
 func TestUnmarshalWithEventData(t *testing.T) {
@@ -730,6 +730,97 @@ func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
 	}
 
 	require.Equal(t, xml, event)
+}
+
+// Benchmarks for unmarshalEventXML measure the cost of the sanitization path
+// relative to the baseline (no sanitization) so we can quantify the overhead
+// introduced by the illegal-XML-character fix.
+
+// benchmarkXMLClean is a representative Windows event log XML document with no
+// illegal characters.  It is intentionally inline so the benchmark does not
+// vary with testdata file I/O.
+var benchmarkXMLClean = []byte(`<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+    <System>
+        <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+        <EventID Qualifiers="0">1</EventID>
+        <Version>5</Version>
+        <Level>4</Level>
+        <Task>1</Task>
+        <Opcode>0</Opcode>
+        <Keywords>0x8000000000000000</Keywords>
+        <TimeCreated SystemTime="2023-10-19T21:57:58.0685414Z" />
+        <EventRecordID>12345</EventRecordID>
+        <Correlation />
+        <Execution ProcessID="1234" ThreadID="5678" />
+        <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+        <Computer>computer</Computer>
+        <Security />
+    </System>
+    <EventData>
+        <Data Name="FileVersion">1.0.0</Data>
+        <Data Name="Description">A perfectly normal file</Data>
+        <Data Name="Product">Windows</Data>
+    </EventData>
+</Event>`)
+
+// benchmarkXMLDirty is the same document but with an embedded U+0001 control
+// character (as observed in real Sysmon events) that is illegal in XML 1.0.
+var benchmarkXMLDirty = []byte("<Event xmlns=\"http://schemas.microsoft.com/win/2004/08/events/event\">\n" +
+	"    <System>\n" +
+	"        <Provider Name=\"Microsoft-Windows-Sysmon\" Guid=\"{5770385F-C22A-43E0-BF4C-06F5698FFBD9}\" />\n" +
+	"        <EventID Qualifiers=\"0\">1</EventID>\n" +
+	"        <Version>5</Version>\n" +
+	"        <Level>4</Level>\n" +
+	"        <Task>1</Task>\n" +
+	"        <Opcode>0</Opcode>\n" +
+	"        <Keywords>0x8000000000000000</Keywords>\n" +
+	"        <TimeCreated SystemTime=\"2023-10-19T21:57:58.0685414Z\" />\n" +
+	"        <EventRecordID>12345</EventRecordID>\n" +
+	"        <Correlation />\n" +
+	"        <Execution ProcessID=\"1234\" ThreadID=\"5678\" />\n" +
+	"        <Channel>Microsoft-Windows-Sysmon/Operational</Channel>\n" +
+	"        <Computer>computer</Computer>\n" +
+	"        <Security />\n" +
+	"    </System>\n" +
+	"    <EventData>\n" +
+	"        <Data Name=\"FileVersion\">1.0\x01.0</Data>\n" +
+	"        <Data Name=\"Description\">A file with an \x02illegal\x03 char</Data>\n" +
+	"    </EventData>\n" +
+	"</Event>")
+
+// BenchmarkUnmarshalEventXML_CleanInput measures the common-case cost of
+// unmarshalling a typical event with no illegal XML characters. The pre-scan
+// short-circuits before any allocation, so this should be close to the raw
+// xml.Unmarshal baseline.
+func BenchmarkUnmarshalEventXML_CleanInput(b *testing.B) {
+	for b.Loop() {
+		_, _ = unmarshalEventXML(benchmarkXMLClean)
+	}
+}
+
+// BenchmarkUnmarshalEventXML_DirtyInput measures the cost when the input
+// contains illegal XML 1.0 characters (as seen in some Sysmon events).
+func BenchmarkUnmarshalEventXML_DirtyInput(b *testing.B) {
+	for b.Loop() {
+		_, _ = unmarshalEventXML(benchmarkXMLDirty)
+	}
+}
+
+// BenchmarkSanitizeXMLBytes_CleanInput isolates the cost of the sanitization
+// step on typical clean input, making it easy to compare against the full
+// unmarshal cost above.
+func BenchmarkSanitizeXMLBytes_CleanInput(b *testing.B) {
+	for b.Loop() {
+		_ = sanitizeXMLBytes(benchmarkXMLClean)
+	}
+}
+
+// BenchmarkSanitizeXMLBytes_DirtyInput isolates the cost of the sanitization
+// step when the input contains illegal characters.
+func BenchmarkSanitizeXMLBytes_DirtyInput(b *testing.B) {
+	for b.Loop() {
+		_ = sanitizeXMLBytes(benchmarkXMLDirty)
+	}
 }
 
 func TestUnmarshalWithUserData(t *testing.T) {
