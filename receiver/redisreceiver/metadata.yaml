@@ -8,6 +8,8 @@ status:
   codeowners:
     active: [dmitryax, hughesjj]
 
+reaggregation_enabled: true
+
 resource_attributes:
   redis.version:
     description: Redis server's version.
@@ -29,12 +31,15 @@ attributes:
     enum:
       - ok
       - fail
+    requirement_level: required
   cmd:
     description: Redis command name
     type: string
+    requirement_level: required
   db:
     description: Redis database identifier
     type: string
+    requirement_level: required
   mode:
     description: Redis server mode
     type: string
@@ -42,6 +47,7 @@ attributes:
       - cluster
       - sentinel
       - standalone
+    requirement_level: required
   percentile:
     description: Percentile
     type: string
@@ -49,12 +55,14 @@ attributes:
       - p50
       - p99
       - p99.9
+    requirement_level: required
   role:
     description: Redis node's role
     type: string
     enum:
       - replica
       - primary
+    requirement_level: required
   state:
     description: Redis CPU usage state
     type: string
@@ -73,6 +81,7 @@ attributes:
       - user
       - user_children
       - user_main_thread
+    requirement_level: required
 
 metrics:
   redis.clients.blocked:

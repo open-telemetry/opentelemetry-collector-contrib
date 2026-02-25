@@ -88,7 +88,7 @@ System CPU consumed by the Redis server in seconds since server start
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| state | Redis CPU usage state | Str: ``sys``, ``sys_children``, ``sys_main_thread``, ``user``, ``user_children``, ``user_main_thread`` | Recommended |
+| state | Redis CPU usage state | Str: ``sys``, ``sys_children``, ``sys_main_thread``, ``user``, ``user_children``, ``user_main_thread`` | Required |
 
 ### redis.db.avg_ttl
 
@@ -102,7 +102,7 @@ Average keyspace keys TTL
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| db | Redis database identifier | Any Str | Recommended |
+| db | Redis database identifier | Any Str | Required |
 
 ### redis.db.expires
 
@@ -116,7 +116,7 @@ Number of keyspace keys with an expiration
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| db | Redis database identifier | Any Str | Recommended |
+| db | Redis database identifier | Any Str | Required |
 
 ### redis.db.keys
 
@@ -130,7 +130,7 @@ Number of keyspace keys
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| db | Redis database identifier | Any Str | Recommended |
+| db | Redis database identifier | Any Str | Required |
 
 ### redis.keys.evicted
 
@@ -362,7 +362,7 @@ State of the cluster
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cluster_state | State of the cluster | Str: ``ok``, ``fail`` | Recommended |
+| cluster_state | State of the cluster | Str: ``ok``, ``fail`` | Required |
 
 ### redis.cluster.stats_messages_received
 
@@ -400,7 +400,7 @@ Total number of calls for a command
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cmd | Redis command name | Any Str | Recommended |
+| cmd | Redis command name | Any Str | Required |
 
 ### redis.cmd.latency
 
@@ -414,8 +414,8 @@ Command execution latency
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cmd | Redis command name | Any Str | Recommended |
-| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | Recommended |
+| cmd | Redis command name | Any Str | Required |
+| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | Required |
 
 ### redis.cmd.usec
 
@@ -429,7 +429,7 @@ Total time for all executions of this command
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cmd | Redis command name | Any Str | Recommended |
+| cmd | Redis command name | Any Str | Required |
 
 ### redis.maxmemory
 
@@ -467,7 +467,7 @@ Redis server mode
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | Recommended |
+| mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | Required |
 
 ### redis.replication.replica_offset
 
@@ -489,7 +489,7 @@ Redis node's role
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| role | Redis node's role | Str: ``replica``, ``primary`` | Recommended |
+| role | Redis node's role | Str: ``replica``, ``primary`` | Required |
 
 ### redis.sentinel.masters
 
