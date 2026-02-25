@@ -36,13 +36,15 @@ const (
 	secondsUnit        = "s"
 )
 
-var defaultLatencyHistogramBuckets = []float64{
-	0.002, 0.004, 0.006, 0.008, 0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 1.4, 2, 5, 10, 15,
-}
+var (
+	legacyDefaultLatencyHistogramBuckets = []float64{
+		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10000, 15000,
+	}
 
-var legacyDefaultLatencyHistogramBuckets = []float64{
-	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10000, 15000,
-}
+	defaultLatencyHistogramBuckets = []float64{
+		0.002, 0.004, 0.006, 0.008, 0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 1.4, 2, 5, 10, 15,
+	}
+)
 
 type metricSeries struct {
 	dimensions  pcommon.Map
