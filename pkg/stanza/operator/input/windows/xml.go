@@ -4,6 +4,7 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"time"
@@ -280,11 +281,30 @@ func (e Correlation) asMap() map[string]any {
 }
 
 // unmarshalEventXML will unmarshal EventXML from xml bytes.
-func unmarshalEventXML(bytes []byte) (*EventXML, error) {
+// Illegal XML 1.0 characters (e.g. U+0001 found in some Sysmon events) are
+// stripped before parsing so that a single malformed event does not halt the
+// entire receiver.
+func unmarshalEventXML(data []byte) (*EventXML, error) {
+	sanitized := sanitizeXMLBytes(data)
 	var eventXML EventXML
-	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
+	if err := xml.Unmarshal(sanitized, &eventXML); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(sanitized))
 	}
-	eventXML.Original = string(bytes)
+	eventXML.Original = string(sanitized)
 	return &eventXML, nil
+}
+
+// sanitizeXMLBytes removes characters that are illegal in XML 1.0 documents.
+// XML 1.0 permits: #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
+// All other code points (e.g. U+0001–U+0008, U+000B, U+000C, U+000E–U+001F) are dropped.
+func sanitizeXMLBytes(data []byte) []byte {
+	return bytes.Map(func(r rune) rune {
+		if r == 0x09 || r == 0x0A || r == 0x0D ||
+			(r >= 0x20 && r <= 0xD7FF) ||
+			(r >= 0xE000 && r <= 0xFFFD) ||
+			r >= 0x10000 {
+			return r
+		}
+		return -1
+	}, data)
 }

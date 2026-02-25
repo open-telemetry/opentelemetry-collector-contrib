@@ -508,6 +508,97 @@ func TestInvalidUnmarshal(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestSanitizeXMLBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []byte
+		expected []byte
+	}{
+		{
+			name:     "no illegal chars",
+			input:    []byte("hello world"),
+			expected: []byte("hello world"),
+		},
+		{
+			name:     "tab newline carriage return are kept",
+			input:    []byte("a\tb\nc\rd"),
+			expected: []byte("a\tb\nc\rd"),
+		},
+		{
+			name:     "U+0001 is stripped",
+			input:    []byte("before\x01after"),
+			expected: []byte("beforeafter"),
+		},
+		{
+			name:     "multiple control chars are stripped",
+			input:    []byte("\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0E\x0F\x10\x1F"),
+			expected: []byte(""),
+		},
+		{
+			name:     "U+FFFE and U+FFFF are stripped",
+			input:    []byte{0xEF, 0xBF, 0xBE, 0xEF, 0xBF, 0xBF}, // U+FFFE and U+FFFF in UTF-8
+			expected: []byte(""),
+		},
+		{
+			name:     "valid non-ASCII chars are kept",
+			input:    []byte("caf\xC3\xA9"), // "café" in UTF-8
+			expected: []byte("caf\xC3\xA9"),
+		},
+		{
+			name:     "empty input",
+			input:    []byte{},
+			expected: []byte{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := sanitizeXMLBytes(tt.input)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestUnmarshalWithIllegalXMLChars verifies that events containing characters
+// illegal in XML 1.0 (such as U+0001, observed in Sysmon Operational events)
+// are sanitized and parsed successfully rather than causing an error.
+func TestUnmarshalWithIllegalXMLChars(t *testing.T) {
+	// Build XML that contains U+0001 inside a Data element, as seen in Sysmon events
+	// where file metadata contains embedded control characters.
+	xmlTemplate := `<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+    <System>
+        <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" />
+        <EventID Qualifiers="0">1</EventID>
+        <Version>5</Version>
+        <Level>4</Level>
+        <Task>1</Task>
+        <Opcode>0</Opcode>
+        <Keywords>0x8000000000000000</Keywords>
+        <TimeCreated SystemTime="2023-10-19T21:57:58.0685414Z" />
+        <EventRecordID>12345</EventRecordID>
+        <Correlation />
+        <Execution ProcessID="1234" ThreadID="5678" />
+        <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+        <Computer>computer</Computer>
+        <Security />
+    </System>
+    <EventData>
+        <Data Name="FileVersion">` + "1.0\x01.0" + `</Data>
+    </EventData>
+</Event>`
+
+	event, err := unmarshalEventXML([]byte(xmlTemplate))
+	require.NoError(t, err)
+	require.Equal(t, "Microsoft-Windows-Sysmon/Operational", event.Channel)
+	require.Equal(t, uint64(12345), event.RecordID)
+	// The illegal character should have been stripped from the event data value
+	require.Len(t, event.EventData.Data, 1)
+	require.Equal(t, "FileVersion", event.EventData.Data[0].Name)
+	require.Equal(t, "1.0.0", event.EventData.Data[0].Value)
+	// Original should also not contain the illegal character
+	require.NotContains(t, event.Original, "\x01")
+}
+
 func TestUnmarshalWithEventData(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
 	require.NoError(t, err)
