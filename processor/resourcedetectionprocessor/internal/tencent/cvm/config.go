@@ -14,8 +14,8 @@ type Config struct {
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
 
 	// FailOnMissingMetadata, if true, causes the detector to return an error
-	// when the Tencent Cloud CVM metadata service is unavailable or required fields are missing.
-	// If false (default), the detector does best-effort population.
+	// when the Tencent Cloud CVM metadata service is unavailable or any required field is missing.
+	// If false (default), the detector logs the failure and returns an empty resource (no attributes set).
 	FailOnMissingMetadata bool `mapstructure:"fail_on_missing_metadata"`
 }
 
