@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,17 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["PingLossRatio"] = mb.metricPingLossRatio.config.AggregationStrategy
+			aggMap["PingRttAvg"] = mb.metricPingRttAvg.config.AggregationStrategy
+			aggMap["PingRttMax"] = mb.metricPingRttMax.config.AggregationStrategy
+			aggMap["PingRttMin"] = mb.metricPingRttMin.config.AggregationStrategy
+			aggMap["PingRttStddev"] = mb.metricPingRttStddev.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,28 +84,50 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPingLossRatioDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPingLossRatioDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPingRttAvgDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPingRttAvgDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPingRttMaxDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPingRttMaxDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPingRttMinDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPingRttMinDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPingRttStddevDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPingRttStddevDataPoint(ts, 3)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetNetPeerIP("net.peer.ip-val")
 			rb.SetNetPeerName("net.peer.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricPingLossRatio.aggDataPoints)
+				assert.Empty(t, mb.metricPingRttAvg.aggDataPoints)
+				assert.Empty(t, mb.metricPingRttMax.aggDataPoints)
+				assert.Empty(t, mb.metricPingRttMin.aggDataPoints)
+				assert.Empty(t, mb.metricPingRttStddev.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -113,65 +149,180 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "ping.loss.ratio":
-					assert.False(t, validatedMetrics["ping.loss.ratio"], "Found a duplicate in the metrics slice: ping.loss.ratio")
-					validatedMetrics["ping.loss.ratio"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The percentage of lost packets.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ping.loss.ratio"], "Found a duplicate in the metrics slice: ping.loss.ratio")
+						validatedMetrics["ping.loss.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The percentage of lost packets.", ms.At(i).Description())
+						assert.Equal(t, "%", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["ping.loss.ratio"], "Found a duplicate in the metrics slice: ping.loss.ratio")
+						validatedMetrics["ping.loss.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The percentage of lost packets.", ms.At(i).Description())
+						assert.Equal(t, "%", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["ping.loss.ratio"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "ping.rtt.avg":
-					assert.False(t, validatedMetrics["ping.rtt.avg"], "Found a duplicate in the metrics slice: ping.rtt.avg")
-					validatedMetrics["ping.rtt.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average round-trip time in milliseconds.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ping.rtt.avg"], "Found a duplicate in the metrics slice: ping.rtt.avg")
+						validatedMetrics["ping.rtt.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average round-trip time in milliseconds.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["ping.rtt.avg"], "Found a duplicate in the metrics slice: ping.rtt.avg")
+						validatedMetrics["ping.rtt.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average round-trip time in milliseconds.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["ping.rtt.avg"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "ping.rtt.max":
-					assert.False(t, validatedMetrics["ping.rtt.max"], "Found a duplicate in the metrics slice: ping.rtt.max")
-					validatedMetrics["ping.rtt.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum round-trip time in milliseconds.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ping.rtt.max"], "Found a duplicate in the metrics slice: ping.rtt.max")
+						validatedMetrics["ping.rtt.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Maximum round-trip time in milliseconds.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["ping.rtt.max"], "Found a duplicate in the metrics slice: ping.rtt.max")
+						validatedMetrics["ping.rtt.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Maximum round-trip time in milliseconds.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["ping.rtt.max"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "ping.rtt.min":
-					assert.False(t, validatedMetrics["ping.rtt.min"], "Found a duplicate in the metrics slice: ping.rtt.min")
-					validatedMetrics["ping.rtt.min"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Minimum round-trip time in milliseconds.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ping.rtt.min"], "Found a duplicate in the metrics slice: ping.rtt.min")
+						validatedMetrics["ping.rtt.min"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Minimum round-trip time in milliseconds.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["ping.rtt.min"], "Found a duplicate in the metrics slice: ping.rtt.min")
+						validatedMetrics["ping.rtt.min"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Minimum round-trip time in milliseconds.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["ping.rtt.min"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "ping.rtt.stddev":
-					assert.False(t, validatedMetrics["ping.rtt.stddev"], "Found a duplicate in the metrics slice: ping.rtt.stddev")
-					validatedMetrics["ping.rtt.stddev"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Standard deviation of round-trip time in milliseconds.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ping.rtt.stddev"], "Found a duplicate in the metrics slice: ping.rtt.stddev")
+						validatedMetrics["ping.rtt.stddev"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Standard deviation of round-trip time in milliseconds.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["ping.rtt.stddev"], "Found a duplicate in the metrics slice: ping.rtt.stddev")
+						validatedMetrics["ping.rtt.stddev"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Standard deviation of round-trip time in milliseconds.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["ping.rtt.stddev"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				}
 			}
 		})

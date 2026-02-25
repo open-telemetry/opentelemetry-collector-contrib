@@ -26,11 +26,31 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PingLossRatio: MetricConfig{Enabled: true},
-					PingRttAvg:    MetricConfig{Enabled: true},
-					PingRttMax:    MetricConfig{Enabled: true},
-					PingRttMin:    MetricConfig{Enabled: true},
-					PingRttStddev: MetricConfig{Enabled: true},
+					PingLossRatio: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					PingRttAvg: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					PingRttMax: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					PingRttMin: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					PingRttStddev: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					NetPeerIP:   ResourceAttributeConfig{Enabled: true},
@@ -42,11 +62,31 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PingLossRatio: MetricConfig{Enabled: false},
-					PingRttAvg:    MetricConfig{Enabled: false},
-					PingRttMax:    MetricConfig{Enabled: false},
-					PingRttMin:    MetricConfig{Enabled: false},
-					PingRttStddev: MetricConfig{Enabled: false},
+					PingLossRatio: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					PingRttAvg: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					PingRttMax: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					PingRttMin: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					PingRttStddev: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					NetPeerIP:   ResourceAttributeConfig{Enabled: false},

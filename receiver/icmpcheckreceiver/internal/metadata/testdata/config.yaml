@@ -3,14 +3,41 @@ all_set:
   metrics:
     ping.loss.ratio:
       enabled: true
+      attributes: []
     ping.rtt.avg:
       enabled: true
+      attributes: []
     ping.rtt.max:
       enabled: true
+      attributes: []
     ping.rtt.min:
       enabled: true
+      attributes: []
     ping.rtt.stddev:
       enabled: true
+      attributes: []
+  resource_attributes:
+    net.peer.ip:
+      enabled: true
+    net.peer.name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    ping.loss.ratio:
+      enabled: true
+      attributes: []
+    ping.rtt.avg:
+      enabled: true
+      attributes: []
+    ping.rtt.max:
+      enabled: true
+      attributes: []
+    ping.rtt.min:
+      enabled: true
+      attributes: []
+    ping.rtt.stddev:
+      enabled: true
+      attributes: []
   resource_attributes:
     net.peer.ip:
       enabled: true
@@ -20,14 +47,19 @@ none_set:
   metrics:
     ping.loss.ratio:
       enabled: false
+      attributes: []
     ping.rtt.avg:
       enabled: false
+      attributes: []
     ping.rtt.max:
       enabled: false
+      attributes: []
     ping.rtt.min:
       enabled: false
+      attributes: []
     ping.rtt.stddev:
       enabled: false
+      attributes: []
   resource_attributes:
     net.peer.ip:
       enabled: false
