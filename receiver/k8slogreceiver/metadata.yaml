@@ -1,0 +1,9 @@
+type: k8slog
+
+status:
+  class: receiver
+  stability:
+    unmaintained: [logs]
+  codeowners:
+    emeritus: [h0cheung, TylerHelmuth]
+    seeking_new: true

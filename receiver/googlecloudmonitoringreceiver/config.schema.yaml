@@ -1,0 +1,19 @@
+$defs:
+  metric_config:
+    type: object
+    properties:
+      metric_descriptor_filter:
+        description: Filter for listing metric descriptors. Only support `project` and `metric.type` as filter objects. See https://cloud.google.com/monitoring/api/v3/filters#metric-descriptor-filter for more details.
+        type: string
+      metric_name:
+        type: string
+type: object
+properties:
+  metrics_list:
+    type: array
+    items:
+      $ref: metric_config
+  project_id:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

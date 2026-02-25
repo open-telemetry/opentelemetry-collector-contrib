@@ -1,0 +1,18 @@
+basic:
+  type: json_array_parser
+  parse_from: body.message
+  parse_to: body.messageParsed
+parse_to_attributes:
+  type: json_array_parser
+  parse_from: body
+  parse_to: attributes.output
+parse_to_body:
+  type: json_array_parser
+  parse_to: body
+parse_to_resource:
+  type: json_array_parser
+  parse_to: resource.output
+parse_with_header_as_attributes:
+  type: json_array_parser
+  parse_to: attributes
+  header: A,B,C

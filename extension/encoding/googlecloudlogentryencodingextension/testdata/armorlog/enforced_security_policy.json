@@ -1,0 +1,55 @@
+{
+  "insertId": "83gmkdftgh8t5",
+  "jsonPayload": {
+    "remoteIp": "79.117.34.252",
+    "enforcedSecurityPolicy": {
+      "name": "test-armor-policy",
+      "configuredAction": "DENY",
+      "priority": 1,
+      "outcome": "DENY"
+    },
+    "securityPolicyRequestData": {
+      "recaptchaActionToken": {
+        "score": 0.9
+      },
+      "remoteIpInfo": {
+        "asn": 57269,
+        "regionCode": "ES"
+      }
+    },
+    "cacheDecision": [
+      "RESPONSE_HAS_CONTENT_TYPE",
+      "CACHE_MODE_USE_ORIGIN_HEADERS"
+    ],
+    "statusDetails": "denied_by_security_policy",
+    "@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+    "backendTargetProjectNumber": "projects/8560181848"
+  },
+  "httpRequest": {
+    "requestMethod": "GET",
+    "requestUrl": "http://136.110.215.198/",
+    "requestSize": "462",
+    "status": 403,
+    "responseSize": "275",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+    "remoteIp": "79.117.34.252",
+    "latency": "0.102951s"
+  },
+  "resource": {
+    "type": "http_load_balancer",
+    "labels": {
+      "zone": "global",
+      "url_map_name": "cloud-armor-test-lb",
+      "backend_service_name": "bakcend-test-2",
+      "forwarding_rule_name": "cloud-armor-test-lb-forwarding-rule",
+      "target_proxy_name": "cloud-armor-test-lb-target-proxy",
+      "project_id": "elastic-observability"
+    }
+  },
+  "timestamp": "2025-11-11T12:25:33.653165Z",
+  "severity": "WARNING",
+  "logName": "projects/elastic-observability/logs/requests",
+  "trace": "projects/elastic-observability/traces/632be878ad209fdbc3d4759d43af07c5",
+  "receiveTimestamp": "2025-11-11T12:25:35.446934692Z",
+  "spanId": "bdb01ee839b3957a"
+}

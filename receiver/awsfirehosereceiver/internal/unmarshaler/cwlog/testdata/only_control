@@ -1,0 +1,1 @@
+{"messageType":"CONTROL_MESSAGE","owner":"CloudwatchLogs","logGroup":"","logStream":"","subscriptionFilters":[],"logEvents":[{"id":"","timestamp":1741312971934,"message":"CWL CONTROL MESSAGE: Checking health of destination Firehose."}]}

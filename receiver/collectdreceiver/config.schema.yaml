@@ -1,0 +1,12 @@
+description: Config defines configuration for Collectd receiver.
+type: object
+properties:
+  attributes_prefix:
+    type: string
+  encoding:
+    type: string
+  timeout:
+    type: string
+    format: duration
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

@@ -1,0 +1,49 @@
+name: "CodeQL Analysis"
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/README.md"
+
+permissions: read-all
+
+jobs:
+  CodeQL-Build:
+    runs-on: macos-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    env:
+      # Force CodeQL to run the extraction on the files compiled by our custom
+      # build command, as opposed to letting the autobuilder figure it out.
+      # See: https://github.com/github/codeql-action/issues/1101#issuecomment-1157729589
+      CODEQL_EXTRACTOR_GO_BUILD_TRACING: "on"
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+
+      # Initializes the CodeQL tools for scanning.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4
+        with:
+          languages: go
+
+      - name: Build Artifact
+        run: |
+          make genotelcontribcol
+          make otelcontribcol
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4
+        timeout-minutes: 60
+
+      - run: ./.github/workflows/scripts/check-disk-space.sh

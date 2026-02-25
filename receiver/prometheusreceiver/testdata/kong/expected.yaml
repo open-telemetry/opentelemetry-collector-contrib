@@ -1,0 +1,850 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: url.scheme
+          value:
+            stringValue: http
+        - key: service.instance.id
+          value:
+            stringValue: localhost:18001
+        - key: service.name
+          value:
+            stringValue: kong
+        - key: server.port
+          value:
+            stringValue: "18001"
+        - key: url.scheme
+          value:
+            stringValue: http
+    scopeMetrics:
+      - metrics:
+          - description: Datastore reachable from Kong, 0 is unreachable
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  timeUnixNano: "1000000"
+            name: kong_datastore_reachable
+          - description: Allocated bytes in worker Lua VM
+            gauge:
+              dataPoints:
+                - asDouble: 6.6756446e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2435"
+                  timeUnixNano: "1000000"
+                - asDouble: 6.6700614e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2436"
+                  timeUnixNano: "1000000"
+                - asDouble: 6.6701446e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2437"
+                  timeUnixNano: "1000000"
+                - asDouble: 6.670025e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2438"
+                  timeUnixNano: "1000000"
+                - asDouble: 6.6700851e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2439"
+                  timeUnixNano: "1000000"
+                - asDouble: 6.6700618e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2440"
+                  timeUnixNano: "1000000"
+                - asDouble: 6.670025e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2441"
+                  timeUnixNano: "1000000"
+                - asDouble: 6.670025e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2442"
+                  timeUnixNano: "1000000"
+                - asDouble: 6.6700246e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2443"
+                  timeUnixNano: "1000000"
+                - asDouble: 6.670025e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: pid
+                      value:
+                        stringValue: "2444"
+                  timeUnixNano: "1000000"
+            name: kong_memory_workers_lua_vms_bytes
+          - description: Kong Node metadata information
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: version
+                      value:
+                        stringValue: 3.7.1.1
+                  timeUnixNano: "1000000"
+            name: kong_node_info
+          - description: The scraping was successful
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  timeUnixNano: "1000000"
+            name: up
+          - description: Duration of the scrape
+            gauge:
+              dataPoints:
+                - asDouble: 0.0086625
+                  timeUnixNano: "1000000"
+            name: scrape_duration_seconds
+            unit: s
+          - description: Allocated slabs in bytes in a shared_dict
+            gauge:
+              dataPoints:
+                - asDouble: 40960
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong
+                  timeUnixNano: "1000000"
+                - asDouble: 40960
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_cluster_events
+                  timeUnixNano: "1000000"
+                - asDouble: 798720
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_core_db_cache
+                  timeUnixNano: "1000000"
+                - asDouble: 86016
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_core_db_cache_miss
+                  timeUnixNano: "1000000"
+                - asDouble: 16384
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_counters
+                  timeUnixNano: "1000000"
+                - asDouble: 811008
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_db_cache
+                  timeUnixNano: "1000000"
+                - asDouble: 86016
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_db_cache_miss
+                  timeUnixNano: "1000000"
+                - asDouble: 40960
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_healthchecks
+                  timeUnixNano: "1000000"
+                - asDouble: 40960
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_keyring
+                  timeUnixNano: "1000000"
+                - asDouble: 61440
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_locks
+                  timeUnixNano: "1000000"
+                - asDouble: 20480
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_profiling_state
+                  timeUnixNano: "1000000"
+                - asDouble: 86016
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_rate_limiting_counters
+                  timeUnixNano: "1000000"
+                - asDouble: 73728
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_reports_consumers
+                  timeUnixNano: "1000000"
+                - asDouble: 16384
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_reports_routes
+                  timeUnixNano: "1000000"
+                - asDouble: 16384
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_reports_services
+                  timeUnixNano: "1000000"
+                - asDouble: 16384
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_reports_workspaces
+                  timeUnixNano: "1000000"
+                - asDouble: 40960
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_secrets
+                  timeUnixNano: "1000000"
+                - asDouble: 16384
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_vaults_hcv
+                  timeUnixNano: "1000000"
+                - asDouble: 16384
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_vitals
+                  timeUnixNano: "1000000"
+                - asDouble: 315392
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_vitals_counters
+                  timeUnixNano: "1000000"
+                - asDouble: 16384
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_vitals_lists
+                  timeUnixNano: "1000000"
+                - asDouble: 40960
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: prometheus_metrics
+                  timeUnixNano: "1000000"
+            name: kong_memory_lua_shared_dict_bytes
+          - description: Total capacity in bytes of a shared_dict
+            gauge:
+              dataPoints:
+                - asDouble: 5.24288e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong
+                  timeUnixNano: "1000000"
+                - asDouble: 5.24288e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_cluster_events
+                  timeUnixNano: "1000000"
+                - asDouble: 1.34217728e+08
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_core_db_cache
+                  timeUnixNano: "1000000"
+                - asDouble: 1.2582912e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_core_db_cache_miss
+                  timeUnixNano: "1000000"
+                - asDouble: 1.048576e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_counters
+                  timeUnixNano: "1000000"
+                - asDouble: 1.34217728e+08
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_db_cache
+                  timeUnixNano: "1000000"
+                - asDouble: 1.2582912e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_db_cache_miss
+                  timeUnixNano: "1000000"
+                - asDouble: 5.24288e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_healthchecks
+                  timeUnixNano: "1000000"
+                - asDouble: 5.24288e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_keyring
+                  timeUnixNano: "1000000"
+                - asDouble: 8.388608e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_locks
+                  timeUnixNano: "1000000"
+                - asDouble: 1.572864e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_profiling_state
+                  timeUnixNano: "1000000"
+                - asDouble: 1.2582912e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_rate_limiting_counters
+                  timeUnixNano: "1000000"
+                - asDouble: 1.048576e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_reports_consumers
+                  timeUnixNano: "1000000"
+                - asDouble: 1.048576e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_reports_routes
+                  timeUnixNano: "1000000"
+                - asDouble: 1.048576e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_reports_services
+                  timeUnixNano: "1000000"
+                - asDouble: 1.048576e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_reports_workspaces
+                  timeUnixNano: "1000000"
+                - asDouble: 5.24288e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_secrets
+                  timeUnixNano: "1000000"
+                - asDouble: 1.048576e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_vaults_hcv
+                  timeUnixNano: "1000000"
+                - asDouble: 1.048576e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_vitals
+                  timeUnixNano: "1000000"
+                - asDouble: 5.24288e+07
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_vitals_counters
+                  timeUnixNano: "1000000"
+                - asDouble: 1.048576e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: kong_vitals_lists
+                  timeUnixNano: "1000000"
+                - asDouble: 5.24288e+06
+                  attributes:
+                    - key: kong_subsystem
+                      value:
+                        stringValue: http
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: shared_dict
+                      value:
+                        stringValue: prometheus_metrics
+                  timeUnixNano: "1000000"
+            name: kong_memory_lua_shared_dict_total_bytes
+          - description: Number of connections by subsystem
+            gauge:
+              dataPoints:
+                - asDouble: 14
+                  attributes:
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: state
+                      value:
+                        stringValue: accepted
+                    - key: subsystem
+                      value:
+                        stringValue: http
+                  timeUnixNano: "1000000"
+                - asDouble: 11
+                  attributes:
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: state
+                      value:
+                        stringValue: active
+                    - key: subsystem
+                      value:
+                        stringValue: http
+                  timeUnixNano: "1000000"
+                - asDouble: 14
+                  attributes:
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: state
+                      value:
+                        stringValue: handled
+                    - key: subsystem
+                      value:
+                        stringValue: http
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: state
+                      value:
+                        stringValue: reading
+                    - key: subsystem
+                      value:
+                        stringValue: http
+                  timeUnixNano: "1000000"
+                - asDouble: 61
+                  attributes:
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: state
+                      value:
+                        stringValue: total
+                    - key: subsystem
+                      value:
+                        stringValue: http
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: state
+                      value:
+                        stringValue: waiting
+                    - key: subsystem
+                      value:
+                        stringValue: http
+                  timeUnixNano: "1000000"
+                - asDouble: 11
+                  attributes:
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: state
+                      value:
+                        stringValue: writing
+                    - key: subsystem
+                      value:
+                        stringValue: http
+                  timeUnixNano: "1000000"
+            name: kong_nginx_connections_total
+          - description: The number of samples the target exposed
+            gauge:
+              dataPoints:
+                - asDouble: 66
+                  timeUnixNano: "1000000"
+            name: scrape_samples_scraped
+          - description: The approximate number of new series in this scrape
+            gauge:
+              dataPoints:
+                - asDouble: 66
+                  timeUnixNano: "1000000"
+            name: scrape_series_added
+          - description: Number of requests total
+            gauge:
+              dataPoints:
+                - asDouble: 61
+                  attributes:
+                    - key: node_id
+                      value:
+                        stringValue: afd8ef55-d340-451e-983f-752a271ac86a
+                    - key: subsystem
+                      value:
+                        stringValue: http
+                  timeUnixNano: "1000000"
+            name: kong_nginx_requests_total
+          - description: Number of nginx timers
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: pending
+                  timeUnixNano: "1000000"
+                - asDouble: 257
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: running
+                  timeUnixNano: "1000000"
+            name: kong_nginx_timers
+          - description: The number of samples remaining after metric relabeling was applied
+            gauge:
+              dataPoints:
+                - asDouble: 66
+                  timeUnixNano: "1000000"
+            name: scrape_samples_post_metric_relabeling
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
+          version: v0.97.0

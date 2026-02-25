@@ -1,0 +1,13 @@
+display_name: OpAMP Agent Extension
+type: opamp
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [portertech, evan-bradley, tigrannajaryan]
+
+tests:
+  config:

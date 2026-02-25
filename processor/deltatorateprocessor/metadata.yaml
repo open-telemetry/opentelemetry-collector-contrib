@@ -1,0 +1,15 @@
+display_name: Delta to Rate Processor
+type: deltatorate
+
+description: |
+  The Delta to Rate Processor (`deltatorateprocessor`) converts delta sum metrics to rate metrics. This rate is a gauge. 
+
+status:
+  class: processor
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [Aneurysm9]
+tests:
+  config:

@@ -1,0 +1,13 @@
+type: honeycombmarker
+display_name: Honeycomb Marker Exporter
+
+status:
+  class: exporter
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [TylerHelmuth, fchikwekwe]
+
+tests:
+  expect_consumer_error: true

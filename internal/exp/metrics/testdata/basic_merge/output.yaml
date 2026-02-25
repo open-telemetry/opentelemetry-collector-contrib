@@ -1,0 +1,187 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 80
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: gauge
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 345
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 120
+                  asDouble: 255
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: cumulative.histogram
+            histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 50
+                  explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  bucketCounts: [4, 7, 9, 6, 25]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 60
+                  explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  bucketCounts: [5, 8, 10, 7, 30]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: cumulative.exphistogram
+            histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 50
+                  scale: 4
+                  zeroCount: 5
+                  positive:
+                    offset: 2
+                    bucketCounts: [4, 7, 9, 6, 25]
+                  negative:
+                    offset: 6
+                    bucketCounts: [2, 13, 7, 12, 4]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 60
+                  scale: 4
+                  zeroCount: 5
+                  positive:
+                    offset: 2
+                    bucketCounts: [5, 8, 10, 7, 30]
+                  negative:
+                    offset: 6
+                    bucketCounts: [3, 14, 8, 13, 5]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: summary
+            summary:
+              dataPoints:
+                - timeUnixNano: 50
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 50
+                    - quantile: 0.5
+                      value: 20
+                    - quantile: 0.75
+                      value: 75
+                    - quantile: 0.95
+                      value: 10
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                - timeUnixNano: 60
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 60
+                    - quantile: 0.5
+                      value: 30
+                    - quantile: 0.75
+                      value: 80
+                    - quantile: 0.95
+                      value: 15
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: delta.monotonic.sum
+            sum:
+              aggregationTemporality: 1
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: bar
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb

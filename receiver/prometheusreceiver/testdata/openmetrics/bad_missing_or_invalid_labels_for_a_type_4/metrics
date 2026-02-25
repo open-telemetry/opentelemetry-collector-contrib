@@ -1,0 +1,3 @@
+# TYPE a summary
+a{quantile="NaN"} 0
+# EOF

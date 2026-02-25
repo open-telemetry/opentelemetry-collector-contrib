@@ -1,0 +1,15 @@
+type: windowseventlog
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [armstrmi, pjanotti]
+  unsupported_platforms: [darwin, linux]
+
+tests:
+  config:
+    start_at: end
+    channel: application

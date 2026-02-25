@@ -1,0 +1,17 @@
+display_name: Transform Processor
+type: transform
+
+status:
+  class: processor
+  stability:
+    development: [profiles]
+    beta: [traces, metrics, logs]
+  distributions: [contrib, k8s]
+  warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
+  codeowners:
+    active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
+    emeritus: [anuraaga, kentquirk]
+    seeking_new: true
+
+tests:
+  config:

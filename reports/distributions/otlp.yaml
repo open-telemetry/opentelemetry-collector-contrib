@@ -1,0 +1,4 @@
+name: otlp
+url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-otlp
+maintainers: []
+components: {}

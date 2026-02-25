@@ -1,0 +1,12 @@
+type: slowsql
+display_name: Slow SQL Connector
+
+status:
+  class: connector
+  stability:
+    development: [traces_to_logs]
+  codeowners:
+    active: [JaredTan95, Frapschen, atoulme]
+
+tests:
+  config:

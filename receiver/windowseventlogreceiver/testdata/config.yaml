@@ -1,0 +1,3 @@
+windowseventlog:
+  start_at: end
+  channel: application

@@ -1,0 +1,4 @@
+status:
+  codeowners:
+    active: [open-telemetry/collector-approvers]
+  class: pkg

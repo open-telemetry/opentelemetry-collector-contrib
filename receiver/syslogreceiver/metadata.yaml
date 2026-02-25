@@ -1,0 +1,17 @@
+type: syslog
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [andrzej-stencel]
+    emeritus: [djaglowski]
+    seeking_new: true
+
+tests:
+  config:
+    tcp:
+      listen_address: "localhost:0"
+    protocol: "rfc5424"

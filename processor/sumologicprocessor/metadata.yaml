@@ -1,0 +1,14 @@
+display_name: Sumo Logic Processor
+type: sumologic
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [rnishtala-sumo, pankaj101A, jagan2221]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, echlebek, chan-tim-sumo, amdprophet]
+
+tests:
+  config:

@@ -1,0 +1,14 @@
+type: zookeeper
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [antonblock, akats7]
+    emeritus: [djaglowski]
+    seeking_new: true
+
+tests:
+  config:

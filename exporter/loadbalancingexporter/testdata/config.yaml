@@ -1,0 +1,49 @@
+loadbalancing:
+  protocol:
+    # the OTLP exporter configuration "endpoint" values will be ignored
+    otlp:
+      timeout: 1s
+
+  # how to get the list of backends: static
+  resolver:
+    static:
+      hostnames:
+      - endpoint-1 # assumes 4317 as the default port
+      - endpoint-2:55678
+loadbalancing/2:
+  protocol:
+    otlp:
+
+  # how to get the list of backends: DNS
+  resolver:
+    dns:
+      hostname: service-1 # assumes 4317 as the default port for the resolved IP addresses
+loadbalancing/3:
+  protocol:
+    otlp:
+
+  # how to get the list of backends: DNS
+  resolver:
+    dns:
+      hostname: service-1
+      port: 55690
+
+loadbalancing/4:
+  protocol:
+    otlp:
+
+  # how to get the list of backends: DNS
+  resolver:
+    aws_cloud_map:
+      namespace: cloudmap-1
+      service_name: service-1
+      port: 4319
+
+loadbalancing/5:
+  # the OTLP exporter configuration "sending_queue" values will be ignored
+  sending_queue:
+    enabled: true
+  protocol:
+    otlp:
+      sending_queue:
+        enabled: false

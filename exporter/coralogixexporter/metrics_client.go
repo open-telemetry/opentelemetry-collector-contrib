@@ -1,0 +1,112 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
+
+import (
+	"context"
+	"fmt"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.uber.org/zap"
+)
+
+func newMetricsExporter(cfg component.Config, set exporter.Settings) (*metricsExporter, error) {
+	oCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
+	}
+
+	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Metrics.Endpoint, oCfg.Metrics.Headers)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metricsExporter{
+		signalExporter: signalExporter,
+	}, nil
+}
+
+type metricsExporter struct {
+	grpcMetricsExporter pmetricotlp.GRPCClient
+	httpMetricsExporter httpMetricsExporter
+	*signalExporter
+}
+
+func (e *metricsExporter) start(ctx context.Context, host component.Host) (err error) {
+	wrapper := &signalConfigWrapper{config: &e.config.Metrics}
+	if err := e.startSignalExporter(ctx, host, wrapper); err != nil {
+		return err
+	}
+	if e.config.Protocol == httpProtocol {
+		e.httpMetricsExporter = newHTTPMetricsExporter(e.clientHTTP, e.config)
+	} else {
+		e.grpcMetricsExporter = pmetricotlp.NewGRPCClient(e.clientConn)
+	}
+	return nil
+}
+
+func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if !e.canSend() {
+		return e.rateError.GetError()
+	}
+
+	rss := md.ResourceMetrics()
+	for i := 0; i < rss.Len(); i++ {
+		resourceMetric := rss.At(i)
+		appName, subsystem := e.config.getMetadataFromResource(resourceMetric.Resource())
+		resourceMetric.Resource().Attributes().PutStr(cxAppNameAttrName, appName)
+		resourceMetric.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
+	}
+
+	er := pmetricotlp.NewExportRequestFromMetrics(md)
+	var resp pmetricotlp.ExportResponse
+	var err error
+	if e.config.Protocol == httpProtocol {
+		resp, err = e.httpMetricsExporter.Export(ctx, er)
+	} else {
+		resp, err = e.grpcMetricsExporter.Export(e.enhanceContext(ctx), er, e.callOptions...)
+	}
+
+	if err != nil {
+		return e.processError(err)
+	}
+
+	partialSuccess := resp.PartialSuccess()
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
+		logFields := []zap.Field{
+			zap.String("message", partialSuccess.ErrorMessage()),
+			zap.Int64("rejected_data_points", partialSuccess.RejectedDataPoints()),
+		}
+
+		if e.settings.Logger.Level() == zap.DebugLevel {
+			var metricNames []string
+			rss := md.ResourceMetrics()
+			for i := 0; i < rss.Len(); i++ {
+				rm := rss.At(i)
+				sm := rm.ScopeMetrics()
+				for j := 0; j < sm.Len(); j++ {
+					metrics := sm.At(j).Metrics()
+					for k := 0; k < metrics.Len(); k++ {
+						metricNames = append(metricNames, metrics.At(k).Name())
+					}
+				}
+			}
+			logFields = append(logFields, zap.Strings("metric_names", metricNames))
+		}
+
+		e.settings.Logger.Error("Partial success response from Coralogix",
+			logFields...,
+		)
+	}
+
+	e.rateError.errorCount.Store(0)
+	return nil
+}
+
+func (e *metricsExporter) enhanceContext(ctx context.Context) context.Context {
+	return e.signalExporter.enhanceContext(ctx)
+}

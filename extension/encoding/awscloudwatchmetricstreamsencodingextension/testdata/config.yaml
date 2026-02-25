@@ -1,0 +1,10 @@
+awscloudwatchmetricstreams_encoding:
+
+awscloudwatchmetricstreams_encoding/json:
+  format: json
+
+awscloudwatchmetricstreams_encoding/opentelemetry1.0:
+  format: opentelemetry1.0
+
+awscloudwatchmetricstreams_encoding/opentelemetry0.7:
+  format: opentelemetry0.7

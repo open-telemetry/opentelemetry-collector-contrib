@@ -1,0 +1,10 @@
+receivers:
+  awscloudwatch:
+    region: us-west-1
+    logs:
+      poll_interval: 1m
+      groups:
+        autodiscover:
+          limit: 100
+          streams:
+            prefixes: [kube-api-controller]

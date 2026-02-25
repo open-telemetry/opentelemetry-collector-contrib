@@ -1,0 +1,16 @@
+type: routing
+display_name: Routing Connector
+
+status:
+  class: connector
+  stability:
+    alpha: [traces_to_traces, metrics_to_metrics, logs_to_logs]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
+    emeritus: [jpkrohling, mwear]
+    seeking_new: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

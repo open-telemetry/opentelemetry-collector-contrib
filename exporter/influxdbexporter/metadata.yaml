@@ -1,0 +1,13 @@
+type: influxdb
+display_name: InfluxDB Exporter
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [jacobmarble]
+
+tests:
+  expect_consumer_error: true

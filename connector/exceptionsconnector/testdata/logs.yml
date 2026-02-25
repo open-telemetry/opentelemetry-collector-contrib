@@ -1,0 +1,150 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: stringAttrName
+                value:
+                  stringValue: stringAttrValue
+              - key: intAttrName
+                value:
+                  intValue: "99"
+              - key: doubleAttrName
+                value:
+                  doubleValue: 99.99
+              - key: boolAttrName
+                value:
+                  boolValue: true
+              - key: nullAttrName
+                value: {}
+              - key: mapAttrName
+                value:
+                  kvlistValue: {}
+              - key: arrayAttrName
+                value:
+                  arrayValue: {}
+              - key: span.name
+                value:
+                  stringValue: svc-a-ep1
+              - key: span.kind
+                value:
+                  stringValue: SPAN_KIND_SERVER
+              - key: status.code
+                value:
+                  stringValue: STATUS_CODE_ERROR
+              - key: service.name
+                value:
+                  stringValue: service-a
+              - key: exception.type
+                value:
+                  stringValue: Exception
+              - key: exception.message
+                value:
+                  stringValue: Exception message
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
+            body: {}
+            severityNumber: 17
+            severityText: ERROR
+            spanId: 2a00000000000000
+            traceId: 2a000000000000000000000000000000
+          - attributes:
+              - key: stringAttrName
+                value:
+                  stringValue: stringAttrValue
+              - key: intAttrName
+                value:
+                  intValue: "99"
+              - key: doubleAttrName
+                value:
+                  doubleValue: 99.99
+              - key: boolAttrName
+                value:
+                  boolValue: true
+              - key: nullAttrName
+                value: {}
+              - key: mapAttrName
+                value:
+                  kvlistValue: {}
+              - key: arrayAttrName
+                value:
+                  arrayValue: {}
+              - key: span.name
+                value:
+                  stringValue: svc-a-ep2
+              - key: span.kind
+                value:
+                  stringValue: SPAN_KIND_CLIENT
+              - key: status.code
+                value:
+                  stringValue: STATUS_CODE_ERROR
+              - key: service.name
+                value:
+                  stringValue: service-a
+              - key: exception.type
+                value:
+                  stringValue: Exception
+              - key: exception.message
+                value:
+                  stringValue: Exception message
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
+            body: {}
+            severityNumber: 17
+            severityText: ERROR
+            spanId: 2a00000000000000
+            traceId: 2a000000000000000000000000000000
+        scope: {}
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: stringAttrName
+                value:
+                  stringValue: stringAttrValue
+              - key: intAttrName
+                value:
+                  intValue: "99"
+              - key: doubleAttrName
+                value:
+                  doubleValue: 99.99
+              - key: boolAttrName
+                value:
+                  boolValue: true
+              - key: nullAttrName
+                value: {}
+              - key: mapAttrName
+                value:
+                  kvlistValue: {}
+              - key: arrayAttrName
+                value:
+                  arrayValue: {}
+              - key: span.name
+                value:
+                  stringValue: svc-b-ep1
+              - key: span.kind
+                value:
+                  stringValue: SPAN_KIND_SERVER
+              - key: status.code
+                value:
+                  stringValue: STATUS_CODE_ERROR
+              - key: service.name
+                value:
+                  stringValue: service-b
+              - key: exception.type
+                value:
+                  stringValue: Exception
+              - key: exception.message
+                value:
+                  stringValue: Exception message
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
+            body: {}
+            severityNumber: 17
+            severityText: ERROR
+            spanId: 2a00000000000000
+            traceId: 2a000000000000000000000000000000
+        scope: {}

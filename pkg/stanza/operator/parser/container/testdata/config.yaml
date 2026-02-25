@@ -1,0 +1,44 @@
+default:
+  type: container
+format:
+  type: container
+  format: "docker"
+on_error_drop:
+  type: container
+  on_error: drop
+add_metadata_from_file_path:
+  type: container
+  add_metadata_from_file_path: true
+max_log_size:
+  type: container
+  max_log_size: 10242
+parse_from_simple:
+  type: container
+  parse_from: body.from
+parse_to_attributes:
+  type: container
+  parse_to: attributes
+parse_to_body:
+  type: container
+  parse_to: body
+parse_to_resource:
+  type: container
+  parse_to: resource
+parse_to_simple:
+  type: container
+  parse_to: body.log
+severity:
+  type: container
+  severity:
+    parse_from: body.severity_field
+    mapping:
+      critical: 5xx
+      error: 4xx
+      info: 3xx
+      debug: 2xx
+timestamp:
+  type: container
+  timestamp:
+    parse_from: body.timestamp_field
+    layout_type: strptime
+    layout: '%Y-%m-%d'

@@ -1,0 +1,20 @@
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = US
+ST = CA
+L = Cupertino
+O = Example
+OU = Local Development
+CN = traces-client
+
+[v3_req]
+keyUsage = keyEncipherment, digitalSignature
+extendedKeyUsage = clientAuth
+subjectAltName = @alt_names
+
+[alt_names]
+URI.1 = trace-client:group-x:tenant-a

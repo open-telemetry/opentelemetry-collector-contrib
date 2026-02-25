@@ -1,0 +1,21 @@
+display_name: ASAP Client Authentication Extension
+type: asapclient
+
+description: |
+  This extension provides [Atlassian Service Authentication Protocol](https://s2sauth.bitbucket.io/) (ASAP) client 
+  credentials for HTTP or gRPC based exporters.
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [jamesmoessis, MovieStoreGuy]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
+  goleak:
+    skip: true

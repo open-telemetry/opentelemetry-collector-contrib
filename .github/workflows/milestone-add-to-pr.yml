@@ -1,0 +1,39 @@
+# This action adds the "next release" milestone to a pull request
+# when it is merged. The "next release" milestone is managed
+# by the "Project: Rotate Milestone" action.
+
+name: 'Project: Add PR to Milestone'
+on:
+  pull_request_target:
+    types:
+      - closed
+
+permissions:
+  contents: read
+
+jobs:
+  update-pr:
+    permissions:
+      pull-requests: write # required for adding milestone to PRs
+    if: github.event.pull_request.merged && github.repository_owner == 'open-telemetry'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const milestones = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open"
+            })
+            for (const milestone of milestones.data) {
+              if (milestone.title == "next release") {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  milestone: milestone.number
+                });
+                return
+              }
+            }

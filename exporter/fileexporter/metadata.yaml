@@ -1,0 +1,16 @@
+type: file
+display_name: File Exporter
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, metrics, logs]
+    development: [profiles]
+  distributions: [core, contrib, k8s]
+  codeowners:
+    active: [atingchen]
+
+tests:
+  config:
+    path: testdata/log.json
+  expect_consumer_error: true

@@ -1,0 +1,14 @@
+resourceLogs:
+  - resource:
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              arrayValue:
+                values:
+                  - emptyValue:
+                  - stringValue: value2
+                  - bytesValue: aGVsbG8gd29ybGQ=

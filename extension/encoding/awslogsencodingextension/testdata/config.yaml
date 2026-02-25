@@ -1,0 +1,44 @@
+awslogs_encoding:
+
+awslogs_encoding/cloudwatch:
+  format: cloudwatch
+
+awslogs_encoding/text_vpcflow:
+  format: vpcflow
+  vpcflow:
+    file_format: plain-text
+
+awslogs_encoding/text_vpc_flow_log:
+  format: vpc_flow_log
+  vpc_flow_log:
+    file_format: plain-text
+
+awslogs_encoding/parquet_vpcflow:
+  format: vpcflow
+  vpcflow:
+    file_format: parquet
+
+awslogs_encoding/invalid_vpcflow:
+  format: vpcflow
+  vpcflow:
+    file_format: invalid
+
+awslogs_encoding/invalid_vpc_flow_log:
+  format: vpc_flow_log
+  vpc_flow_log:
+    file_format: invalid
+
+awslogs_encoding/s3access:
+  format: s3access
+
+awslogs_encoding/waf:
+  format: waf
+
+awslogs_encoding/cloudtrail:
+  format: cloudtrail
+
+awslogs_encoding/elbaccess:
+  format: elbaccess
+
+awslogs_encoding/networkfirewall:
+  format: networkfirewall

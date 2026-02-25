@@ -1,0 +1,83 @@
+default:
+all_set:
+  metrics:
+    chassis.powerstate:
+      enabled: true
+    chassis.status.health:
+      enabled: true
+    chassis.status.state:
+      enabled: true
+    fan.reading:
+      enabled: true
+    fan.status.health:
+      enabled: true
+    fan.status.state:
+      enabled: true
+    system.powerstate:
+      enabled: true
+    system.status.health:
+      enabled: true
+    system.status.state:
+      enabled: true
+    temperature.reading:
+      enabled: true
+    temperature.status.health:
+      enabled: true
+    temperature.status.state:
+      enabled: true
+  resource_attributes:
+    base_url:
+      enabled: true
+    system.host_name:
+      enabled: true
+none_set:
+  metrics:
+    chassis.powerstate:
+      enabled: false
+    chassis.status.health:
+      enabled: false
+    chassis.status.state:
+      enabled: false
+    fan.reading:
+      enabled: false
+    fan.status.health:
+      enabled: false
+    fan.status.state:
+      enabled: false
+    system.powerstate:
+      enabled: false
+    system.status.health:
+      enabled: false
+    system.status.state:
+      enabled: false
+    temperature.reading:
+      enabled: false
+    temperature.status.health:
+      enabled: false
+    temperature.status.state:
+      enabled: false
+  resource_attributes:
+    base_url:
+      enabled: false
+    system.host_name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    base_url:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    system.host_name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    base_url:
+      enabled: true
+      metrics_exclude:
+        - strict: "base_url-val"
+    system.host_name:
+      enabled: true
+      metrics_exclude:
+        - strict: "system.host_name-val"

@@ -1,0 +1,20 @@
+display_name: OAuth2 Client Credentials Authenticator Extension
+type: oauth2client
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [pavankrish123]
+    emeritus: [jpkrohling]
+    seeking_new: true
+
+tests:
+  config:
+  goleak:
+    ignore:
+      top:
+        - "net/http.(*persistConn).readLoop"
+        - "net/http.(*persistConn).writeLoop"

@@ -1,0 +1,18 @@
+display_name: Sumo Logic Extension
+type: sumologic
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: []
+  codeowners:
+    active: [rnishtala-sumo, pankaj101A, jagan2221]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, chan-tim-sumo, echlebek, amdprophet]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
+  goleak:
+    setup: "setupTestMain(m)"

@@ -1,0 +1,20 @@
+display_name: Kubernetes Leader Elector Extension
+type: k8s_leader_elector
+
+description: |
+  This extension enables OpenTelemetry components to run in HA mode across a Kubernetes cluster. The component that owns
+  the lease becomes the leader and becomes the active instance.
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [dmitryax, rakesh-garimella]
+
+# Skip life cycle tests as we need a real kubeconfig to run the lifecycle tests, as the test needs to generate a kubeconfig client. Enable them once we have a proper solution for this
+tests:
+  config:
+  skip_lifecycle: true
+  skip_shutdown: true

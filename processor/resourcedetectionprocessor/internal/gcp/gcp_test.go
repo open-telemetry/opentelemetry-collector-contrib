@@ -1,0 +1,745 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
+
+import (
+	"context"
+	"errors"
+	"regexp"
+	"testing"
+
+	computepb "cloud.google.com/go/compute/apiv1/computepb"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
+)
+
+type mockInstancesClient struct {
+	labels map[string]string
+	err    error
+}
+
+func (m *mockInstancesClient) Get(_ context.Context, _ *computepb.GetInstanceRequest) (*computepb.Instance, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &computepb.Instance{Labels: m.labels}, nil
+}
+
+func (*mockInstancesClient) Close() error { return nil }
+
+type mockInstancesBuilder struct {
+	client instancesAPI
+	err    error
+}
+
+func (b *mockInstancesBuilder) buildClient(_ context.Context) (instancesAPI, error) {
+	return b.client, b.err
+}
+
+func mustRe(p string) *regexp.Regexp {
+	r, err := regexp.Compile(p)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
+func TestDetect(t *testing.T) {
+	// Set this before all tests to ensure metadata.onGCE() returns true
+	t.Setenv("GCE_METADATA_HOST", "169.254.169.254")
+
+	for _, tc := range []struct {
+		desc             string
+		detector         internal.Detector
+		expectErr        bool
+		expectedResource map[string]any
+	}{
+		{
+			desc: "zonal GKE cluster",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:           "my-project",
+				cloudPlatform:       gcp.GKE,
+				gceHostName:         "my-gke-node-1234",
+				gkeHostID:           "1472385723456792345",
+				gkeClusterName:      "my-cluster",
+				gkeAvailabilityZone: "us-central1-c",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":          "gcp",
+				"cloud.account.id":        "my-project",
+				"cloud.platform":          "gcp_kubernetes_engine",
+				"k8s.cluster.name":        "my-cluster",
+				"cloud.availability_zone": "us-central1-c",
+				"host.id":                 "1472385723456792345",
+				"host.name":               "my-gke-node-1234",
+			},
+		},
+		{
+			desc: "regional GKE cluster",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:      "my-project",
+				cloudPlatform:  gcp.GKE,
+				gceHostName:    "my-gke-node-1234",
+				gkeHostID:      "1472385723456792345",
+				gkeClusterName: "my-cluster",
+				gkeRegion:      "us-central1",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "my-project",
+				"cloud.platform":   "gcp_kubernetes_engine",
+				"k8s.cluster.name": "my-cluster",
+				"cloud.region":     "us-central1",
+				"host.id":          "1472385723456792345",
+				"host.name":        "my-gke-node-1234",
+			},
+		},
+		{
+			desc: "regional GKE cluster with workload identity",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:      "my-project",
+				cloudPlatform:  gcp.GKE,
+				gceHostNameErr: errors.New("metadata endpoint is concealed"),
+				gkeHostID:      "1472385723456792345",
+				gkeClusterName: "my-cluster",
+				gkeRegion:      "us-central1",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "my-project",
+				"cloud.platform":   "gcp_kubernetes_engine",
+				"k8s.cluster.name": "my-cluster",
+				"cloud.region":     "us-central1",
+				"host.id":          "1472385723456792345",
+			},
+		},
+		{
+			desc: "GCE",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:              "my-project",
+				cloudPlatform:          gcp.GCE,
+				gceHostID:              "1472385723456792345",
+				gceHostName:            "my-gke-node-1234",
+				gceHostType:            "n1-standard1",
+				gceAvailabilityZone:    "us-central1-c",
+				gceRegion:              "us-central1",
+				gcpGceInstanceHostname: "custom.dns.example.com",
+				gcpGceInstanceName:     "my-gke-node-1234",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":          "gcp",
+				"cloud.account.id":        "my-project",
+				"cloud.platform":          "gcp_compute_engine",
+				"host.id":                 "1472385723456792345",
+				"host.name":               "my-gke-node-1234",
+				"host.type":               "n1-standard1",
+				"cloud.region":            "us-central1",
+				"cloud.availability_zone": "us-central1-c",
+			},
+		},
+		{
+			desc: "GCE with instance.hostname and instance.name enabled",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:              "my-project",
+				cloudPlatform:          gcp.GCE,
+				gceHostID:              "1472385723456792345",
+				gceHostName:            "my-gke-node-1234",
+				gceHostType:            "n1-standard1",
+				gceAvailabilityZone:    "us-central1-c",
+				gceRegion:              "us-central1",
+				gcpGceInstanceHostname: "custom.dns.example.com",
+				gcpGceInstanceName:     "my-gke-node-1234",
+			}, func(cfg *localMetadata.ResourceAttributesConfig) {
+				cfg.GcpGceInstanceHostname.Enabled = true
+				cfg.GcpGceInstanceName.Enabled = true
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":            "gcp",
+				"cloud.account.id":          "my-project",
+				"cloud.platform":            "gcp_compute_engine",
+				"host.id":                   "1472385723456792345",
+				"host.name":                 "my-gke-node-1234",
+				"host.type":                 "n1-standard1",
+				"cloud.region":              "us-central1",
+				"cloud.availability_zone":   "us-central1-c",
+				"gcp.gce.instance.hostname": "custom.dns.example.com",
+				"gcp.gce.instance.name":     "my-gke-node-1234",
+			},
+		},
+		{
+			desc: "GCE with MIG",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:              "my-project",
+				cloudPlatform:          gcp.GCE,
+				gceHostID:              "1472385723456792345",
+				gceHostName:            "my-gke-node-1234",
+				gceHostType:            "n1-standard1",
+				gceAvailabilityZone:    "us-central1-c",
+				gceRegion:              "us-central1",
+				gcpGceInstanceHostname: "custom.dns.example.com",
+				gcpGceInstanceName:     "my-gke-node-1234",
+				gcpGceManagedInstanceGroup: gcp.ManagedInstanceGroup{
+					Name:     "my-gke-node",
+					Location: "us-central1",
+					Type:     gcp.Region,
+				},
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":                        "gcp",
+				"cloud.account.id":                      "my-project",
+				"cloud.platform":                        "gcp_compute_engine",
+				"host.id":                               "1472385723456792345",
+				"host.name":                             "my-gke-node-1234",
+				"host.type":                             "n1-standard1",
+				"cloud.region":                          "us-central1",
+				"cloud.availability_zone":               "us-central1-c",
+				"gcp.gce.instance_group_manager.name":   "my-gke-node",
+				"gcp.gce.instance_group_manager.region": "us-central1",
+			},
+		},
+		{
+			desc: "Cloud Run",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:       "my-project",
+				cloudPlatform:   gcp.CloudRun,
+				faaSID:          "1472385723456792345",
+				faaSCloudRegion: "us-central1",
+				faaSName:        "my-service",
+				faaSVersion:     "123456",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "my-project",
+				"cloud.platform":   "gcp_cloud_run",
+				"cloud.region":     "us-central1",
+				"faas.name":        "my-service",
+				"faas.version":     "123456",
+				"faas.instance":    "1472385723456792345",
+			},
+		},
+		{
+			desc: "Cloud Run Job",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:               "my-project",
+				cloudPlatform:           gcp.CloudRunJob,
+				faaSID:                  "1472385723456792345",
+				faaSCloudRegion:         "us-central1",
+				faaSName:                "my-service",
+				gcpCloudRunJobExecution: "my-service-ajg89",
+				gcpCloudRunJobTaskIndex: "2",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":               "gcp",
+				"cloud.account.id":             "my-project",
+				"cloud.platform":               "gcp_cloud_run",
+				"cloud.region":                 "us-central1",
+				"faas.name":                    "my-service",
+				"faas.instance":                "1472385723456792345",
+				"gcp.cloud_run.job.execution":  "my-service-ajg89",
+				"gcp.cloud_run.job.task_index": "2",
+			},
+		},
+		{
+			desc: "Cloud Functions",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:       "my-project",
+				cloudPlatform:   gcp.CloudFunctions,
+				faaSID:          "1472385723456792345",
+				faaSCloudRegion: "us-central1",
+				faaSName:        "my-service",
+				faaSVersion:     "123456",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "my-project",
+				"cloud.platform":   "gcp_cloud_functions",
+				"cloud.region":     "us-central1",
+				"faas.name":        "my-service",
+				"faas.version":     "123456",
+				"faas.instance":    "1472385723456792345",
+			},
+		},
+		{
+			desc: "App Engine Standard",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:                 "my-project",
+				cloudPlatform:             gcp.AppEngineStandard,
+				appEngineServiceInstance:  "1472385723456792345",
+				appEngineAvailabilityZone: "us-central1-c",
+				appEngineRegion:           "us-central1",
+				appEngineServiceName:      "my-service",
+				appEngineServiceVersion:   "123456",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":          "gcp",
+				"cloud.account.id":        "my-project",
+				"cloud.platform":          "gcp_app_engine",
+				"cloud.region":            "us-central1",
+				"cloud.availability_zone": "us-central1-c",
+				"faas.name":               "my-service",
+				"faas.version":            "123456",
+				"faas.instance":           "1472385723456792345",
+			},
+		},
+		{
+			desc: "App Engine Flex",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:                 "my-project",
+				cloudPlatform:             gcp.AppEngineFlex,
+				appEngineServiceInstance:  "1472385723456792345",
+				appEngineAvailabilityZone: "us-central1-c",
+				appEngineRegion:           "us-central1",
+				appEngineServiceName:      "my-service",
+				appEngineServiceVersion:   "123456",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":          "gcp",
+				"cloud.account.id":        "my-project",
+				"cloud.platform":          "gcp_app_engine",
+				"cloud.region":            "us-central1",
+				"cloud.availability_zone": "us-central1-c",
+				"faas.name":               "my-service",
+				"faas.version":            "123456",
+				"faas.instance":           "1472385723456792345",
+			},
+		},
+		{
+			desc: "Bare Metal Solution",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:                       "my-project",
+				cloudPlatform:                   gcp.BareMetalSolution,
+				gcpBareMetalSolutionCloudRegion: "us-central1",
+				gcpBareMetalSolutionInstanceID:  "1472385723456792345",
+				gcpBareMetalSolutionProjectID:   "my-project",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "my-project",
+				"cloud.platform":   "gcp_bare_metal_solution",
+				"cloud.region":     "us-central1",
+				"host.name":        "1472385723456792345",
+			},
+		},
+		{
+			desc: "Unknown Platform",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:     "my-project",
+				cloudPlatform: gcp.UnknownPlatform,
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "my-project",
+			},
+		},
+		{
+			desc: "error",
+			detector: newTestDetector(&fakeGCPDetector{
+				err: errors.New("failed to get metadata"),
+			}),
+			expectErr: true,
+			expectedResource: map[string]any{
+				"cloud.provider": "gcp",
+			},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			res, schema, err := tc.detector.Detect(t.Context())
+			if tc.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
+			assert.Equal(t, tc.expectedResource, res.Attributes().AsRaw(), "Resource object returned is incorrect")
+		})
+	}
+}
+
+func newTestDetector(gcpDetector *fakeGCPDetector, opts ...func(*localMetadata.ResourceAttributesConfig)) *detector {
+	cfg := localMetadata.DefaultResourceAttributesConfig()
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	return &detector{
+		logger:   zap.NewNop(),
+		detector: gcpDetector,
+		rb:       localMetadata.NewResourceBuilder(cfg),
+	}
+}
+
+// fakeGCPDetector implements gcpDetector and uses fake values.
+type fakeGCPDetector struct {
+	err                             error
+	projectID                       string
+	cloudPlatform                   gcp.Platform
+	gkeAvailabilityZone             string
+	gkeRegion                       string
+	gkeClusterName                  string
+	gkeHostID                       string
+	faaSName                        string
+	faaSVersion                     string
+	faaSID                          string
+	faaSCloudRegion                 string
+	appEngineAvailabilityZone       string
+	appEngineRegion                 string
+	appEngineServiceName            string
+	appEngineServiceVersion         string
+	appEngineServiceInstance        string
+	gceAvailabilityZone             string
+	gceRegion                       string
+	gceHostType                     string
+	gceHostID                       string
+	gceHostName                     string
+	gceHostNameErr                  error
+	gcpCloudRunJobExecution         string
+	gcpCloudRunJobTaskIndex         string
+	gcpGceInstanceName              string
+	gcpGceInstanceHostname          string
+	gcpGceManagedInstanceGroup      gcp.ManagedInstanceGroup
+	gcpBareMetalSolutionInstanceID  string
+	gcpBareMetalSolutionCloudRegion string
+	gcpBareMetalSolutionProjectID   string
+}
+
+func TestGCELabels(t *testing.T) {
+	tests := []struct {
+		name            string
+		instanceLabels  map[string]string
+		instanceErr     error
+		builderErr      error
+		labelRegexes    []*regexp.Regexp
+		expectedPresent map[string]string
+		expectedAbsent  []string
+	}{
+		{
+			name: "success case two labels matched",
+			instanceLabels: map[string]string{
+				"tag1":  "val1",
+				"tag2":  "val2",
+				"other": "nope",
+			},
+			labelRegexes: []*regexp.Regexp{mustRe("^tag1$"), mustRe("^tag2$")},
+			expectedPresent: map[string]string{
+				"tag1": "val1",
+				"tag2": "val2",
+			},
+			expectedAbsent: []string{"other"},
+		},
+		{
+			name:            "error case in Get",
+			instanceErr:     errors.New("compute API is not available"),
+			labelRegexes:    []*regexp.Regexp{mustRe("^tag1$")},
+			expectedPresent: map[string]string{},
+			expectedAbsent:  []string{"tag1"},
+		},
+		{
+			name:            "buildClient error",
+			builderErr:      errors.New("failed to create compute client"),
+			labelRegexes:    []*regexp.Regexp{mustRe("^tag1$")},
+			expectedPresent: map[string]string{},
+			expectedAbsent:  []string{"tag1"},
+		},
+		{
+			name: "no labels match regexes",
+			instanceLabels: map[string]string{
+				"foo": "bar",
+				"baz": "qux",
+			},
+			labelRegexes:    []*regexp.Regexp{mustRe("^nomatch$")},
+			expectedPresent: map[string]string{},
+			expectedAbsent:  []string{"foo", "baz"},
+		},
+		{
+			name: "wildcard regex matches multiple",
+			instanceLabels: map[string]string{
+				"env_prod": "1",
+				"env_dev":  "0",
+				"other":    "x",
+			},
+			labelRegexes: []*regexp.Regexp{mustRe("^env_")},
+			expectedPresent: map[string]string{
+				"env_prod": "1",
+				"env_dev":  "0",
+			},
+			expectedAbsent: []string{"other"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Force metadata.OnGCE() to return true without a real metadata server.
+			t.Setenv("GCE_METADATA_HOST", "169.254.169.254")
+
+			d := newTestDetector(&fakeGCPDetector{
+				projectID:           "test-proj",
+				cloudPlatform:       gcp.GCE,
+				gceAvailabilityZone: "us-central1-a",
+				gceRegion:           "us-central1",
+				gcpGceInstanceName:  "test-vm",
+				gceHostID:           "1234567890",
+				gceHostName:         "test-vm",
+				gceHostType:         "n2-standard-2",
+			})
+
+			d.labelKeyRegexes = tt.labelRegexes
+			d.gceClientBuilder = &mockInstancesBuilder{
+				client: &mockInstancesClient{
+					labels: tt.instanceLabels,
+					err:    tt.instanceErr,
+				},
+				err: tt.builderErr,
+			}
+
+			res, _, err := d.Detect(t.Context())
+			assert.NoError(t, err)
+
+			attrs := res.Attributes()
+			for k, v := range tt.expectedPresent {
+				val, ok := attrs.Get(gceLabelPrefix + k)
+				assert.True(t, ok, "expected %s to be present", k)
+				assert.Equal(t, v, val.Str())
+			}
+			for _, k := range tt.expectedAbsent {
+				_, ok := attrs.Get(gceLabelPrefix + k)
+				assert.False(t, ok, "did not expect %s to be present", k)
+			}
+		})
+	}
+}
+
+func (f *fakeGCPDetector) ProjectID() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.projectID, nil
+}
+
+func (f *fakeGCPDetector) CloudPlatform() gcp.Platform {
+	return f.cloudPlatform
+}
+
+func (f *fakeGCPDetector) GKEAvailabilityZoneOrRegion() (string, gcp.LocationType, error) {
+	if f.err != nil {
+		return "", gcp.UndefinedLocation, f.err
+	}
+	if f.gkeAvailabilityZone != "" {
+		return f.gkeAvailabilityZone, gcp.Zone, nil
+	}
+	return f.gkeRegion, gcp.Region, nil
+}
+
+func (f *fakeGCPDetector) GKEClusterName() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gkeClusterName, nil
+}
+
+func (f *fakeGCPDetector) GKEHostID() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gkeHostID, nil
+}
+
+func (f *fakeGCPDetector) FaaSName() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.faaSName, nil
+}
+
+func (f *fakeGCPDetector) FaaSVersion() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.faaSVersion, nil
+}
+
+func (f *fakeGCPDetector) FaaSID() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.faaSID, nil
+}
+
+func (f *fakeGCPDetector) FaaSCloudRegion() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.faaSCloudRegion, nil
+}
+
+func (f *fakeGCPDetector) AppEngineFlexAvailabilityZoneAndRegion() (string, string, error) {
+	if f.err != nil {
+		return "", "", f.err
+	}
+	return f.appEngineAvailabilityZone, f.appEngineRegion, nil
+}
+
+func (f *fakeGCPDetector) AppEngineStandardAvailabilityZone() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.appEngineAvailabilityZone, nil
+}
+
+func (f *fakeGCPDetector) AppEngineStandardCloudRegion() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.appEngineRegion, nil
+}
+
+func (f *fakeGCPDetector) AppEngineServiceName() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.appEngineServiceName, nil
+}
+
+func (f *fakeGCPDetector) AppEngineServiceVersion() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.appEngineServiceVersion, nil
+}
+
+func (f *fakeGCPDetector) AppEngineServiceInstance() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.appEngineServiceInstance, nil
+}
+
+func (f *fakeGCPDetector) GCEAvailabilityZoneAndRegion() (string, string, error) {
+	if f.err != nil {
+		return "", "", f.err
+	}
+	return f.gceAvailabilityZone, f.gceRegion, nil
+}
+
+func (f *fakeGCPDetector) GCEHostType() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gceHostType, nil
+}
+
+func (f *fakeGCPDetector) GCEHostID() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gceHostID, nil
+}
+
+func (f *fakeGCPDetector) GCEHostName() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gceHostName, f.gceHostNameErr
+}
+
+func (f *fakeGCPDetector) CloudRunJobTaskIndex() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpCloudRunJobTaskIndex, nil
+}
+
+func (f *fakeGCPDetector) CloudRunJobExecution() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpCloudRunJobExecution, nil
+}
+
+func (f *fakeGCPDetector) GCEInstanceName() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpGceInstanceName, nil
+}
+
+func (f *fakeGCPDetector) GCEInstanceHostname() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpGceInstanceHostname, nil
+}
+
+func (f *fakeGCPDetector) GCEManagedInstanceGroup() (gcp.ManagedInstanceGroup, error) {
+	if f.err != nil {
+		return gcp.ManagedInstanceGroup{}, f.err
+	}
+	return f.gcpGceManagedInstanceGroup, nil
+}
+
+func (f *fakeGCPDetector) BareMetalSolutionInstanceID() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpBareMetalSolutionInstanceID, nil
+}
+
+func (f *fakeGCPDetector) BareMetalSolutionCloudRegion() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpBareMetalSolutionCloudRegion, nil
+}
+
+func (f *fakeGCPDetector) BareMetalSolutionProjectID() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpBareMetalSolutionProjectID, nil
+}
+
+func TestCompileLabelRegexes(t *testing.T) {
+	tests := []struct {
+		name        string
+		labels      []string
+		expectError bool
+	}{
+		{
+			name:        "valid regexes",
+			labels:      []string{"^tag1$", "^env_"},
+			expectError: false,
+		},
+		{
+			name:        "empty labels",
+			labels:      []string{},
+			expectError: false,
+		},
+		{
+			name:        "invalid regex in config",
+			labels:      []string{"[invalid"},
+			expectError: true,
+		},
+		{
+			name:        "invalid regex among valid ones",
+			labels:      []string{"^valid$", "[also-invalid", "^another-valid$"},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{Labels: tt.labels}
+			regexes, err := compileLabelRegexes(cfg)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, regexes)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, regexes, len(tt.labels))
+			}
+		})
+	}
+}

@@ -1,0 +1,15 @@
+display_name: Health Check Extension
+type: health_check
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [core, contrib, k8s]
+  codeowners:
+    active: [evan-bradley]
+    seeking_new: true
+
+tests:
+  config:
+    endpoint: localhost:0

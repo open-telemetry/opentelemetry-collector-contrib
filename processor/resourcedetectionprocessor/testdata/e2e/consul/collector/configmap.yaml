@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    processors:
+      resource:
+        attributes:
+          - key: instance_type
+            value: "t3.micro"
+            action: upsert
+      resourcedetection:
+        detectors: [consul]
+        timeout: 2s
+        override: false
+        consul:
+          address: "127.0.0.1:8500"
+          datacenter: "dc1"
+          meta:
+            region: ""
+            zone: ""
+            instance_type: ""
+          resource_attributes:
+            cloud.region:
+              enabled: true
+            host.id:
+              enabled: true
+            host.name:
+              enabled: true
+    receivers:
+      hostmetrics:
+        collection_interval: 1s
+        scrapers:
+          cpu:
+    service:
+      telemetry:
+        logs:
+          level: "debug"
+      extensions:
+        - health_check
+      pipelines:
+        metrics:
+          receivers:
+            - hostmetrics
+          processors:
+            - resource
+            - resourcedetection
+          exporters:
+            - otlp

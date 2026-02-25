@@ -1,0 +1,22 @@
+{
+  "records": [
+    {
+      "time": "2024-04-24T12:06:12.0000000Z",
+      "resourceId": "/RESOURCE_ID",
+      "category": "FrontDoorHealthProbeLog",
+      "operationName": "WAF/FirewallLog",
+      "properties": {
+        "healthProbeId": "AAAA",
+        "POP": "",
+        "httpVerb": "GET",
+        "result": "",
+        "httpStatusCode": "200",
+        "probeURL": "https://probe.net/health",
+        "originName": "https://probe.net/",
+        "originIP": "42.42.42.42",
+        "totalLatencyMilliseconds": "42",
+        "DNSLatencyMicroseconds": "230"
+      }
+    }
+  ]
+}

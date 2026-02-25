@@ -1,0 +1,18 @@
+type: azureblob
+scope_name: otelcol/azureblobexporter
+display_name: Azure Blob Storage Exporter
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [hgaol, MovieStoreGuy]
+
+tests:
+  config:
+  expect_consumer_error: true
+  skip_lifecycle: true
+  goleak:
+    skip: true

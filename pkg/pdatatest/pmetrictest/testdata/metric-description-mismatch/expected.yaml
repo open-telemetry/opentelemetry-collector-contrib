@@ -1,0 +1,8 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Gauge One
+            gauge: {}
+            name: gauge.one
+        scope: {}

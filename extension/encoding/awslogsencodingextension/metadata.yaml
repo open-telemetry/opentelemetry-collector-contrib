@@ -1,0 +1,17 @@
+display_name: AWS Logs Encoding Extension
+type: awslogs_encoding
+
+description: This extension unmarshalls logs encoded in formats produced by AWS services.
+
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [axw, constanca-m]
+
+tests:
+  config:
+    format: cloudwatch

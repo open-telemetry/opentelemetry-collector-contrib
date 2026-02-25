@@ -1,0 +1,327 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: Span count by attribute with default
+            name: span.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                    - key: span.optional
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: bar
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: notbar
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+              isMonotonic: true
+          - description: Span event count by attribute with default
+            name: spanevent.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: bar
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: notbar
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                    - key: event.optional
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+              isMonotonic: true
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: Span count by attribute with default
+            name: span.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: bar
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: notbar
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                    - key: span.optional
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+              isMonotonic: true
+          - description: Span event count by attribute with default
+            name: spanevent.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: bar
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: notbar
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                    - key: event.optional
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+              isMonotonic: true
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeMetrics:
+      - metrics:
+          - description: Span count by attribute with default
+            name: span.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: bar
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: notbar
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                    - key: span.optional
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+              isMonotonic: true
+          - description: Span event count by attribute with default
+            name: spanevent.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: bar
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: notbar
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                    - key: event.optional
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+              isMonotonic: true
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Span count by attribute with default
+            name: span.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: bar
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: notbar
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                    - key: span.optional
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+              isMonotonic: true
+          - description: Span event count by attribute with default
+            name: spanevent.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: bar
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: notbar
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                    - key: event.optional
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1581452773000000123"
+                  timeUnixNano: "1581452773000000123"
+              isMonotonic: true
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector

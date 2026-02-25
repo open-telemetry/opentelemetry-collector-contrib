@@ -1,0 +1,120 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: aws.networkfirewall.name
+          value:
+            stringValue: test-firewall
+        - key: cloud.availability_zone
+          value:
+            stringValue: us-east-1a
+    scopeLogs:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: ""
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.networkfirewall
+        logRecords:
+          - observedTimeUnixNano: "0"
+            timeUnixNano: "1760956245123000000"
+            attributes:
+              - key: aws.networkfirewall.event.type
+                value:
+                  stringValue: alert
+              - key: aws.networkfirewall.flow_id
+                value:
+                  intValue: "1234567890"
+              - key: source.address
+                value:
+                  stringValue: 192.168.1.100
+              - key: source.port
+                value:
+                  intValue: "54321"
+              - key: destination.address
+                value:
+                  stringValue: 10.0.1.50
+              - key: destination.port
+                value:
+                  intValue: "443"
+              - key: network.transport
+                value:
+                  stringValue: TCP
+              - key: aws.networkfirewall.alert.action
+                value:
+                  stringValue: allowed
+              - key: aws.networkfirewall.alert.signature
+                value:
+                  stringValue: ET MALWARE Suspicious TLS Connection
+              - key: aws.networkfirewall.alert.signature_id
+                value:
+                  intValue: "2027758"
+              - key: aws.networkfirewall.alert.rev
+                value:
+                  intValue: "3"
+              - key: aws.networkfirewall.alert.category
+                value:
+                  stringValue: Malware
+              - key: aws.networkfirewall.alert.severity
+                value:
+                  intValue: "1"
+              - key: aws.networkfirewall.alert.gid
+                value:
+                  intValue: "1"
+              - key: aws.networkfirewall.alert.metadata.affected_product
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: Windows
+                      - stringValue: Linux
+              - key: aws.networkfirewall.alert.metadata.attack_target
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: Server
+                      - stringValue: Workstation
+              - key: aws.networkfirewall.alert.metadata.deployment
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: Perimeter
+                      - stringValue: Internal
+              - key: aws.networkfirewall.alert.metadata.former_category
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: Trojan
+                      - stringValue: Backdoor
+              - key: aws.networkfirewall.alert.metadata.malware_family
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: Zeus
+                      - stringValue: CryptoLocker
+              - key: aws.networkfirewall.alert.metadata.performance_impact
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: High
+                      - stringValue: Medium
+              - key: aws.networkfirewall.alert.metadata.signature_severity
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: Critical
+                      - stringValue: High
+              - key: aws.networkfirewall.alert.metadata.created_at
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: "2025-10-20T00:00:00Z"
+                      - stringValue: "2025-10-20T06:00:00Z"
+              - key: aws.networkfirewall.alert.metadata.updated_at
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: "2025-10-20T12:00:00Z"
+                      - stringValue: "2025-10-20T18:00:00Z"

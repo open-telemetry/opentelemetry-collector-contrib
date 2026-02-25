@@ -1,0 +1,49 @@
+name: Automation - Prepare Release
+
+on:
+  workflow_dispatch:
+    # Determine the version number that will be assigned to the release. During the beta phase, we increment
+    # the minor version number and set the patch number to 0.
+    inputs:
+      candidate-beta:
+        required: true
+        description: Release candidate version (beta, like 0.70.0)
+
+      current-beta:
+        required: true
+        description: Current version (beta, like 0.69.1)
+permissions:
+  contents: read
+jobs:
+  # Releasing opentelemetry-collector-contrib
+  prepare-release:
+    permissions:
+      contents: write # required for pushing changes in release-prepare-release.sh
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: "open-telemetry/opentelemetry-collector"
+          path: opentelemetry-collector
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          path: opentelemetry-collector-contrib
+      - run: opentelemetry-collector-contrib/.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+        with:
+          go-version: oldstable
+          cache: false
+      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        id: otelbot-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+      - name: Prepare release for contrib
+        working-directory: opentelemetry-collector-contrib
+        env:
+          GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
+          REPO: open-telemetry/opentelemetry-collector-contrib
+          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+          CURRENT_BETA: ${{ inputs.current-beta }}
+        run: ./.github/workflows/scripts/release-prepare-release.sh
+      - run: opentelemetry-collector-contrib/.github/workflows/scripts/check-disk-space.sh

@@ -1,0 +1,20 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: ip
+          value:
+            stringValue: 1.2.3.4
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: "hello one"
+            attributes:
+              - key: custom.address
+                value:
+                  stringValue: 1.2.3.4
+              - key: host.name
+                value:
+                  stringValue: HOST.ONE
+              - key: log.file.name
+                value:
+                  stringValue: one.log

@@ -1,0 +1,5 @@
+# TYPE a summary
+# HELP a help
+a_count 1
+a_sum 2
+# EOF

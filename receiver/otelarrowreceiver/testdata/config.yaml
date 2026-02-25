@@ -1,0 +1,32 @@
+protocols:
+  grpc:
+    # The following entry demonstrates how to specify TLS credentials for the server.
+    # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
+    tls:
+      cert_file: test.crt
+      key_file: test.key
+
+    # The following demonstrates how to set maximum limits on stream, message size and connection idle time.
+    # Note: The test yaml has demonstrated configuration on a grouped by their structure; however, all of the settings can
+    # be mix and matched like adding the maximum connection idle setting in this example.
+    max_recv_msg_size_mib: 32
+    max_concurrent_streams: 16
+    read_buffer_size: 1024
+    write_buffer_size: 1024
+
+    # The following entry configures all of the keep alive settings. These settings are used to configure the receiver.
+    keepalive:
+      server_parameters:
+        max_connection_idle: 11s
+        max_connection_age: 12s
+        max_connection_age_grace: 13s
+        time: 30s
+        timeout: 5s
+      enforcement_policy:
+        min_time: 10s
+        permit_without_stream: true
+  arrow:
+    memory_limit_mib: 123
+admission:
+  request_limit_mib: 80
+  waiting_limit_mib: 100

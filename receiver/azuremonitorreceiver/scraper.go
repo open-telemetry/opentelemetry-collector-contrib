@@ -1,0 +1,673 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
+
+import (
+	"context"
+	"fmt"
+	"maps"
+	"regexp"
+	"slices"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/huandu/go-clone"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
+)
+
+var (
+	timeGrains = map[string]int64{
+		"PT1M":  60,
+		"PT5M":  300,
+		"PT15M": 900,
+		"PT30M": 1800,
+		"PT1H":  3600,
+		"PT6H":  21600,
+		"PT12H": 43200,
+		"P1D":   86400,
+	}
+	aggregations = []string{
+		"Average",
+		"Count",
+		"Maximum",
+		"Minimum",
+		"Total",
+	}
+)
+
+const (
+	attributeLocation      = "location"
+	attributeName          = "name"
+	attributeResourceGroup = "resource_group"
+	attributeResourceType  = "type"
+	metadataPrefix         = "metadata_"
+	tagPrefix              = "tags_"
+	truncateTimeGrain      = time.Minute
+	filterAllAggregations  = "*"
+	storageAccountType     = "Microsoft.Storage/storageAccounts"
+)
+
+// azureSubscription is an extract of armsubscriptions.Subscription.
+// It designates a common structure between complex structures retrieved from the AP
+// and simple subscriptions ids that you can find in config.
+type azureSubscription struct {
+	SubscriptionID   string
+	DisplayName      string
+	resourcesUpdated time.Time
+}
+
+type azureResource struct {
+	attributes                map[string]*string
+	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
+	metricsDefinitionsUpdated time.Time
+	tags                      map[string]*string
+	resourceType              *string
+}
+
+type metricsCompositeKey struct {
+	dimensions   string // comma separated sorted dimensions
+	aggregations string // comma separated sorted aggregations
+	timeGrain    string
+}
+
+type azureResourceMetrics struct {
+	metrics              []string
+	metricsValuesUpdated time.Time
+}
+
+type void struct{}
+
+type timeNowIface interface {
+	Now() time.Time
+}
+
+type timeWrapper struct{}
+
+func (*timeWrapper) Now() time.Time {
+	return time.Now()
+}
+
+type storageAccountSpecificConfig struct {
+	askedBlobServices  bool
+	askedFileServices  bool
+	askedQueueServices bool
+	askedTableServices bool
+}
+
+func newStorageAccountSpecificConfig(services []string) storageAccountSpecificConfig {
+	return storageAccountSpecificConfig{
+		askedBlobServices:  slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/blobServices") }) != -1,
+		askedFileServices:  slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/fileServices") }) != -1,
+		askedQueueServices: slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/queueServices") }) != -1,
+		askedTableServices: slices.IndexFunc(services, func(s string) bool { return strings.EqualFold(s, "Microsoft.Storage/storageAccounts/tableServices") }) != -1,
+	}
+}
+
+func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
+	return &azureScraper{
+		cfg:                          conf,
+		settings:                     settings.TelemetrySettings,
+		mb:                           metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
+		mutex:                        &sync.Mutex{},
+		time:                         &timeWrapper{},
+		clientOptionsResolver:        newClientOptionsResolver(conf.Cloud),
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(conf.Services),
+	}
+}
+
+type azureScraper struct {
+	cred azcore.TokenCredential
+
+	cfg      *Config
+	settings component.TelemetrySettings
+	// resources on which we'll collect metrics. Stored by resource id and subscription id.
+	resources map[string]map[string]*azureResource
+	// subscriptions on which we'll look up resources. Stored by subscription id.
+	subscriptions        map[string]*azureSubscription
+	subscriptionsUpdated time.Time
+	mb                   *metadata.MetricsBuilder
+
+	mutex                        *sync.Mutex
+	time                         timeNowIface
+	clientOptionsResolver        ClientOptionsResolver
+	storageAccountSpecificConfig storageAccountSpecificConfig
+}
+
+func (s *azureScraper) start(_ context.Context, host component.Host) (err error) {
+	if s.cred, err = loadCredentials(s.settings.Logger, s.cfg, host); err != nil {
+		return err
+	}
+
+	s.subscriptions = map[string]*azureSubscription{}
+	s.resources = map[string]map[string]*azureResource{}
+
+	return err
+}
+
+func (s *azureScraper) loadSubscription(sub azureSubscription) {
+	s.resources[sub.SubscriptionID] = make(map[string]*azureResource)
+	s.subscriptions[sub.SubscriptionID] = &azureSubscription{
+		SubscriptionID: sub.SubscriptionID,
+		DisplayName:    sub.DisplayName,
+	}
+}
+
+func (s *azureScraper) unloadSubscription(id string) {
+	delete(s.resources, id)
+	delete(s.subscriptions, id)
+}
+
+func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	s.getSubscriptions(ctx)
+
+	for subscriptionID, subscription := range s.subscriptions {
+		s.getResources(ctx, subscriptionID)
+
+		resourcesIDsWithDefinitions := make(chan string)
+		go func(subscriptionID string) {
+			defer close(resourcesIDsWithDefinitions)
+			for resourceID := range s.resources[subscriptionID] {
+				s.getResourceMetricsDefinitions(ctx, subscriptionID, resourceID)
+				resourcesIDsWithDefinitions <- resourceID
+			}
+		}(subscriptionID)
+
+		var wg sync.WaitGroup
+		for resourceID := range resourcesIDsWithDefinitions {
+			wg.Add(1)
+			go func(subscriptionID, resourceID string) {
+				defer wg.Done()
+				s.getResourceMetricsValues(ctx, subscriptionID, resourceID)
+			}(subscriptionID, resourceID)
+		}
+
+		wg.Wait()
+
+		// Once all metrics has been collected for one subscription, we move to the next.
+		// We need to keep it synchronous to have the subscription id in resource attributes and not metrics attributes.
+		// It can be revamped later if we need to parallelize more, but currently, resource emit is not thread safe.
+		rb := s.mb.NewResourceBuilder()
+		rb.SetAzuremonitorTenantID(s.cfg.TenantID)
+		rb.SetAzuremonitorSubscriptionID(subscriptionID)
+		rb.SetAzuremonitorSubscription(subscription.DisplayName)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+	return s.mb.Emit(), nil
+}
+
+func (s *azureScraper) getSubscriptions(ctx context.Context) {
+	if time.Since(s.subscriptionsUpdated).Seconds() < s.cfg.CacheResources {
+		return
+	}
+
+	// if subscriptions discovery is enabled, we'll need a client
+	armSubscriptionClient, clientErr := armsubscriptions.NewClient(s.cred, s.clientOptionsResolver.GetArmSubscriptionsClientOptions())
+	if clientErr != nil {
+		s.settings.Logger.Error("failed to initialize the client to get Azure Subscriptions", zap.Error(clientErr))
+		return
+	}
+
+	// Make a special case for when we only have subscription ids configured (discovery disabled)
+	if !s.cfg.DiscoverSubscriptions {
+		for _, subID := range s.cfg.SubscriptionIDs {
+			// we don't need additional info,
+			// => It simply load the subscription id
+			if !s.cfg.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled {
+				s.loadSubscription(azureSubscription{
+					SubscriptionID: subID,
+				})
+				continue
+			}
+
+			// We need additional info,
+			// => It makes some get requests
+			resp, err := armSubscriptionClient.Get(ctx, subID, &armsubscriptions.ClientGetOptions{})
+			if err != nil {
+				s.settings.Logger.Error("failed to get Azure Subscription", zap.String("subscription_id", subID), zap.Error(err))
+				return
+			}
+			s.loadSubscription(azureSubscription{
+				SubscriptionID: *resp.SubscriptionID,
+				DisplayName:    *resp.DisplayName,
+			})
+		}
+		s.subscriptionsUpdated = time.Now()
+		return
+	}
+
+	opts := &armsubscriptions.ClientListOptions{}
+	pager := armSubscriptionClient.NewListPager(opts)
+
+	existingSubscriptions := map[string]void{}
+	for id := range s.subscriptions {
+		existingSubscriptions[id] = void{}
+	}
+
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		if err != nil {
+			s.settings.Logger.Error("failed to get Azure Subscriptions", zap.Error(err))
+			return
+		}
+
+		for _, subscription := range nextResult.Value {
+			s.loadSubscription(azureSubscription{
+				SubscriptionID: *subscription.SubscriptionID,
+				DisplayName:    *subscription.DisplayName,
+			})
+			delete(existingSubscriptions, *subscription.SubscriptionID)
+		}
+	}
+	if len(existingSubscriptions) > 0 {
+		for idToDelete := range existingSubscriptions {
+			s.unloadSubscription(idToDelete)
+		}
+	}
+
+	s.subscriptionsUpdated = time.Now()
+}
+
+func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) {
+	if time.Since(s.subscriptions[subscriptionID].resourcesUpdated).Seconds() < s.cfg.CacheResources {
+		return
+	}
+	clientResources, clientErr := armresources.NewClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmResourceClientOptions(subscriptionID))
+	if clientErr != nil {
+		s.settings.Logger.Error("failed to initialize the client to get Azure Resources", zap.Error(clientErr))
+		return
+	}
+
+	existingResources := map[string]void{}
+	for id := range s.resources[subscriptionID] {
+		existingResources[id] = void{}
+	}
+
+	filter := s.getResourcesFilter()
+	opts := &armresources.ClientListOptions{
+		Filter: &filter,
+	}
+
+	tagsFilterMap := getTagsFilterMap(s.cfg.AppendTagsAsAttributes)
+
+	pager := clientResources.NewListPager(opts)
+
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		if err != nil {
+			s.settings.Logger.Error("failed to get Azure Resources data", zap.Error(err))
+			return
+		}
+		for _, resource := range s.processResources(nextResult.Value) {
+			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
+				resourceGroup := getResourceGroupFromID(*resource.ID)
+				attributes := map[string]*string{
+					attributeName:          resource.Name,
+					attributeResourceGroup: &resourceGroup,
+					attributeResourceType:  resource.Type,
+				}
+				if resource.Location != nil {
+					attributes[attributeLocation] = resource.Location
+				}
+				s.resources[subscriptionID][*resource.ID] = &azureResource{
+					attributes:   attributes,
+					tags:         filterResourceTags(tagsFilterMap, resource.Tags),
+					resourceType: resource.Type,
+				}
+			}
+			delete(existingResources, *resource.ID)
+		}
+	}
+	if len(existingResources) > 0 {
+		for idToDelete := range existingResources {
+			delete(s.resources[subscriptionID], idToDelete)
+		}
+	}
+
+	s.subscriptions[subscriptionID].resourcesUpdated = time.Now()
+}
+
+// processResources is a workaround specially done for the storageAccount metrics.
+// Every StorageAccount resources have some implicit sub resources (/blobServices/default, fileServices/default, etc...) that are not returned by the API.
+// We need to add them manually to the resources and resourceTypes map.
+// Note that we do that hack only if the user has asked the sub resource types explicitly in the services config.
+// Example:
+// For each resource with id .../Microsoft.Storage/storageAccount/myResource of type Microsoft.Storage/storageAccount,
+// It will create a fake resource with id .../Microsoft.Storage/storageAccount/myResource/blobServices/default of type Microsoft.Storage/storageAccounts/blobServices.
+// TODO: duplicate
+func (s *azureScraper) processResources(resources []*armresources.GenericResourceExpanded) []*armresources.GenericResourceExpanded {
+	var subTypeResources []*armresources.GenericResourceExpanded
+	for _, resource := range resources {
+		subTypeResources = append(subTypeResources, resource)
+		if resource != nil && resource.Type != nil && *resource.Type == storageAccountType {
+			if s.storageAccountSpecificConfig.askedBlobServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/blobServices", fmt.Sprintf("%s/blobServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+			if s.storageAccountSpecificConfig.askedFileServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/fileServices", fmt.Sprintf("%s/fileServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+			if s.storageAccountSpecificConfig.askedQueueServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/queueServices", fmt.Sprintf("%s/queueServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+			if s.storageAccountSpecificConfig.askedTableServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/tableServices", fmt.Sprintf("%s/tableServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+		}
+	}
+	return subTypeResources
+}
+
+// buildSubTypeResource creates a virtual new resource with given type and ID.
+// The rest of the attributes (location, tags, etc...) are copied from the original resource.
+func buildSubTypeResource(orig armresources.GenericResourceExpanded, newType, newID string) *armresources.GenericResourceExpanded {
+	cloned := clone.Clone(orig).(armresources.GenericResourceExpanded)
+	cloned.ID = &newID
+	cloned.Type = &newType
+	return &cloned
+}
+
+func getResourceGroupFromID(id string) string {
+	s := regexp.MustCompile(`/resourcegroups/([^/]+)/`)
+	match := s.FindStringSubmatch(strings.ToLower(id))
+
+	if len(match) == 2 {
+		return match[1]
+	}
+	return ""
+}
+
+func (s *azureScraper) getResourcesFilter() string {
+	// TODO: switch to parsing services from
+	// https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported
+	resourcesTypeFilter := strings.Join(s.cfg.Services, "' or resourceType eq '")
+
+	resourcesGroupFilterString := ""
+	if len(s.cfg.ResourceGroups) > 0 {
+		resourcesGroupFilterString = fmt.Sprintf(" and (resourceGroup eq '%s')",
+			strings.Join(s.cfg.ResourceGroups, "' or resourceGroup eq  '"))
+	}
+
+	return fmt.Sprintf("(resourceType eq '%s')%s", resourcesTypeFilter, resourcesGroupFilterString)
+}
+
+func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, subscriptionID, resourceID string) {
+	if time.Since(s.resources[subscriptionID][resourceID].metricsDefinitionsUpdated).Seconds() < s.cfg.CacheResourcesDefinitions {
+		return
+	}
+
+	clientMetricsDefinitions, clientErr := armmonitor.NewMetricDefinitionsClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmMonitorClientOptions())
+	if clientErr != nil {
+		s.settings.Logger.Error("failed to initialize the client to get Azure Metrics definitions", zap.Error(clientErr))
+		return
+	}
+
+	s.resources[subscriptionID][resourceID].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
+
+	pager := clientMetricsDefinitions.NewListPager(resourceID, nil)
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		if err != nil {
+			s.settings.Logger.Error("failed to get Azure Metrics definitions data", zap.Error(err))
+			return
+		}
+
+		for _, v := range nextResult.Value {
+			metricName := *v.Name.Value
+			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
+			if len(metricAggregations) == 0 {
+				continue
+			}
+
+			timeGrain := *v.MetricAvailabilities[0].TimeGrain
+			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, *s.resources[subscriptionID][resourceID].resourceType, metricName)
+			compositeKey := metricsCompositeKey{
+				timeGrain:    timeGrain,
+				dimensions:   serializeDimensions(dimensions),
+				aggregations: strings.Join(metricAggregations, ","),
+			}
+			s.storeMetricsDefinition(subscriptionID, resourceID, metricName, compositeKey)
+		}
+	}
+	s.resources[subscriptionID][resourceID].metricsDefinitionsUpdated = time.Now()
+}
+
+func (s *azureScraper) storeMetricsDefinition(subscriptionID, resourceID, name string, compositeKey metricsCompositeKey) {
+	if _, ok := s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey]; ok {
+		s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey].metrics = append(
+			s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey].metrics, name,
+		)
+	} else {
+		s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{name}}
+	}
+}
+
+func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptionID, resourceID string) {
+	res := *s.resources[subscriptionID][resourceID]
+	updatedAt := s.time.Now().Truncate(truncateTimeGrain)
+
+	clientMetricsValues, clientErr := armmonitor.NewMetricsClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmMonitorClientOptions())
+	if clientErr != nil {
+		s.settings.Logger.Error("failed to initialize the client to get Azure Metrics values", zap.Error(clientErr))
+		return
+	}
+
+	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
+		if updatedAt.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
+			continue
+		}
+		metricsByGrain.metricsValuesUpdated = updatedAt
+
+		start := 0
+
+		for start < len(metricsByGrain.metrics) {
+			end := min(start+s.cfg.MaximumNumberOfMetricsInACall, len(metricsByGrain.metrics))
+
+			opts := getResourceMetricsValuesRequestOptions(
+				metricsByGrain.metrics,
+				compositeKey.dimensions,
+				compositeKey.timeGrain,
+				compositeKey.aggregations,
+				start,
+				end,
+				s.cfg.MaximumNumberOfRecordsPerResource,
+			)
+			start = end
+
+			result, err := clientMetricsValues.List(
+				ctx,
+				resourceID,
+				&opts,
+			)
+			if err != nil {
+				s.settings.Logger.Error("failed to get Azure Metrics values data", zap.Error(err))
+				return
+			}
+
+			for _, metric := range result.Value {
+				for _, timeseriesElement := range metric.Timeseries {
+					if timeseriesElement.Data == nil {
+						continue
+					}
+					attributes := map[string]*string{}
+					maps.Copy(attributes, res.attributes)
+					for _, value := range timeseriesElement.Metadatavalues {
+						name := metadataPrefix + *value.Name.Value
+						attributes[name] = value.Value
+					}
+					for tagName, value := range res.tags {
+						name := tagPrefix + tagName
+						attributes[name] = value
+					}
+					for _, metricValue := range timeseriesElement.Data {
+						s.processTimeseriesData(resourceID, metric, metricValue, attributes)
+					}
+				}
+			}
+		}
+	}
+}
+
+func getResourceMetricsValuesRequestOptions(
+	metrics []string,
+	dimensionsStr string,
+	timeGrain string,
+	aggregationsStr string,
+	start int,
+	end int,
+	top int32,
+) armmonitor.MetricsClientListOptions {
+	return armmonitor.MetricsClientListOptions{
+		Metricnames: to.Ptr(strings.Join(metrics[start:end], ",")),
+		Interval:    to.Ptr(timeGrain),
+		Timespan:    to.Ptr(timeGrain),
+		Aggregation: to.Ptr(aggregationsStr),
+		Top:         to.Ptr(top),
+		Filter:      buildDimensionsFilter(dimensionsStr),
+	}
+}
+
+func (s *azureScraper) processTimeseriesData(
+	resourceID string,
+	metric *armmonitor.Metric,
+	metricValue *armmonitor.MetricValue,
+	attributes map[string]*string,
+) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	ts := pcommon.NewTimestampFromTime(time.Now())
+
+	aggregationsData := []struct {
+		name  string
+		value *float64
+	}{
+		{"Average", metricValue.Average},
+		{"Count", metricValue.Count},
+		{"Maximum", metricValue.Maximum},
+		{"Minimum", metricValue.Minimum},
+		{"Total", metricValue.Total},
+	}
+	for _, aggregation := range aggregationsData {
+		if aggregation.value != nil {
+			s.mb.AddDataPoint(
+				resourceID,
+				*metric.Name.Value,
+				aggregation.name,
+				string(*metric.Unit),
+				attributes,
+				ts,
+				*aggregation.value,
+			)
+		}
+	}
+}
+
+// getMetricAggregations returns a list of aggregations for a given namespace/metric.
+// Two parameters are considered to know the aggregation to choose
+// - a filter (given in configuration)
+// - a list of supported aggregations (given by the API)
+// If one namespace/metrics combination matches a provided filter,
+// > Then it returns the aggregations in the filter
+// > Otherwise it returns all supported aggregations.
+// Note that a special filter * is supported to return all supported aggregations explicitly.
+// /!\ It does not control the aggregations in the filters. If it's not in the supported list, it still lets it pass.
+func getMetricAggregations(metricNamespace, metricName string, filters NestedListAlias, supportedAggregations []string) []string {
+	// default behavior when no metric filters specified: pass all metrics with all aggregations
+	if len(filters) == 0 {
+		return supportedAggregations
+	}
+
+	metricsFilters, ok := mapFindInsensitive(filters, metricNamespace)
+	// metric namespace isn't found, or it's empty: pass all metrics from the namespace
+	if !ok || len(metricsFilters) == 0 {
+		return supportedAggregations
+	}
+
+	aggregationsFilters, ok := mapFindInsensitive(metricsFilters, metricName)
+	// if the target metric is absent in the metrics map: filter out metric
+	if !ok {
+		return []string{}
+	}
+	// allow all aggregations if others are not specified
+	if len(aggregationsFilters) == 0 || slices.Contains(aggregationsFilters, filterAllAggregations) {
+		return supportedAggregations
+	}
+
+	// collect known aggregations without filtering on supported
+	var out []string
+	for _, filter := range aggregationsFilters {
+		for _, aggregation := range aggregations {
+			if strings.EqualFold(aggregation, filter) {
+				out = append(out, aggregation)
+			}
+		}
+	}
+
+	return out
+}
+
+func convertAggregationsToStr(aggregations []*armmonitor.AggregationType) []string {
+	var result []string
+	for _, aggr := range aggregations {
+		result = append(result, string(*aggr))
+	}
+	return result
+}
+
+func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {
+	for k, v := range m {
+		if strings.EqualFold(key, k) {
+			return v, true
+		}
+	}
+
+	var got T
+	return got, false
+}
+
+// getTagsFilterMap returns a map used to filter tags.
+// Each user-configured tag key is normalized to lowercase and added to the map for case-insensitive lookup.
+func getTagsFilterMap(appendTagsAsAttributes []string) (tagsFilterMap map[string]struct{}) {
+	tagsFilterMap = make(map[string]struct{}, len(appendTagsAsAttributes))
+	for _, v := range appendTagsAsAttributes {
+		tagsFilterMap[strings.ToLower(v)] = struct{}{}
+	}
+	return tagsFilterMap
+}
+
+// filterResourceTags filter out resource tags according to configured tag list (append_tags_as_attributes)
+func filterResourceTags(tagFilterList map[string]struct{}, resourceTags map[string]*string) map[string]*string {
+	if _, includeAll := tagFilterList["*"]; includeAll {
+		return resourceTags
+	}
+
+	// wildcard not found. include only configured tags
+	includedTags := make(map[string]*string, len(resourceTags))
+	for tagName, value := range resourceTags {
+		if _, ok := tagFilterList[strings.ToLower(tagName)]; ok {
+			includedTags[tagName] = value
+		}
+	}
+
+	return includedTags
+}

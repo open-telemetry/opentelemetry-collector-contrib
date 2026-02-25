@@ -1,0 +1,6 @@
+prometheus:
+  trim_metric_suffixes: true
+  report_extra_scrape_metrics: true
+  config:
+    scrape_config_files:
+      - ./testdata/scrape-config.yaml

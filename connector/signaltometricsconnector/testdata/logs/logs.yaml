@@ -1,0 +1,63 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: resource.bar
+          value:
+            stringValue: bar
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.foo
+                value:
+                  stringValue: foo
+              - key: log.bar
+                value:
+                  stringValue: bar
+              - key: log.duration
+                value:
+                  doubleValue: 101.5
+            body:
+              stringValue: "2025-02-09 16:53:23 Memory usage 340MB CPU usage 0.76"
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.foo
+                value:
+                  stringValue: foo
+              - key: log.bar
+                value:
+                  stringValue: notbar
+              - key: log.duration
+                value:
+                  doubleValue: 11.4
+            body:
+              stringValue: "2025-02-09 16:54:00 Memory usage 600MB"
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.foo
+                value:
+                  stringValue: notfoo
+              - key: log.duration
+                value:
+                  doubleValue: 8.1
+            body:
+              stringValue: "2025-02-09 16:55:00 Memory usage 612MB CPU usage 0.32"
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.duration
+                value:
+                  doubleValue: 7
+            body:
+              stringValue: "2025-02-09 17:28:00 Memory usage 22MB CPU usage 0.55"
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+        scope: {}

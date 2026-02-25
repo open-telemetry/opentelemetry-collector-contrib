@@ -1,0 +1,16 @@
+display_name: Azure Event Hub Receiver
+type: azure_event_hub
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, logs, traces]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme, cparkins, dyl10s]
+    emeritus: [djaglowski]
+    seeking_new: true
+
+tests:
+  config:
+  skip_lifecycle: true

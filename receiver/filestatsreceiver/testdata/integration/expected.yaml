@@ -1,0 +1,61 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: file.name
+          value:
+            stringValue: foo.txt
+        - key: file.path
+          value:
+            stringValue: /foo.txt
+    scopeMetrics:
+      - metrics:
+          - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
+            name: file.mtime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1710390874"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: s
+          - description: The size of the file or folder, in bytes.
+            gauge:
+              dataPoints:
+                - asInt: "3"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: file.size
+            unit: b
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: file.name
+          value:
+            stringValue: foobar.txt
+        - key: file.path
+          value:
+            stringValue: /foobar.txt
+    scopeMetrics:
+      - metrics:
+          - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
+            name: file.mtime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1710390874"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: s
+          - description: The size of the file or folder, in bytes.
+            gauge:
+              dataPoints:
+                - asInt: "6"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: file.size
+            unit: b
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
+          version: latest

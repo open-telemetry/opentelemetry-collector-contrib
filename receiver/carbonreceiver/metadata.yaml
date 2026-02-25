@@ -1,0 +1,20 @@
+display_name: Carbon Receiver
+type: carbon
+
+description: |
+  The [Carbon](https://github.com/graphite-project/carbon) Receiver supports Carbon's
+  [plaintext protocol](https://graphite.readthedocs.io/en/stable/feeding-carbon.html#the-plaintext-protocol).
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme]
+    emeritus: [aboguszewski-sumo]
+    seeking_new: true
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

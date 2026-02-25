@@ -1,0 +1,56 @@
+{
+    "protoPayload": {
+        "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+        "authenticationInfo": {
+            "principalEmail": "service-8560181848@container-engine-robot.iam.gserviceaccount.com",
+            "principalSubject": "serviceAccount:service-8560181848@container-engine-robot.iam.gserviceaccount.com"
+        },
+        "requestMetadata": {
+            "callerIp": "34.29.77.17",
+            "callerSuppliedUserAgent": "google-api-go-client/0.5 cluster-autoscaler,gzip(gfe)",
+            "requestAttributes": {},
+            "destinationAttributes": {}
+        },
+        "serviceName": "container.googleapis.com",
+        "methodName": "google.container.v1beta1.ClusterManager.GetCluster",
+        "authorizationInfo": [
+            {
+                "resource": "projects/elastic-observability/zones/us-central1-c/clusters/edge-oblt",
+                "permission": "container.clusters.get",
+                "granted": true,
+                "resourceAttributes": {
+                    "service": "container.googleapis.com",
+                    "name": "projects/elastic-observability/zones/us-central1-c/clusters/edge-oblt",
+                    "type": "container.googleapis.com/Cluster"
+                },
+                "permissionType": "ADMIN_READ"
+            }
+        ],
+        "resourceName": "projects/elastic-observability/zones/us-central1-c/clusters/edge-oblt",
+        "request": {
+            "@type": "type.googleapis.com/google.container.v1alpha1.GetClusterRequest",
+            "name": "projects/elastic-observability/locations/us-central1-c/clusters/edge-oblt"
+        },
+        "resourceLocation": {
+            "currentLocations": [
+                "us-central1-c"
+            ]
+        },
+        "policyViolationInfo": {
+            "orgPolicyViolationInfo": {}
+        }
+    },
+    "insertId": "ak85oqe14p19",
+    "resource": {
+        "type": "gke_cluster",
+        "labels": {
+            "cluster_name": "edge-oblt",
+            "project_id": "elastic-observability",
+            "location": "us-central1-c"
+        }
+    },
+    "timestamp": "2025-08-15T12:56:17.261620203Z",
+    "severity": "INFO",
+    "logName": "projects/elastic-observability/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2025-08-15T12:56:18.095662412Z"
+}

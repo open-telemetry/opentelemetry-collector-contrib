@@ -1,0 +1,42 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: one
+          value:
+            intValue: "1"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: unique_id
+                value:
+                  intValue: "1"
+              - key: dedup_key
+                value:
+                  stringValue: abc
+              - key: dedup_key1
+                value:
+                  stringValue: def
+              - key: log_count
+                value:
+                  intValue: "2"
+              - key: first_observed_timestamp
+                value:
+                  stringValue: "2024-10-04T19:21:47Z"
+              - key: last_observed_timestamp
+                value:
+                  stringValue: "2024-10-04T19:21:47Z"
+            body:
+              kvlistValue:
+                values:
+                  - key: dedup_key
+                    value:
+                      stringValue: abc
+                  - key: dedup_key1
+                    value:
+                      stringValue: def
+            observedTimeUnixNano: "1728069707998122000"
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069708998920000"
+            traceId: ""
+        scope: {}
