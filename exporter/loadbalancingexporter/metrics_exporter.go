@@ -291,7 +291,6 @@ func splitMetricsByAttributes(md pmetric.Metrics, attrs []string) map[string]pme
 
 			var baseScopeKeyBuilder strings.Builder
 			baseScopeKeyBuilder.WriteString(baseResourceKey)
-
 			pendingScopeAttrs := make([]string, 0, len(pendingResourceAttrs))
 			for _, attr := range pendingResourceAttrs {
 				if val, ok := scopeAttrs.Get(attr); ok {
