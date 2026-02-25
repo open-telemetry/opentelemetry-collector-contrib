@@ -12,13 +12,17 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.uber.org/zap"
 	creds "google.golang.org/grpc/credentials"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
 
 var (
@@ -180,12 +184,12 @@ func (*authData) GetAttributeNames() []string {
 
 // perRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
 type perRPCAuth struct {
-	metadata map[string]string
+	client *basicAuthClient
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
 func (p *perRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	return p.metadata, nil
+	return *p.client.grpcMetadata.Load(), nil
 }
 
 // RequireTransportSecurity always returns true for this implementation.
@@ -194,13 +198,16 @@ func (*perRPCAuth) RequireTransportSecurity() bool {
 }
 
 type basicAuthRoundTripper struct {
-	base     http.RoundTripper
-	authData *ClientAuthSettings
+	base   http.RoundTripper
+	client *basicAuthClient
 }
 
 func (b *basicAuthRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	newRequest := request.Clone(request.Context())
-	newRequest.SetBasicAuth(b.authData.Username, string(b.authData.Password))
+	if newRequest.Header == nil {
+		newRequest.Header = make(http.Header)
+	}
+	newRequest.SetBasicAuth(b.client.username(), b.client.password())
 	return b.base.RoundTrip(newRequest)
 }
 
@@ -211,30 +218,95 @@ var (
 )
 
 type basicAuthClient struct {
-	component.StartFunc
-	component.ShutdownFunc
+	clientAuth       *ClientAuthSettings
+	logger           *zap.Logger
+	usernameResolver credentialsfile.ValueResolver
+	passwordResolver credentialsfile.ValueResolver
+	grpcMetadata     atomic.Pointer[map[string]string]
+}
 
-	clientAuth *ClientAuthSettings
+func (ba *basicAuthClient) updateGRPCMetadata() {
+	encoded := base64.StdEncoding.EncodeToString([]byte(ba.username() + ":" + ba.password()))
+	m := map[string]string{
+		"authorization": fmt.Sprintf("Basic %s", encoded),
+	}
+	ba.grpcMetadata.Store(&m)
+}
+
+func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
+	if ba.clientAuth == nil {
+		return errNoCredentialSource
+	}
+	onChange := func(_ string) { ba.updateGRPCMetadata() }
+	ca := ba.clientAuth
+	if ca.Username != "" || ca.UsernameFile != "" {
+		r, err := credentialsfile.NewValueResolver(ca.Username, ca.UsernameFile, ba.logger, credentialsfile.WithOnChange(onChange))
+		if err != nil {
+			return err
+		}
+		if err := r.Start(ctx); err != nil {
+			return err
+		}
+		ba.usernameResolver = r
+	}
+	if string(ca.Password) != "" || ca.PasswordFile != "" {
+		r, err := credentialsfile.NewValueResolver(string(ca.Password), ca.PasswordFile, ba.logger, credentialsfile.WithOnChange(onChange))
+		if err != nil {
+			return err
+		}
+		if err := r.Start(ctx); err != nil {
+			return err
+		}
+		ba.passwordResolver = r
+	}
+	ba.updateGRPCMetadata()
+	return nil
+}
+
+func (ba *basicAuthClient) Shutdown(_ context.Context) error {
+	var errs []error
+	if ba.usernameResolver != nil {
+		errs = append(errs, ba.usernameResolver.Shutdown())
+	}
+	if ba.passwordResolver != nil {
+		errs = append(errs, ba.passwordResolver.Shutdown())
+	}
+	return errors.Join(errs...)
+}
+
+func (ba *basicAuthClient) username() string {
+	if ba.usernameResolver != nil {
+		return ba.usernameResolver.Value()
+	}
+	if ba.clientAuth != nil {
+		return ba.clientAuth.Username
+	}
+	return ""
+}
+
+func (ba *basicAuthClient) password() string {
+	if ba.passwordResolver != nil {
+		return ba.passwordResolver.Value()
+	}
+	if ba.clientAuth != nil {
+		return string(ba.clientAuth.Password)
+	}
+	return ""
 }
 
 func (ba *basicAuthClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	if strings.Contains(ba.clientAuth.Username, ":") {
+	if strings.Contains(ba.username(), ":") {
 		return nil, errInvalidFormat
 	}
 	return &basicAuthRoundTripper{
-		base:     base,
-		authData: ba.clientAuth,
+		base:   base,
+		client: ba,
 	}, nil
 }
 
 func (ba *basicAuthClient) PerRPCCredentials() (creds.PerRPCCredentials, error) {
-	if strings.Contains(ba.clientAuth.Username, ":") {
+	if strings.Contains(ba.username(), ":") {
 		return nil, errInvalidFormat
 	}
-	encoded := base64.StdEncoding.EncodeToString([]byte(ba.clientAuth.Username + ":" + string(ba.clientAuth.Password)))
-	return &perRPCAuth{
-		metadata: map[string]string{
-			"authorization": fmt.Sprintf("Basic %s", encoded),
-		},
-	}, nil
+	return &perRPCAuth{client: ba}, nil
 }
