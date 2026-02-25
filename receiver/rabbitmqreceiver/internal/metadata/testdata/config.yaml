@@ -3,164 +3,493 @@ all_set:
   metrics:
     rabbitmq.consumer.count:
       enabled: true
+      attributes: []
     rabbitmq.message.acknowledged:
       enabled: true
+      attributes: []
     rabbitmq.message.current:
       enabled: true
+      attributes: ["state"]
     rabbitmq.message.delivered:
       enabled: true
+      attributes: []
     rabbitmq.message.dropped:
       enabled: true
+      attributes: []
     rabbitmq.message.published:
       enabled: true
+      attributes: []
     rabbitmq.node.channel_closed:
       enabled: true
+      attributes: []
     rabbitmq.node.channel_closed_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.channel_created:
       enabled: true
+      attributes: []
     rabbitmq.node.channel_created_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.connection_closed:
       enabled: true
+      attributes: []
     rabbitmq.node.connection_closed_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.connection_created:
       enabled: true
+      attributes: []
     rabbitmq.node.connection_created_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.context_switches:
       enabled: true
+      attributes: []
     rabbitmq.node.context_switches_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.disk_free:
       enabled: true
+      attributes: []
     rabbitmq.node.disk_free_alarm:
       enabled: true
+      attributes: []
     rabbitmq.node.disk_free_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.disk_free_limit:
       enabled: true
+      attributes: []
     rabbitmq.node.fd_total:
       enabled: true
+      attributes: []
     rabbitmq.node.fd_used:
       enabled: true
+      attributes: []
     rabbitmq.node.fd_used_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.gc_bytes_reclaimed:
       enabled: true
+      attributes: []
     rabbitmq.node.gc_bytes_reclaimed_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.gc_num:
       enabled: true
+      attributes: []
     rabbitmq.node.gc_num_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_read_avg_time:
       enabled: true
+      attributes: []
     rabbitmq.node.io_read_avg_time_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_read_bytes:
       enabled: true
+      attributes: []
     rabbitmq.node.io_read_bytes_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_read_count:
       enabled: true
+      attributes: []
     rabbitmq.node.io_read_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_reopen_count:
       enabled: true
+      attributes: []
     rabbitmq.node.io_reopen_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_seek_avg_time:
       enabled: true
+      attributes: []
     rabbitmq.node.io_seek_avg_time_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_seek_count:
       enabled: true
+      attributes: []
     rabbitmq.node.io_seek_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_sync_avg_time:
       enabled: true
+      attributes: []
     rabbitmq.node.io_sync_avg_time_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_sync_count:
       enabled: true
+      attributes: []
     rabbitmq.node.io_sync_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_write_avg_time:
       enabled: true
+      attributes: []
     rabbitmq.node.io_write_avg_time_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_write_bytes:
       enabled: true
+      attributes: []
     rabbitmq.node.io_write_bytes_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.io_write_count:
       enabled: true
+      attributes: []
     rabbitmq.node.io_write_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.mem_alarm:
       enabled: true
+      attributes: []
     rabbitmq.node.mem_limit:
       enabled: true
+      attributes: []
     rabbitmq.node.mem_used:
       enabled: true
+      attributes: []
     rabbitmq.node.mem_used_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.mnesia_disk_tx_count:
       enabled: true
+      attributes: []
     rabbitmq.node.mnesia_disk_tx_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.mnesia_ram_tx_count:
       enabled: true
+      attributes: []
     rabbitmq.node.mnesia_ram_tx_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.msg_store_read_count:
       enabled: true
+      attributes: []
     rabbitmq.node.msg_store_read_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.msg_store_write_count:
       enabled: true
+      attributes: []
     rabbitmq.node.msg_store_write_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.proc_total:
       enabled: true
+      attributes: []
     rabbitmq.node.proc_used:
       enabled: true
+      attributes: []
     rabbitmq.node.proc_used_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.processors:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_created:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_created_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_declared:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_declared_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_deleted:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_deleted_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_index_read_count:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_index_read_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_index_write_count:
       enabled: true
+      attributes: []
     rabbitmq.node.queue_index_write_count_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.run_queue:
       enabled: true
+      attributes: []
     rabbitmq.node.sockets_total:
       enabled: true
+      attributes: []
     rabbitmq.node.sockets_used:
       enabled: true
+      attributes: []
     rabbitmq.node.sockets_used_details.rate:
       enabled: true
+      attributes: []
     rabbitmq.node.uptime:
       enabled: true
+      attributes: []
+  resource_attributes:
+    rabbitmq.node.name:
+      enabled: true
+    rabbitmq.queue.name:
+      enabled: true
+    rabbitmq.vhost.name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    rabbitmq.consumer.count:
+      enabled: true
+      attributes: []
+    rabbitmq.message.acknowledged:
+      enabled: true
+      attributes: []
+    rabbitmq.message.current:
+      enabled: true
+      attributes: ["state"]
+    rabbitmq.message.delivered:
+      enabled: true
+      attributes: []
+    rabbitmq.message.dropped:
+      enabled: true
+      attributes: []
+    rabbitmq.message.published:
+      enabled: true
+      attributes: []
+    rabbitmq.node.channel_closed:
+      enabled: true
+      attributes: []
+    rabbitmq.node.channel_closed_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.channel_created:
+      enabled: true
+      attributes: []
+    rabbitmq.node.channel_created_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.connection_closed:
+      enabled: true
+      attributes: []
+    rabbitmq.node.connection_closed_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.connection_created:
+      enabled: true
+      attributes: []
+    rabbitmq.node.connection_created_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.context_switches:
+      enabled: true
+      attributes: []
+    rabbitmq.node.context_switches_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.disk_free:
+      enabled: true
+      attributes: []
+    rabbitmq.node.disk_free_alarm:
+      enabled: true
+      attributes: []
+    rabbitmq.node.disk_free_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.disk_free_limit:
+      enabled: true
+      attributes: []
+    rabbitmq.node.fd_total:
+      enabled: true
+      attributes: []
+    rabbitmq.node.fd_used:
+      enabled: true
+      attributes: []
+    rabbitmq.node.fd_used_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.gc_bytes_reclaimed:
+      enabled: true
+      attributes: []
+    rabbitmq.node.gc_bytes_reclaimed_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.gc_num:
+      enabled: true
+      attributes: []
+    rabbitmq.node.gc_num_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_read_avg_time:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_read_avg_time_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_read_bytes:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_read_bytes_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_read_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_read_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_reopen_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_reopen_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_seek_avg_time:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_seek_avg_time_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_seek_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_seek_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_sync_avg_time:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_sync_avg_time_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_sync_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_sync_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_write_avg_time:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_write_avg_time_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_write_bytes:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_write_bytes_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_write_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.io_write_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.mem_alarm:
+      enabled: true
+      attributes: []
+    rabbitmq.node.mem_limit:
+      enabled: true
+      attributes: []
+    rabbitmq.node.mem_used:
+      enabled: true
+      attributes: []
+    rabbitmq.node.mem_used_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.mnesia_disk_tx_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.mnesia_disk_tx_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.mnesia_ram_tx_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.mnesia_ram_tx_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.msg_store_read_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.msg_store_read_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.msg_store_write_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.msg_store_write_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.proc_total:
+      enabled: true
+      attributes: []
+    rabbitmq.node.proc_used:
+      enabled: true
+      attributes: []
+    rabbitmq.node.proc_used_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.processors:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_created:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_created_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_declared:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_declared_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_deleted:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_deleted_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_index_read_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_index_read_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_index_write_count:
+      enabled: true
+      attributes: []
+    rabbitmq.node.queue_index_write_count_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.run_queue:
+      enabled: true
+      attributes: []
+    rabbitmq.node.sockets_total:
+      enabled: true
+      attributes: []
+    rabbitmq.node.sockets_used:
+      enabled: true
+      attributes: []
+    rabbitmq.node.sockets_used_details.rate:
+      enabled: true
+      attributes: []
+    rabbitmq.node.uptime:
+      enabled: true
+      attributes: []
   resource_attributes:
     rabbitmq.node.name:
       enabled: true
@@ -172,164 +501,244 @@ none_set:
   metrics:
     rabbitmq.consumer.count:
       enabled: false
+      attributes: []
     rabbitmq.message.acknowledged:
       enabled: false
+      attributes: []
     rabbitmq.message.current:
       enabled: false
+      attributes: ["state"]
     rabbitmq.message.delivered:
       enabled: false
+      attributes: []
     rabbitmq.message.dropped:
       enabled: false
+      attributes: []
     rabbitmq.message.published:
       enabled: false
+      attributes: []
     rabbitmq.node.channel_closed:
       enabled: false
+      attributes: []
     rabbitmq.node.channel_closed_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.channel_created:
       enabled: false
+      attributes: []
     rabbitmq.node.channel_created_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.connection_closed:
       enabled: false
+      attributes: []
     rabbitmq.node.connection_closed_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.connection_created:
       enabled: false
+      attributes: []
     rabbitmq.node.connection_created_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.context_switches:
       enabled: false
+      attributes: []
     rabbitmq.node.context_switches_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.disk_free:
       enabled: false
+      attributes: []
     rabbitmq.node.disk_free_alarm:
       enabled: false
+      attributes: []
     rabbitmq.node.disk_free_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.disk_free_limit:
       enabled: false
+      attributes: []
     rabbitmq.node.fd_total:
       enabled: false
+      attributes: []
     rabbitmq.node.fd_used:
       enabled: false
+      attributes: []
     rabbitmq.node.fd_used_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.gc_bytes_reclaimed:
       enabled: false
+      attributes: []
     rabbitmq.node.gc_bytes_reclaimed_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.gc_num:
       enabled: false
+      attributes: []
     rabbitmq.node.gc_num_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_read_avg_time:
       enabled: false
+      attributes: []
     rabbitmq.node.io_read_avg_time_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_read_bytes:
       enabled: false
+      attributes: []
     rabbitmq.node.io_read_bytes_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_read_count:
       enabled: false
+      attributes: []
     rabbitmq.node.io_read_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_reopen_count:
       enabled: false
+      attributes: []
     rabbitmq.node.io_reopen_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_seek_avg_time:
       enabled: false
+      attributes: []
     rabbitmq.node.io_seek_avg_time_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_seek_count:
       enabled: false
+      attributes: []
     rabbitmq.node.io_seek_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_sync_avg_time:
       enabled: false
+      attributes: []
     rabbitmq.node.io_sync_avg_time_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_sync_count:
       enabled: false
+      attributes: []
     rabbitmq.node.io_sync_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_write_avg_time:
       enabled: false
+      attributes: []
     rabbitmq.node.io_write_avg_time_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_write_bytes:
       enabled: false
+      attributes: []
     rabbitmq.node.io_write_bytes_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.io_write_count:
       enabled: false
+      attributes: []
     rabbitmq.node.io_write_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.mem_alarm:
       enabled: false
+      attributes: []
     rabbitmq.node.mem_limit:
       enabled: false
+      attributes: []
     rabbitmq.node.mem_used:
       enabled: false
+      attributes: []
     rabbitmq.node.mem_used_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.mnesia_disk_tx_count:
       enabled: false
+      attributes: []
     rabbitmq.node.mnesia_disk_tx_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.mnesia_ram_tx_count:
       enabled: false
+      attributes: []
     rabbitmq.node.mnesia_ram_tx_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.msg_store_read_count:
       enabled: false
+      attributes: []
     rabbitmq.node.msg_store_read_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.msg_store_write_count:
       enabled: false
+      attributes: []
     rabbitmq.node.msg_store_write_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.proc_total:
       enabled: false
+      attributes: []
     rabbitmq.node.proc_used:
       enabled: false
+      attributes: []
     rabbitmq.node.proc_used_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.processors:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_created:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_created_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_declared:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_declared_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_deleted:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_deleted_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_index_read_count:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_index_read_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_index_write_count:
       enabled: false
+      attributes: []
     rabbitmq.node.queue_index_write_count_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.run_queue:
       enabled: false
+      attributes: []
     rabbitmq.node.sockets_total:
       enabled: false
+      attributes: []
     rabbitmq.node.sockets_used:
       enabled: false
+      attributes: []
     rabbitmq.node.sockets_used_details.rate:
       enabled: false
+      attributes: []
     rabbitmq.node.uptime:
       enabled: false
+      attributes: []
   resource_attributes:
     rabbitmq.node.name:
       enabled: false

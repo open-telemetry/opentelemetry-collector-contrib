@@ -165,6 +165,8 @@ status:
     active: [VenuEmmadi]
     emeritus: [cpheps]
 
+reaggregation_enabled: true
+
 resource_attributes:
   rabbitmq.node.name:
     description: The name of the RabbitMQ node.
@@ -184,6 +186,7 @@ attributes:
     name_override: state
     description: The state of messages in a queue.
     type: string
+    requirement_level: required
     enum:
       - ready
       - unacknowledged

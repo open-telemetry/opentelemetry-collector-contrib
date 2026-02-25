@@ -3,6 +3,9 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
@@ -11,6 +14,11 @@ import (
 type MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []string `mapstructure:"attributes"`
+	definedAttributes   []string
+	requiredAttributes  []string
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -22,9 +30,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+	for _, val := range ms.EnabledAttributes {
+		if !slices.Contains(ms.definedAttributes, val) {
+			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		}
+	}
+
+	for _, val := range ms.requiredAttributes {
+		if !slices.Contains(ms.EnabledAttributes, val) {
+			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		}
+	}
+
+	if ms.AggregationStrategy != AggregationStrategySum &&
+		ms.AggregationStrategy != AggregationStrategyAvg &&
+		ms.AggregationStrategy != AggregationStrategyMin &&
+		ms.AggregationStrategy != AggregationStrategyMax {
+		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for rabbitmq metrics.
@@ -115,243 +146,643 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		RabbitmqConsumerCount: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqMessageAcknowledged: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqMessageCurrent: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{"state"},
+			definedAttributes:   []string{"state"},
+			EnabledAttributes:   []string{"state"},
 		},
 		RabbitmqMessageDelivered: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqMessageDropped: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqMessagePublished: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeChannelClosed: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeChannelClosedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeChannelCreated: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeChannelCreatedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeConnectionClosed: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeConnectionClosedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeConnectionCreated: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeConnectionCreatedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeContextSwitches: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeContextSwitchesDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeDiskFree: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeDiskFreeAlarm: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeDiskFreeDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeDiskFreeLimit: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeFdTotal: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeFdUsed: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeFdUsedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeGcBytesReclaimed: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeGcBytesReclaimedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeGcNum: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeGcNumDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoReadAvgTime: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoReadAvgTimeDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoReadBytes: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoReadBytesDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoReadCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoReadCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoReopenCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoReopenCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoSeekAvgTime: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoSeekAvgTimeDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoSeekCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoSeekCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoSyncAvgTime: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoSyncAvgTimeDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoSyncCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoSyncCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoWriteAvgTime: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoWriteAvgTimeDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoWriteBytes: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoWriteBytesDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoWriteCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeIoWriteCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMemAlarm: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMemLimit: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMemUsed: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMemUsedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMnesiaDiskTxCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMnesiaDiskTxCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMnesiaRAMTxCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMnesiaRAMTxCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMsgStoreReadCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMsgStoreReadCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMsgStoreWriteCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeMsgStoreWriteCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeProcTotal: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeProcUsed: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeProcUsedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeProcessors: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueCreated: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueCreatedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueDeclared: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueDeclaredDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueDeleted: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueDeletedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueIndexReadCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueIndexReadCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueIndexWriteCount: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeQueueIndexWriteCountDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeRunQueue: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeSocketsTotal: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeSocketsUsed: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeSocketsUsedDetailsRate: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		RabbitmqNodeUptime: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 	}
 }

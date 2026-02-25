@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,92 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["RabbitmqConsumerCount"] = mb.metricRabbitmqConsumerCount.config.AggregationStrategy
+			aggMap["RabbitmqMessageAcknowledged"] = mb.metricRabbitmqMessageAcknowledged.config.AggregationStrategy
+			aggMap["RabbitmqMessageCurrent"] = mb.metricRabbitmqMessageCurrent.config.AggregationStrategy
+			aggMap["RabbitmqMessageDelivered"] = mb.metricRabbitmqMessageDelivered.config.AggregationStrategy
+			aggMap["RabbitmqMessageDropped"] = mb.metricRabbitmqMessageDropped.config.AggregationStrategy
+			aggMap["RabbitmqMessagePublished"] = mb.metricRabbitmqMessagePublished.config.AggregationStrategy
+			aggMap["RabbitmqNodeChannelClosed"] = mb.metricRabbitmqNodeChannelClosed.config.AggregationStrategy
+			aggMap["RabbitmqNodeChannelClosedDetailsRate"] = mb.metricRabbitmqNodeChannelClosedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeChannelCreated"] = mb.metricRabbitmqNodeChannelCreated.config.AggregationStrategy
+			aggMap["RabbitmqNodeChannelCreatedDetailsRate"] = mb.metricRabbitmqNodeChannelCreatedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeConnectionClosed"] = mb.metricRabbitmqNodeConnectionClosed.config.AggregationStrategy
+			aggMap["RabbitmqNodeConnectionClosedDetailsRate"] = mb.metricRabbitmqNodeConnectionClosedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeConnectionCreated"] = mb.metricRabbitmqNodeConnectionCreated.config.AggregationStrategy
+			aggMap["RabbitmqNodeConnectionCreatedDetailsRate"] = mb.metricRabbitmqNodeConnectionCreatedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeContextSwitches"] = mb.metricRabbitmqNodeContextSwitches.config.AggregationStrategy
+			aggMap["RabbitmqNodeContextSwitchesDetailsRate"] = mb.metricRabbitmqNodeContextSwitchesDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeDiskFree"] = mb.metricRabbitmqNodeDiskFree.config.AggregationStrategy
+			aggMap["RabbitmqNodeDiskFreeAlarm"] = mb.metricRabbitmqNodeDiskFreeAlarm.config.AggregationStrategy
+			aggMap["RabbitmqNodeDiskFreeDetailsRate"] = mb.metricRabbitmqNodeDiskFreeDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeDiskFreeLimit"] = mb.metricRabbitmqNodeDiskFreeLimit.config.AggregationStrategy
+			aggMap["RabbitmqNodeFdTotal"] = mb.metricRabbitmqNodeFdTotal.config.AggregationStrategy
+			aggMap["RabbitmqNodeFdUsed"] = mb.metricRabbitmqNodeFdUsed.config.AggregationStrategy
+			aggMap["RabbitmqNodeFdUsedDetailsRate"] = mb.metricRabbitmqNodeFdUsedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeGcBytesReclaimed"] = mb.metricRabbitmqNodeGcBytesReclaimed.config.AggregationStrategy
+			aggMap["RabbitmqNodeGcBytesReclaimedDetailsRate"] = mb.metricRabbitmqNodeGcBytesReclaimedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeGcNum"] = mb.metricRabbitmqNodeGcNum.config.AggregationStrategy
+			aggMap["RabbitmqNodeGcNumDetailsRate"] = mb.metricRabbitmqNodeGcNumDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoReadAvgTime"] = mb.metricRabbitmqNodeIoReadAvgTime.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoReadAvgTimeDetailsRate"] = mb.metricRabbitmqNodeIoReadAvgTimeDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoReadBytes"] = mb.metricRabbitmqNodeIoReadBytes.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoReadBytesDetailsRate"] = mb.metricRabbitmqNodeIoReadBytesDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoReadCount"] = mb.metricRabbitmqNodeIoReadCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoReadCountDetailsRate"] = mb.metricRabbitmqNodeIoReadCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoReopenCount"] = mb.metricRabbitmqNodeIoReopenCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoReopenCountDetailsRate"] = mb.metricRabbitmqNodeIoReopenCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoSeekAvgTime"] = mb.metricRabbitmqNodeIoSeekAvgTime.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoSeekAvgTimeDetailsRate"] = mb.metricRabbitmqNodeIoSeekAvgTimeDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoSeekCount"] = mb.metricRabbitmqNodeIoSeekCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoSeekCountDetailsRate"] = mb.metricRabbitmqNodeIoSeekCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoSyncAvgTime"] = mb.metricRabbitmqNodeIoSyncAvgTime.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoSyncAvgTimeDetailsRate"] = mb.metricRabbitmqNodeIoSyncAvgTimeDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoSyncCount"] = mb.metricRabbitmqNodeIoSyncCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoSyncCountDetailsRate"] = mb.metricRabbitmqNodeIoSyncCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoWriteAvgTime"] = mb.metricRabbitmqNodeIoWriteAvgTime.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoWriteAvgTimeDetailsRate"] = mb.metricRabbitmqNodeIoWriteAvgTimeDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoWriteBytes"] = mb.metricRabbitmqNodeIoWriteBytes.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoWriteBytesDetailsRate"] = mb.metricRabbitmqNodeIoWriteBytesDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoWriteCount"] = mb.metricRabbitmqNodeIoWriteCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeIoWriteCountDetailsRate"] = mb.metricRabbitmqNodeIoWriteCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeMemAlarm"] = mb.metricRabbitmqNodeMemAlarm.config.AggregationStrategy
+			aggMap["RabbitmqNodeMemLimit"] = mb.metricRabbitmqNodeMemLimit.config.AggregationStrategy
+			aggMap["RabbitmqNodeMemUsed"] = mb.metricRabbitmqNodeMemUsed.config.AggregationStrategy
+			aggMap["RabbitmqNodeMemUsedDetailsRate"] = mb.metricRabbitmqNodeMemUsedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeMnesiaDiskTxCount"] = mb.metricRabbitmqNodeMnesiaDiskTxCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeMnesiaDiskTxCountDetailsRate"] = mb.metricRabbitmqNodeMnesiaDiskTxCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeMnesiaRAMTxCount"] = mb.metricRabbitmqNodeMnesiaRAMTxCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeMnesiaRAMTxCountDetailsRate"] = mb.metricRabbitmqNodeMnesiaRAMTxCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeMsgStoreReadCount"] = mb.metricRabbitmqNodeMsgStoreReadCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeMsgStoreReadCountDetailsRate"] = mb.metricRabbitmqNodeMsgStoreReadCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeMsgStoreWriteCount"] = mb.metricRabbitmqNodeMsgStoreWriteCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeMsgStoreWriteCountDetailsRate"] = mb.metricRabbitmqNodeMsgStoreWriteCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeProcTotal"] = mb.metricRabbitmqNodeProcTotal.config.AggregationStrategy
+			aggMap["RabbitmqNodeProcUsed"] = mb.metricRabbitmqNodeProcUsed.config.AggregationStrategy
+			aggMap["RabbitmqNodeProcUsedDetailsRate"] = mb.metricRabbitmqNodeProcUsedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeProcessors"] = mb.metricRabbitmqNodeProcessors.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueCreated"] = mb.metricRabbitmqNodeQueueCreated.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueCreatedDetailsRate"] = mb.metricRabbitmqNodeQueueCreatedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueDeclared"] = mb.metricRabbitmqNodeQueueDeclared.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueDeclaredDetailsRate"] = mb.metricRabbitmqNodeQueueDeclaredDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueDeleted"] = mb.metricRabbitmqNodeQueueDeleted.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueDeletedDetailsRate"] = mb.metricRabbitmqNodeQueueDeletedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueIndexReadCount"] = mb.metricRabbitmqNodeQueueIndexReadCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueIndexReadCountDetailsRate"] = mb.metricRabbitmqNodeQueueIndexReadCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueIndexWriteCount"] = mb.metricRabbitmqNodeQueueIndexWriteCount.config.AggregationStrategy
+			aggMap["RabbitmqNodeQueueIndexWriteCountDetailsRate"] = mb.metricRabbitmqNodeQueueIndexWriteCountDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeRunQueue"] = mb.metricRabbitmqNodeRunQueue.config.AggregationStrategy
+			aggMap["RabbitmqNodeSocketsTotal"] = mb.metricRabbitmqNodeSocketsTotal.config.AggregationStrategy
+			aggMap["RabbitmqNodeSocketsUsed"] = mb.metricRabbitmqNodeSocketsUsed.config.AggregationStrategy
+			aggMap["RabbitmqNodeSocketsUsedDetailsRate"] = mb.metricRabbitmqNodeSocketsUsedDetailsRate.config.AggregationStrategy
+			aggMap["RabbitmqNodeUptime"] = mb.metricRabbitmqNodeUptime.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,248 +159,488 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqConsumerCountDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageStateReady)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqMessageCurrentDataPoint(ts, 3, AttributeMessageStateReady)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageDeliveredDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqMessageDeliveredDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessageDroppedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqMessageDroppedDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqMessagePublishedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeChannelClosedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeChannelClosedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeChannelClosedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeChannelClosedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeChannelCreatedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeChannelCreatedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeChannelCreatedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeChannelCreatedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeConnectionClosedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeConnectionClosedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeConnectionClosedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeConnectionClosedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeConnectionCreatedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeConnectionCreatedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeConnectionCreatedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeConnectionCreatedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeContextSwitchesDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeContextSwitchesDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeContextSwitchesDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeContextSwitchesDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeDiskFreeDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeDiskFreeDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeDiskFreeAlarmDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeDiskFreeAlarmDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeDiskFreeDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeDiskFreeDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeDiskFreeLimitDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeDiskFreeLimitDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeFdTotalDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeFdTotalDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeFdUsedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeFdUsedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeFdUsedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeFdUsedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeGcBytesReclaimedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeGcBytesReclaimedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeGcBytesReclaimedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeGcBytesReclaimedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeGcNumDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeGcNumDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeGcNumDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeGcNumDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoReadAvgTimeDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoReadAvgTimeDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoReadAvgTimeDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoReadAvgTimeDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoReadBytesDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoReadBytesDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoReadBytesDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoReadBytesDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoReadCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoReadCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoReadCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoReadCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoReopenCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoReopenCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoReopenCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoReopenCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoSeekAvgTimeDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoSeekAvgTimeDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoSeekAvgTimeDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoSeekAvgTimeDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoSeekCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoSeekCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoSeekCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoSeekCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoSyncAvgTimeDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoSyncAvgTimeDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoSyncAvgTimeDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoSyncAvgTimeDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoSyncCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoSyncCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoSyncCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoSyncCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoWriteAvgTimeDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoWriteAvgTimeDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoWriteAvgTimeDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoWriteAvgTimeDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoWriteBytesDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoWriteBytesDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoWriteBytesDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoWriteBytesDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoWriteCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoWriteCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeIoWriteCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeIoWriteCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMemAlarmDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMemAlarmDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMemLimitDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMemLimitDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMemUsedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMemUsedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMemUsedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMemUsedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMnesiaDiskTxCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMnesiaDiskTxCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMnesiaDiskTxCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMnesiaDiskTxCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMnesiaRAMTxCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMnesiaRAMTxCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMnesiaRAMTxCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMnesiaRAMTxCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMsgStoreReadCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMsgStoreReadCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMsgStoreReadCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMsgStoreReadCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMsgStoreWriteCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMsgStoreWriteCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMsgStoreWriteCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeMsgStoreWriteCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeProcTotalDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeProcTotalDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeProcUsedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeProcUsedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeProcUsedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeProcUsedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeProcessorsDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeProcessorsDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueCreatedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueCreatedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueCreatedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueCreatedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueDeclaredDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueDeclaredDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueDeclaredDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueDeclaredDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueDeletedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueDeletedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueDeletedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueDeletedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueIndexReadCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueIndexReadCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueIndexReadCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueIndexReadCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueIndexWriteCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueIndexWriteCountDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeQueueIndexWriteCountDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeQueueIndexWriteCountDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeRunQueueDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeRunQueueDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeSocketsTotalDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeSocketsTotalDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeSocketsUsedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeSocketsUsedDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeSocketsUsedDetailsRateDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeSocketsUsedDetailsRateDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordRabbitmqNodeUptimeDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqNodeUptimeDataPoint(ts, 3)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
@@ -319,6 +648,88 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetRabbitmqVhostName("rabbitmq.vhost.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricRabbitmqConsumerCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqMessageAcknowledged.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqMessageCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqMessageDelivered.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqMessageDropped.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqMessagePublished.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeChannelClosed.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeChannelClosedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeChannelCreated.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeChannelCreatedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeConnectionClosed.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeConnectionClosedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeConnectionCreated.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeConnectionCreatedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeContextSwitches.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeContextSwitchesDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeDiskFree.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeDiskFreeAlarm.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeDiskFreeDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeDiskFreeLimit.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeFdTotal.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeFdUsed.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeFdUsedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeGcBytesReclaimed.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeGcBytesReclaimedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeGcNum.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeGcNumDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoReadAvgTime.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoReadAvgTimeDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoReadBytes.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoReadBytesDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoReadCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoReadCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoReopenCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoReopenCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoSeekAvgTime.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoSeekAvgTimeDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoSeekCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoSeekCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoSyncAvgTime.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoSyncAvgTimeDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoSyncCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoSyncCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoWriteAvgTime.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoWriteAvgTimeDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoWriteBytes.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoWriteBytesDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoWriteCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeIoWriteCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMemAlarm.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMemLimit.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMemUsed.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMemUsedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMnesiaDiskTxCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMnesiaDiskTxCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMnesiaRAMTxCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMnesiaRAMTxCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMsgStoreReadCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMsgStoreReadCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMsgStoreWriteCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeMsgStoreWriteCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeProcTotal.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeProcUsed.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeProcUsedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeProcessors.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueCreated.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueCreatedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueDeclared.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueDeclaredDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueDeleted.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueDeletedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueIndexReadCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueIndexReadCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueIndexWriteCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeQueueIndexWriteCountDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeRunQueue.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeSocketsTotal.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeSocketsUsed.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeSocketsUsedDetailsRate.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqNodeUptime.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -340,1128 +751,3130 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "rabbitmq.consumer.count":
-					assert.False(t, validatedMetrics["rabbitmq.consumer.count"], "Found a duplicate in the metrics slice: rabbitmq.consumer.count")
-					validatedMetrics["rabbitmq.consumer.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of consumers currently reading from the queue.", ms.At(i).Description())
-					assert.Equal(t, "{consumers}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.consumer.count"], "Found a duplicate in the metrics slice: rabbitmq.consumer.count")
+						validatedMetrics["rabbitmq.consumer.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of consumers currently reading from the queue.", ms.At(i).Description())
+						assert.Equal(t, "{consumers}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.consumer.count"], "Found a duplicate in the metrics slice: rabbitmq.consumer.count")
+						validatedMetrics["rabbitmq.consumer.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of consumers currently reading from the queue.", ms.At(i).Description())
+						assert.Equal(t, "{consumers}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.consumer.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.message.acknowledged":
-					assert.False(t, validatedMetrics["rabbitmq.message.acknowledged"], "Found a duplicate in the metrics slice: rabbitmq.message.acknowledged")
-					validatedMetrics["rabbitmq.message.acknowledged"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of messages acknowledged by consumers.", ms.At(i).Description())
-					assert.Equal(t, "{messages}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.message.acknowledged"], "Found a duplicate in the metrics slice: rabbitmq.message.acknowledged")
+						validatedMetrics["rabbitmq.message.acknowledged"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of messages acknowledged by consumers.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.message.acknowledged"], "Found a duplicate in the metrics slice: rabbitmq.message.acknowledged")
+						validatedMetrics["rabbitmq.message.acknowledged"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of messages acknowledged by consumers.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.message.acknowledged"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.message.current":
-					assert.False(t, validatedMetrics["rabbitmq.message.current"], "Found a duplicate in the metrics slice: rabbitmq.message.current")
-					validatedMetrics["rabbitmq.message.current"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total number of messages currently in the queue.", ms.At(i).Description())
-					assert.Equal(t, "{messages}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "ready", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.message.current"], "Found a duplicate in the metrics slice: rabbitmq.message.current")
+						validatedMetrics["rabbitmq.message.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The total number of messages currently in the queue.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "ready", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.message.current"], "Found a duplicate in the metrics slice: rabbitmq.message.current")
+						validatedMetrics["rabbitmq.message.current"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The total number of messages currently in the queue.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.message.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+					}
 				case "rabbitmq.message.delivered":
-					assert.False(t, validatedMetrics["rabbitmq.message.delivered"], "Found a duplicate in the metrics slice: rabbitmq.message.delivered")
-					validatedMetrics["rabbitmq.message.delivered"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of messages delivered to consumers.", ms.At(i).Description())
-					assert.Equal(t, "{messages}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.message.delivered"], "Found a duplicate in the metrics slice: rabbitmq.message.delivered")
+						validatedMetrics["rabbitmq.message.delivered"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of messages delivered to consumers.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.message.delivered"], "Found a duplicate in the metrics slice: rabbitmq.message.delivered")
+						validatedMetrics["rabbitmq.message.delivered"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of messages delivered to consumers.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.message.delivered"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.message.dropped":
-					assert.False(t, validatedMetrics["rabbitmq.message.dropped"], "Found a duplicate in the metrics slice: rabbitmq.message.dropped")
-					validatedMetrics["rabbitmq.message.dropped"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of messages dropped as unroutable.", ms.At(i).Description())
-					assert.Equal(t, "{messages}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.message.dropped"], "Found a duplicate in the metrics slice: rabbitmq.message.dropped")
+						validatedMetrics["rabbitmq.message.dropped"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of messages dropped as unroutable.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.message.dropped"], "Found a duplicate in the metrics slice: rabbitmq.message.dropped")
+						validatedMetrics["rabbitmq.message.dropped"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of messages dropped as unroutable.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.message.dropped"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.message.published":
-					assert.False(t, validatedMetrics["rabbitmq.message.published"], "Found a duplicate in the metrics slice: rabbitmq.message.published")
-					validatedMetrics["rabbitmq.message.published"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of messages published to a queue.", ms.At(i).Description())
-					assert.Equal(t, "{messages}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.message.published"], "Found a duplicate in the metrics slice: rabbitmq.message.published")
+						validatedMetrics["rabbitmq.message.published"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of messages published to a queue.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.message.published"], "Found a duplicate in the metrics slice: rabbitmq.message.published")
+						validatedMetrics["rabbitmq.message.published"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of messages published to a queue.", ms.At(i).Description())
+						assert.Equal(t, "{messages}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.message.published"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.channel_closed":
-					assert.False(t, validatedMetrics["rabbitmq.node.channel_closed"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_closed")
-					validatedMetrics["rabbitmq.node.channel_closed"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of channels closed.", ms.At(i).Description())
-					assert.Equal(t, "{channels}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.channel_closed"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_closed")
+						validatedMetrics["rabbitmq.node.channel_closed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of channels closed.", ms.At(i).Description())
+						assert.Equal(t, "{channels}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.channel_closed"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_closed")
+						validatedMetrics["rabbitmq.node.channel_closed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of channels closed.", ms.At(i).Description())
+						assert.Equal(t, "{channels}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.channel_closed"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.channel_closed_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.channel_closed_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_closed_details.rate")
-					validatedMetrics["rabbitmq.node.channel_closed_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of channels closed.", ms.At(i).Description())
-					assert.Equal(t, "{channels}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.channel_closed_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_closed_details.rate")
+						validatedMetrics["rabbitmq.node.channel_closed_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of channels closed.", ms.At(i).Description())
+						assert.Equal(t, "{channels}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.channel_closed_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_closed_details.rate")
+						validatedMetrics["rabbitmq.node.channel_closed_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of channels closed.", ms.At(i).Description())
+						assert.Equal(t, "{channels}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.channel_closed_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.channel_created":
-					assert.False(t, validatedMetrics["rabbitmq.node.channel_created"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_created")
-					validatedMetrics["rabbitmq.node.channel_created"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of channels created.", ms.At(i).Description())
-					assert.Equal(t, "{channels}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.channel_created"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_created")
+						validatedMetrics["rabbitmq.node.channel_created"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of channels created.", ms.At(i).Description())
+						assert.Equal(t, "{channels}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.channel_created"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_created")
+						validatedMetrics["rabbitmq.node.channel_created"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of channels created.", ms.At(i).Description())
+						assert.Equal(t, "{channels}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.channel_created"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.channel_created_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.channel_created_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_created_details.rate")
-					validatedMetrics["rabbitmq.node.channel_created_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of channels created.", ms.At(i).Description())
-					assert.Equal(t, "{channels}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.channel_created_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_created_details.rate")
+						validatedMetrics["rabbitmq.node.channel_created_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of channels created.", ms.At(i).Description())
+						assert.Equal(t, "{channels}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.channel_created_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.channel_created_details.rate")
+						validatedMetrics["rabbitmq.node.channel_created_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of channels created.", ms.At(i).Description())
+						assert.Equal(t, "{channels}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.channel_created_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.connection_closed":
-					assert.False(t, validatedMetrics["rabbitmq.node.connection_closed"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_closed")
-					validatedMetrics["rabbitmq.node.connection_closed"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of connections closed.", ms.At(i).Description())
-					assert.Equal(t, "{connections}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.connection_closed"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_closed")
+						validatedMetrics["rabbitmq.node.connection_closed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of connections closed.", ms.At(i).Description())
+						assert.Equal(t, "{connections}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.connection_closed"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_closed")
+						validatedMetrics["rabbitmq.node.connection_closed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of connections closed.", ms.At(i).Description())
+						assert.Equal(t, "{connections}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.connection_closed"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.connection_closed_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.connection_closed_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_closed_details.rate")
-					validatedMetrics["rabbitmq.node.connection_closed_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of connections closed.", ms.At(i).Description())
-					assert.Equal(t, "{connections}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.connection_closed_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_closed_details.rate")
+						validatedMetrics["rabbitmq.node.connection_closed_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of connections closed.", ms.At(i).Description())
+						assert.Equal(t, "{connections}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.connection_closed_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_closed_details.rate")
+						validatedMetrics["rabbitmq.node.connection_closed_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of connections closed.", ms.At(i).Description())
+						assert.Equal(t, "{connections}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.connection_closed_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.connection_created":
-					assert.False(t, validatedMetrics["rabbitmq.node.connection_created"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_created")
-					validatedMetrics["rabbitmq.node.connection_created"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of connections created.", ms.At(i).Description())
-					assert.Equal(t, "{connections}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.connection_created"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_created")
+						validatedMetrics["rabbitmq.node.connection_created"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of connections created.", ms.At(i).Description())
+						assert.Equal(t, "{connections}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.connection_created"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_created")
+						validatedMetrics["rabbitmq.node.connection_created"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of connections created.", ms.At(i).Description())
+						assert.Equal(t, "{connections}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.connection_created"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.connection_created_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.connection_created_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_created_details.rate")
-					validatedMetrics["rabbitmq.node.connection_created_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of connections created.", ms.At(i).Description())
-					assert.Equal(t, "{connections}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.connection_created_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_created_details.rate")
+						validatedMetrics["rabbitmq.node.connection_created_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of connections created.", ms.At(i).Description())
+						assert.Equal(t, "{connections}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.connection_created_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.connection_created_details.rate")
+						validatedMetrics["rabbitmq.node.connection_created_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of connections created.", ms.At(i).Description())
+						assert.Equal(t, "{connections}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.connection_created_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.context_switches":
-					assert.False(t, validatedMetrics["rabbitmq.node.context_switches"], "Found a duplicate in the metrics slice: rabbitmq.node.context_switches")
-					validatedMetrics["rabbitmq.node.context_switches"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of context switches.", ms.At(i).Description())
-					assert.Equal(t, "{switches}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.context_switches"], "Found a duplicate in the metrics slice: rabbitmq.node.context_switches")
+						validatedMetrics["rabbitmq.node.context_switches"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of context switches.", ms.At(i).Description())
+						assert.Equal(t, "{switches}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.context_switches"], "Found a duplicate in the metrics slice: rabbitmq.node.context_switches")
+						validatedMetrics["rabbitmq.node.context_switches"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of context switches.", ms.At(i).Description())
+						assert.Equal(t, "{switches}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.context_switches"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.context_switches_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.context_switches_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.context_switches_details.rate")
-					validatedMetrics["rabbitmq.node.context_switches_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of context switches.", ms.At(i).Description())
-					assert.Equal(t, "{switches}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.context_switches_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.context_switches_details.rate")
+						validatedMetrics["rabbitmq.node.context_switches_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of context switches.", ms.At(i).Description())
+						assert.Equal(t, "{switches}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.context_switches_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.context_switches_details.rate")
+						validatedMetrics["rabbitmq.node.context_switches_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of context switches.", ms.At(i).Description())
+						assert.Equal(t, "{switches}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.context_switches_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.disk_free":
-					assert.False(t, validatedMetrics["rabbitmq.node.disk_free"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free")
-					validatedMetrics["rabbitmq.node.disk_free"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Free disk space on the node.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.disk_free"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free")
+						validatedMetrics["rabbitmq.node.disk_free"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Free disk space on the node.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.disk_free"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free")
+						validatedMetrics["rabbitmq.node.disk_free"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Free disk space on the node.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.disk_free"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.disk_free_alarm":
-					assert.False(t, validatedMetrics["rabbitmq.node.disk_free_alarm"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free_alarm")
-					validatedMetrics["rabbitmq.node.disk_free_alarm"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Whether disk usage has triggered an alarm.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.disk_free_alarm"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free_alarm")
+						validatedMetrics["rabbitmq.node.disk_free_alarm"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Whether disk usage has triggered an alarm.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.disk_free_alarm"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free_alarm")
+						validatedMetrics["rabbitmq.node.disk_free_alarm"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Whether disk usage has triggered an alarm.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.disk_free_alarm"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.disk_free_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.disk_free_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free_details.rate")
-					validatedMetrics["rabbitmq.node.disk_free_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of disk usage change.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.disk_free_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free_details.rate")
+						validatedMetrics["rabbitmq.node.disk_free_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of disk usage change.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.disk_free_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free_details.rate")
+						validatedMetrics["rabbitmq.node.disk_free_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of disk usage change.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.disk_free_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.disk_free_limit":
-					assert.False(t, validatedMetrics["rabbitmq.node.disk_free_limit"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free_limit")
-					validatedMetrics["rabbitmq.node.disk_free_limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Minimum required free disk space before alarm.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.disk_free_limit"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free_limit")
+						validatedMetrics["rabbitmq.node.disk_free_limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Minimum required free disk space before alarm.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.disk_free_limit"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free_limit")
+						validatedMetrics["rabbitmq.node.disk_free_limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Minimum required free disk space before alarm.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.disk_free_limit"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.fd_total":
-					assert.False(t, validatedMetrics["rabbitmq.node.fd_total"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_total")
-					validatedMetrics["rabbitmq.node.fd_total"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Maximum number of file descriptors available.", ms.At(i).Description())
-					assert.Equal(t, "{fd}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.fd_total"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_total")
+						validatedMetrics["rabbitmq.node.fd_total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Maximum number of file descriptors available.", ms.At(i).Description())
+						assert.Equal(t, "{fd}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.fd_total"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_total")
+						validatedMetrics["rabbitmq.node.fd_total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Maximum number of file descriptors available.", ms.At(i).Description())
+						assert.Equal(t, "{fd}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.fd_total"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.fd_used":
-					assert.False(t, validatedMetrics["rabbitmq.node.fd_used"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_used")
-					validatedMetrics["rabbitmq.node.fd_used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of file descriptors used.", ms.At(i).Description())
-					assert.Equal(t, "{fd}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.fd_used"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_used")
+						validatedMetrics["rabbitmq.node.fd_used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of file descriptors used.", ms.At(i).Description())
+						assert.Equal(t, "{fd}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.fd_used"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_used")
+						validatedMetrics["rabbitmq.node.fd_used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of file descriptors used.", ms.At(i).Description())
+						assert.Equal(t, "{fd}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.fd_used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.fd_used_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.fd_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_used_details.rate")
-					validatedMetrics["rabbitmq.node.fd_used_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of file descriptor usage.", ms.At(i).Description())
-					assert.Equal(t, "{fd}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.fd_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_used_details.rate")
+						validatedMetrics["rabbitmq.node.fd_used_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of file descriptor usage.", ms.At(i).Description())
+						assert.Equal(t, "{fd}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.fd_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_used_details.rate")
+						validatedMetrics["rabbitmq.node.fd_used_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of file descriptor usage.", ms.At(i).Description())
+						assert.Equal(t, "{fd}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.fd_used_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.gc_bytes_reclaimed":
-					assert.False(t, validatedMetrics["rabbitmq.node.gc_bytes_reclaimed"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_bytes_reclaimed")
-					validatedMetrics["rabbitmq.node.gc_bytes_reclaimed"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes reclaimed by garbage collection.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.gc_bytes_reclaimed"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_bytes_reclaimed")
+						validatedMetrics["rabbitmq.node.gc_bytes_reclaimed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes reclaimed by garbage collection.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.gc_bytes_reclaimed"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_bytes_reclaimed")
+						validatedMetrics["rabbitmq.node.gc_bytes_reclaimed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes reclaimed by garbage collection.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.gc_bytes_reclaimed"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.gc_bytes_reclaimed_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.gc_bytes_reclaimed_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_bytes_reclaimed_details.rate")
-					validatedMetrics["rabbitmq.node.gc_bytes_reclaimed_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of bytes reclaimed by GC.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.gc_bytes_reclaimed_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_bytes_reclaimed_details.rate")
+						validatedMetrics["rabbitmq.node.gc_bytes_reclaimed_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of bytes reclaimed by GC.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.gc_bytes_reclaimed_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_bytes_reclaimed_details.rate")
+						validatedMetrics["rabbitmq.node.gc_bytes_reclaimed_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of bytes reclaimed by GC.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.gc_bytes_reclaimed_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.gc_num":
-					assert.False(t, validatedMetrics["rabbitmq.node.gc_num"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_num")
-					validatedMetrics["rabbitmq.node.gc_num"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of garbage collections.", ms.At(i).Description())
-					assert.Equal(t, "{collections}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.gc_num"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_num")
+						validatedMetrics["rabbitmq.node.gc_num"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of garbage collections.", ms.At(i).Description())
+						assert.Equal(t, "{collections}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.gc_num"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_num")
+						validatedMetrics["rabbitmq.node.gc_num"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of garbage collections.", ms.At(i).Description())
+						assert.Equal(t, "{collections}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.gc_num"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.gc_num_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.gc_num_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_num_details.rate")
-					validatedMetrics["rabbitmq.node.gc_num_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of garbage collections.", ms.At(i).Description())
-					assert.Equal(t, "{collections}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.gc_num_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_num_details.rate")
+						validatedMetrics["rabbitmq.node.gc_num_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of garbage collections.", ms.At(i).Description())
+						assert.Equal(t, "{collections}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.gc_num_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.gc_num_details.rate")
+						validatedMetrics["rabbitmq.node.gc_num_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of garbage collections.", ms.At(i).Description())
+						assert.Equal(t, "{collections}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.gc_num_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_read_avg_time":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_read_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_avg_time")
-					validatedMetrics["rabbitmq.node.io_read_avg_time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Average read time in microseconds.", ms.At(i).Description())
-					assert.Equal(t, "{microseconds}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_avg_time")
+						validatedMetrics["rabbitmq.node.io_read_avg_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Average read time in microseconds.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_avg_time")
+						validatedMetrics["rabbitmq.node.io_read_avg_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Average read time in microseconds.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_read_avg_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_read_avg_time_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_read_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_avg_time_details.rate")
-					validatedMetrics["rabbitmq.node.io_read_avg_time_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of change of average read time.", ms.At(i).Description())
-					assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_avg_time_details.rate")
+						validatedMetrics["rabbitmq.node.io_read_avg_time_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of change of average read time.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_avg_time_details.rate")
+						validatedMetrics["rabbitmq.node.io_read_avg_time_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of change of average read time.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_read_avg_time_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_read_bytes":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_read_bytes"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_bytes")
-					validatedMetrics["rabbitmq.node.io_read_bytes"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total bytes read.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_bytes"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_bytes")
+						validatedMetrics["rabbitmq.node.io_read_bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total bytes read.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_bytes"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_bytes")
+						validatedMetrics["rabbitmq.node.io_read_bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total bytes read.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_read_bytes"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.io_read_bytes_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_read_bytes_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_bytes_details.rate")
-					validatedMetrics["rabbitmq.node.io_read_bytes_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of bytes read.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_bytes_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_bytes_details.rate")
+						validatedMetrics["rabbitmq.node.io_read_bytes_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of bytes read.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_bytes_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_bytes_details.rate")
+						validatedMetrics["rabbitmq.node.io_read_bytes_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of bytes read.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_read_bytes_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_read_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_read_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_count")
-					validatedMetrics["rabbitmq.node.io_read_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of read operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_count")
+						validatedMetrics["rabbitmq.node.io_read_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of read operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_count")
+						validatedMetrics["rabbitmq.node.io_read_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of read operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_read_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.io_read_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_read_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_count_details.rate")
-					validatedMetrics["rabbitmq.node.io_read_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of read operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_read_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of read operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_read_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_read_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_read_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of read operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_read_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_reopen_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_reopen_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_reopen_count")
-					validatedMetrics["rabbitmq.node.io_reopen_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of file reopen operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_reopen_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_reopen_count")
+						validatedMetrics["rabbitmq.node.io_reopen_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of file reopen operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_reopen_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_reopen_count")
+						validatedMetrics["rabbitmq.node.io_reopen_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of file reopen operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_reopen_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.io_reopen_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_reopen_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_reopen_count_details.rate")
-					validatedMetrics["rabbitmq.node.io_reopen_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of file reopen operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_reopen_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_reopen_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_reopen_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of file reopen operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_reopen_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_reopen_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_reopen_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of file reopen operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_reopen_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_seek_avg_time":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_seek_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_avg_time")
-					validatedMetrics["rabbitmq.node.io_seek_avg_time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Average seek time in microseconds.", ms.At(i).Description())
-					assert.Equal(t, "{microseconds}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_seek_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_avg_time")
+						validatedMetrics["rabbitmq.node.io_seek_avg_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Average seek time in microseconds.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_seek_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_avg_time")
+						validatedMetrics["rabbitmq.node.io_seek_avg_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Average seek time in microseconds.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_seek_avg_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_seek_avg_time_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_seek_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_avg_time_details.rate")
-					validatedMetrics["rabbitmq.node.io_seek_avg_time_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of change of average seek time.", ms.At(i).Description())
-					assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_seek_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_avg_time_details.rate")
+						validatedMetrics["rabbitmq.node.io_seek_avg_time_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of change of average seek time.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_seek_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_avg_time_details.rate")
+						validatedMetrics["rabbitmq.node.io_seek_avg_time_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of change of average seek time.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_seek_avg_time_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_seek_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_seek_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_count")
-					validatedMetrics["rabbitmq.node.io_seek_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of seek operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_seek_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_count")
+						validatedMetrics["rabbitmq.node.io_seek_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of seek operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_seek_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_count")
+						validatedMetrics["rabbitmq.node.io_seek_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of seek operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_seek_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.io_seek_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_seek_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_count_details.rate")
-					validatedMetrics["rabbitmq.node.io_seek_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of seek operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_seek_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_seek_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of seek operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_seek_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_seek_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_seek_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of seek operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_seek_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_sync_avg_time":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_sync_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_avg_time")
-					validatedMetrics["rabbitmq.node.io_sync_avg_time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Average sync time in microseconds.", ms.At(i).Description())
-					assert.Equal(t, "{microseconds}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_sync_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_avg_time")
+						validatedMetrics["rabbitmq.node.io_sync_avg_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Average sync time in microseconds.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_sync_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_avg_time")
+						validatedMetrics["rabbitmq.node.io_sync_avg_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Average sync time in microseconds.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_sync_avg_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_sync_avg_time_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_sync_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_avg_time_details.rate")
-					validatedMetrics["rabbitmq.node.io_sync_avg_time_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of change of average sync time.", ms.At(i).Description())
-					assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_sync_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_avg_time_details.rate")
+						validatedMetrics["rabbitmq.node.io_sync_avg_time_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of change of average sync time.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_sync_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_avg_time_details.rate")
+						validatedMetrics["rabbitmq.node.io_sync_avg_time_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of change of average sync time.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_sync_avg_time_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_sync_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_sync_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_count")
-					validatedMetrics["rabbitmq.node.io_sync_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of sync operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_sync_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_count")
+						validatedMetrics["rabbitmq.node.io_sync_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of sync operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_sync_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_count")
+						validatedMetrics["rabbitmq.node.io_sync_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of sync operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_sync_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.io_sync_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_sync_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_count_details.rate")
-					validatedMetrics["rabbitmq.node.io_sync_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of sync operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_sync_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_sync_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of sync operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_sync_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_sync_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_sync_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of sync operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_sync_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_write_avg_time":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_write_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_avg_time")
-					validatedMetrics["rabbitmq.node.io_write_avg_time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Average write time in microseconds.", ms.At(i).Description())
-					assert.Equal(t, "{microseconds}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_avg_time")
+						validatedMetrics["rabbitmq.node.io_write_avg_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Average write time in microseconds.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_avg_time"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_avg_time")
+						validatedMetrics["rabbitmq.node.io_write_avg_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Average write time in microseconds.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_write_avg_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_write_avg_time_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_write_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_avg_time_details.rate")
-					validatedMetrics["rabbitmq.node.io_write_avg_time_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of change of average write time.", ms.At(i).Description())
-					assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_avg_time_details.rate")
+						validatedMetrics["rabbitmq.node.io_write_avg_time_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of change of average write time.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_avg_time_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_avg_time_details.rate")
+						validatedMetrics["rabbitmq.node.io_write_avg_time_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of change of average write time.", ms.At(i).Description())
+						assert.Equal(t, "{microseconds}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_write_avg_time_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_write_bytes":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_write_bytes"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_bytes")
-					validatedMetrics["rabbitmq.node.io_write_bytes"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total bytes written.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_bytes"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_bytes")
+						validatedMetrics["rabbitmq.node.io_write_bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total bytes written.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_bytes"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_bytes")
+						validatedMetrics["rabbitmq.node.io_write_bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total bytes written.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_write_bytes"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.io_write_bytes_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_write_bytes_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_bytes_details.rate")
-					validatedMetrics["rabbitmq.node.io_write_bytes_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of bytes written.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_bytes_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_bytes_details.rate")
+						validatedMetrics["rabbitmq.node.io_write_bytes_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of bytes written.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_bytes_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_bytes_details.rate")
+						validatedMetrics["rabbitmq.node.io_write_bytes_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of bytes written.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_write_bytes_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.io_write_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_write_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_count")
-					validatedMetrics["rabbitmq.node.io_write_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of write operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_count")
+						validatedMetrics["rabbitmq.node.io_write_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of write operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_count"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_count")
+						validatedMetrics["rabbitmq.node.io_write_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of write operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_write_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.io_write_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.io_write_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_count_details.rate")
-					validatedMetrics["rabbitmq.node.io_write_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of write operations.", ms.At(i).Description())
-					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_write_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of write operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.io_write_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.io_write_count_details.rate")
+						validatedMetrics["rabbitmq.node.io_write_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of write operations.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.io_write_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.mem_alarm":
-					assert.False(t, validatedMetrics["rabbitmq.node.mem_alarm"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_alarm")
-					validatedMetrics["rabbitmq.node.mem_alarm"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Whether memory alarm is triggered.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.mem_alarm"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_alarm")
+						validatedMetrics["rabbitmq.node.mem_alarm"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Whether memory alarm is triggered.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.mem_alarm"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_alarm")
+						validatedMetrics["rabbitmq.node.mem_alarm"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Whether memory alarm is triggered.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.mem_alarm"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.mem_limit":
-					assert.False(t, validatedMetrics["rabbitmq.node.mem_limit"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_limit")
-					validatedMetrics["rabbitmq.node.mem_limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The memory limit on the node.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.mem_limit"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_limit")
+						validatedMetrics["rabbitmq.node.mem_limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory limit on the node.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.mem_limit"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_limit")
+						validatedMetrics["rabbitmq.node.mem_limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory limit on the node.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.mem_limit"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.mem_used":
-					assert.False(t, validatedMetrics["rabbitmq.node.mem_used"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_used")
-					validatedMetrics["rabbitmq.node.mem_used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The memory used on the node.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.mem_used"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_used")
+						validatedMetrics["rabbitmq.node.mem_used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory used on the node.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.mem_used"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_used")
+						validatedMetrics["rabbitmq.node.mem_used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The memory used on the node.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.mem_used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.mem_used_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.mem_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_used_details.rate")
-					validatedMetrics["rabbitmq.node.mem_used_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of memory usage change.", ms.At(i).Description())
-					assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.mem_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_used_details.rate")
+						validatedMetrics["rabbitmq.node.mem_used_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of memory usage change.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.mem_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_used_details.rate")
+						validatedMetrics["rabbitmq.node.mem_used_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of memory usage change.", ms.At(i).Description())
+						assert.Equal(t, "{bytes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.mem_used_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.mnesia_disk_tx_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.mnesia_disk_tx_count"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_disk_tx_count")
-					validatedMetrics["rabbitmq.node.mnesia_disk_tx_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of disk transactions in Mnesia.", ms.At(i).Description())
-					assert.Equal(t, "{tx}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.mnesia_disk_tx_count"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_disk_tx_count")
+						validatedMetrics["rabbitmq.node.mnesia_disk_tx_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of disk transactions in Mnesia.", ms.At(i).Description())
+						assert.Equal(t, "{tx}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.mnesia_disk_tx_count"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_disk_tx_count")
+						validatedMetrics["rabbitmq.node.mnesia_disk_tx_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of disk transactions in Mnesia.", ms.At(i).Description())
+						assert.Equal(t, "{tx}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.mnesia_disk_tx_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.mnesia_disk_tx_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.mnesia_disk_tx_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_disk_tx_count_details.rate")
-					validatedMetrics["rabbitmq.node.mnesia_disk_tx_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of disk transactions in Mnesia.", ms.At(i).Description())
-					assert.Equal(t, "{tx}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.mnesia_disk_tx_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_disk_tx_count_details.rate")
+						validatedMetrics["rabbitmq.node.mnesia_disk_tx_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of disk transactions in Mnesia.", ms.At(i).Description())
+						assert.Equal(t, "{tx}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.mnesia_disk_tx_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_disk_tx_count_details.rate")
+						validatedMetrics["rabbitmq.node.mnesia_disk_tx_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of disk transactions in Mnesia.", ms.At(i).Description())
+						assert.Equal(t, "{tx}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.mnesia_disk_tx_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.mnesia_ram_tx_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.mnesia_ram_tx_count"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_ram_tx_count")
-					validatedMetrics["rabbitmq.node.mnesia_ram_tx_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of RAM transactions in Mnesia.", ms.At(i).Description())
-					assert.Equal(t, "{tx}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.mnesia_ram_tx_count"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_ram_tx_count")
+						validatedMetrics["rabbitmq.node.mnesia_ram_tx_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of RAM transactions in Mnesia.", ms.At(i).Description())
+						assert.Equal(t, "{tx}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.mnesia_ram_tx_count"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_ram_tx_count")
+						validatedMetrics["rabbitmq.node.mnesia_ram_tx_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of RAM transactions in Mnesia.", ms.At(i).Description())
+						assert.Equal(t, "{tx}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.mnesia_ram_tx_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.mnesia_ram_tx_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.mnesia_ram_tx_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_ram_tx_count_details.rate")
-					validatedMetrics["rabbitmq.node.mnesia_ram_tx_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of RAM transactions in Mnesia.", ms.At(i).Description())
-					assert.Equal(t, "{tx}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.mnesia_ram_tx_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_ram_tx_count_details.rate")
+						validatedMetrics["rabbitmq.node.mnesia_ram_tx_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of RAM transactions in Mnesia.", ms.At(i).Description())
+						assert.Equal(t, "{tx}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.mnesia_ram_tx_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.mnesia_ram_tx_count_details.rate")
+						validatedMetrics["rabbitmq.node.mnesia_ram_tx_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of RAM transactions in Mnesia.", ms.At(i).Description())
+						assert.Equal(t, "{tx}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.mnesia_ram_tx_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.msg_store_read_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.msg_store_read_count"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_read_count")
-					validatedMetrics["rabbitmq.node.msg_store_read_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of message store reads.", ms.At(i).Description())
-					assert.Equal(t, "{ops}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.msg_store_read_count"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_read_count")
+						validatedMetrics["rabbitmq.node.msg_store_read_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of message store reads.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.msg_store_read_count"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_read_count")
+						validatedMetrics["rabbitmq.node.msg_store_read_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of message store reads.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.msg_store_read_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.msg_store_read_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.msg_store_read_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_read_count_details.rate")
-					validatedMetrics["rabbitmq.node.msg_store_read_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of message store reads.", ms.At(i).Description())
-					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.msg_store_read_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_read_count_details.rate")
+						validatedMetrics["rabbitmq.node.msg_store_read_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of message store reads.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.msg_store_read_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_read_count_details.rate")
+						validatedMetrics["rabbitmq.node.msg_store_read_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of message store reads.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.msg_store_read_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.msg_store_write_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.msg_store_write_count"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_write_count")
-					validatedMetrics["rabbitmq.node.msg_store_write_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of message store writes.", ms.At(i).Description())
-					assert.Equal(t, "{ops}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.msg_store_write_count"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_write_count")
+						validatedMetrics["rabbitmq.node.msg_store_write_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of message store writes.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.msg_store_write_count"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_write_count")
+						validatedMetrics["rabbitmq.node.msg_store_write_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of message store writes.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.msg_store_write_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.msg_store_write_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.msg_store_write_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_write_count_details.rate")
-					validatedMetrics["rabbitmq.node.msg_store_write_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of message store writes.", ms.At(i).Description())
-					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.msg_store_write_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_write_count_details.rate")
+						validatedMetrics["rabbitmq.node.msg_store_write_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of message store writes.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.msg_store_write_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.msg_store_write_count_details.rate")
+						validatedMetrics["rabbitmq.node.msg_store_write_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of message store writes.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.msg_store_write_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.proc_total":
-					assert.False(t, validatedMetrics["rabbitmq.node.proc_total"], "Found a duplicate in the metrics slice: rabbitmq.node.proc_total")
-					validatedMetrics["rabbitmq.node.proc_total"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Maximum allowed Erlang processes.", ms.At(i).Description())
-					assert.Equal(t, "{processes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.proc_total"], "Found a duplicate in the metrics slice: rabbitmq.node.proc_total")
+						validatedMetrics["rabbitmq.node.proc_total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Maximum allowed Erlang processes.", ms.At(i).Description())
+						assert.Equal(t, "{processes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.proc_total"], "Found a duplicate in the metrics slice: rabbitmq.node.proc_total")
+						validatedMetrics["rabbitmq.node.proc_total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Maximum allowed Erlang processes.", ms.At(i).Description())
+						assert.Equal(t, "{processes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.proc_total"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.proc_used":
-					assert.False(t, validatedMetrics["rabbitmq.node.proc_used"], "Found a duplicate in the metrics slice: rabbitmq.node.proc_used")
-					validatedMetrics["rabbitmq.node.proc_used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of Erlang processes in use.", ms.At(i).Description())
-					assert.Equal(t, "{processes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.proc_used"], "Found a duplicate in the metrics slice: rabbitmq.node.proc_used")
+						validatedMetrics["rabbitmq.node.proc_used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of Erlang processes in use.", ms.At(i).Description())
+						assert.Equal(t, "{processes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.proc_used"], "Found a duplicate in the metrics slice: rabbitmq.node.proc_used")
+						validatedMetrics["rabbitmq.node.proc_used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of Erlang processes in use.", ms.At(i).Description())
+						assert.Equal(t, "{processes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.proc_used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.proc_used_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.proc_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.proc_used_details.rate")
-					validatedMetrics["rabbitmq.node.proc_used_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of process usage.", ms.At(i).Description())
-					assert.Equal(t, "{processes}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.proc_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.proc_used_details.rate")
+						validatedMetrics["rabbitmq.node.proc_used_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of process usage.", ms.At(i).Description())
+						assert.Equal(t, "{processes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.proc_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.proc_used_details.rate")
+						validatedMetrics["rabbitmq.node.proc_used_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of process usage.", ms.At(i).Description())
+						assert.Equal(t, "{processes}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.proc_used_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.processors":
-					assert.False(t, validatedMetrics["rabbitmq.node.processors"], "Found a duplicate in the metrics slice: rabbitmq.node.processors")
-					validatedMetrics["rabbitmq.node.processors"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of processors available to the node.", ms.At(i).Description())
-					assert.Equal(t, "{processors}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.processors"], "Found a duplicate in the metrics slice: rabbitmq.node.processors")
+						validatedMetrics["rabbitmq.node.processors"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of processors available to the node.", ms.At(i).Description())
+						assert.Equal(t, "{processors}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.processors"], "Found a duplicate in the metrics slice: rabbitmq.node.processors")
+						validatedMetrics["rabbitmq.node.processors"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of processors available to the node.", ms.At(i).Description())
+						assert.Equal(t, "{processors}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.processors"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.queue_created":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_created"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_created")
-					validatedMetrics["rabbitmq.node.queue_created"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of queues created.", ms.At(i).Description())
-					assert.Equal(t, "{queues}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_created"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_created")
+						validatedMetrics["rabbitmq.node.queue_created"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queues created.", ms.At(i).Description())
+						assert.Equal(t, "{queues}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_created"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_created")
+						validatedMetrics["rabbitmq.node.queue_created"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queues created.", ms.At(i).Description())
+						assert.Equal(t, "{queues}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_created"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.queue_created_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_created_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_created_details.rate")
-					validatedMetrics["rabbitmq.node.queue_created_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of queues created.", ms.At(i).Description())
-					assert.Equal(t, "{queues}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_created_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_created_details.rate")
+						validatedMetrics["rabbitmq.node.queue_created_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queues created.", ms.At(i).Description())
+						assert.Equal(t, "{queues}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_created_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_created_details.rate")
+						validatedMetrics["rabbitmq.node.queue_created_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queues created.", ms.At(i).Description())
+						assert.Equal(t, "{queues}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_created_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.queue_declared":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_declared"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_declared")
-					validatedMetrics["rabbitmq.node.queue_declared"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of queues declared.", ms.At(i).Description())
-					assert.Equal(t, "{queues}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_declared"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_declared")
+						validatedMetrics["rabbitmq.node.queue_declared"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queues declared.", ms.At(i).Description())
+						assert.Equal(t, "{queues}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_declared"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_declared")
+						validatedMetrics["rabbitmq.node.queue_declared"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queues declared.", ms.At(i).Description())
+						assert.Equal(t, "{queues}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_declared"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.queue_declared_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_declared_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_declared_details.rate")
-					validatedMetrics["rabbitmq.node.queue_declared_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of queues declared.", ms.At(i).Description())
-					assert.Equal(t, "{queues}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_declared_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_declared_details.rate")
+						validatedMetrics["rabbitmq.node.queue_declared_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queues declared.", ms.At(i).Description())
+						assert.Equal(t, "{queues}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_declared_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_declared_details.rate")
+						validatedMetrics["rabbitmq.node.queue_declared_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queues declared.", ms.At(i).Description())
+						assert.Equal(t, "{queues}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_declared_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.queue_deleted":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_deleted"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_deleted")
-					validatedMetrics["rabbitmq.node.queue_deleted"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of queues deleted.", ms.At(i).Description())
-					assert.Equal(t, "{queues}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_deleted"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_deleted")
+						validatedMetrics["rabbitmq.node.queue_deleted"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queues deleted.", ms.At(i).Description())
+						assert.Equal(t, "{queues}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_deleted"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_deleted")
+						validatedMetrics["rabbitmq.node.queue_deleted"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queues deleted.", ms.At(i).Description())
+						assert.Equal(t, "{queues}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_deleted"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.queue_deleted_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_deleted_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_deleted_details.rate")
-					validatedMetrics["rabbitmq.node.queue_deleted_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of queues deleted.", ms.At(i).Description())
-					assert.Equal(t, "{queues}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_deleted_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_deleted_details.rate")
+						validatedMetrics["rabbitmq.node.queue_deleted_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queues deleted.", ms.At(i).Description())
+						assert.Equal(t, "{queues}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_deleted_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_deleted_details.rate")
+						validatedMetrics["rabbitmq.node.queue_deleted_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queues deleted.", ms.At(i).Description())
+						assert.Equal(t, "{queues}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_deleted_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.queue_index_read_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_index_read_count"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_read_count")
-					validatedMetrics["rabbitmq.node.queue_index_read_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of queue index reads.", ms.At(i).Description())
-					assert.Equal(t, "{ops}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_index_read_count"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_read_count")
+						validatedMetrics["rabbitmq.node.queue_index_read_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queue index reads.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_index_read_count"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_read_count")
+						validatedMetrics["rabbitmq.node.queue_index_read_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queue index reads.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_index_read_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.queue_index_read_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_index_read_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_read_count_details.rate")
-					validatedMetrics["rabbitmq.node.queue_index_read_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of queue index reads.", ms.At(i).Description())
-					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_index_read_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_read_count_details.rate")
+						validatedMetrics["rabbitmq.node.queue_index_read_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queue index reads.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_index_read_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_read_count_details.rate")
+						validatedMetrics["rabbitmq.node.queue_index_read_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queue index reads.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_index_read_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.queue_index_write_count":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_index_write_count"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_write_count")
-					validatedMetrics["rabbitmq.node.queue_index_write_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of queue index writes.", ms.At(i).Description())
-					assert.Equal(t, "{ops}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_index_write_count"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_write_count")
+						validatedMetrics["rabbitmq.node.queue_index_write_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queue index writes.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_index_write_count"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_write_count")
+						validatedMetrics["rabbitmq.node.queue_index_write_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of queue index writes.", ms.At(i).Description())
+						assert.Equal(t, "{ops}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_index_write_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.queue_index_write_count_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.queue_index_write_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_write_count_details.rate")
-					validatedMetrics["rabbitmq.node.queue_index_write_count_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of queue index writes.", ms.At(i).Description())
-					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_index_write_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_write_count_details.rate")
+						validatedMetrics["rabbitmq.node.queue_index_write_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queue index writes.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.queue_index_write_count_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.queue_index_write_count_details.rate")
+						validatedMetrics["rabbitmq.node.queue_index_write_count_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of queue index writes.", ms.At(i).Description())
+						assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.queue_index_write_count_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.run_queue":
-					assert.False(t, validatedMetrics["rabbitmq.node.run_queue"], "Found a duplicate in the metrics slice: rabbitmq.node.run_queue")
-					validatedMetrics["rabbitmq.node.run_queue"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Run queue length of the Erlang scheduler.", ms.At(i).Description())
-					assert.Equal(t, "{threads}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.run_queue"], "Found a duplicate in the metrics slice: rabbitmq.node.run_queue")
+						validatedMetrics["rabbitmq.node.run_queue"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Run queue length of the Erlang scheduler.", ms.At(i).Description())
+						assert.Equal(t, "{threads}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.run_queue"], "Found a duplicate in the metrics slice: rabbitmq.node.run_queue")
+						validatedMetrics["rabbitmq.node.run_queue"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Run queue length of the Erlang scheduler.", ms.At(i).Description())
+						assert.Equal(t, "{threads}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.run_queue"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.sockets_total":
-					assert.False(t, validatedMetrics["rabbitmq.node.sockets_total"], "Found a duplicate in the metrics slice: rabbitmq.node.sockets_total")
-					validatedMetrics["rabbitmq.node.sockets_total"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Maximum allowed sockets.", ms.At(i).Description())
-					assert.Equal(t, "{sockets}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.sockets_total"], "Found a duplicate in the metrics slice: rabbitmq.node.sockets_total")
+						validatedMetrics["rabbitmq.node.sockets_total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Maximum allowed sockets.", ms.At(i).Description())
+						assert.Equal(t, "{sockets}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.sockets_total"], "Found a duplicate in the metrics slice: rabbitmq.node.sockets_total")
+						validatedMetrics["rabbitmq.node.sockets_total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Maximum allowed sockets.", ms.At(i).Description())
+						assert.Equal(t, "{sockets}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.sockets_total"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.sockets_used":
-					assert.False(t, validatedMetrics["rabbitmq.node.sockets_used"], "Found a duplicate in the metrics slice: rabbitmq.node.sockets_used")
-					validatedMetrics["rabbitmq.node.sockets_used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of sockets in use.", ms.At(i).Description())
-					assert.Equal(t, "{sockets}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.sockets_used"], "Found a duplicate in the metrics slice: rabbitmq.node.sockets_used")
+						validatedMetrics["rabbitmq.node.sockets_used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of sockets in use.", ms.At(i).Description())
+						assert.Equal(t, "{sockets}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.sockets_used"], "Found a duplicate in the metrics slice: rabbitmq.node.sockets_used")
+						validatedMetrics["rabbitmq.node.sockets_used"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of sockets in use.", ms.At(i).Description())
+						assert.Equal(t, "{sockets}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.sockets_used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "rabbitmq.node.sockets_used_details.rate":
-					assert.False(t, validatedMetrics["rabbitmq.node.sockets_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.sockets_used_details.rate")
-					validatedMetrics["rabbitmq.node.sockets_used_details.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Rate of socket usage.", ms.At(i).Description())
-					assert.Equal(t, "{sockets}/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.sockets_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.sockets_used_details.rate")
+						validatedMetrics["rabbitmq.node.sockets_used_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of socket usage.", ms.At(i).Description())
+						assert.Equal(t, "{sockets}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.sockets_used_details.rate"], "Found a duplicate in the metrics slice: rabbitmq.node.sockets_used_details.rate")
+						validatedMetrics["rabbitmq.node.sockets_used_details.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Rate of socket usage.", ms.At(i).Description())
+						assert.Equal(t, "{sockets}/s", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["rabbitmq.node.sockets_used_details.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "rabbitmq.node.uptime":
-					assert.False(t, validatedMetrics["rabbitmq.node.uptime"], "Found a duplicate in the metrics slice: rabbitmq.node.uptime")
-					validatedMetrics["rabbitmq.node.uptime"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Uptime of the node.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.node.uptime"], "Found a duplicate in the metrics slice: rabbitmq.node.uptime")
+						validatedMetrics["rabbitmq.node.uptime"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Uptime of the node.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.node.uptime"], "Found a duplicate in the metrics slice: rabbitmq.node.uptime")
+						validatedMetrics["rabbitmq.node.uptime"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Uptime of the node.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.node.uptime"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				}
 			}
 		})
