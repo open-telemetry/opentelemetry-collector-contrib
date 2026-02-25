@@ -32,7 +32,7 @@ Records errors occurring during SSH check.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| error.message | Error message recorded during check | Any Str | Recommended |
+| error.message | Error message recorded during check | Any Str | Required |
 
 ### sshcheck.status
 
@@ -72,7 +72,7 @@ Records errors occurring during SFTP check.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| error.message | Error message recorded during check | Any Str | Recommended |
+| error.message | Error message recorded during check | Any Str | Required |
 
 ### sshcheck.sftp_status
 
