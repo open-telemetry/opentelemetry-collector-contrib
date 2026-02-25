@@ -260,9 +260,9 @@ func TestAttributeBasedRouting(t *testing.T) {
 			batch: simpleTracesWithServiceName(),
 
 			res: map[string]bool{
-				"service-name-1": true,
-				"service-name-2": true,
-				"service-name-3": true,
+				"service.name=service-name-1|": true,
+				"service.name=service-name-2|": true,
+				"service.name=service-name-3|": true,
 			},
 		},
 		{
@@ -280,7 +280,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"/foo/bar/baz": true,
+				"span.name=/foo/bar/baz|": true,
 			},
 		},
 		{
@@ -298,7 +298,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"Client": true,
+				"span.kind=Client|": true,
 			},
 		},
 		{
@@ -320,7 +320,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"service-name-1Client": true,
+				"service.name=service-name-1|span.kind=Client|": true,
 			},
 		},
 		{
@@ -339,7 +339,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"Server": true,
+				"missing.attribute=|span.kind=Server|": true,
 			},
 		},
 		{
@@ -357,7 +357,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"/foo/bar/baz": true,
+				"http.path=/foo/bar/baz|": true,
 			},
 		},
 		{
@@ -381,7 +381,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"service-name-1Client/foo/bar/baz": true,
+				"service.name=service-name-1|span.kind=Client|http.path=/foo/bar/baz|": true,
 			},
 		},
 	} {
@@ -391,6 +391,46 @@ func TestAttributeBasedRouting(t *testing.T) {
 			assert.Equal(t, res, tc.res)
 		})
 	}
+}
+
+func TestAttributeBasedRoutingStableEncodingAvoidsConcatenationCollisions(t *testing.T) {
+	traces := ptrace.NewTraces()
+
+	rs1 := traces.ResourceSpans().AppendEmpty()
+	rs1.Resource().Attributes().PutStr("a", "foo")
+	rs1.Resource().Attributes().PutStr("b", "bar")
+	rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	rs2 := traces.ResourceSpans().AppendEmpty()
+	rs2.Resource().Attributes().PutStr("a", "foob")
+	rs2.Resource().Attributes().PutStr("b", "ar")
+	rs2.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	res, err := routingIdentifiersFromTraces(traces, attrRouting, []string{"a", "b"})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]bool{
+		"a=foo|b=bar|": true,
+		"a=foob|b=ar|": true,
+	}, res)
+}
+
+func TestAttributeBasedRoutingNonStringValues(t *testing.T) {
+	traces := ptrace.NewTraces()
+
+	rs1 := traces.ResourceSpans().AppendEmpty()
+	rs1.Resource().Attributes().PutInt("shard", 1)
+	rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	rs2 := traces.ResourceSpans().AppendEmpty()
+	rs2.Resource().Attributes().PutInt("shard", 2)
+	rs2.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	res, err := routingIdentifiersFromTraces(traces, attrRouting, []string{"shard"})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]bool{
+		"shard=1|": true,
+		"shard=2|": true,
+	}, res)
 }
 
 func TestUnsupportedRoutingKeyInRouting(t *testing.T) {
@@ -416,7 +456,7 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 			"same trace id and different services - service based routing",
 			twoServicesWithSameTraceID(),
 			svcRouting,
-			map[string]bool{"ad-service-1": true, "get-recommendations-7": true},
+			map[string]bool{"service.name=ad-service-1|": true, "service.name=get-recommendations-7|": true},
 		},
 		{
 			"same trace id and different services - trace id routing",
