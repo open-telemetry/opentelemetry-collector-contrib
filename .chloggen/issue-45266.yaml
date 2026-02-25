@@ -1,0 +1,4 @@
+change_type: enhancement
+component: exporter/prometheusremotewrite
+note: "Add support for exporting InstrumentationScope attributes as Prometheus labels. This behavior can be disabled via the `disable_scope_info` configuration option."
+issues: [45266]

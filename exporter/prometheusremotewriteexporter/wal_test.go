@@ -155,6 +155,7 @@ func TestWAL_persist(t *testing.T) {
 	})
 
 	require.NoError(t, pwal.persistToWAL(ctx, reqL))
+	require.Len(t, pwal.rNotify, 1)
 
 	// 2. Read all the entries from the WAL itself, guided by the indices available,
 	// and ensure that they are exactly in order as we'd expect them.

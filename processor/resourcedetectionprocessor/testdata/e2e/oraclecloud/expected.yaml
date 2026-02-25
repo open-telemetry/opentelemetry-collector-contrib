@@ -25,6 +25,9 @@ resourceMetrics:
         - key: k8s.cluster.name
           value:
             stringValue: test-oke-cluster
+        - key: oracle_cloud.realm
+          value:
+            stringValue: oc999            
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
     scopeMetrics:
       - metrics:
