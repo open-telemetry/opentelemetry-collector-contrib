@@ -3,6 +3,9 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
@@ -11,6 +14,11 @@ import (
 type MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []string `mapstructure:"attributes"`
+	definedAttributes   []string
+	requiredAttributes  []string
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -22,9 +30,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+	for _, val := range ms.EnabledAttributes {
+		if !slices.Contains(ms.definedAttributes, val) {
+			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		}
+	}
+
+	for _, val := range ms.requiredAttributes {
+		if !slices.Contains(ms.EnabledAttributes, val) {
+			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		}
+	}
+
+	if ms.AggregationStrategy != AggregationStrategySum &&
+		ms.AggregationStrategy != AggregationStrategyAvg &&
+		ms.AggregationStrategy != AggregationStrategyMin &&
+		ms.AggregationStrategy != AggregationStrategyMax {
+		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for redfish metrics.
@@ -47,39 +78,99 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		ChassisPowerstate: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+			definedAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+			EnabledAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
 		},
 		ChassisStatusHealth: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+			definedAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+			EnabledAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
 		},
 		ChassisStatusState: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+			definedAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+			EnabledAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
 		},
 		FanReading: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"chassis.id", "fan.name", "fan.reading_units"},
+			definedAttributes:   []string{"chassis.id", "fan.name", "fan.reading_units"},
+			EnabledAttributes:   []string{"chassis.id", "fan.name", "fan.reading_units"},
 		},
 		FanStatusHealth: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"chassis.id", "fan.name"},
+			definedAttributes:   []string{"chassis.id", "fan.name"},
+			EnabledAttributes:   []string{"chassis.id", "fan.name"},
 		},
 		FanStatusState: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"chassis.id", "fan.name"},
+			definedAttributes:   []string{"chassis.id", "fan.name"},
+			EnabledAttributes:   []string{"chassis.id", "fan.name"},
 		},
 		SystemPowerstate: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+			definedAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+			EnabledAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
 		},
 		SystemStatusHealth: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+			definedAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+			EnabledAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
 		},
 		SystemStatusState: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+			definedAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+			EnabledAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
 		},
 		TemperatureReading: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"chassis.id", "temperature.name"},
+			definedAttributes:   []string{"chassis.id", "temperature.name"},
+			EnabledAttributes:   []string{"chassis.id", "temperature.name"},
 		},
 		TemperatureStatusHealth: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"chassis.id", "temperature.name"},
+			definedAttributes:   []string{"chassis.id", "temperature.name"},
+			EnabledAttributes:   []string{"chassis.id", "temperature.name"},
 		},
 		TemperatureStatusState: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{"chassis.id", "temperature.name"},
+			definedAttributes:   []string{"chassis.id", "temperature.name"},
+			EnabledAttributes:   []string{"chassis.id", "temperature.name"},
 		},
 	}
 }

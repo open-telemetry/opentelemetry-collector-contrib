@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,18 +27,66 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ChassisPowerstate:       MetricConfig{Enabled: true},
-					ChassisStatusHealth:     MetricConfig{Enabled: true},
-					ChassisStatusState:      MetricConfig{Enabled: true},
-					FanReading:              MetricConfig{Enabled: true},
-					FanStatusHealth:         MetricConfig{Enabled: true},
-					FanStatusState:          MetricConfig{Enabled: true},
-					SystemPowerstate:        MetricConfig{Enabled: true},
-					SystemStatusHealth:      MetricConfig{Enabled: true},
-					SystemStatusState:       MetricConfig{Enabled: true},
-					TemperatureReading:      MetricConfig{Enabled: true},
-					TemperatureStatusHealth: MetricConfig{Enabled: true},
-					TemperatureStatusState:  MetricConfig{Enabled: true},
+					ChassisPowerstate: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+					},
+					ChassisStatusHealth: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+					},
+					ChassisStatusState: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+					},
+					FanReading: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "fan.name", "fan.reading_units"},
+					},
+					FanStatusHealth: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "fan.name"},
+					},
+					FanStatusState: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "fan.name"},
+					},
+					SystemPowerstate: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+					},
+					SystemStatusHealth: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+					},
+					SystemStatusState: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+					},
+					TemperatureReading: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "temperature.name"},
+					},
+					TemperatureStatusHealth: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "temperature.name"},
+					},
+					TemperatureStatusState: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "temperature.name"},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					BaseURL:        ResourceAttributeConfig{Enabled: true},
@@ -49,18 +98,66 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ChassisPowerstate:       MetricConfig{Enabled: false},
-					ChassisStatusHealth:     MetricConfig{Enabled: false},
-					ChassisStatusState:      MetricConfig{Enabled: false},
-					FanReading:              MetricConfig{Enabled: false},
-					FanStatusHealth:         MetricConfig{Enabled: false},
-					FanStatusState:          MetricConfig{Enabled: false},
-					SystemPowerstate:        MetricConfig{Enabled: false},
-					SystemStatusHealth:      MetricConfig{Enabled: false},
-					SystemStatusState:       MetricConfig{Enabled: false},
-					TemperatureReading:      MetricConfig{Enabled: false},
-					TemperatureStatusHealth: MetricConfig{Enabled: false},
-					TemperatureStatusState:  MetricConfig{Enabled: false},
+					ChassisPowerstate: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+					},
+					ChassisStatusHealth: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+					},
+					ChassisStatusState: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "chassis.asset_tag", "chassis.model", "chassis.name", "chassis.manufacturer", "chassis.serial_number", "chassis.sku", "chassis.chassis_type"},
+					},
+					FanReading: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "fan.name", "fan.reading_units"},
+					},
+					FanStatusHealth: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "fan.name"},
+					},
+					FanStatusState: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "fan.name"},
+					},
+					SystemPowerstate: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+					},
+					SystemStatusHealth: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+					},
+					SystemStatusState: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"system.id", "system.asset_tag", "system.bios_version", "system.model", "system.name", "system.manufacturer", "system.serial_number", "system.sku", "system.system_type"},
+					},
+					TemperatureReading: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "temperature.name"},
+					},
+					TemperatureStatusHealth: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "temperature.name"},
+					},
+					TemperatureStatusState: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"chassis.id", "temperature.name"},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					BaseURL:        ResourceAttributeConfig{Enabled: false},
