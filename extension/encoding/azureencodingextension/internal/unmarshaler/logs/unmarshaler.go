@@ -43,7 +43,7 @@ type logsResourceAttributes struct {
 	Environment       string
 }
 
-// scopeKey keys ScopeLogs by resource attributes and encoding.format so each scope has a single format (AWS-style).
+// scopeKey keys ScopeLogs by resource attributes and encoding.format so each scope has a single format.
 type scopeKey struct {
 	Resource logsResourceAttributes
 	Format   string
@@ -243,7 +243,7 @@ func (r ResourceLogsUnmarshaler) unmarshalRecord(allResourceScopeLogs map[scopeK
 	}
 }
 
-// getScopeLog gets or creates ScopeLogs keyed by resource attributes and encoding.format (AWS-style: one format per scope).
+// getScopeLog gets or creates ScopeLogs keyed by resource attributes and encoding.format (one format per scope).
 func (r ResourceLogsUnmarshaler) getScopeLog(allResourceScopeLogs map[scopeKey]plog.ScopeLogs, rs logsResourceAttributes, format string) plog.ScopeLogs {
 	key := scopeKey{Resource: rs, Format: format}
 	scopeLogs, found := allResourceScopeLogs[key]

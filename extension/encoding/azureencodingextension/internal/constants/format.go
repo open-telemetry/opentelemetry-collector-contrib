@@ -8,7 +8,7 @@ const (
 	// the encoding format of the log (e.g. for filtering and routing).
 	FormatIdentificationTag = "encoding.format"
 
-	// Detailed format values per Azure log category (aligned with AWS style: aws.elbaccess, aws.cloudtrail).
+	// Detailed format values per Azure log category.
 	FormatApplicationGatewayAccess   = "azure.application_gateway_access"
 	FormatApplicationGatewayPerf     = "azure.application_gateway_performance"
 	FormatApplicationGatewayFirewall = "azure.application_gateway_firewall"
