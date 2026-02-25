@@ -56,13 +56,6 @@ func (rb *ResourceBuilder) SetCloudRegion(val string) {
 	}
 }
 
-// SetFaasID sets provided value as "faas.id" attribute.
-func (rb *ResourceBuilder) SetFaasID(val string) {
-	if rb.config.FaasID.Enabled {
-		rb.res.Attributes().PutStr("faas.id", val)
-	}
-}
-
 // SetFaasInstance sets provided value as "faas.instance" attribute.
 func (rb *ResourceBuilder) SetFaasInstance(val string) {
 	if rb.config.FaasInstance.Enabled {
