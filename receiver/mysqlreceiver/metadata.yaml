@@ -1,5 +1,7 @@
 type: mysql
 
+reaggregation_enabled: true
+
 status:
   class: receiver
   stability:
@@ -23,216 +25,268 @@ attributes:
     description: The status of buffer pool data.
     type: string
     enum: [dirty, clean]
+    requirement_level: required
   buffer_pool_operations:
     name_override: operation
     description: The buffer pool operations types.
     type: string
     enum: [read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests]
+    requirement_level: required
   buffer_pool_pages:
     name_override: kind
     description: The buffer pool pages types.
     type: string
     enum: [data, free, misc, total]
+    requirement_level: required
   cache_status:
     name_override: status
     description: The status of cache access.
     type: string
     enum: [hit, miss, overflow]
+    requirement_level: required
   client.address:
     description: Hostname or address of the client.
     type: string
+    requirement_level: required
   client.port:
     description: TCP port used by the client.
     type: int
+    requirement_level: required
   command:
     description: The command types.
     type: string
     enum: [delete, delete_multi, insert, select, update, update_multi]
+    requirement_level: required
   connection_error:
     name_override: error
     description: The connection error type.
     type: string
     enum: [accept, internal, max_connections, peer_address, select, tcpwrap, aborted, aborted_clients, locked]
+    requirement_level: required
   connection_status:
     name_override: status
     description: The connection status.
     type: string
     enum: [accepted, closed, rejected]
+    requirement_level: required
   db.namespace:
     description: The default database for the thread, or empty if none has been selected (originally processlist_db).
     type: string
+    requirement_level: required
   db.query.text:
     description: The SQL statement text for the event.
     type: string
+    requirement_level: required
   db.system.name:
     description: The name of the database system.
     type: string
     enum: [mysql]
+    requirement_level: required
   digest:
     description: Digest.
     type: string
+    requirement_level: required
   digest_text:
     description: Text before digestion.
     type: string
+    requirement_level: required
   direction:
     name_override: kind
     description: The name of the transmission direction.
     type: string
     enum: [received, sent]
+    requirement_level: required
   double_writes:
     name_override: kind
     description: The doublewrite types.
     type: string
     enum: [pages_written, writes]
+    requirement_level: required
   event_state:
     name_override: kind
     description: Possible event states.
     type: string
     enum: [errors, warnings, rows_affected, rows_sent, rows_examined, created_tmp_disk_tables, created_tmp_tables, sort_merge_passes, sort_rows, no_index_used]
+    requirement_level: required
   handler:
     name_override: kind
     description: The handler types.
     type: string
     enum: [commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write]
+    requirement_level: required
   index_name:
     name_override: index
     type: string
+    requirement_level: required
     description: The name of the index.
   io_waits_operations:
     name_override: operation
     description: The io_waits operation type.
     type: string
     enum: [delete, fetch, insert, update]
+    requirement_level: required
   join_kind:
     name_override: kind
     description: The kind of join.
     type: string
     enum: [full, full_range, range, range_check, scan]
+    requirement_level: required
   locks:
     name_override: kind
     description: The table locks type.
     type: string
     enum: [immediate, waited]
+    requirement_level: required
   log_operations:
     name_override: operation
     description: The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later.
     type: string
     enum: [waits, write_requests, writes, fsyncs]
+    requirement_level: required
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
+    requirement_level: required
   mysql.events_statements_current.digest:
     description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
     type: string
+    requirement_level: required
   mysql.events_statements_summary_by_digest.count_star:
     description: The number of times the statement was executed, report in delta value.
     type: int
+    requirement_level: required
   mysql.events_statements_summary_by_digest.digest:
     description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
     type: string
+    requirement_level: required
   mysql.events_statements_summary_by_digest.sum_timer_wait:
     description: The total time spent executing the statement, report in delta seconds.
     type: double
+    requirement_level: required
 
   mysql.events_waits_current.timer_wait:
     description: Timing information for the event, indicating elapsed time the event waited in seconds.
     type: double
+    requirement_level: required
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
+    requirement_level: required
   mysql.threads.processlist_command:
     description: The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle.
     type: string
+    requirement_level: required
   mysql.threads.processlist_state:
     description: An action, event, or state that indicates what the thread is doing.
     type: string
+    requirement_level: required
   mysql.threads.thread_id:
     description: The unique identifier for the thread executing the statement.
     type: int
+    requirement_level: required
   mysql.wait_type:
     description: The name of the instrument that produced the event.
     type: string
+    requirement_level: required
   mysqlx_threads:
     name_override: kind
     description: The worker thread count kind.
     type: string
     enum: [available, active]
+    requirement_level: required
   network.peer.address:
     description: IP address of the peer client.
     type: string
+    requirement_level: required
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
+    requirement_level: required
   opened_resources:
     name_override: kind
     description: The kind of the resource.
     type: string
     enum: [file, table_definition, table]
+    requirement_level: required
   operations:
     name_override: operation
     description: The operation types.
     type: string
     enum: [fsyncs, reads, writes]
+    requirement_level: required
   page_operations:
     name_override: operation
     description: The page operation types.
     type: string
     enum: [created, read, written]
+    requirement_level: required
   prepared_statements_command:
     name_override: command
     description: The prepare statement command types.
     type: string
     enum: [execute, close, fetch, prepare, reset, send_long_data]
+    requirement_level: required
   read_lock_type:
     name_override: kind
     description: Read operation types.
     type: string
     enum: [normal, with_shared_locks, high_priority, no_insert, external]
+    requirement_level: required
   row_locks:
     name_override: kind
     description: The row lock type.
     type: string
     enum: [waits, time]
+    requirement_level: required
   row_operations:
     name_override: operation
     description: The row operation type.
     type: string
     enum: [deleted, inserted, read, updated]
+    requirement_level: required
   schema:
     description: The schema of the object.
     type: string
+    requirement_level: required
   sorts:
     name_override: kind
     description: The sort count type.
     type: string
     enum: [merge_passes, range, rows, scan]
+    requirement_level: required
   table_name:
     name_override: table
     type: string
+    requirement_level: required
     description: Table name for event or process.
   table_size_type:
     name_override: kind
     description: The table size types.
     type: string
     enum: [data, index]
+    requirement_level: required
   threads:
     name_override: kind
     description: The thread count type.
     type: string
     enum: [cached, connected, created, running]
+    requirement_level: required
   tmp_resource:
     name_override: resource
     description: The kind of temporary resources.
     type: string
     enum: [disk_tables, files, tables]
+    requirement_level: required
   user.name:
     description: The user associated with a foreground thread, empty for a background thread (originally processlist_user).
     type: string
+    requirement_level: required
   write_lock_type:
     name_override: kind
     description: Write operation types.
     type: string
     enum: [allow_write, concurrent_insert, low_priority, normal, external]
+    requirement_level: required
 events:
   db.server.query_sample:
     enabled: true

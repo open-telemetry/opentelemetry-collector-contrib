@@ -24,7 +24,7 @@ The number of data pages in the InnoDB buffer pool.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The status of buffer pool data. | Str: ``dirty``, ``clean`` | Recommended |
+| status | The status of buffer pool data. | Str: ``dirty``, ``clean`` | Required |
 
 ### mysql.buffer_pool.limit
 
@@ -46,7 +46,7 @@ The number of operations on the InnoDB buffer pool.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The buffer pool operations types. | Str: ``read_ahead_rnd``, ``read_ahead``, ``read_ahead_evicted``, ``read_requests``, ``reads``, ``wait_free``, ``write_requests`` | Recommended |
+| operation | The buffer pool operations types. | Str: ``read_ahead_rnd``, ``read_ahead``, ``read_ahead_evicted``, ``read_requests``, ``reads``, ``wait_free``, ``write_requests`` | Required |
 
 ### mysql.buffer_pool.page_flushes
 
@@ -68,7 +68,7 @@ The number of pages in the InnoDB buffer pool.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The buffer pool pages types. | Str: ``data``, ``free``, ``misc``, ``total`` | Recommended |
+| kind | The buffer pool pages types. | Str: ``data``, ``free``, ``misc``, ``total`` | Required |
 
 ### mysql.buffer_pool.usage
 
@@ -82,7 +82,7 @@ The number of bytes in the InnoDB buffer pool.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The status of buffer pool data. | Str: ``dirty``, ``clean`` | Recommended |
+| status | The status of buffer pool data. | Str: ``dirty``, ``clean`` | Required |
 
 ### mysql.double_writes
 
@@ -96,7 +96,7 @@ The number of writes to the InnoDB doublewrite buffer.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The doublewrite types. | Str: ``pages_written``, ``writes`` | Recommended |
+| kind | The doublewrite types. | Str: ``pages_written``, ``writes`` | Required |
 
 ### mysql.handlers
 
@@ -110,7 +110,7 @@ The number of requests to various MySQL handlers.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The handler types. | Str: ``commit``, ``delete``, ``discover``, ``external_lock``, ``mrr_init``, ``prepare``, ``read_first``, ``read_key``, ``read_last``, ``read_next``, ``read_prev``, ``read_rnd``, ``read_rnd_next``, ``rollback``, ``savepoint``, ``savepoint_rollback``, ``update``, ``write`` | Recommended |
+| kind | The handler types. | Str: ``commit``, ``delete``, ``discover``, ``external_lock``, ``mrr_init``, ``prepare``, ``read_first``, ``read_key``, ``read_last``, ``read_next``, ``read_prev``, ``read_rnd``, ``read_rnd_next``, ``rollback``, ``savepoint``, ``savepoint_rollback``, ``update``, ``write`` | Required |
 
 ### mysql.index.io.wait.count
 
@@ -124,10 +124,10 @@ The total count of I/O wait events for an index.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Recommended |
-| table | Table name for event or process. | Any Str | Recommended |
-| schema | The schema of the object. | Any Str | Recommended |
-| index | The name of the index. | Any Str | Recommended |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Required |
+| table | Table name for event or process. | Any Str | Required |
+| schema | The schema of the object. | Any Str | Required |
+| index | The name of the index. | Any Str | Required |
 
 ### mysql.index.io.wait.time
 
@@ -141,10 +141,10 @@ The total time of I/O wait events for an index.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Recommended |
-| table | Table name for event or process. | Any Str | Recommended |
-| schema | The schema of the object. | Any Str | Recommended |
-| index | The name of the index. | Any Str | Recommended |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Required |
+| table | Table name for event or process. | Any Str | Required |
+| schema | The schema of the object. | Any Str | Required |
+| index | The name of the index. | Any Str | Required |
 
 ### mysql.locks
 
@@ -158,7 +158,7 @@ The number of MySQL locks.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The table locks type. | Str: ``immediate``, ``waited`` | Recommended |
+| kind | The table locks type. | Str: ``immediate``, ``waited`` | Required |
 
 ### mysql.log_operations
 
@@ -172,7 +172,7 @@ The number of InnoDB log operations.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | Recommended |
+| operation | The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | Required |
 
 ### mysql.mysqlx_connections
 
@@ -188,7 +188,7 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The connection status. | Str: ``accepted``, ``closed``, ``rejected`` | Recommended |
+| status | The connection status. | Str: ``accepted``, ``closed``, ``rejected`` | Required |
 
 ### mysql.opened_resources
 
@@ -202,7 +202,7 @@ The number of opened resources.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The kind of the resource. | Str: ``file``, ``table_definition``, ``table`` | Recommended |
+| kind | The kind of the resource. | Str: ``file``, ``table_definition``, ``table`` | Required |
 
 ### mysql.operations
 
@@ -216,7 +216,7 @@ The number of InnoDB operations.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended |
+| operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Required |
 
 ### mysql.page_operations
 
@@ -230,7 +230,7 @@ The number of InnoDB page operations.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The page operation types. | Str: ``created``, ``read``, ``written`` | Recommended |
+| operation | The page operation types. | Str: ``created``, ``read``, ``written`` | Required |
 
 ### mysql.prepared_statements
 
@@ -244,7 +244,7 @@ The number of times each type of prepared statement command has been issued.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| command | The prepare statement command types. | Str: ``execute``, ``close``, ``fetch``, ``prepare``, ``reset``, ``send_long_data`` | Recommended |
+| command | The prepare statement command types. | Str: ``execute``, ``close``, ``fetch``, ``prepare``, ``reset``, ``send_long_data`` | Required |
 
 ### mysql.row_locks
 
@@ -258,7 +258,7 @@ The number of InnoDB row locks.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The row lock type. | Str: ``waits``, ``time`` | Recommended |
+| kind | The row lock type. | Str: ``waits``, ``time`` | Required |
 
 ### mysql.row_operations
 
@@ -272,7 +272,7 @@ The number of InnoDB row operations.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The row operation type. | Str: ``deleted``, ``inserted``, ``read``, ``updated`` | Recommended |
+| operation | The row operation type. | Str: ``deleted``, ``inserted``, ``read``, ``updated`` | Required |
 
 ### mysql.sorts
 
@@ -286,7 +286,7 @@ The number of MySQL sorts.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The sort count type. | Str: ``merge_passes``, ``range``, ``rows``, ``scan`` | Recommended |
+| kind | The sort count type. | Str: ``merge_passes``, ``range``, ``rows``, ``scan`` | Required |
 
 ### mysql.table.io.wait.count
 
@@ -300,9 +300,9 @@ The total count of I/O wait events for a table.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Recommended |
-| table | Table name for event or process. | Any Str | Recommended |
-| schema | The schema of the object. | Any Str | Recommended |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Required |
+| table | Table name for event or process. | Any Str | Required |
+| schema | The schema of the object. | Any Str | Required |
 
 ### mysql.table.io.wait.time
 
@@ -316,9 +316,9 @@ The total time of I/O wait events for a table.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Recommended |
-| table | Table name for event or process. | Any Str | Recommended |
-| schema | The schema of the object. | Any Str | Recommended |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` | Required |
+| table | Table name for event or process. | Any Str | Required |
+| schema | The schema of the object. | Any Str | Required |
 
 ### mysql.threads
 
@@ -332,7 +332,7 @@ The state of MySQL threads.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The thread count type. | Str: ``cached``, ``connected``, ``created``, ``running`` | Recommended |
+| kind | The thread count type. | Str: ``cached``, ``connected``, ``created``, ``running`` | Required |
 
 ### mysql.tmp_resources
 
@@ -346,7 +346,7 @@ The number of created temporary resources.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| resource | The kind of temporary resources. | Str: ``disk_tables``, ``files``, ``tables`` | Recommended |
+| resource | The kind of temporary resources. | Str: ``disk_tables``, ``files``, ``tables`` | Required |
 
 ### mysql.uptime
 
@@ -378,7 +378,7 @@ The number of transmitted bytes between server and clients.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The name of the transmission direction. | Str: ``received``, ``sent`` | Recommended |
+| kind | The name of the transmission direction. | Str: ``received``, ``sent`` | Required |
 
 ### mysql.commands
 
@@ -392,7 +392,7 @@ The number of times each type of command has been executed.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| command | The command types. | Str: ``delete``, ``delete_multi``, ``insert``, ``select``, ``update``, ``update_multi`` | Recommended |
+| command | The command types. | Str: ``delete``, ``delete_multi``, ``insert``, ``select``, ``update``, ``update_multi`` | Required |
 
 ### mysql.connection.count
 
@@ -414,7 +414,7 @@ Errors that occur during the client connection process.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended |
+| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Required |
 
 ### mysql.joins
 
@@ -428,7 +428,7 @@ The number of joins that perform table scans.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` | Recommended |
+| kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` | Required |
 
 ### mysql.max_used_connections
 
@@ -452,7 +452,7 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| kind | The worker thread count kind. | Str: ``available``, ``active`` | Recommended |
+| kind | The worker thread count kind. | Str: ``available``, ``active`` | Required |
 
 ### mysql.page_size
 
@@ -514,10 +514,10 @@ Summary of current and recent statement events.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | Recommended |
-| digest | Digest. | Any Str | Recommended |
-| digest_text | Text before digestion. | Any Str | Recommended |
-| kind | Possible event states. | Str: ``errors``, ``warnings``, ``rows_affected``, ``rows_sent``, ``rows_examined``, ``created_tmp_disk_tables``, ``created_tmp_tables``, ``sort_merge_passes``, ``sort_rows``, ``no_index_used`` | Recommended |
+| schema | The schema of the object. | Any Str | Required |
+| digest | Digest. | Any Str | Required |
+| digest_text | Text before digestion. | Any Str | Required |
+| kind | Possible event states. | Str: ``errors``, ``warnings``, ``rows_affected``, ``rows_sent``, ``rows_examined``, ``created_tmp_disk_tables``, ``created_tmp_tables``, ``sort_merge_passes``, ``sort_rows``, ``no_index_used`` | Required |
 
 ### mysql.statement_event.wait.time
 
@@ -531,9 +531,9 @@ The total wait time of the summarized timed events.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | Recommended |
-| digest | Digest. | Any Str | Recommended |
-| digest_text | Text before digestion. | Any Str | Recommended |
+| schema | The schema of the object. | Any Str | Required |
+| digest | Digest. | Any Str | Required |
+| digest_text | Text before digestion. | Any Str | Required |
 
 ### mysql.table.average_row_length
 
@@ -547,8 +547,8 @@ The average row length in bytes for a given table.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| table | Table name for event or process. | Any Str | Recommended |
-| schema | The schema of the object. | Any Str | Recommended |
+| table | Table name for event or process. | Any Str | Required |
+| schema | The schema of the object. | Any Str | Required |
 
 ### mysql.table.lock_wait.read.count
 
@@ -562,9 +562,9 @@ The total table lock wait read events.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | Recommended |
-| table | Table name for event or process. | Any Str | Recommended |
-| kind | Read operation types. | Str: ``normal``, ``with_shared_locks``, ``high_priority``, ``no_insert``, ``external`` | Recommended |
+| schema | The schema of the object. | Any Str | Required |
+| table | Table name for event or process. | Any Str | Required |
+| kind | Read operation types. | Str: ``normal``, ``with_shared_locks``, ``high_priority``, ``no_insert``, ``external`` | Required |
 
 ### mysql.table.lock_wait.read.time
 
@@ -578,9 +578,9 @@ The total table lock wait read events times.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | Recommended |
-| table | Table name for event or process. | Any Str | Recommended |
-| kind | Read operation types. | Str: ``normal``, ``with_shared_locks``, ``high_priority``, ``no_insert``, ``external`` | Recommended |
+| schema | The schema of the object. | Any Str | Required |
+| table | Table name for event or process. | Any Str | Required |
+| kind | Read operation types. | Str: ``normal``, ``with_shared_locks``, ``high_priority``, ``no_insert``, ``external`` | Required |
 
 ### mysql.table.lock_wait.write.count
 
@@ -594,9 +594,9 @@ The total table lock wait write events.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | Recommended |
-| table | Table name for event or process. | Any Str | Recommended |
-| kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Recommended |
+| schema | The schema of the object. | Any Str | Required |
+| table | Table name for event or process. | Any Str | Required |
+| kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Required |
 
 ### mysql.table.lock_wait.write.time
 
@@ -610,9 +610,9 @@ The total table lock wait write events times.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The schema of the object. | Any Str | Recommended |
-| table | Table name for event or process. | Any Str | Recommended |
-| kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Recommended |
+| schema | The schema of the object. | Any Str | Required |
+| table | Table name for event or process. | Any Str | Required |
+| kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Required |
 
 ### mysql.table.rows
 
@@ -626,8 +626,8 @@ The number of rows for a given table.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| table | Table name for event or process. | Any Str | Recommended |
-| schema | The schema of the object. | Any Str | Recommended |
+| table | Table name for event or process. | Any Str | Required |
+| schema | The schema of the object. | Any Str | Required |
 
 ### mysql.table.size
 
@@ -641,9 +641,9 @@ The table size in bytes for a given table.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| table | Table name for event or process. | Any Str | Recommended |
-| schema | The schema of the object. | Any Str | Recommended |
-| kind | The table size types. | Str: ``data``, ``index`` | Recommended |
+| table | Table name for event or process. | Any Str | Required |
+| schema | The schema of the object. | Any Str | Required |
+| kind | The table size types. | Str: ``data``, ``index`` | Required |
 
 ### mysql.table_open_cache
 
@@ -657,7 +657,7 @@ The number of hits, misses or overflows for open tables cache lookups.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | Recommended |
+| status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | Required |
 
 ## Default Events
 
