@@ -1,0 +1,10 @@
+processors:
+  genainormalizer:
+    semconv_version: "1.39.0"
+    profiles:
+      - openinference
+      - openllmetry
+    remove_originals: true
+    overwrite: false
+    custom_mappings:
+      my_vendor.model: gen_ai.request.model

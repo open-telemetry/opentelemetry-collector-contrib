@@ -1,0 +1,18 @@
+display_name: GenAI Normalizer Processor
+type: genainormalizer
+
+status:
+  class: processor
+  stability:
+    development: [traces]
+  distributions: []
+  codeowners:
+    active: [ps48]
+
+tests:
+  config:
+    semconv_version: "1.39.0"
+    profiles:
+      - openinference
+      - openllmetry
+    remove_originals: true
