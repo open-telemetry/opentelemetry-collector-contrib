@@ -186,8 +186,9 @@ relevant.
 
 The detailed response body for collector health will include the overall status for the
 collector, the overall status for each pipeline in the collector, and the statuses for the
-individual components in each pipeline. The non-detailed response will only contain the overall
-collector health.
+individual components in each pipeline. Components may include an `attributes` field containing
+additional context or metadata about the status event. The non-detailed response will only
+contain the overall collector health.
 
 **Verbose Example**
 
@@ -225,7 +226,10 @@ response body such as:
                     "healthy": true,
                     "status": "StatusRecoverableError",
                     "error": "rpc error: code = ResourceExhausted desc = resource exhausted",
-                    "status_time": "2024-01-18T17:27:32.572301-08:00"
+                    "status_time": "2024-01-18T17:27:32.572301-08:00",
+                    "attributes": {
+                        "endpoint": "staging.example.com:4317"
+                    }
                 },
                 "processor:batch": {
                     "healthy": true,
@@ -270,6 +274,9 @@ Note the following based on this response:
   is set to `false` or it is `true` and the recovery duration has not yet passed.
 - `pipeline:metrics/grpc` has a matching status, as does `exporter:otlp_grpc/staging`. This implicates
   the exporter as the root cause for the pipeline and overall collector status.
+- `exporter:otlp/staging` includes an `attributes` field with additional context about the status
+  event. Attributes are set by the component reporting the status and are only present when a
+  component provides them. The field is omitted when there are no attributes.
 - `pipeline:traces/http` is completely healthy.
 
 **Non-verbose Response example**
