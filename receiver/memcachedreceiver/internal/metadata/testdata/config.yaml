@@ -3,47 +3,104 @@ all_set:
   metrics:
     memcached.bytes:
       enabled: true
+      attributes: []
     memcached.commands:
       enabled: true
+      attributes: ["command"]
     memcached.connections.current:
       enabled: true
+      attributes: []
     memcached.connections.total:
       enabled: true
+      attributes: []
     memcached.cpu.usage:
       enabled: true
+      attributes: ["state"]
     memcached.current_items:
       enabled: true
+      attributes: []
     memcached.evictions:
       enabled: true
+      attributes: []
     memcached.network:
       enabled: true
+      attributes: ["direction"]
     memcached.operation_hit_ratio:
       enabled: true
+      attributes: ["operation"]
     memcached.operations:
       enabled: true
+      attributes: ["type","operation"]
     memcached.threads:
       enabled: true
+      attributes: []
+reaggregate_set:
+  metrics:
+    memcached.bytes:
+      enabled: true
+      attributes: []
+    memcached.commands:
+      enabled: true
+      attributes: []
+    memcached.connections.current:
+      enabled: true
+      attributes: []
+    memcached.connections.total:
+      enabled: true
+      attributes: []
+    memcached.cpu.usage:
+      enabled: true
+      attributes: []
+    memcached.current_items:
+      enabled: true
+      attributes: []
+    memcached.evictions:
+      enabled: true
+      attributes: []
+    memcached.network:
+      enabled: true
+      attributes: []
+    memcached.operation_hit_ratio:
+      enabled: true
+      attributes: []
+    memcached.operations:
+      enabled: true
+      attributes: []
+    memcached.threads:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     memcached.bytes:
       enabled: false
+      attributes: []
     memcached.commands:
       enabled: false
+      attributes: ["command"]
     memcached.connections.current:
       enabled: false
+      attributes: []
     memcached.connections.total:
       enabled: false
+      attributes: []
     memcached.cpu.usage:
       enabled: false
+      attributes: ["state"]
     memcached.current_items:
       enabled: false
+      attributes: []
     memcached.evictions:
       enabled: false
+      attributes: []
     memcached.network:
       enabled: false
+      attributes: ["direction"]
     memcached.operation_hit_ratio:
       enabled: false
+      attributes: ["operation"]
     memcached.operations:
       enabled: false
+      attributes: ["type","operation"]
     memcached.threads:
       enabled: false
+      attributes: []

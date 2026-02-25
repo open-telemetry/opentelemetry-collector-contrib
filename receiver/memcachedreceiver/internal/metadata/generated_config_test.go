@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,17 +27,61 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MemcachedBytes:              MetricConfig{Enabled: true},
-					MemcachedCommands:           MetricConfig{Enabled: true},
-					MemcachedConnectionsCurrent: MetricConfig{Enabled: true},
-					MemcachedConnectionsTotal:   MetricConfig{Enabled: true},
-					MemcachedCPUUsage:           MetricConfig{Enabled: true},
-					MemcachedCurrentItems:       MetricConfig{Enabled: true},
-					MemcachedEvictions:          MetricConfig{Enabled: true},
-					MemcachedNetwork:            MetricConfig{Enabled: true},
-					MemcachedOperationHitRatio:  MetricConfig{Enabled: true},
-					MemcachedOperations:         MetricConfig{Enabled: true},
-					MemcachedThreads:            MetricConfig{Enabled: true},
+					MemcachedBytes: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedCommands: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"command"},
+					},
+					MemcachedConnectionsCurrent: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedConnectionsTotal: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedCPUUsage: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"state"},
+					},
+					MemcachedCurrentItems: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedEvictions: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedNetwork: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
+					},
+					MemcachedOperationHitRatio: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"operation"},
+					},
+					MemcachedOperations: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "operation"},
+					},
+					MemcachedThreads: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
 				},
 			},
 		},
@@ -44,17 +89,61 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MemcachedBytes:              MetricConfig{Enabled: false},
-					MemcachedCommands:           MetricConfig{Enabled: false},
-					MemcachedConnectionsCurrent: MetricConfig{Enabled: false},
-					MemcachedConnectionsTotal:   MetricConfig{Enabled: false},
-					MemcachedCPUUsage:           MetricConfig{Enabled: false},
-					MemcachedCurrentItems:       MetricConfig{Enabled: false},
-					MemcachedEvictions:          MetricConfig{Enabled: false},
-					MemcachedNetwork:            MetricConfig{Enabled: false},
-					MemcachedOperationHitRatio:  MetricConfig{Enabled: false},
-					MemcachedOperations:         MetricConfig{Enabled: false},
-					MemcachedThreads:            MetricConfig{Enabled: false},
+					MemcachedBytes: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedCommands: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"command"},
+					},
+					MemcachedConnectionsCurrent: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedConnectionsTotal: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedCPUUsage: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"state"},
+					},
+					MemcachedCurrentItems: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedEvictions: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					MemcachedNetwork: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
+					},
+					MemcachedOperationHitRatio: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"operation"},
+					},
+					MemcachedOperations: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type", "operation"},
+					},
+					MemcachedThreads: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
 				},
 			},
 		},

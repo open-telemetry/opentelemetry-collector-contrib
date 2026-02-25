@@ -10,10 +10,13 @@ status:
     emeritus: [djaglowski]
     seeking_new: true
 
+reaggregation_enabled: true
+
 attributes:
   command:
     description: The type of command.
     type: string
+    requirement_level: recommended
     enum:
       - get
       - set
@@ -22,12 +25,14 @@ attributes:
   direction:
     description: Direction of data flow.
     type: string
+    requirement_level: recommended
     enum:
       - sent
       - received
   operation:
     description: The type of operation.
     type: string
+    requirement_level: recommended
     enum:
       - increment
       - decrement
@@ -35,6 +40,7 @@ attributes:
   state:
     description: The type of CPU usage.
     type: string
+    requirement_level: recommended
     enum:
       - system
       - user
@@ -42,6 +48,7 @@ attributes:
   type:
     description: Result of cache request.
     type: string
+    requirement_level: recommended
     enum:
       - hit
       - miss
