@@ -68,5 +68,9 @@ resourceLogs:
               stringValue: '{}'
             timeUnixNano: "1609533606000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.messaging_runtime_audit
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
