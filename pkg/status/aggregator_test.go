@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
@@ -538,4 +539,63 @@ func assertNoEventsRecvd(t *testing.T, chans ...<-chan *status.AggregateStatus) 
 		default:
 		}
 	}
+}
+
+func TestAggregateStatusAttributes(t *testing.T) {
+	agg := status.NewAggregator(status.PriorityPermanent)
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+	tracesKey := toPipelineKey(traces.PipelineID)
+
+	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), componentstatus.StatusOK)
+
+	// Record an error with attributes on the exporter
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "connection refused")
+	agg.RecordStatus(
+		traces.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	st, ok := agg.AggregateStatus(status.ScopeAll, status.Verbose)
+	require.True(t, ok)
+
+	// Leaf component should have attributes
+	exporterKey := toComponentKey(traces.ExporterID)
+	leafStatus := st.ComponentStatusMap[tracesKey].ComponentStatusMap[exporterKey]
+	require.NotNil(t, leafStatus)
+	assert.Equal(t, "connection refused", leafStatus.Event.Attributes().AsRaw()["error_msg"])
+
+	// Components without attributes should have empty attributes
+	receiverKey := toComponentKey(traces.ReceiverID)
+	receiverStatus := st.ComponentStatusMap[tracesKey].ComponentStatusMap[receiverKey]
+	require.NotNil(t, receiverStatus)
+	assert.Equal(t, 0, receiverStatus.Event.Attributes().Len())
+}
+
+func TestAggregateStatusSyntheticEventHasNoAttributes(t *testing.T) {
+	agg := status.NewAggregator(status.PriorityPermanent)
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+	tracesKey := toPipelineKey(traces.PipelineID)
+
+	// Seed with StatusOK for all components
+	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), componentstatus.StatusOK)
+
+	// Move one component to StatusStopping — this forces a synthetic event at the
+	// pipeline level (mixed OK + Stopping = aggregate Stopping via synthetic event)
+	agg.RecordStatus(
+		traces.ReceiverID,
+		componentstatus.NewEvent(componentstatus.StatusStopping),
+	)
+
+	st, ok := agg.AggregateStatus(status.ScopeAll, status.Verbose)
+	require.True(t, ok)
+
+	// Pipeline-level status is a synthetic event and should have empty attributes
+	pipelineStatus := st.ComponentStatusMap[tracesKey]
+	assert.Equal(t, componentstatus.StatusStopping, pipelineStatus.Status())
+	assert.Equal(t, 0, pipelineStatus.Event.Attributes().Len())
 }

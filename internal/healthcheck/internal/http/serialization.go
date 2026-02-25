@@ -34,10 +34,11 @@ type serializableStatus struct {
 
 // SerializableEvent is exported for json.Unmarshal
 type SerializableEvent struct {
-	Healthy      bool      `json:"healthy"`
-	StatusString string    `json:"status"`
-	Error        string    `json:"error,omitempty"`
-	Timestamp    time.Time `json:"status_time"`
+	Healthy      bool           `json:"healthy"`
+	StatusString string         `json:"status"`
+	Error        string         `json:"error,omitempty"`
+	Timestamp    time.Time      `json:"status_time"`
+	Attributes   map[string]any `json:"attributes,omitempty"`
 }
 
 var stringToStatusMap = map[string]componentstatus.Status{
@@ -66,6 +67,9 @@ func toSerializableEvent(ev status.Event, isHealthy bool) *SerializableEvent {
 	}
 	if ev.Err() != nil {
 		se.Error = ev.Err().Error()
+	}
+	if attrs := ev.Attributes(); attrs.Len() > 0 {
+		se.Attributes = attrs.AsRaw()
 	}
 	return se
 }

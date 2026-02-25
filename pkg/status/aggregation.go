@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // statusEvent contains a status and timestamp, and can contain an error. Note:
@@ -33,6 +34,11 @@ func (ev *statusEvent) Err() error {
 // Timestamp returns the timestamp associated with the StatusEvent
 func (ev *statusEvent) Timestamp() time.Time {
 	return ev.timestamp
+}
+
+// Attributes returns an empty map for synthetic aggregated events.
+func (ev *statusEvent) Attributes() pcommon.Map {
+	return pcommon.NewMap()
 }
 
 type ErrorPriority int
