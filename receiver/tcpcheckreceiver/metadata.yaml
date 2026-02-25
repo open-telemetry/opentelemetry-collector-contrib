@@ -8,6 +8,8 @@ status:
   codeowners:
     active: [atoulme, michael-burt, chengchuanpeng, yanfeng1992]
 
+reaggregation_enabled: true
+
 resource_attributes:
 
 attributes:
