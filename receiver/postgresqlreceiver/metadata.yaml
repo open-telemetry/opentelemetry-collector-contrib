@@ -11,6 +11,8 @@ status:
     seeking_new: true
     emeritus: [djaglowski]
 
+reaggregation_enabled: true
+
 resource_attributes:
   postgresql.database.name:
     description: The name of the database.
@@ -37,6 +39,7 @@ attributes:
   bg_buffer_source:
     description: The source of a buffer write.
     type: string
+    requirement_level: required
     enum:
       - backend
       - backend_fsync
@@ -46,6 +49,7 @@ attributes:
   bg_checkpoint_type:
     description: The type of checkpoint state.
     type: string
+    requirement_level: required
     enum:
       - requested
       - scheduled
@@ -53,6 +57,7 @@ attributes:
   bg_duration_type:
     description: The type of time spent during the checkpoint.
     type: string
+    requirement_level: required
     enum:
       - sync
       - write
@@ -60,105 +65,138 @@ attributes:
   db.namespace:
     description: The namespace or schema of the database where the query is executed.
     type: string
+    requirement_level: recommended
   db.query.text:
     description: The text of the database query being executed.
     type: string
+    requirement_level: recommended
   db.system.name:
     description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
+    requirement_level: recommended
     enum: [postgresql]
   function:
     description: The name of the function.
     type: string
+    requirement_level: required
   lock_type:
     description: Type of the lockable object.
     type: string
+    requirement_level: required
   mode:
     description: Name of the lock mode held or desired by the process.
     type: string
+    requirement_level: required
   network.peer.address:
     description: IP address of the client connected to this backend.
     type: string
+    requirement_level: recommended
   network.peer.port:
     description: TCP port number that the client is using for communication with this backend.
     type: int
+    requirement_level: recommended
   operation:
     description: The database operation.
     type: string
+    requirement_level: required
     enum: [ins, upd, del, hot_upd]
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
     type: string
+    requirement_level: recommended
   postgresql.calls:
     description: Number of times the statement was executed, reported in delta value.
     type: int
+    requirement_level: recommended
   postgresql.client_hostname:
     description: Host name of the connected client, as reported by a reverse DNS lookup of client_addr.
     type: string
+    requirement_level: recommended
   postgresql.pid:
     description: Process ID of this backend.
     type: int
+    requirement_level: recommended
   postgresql.query_id:
     description: Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed.
     type: string
+    requirement_level: recommended
 
   postgresql.query_plan:
     description: The execution plan used by PostgreSQL for the query.
     type: string
+    requirement_level: recommended
   postgresql.query_start:
     description: Time when the currently active query was started, or if state is not active, when the last query was started.
     type: string
+    requirement_level: recommended
   postgresql.queryid:
     description: Hash code to identify identical normalized queries.
     type: string
+    requirement_level: recommended
   postgresql.rolname:
     description: The name of the PostgreSQL role that executed the query.
     type: string
+    requirement_level: recommended
   postgresql.rows:
     description: Total number of rows retrieved or affected by the statement, reported in delta value.
     type: int
+    requirement_level: recommended
   postgresql.shared_blks_dirtied:
     description: Total number of shared blocks dirtied by the statement, reported in delta value.
     type: int
+    requirement_level: recommended
   postgresql.shared_blks_hit:
     description: Total number of shared block cache hits by the statement, reported in delta value.
     type: int
+    requirement_level: recommended
   postgresql.shared_blks_read:
     description: Total number of shared blocks read by the statement, reported in delta value.
     type: int
+    requirement_level: recommended
   postgresql.shared_blks_written:
     description: Total number of shared blocks written by the statement, reported in delta value.
     type: int
+    requirement_level: recommended
   postgresql.state:
     description: Current overall state of this backend
     type: string
+    requirement_level: recommended
   postgresql.temp_blks_read:
     description: Total number of temp blocks read by the statement, reported in delta value.
     type: int
+    requirement_level: recommended
   postgresql.temp_blks_written:
     description: Total number of temp blocks written by the statement, reported in delta value.
     type: int
+    requirement_level: recommended
   postgresql.total_exec_time:
     description: Total time spent executing the statement, in delta milliseconds.
     type: double
+    requirement_level: recommended
   postgresql.total_plan_time:
     description: Total time spent planning the statement, in delta milliseconds.
     type: double
+    requirement_level: recommended
   postgresql.wait_event:
     description: Wait event name if backend is currently waiting, otherwise NULL.
     type: string
+    requirement_level: recommended
   postgresql.wait_event_type:
     description: The type of event for which the backend is waiting, if any; otherwise NULL.
     type: string
+    requirement_level: recommended
   relation:
     description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
     type: string
+    requirement_level: required
   replication_client:
     description: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
     type: string
+    requirement_level: required
   source:
     description: The block read source type.
     type: string
+    requirement_level: required
     enum:
       - heap_read
       - heap_hit
@@ -171,14 +209,17 @@ attributes:
   state:
     description: The tuple (row) state.
     type: string
+    requirement_level: required
     enum: [dead, live]
   user.name:
     description: Name of the user logged into this backend.
     type: string
+    requirement_level: recommended
   wal_operation_lag:
     name_override: operation
     description: The operation which is responsible for the lag.
     type: string
+    requirement_level: required
     enum: [flush, replay, write]
 events:
   db.server.query_sample:

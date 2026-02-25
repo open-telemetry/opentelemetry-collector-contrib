@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: receiver/postgresql
+
+note: Enable re-aggregation feature
+
+issues: [46373]
+
+subtext: "Part of #45396"
