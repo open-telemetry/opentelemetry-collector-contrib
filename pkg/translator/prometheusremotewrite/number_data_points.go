@@ -20,7 +20,7 @@ func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.Number
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		labels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, model.MetricNameLabel, name)
+		labels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -49,7 +49,7 @@ func (c *prometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDa
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, model.MetricNameLabel, name)
+		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
