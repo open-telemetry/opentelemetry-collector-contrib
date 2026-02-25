@@ -1,4 +1,8 @@
+display_name: HAProxy Receiver
 type: haproxy
+
+description: |
+  The HAProxy receiver generates metrics by polling periodically the HAProxy process through a dedicated socket or HTTP URL.
 
 status:
   class: receiver
