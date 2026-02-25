@@ -3,19 +3,41 @@ all_set:
   metrics:
     system.paging.faults:
       enabled: true
+      attributes: ["type"]
     system.paging.operations:
       enabled: true
+      attributes: ["direction","type"]
     system.paging.usage:
       enabled: true
+      attributes: ["device","state"]
     system.paging.utilization:
       enabled: true
+      attributes: ["device","state"]
+reaggregate_set:
+  metrics:
+    system.paging.faults:
+      enabled: true
+      attributes: []
+    system.paging.operations:
+      enabled: true
+      attributes: []
+    system.paging.usage:
+      enabled: true
+      attributes: []
+    system.paging.utilization:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     system.paging.faults:
       enabled: false
+      attributes: ["type"]
     system.paging.operations:
       enabled: false
+      attributes: ["direction","type"]
     system.paging.usage:
       enabled: false
+      attributes: ["device","state"]
     system.paging.utilization:
       enabled: false
+      attributes: ["device","state"]

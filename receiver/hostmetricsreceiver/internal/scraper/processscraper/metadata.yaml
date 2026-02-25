@@ -57,25 +57,31 @@ resource_attributes:
     enabled: true
     type: int
 
+reaggregation_enabled: true
+
 attributes:
   context_switch_type:
     name_override: type
     description: Type of context switched.
     type: string
+    requirement_level: recommended
     enum: [involuntary, voluntary]
   direction:
     description: Direction of flow of bytes (read or write).
     type: string
+    requirement_level: recommended
     enum: [read, write]
 
   paging_fault_type:
     name_override: type
     description: Type of memory paging fault.
     type: string
+    requirement_level: recommended
     enum: [major, minor]
   state:
     description: Breakdown of CPU usage by type.
     type: string
+    requirement_level: recommended
     enum: [system, user, wait]
 
 metrics:

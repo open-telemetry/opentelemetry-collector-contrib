@@ -10,21 +10,27 @@ status:
 
 sem_conv_version: 1.9.0
 
+reaggregation_enabled: true
+
 attributes:
   device:
     description: Name of the network interface.
     type: string
+    requirement_level: recommended
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
     type: string
+    requirement_level: recommended
     enum: [receive, transmit]
   protocol:
     description: Network protocol, e.g. TCP or UDP.
     type: string
+    requirement_level: recommended
     enum: [tcp]
   state:
     description: State of the network connection.
     type: string
+    requirement_level: recommended
 
 metrics:
   system.network.connections:

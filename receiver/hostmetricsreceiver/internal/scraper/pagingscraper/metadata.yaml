@@ -10,24 +10,30 @@ status:
 
 sem_conv_version: 1.9.0
 
+reaggregation_enabled: true
+
 attributes:
   device:
     description: Name of the page file.
     type: string
+    requirement_level: recommended
 
   direction:
     description: Page In or Page Out.
     type: string
+    requirement_level: recommended
     enum: [page_in, page_out]
 
   state:
     description: Breakdown of paging usage by type.
     type: string
+    requirement_level: recommended
     enum: [cached, free, used]
 
   type:
     description: Type of fault.
     type: string
+    requirement_level: recommended
     enum: [major, minor]
 
 metrics:

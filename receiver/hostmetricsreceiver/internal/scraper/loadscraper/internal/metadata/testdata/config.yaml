@@ -3,15 +3,32 @@ all_set:
   metrics:
     system.cpu.load_average.15m:
       enabled: true
+      attributes: []
     system.cpu.load_average.1m:
       enabled: true
+      attributes: []
     system.cpu.load_average.5m:
       enabled: true
+      attributes: []
+reaggregate_set:
+  metrics:
+    system.cpu.load_average.15m:
+      enabled: true
+      attributes: []
+    system.cpu.load_average.1m:
+      enabled: true
+      attributes: []
+    system.cpu.load_average.5m:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     system.cpu.load_average.15m:
       enabled: false
+      attributes: []
     system.cpu.load_average.1m:
       enabled: false
+      attributes: []
     system.cpu.load_average.5m:
       enabled: false
+      attributes: []

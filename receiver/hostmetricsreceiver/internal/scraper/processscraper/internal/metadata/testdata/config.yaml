@@ -3,32 +3,107 @@ all_set:
   metrics:
     process.context_switches:
       enabled: true
+      attributes: ["type"]
     process.cpu.time:
       enabled: true
+      attributes: ["state"]
     process.cpu.utilization:
       enabled: true
+      attributes: ["state"]
     process.disk.io:
       enabled: true
+      attributes: ["direction"]
     process.disk.operations:
       enabled: true
+      attributes: ["direction"]
     process.handles:
       enabled: true
+      attributes: []
     process.memory.usage:
       enabled: true
+      attributes: []
     process.memory.utilization:
       enabled: true
+      attributes: []
     process.memory.virtual:
       enabled: true
+      attributes: []
     process.open_file_descriptors:
       enabled: true
+      attributes: []
     process.paging.faults:
       enabled: true
+      attributes: ["type"]
     process.signals_pending:
       enabled: true
+      attributes: []
     process.threads:
       enabled: true
+      attributes: []
     process.uptime:
       enabled: true
+      attributes: []
+  resource_attributes:
+    process.cgroup:
+      enabled: true
+    process.command:
+      enabled: true
+    process.command_line:
+      enabled: true
+    process.executable.name:
+      enabled: true
+    process.executable.path:
+      enabled: true
+    process.owner:
+      enabled: true
+    process.parent_pid:
+      enabled: true
+    process.pid:
+      enabled: true
+reaggregate_set:
+  metrics:
+    process.context_switches:
+      enabled: true
+      attributes: []
+    process.cpu.time:
+      enabled: true
+      attributes: []
+    process.cpu.utilization:
+      enabled: true
+      attributes: []
+    process.disk.io:
+      enabled: true
+      attributes: []
+    process.disk.operations:
+      enabled: true
+      attributes: []
+    process.handles:
+      enabled: true
+      attributes: []
+    process.memory.usage:
+      enabled: true
+      attributes: []
+    process.memory.utilization:
+      enabled: true
+      attributes: []
+    process.memory.virtual:
+      enabled: true
+      attributes: []
+    process.open_file_descriptors:
+      enabled: true
+      attributes: []
+    process.paging.faults:
+      enabled: true
+      attributes: []
+    process.signals_pending:
+      enabled: true
+      attributes: []
+    process.threads:
+      enabled: true
+      attributes: []
+    process.uptime:
+      enabled: true
+      attributes: []
   resource_attributes:
     process.cgroup:
       enabled: true
@@ -50,32 +125,46 @@ none_set:
   metrics:
     process.context_switches:
       enabled: false
+      attributes: ["type"]
     process.cpu.time:
       enabled: false
+      attributes: ["state"]
     process.cpu.utilization:
       enabled: false
+      attributes: ["state"]
     process.disk.io:
       enabled: false
+      attributes: ["direction"]
     process.disk.operations:
       enabled: false
+      attributes: ["direction"]
     process.handles:
       enabled: false
+      attributes: []
     process.memory.usage:
       enabled: false
+      attributes: []
     process.memory.utilization:
       enabled: false
+      attributes: []
     process.memory.virtual:
       enabled: false
+      attributes: []
     process.open_file_descriptors:
       enabled: false
+      attributes: []
     process.paging.faults:
       enabled: false
+      attributes: ["type"]
     process.signals_pending:
       enabled: false
+      attributes: []
     process.threads:
       enabled: false
+      attributes: []
     process.uptime:
       enabled: false
+      attributes: []
   resource_attributes:
     process.cgroup:
       enabled: false

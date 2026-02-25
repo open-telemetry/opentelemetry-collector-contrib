@@ -10,26 +10,33 @@ status:
 
 sem_conv_version: 1.9.0
 
+reaggregation_enabled: true
+
 attributes:
   device:
     description: Identifier of the filesystem.
     type: string
+    requirement_level: recommended
 
   mode:
     description: Mountpoint mode such "ro", "rw", etc.
     type: string
+    requirement_level: recommended
 
   mountpoint:
     description: Mountpoint path.
     type: string
+    requirement_level: recommended
 
   state:
     description: Breakdown of filesystem usage by type.
     type: string
+    requirement_level: recommended
     enum: [free, reserved, used]
 
   type:
     type: string
+    requirement_level: recommended
     description: Filesystem type, such as, "ext4", "tmpfs", etc.
 
 metrics:

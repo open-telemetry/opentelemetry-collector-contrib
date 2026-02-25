@@ -3,23 +3,50 @@ all_set:
   metrics:
     system.cpu.frequency:
       enabled: true
+      attributes: ["cpu"]
     system.cpu.logical.count:
       enabled: true
+      attributes: []
     system.cpu.physical.count:
       enabled: true
+      attributes: []
     system.cpu.time:
       enabled: true
+      attributes: ["cpu","state"]
     system.cpu.utilization:
       enabled: true
+      attributes: ["cpu","state"]
+reaggregate_set:
+  metrics:
+    system.cpu.frequency:
+      enabled: true
+      attributes: []
+    system.cpu.logical.count:
+      enabled: true
+      attributes: []
+    system.cpu.physical.count:
+      enabled: true
+      attributes: []
+    system.cpu.time:
+      enabled: true
+      attributes: []
+    system.cpu.utilization:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     system.cpu.frequency:
       enabled: false
+      attributes: ["cpu"]
     system.cpu.logical.count:
       enabled: false
+      attributes: []
     system.cpu.physical.count:
       enabled: false
+      attributes: []
     system.cpu.time:
       enabled: false
+      attributes: ["cpu","state"]
     system.cpu.utilization:
       enabled: false
+      attributes: ["cpu","state"]

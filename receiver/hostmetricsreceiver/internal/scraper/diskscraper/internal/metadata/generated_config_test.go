@@ -26,13 +26,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemDiskIo:                MetricConfig{Enabled: true},
-					SystemDiskIoTime:            MetricConfig{Enabled: true},
-					SystemDiskMerged:            MetricConfig{Enabled: true},
-					SystemDiskOperationTime:     MetricConfig{Enabled: true},
-					SystemDiskOperations:        MetricConfig{Enabled: true},
-					SystemDiskPendingOperations: MetricConfig{Enabled: true},
-					SystemDiskWeightedIoTime:    MetricConfig{Enabled: true},
+					SystemDiskIo: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "direction"},
+					},
+					SystemDiskIoTime: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device"},
+					},
+					SystemDiskMerged: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "direction"},
+					},
+					SystemDiskOperationTime: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "direction"},
+					},
+					SystemDiskOperations: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "direction"},
+					},
+					SystemDiskPendingOperations: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device"},
+					},
+					SystemDiskWeightedIoTime: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device"},
+					},
 				},
 			},
 		},
@@ -40,13 +68,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemDiskIo:                MetricConfig{Enabled: false},
-					SystemDiskIoTime:            MetricConfig{Enabled: false},
-					SystemDiskMerged:            MetricConfig{Enabled: false},
-					SystemDiskOperationTime:     MetricConfig{Enabled: false},
-					SystemDiskOperations:        MetricConfig{Enabled: false},
-					SystemDiskPendingOperations: MetricConfig{Enabled: false},
-					SystemDiskWeightedIoTime:    MetricConfig{Enabled: false},
+					SystemDiskIo: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "direction"},
+					},
+					SystemDiskIoTime: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device"},
+					},
+					SystemDiskMerged: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "direction"},
+					},
+					SystemDiskOperationTime: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "direction"},
+					},
+					SystemDiskOperations: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "direction"},
+					},
+					SystemDiskPendingOperations: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device"},
+					},
+					SystemDiskWeightedIoTime: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device"},
+					},
 				},
 			},
 		},

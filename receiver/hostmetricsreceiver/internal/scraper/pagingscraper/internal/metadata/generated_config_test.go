@@ -26,10 +26,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemPagingFaults:      MetricConfig{Enabled: true},
-					SystemPagingOperations:  MetricConfig{Enabled: true},
-					SystemPagingUsage:       MetricConfig{Enabled: true},
-					SystemPagingUtilization: MetricConfig{Enabled: true},
+					SystemPagingFaults: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type"},
+					},
+					SystemPagingOperations: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction", "type"},
+					},
+					SystemPagingUsage: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "state"},
+					},
+					SystemPagingUtilization: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"device", "state"},
+					},
 				},
 			},
 		},
@@ -37,10 +53,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemPagingFaults:      MetricConfig{Enabled: false},
-					SystemPagingOperations:  MetricConfig{Enabled: false},
-					SystemPagingUsage:       MetricConfig{Enabled: false},
-					SystemPagingUtilization: MetricConfig{Enabled: false},
+					SystemPagingFaults: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type"},
+					},
+					SystemPagingOperations: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction", "type"},
+					},
+					SystemPagingUsage: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "state"},
+					},
+					SystemPagingUtilization: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"device", "state"},
+					},
 				},
 			},
 		},

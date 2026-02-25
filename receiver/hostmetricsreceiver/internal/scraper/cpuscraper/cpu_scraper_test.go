@@ -222,7 +222,6 @@ func TestScrape_CpuCount(t *testing.T) {
 func TestScrape_CpuUtilization(t *testing.T) {
 	type testCase struct {
 		name                string
-		metricsConfig       metadata.MetricsBuilderConfig
 		expectedMetricCount int
 		times               bool
 		utilization         bool
@@ -232,7 +231,6 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:                "Standard",
-			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			times:               true,
 			utilization:         false,
@@ -261,12 +259,9 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			settings := test.metricsConfig
-			if test.metricsConfig.Metrics == (metadata.MetricsConfig{}) {
-				settings = metadata.DefaultMetricsBuilderConfig()
-				settings.Metrics.SystemCPUTime.Enabled = test.times
-				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
-			}
+			settings := metadata.DefaultMetricsBuilderConfig()
+			settings.Metrics.SystemCPUTime.Enabled = test.times
+			settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
 
 			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: settings})
 			err := scraper.start(t.Context(), componenttest.NewNopHost())
