@@ -4,6 +4,7 @@
 package windows
 
 import (
+	"encoding/xml"
 	"os"
 	"path/filepath"
 	"testing"
@@ -788,10 +789,19 @@ var benchmarkXMLDirty = []byte("<Event xmlns=\"http://schemas.microsoft.com/win/
 	"    </EventData>\n" +
 	"</Event>")
 
+// BenchmarkXMLUnmarshal_Baseline calls xml.Unmarshal directly with no
+// sanitization, giving the true lower bound to compare against.
+func BenchmarkXMLUnmarshal_Baseline(b *testing.B) {
+	for b.Loop() {
+		var e EventXML
+		_ = xml.Unmarshal(benchmarkXMLClean, &e)
+	}
+}
+
 // BenchmarkUnmarshalEventXML_CleanInput measures the common-case cost of
 // unmarshalling a typical event with no illegal XML characters. The pre-scan
-// short-circuits before any allocation, so this should be close to the raw
-// xml.Unmarshal baseline.
+// short-circuits before any allocation, so overhead above the baseline should
+// be minimal.
 func BenchmarkUnmarshalEventXML_CleanInput(b *testing.B) {
 	for b.Loop() {
 		_, _ = unmarshalEventXML(benchmarkXMLClean)
