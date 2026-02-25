@@ -9,6 +9,8 @@ status:
     active: [rogercoll]
   unsupported_platforms: [windows]
 
+reaggregation_enabled: true
+
 resource_attributes:
   container.id:
     description: "The ID of the container."
@@ -31,6 +33,7 @@ attributes:
   core:
     description: "The CPU core number when utilising per-CPU metrics."
     type: string
+    requirement_level: required
 
 metrics:
   # BlockIO

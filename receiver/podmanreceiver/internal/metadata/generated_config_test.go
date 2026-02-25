@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,17 +27,61 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoServiceBytesRecursiveRead:  MetricConfig{Enabled: true},
-					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{Enabled: true},
-					ContainerCPUPercent:                          MetricConfig{Enabled: true},
-					ContainerCPUUsagePercpu:                      MetricConfig{Enabled: true},
-					ContainerCPUUsageSystem:                      MetricConfig{Enabled: true},
-					ContainerCPUUsageTotal:                       MetricConfig{Enabled: true},
-					ContainerMemoryPercent:                       MetricConfig{Enabled: true},
-					ContainerMemoryUsageLimit:                    MetricConfig{Enabled: true},
-					ContainerMemoryUsageTotal:                    MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageRxBytes:               MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageTxBytes:               MetricConfig{Enabled: true},
+					ContainerBlockioIoServiceBytesRecursiveRead: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerCPUPercent: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					ContainerCPUUsagePercpu: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"core"},
+					},
+					ContainerCPUUsageSystem: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerCPUUsageTotal: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerMemoryPercent: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					ContainerMemoryUsageLimit: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerMemoryUsageTotal: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerNetworkIoUsageRxBytes: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerNetworkIoUsageTxBytes: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerID:        ResourceAttributeConfig{Enabled: true},
@@ -50,17 +95,61 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoServiceBytesRecursiveRead:  MetricConfig{Enabled: false},
-					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{Enabled: false},
-					ContainerCPUPercent:                          MetricConfig{Enabled: false},
-					ContainerCPUUsagePercpu:                      MetricConfig{Enabled: false},
-					ContainerCPUUsageSystem:                      MetricConfig{Enabled: false},
-					ContainerCPUUsageTotal:                       MetricConfig{Enabled: false},
-					ContainerMemoryPercent:                       MetricConfig{Enabled: false},
-					ContainerMemoryUsageLimit:                    MetricConfig{Enabled: false},
-					ContainerMemoryUsageTotal:                    MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageRxBytes:               MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageTxBytes:               MetricConfig{Enabled: false},
+					ContainerBlockioIoServiceBytesRecursiveRead: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerCPUPercent: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					ContainerCPUUsagePercpu: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"core"},
+					},
+					ContainerCPUUsageSystem: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerCPUUsageTotal: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerMemoryPercent: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					ContainerMemoryUsageLimit: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerMemoryUsageTotal: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerNetworkIoUsageRxBytes: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					ContainerNetworkIoUsageTxBytes: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerID:        ResourceAttributeConfig{Enabled: false},
