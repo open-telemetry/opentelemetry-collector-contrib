@@ -9,6 +9,8 @@ status:
     active: [atoulme, paulojmdias]
     seeking_new: true
 
+reaggregation_enabled: true
+
 resource_attributes:
   ntp.host:
     description: NTP server used. Corresponds to configured `host`.

@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["NtpOffset"] = mb.metricNtpOffset.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,11 +80,17 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpOffsetDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordNtpOffsetDataPoint(ts, 3)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetNtpHost("ntp.host-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricNtpOffset.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -96,17 +112,40 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "ntp.offset":
-					assert.False(t, validatedMetrics["ntp.offset"], "Found a duplicate in the metrics slice: ntp.offset")
-					validatedMetrics["ntp.offset"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Time difference between local and NTP server clocks", ms.At(i).Description())
-					assert.Equal(t, "ns", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ntp.offset"], "Found a duplicate in the metrics slice: ntp.offset")
+						validatedMetrics["ntp.offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Time difference between local and NTP server clocks", ms.At(i).Description())
+						assert.Equal(t, "ns", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["ntp.offset"], "Found a duplicate in the metrics slice: ntp.offset")
+						validatedMetrics["ntp.offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Time difference between local and NTP server clocks", ms.At(i).Description())
+						assert.Equal(t, "ns", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["ntp.offset"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				}
 			}
 		})
