@@ -8,6 +8,8 @@ status:
   codeowners:
     active: [dashpole, schmikei]
 
+reaggregation_enabled: true
+
 resource_attributes:
   device.id:
     description: The name of the network interface.
@@ -31,12 +33,14 @@ attributes:
   class:
     description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.
     type: string
+    requirement_level: required
     enum:
       - datapath
       - services
   direction:
     description: The direction of network flow.
     type: string
+    requirement_level: required
     enum:
       - received
       - transmitted
@@ -44,6 +48,7 @@ attributes:
     name_override: state
     description: The state of storage space.
     type: string
+    requirement_level: required
     enum:
       - used
       - available
@@ -51,6 +56,7 @@ attributes:
     name_override: type
     description: The type of packet counter.
     type: string
+    requirement_level: required
     enum:
       - dropped
       - errored

@@ -3,18 +3,57 @@ all_set:
   metrics:
     nsxt.node.cpu.utilization:
       enabled: true
+      attributes: ["class"]
     nsxt.node.filesystem.usage:
       enabled: true
+      attributes: ["state"]
     nsxt.node.filesystem.utilization:
       enabled: true
+      attributes: []
     nsxt.node.memory.cache.usage:
       enabled: true
+      attributes: []
     nsxt.node.memory.usage:
       enabled: true
+      attributes: []
     nsxt.node.network.io:
       enabled: true
+      attributes: ["direction"]
     nsxt.node.network.packet.count:
       enabled: true
+      attributes: ["direction","type"]
+  resource_attributes:
+    device.id:
+      enabled: true
+    nsxt.node.id:
+      enabled: true
+    nsxt.node.name:
+      enabled: true
+    nsxt.node.type:
+      enabled: true
+reaggregate_set:
+  metrics:
+    nsxt.node.cpu.utilization:
+      enabled: true
+      attributes: ["class"]
+    nsxt.node.filesystem.usage:
+      enabled: true
+      attributes: ["state"]
+    nsxt.node.filesystem.utilization:
+      enabled: true
+      attributes: []
+    nsxt.node.memory.cache.usage:
+      enabled: true
+      attributes: []
+    nsxt.node.memory.usage:
+      enabled: true
+      attributes: []
+    nsxt.node.network.io:
+      enabled: true
+      attributes: ["direction"]
+    nsxt.node.network.packet.count:
+      enabled: true
+      attributes: ["direction","type"]
   resource_attributes:
     device.id:
       enabled: true
@@ -28,18 +67,25 @@ none_set:
   metrics:
     nsxt.node.cpu.utilization:
       enabled: false
+      attributes: ["class"]
     nsxt.node.filesystem.usage:
       enabled: false
+      attributes: ["state"]
     nsxt.node.filesystem.utilization:
       enabled: false
+      attributes: []
     nsxt.node.memory.cache.usage:
       enabled: false
+      attributes: []
     nsxt.node.memory.usage:
       enabled: false
+      attributes: []
     nsxt.node.network.io:
       enabled: false
+      attributes: ["direction"]
     nsxt.node.network.packet.count:
       enabled: false
+      attributes: ["direction","type"]
   resource_attributes:
     device.id:
       enabled: false

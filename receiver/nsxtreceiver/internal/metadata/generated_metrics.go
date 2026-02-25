@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -10,6 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeClass specifies the value class attribute.
@@ -159,9 +167,10 @@ type metricInfo struct {
 }
 
 type metricNsxtNodeCPUUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.cpu.utilization metric with initial data.
@@ -171,17 +180,48 @@ func (m *metricNsxtNodeCPUUtilization) init() {
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricNsxtNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, classAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "class") {
+		dp.Attributes().PutStr("class", classAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("class", classAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -194,6 +234,11 @@ func (m *metricNsxtNodeCPUUtilization) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeCPUUtilization) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -211,9 +256,10 @@ func newMetricNsxtNodeCPUUtilization(cfg MetricConfig) metricNsxtNodeCPUUtilizat
 }
 
 type metricNsxtNodeFilesystemUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.filesystem.usage metric with initial data.
@@ -225,17 +271,48 @@ func (m *metricNsxtNodeFilesystemUsage) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricNsxtNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "state") {
+		dp.Attributes().PutStr("state", diskStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", diskStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -248,6 +325,11 @@ func (m *metricNsxtNodeFilesystemUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeFilesystemUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -265,9 +347,10 @@ func newMetricNsxtNodeFilesystemUsage(cfg MetricConfig) metricNsxtNodeFilesystem
 }
 
 type metricNsxtNodeFilesystemUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.filesystem.utilization metric with initial data.
@@ -276,16 +359,45 @@ func (m *metricNsxtNodeFilesystemUtilization) init() {
 	m.data.SetDescription("The percentage of storage space utilized.")
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricNsxtNodeFilesystemUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -298,6 +410,11 @@ func (m *metricNsxtNodeFilesystemUtilization) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeFilesystemUtilization) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -315,9 +432,10 @@ func newMetricNsxtNodeFilesystemUtilization(cfg MetricConfig) metricNsxtNodeFile
 }
 
 type metricNsxtNodeMemoryCacheUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.memory.cache.usage metric with initial data.
@@ -328,16 +446,45 @@ func (m *metricNsxtNodeMemoryCacheUsage) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricNsxtNodeMemoryCacheUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -350,6 +497,11 @@ func (m *metricNsxtNodeMemoryCacheUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeMemoryCacheUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -367,9 +519,10 @@ func newMetricNsxtNodeMemoryCacheUsage(cfg MetricConfig) metricNsxtNodeMemoryCac
 }
 
 type metricNsxtNodeMemoryUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.memory.usage metric with initial data.
@@ -380,16 +533,45 @@ func (m *metricNsxtNodeMemoryUsage) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricNsxtNodeMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -402,6 +584,11 @@ func (m *metricNsxtNodeMemoryUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -419,9 +606,10 @@ func newMetricNsxtNodeMemoryUsage(cfg MetricConfig) metricNsxtNodeMemoryUsage {
 }
 
 type metricNsxtNodeNetworkIo struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.network.io metric with initial data.
@@ -433,17 +621,48 @@ func (m *metricNsxtNodeNetworkIo) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricNsxtNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "direction") {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -456,6 +675,11 @@ func (m *metricNsxtNodeNetworkIo) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeNetworkIo) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -473,9 +697,10 @@ func newMetricNsxtNodeNetworkIo(cfg MetricConfig) metricNsxtNodeNetworkIo {
 }
 
 type metricNsxtNodeNetworkPacketCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.network.packet.count metric with initial data.
@@ -487,18 +712,51 @@ func (m *metricNsxtNodeNetworkPacketCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricNsxtNodeNetworkPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string, packetTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "direction") {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "type") {
+		dp.Attributes().PutStr("type", packetTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
-	dp.Attributes().PutStr("type", packetTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -511,6 +769,11 @@ func (m *metricNsxtNodeNetworkPacketCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()

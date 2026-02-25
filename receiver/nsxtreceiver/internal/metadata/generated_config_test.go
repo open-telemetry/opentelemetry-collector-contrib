@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,13 +27,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NsxtNodeCPUUtilization:        MetricConfig{Enabled: true},
-					NsxtNodeFilesystemUsage:       MetricConfig{Enabled: true},
-					NsxtNodeFilesystemUtilization: MetricConfig{Enabled: true},
-					NsxtNodeMemoryCacheUsage:      MetricConfig{Enabled: true},
-					NsxtNodeMemoryUsage:           MetricConfig{Enabled: true},
-					NsxtNodeNetworkIo:             MetricConfig{Enabled: true},
-					NsxtNodeNetworkPacketCount:    MetricConfig{Enabled: true},
+					NsxtNodeCPUUtilization: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"class"},
+					},
+					NsxtNodeFilesystemUsage: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"state"},
+					},
+					NsxtNodeFilesystemUtilization: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					NsxtNodeMemoryCacheUsage: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					NsxtNodeMemoryUsage: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					NsxtNodeNetworkIo: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
+					},
+					NsxtNodeNetworkPacketCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction", "type"},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					DeviceID:     ResourceAttributeConfig{Enabled: true},
@@ -46,13 +75,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NsxtNodeCPUUtilization:        MetricConfig{Enabled: false},
-					NsxtNodeFilesystemUsage:       MetricConfig{Enabled: false},
-					NsxtNodeFilesystemUtilization: MetricConfig{Enabled: false},
-					NsxtNodeMemoryCacheUsage:      MetricConfig{Enabled: false},
-					NsxtNodeMemoryUsage:           MetricConfig{Enabled: false},
-					NsxtNodeNetworkIo:             MetricConfig{Enabled: false},
-					NsxtNodeNetworkPacketCount:    MetricConfig{Enabled: false},
+					NsxtNodeCPUUtilization: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"class"},
+					},
+					NsxtNodeFilesystemUsage: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"state"},
+					},
+					NsxtNodeFilesystemUtilization: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					NsxtNodeMemoryCacheUsage: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					NsxtNodeMemoryUsage: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					NsxtNodeNetworkIo: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
+					},
+					NsxtNodeNetworkPacketCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction", "type"},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					DeviceID:     ResourceAttributeConfig{Enabled: false},
