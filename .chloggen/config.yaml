@@ -145,6 +145,7 @@ components:
     - internal/splunk
     - internal/sqlquery
     - internal/tools
+    - pkg/azurelogs
     - pkg/batchperresourceattr
     - pkg/batchpersignal
     - pkg/core/xidutils
@@ -166,7 +167,6 @@ components:
     - pkg/status
     - pkg/topic
     - pkg/translator/azure
-    - pkg/translator/azurelogs
     - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/pprof
