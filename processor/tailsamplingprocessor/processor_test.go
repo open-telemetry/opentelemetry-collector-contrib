@@ -1188,9 +1188,8 @@ func TestDropLargeTraces(t *testing.T) {
 		require.NoError(collect, err)
 
 		expectedTooEarly := metricdata.Metrics{
-			Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
-			Description: "Count of traces that needed to be dropped before the configured wait time [Development]",
-			Unit:        "{traces}",
+			Name: "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
+			Unit: "{traces}",
 			Data: metricdata.Sum[int64]{
 				IsMonotonic: true,
 				Temporality: metricdata.CumulativeTemporality,
@@ -1211,14 +1210,14 @@ func TestDropLargeTraces(t *testing.T) {
 		require.True(collect, tooEarlySum.IsMonotonic, "tooEarly metric must be monotonic")
 		require.Equal(collect, metricdata.CumulativeTemporality, tooEarlySum.Temporality,
 			"tooEarly metric must have CumulativeTemporality")
-		require.Equal(collect, len(expectedTooEarly.Data.(metricdata.Sum[int64]).DataPoints),
-			len(tooEarlySum.DataPoints))
+		require.Len(collect,
+			tooEarlySum.DataPoints,
+			len(expectedTooEarly.Data.(metricdata.Sum[int64]).DataPoints))
 		require.Equal(collect, int64(0), tooEarlySum.DataPoints[0].Value)
 
 		expectedTooLarge := metricdata.Metrics{
-			Name:        "otelcol_processor_tail_sampling_traces_dropped_too_large",
-			Description: "Count of traces that were dropped because they were too large [Development]",
-			Unit:        "{traces}",
+			Name: "otelcol_processor_tail_sampling_traces_dropped_too_large",
+			Unit: "{traces}",
 			Data: metricdata.Sum[int64]{
 				IsMonotonic: true,
 				Temporality: metricdata.CumulativeTemporality,
@@ -1239,8 +1238,9 @@ func TestDropLargeTraces(t *testing.T) {
 		require.True(collect, tooLargeSum.IsMonotonic, "tooLarge metric must be monotonic")
 		require.Equal(collect, metricdata.CumulativeTemporality, tooLargeSum.Temporality,
 			"tooLarge metric must have CumulativeTemporality")
-		require.Equal(collect, len(expectedTooLarge.Data.(metricdata.Sum[int64]).DataPoints),
-			len(tooLargeSum.DataPoints))
+		require.Len(collect,
+			tooLargeSum.DataPoints,
+			len(expectedTooLarge.Data.(metricdata.Sum[int64]).DataPoints))
 		require.Equal(collect, int64(1), tooLargeSum.DataPoints[0].Value)
 	}, 2*time.Second, 100*time.Millisecond)
 }
