@@ -2,6 +2,12 @@ $defs:
   attribute_bind_type:
     description: AttributeBindType specifies the value bind_type attribute.
     type: integer
+  attribute_config:
+    description: AttributeConfig holds configuration information for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
   attribute_direction:
     description: AttributeDirection specifies the value direction attribute.
     type: integer
@@ -24,6 +30,12 @@ $defs:
     description: MetricConfig provides common config for a particular metric.
     type: object
     properties:
+      aggregation_strategy:
+        type: string
+      attributes:
+        type: array
+        items:
+          type: string
       enabled:
         type: boolean
   metrics_builder_config:
