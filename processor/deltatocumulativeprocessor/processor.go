@@ -85,6 +85,31 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 		expo: guard(pmetric.NewExponentialHistogramDataPoint()),
 	}
 
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+
+				// Only sort if it's a Delta metric
+				if metric.Type() == pmetric.MetricTypeSum && metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+					metric.Sum().DataPoints().Sort(func(a, b pmetric.NumberDataPoint) bool {
+						return a.Timestamp() < b.Timestamp()
+					})
+				} else if metric.Type() == pmetric.MetricTypeHistogram && metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+					metric.Histogram().DataPoints().Sort(func(a, b pmetric.HistogramDataPoint) bool {
+						return a.Timestamp() < b.Timestamp()
+					})
+				} else if metric.Type() == pmetric.MetricTypeExponentialHistogram && metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+					metric.ExponentialHistogram().DataPoints().Sort(func(a, b pmetric.ExponentialHistogramDataPoint) bool {
+						return a.Timestamp() < b.Timestamp()
+					})
+				}
+			}
+		}
+	}
+	
 	metrics.Filter(md, func(m metrics.Metric) bool {
 		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta {
 			return keep
