@@ -21,28 +21,28 @@ var (
 	traceEventData = []byte(`[{"topic":"someTopic","subject":"/blobServices/default/containers/traces/blobs/traces-1","eventType":"Microsoft.Storage.BlobCreated","id":"1","data":{"api":"PutBlob","clientRequestId":"1","requestId":"1","eTag":"1","contentType":"text","contentLength":10,"blobType":"BlockBlob","url":"https://oteldata.blob.core.windows.net/traces/traces-1","sequencer":"1","storageDiagnostics":{"batchId":"1"}},"dataVersion":"","metadataVersion":"1","eventTime":"2022-03-25T15:59:50.9251748Z"}]`)
 )
 
-func TestNewBlobEventHandler(t *testing.T) {
+func TestNewEventHubEventHandler(t *testing.T) {
 	blobClient := newMockBlobClient()
-	blobEventHandler := getBlobEventHandler(t, blobClient)
+	blobEventHandler := getEventHubEventHandler(t, blobClient)
 
 	require.NotNil(t, blobEventHandler)
 	assert.Equal(t, blobClient, blobEventHandler.blobClient)
 }
 
-func TestNewMessageHandler(t *testing.T) {
+func TestNewEventHubMessageHandler(t *testing.T) {
 	blobClient := newMockBlobClient()
-	blobEventHandler := getBlobEventHandler(t, blobClient)
+	blobEventHandler := getEventHubEventHandler(t, blobClient)
 
 	logsDataConsumer := newMockLogsDataConsumer()
 	tracesDataConsumer := newMockTracesDataConsumer()
 	blobEventHandler.setLogsDataConsumer(logsDataConsumer)
 	blobEventHandler.setTracesDataConsumer(tracesDataConsumer)
 
-	logEvent := getEvent(logEventData)
+	logEvent := getEventHubEvent(logEventData)
 	err := blobEventHandler.newMessageHandler(t.Context(), logEvent)
 	require.NoError(t, err)
 
-	traceEvent := getEvent(traceEventData)
+	traceEvent := getEventHubEvent(traceEventData)
 	err = blobEventHandler.newMessageHandler(t.Context(), traceEvent)
 	require.NoError(t, err)
 
@@ -51,7 +51,7 @@ func TestNewMessageHandler(t *testing.T) {
 	blobClient.AssertNumberOfCalls(t, "readBlob", 2)
 }
 
-func getEvent(eventData []byte) *azeventhubs.ReceivedEventData {
+func getEventHubEvent(eventData []byte) *azeventhubs.ReceivedEventData {
 	return &azeventhubs.ReceivedEventData{
 		EventData: azeventhubs.EventData{
 			Body: eventData,
@@ -59,8 +59,8 @@ func getEvent(eventData []byte) *azeventhubs.ReceivedEventData {
 	}
 }
 
-func getBlobEventHandler(tb testing.TB, blobClient blobClient) *azureBlobEventHandler {
-	blobEventHandler := newBlobEventHandler(
+func getEventHubEventHandler(tb testing.TB, blobClient blobClient) *eventHubEventHandler {
+	blobEventHandler := newEventHubEventHandler(
 		eventHubString,
 		logsContainerName,
 		tracesContainerName,

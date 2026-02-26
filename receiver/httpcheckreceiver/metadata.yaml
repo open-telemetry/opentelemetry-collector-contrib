@@ -1,4 +1,8 @@
+display_name: HTTP Check Receiver
 type: httpcheck
+
+description: |
+  The HTTP Check Receiver can be used for synthetic checks against HTTP endpoints. 
 
 status:
   class: receiver

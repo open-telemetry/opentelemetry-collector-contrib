@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -106,7 +105,7 @@ type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, Extra
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
-type APIClientsetProvider func(config k8sconfig.APIConfig) (kubernetes.Interface, error)
+type APIClientsetProvider func(config k8sconfig.APIConfig) (k8sconfig.ClientBundle, error)
 
 // Pod represents a kubernetes pod.
 type Pod struct {
