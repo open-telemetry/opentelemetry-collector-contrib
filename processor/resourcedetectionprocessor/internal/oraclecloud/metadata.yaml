@@ -5,7 +5,7 @@ status:
   stability:
     alpha: [traces, metrics, logs, profiles]
   codeowners:
-    active: [dashpole]
+    active: [dashpole, geekdave]
 
 resource_attributes:
   cloud.availability_zone:
@@ -40,6 +40,10 @@ resource_attributes:
     description: The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise.
     enabled: true
     type: string
+  oracle_cloud.realm:
+    description: The Oracle Cloud realm
+    enabled: true
+    type: string    
 
 tests:
   skip_lifecycle: true

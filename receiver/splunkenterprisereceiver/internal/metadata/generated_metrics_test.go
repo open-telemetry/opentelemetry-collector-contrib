@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -51,169 +57,429 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["SplunkAggregationQueueRatio"] = mb.metricSplunkAggregationQueueRatio.config.AggregationStrategy
+			aggMap["SplunkBucketsSearchableStatus"] = mb.metricSplunkBucketsSearchableStatus.config.AggregationStrategy
+			aggMap["SplunkDataIndexesExtendedBucketCount"] = mb.metricSplunkDataIndexesExtendedBucketCount.config.AggregationStrategy
+			aggMap["SplunkDataIndexesExtendedBucketEventCount"] = mb.metricSplunkDataIndexesExtendedBucketEventCount.config.AggregationStrategy
+			aggMap["SplunkDataIndexesExtendedBucketHotCount"] = mb.metricSplunkDataIndexesExtendedBucketHotCount.config.AggregationStrategy
+			aggMap["SplunkDataIndexesExtendedBucketWarmCount"] = mb.metricSplunkDataIndexesExtendedBucketWarmCount.config.AggregationStrategy
+			aggMap["SplunkDataIndexesExtendedEventCount"] = mb.metricSplunkDataIndexesExtendedEventCount.config.AggregationStrategy
+			aggMap["SplunkDataIndexesExtendedRawSize"] = mb.metricSplunkDataIndexesExtendedRawSize.config.AggregationStrategy
+			aggMap["SplunkDataIndexesExtendedTotalSize"] = mb.metricSplunkDataIndexesExtendedTotalSize.config.AggregationStrategy
+			aggMap["SplunkHealth"] = mb.metricSplunkHealth.config.AggregationStrategy
+			aggMap["SplunkIndexerAvgRate"] = mb.metricSplunkIndexerAvgRate.config.AggregationStrategy
+			aggMap["SplunkIndexerCPUTime"] = mb.metricSplunkIndexerCPUTime.config.AggregationStrategy
+			aggMap["SplunkIndexerQueueRatio"] = mb.metricSplunkIndexerQueueRatio.config.AggregationStrategy
+			aggMap["SplunkIndexerRawWriteTime"] = mb.metricSplunkIndexerRawWriteTime.config.AggregationStrategy
+			aggMap["SplunkIndexerRollingrestartStatus"] = mb.metricSplunkIndexerRollingrestartStatus.config.AggregationStrategy
+			aggMap["SplunkIndexerThroughput"] = mb.metricSplunkIndexerThroughput.config.AggregationStrategy
+			aggMap["SplunkIndexesAvgSize"] = mb.metricSplunkIndexesAvgSize.config.AggregationStrategy
+			aggMap["SplunkIndexesAvgUsage"] = mb.metricSplunkIndexesAvgUsage.config.AggregationStrategy
+			aggMap["SplunkIndexesBucketCount"] = mb.metricSplunkIndexesBucketCount.config.AggregationStrategy
+			aggMap["SplunkIndexesMedianDataAge"] = mb.metricSplunkIndexesMedianDataAge.config.AggregationStrategy
+			aggMap["SplunkIndexesSize"] = mb.metricSplunkIndexesSize.config.AggregationStrategy
+			aggMap["SplunkIoAvgIops"] = mb.metricSplunkIoAvgIops.config.AggregationStrategy
+			aggMap["SplunkKvstoreBackupStatus"] = mb.metricSplunkKvstoreBackupStatus.config.AggregationStrategy
+			aggMap["SplunkKvstoreReplicationStatus"] = mb.metricSplunkKvstoreReplicationStatus.config.AggregationStrategy
+			aggMap["SplunkKvstoreStatus"] = mb.metricSplunkKvstoreStatus.config.AggregationStrategy
+			aggMap["SplunkLicenseExpirationSecondsRemaining"] = mb.metricSplunkLicenseExpirationSecondsRemaining.config.AggregationStrategy
+			aggMap["SplunkLicenseIndexUsage"] = mb.metricSplunkLicenseIndexUsage.config.AggregationStrategy
+			aggMap["SplunkParseQueueRatio"] = mb.metricSplunkParseQueueRatio.config.AggregationStrategy
+			aggMap["SplunkPipelineSetCount"] = mb.metricSplunkPipelineSetCount.config.AggregationStrategy
+			aggMap["SplunkSchedulerAvgExecutionLatency"] = mb.metricSplunkSchedulerAvgExecutionLatency.config.AggregationStrategy
+			aggMap["SplunkSchedulerAvgRunTime"] = mb.metricSplunkSchedulerAvgRunTime.config.AggregationStrategy
+			aggMap["SplunkSchedulerCompletionRatio"] = mb.metricSplunkSchedulerCompletionRatio.config.AggregationStrategy
+			aggMap["SplunkSearchDuration"] = mb.metricSplunkSearchDuration.config.AggregationStrategy
+			aggMap["SplunkSearchInitiation"] = mb.metricSplunkSearchInitiation.config.AggregationStrategy
+			aggMap["SplunkSearchStatus"] = mb.metricSplunkSearchStatus.config.AggregationStrategy
+			aggMap["SplunkSearchSuccess"] = mb.metricSplunkSearchSuccess.config.AggregationStrategy
+			aggMap["SplunkServerIntrospectionQueuesCurrent"] = mb.metricSplunkServerIntrospectionQueuesCurrent.config.AggregationStrategy
+			aggMap["SplunkServerIntrospectionQueuesCurrentBytes"] = mb.metricSplunkServerIntrospectionQueuesCurrentBytes.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsAdhoc"] = mb.metricSplunkServerSearchartifactsAdhoc.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsAdhocSize"] = mb.metricSplunkServerSearchartifactsAdhocSize.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsCompleted"] = mb.metricSplunkServerSearchartifactsCompleted.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsCompletedSize"] = mb.metricSplunkServerSearchartifactsCompletedSize.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsIncomplete"] = mb.metricSplunkServerSearchartifactsIncomplete.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsIncompleteSize"] = mb.metricSplunkServerSearchartifactsIncompleteSize.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsInvalid"] = mb.metricSplunkServerSearchartifactsInvalid.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsJobCacheCount"] = mb.metricSplunkServerSearchartifactsJobCacheCount.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsJobCacheSize"] = mb.metricSplunkServerSearchartifactsJobCacheSize.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsSavedsearches"] = mb.metricSplunkServerSearchartifactsSavedsearches.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsScheduled"] = mb.metricSplunkServerSearchartifactsScheduled.config.AggregationStrategy
+			aggMap["SplunkServerSearchartifactsScheduledSize"] = mb.metricSplunkServerSearchartifactsScheduledSize.config.AggregationStrategy
+			aggMap["SplunkTypingQueueRatio"] = mb.metricSplunkTypingQueueRatio.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
 			allMetricsCount++
 			mb.RecordSplunkAggregationQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkAggregationQueueRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkBucketsSearchableStatusDataPoint(ts, 1, "splunk.host-val", "splunk.indexer.searchable-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkBucketsSearchableStatusDataPoint(ts, 3, "splunk.host-val-2", "splunk.indexer.searchable-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedBucketCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkDataIndexesExtendedBucketCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.bucket.dir-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.bucket.dir-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.bucket.dir-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.bucket.dir-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.bucket.dir-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.bucket.dir-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedEventCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkDataIndexesExtendedEventCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkHealthDataPoint(ts, 1, "splunk.feature-val", "splunk.feature.health-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkHealthDataPoint(ts, 3, "splunk.feature-val-2", "splunk.feature.health-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerAvgRateDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexerAvgRateDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerCPUTimeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexerCPUTimeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexerQueueRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerRollingrestartStatusDataPoint(ts, 1, false, false, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexerRollingrestartStatusDataPoint(ts, 3, true, true, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerThroughputDataPoint(ts, 1, "splunk.indexer.status-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexerThroughputDataPoint(ts, 3, "splunk.indexer.status-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesAvgSizeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexesAvgSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesAvgUsageDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexesAvgUsageDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesBucketCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexesBucketCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesMedianDataAgeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexesMedianDataAgeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesSizeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIndexesSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkIoAvgIopsDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkIoAvgIopsDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkKvstoreBackupStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkKvstoreBackupStatusDataPoint(ts, 3, "splunk.kvstore.status.value-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 3, "splunk.kvstore.status.value-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage.engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkKvstoreStatusDataPoint(ts, 3, "splunk.kvstore.storage.engine-val-2", "splunk.kvstore.external-val-2", "splunk.kvstore.status.value-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(ts, 1, "splunk.license.status-val", "splunk.license.label-val", "splunk.license.type-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(ts, 3, "splunk.license.status-val-2", "splunk.license.label-val-2", "splunk.license.type-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkParseQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkParseQueueRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkPipelineSetCountDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkPipelineSetCountDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkSchedulerAvgRunTimeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkSchedulerAvgRunTimeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkSchedulerCompletionRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkSchedulerCompletionRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkSearchDurationDataPoint(ts, 1, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkSearchDurationDataPoint(ts, 3, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkSearchInitiationDataPoint(ts, 1, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkSearchInitiationDataPoint(ts, 3, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkSearchStatusDataPoint(ts, 1, "splunk.search.state-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkSearchStatusDataPoint(ts, 3, "splunk.search.state-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkSearchSuccessDataPoint(ts, 1, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkSearchSuccessDataPoint(ts, 3, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts, 1, "splunk.queue.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts, 3, "splunk.queue.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts, 1, "splunk.queue.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts, 3, "splunk.queue.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsAdhocDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsAdhocDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsAdhocSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsAdhocSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsCompletedDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsCompletedDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsCompletedSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsCompletedSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsInvalidDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsInvalidDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(ts, 1, "splunk.host-val", "splunk.searchartifacts.cache.type-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.searchartifacts.cache.type-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsScheduledDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsScheduledDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsScheduledSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkServerSearchartifactsScheduledSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSplunkTypingQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkTypingQueueRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+			}
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSplunkAggregationQueueRatio.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkBucketsSearchableStatus.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkDataIndexesExtendedBucketCount.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkDataIndexesExtendedBucketEventCount.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkDataIndexesExtendedBucketHotCount.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkDataIndexesExtendedBucketWarmCount.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkDataIndexesExtendedEventCount.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkDataIndexesExtendedRawSize.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkDataIndexesExtendedTotalSize.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkHealth.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexerAvgRate.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexerCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexerQueueRatio.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexerRawWriteTime.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexerRollingrestartStatus.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexerThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexesAvgSize.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexesAvgUsage.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexesBucketCount.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexesMedianDataAge.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIndexesSize.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkIoAvgIops.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkKvstoreBackupStatus.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkKvstoreReplicationStatus.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkKvstoreStatus.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkLicenseExpirationSecondsRemaining.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkLicenseIndexUsage.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkParseQueueRatio.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkPipelineSetCount.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkSchedulerAvgExecutionLatency.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkSchedulerAvgRunTime.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkSchedulerCompletionRatio.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkSearchDuration.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkSearchInitiation.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkSearchStatus.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkSearchSuccess.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerIntrospectionQueuesCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerIntrospectionQueuesCurrentBytes.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsAdhoc.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsAdhocSize.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsCompleted.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsCompletedSize.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsIncomplete.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsIncompleteSize.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsInvalid.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsJobCacheCount.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsJobCacheSize.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsSavedsearches.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsScheduled.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkServerSearchartifactsScheduledSize.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkTypingQueueRatio.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -235,1100 +501,2595 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "splunk.aggregation.queue.ratio":
-					assert.False(t, validatedMetrics["splunk.aggregation.queue.ratio"], "Found a duplicate in the metrics slice: splunk.aggregation.queue.ratio")
-					validatedMetrics["splunk.aggregation.queue.ratio"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "{%}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.aggregation.queue.ratio"], "Found a duplicate in the metrics slice: splunk.aggregation.queue.ratio")
+						validatedMetrics["splunk.aggregation.queue.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.aggregation.queue.ratio"], "Found a duplicate in the metrics slice: splunk.aggregation.queue.ratio")
+						validatedMetrics["splunk.aggregation.queue.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.aggregation.queue.ratio"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.buckets.searchable.status":
-					assert.False(t, validatedMetrics["splunk.buckets.searchable.status"], "Found a duplicate in the metrics slice: splunk.buckets.searchable.status")
-					validatedMetrics["splunk.buckets.searchable.status"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "{count}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.indexer.searchable")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.indexer.searchable-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.buckets.searchable.status"], "Found a duplicate in the metrics slice: splunk.buckets.searchable.status")
+						validatedMetrics["splunk.buckets.searchable.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{count}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.indexer.searchable")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.indexer.searchable-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.buckets.searchable.status"], "Found a duplicate in the metrics slice: splunk.buckets.searchable.status")
+						validatedMetrics["splunk.buckets.searchable.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{count}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.buckets.searchable.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.indexer.searchable")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.data.indexes.extended.bucket.count":
-					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.count")
-					validatedMetrics["splunk.data.indexes.extended.bucket.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Count of buckets per index", ms.At(i).Description())
-					assert.Equal(t, "{buckets}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.count")
+						validatedMetrics["splunk.data.indexes.extended.bucket.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Count of buckets per index", ms.At(i).Description())
+						assert.Equal(t, "{buckets}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.count")
+						validatedMetrics["splunk.data.indexes.extended.bucket.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Count of buckets per index", ms.At(i).Description())
+						assert.Equal(t, "{buckets}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.data.indexes.extended.bucket.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.data.indexes.extended.bucket.event.count":
-					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.event.count")
-					validatedMetrics["splunk.data.indexes.extended.bucket.event.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Count of events in this bucket super-directory. *Note:** Must be pointed at specific indexer `endpoint`.", ms.At(i).Description())
-					assert.Equal(t, "{events}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.event.count")
+						validatedMetrics["splunk.data.indexes.extended.bucket.event.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Count of events in this bucket super-directory. *Note:** Must be pointed at specific indexer `endpoint`.", ms.At(i).Description())
+						assert.Equal(t, "{events}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.event.count")
+						validatedMetrics["splunk.data.indexes.extended.bucket.event.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Count of events in this bucket super-directory. *Note:** Must be pointed at specific indexer `endpoint`.", ms.At(i).Description())
+						assert.Equal(t, "{events}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.data.indexes.extended.bucket.event.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.bucket.dir")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.data.indexes.extended.bucket.hot.count":
-					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.hot.count")
-					validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "(If size > 0) Number of hot buckets. *Note:** Must be pointed at specific indexer `endpoint`.", ms.At(i).Description())
-					assert.Equal(t, "{buckets}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.hot.count")
+						validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "(If size > 0) Number of hot buckets. *Note:** Must be pointed at specific indexer `endpoint`.", ms.At(i).Description())
+						assert.Equal(t, "{buckets}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.hot.count")
+						validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "(If size > 0) Number of hot buckets. *Note:** Must be pointed at specific indexer `endpoint`.", ms.At(i).Description())
+						assert.Equal(t, "{buckets}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.data.indexes.extended.bucket.hot.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.bucket.dir")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.data.indexes.extended.bucket.warm.count":
-					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.warm.count")
-					validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "(If size > 0) Number of warm buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
-					assert.Equal(t, "{buckets}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.warm.count")
+						validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "(If size > 0) Number of warm buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "{buckets}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.warm.count")
+						validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "(If size > 0) Number of warm buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "{buckets}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.data.indexes.extended.bucket.warm.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.bucket.dir")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.data.indexes.extended.event.count":
-					assert.False(t, validatedMetrics["splunk.data.indexes.extended.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.event.count")
-					validatedMetrics["splunk.data.indexes.extended.event.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
-					assert.Equal(t, "{events}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.event.count")
+						validatedMetrics["splunk.data.indexes.extended.event.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "{events}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.event.count")
+						validatedMetrics["splunk.data.indexes.extended.event.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "{events}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.data.indexes.extended.event.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.data.indexes.extended.raw.size":
-					assert.False(t, validatedMetrics["splunk.data.indexes.extended.raw.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.raw.size")
-					validatedMetrics["splunk.data.indexes.extended.raw.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.raw.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.raw.size")
+						validatedMetrics["splunk.data.indexes.extended.raw.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.raw.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.raw.size")
+						validatedMetrics["splunk.data.indexes.extended.raw.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.data.indexes.extended.raw.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.data.indexes.extended.total.size":
-					assert.False(t, validatedMetrics["splunk.data.indexes.extended.total.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.total.size")
-					validatedMetrics["splunk.data.indexes.extended.total.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Size in bytes on disk of this index *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.total.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.total.size")
+						validatedMetrics["splunk.data.indexes.extended.total.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Size in bytes on disk of this index *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.data.indexes.extended.total.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.total.size")
+						validatedMetrics["splunk.data.indexes.extended.total.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Size in bytes on disk of this index *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.data.indexes.extended.total.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.health":
-					assert.False(t, validatedMetrics["splunk.health"], "Found a duplicate in the metrics slice: splunk.health")
-					validatedMetrics["splunk.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.feature")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.feature-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.feature.health")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.feature.health-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.health"], "Found a duplicate in the metrics slice: splunk.health")
+						validatedMetrics["splunk.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.feature")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.feature-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.feature.health")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.feature.health-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.health"], "Found a duplicate in the metrics slice: splunk.health")
+						validatedMetrics["splunk.health"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.health"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.feature")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.feature.health")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexer.avg.rate":
-					assert.False(t, validatedMetrics["splunk.indexer.avg.rate"], "Found a duplicate in the metrics slice: splunk.indexer.avg.rate")
-					validatedMetrics["splunk.indexer.avg.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "KBy", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexer.avg.rate"], "Found a duplicate in the metrics slice: splunk.indexer.avg.rate")
+						validatedMetrics["splunk.indexer.avg.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "KBy", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexer.avg.rate"], "Found a duplicate in the metrics slice: splunk.indexer.avg.rate")
+						validatedMetrics["splunk.indexer.avg.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "KBy", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.indexer.avg.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexer.cpu.time":
-					assert.False(t, validatedMetrics["splunk.indexer.cpu.time"], "Found a duplicate in the metrics slice: splunk.indexer.cpu.time")
-					validatedMetrics["splunk.indexer.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the number of indexing process cpu seconds per instance", ms.At(i).Description())
-					assert.Equal(t, "{s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexer.cpu.time"], "Found a duplicate in the metrics slice: splunk.indexer.cpu.time")
+						validatedMetrics["splunk.indexer.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the number of indexing process cpu seconds per instance", ms.At(i).Description())
+						assert.Equal(t, "{s}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexer.cpu.time"], "Found a duplicate in the metrics slice: splunk.indexer.cpu.time")
+						validatedMetrics["splunk.indexer.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the number of indexing process cpu seconds per instance", ms.At(i).Description())
+						assert.Equal(t, "{s}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.indexer.cpu.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexer.queue.ratio":
-					assert.False(t, validatedMetrics["splunk.indexer.queue.ratio"], "Found a duplicate in the metrics slice: splunk.indexer.queue.ratio")
-					validatedMetrics["splunk.indexer.queue.ratio"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average indexer index queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "{%}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexer.queue.ratio"], "Found a duplicate in the metrics slice: splunk.indexer.queue.ratio")
+						validatedMetrics["splunk.indexer.queue.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average indexer index queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexer.queue.ratio"], "Found a duplicate in the metrics slice: splunk.indexer.queue.ratio")
+						validatedMetrics["splunk.indexer.queue.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average indexer index queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.indexer.queue.ratio"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexer.raw.write.time":
-					assert.False(t, validatedMetrics["splunk.indexer.raw.write.time"], "Found a duplicate in the metrics slice: splunk.indexer.raw.write.time")
-					validatedMetrics["splunk.indexer.raw.write.time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the number of raw write seconds per instance", ms.At(i).Description())
-					assert.Equal(t, "{s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexer.raw.write.time"], "Found a duplicate in the metrics slice: splunk.indexer.raw.write.time")
+						validatedMetrics["splunk.indexer.raw.write.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the number of raw write seconds per instance", ms.At(i).Description())
+						assert.Equal(t, "{s}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexer.raw.write.time"], "Found a duplicate in the metrics slice: splunk.indexer.raw.write.time")
+						validatedMetrics["splunk.indexer.raw.write.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the number of raw write seconds per instance", ms.At(i).Description())
+						assert.Equal(t, "{s}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.indexer.raw.write.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexer.rollingrestart.status":
-					assert.False(t, validatedMetrics["splunk.indexer.rollingrestart.status"], "Found a duplicate in the metrics slice: splunk.indexer.rollingrestart.status")
-					validatedMetrics["splunk.indexer.rollingrestart.status"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The status of a rolling restart.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.searchable.restart")
-					assert.True(t, ok)
-					assert.False(t, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("splunk.rollingorrestart")
-					assert.True(t, ok)
-					assert.False(t, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexer.rollingrestart.status"], "Found a duplicate in the metrics slice: splunk.indexer.rollingrestart.status")
+						validatedMetrics["splunk.indexer.rollingrestart.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The status of a rolling restart.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.searchable.restart")
+						assert.True(t, ok)
+						assert.False(t, attrVal.Bool())
+						attrVal, ok = dp.Attributes().Get("splunk.rollingorrestart")
+						assert.True(t, ok)
+						assert.False(t, attrVal.Bool())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexer.rollingrestart.status"], "Found a duplicate in the metrics slice: splunk.indexer.rollingrestart.status")
+						validatedMetrics["splunk.indexer.rollingrestart.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The status of a rolling restart.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.indexer.rollingrestart.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.searchable.restart")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.rollingorrestart")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexer.throughput":
-					assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
-					validatedMetrics["splunk.indexer.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
-					assert.Equal(t, "By/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.indexer.status")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.indexer.status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
+						validatedMetrics["splunk.indexer.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "By/s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.indexer.status")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.indexer.status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
+						validatedMetrics["splunk.indexer.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "By/s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.indexer.throughput"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.indexer.status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexes.avg.size":
-					assert.False(t, validatedMetrics["splunk.indexes.avg.size"], "Found a duplicate in the metrics slice: splunk.indexes.avg.size")
-					validatedMetrics["splunk.indexes.avg.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "Gb", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexes.avg.size"], "Found a duplicate in the metrics slice: splunk.indexes.avg.size")
+						validatedMetrics["splunk.indexes.avg.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "Gb", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexes.avg.size"], "Found a duplicate in the metrics slice: splunk.indexes.avg.size")
+						validatedMetrics["splunk.indexes.avg.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "Gb", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.indexes.avg.size"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexes.avg.usage":
-					assert.False(t, validatedMetrics["splunk.indexes.avg.usage"], "Found a duplicate in the metrics slice: splunk.indexes.avg.usage")
-					validatedMetrics["splunk.indexes.avg.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "{%}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexes.avg.usage"], "Found a duplicate in the metrics slice: splunk.indexes.avg.usage")
+						validatedMetrics["splunk.indexes.avg.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexes.avg.usage"], "Found a duplicate in the metrics slice: splunk.indexes.avg.usage")
+						validatedMetrics["splunk.indexes.avg.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.indexes.avg.usage"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexes.bucket.count":
-					assert.False(t, validatedMetrics["splunk.indexes.bucket.count"], "Found a duplicate in the metrics slice: splunk.indexes.bucket.count")
-					validatedMetrics["splunk.indexes.bucket.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the indexes and their bucket counts. *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "{count}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexes.bucket.count"], "Found a duplicate in the metrics slice: splunk.indexes.bucket.count")
+						validatedMetrics["splunk.indexes.bucket.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their bucket counts. *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{count}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexes.bucket.count"], "Found a duplicate in the metrics slice: splunk.indexes.bucket.count")
+						validatedMetrics["splunk.indexes.bucket.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their bucket counts. *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{count}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.indexes.bucket.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexes.median.data.age":
-					assert.False(t, validatedMetrics["splunk.indexes.median.data.age"], "Found a duplicate in the metrics slice: splunk.indexes.median.data.age")
-					validatedMetrics["splunk.indexes.median.data.age"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "{days}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexes.median.data.age"], "Found a duplicate in the metrics slice: splunk.indexes.median.data.age")
+						validatedMetrics["splunk.indexes.median.data.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{days}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexes.median.data.age"], "Found a duplicate in the metrics slice: splunk.indexes.median.data.age")
+						validatedMetrics["splunk.indexes.median.data.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{days}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.indexes.median.data.age"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.indexes.size":
-					assert.False(t, validatedMetrics["splunk.indexes.size"], "Found a duplicate in the metrics slice: splunk.indexes.size")
-					validatedMetrics["splunk.indexes.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "Gb", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.indexes.size"], "Found a duplicate in the metrics slice: splunk.indexes.size")
+						validatedMetrics["splunk.indexes.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "Gb", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.indexes.size"], "Found a duplicate in the metrics slice: splunk.indexes.size")
+						validatedMetrics["splunk.indexes.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "Gb", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.indexes.size"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.io.avg.iops":
-					assert.False(t, validatedMetrics["splunk.io.avg.iops"], "Found a duplicate in the metrics slice: splunk.io.avg.iops")
-					validatedMetrics["splunk.io.avg.iops"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average IOPs used per instance", ms.At(i).Description())
-					assert.Equal(t, "{iops}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.io.avg.iops"], "Found a duplicate in the metrics slice: splunk.io.avg.iops")
+						validatedMetrics["splunk.io.avg.iops"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average IOPs used per instance", ms.At(i).Description())
+						assert.Equal(t, "{iops}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.io.avg.iops"], "Found a duplicate in the metrics slice: splunk.io.avg.iops")
+						validatedMetrics["splunk.io.avg.iops"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average IOPs used per instance", ms.At(i).Description())
+						assert.Equal(t, "{iops}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.io.avg.iops"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.kvstore.backup.status":
-					assert.False(t, validatedMetrics["splunk.kvstore.backup.status"], "Found a duplicate in the metrics slice: splunk.kvstore.backup.status")
-					validatedMetrics["splunk.kvstore.backup.status"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Backup and restore status of the KV store.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.kvstore.backup.status"], "Found a duplicate in the metrics slice: splunk.kvstore.backup.status")
+						validatedMetrics["splunk.kvstore.backup.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Backup and restore status of the KV store.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.kvstore.backup.status"], "Found a duplicate in the metrics slice: splunk.kvstore.backup.status")
+						validatedMetrics["splunk.kvstore.backup.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Backup and restore status of the KV store.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.kvstore.backup.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.kvstore.status.value")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.kvstore.replication.status":
-					assert.False(t, validatedMetrics["splunk.kvstore.replication.status"], "Found a duplicate in the metrics slice: splunk.kvstore.replication.status")
-					validatedMetrics["splunk.kvstore.replication.status"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Replication status of the KV store.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.kvstore.replication.status"], "Found a duplicate in the metrics slice: splunk.kvstore.replication.status")
+						validatedMetrics["splunk.kvstore.replication.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Replication status of the KV store.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.kvstore.replication.status"], "Found a duplicate in the metrics slice: splunk.kvstore.replication.status")
+						validatedMetrics["splunk.kvstore.replication.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Replication status of the KV store.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.kvstore.replication.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.kvstore.status.value")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.kvstore.status":
-					assert.False(t, validatedMetrics["splunk.kvstore.status"], "Found a duplicate in the metrics slice: splunk.kvstore.status")
-					validatedMetrics["splunk.kvstore.status"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "This is the overall status of the kvstore for the given deployment.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.kvstore.storage.engine-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.kvstore.external")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.kvstore.external-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.kvstore.status.value")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.kvstore.status"], "Found a duplicate in the metrics slice: splunk.kvstore.status")
+						validatedMetrics["splunk.kvstore.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "This is the overall status of the kvstore for the given deployment.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.kvstore.storage.engine-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.kvstore.external")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.kvstore.external-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.kvstore.status.value")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.kvstore.status"], "Found a duplicate in the metrics slice: splunk.kvstore.status")
+						validatedMetrics["splunk.kvstore.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "This is the overall status of the kvstore for the given deployment.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.kvstore.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.kvstore.external")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.kvstore.status.value")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.license.expiration.seconds_remaining":
-					assert.False(t, validatedMetrics["splunk.license.expiration.seconds_remaining"], "Found a duplicate in the metrics slice: splunk.license.expiration.seconds_remaining")
-					validatedMetrics["splunk.license.expiration.seconds_remaining"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "{seconds}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.license.status")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.license.status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.license.label")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.license.label-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.license.type")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.license.type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.license.expiration.seconds_remaining"], "Found a duplicate in the metrics slice: splunk.license.expiration.seconds_remaining")
+						validatedMetrics["splunk.license.expiration.seconds_remaining"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{seconds}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.license.status")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.license.status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.license.label")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.license.label-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.license.type")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.license.type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.license.expiration.seconds_remaining"], "Found a duplicate in the metrics slice: splunk.license.expiration.seconds_remaining")
+						validatedMetrics["splunk.license.expiration.seconds_remaining"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{seconds}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.license.expiration.seconds_remaining"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.license.status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.license.label")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.license.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.license.index.usage":
-					assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
-					validatedMetrics["splunk.license.index.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the indexed license usage per index", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
+						validatedMetrics["splunk.license.index.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexed license usage per index", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
+						validatedMetrics["splunk.license.index.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the indexed license usage per index", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.license.index.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.index.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.parse.queue.ratio":
-					assert.False(t, validatedMetrics["splunk.parse.queue.ratio"], "Found a duplicate in the metrics slice: splunk.parse.queue.ratio")
-					validatedMetrics["splunk.parse.queue.ratio"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "{%}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.parse.queue.ratio"], "Found a duplicate in the metrics slice: splunk.parse.queue.ratio")
+						validatedMetrics["splunk.parse.queue.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.parse.queue.ratio"], "Found a duplicate in the metrics slice: splunk.parse.queue.ratio")
+						validatedMetrics["splunk.parse.queue.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.parse.queue.ratio"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.pipeline.set.count":
-					assert.False(t, validatedMetrics["splunk.pipeline.set.count"], "Found a duplicate in the metrics slice: splunk.pipeline.set.count")
-					validatedMetrics["splunk.pipeline.set.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "KBy", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.pipeline.set.count"], "Found a duplicate in the metrics slice: splunk.pipeline.set.count")
+						validatedMetrics["splunk.pipeline.set.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "KBy", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.pipeline.set.count"], "Found a duplicate in the metrics slice: splunk.pipeline.set.count")
+						validatedMetrics["splunk.pipeline.set.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "KBy", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.pipeline.set.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.scheduler.avg.execution.latency":
-					assert.False(t, validatedMetrics["splunk.scheduler.avg.execution.latency"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.execution.latency")
-					validatedMetrics["splunk.scheduler.avg.execution.latency"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average execution latency of scheduled searches", ms.At(i).Description())
-					assert.Equal(t, "{ms}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.scheduler.avg.execution.latency"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.execution.latency")
+						validatedMetrics["splunk.scheduler.avg.execution.latency"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average execution latency of scheduled searches", ms.At(i).Description())
+						assert.Equal(t, "{ms}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.scheduler.avg.execution.latency"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.execution.latency")
+						validatedMetrics["splunk.scheduler.avg.execution.latency"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average execution latency of scheduled searches", ms.At(i).Description())
+						assert.Equal(t, "{ms}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.scheduler.avg.execution.latency"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.scheduler.avg.run.time":
-					assert.False(t, validatedMetrics["splunk.scheduler.avg.run.time"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.run.time")
-					validatedMetrics["splunk.scheduler.avg.run.time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average runtime of scheduled searches", ms.At(i).Description())
-					assert.Equal(t, "{ms}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.scheduler.avg.run.time"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.run.time")
+						validatedMetrics["splunk.scheduler.avg.run.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average runtime of scheduled searches", ms.At(i).Description())
+						assert.Equal(t, "{ms}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.scheduler.avg.run.time"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.run.time")
+						validatedMetrics["splunk.scheduler.avg.run.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average runtime of scheduled searches", ms.At(i).Description())
+						assert.Equal(t, "{ms}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.scheduler.avg.run.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.scheduler.completion.ratio":
-					assert.False(t, validatedMetrics["splunk.scheduler.completion.ratio"], "Found a duplicate in the metrics slice: splunk.scheduler.completion.ratio")
-					validatedMetrics["splunk.scheduler.completion.ratio"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the ratio of completed to skipped scheduled searches", ms.At(i).Description())
-					assert.Equal(t, "{%}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.scheduler.completion.ratio"], "Found a duplicate in the metrics slice: splunk.scheduler.completion.ratio")
+						validatedMetrics["splunk.scheduler.completion.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the ratio of completed to skipped scheduled searches", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.scheduler.completion.ratio"], "Found a duplicate in the metrics slice: splunk.scheduler.completion.ratio")
+						validatedMetrics["splunk.scheduler.completion.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the ratio of completed to skipped scheduled searches", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.scheduler.completion.ratio"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.search.duration":
-					assert.False(t, validatedMetrics["splunk.search.duration"], "Found a duplicate in the metrics slice: splunk.search.duration")
-					validatedMetrics["splunk.search.duration"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the duration in seconds of the last search probe call.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.search.duration"], "Found a duplicate in the metrics slice: splunk.search.duration")
+						validatedMetrics["splunk.search.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the duration in seconds of the last search probe call.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.search.duration"], "Found a duplicate in the metrics slice: splunk.search.duration")
+						validatedMetrics["splunk.search.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the duration in seconds of the last search probe call.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.search.duration"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.search.initiation":
-					assert.False(t, validatedMetrics["splunk.search.initiation"], "Found a duplicate in the metrics slice: splunk.search.initiation")
-					validatedMetrics["splunk.search.initiation"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking whether the last search probe successfully initiated a search.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.search.initiation"], "Found a duplicate in the metrics slice: splunk.search.initiation")
+						validatedMetrics["splunk.search.initiation"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking whether the last search probe successfully initiated a search.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.search.initiation"], "Found a duplicate in the metrics slice: splunk.search.initiation")
+						validatedMetrics["splunk.search.initiation"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking whether the last search probe successfully initiated a search.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.search.initiation"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.search.status":
-					assert.False(t, validatedMetrics["splunk.search.status"], "Found a duplicate in the metrics slice: splunk.search.status")
-					validatedMetrics["splunk.search.status"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the dispatch status of the last search probe.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.search.state")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.search.state-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.search.status"], "Found a duplicate in the metrics slice: splunk.search.status")
+						validatedMetrics["splunk.search.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the dispatch status of the last search probe.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.search.state")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.search.state-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.search.status"], "Found a duplicate in the metrics slice: splunk.search.status")
+						validatedMetrics["splunk.search.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the dispatch status of the last search probe.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.search.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.search.state")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.search.success":
-					assert.False(t, validatedMetrics["splunk.search.success"], "Found a duplicate in the metrics slice: splunk.search.success")
-					validatedMetrics["splunk.search.success"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking whether the last search probe call was successful with the dispatch state 'DONE'.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.search.success"], "Found a duplicate in the metrics slice: splunk.search.success")
+						validatedMetrics["splunk.search.success"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking whether the last search probe call was successful with the dispatch state 'DONE'.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.search.success"], "Found a duplicate in the metrics slice: splunk.search.success")
+						validatedMetrics["splunk.search.success"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking whether the last search probe call was successful with the dispatch state 'DONE'.", ms.At(i).Description())
+						assert.Equal(t, "{status}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.search.success"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.introspection.queues.current":
-					assert.False(t, validatedMetrics["splunk.server.introspection.queues.current"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current")
-					validatedMetrics["splunk.server.introspection.queues.current"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
-					assert.Equal(t, "{queues}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.queue.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.queue.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.introspection.queues.current"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current")
+						validatedMetrics["splunk.server.introspection.queues.current"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "{queues}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.queue.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.queue.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.introspection.queues.current"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current")
+						validatedMetrics["splunk.server.introspection.queues.current"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "{queues}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.introspection.queues.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.queue.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.introspection.queues.current.bytes":
-					assert.False(t, validatedMetrics["splunk.server.introspection.queues.current.bytes"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current.bytes")
-					validatedMetrics["splunk.server.introspection.queues.current.bytes"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.queue.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.queue.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.introspection.queues.current.bytes"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current.bytes")
+						validatedMetrics["splunk.server.introspection.queues.current.bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.queue.name")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.queue.name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.introspection.queues.current.bytes"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current.bytes")
+						validatedMetrics["splunk.server.introspection.queues.current.bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.introspection.queues.current.bytes"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.queue.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.adhoc":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc")
-					validatedMetrics["splunk.server.searchartifacts.adhoc"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc")
+						validatedMetrics["splunk.server.searchartifacts.adhoc"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc")
+						validatedMetrics["splunk.server.searchartifacts.adhoc"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.adhoc"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.adhoc.size":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc.size")
-					validatedMetrics["splunk.server.searchartifacts.adhoc.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc.size")
+						validatedMetrics["splunk.server.searchartifacts.adhoc.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc.size")
+						validatedMetrics["splunk.server.searchartifacts.adhoc.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.adhoc.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.completed":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed")
-					validatedMetrics["splunk.server.searchartifacts.completed"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed")
+						validatedMetrics["splunk.server.searchartifacts.completed"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed")
+						validatedMetrics["splunk.server.searchartifacts.completed"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.completed"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.completed.size":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed.size")
-					validatedMetrics["splunk.server.searchartifacts.completed.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed.size")
+						validatedMetrics["splunk.server.searchartifacts.completed.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed.size")
+						validatedMetrics["splunk.server.searchartifacts.completed.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.completed.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.incomplete":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete")
-					validatedMetrics["splunk.server.searchartifacts.incomplete"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete")
+						validatedMetrics["splunk.server.searchartifacts.incomplete"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete")
+						validatedMetrics["splunk.server.searchartifacts.incomplete"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.incomplete"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.incomplete.size":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete.size")
-					validatedMetrics["splunk.server.searchartifacts.incomplete.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete.size")
+						validatedMetrics["splunk.server.searchartifacts.incomplete.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete.size")
+						validatedMetrics["splunk.server.searchartifacts.incomplete.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.incomplete.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.invalid":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.invalid"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.invalid")
-					validatedMetrics["splunk.server.searchartifacts.invalid"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.invalid"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.invalid")
+						validatedMetrics["splunk.server.searchartifacts.invalid"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.invalid"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.invalid")
+						validatedMetrics["splunk.server.searchartifacts.invalid"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.invalid"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.job.cache.count":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.count"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.count")
-					validatedMetrics["splunk.server.searchartifacts.job.cache.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking number search artifacts metadata stored in memory, available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.count"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.count")
+						validatedMetrics["splunk.server.searchartifacts.job.cache.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number search artifacts metadata stored in memory, available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.count"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.count")
+						validatedMetrics["splunk.server.searchartifacts.job.cache.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number search artifacts metadata stored in memory, available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.job.cache.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.job.cache.size":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.size")
-					validatedMetrics["splunk.server.searchartifacts.job.cache.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking, in megabytes, memory used to cache job status and job info of all search artifacts, available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{mb}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.searchartifacts.cache.type")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.searchartifacts.cache.type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.size")
+						validatedMetrics["splunk.server.searchartifacts.job.cache.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking, in megabytes, memory used to cache job status and job info of all search artifacts, available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{mb}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.searchartifacts.cache.type")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.searchartifacts.cache.type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.size")
+						validatedMetrics["splunk.server.searchartifacts.job.cache.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking, in megabytes, memory used to cache job status and job info of all search artifacts, available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{mb}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.job.cache.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.searchartifacts.cache.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.savedsearches":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.savedsearches"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.savedsearches")
-					validatedMetrics["splunk.server.searchartifacts.savedsearches"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.savedsearches"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.savedsearches")
+						validatedMetrics["splunk.server.searchartifacts.savedsearches"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.savedsearches"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.savedsearches")
+						validatedMetrics["splunk.server.searchartifacts.savedsearches"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.savedsearches"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.scheduled":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled")
-					validatedMetrics["splunk.server.searchartifacts.scheduled"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled")
+						validatedMetrics["splunk.server.searchartifacts.scheduled"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled")
+						validatedMetrics["splunk.server.searchartifacts.scheduled"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.scheduled"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.server.searchartifacts.scheduled.size":
-					assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled.size")
-					validatedMetrics["splunk.server.searchartifacts.scheduled.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
-					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled.size")
+						validatedMetrics["splunk.server.searchartifacts.scheduled.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled.size")
+						validatedMetrics["splunk.server.searchartifacts.scheduled.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", ms.At(i).Description())
+						assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.server.searchartifacts.scheduled.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				case "splunk.typing.queue.ratio":
-					assert.False(t, validatedMetrics["splunk.typing.queue.ratio"], "Found a duplicate in the metrics slice: splunk.typing.queue.ratio")
-					validatedMetrics["splunk.typing.queue.ratio"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average indexer typing queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
-					assert.Equal(t, "{%}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("splunk.host")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.host-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.typing.queue.ratio"], "Found a duplicate in the metrics slice: splunk.typing.queue.ratio")
+						validatedMetrics["splunk.typing.queue.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average indexer typing queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.typing.queue.ratio"], "Found a duplicate in the metrics slice: splunk.typing.queue.ratio")
+						validatedMetrics["splunk.typing.queue.ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Gauge tracking the average indexer typing queue ration (%). *Note:** Search is best run against a Cluster Manager.", ms.At(i).Description())
+						assert.Equal(t, "{%}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["splunk.typing.queue.ratio"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

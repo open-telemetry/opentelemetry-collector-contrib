@@ -290,6 +290,30 @@ func TestSplitMetrics(t *testing.T) {
 			name:      "duplicate_stream_id",
 			splitFunc: splitMetricsByStreamID,
 		},
+		{
+			name: "basic_attributes",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"resource_key", "scope_key", "aaa"})
+			},
+		},
+		{
+			name: "attributes_resource_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"resource_key"})
+			},
+		},
+		{
+			name: "attributes_scope_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"scope_key"})
+			},
+		},
+		{
+			name: "attributes_datapoint_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"aaa"})
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -315,8 +339,9 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name       string
-		routingKey string
+		name              string
+		routingKey        string
+		routingAttributes []string
 	}{
 		{
 			name:       "resource_service_name",
@@ -334,6 +359,11 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			name:       "stream_id",
 			routingKey: streamIDRoutingStr,
 		},
+		{
+			name:              "attributes",
+			routingKey:        attrRoutingStr,
+			routingAttributes: []string{"resource_key", "scope_key", "aaa"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -345,9 +375,9 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 				Resolver: ResolverSettings{
 					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 				},
-				RoutingKey: tc.routingKey,
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttributes,
 			}
-
 			p, err := newMetricsExporter(createSettings, config)
 			require.NoError(t, err)
 			require.NotNil(t, p)
@@ -492,8 +522,9 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name       string
-		routingKey string
+		name              string
+		routingKey        string
+		routingAttributes []string
 	}{
 		{
 			name:       "resource_service_name",
@@ -511,6 +542,11 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			name:       "stream_id",
 			routingKey: streamIDRoutingStr,
 		},
+		{
+			name:              "attributes",
+			routingKey:        attrRoutingStr,
+			routingAttributes: []string{"resource_key", "scope_key", "aaa"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -522,7 +558,8 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 				Resolver: ResolverSettings{
 					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}}),
 				},
-				RoutingKey: tc.routingKey,
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttributes,
 			}
 
 			p, err := newMetricsExporter(createSettings, config)

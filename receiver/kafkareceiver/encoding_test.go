@@ -384,36 +384,35 @@ func TestNewTracesUnmarshalerExtension(t *testing.T) {
 }
 
 func TestNewProfilesUnmarshaler(t *testing.T) {
-	profiles := testdata.GenerateProfiles(3)
-
-	otlpProtoProfiles, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(profiles)
-	require.NoError(t, err)
-	otlpJSONProfiles, err := (&pprofile.JSONMarshaler{}).MarshalProfiles(profiles)
-	require.NoError(t, err)
-
 	for _, tc := range []struct {
 		encoding string
-		input    []byte
+		marshal  func(pprofile.Profiles) ([]byte, error)
 		check    func(*testing.T, pprofile.Profiles)
 	}{
 		{
 			encoding: "otlp_proto",
-			input:    otlpProtoProfiles,
+			marshal:  (&pprofile.ProtoMarshaler{}).MarshalProfiles,
 			check: func(t *testing.T, actual pprofile.Profiles) {
-				assert.NoError(t, pprofiletest.CompareProfiles(profiles, actual))
+				expected := testdata.GenerateProfiles(3)
+				assert.NoError(t, pprofiletest.CompareProfiles(expected, actual))
 			},
 		},
 		{
 			encoding: "otlp_json",
-			input:    otlpJSONProfiles,
+			marshal:  (&pprofile.JSONMarshaler{}).MarshalProfiles,
 			check: func(t *testing.T, actual pprofile.Profiles) {
-				assert.NoError(t, pprofiletest.CompareProfiles(profiles, actual))
+				expected := testdata.GenerateProfiles(3)
+				assert.NoError(t, pprofiletest.CompareProfiles(expected, actual))
 			},
 		},
 	} {
 		t.Run(tc.encoding, func(t *testing.T) {
+			profiles := testdata.GenerateProfiles(3)
+			input, err := tc.marshal(profiles)
+			require.NoError(t, err)
+
 			u := mustNewProfilesUnmarshaler(t, tc.encoding, componenttest.NewNopHost())
-			out, err := u.UnmarshalProfiles(tc.input)
+			out, err := u.UnmarshalProfiles(input)
 			require.NoError(t, err)
 			tc.check(t, out)
 		})
