@@ -1,0 +1,7 @@
+change_type: enhancement
+component: pkg/ottl
+note: Add `delete_matching_values` OTTL function to conditionally remove map entries based on value regex.
+issues: [43804]
+subtext:
+change_logs: [user, api]
+
