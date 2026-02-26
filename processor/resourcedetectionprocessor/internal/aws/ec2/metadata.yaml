@@ -43,12 +43,3 @@ resource_attributes:
 tests:
   skip_lifecycle: true
   skip_shutdown: true
-
-feature_gates:
-  - id: processor.resourcedetection.ec2.getTagsFromIMDS
-    stage: beta
-    description: >-
-      When enabled, the EC2 resource detector will attempt to get tags
-      from the instance metadata service.
-    from_version: v0.147.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46046

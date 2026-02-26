@@ -17,13 +17,3 @@
 | host.image.id | The host image id | Any Str | true |
 | host.name | The hostname | Any Str | true |
 | host.type | The host instance type | Any Str | true |
-
-## Feature Gates
-
-This component has the following feature gates:
-
-| Feature Gate | Stage | Description | From Version | To Version | Reference |
-| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `processor.resourcedetection.ec2.getTagsFromIMDS` | beta | When enabled, the EC2 resource detector will attempt to get tags from the instance metadata service. | v0.147.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46046) |
-
-For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -16,7 +16,6 @@ import (
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
@@ -183,7 +182,7 @@ func TestDetector_Detect(t *testing.T) {
 		wantErr               bool
 		tagsProvider          ec2ifaceBuilder
 		failOnMissingMetadata bool
-		gateEnabled           bool
+		tagsFromIMDS          bool
 	}{
 		{
 			name: "success",
@@ -216,7 +215,7 @@ func TestDetector_Detect(t *testing.T) {
 			}(),
 		},
 		{
-			name: "success with tags via IMDS (FG enabled)",
+			name: "success with tags via IMDS",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
@@ -248,10 +247,10 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("ec2.tag.tag2", "val2")
 				return res
 			}(),
-			gateEnabled: true,
+			tagsFromIMDS: true,
 		},
 		{
-			name: "IMDS fails returns resource without tags (FG enabled)",
+			name: "IMDS fails returns resource without tags",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
@@ -281,10 +280,10 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("host.name", "example-hostname")
 				return res
 			}(),
-			gateEnabled: true,
+			tagsFromIMDS: true,
 		},
 		{
-			name: "success with tags via EC2 API only (FG disabled)",
+			name: "success with tags via EC2 API",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
@@ -316,10 +315,9 @@ func TestDetector_Detect(t *testing.T) {
 				return res
 			}(),
 			tagsProvider: &mockClientBuilder{},
-			gateEnabled:  false,
 		},
 		{
-			name: "EC2 API fails returns resource without tags (FG disabled)",
+			name: "EC2 API fails returns resource without tags",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
@@ -349,7 +347,6 @@ func TestDetector_Detect(t *testing.T) {
 				return res
 			}(),
 			tagsProvider: &mockClientBuilderError{},
-			gateEnabled:  false,
 		},
 		{
 			name: "endpoint not available",
@@ -400,14 +397,6 @@ func TestDetector_Detect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if len(tt.tagKeyRegexes) != 0 {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					metadata.ProcessorResourcedetectionEc2GetTagsFromIMDSFeatureGate.ID(), tt.gateEnabled))
-				t.Cleanup(func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(
-						metadata.ProcessorResourcedetectionEc2GetTagsFromIMDSFeatureGate.ID(), true))
-				})
-			}
 			d := &Detector{
 				metadataProvider:      tt.fields.metadataProvider,
 				logger:                zap.NewNop(),
@@ -415,6 +404,7 @@ func TestDetector_Detect(t *testing.T) {
 				tagKeyRegexes:         tt.tagKeyRegexes,
 				ec2ClientBuilder:      tt.tagsProvider,
 				failOnMissingMetadata: tt.failOnMissingMetadata,
+				tagsFromIMDS:          tt.tagsFromIMDS,
 			}
 			got, _, err := d.Detect(tt.args.ctx)
 

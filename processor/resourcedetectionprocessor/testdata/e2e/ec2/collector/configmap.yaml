@@ -38,6 +38,7 @@ data:
               enabled: true
             host.type:
               enabled: true
+          tags_from_imds: true
           tags:
             - Name
             - Test

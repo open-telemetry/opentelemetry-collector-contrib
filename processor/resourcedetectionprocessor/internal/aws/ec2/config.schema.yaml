@@ -15,3 +15,9 @@ properties:
     type: array
     items:
       type: string
+  tags_from_imds:
+    description: >
+      When true, instance tags are fetched via IMDS (no IAM permissions required,
+      but requires InstanceMetadataTags=enabled on the instance).
+      When false (default), tags are fetched via the EC2 DescribeTags API.
+    type: boolean

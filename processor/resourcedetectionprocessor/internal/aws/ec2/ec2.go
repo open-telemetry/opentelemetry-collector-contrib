@@ -57,6 +57,7 @@ type Detector struct {
 	rb                    *metadata.ResourceBuilder
 	ec2ClientBuilder      ec2ifaceBuilder
 	failOnMissingMetadata bool
+	tagsFromIMDS          bool
 }
 
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -83,6 +84,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		ec2ClientBuilder:      &ec2ClientBuilder{},
 		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		tagsFromIMDS:          cfg.TagsFromIMDS,
 	}, nil
 }
 
@@ -118,14 +120,14 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	if len(d.tagKeyRegexes) != 0 {
 		var tags map[string]string
-		if metadata.ProcessorResourcedetectionEc2GetTagsFromIMDSFeatureGate.IsEnabled() {
-			// Gate enabled: use IMDS only (no IAM permissions needed, requires InstanceMetadataTags=enabled)
+		if d.tagsFromIMDS {
+			// Use IMDS: no IAM permissions needed, requires InstanceMetadataTags=enabled on the instance
 			tags, err = fetchIMDSTags(ctx, d.metadataProvider, d.tagKeyRegexes)
 			if err != nil {
 				d.logger.Warn("failed to fetch tags from IMDS", zap.Error(err))
 			}
 		} else {
-			// Gate disabled: use EC2 DescribeTags API only (old behavior)
+			// Use EC2 DescribeTags API (default): requires ec2:DescribeTags IAM permission
 			httpClient := getClientConfig(ctx, d.logger)
 			ec2Client, err := d.ec2ClientBuilder.buildClient(ctx, meta.Region, httpClient)
 			if err != nil {
