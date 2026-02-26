@@ -986,7 +986,7 @@ func (m mockStatusEvent) Timestamp() time.Time {
 	return m.timestamp
 }
 
-func (m mockStatusEvent) Attributes() pcommon.Map {
+func (mockStatusEvent) Attributes() pcommon.Map {
 	return pcommon.NewMap()
 }
 

@@ -37,7 +37,7 @@ func (ev *statusEvent) Timestamp() time.Time {
 }
 
 // Attributes returns an empty map for synthetic aggregated events.
-func (ev *statusEvent) Attributes() pcommon.Map {
+func (*statusEvent) Attributes() pcommon.Map {
 	return pcommon.NewMap()
 }
 
