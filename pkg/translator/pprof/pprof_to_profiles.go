@@ -125,7 +125,20 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 	sp.SetSchemaUrl(semconv.SchemaURL)
 
 	// Use a dedicated pprofile.Profile for each sample type.
-	for stIdx, st := range src.SampleType {
+	// By convention, pprof uses the last sample type as default, while OTel Profiles
+	// uses the first profile as default. Therefore, swap first and last.
+	for stIdx := range src.SampleType {
+		// Swap first and last: last pprof sample type becomes first OTel profile
+		var mappedIdx int
+		switch stIdx {
+		case 0:
+			mappedIdx = len(src.SampleType) - 1
+		case len(src.SampleType) - 1:
+			mappedIdx = 0
+		default:
+			mappedIdx = stIdx
+		}
+		st := src.SampleType[mappedIdx]
 		p := sp.Profiles().AppendEmpty()
 
 		// pprof.Profile.sample_type
@@ -141,7 +154,7 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 			s.SetStackIndex(stackIdx)
 
 			// pprof.Sample.value
-			s.Values().Append(sample.Value[stIdx])
+			s.Values().Append(sample.Value[mappedIdx])
 
 			// pprof.Sample.label - this field is split into string and numeric labels.
 			for lk, lv := range sample.Label {

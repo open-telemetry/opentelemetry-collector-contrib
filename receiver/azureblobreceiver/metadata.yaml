@@ -7,7 +7,7 @@ status:
     alpha: [logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [eedorenko, mx-psi]
+    active: [eedorenko, mx-psi, dyl10s]
 
 # TODO: Update the exporter to pass the tests
 tests:

@@ -56,6 +56,8 @@ go.opentelemetry.io/collector/pdata v1.52.1-0.20260219223409-66996adfaaf7 h1:fnX
 go.opentelemetry.io/collector/pdata v1.52.1-0.20260219223409-66996adfaaf7/go.mod h1:+w6A2FXrMDDIwjRgQaud11Ifobng/j/FW3upZtaVKHc=
 go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260219223409-66996adfaaf7 h1:biy3Lio7MROQxN6F7TnSBHcZs7+jtISMXRP5H6EfcL4=
 go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260219223409-66996adfaaf7/go.mod h1:gNaqTrI/3sdZxtwYcR4yei89Kd3T1rXKGFpVonPQv/U=
+go.opentelemetry.io/collector/pdata/xpdata v0.146.2-0.20260219223409-66996adfaaf7 h1:Xb+2uGxHcSj5UpAcIQkRVcvD1w/fUVWHkCJKBfy05EM=
+go.opentelemetry.io/collector/pdata/xpdata v0.146.2-0.20260219223409-66996adfaaf7/go.mod h1:rOeWBaq86aRNxeHXRTNGvoSIhOZOFfxWjhicbvvKO04=
 go.opentelemetry.io/proto/slim/otlp v1.9.0 h1:fPVMv8tP3TrsqlkH1HWYUpbCY9cAIemx184VGkS6vlE=
 go.opentelemetry.io/proto/slim/otlp v1.9.0/go.mod h1:xXdeJJ90Gqyll+orzUkY4bOd2HECo5JofeoLpymVqdI=
 go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.2.0 h1:o13nadWDNkH/quoDomDUClnQBpdQQ2Qqv0lQBjIXjE8=
