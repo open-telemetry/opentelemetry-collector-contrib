@@ -2311,16 +2311,6 @@ resourceMetrics:
                         stringValue: completed
                     - key: thread_pool_name
                       value:
-                        stringValue: rollup_indexing
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: completed
-                    - key: thread_pool_name
-                      value:
                         stringValue: search
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
@@ -2651,16 +2641,6 @@ resourceMetrics:
                         stringValue: rejected
                     - key: thread_pool_name
                       value:
-                        stringValue: rollup_indexing
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: rejected
-                    - key: thread_pool_name
-                      value:
                         stringValue: search
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
@@ -2950,13 +2930,6 @@ resourceMetrics:
                   attributes:
                     - key: thread_pool_name
                       value:
-                        stringValue: rollup_indexing
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: thread_pool_name
-                      value:
                         stringValue: search
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
@@ -3233,16 +3206,6 @@ resourceMetrics:
                     - key: thread_pool_name
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: active
-                    - key: thread_pool_name
-                      value:
-                        stringValue: rollup_indexing
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
@@ -3573,16 +3536,6 @@ resourceMetrics:
                     - key: thread_pool_name
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: idle
-                    - key: thread_pool_name
-                      value:
-                        stringValue: rollup_indexing
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
