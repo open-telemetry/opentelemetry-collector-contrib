@@ -107,7 +107,7 @@ func (m *metricSystemCPUFrequency) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, socketAttributeValue string, coreAttributeValue string) {
+func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -116,8 +116,8 @@ func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("cpu", cpuAttributeValue)
-	dp.Attributes().PutStr("socket", socketAttributeValue)
-	dp.Attributes().PutStr("core", coreAttributeValue)
+	dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
+	dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -267,7 +267,7 @@ func (m *metricSystemCPUTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string, socketAttributeValue string, coreAttributeValue string) {
+func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -277,8 +277,8 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	dp.Attributes().PutStr("state", stateAttributeValue)
-	dp.Attributes().PutStr("socket", socketAttributeValue)
-	dp.Attributes().PutStr("core", coreAttributeValue)
+	dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
+	dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -322,7 +322,7 @@ func (m *metricSystemCPUUtilization) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string, socketAttributeValue string, coreAttributeValue string) {
+func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -332,8 +332,8 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	dp.Attributes().PutStr("state", stateAttributeValue)
-	dp.Attributes().PutStr("socket", socketAttributeValue)
-	dp.Attributes().PutStr("core", coreAttributeValue)
+	dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
+	dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -498,8 +498,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordSystemCPUFrequencyDataPoint adds a data point to system.cpu.frequency metric.
-func (mb *MetricsBuilder) RecordSystemCPUFrequencyDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, socketAttributeValue string, coreAttributeValue string) {
-	mb.metricSystemCPUFrequency.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, socketAttributeValue, coreAttributeValue)
+func (mb *MetricsBuilder) RecordSystemCPUFrequencyDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
+	mb.metricSystemCPUFrequency.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, hostCPUSocketIDAttributeValue, hostCPUCoreIDAttributeValue)
 }
 
 // RecordSystemCPULogicalCountDataPoint adds a data point to system.cpu.logical.count metric.
@@ -513,13 +513,13 @@ func (mb *MetricsBuilder) RecordSystemCPUPhysicalCountDataPoint(ts pcommon.Times
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
-func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState, socketAttributeValue string, coreAttributeValue string) {
-	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), socketAttributeValue, coreAttributeValue)
+func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
+	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), hostCPUSocketIDAttributeValue, hostCPUCoreIDAttributeValue)
 }
 
 // RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState, socketAttributeValue string, coreAttributeValue string) {
-	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), socketAttributeValue, coreAttributeValue)
+func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState, hostCPUSocketIDAttributeValue string, hostCPUCoreIDAttributeValue string) {
+	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), hostCPUSocketIDAttributeValue, hostCPUCoreIDAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

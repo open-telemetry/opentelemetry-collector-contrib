@@ -59,7 +59,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordSystemCPUFrequencyDataPoint(ts, 1, "cpu-val", "socket-val", "core-val")
+			mb.RecordSystemCPUFrequencyDataPoint(ts, 1, "cpu-val", "host.cpu.socket.id-val", "host.cpu.core.id-val")
 
 			allMetricsCount++
 			mb.RecordSystemCPULogicalCountDataPoint(ts, 1)
@@ -69,10 +69,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle, "socket-val", "core-val")
+			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle, "host.cpu.socket.id-val", "host.cpu.core.id-val")
 
 			allMetricsCount++
-			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle, "socket-val", "core-val")
+			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle, "host.cpu.socket.id-val", "host.cpu.core.id-val")
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
@@ -111,12 +111,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("cpu")
 					assert.True(t, ok)
 					assert.Equal(t, "cpu-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("socket")
+					attrVal, ok = dp.Attributes().Get("host.cpu.socket.id")
 					assert.True(t, ok)
-					assert.Equal(t, "socket-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("core")
+					assert.Equal(t, "host.cpu.socket.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("host.cpu.core.id")
 					assert.True(t, ok)
-					assert.Equal(t, "core-val", attrVal.Str())
+					assert.Equal(t, "host.cpu.core.id-val", attrVal.Str())
 				case "system.cpu.logical.count":
 					assert.False(t, validatedMetrics["system.cpu.logical.count"], "Found a duplicate in the metrics slice: system.cpu.logical.count")
 					validatedMetrics["system.cpu.logical.count"] = true
@@ -165,12 +165,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
 					assert.Equal(t, "idle", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("socket")
+					attrVal, ok = dp.Attributes().Get("host.cpu.socket.id")
 					assert.True(t, ok)
-					assert.Equal(t, "socket-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("core")
+					assert.Equal(t, "host.cpu.socket.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("host.cpu.core.id")
 					assert.True(t, ok)
-					assert.Equal(t, "core-val", attrVal.Str())
+					assert.Equal(t, "host.cpu.core.id-val", attrVal.Str())
 				case "system.cpu.utilization":
 					assert.False(t, validatedMetrics["system.cpu.utilization"], "Found a duplicate in the metrics slice: system.cpu.utilization")
 					validatedMetrics["system.cpu.utilization"] = true
@@ -189,12 +189,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
 					assert.Equal(t, "idle", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("socket")
+					attrVal, ok = dp.Attributes().Get("host.cpu.socket.id")
 					assert.True(t, ok)
-					assert.Equal(t, "socket-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("core")
+					assert.Equal(t, "host.cpu.socket.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("host.cpu.core.id")
 					assert.True(t, ok)
-					assert.Equal(t, "core-val", attrVal.Str())
+					assert.Equal(t, "host.cpu.core.id-val", attrVal.Str())
 				}
 			}
 		})

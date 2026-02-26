@@ -11,15 +11,15 @@ status:
 sem_conv_version: 1.9.0
 
 attributes:
-  core:
-    description: Core number of the CPU.
-    type: string
-
   cpu:
     description: Logical CPU number starting at 0.
     type: string
 
-  socket:
+  host.cpu.core.id:
+    description: Core number of the CPU.
+    type: string
+
+  host.cpu.socket.id:
     description: Socket number of the CPU.
     type: string
 
@@ -36,7 +36,7 @@ metrics:
     stability: development
     gauge:
       value_type: double
-    attributes: [cpu, socket, core]
+    attributes: [cpu, host.cpu.socket.id, host.cpu.core.id]
 
   system.cpu.logical.count:
     enabled: false
@@ -67,7 +67,7 @@ metrics:
       value_type: double
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [cpu, state, socket, core]
+    attributes: [cpu, state, host.cpu.socket.id, host.cpu.core.id]
 
   system.cpu.utilization:
     enabled: false
@@ -76,4 +76,4 @@ metrics:
     stability: development
     gauge:
       value_type: double
-    attributes: [cpu, state, socket, core]
+    attributes: [cpu, state, host.cpu.socket.id, host.cpu.core.id]
