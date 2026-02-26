@@ -19,7 +19,32 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.OtelcolK8sPodAssociation.Add(context.Background(), 1)
+	tb.K8sPodAssociation.Add(context.Background(), 1)
+	tb.K8sWatcherDaemonsetAdded.Add(context.Background(), 1)
+	tb.K8sWatcherDaemonsetDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherDaemonsetUpdated.Add(context.Background(), 1)
+	tb.K8sWatcherDeploymentAdded.Add(context.Background(), 1)
+	tb.K8sWatcherDeploymentDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherDeploymentUpdated.Add(context.Background(), 1)
+	tb.K8sWatcherJobAdded.Add(context.Background(), 1)
+	tb.K8sWatcherJobDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherJobUpdated.Add(context.Background(), 1)
+	tb.K8sWatcherNamespaceAdded.Add(context.Background(), 1)
+	tb.K8sWatcherNamespaceDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherNamespaceUpdated.Add(context.Background(), 1)
+	tb.K8sWatcherNodeAdded.Add(context.Background(), 1)
+	tb.K8sWatcherNodeDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherNodeUpdated.Add(context.Background(), 1)
+	tb.K8sWatcherPodAdded.Add(context.Background(), 1)
+	tb.K8sWatcherPodDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherPodUpdated.Add(context.Background(), 1)
+	tb.K8sWatcherPodCacheSize.Record(context.Background(), 1)
+	tb.K8sWatcherReplicasetAdded.Add(context.Background(), 1)
+	tb.K8sWatcherReplicasetDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherReplicasetUpdated.Add(context.Background(), 1)
+	tb.K8sWatcherStatefulsetAdded.Add(context.Background(), 1)
+	tb.K8sWatcherStatefulsetDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherStatefulsetUpdated.Add(context.Background(), 1)
 	tb.OtelsvcK8sDaemonsetAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sDaemonsetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sDaemonsetUpdated.Add(context.Background(), 1)
@@ -46,7 +71,82 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.OtelsvcK8sStatefulsetAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
-	AssertEqualOtelcolK8sPodAssociation(t, testTel,
+	AssertEqualK8sPodAssociation(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherDaemonsetAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherDaemonsetDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherDaemonsetUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherDeploymentAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherDeploymentDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherDeploymentUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherJobAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherJobDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherJobUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherNamespaceAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherNamespaceDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherNamespaceUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherNodeAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherNodeDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherNodeUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherPodAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherPodDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherPodUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherPodCacheSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherReplicasetAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherReplicasetDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherReplicasetUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherStatefulsetAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherStatefulsetDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherStatefulsetUpdated(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sDaemonsetAdded(t, testTel,

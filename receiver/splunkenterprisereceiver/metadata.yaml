@@ -8,68 +8,88 @@ status:
   codeowners:
     active: [shalper2, MovieStoreGuy, greatestusername]
 
+reaggregation_enabled: true
 attributes:
   splunk.bucket.dir:
     description: The bucket super-directory (home, cold, thawed) for each index
     type: string
+    requirement_level: recommended
   splunk.feature:
     description: The Feature name from the Splunk Health Introspection Endpoint
     type: string
+    requirement_level: recommended
   splunk.feature.health:
     description: The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint
     type: string
+    requirement_level: recommended
   splunk.host:
     description: The name of the splunk host
     type: string
+    requirement_level: recommended
   splunk.index.name:
     description: The name of the index reporting a specific KPI
     type: string
+    requirement_level: recommended
   splunk.indexer.searchable:
     description: The searchability status reported for a specific object
     type: string
+    requirement_level: recommended
   splunk.indexer.status:
     description: The status message reported for a specific object
     type: string
+    requirement_level: recommended
   splunk.kvstore.external:
     description: Value denoting if the KV store is using an external service
     type: string
+    requirement_level: recommended
   splunk.kvstore.status.value:
     description: The string value of the status returned when reporting on KV store using the introspection endpoint
     type: string
+    requirement_level: recommended
   splunk.kvstore.storage.engine:
     description: The backend storage used by the KV store
     type: string
+    requirement_level: recommended
   splunk.license.label:
     description: The label of the license.
     type: string
+    requirement_level: recommended
   splunk.license.status:
     description: The status of the license.
     type: string
+    requirement_level: recommended
   splunk.license.type:
     description: The type of license.
     type: string
-
+    requirement_level: recommended
   splunk.queue.name:
     description: The name of the queue reporting a specific KPI
     type: string
+    requirement_level: recommended
   splunk.rollingorrestart:
     description: Boolean that indicates if there is a rolling restart or rolling upgrade in progress.
     type: bool
+    requirement_level: recommended
   splunk.search.state:
     description: The dispatch state of the search
     type: string
+    requirement_level: recommended
   splunk.searchable.restart:
     description: Boolean that indicates if a searchable rolling restart/upgrade in progress.t
     type: bool
+    requirement_level: recommended
   splunk.searchartifacts.cache.type:
     description: The search artifacts cache type
     type: string
+    requirement_level: recommended
   splunk.splunkd.build:
     description: The build number for this Splunk instance version
     type: string
+    requirement_level: recommended
   splunk.splunkd.version:
     description: The splunkd version number
     type: string
+    requirement_level: recommended
 
 metrics:
   splunk.aggregation.queue.ratio:

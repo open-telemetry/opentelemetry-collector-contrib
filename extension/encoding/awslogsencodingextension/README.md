@@ -171,6 +171,19 @@ otelcol --config=config.yaml --feature-gates --feature-gates=<FEATURE_GATE_ID>
 | `userIdentity.arn`              | `aws.principal.arn`            | `aws.user_identity.principal.arn`             |
 | `userIdentity.type`             | `aws.principal.type`           | `aws.user_identity.principal.type`            |
 
+## Streaming Support
+
+The extension implements streaming support which allows processing of input data to be processed without loading entire logs into memory.
+The implementation follows `encoding.LogsDecoderExtension` contract and streamed unmarhaling is exposed through `NewLogsDecoder`.
+
+Note that, unlike non-streaming unmarshaling, caller is expected to detect and perform decompression operations (e.g. un-gzip).
+This allows streaming implementation to work independently of compression algorithms and buffer sizes.
+
+The table below summarizes streaming support details for each log type, along with the offset tracking mechanism,
+
+| Log Type      | Sub Log Type/Source            | Offset Tracking                   | Notes |
+|---------------|--------------------------------|-----------------------------------|-------|
+
 ## Produced Records per Format
 
 ### VPC flow log record fields

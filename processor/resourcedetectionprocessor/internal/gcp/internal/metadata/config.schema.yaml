@@ -19,8 +19,6 @@ $defs:
         $ref: resource_attribute_config
       cloud.region:
         $ref: resource_attribute_config
-      faas.id:
-        $ref: resource_attribute_config
       faas.instance:
         $ref: resource_attribute_config
       faas.name:

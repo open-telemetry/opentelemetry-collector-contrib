@@ -1,3 +1,4 @@
+display_name: GitHub Receiver
 type: github
 
 sem_conv_version: 1.38.0
