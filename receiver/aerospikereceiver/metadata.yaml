@@ -27,12 +27,10 @@ resource_attributes:
   aerospike.namespace:
     description: Name of the Aerospike namespace
     enabled: true
-    requirement_level: required
     type: string
   aerospike.node.name:
     description: Name of the Aerospike node collected from
     enabled: true
-    requirement_level: required
     type: string
 
 attributes:
