@@ -1,4 +1,10 @@
 $defs:
+  attribute_config:
+    description: AttributeConfig holds configuration information for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
   attribute_cache_name:
     description: AttributeCacheName specifies the value cache_name attribute.
     type: integer
@@ -56,6 +62,12 @@ $defs:
     properties:
       enabled:
         type: boolean
+      aggregation_strategy:
+        type: string
+      attributes:
+        type: array
+        items:
+          type: string
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for elasticsearch metrics builder.
     type: object
