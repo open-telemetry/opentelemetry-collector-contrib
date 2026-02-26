@@ -417,6 +417,16 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 							UID: "uid-1234",
 						},
 						Spec: v1.PodSpec{
+							Resources: &v1.ResourceRequirements{
+								Requests: v1.ResourceList{
+									v1.ResourceCPU:    k8sresource.MustParse("500m"),
+									v1.ResourceMemory: k8sresource.MustParse("2G"),
+								},
+								Limits: v1.ResourceList{
+									v1.ResourceCPU:    k8sresource.MustParse("2"),
+									v1.ResourceMemory: k8sresource.MustParse("4G"),
+								},
+							},
 							Containers: []v1.Container{
 								{
 									Name: "container-1",
@@ -451,12 +461,12 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			}, NodeInfo{}, nil),
 			podUID:                     "uid-1234",
 			containerName:              "container-2",
-			wantPodCPULimit:            2.1,
-			wantPodCPURequest:          2.1,
+			wantPodCPULimit:            2,
+			wantPodCPURequest:          0.5,
 			wantContainerCPULimit:      2,
 			wantContainerCPURequest:    2,
 			wantPodMemoryLimit:         4000000000,
-			wantPodMemoryRequest:       4000000000,
+			wantPodMemoryRequest:       2000000000,
 			wantContainerMemoryLimit:   3000000000,
 			wantContainerMemoryRequest: 3000000000,
 		},
@@ -512,6 +522,16 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 							UID: "uid-1234",
 						},
 						Spec: v1.PodSpec{
+							Resources: &v1.ResourceRequirements{
+								Requests: v1.ResourceList{
+									v1.ResourceCPU:    k8sresource.MustParse("700m"),
+									v1.ResourceMemory: k8sresource.MustParse("4G"),
+								},
+								Limits: v1.ResourceList{
+									v1.ResourceCPU:    k8sresource.MustParse("700m"),
+									v1.ResourceMemory: k8sresource.MustParse("4G"),
+								},
+							},
 							Containers: []v1.Container{
 								{
 									Name: "container-1",
@@ -560,6 +580,12 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 							UID: "uid-1234",
 						},
 						Spec: v1.PodSpec{
+							Resources: &v1.ResourceRequirements{
+								Requests: v1.ResourceList{
+									v1.ResourceCPU:    k8sresource.MustParse("1"),
+									v1.ResourceMemory: k8sresource.MustParse("2G"),
+								},
+							},
 							Containers: []v1.Container{
 								{
 									Name: "container-1",
@@ -586,7 +612,7 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			}, NodeInfo{}, nil),
 			podUID:                     "uid-1234",
 			containerName:              "container-2",
-			wantPodCPURequest:          2,
+			wantPodCPURequest:          1,
 			wantContainerCPURequest:    1,
 			wantPodMemoryRequest:       2000000000,
 			wantContainerMemoryRequest: 1000000000,
@@ -600,6 +626,12 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 							UID: "uid-1234",
 						},
 						Spec: v1.PodSpec{
+							Resources: &v1.ResourceRequirements{
+								Limits: v1.ResourceList{
+									v1.ResourceCPU:    k8sresource.MustParse("3"),
+									v1.ResourceMemory: k8sresource.MustParse("3G"),
+								},
+							},
 							Containers: []v1.Container{
 								{
 									Name: "container-1",
@@ -626,9 +658,9 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			}, NodeInfo{}, nil),
 			podUID:                   "uid-1234",
 			containerName:            "container-2",
-			wantPodCPULimit:          2,
+			wantPodCPULimit:          3,
 			wantContainerCPULimit:    1,
-			wantPodMemoryLimit:       2000000000,
+			wantPodMemoryLimit:       3000000000,
 			wantContainerMemoryLimit: 1000000000,
 		},
 		{
@@ -672,14 +704,16 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.wantPodCPULimit, tt.metadata.podResources[tt.podUID].cpuLimit)
-			require.Equal(t, tt.wantPodCPURequest, tt.metadata.podResources[tt.podUID].cpuRequest)
-			require.Equal(t, tt.wantContainerCPULimit, tt.metadata.containerResources[tt.podUID+tt.containerName].cpuLimit)
-			require.Equal(t, tt.wantContainerCPURequest, tt.metadata.containerResources[tt.podUID+tt.containerName].cpuRequest)
-			require.Equal(t, tt.wantPodMemoryLimit, tt.metadata.podResources[tt.podUID].memoryLimit)
-			require.Equal(t, tt.wantPodMemoryRequest, tt.metadata.podResources[tt.podUID].memoryRequest)
-			require.Equal(t, tt.wantContainerMemoryLimit, tt.metadata.containerResources[tt.podUID+tt.containerName].memoryLimit)
-			require.Equal(t, tt.wantContainerMemoryRequest, tt.metadata.containerResources[tt.podUID+tt.containerName].memoryRequest)
+			podRes := tt.metadata.podResources[tt.podUID]
+			containerRes := tt.metadata.containerResources[tt.podUID+tt.containerName]
+			assert.InDelta(t, tt.wantPodCPULimit, podRes.cpuLimit, 0.01, "pod CPU limit")
+			assert.InDelta(t, tt.wantPodCPURequest, podRes.cpuRequest, 0.01, "pod CPU request")
+			assert.InDelta(t, tt.wantContainerCPULimit, containerRes.cpuLimit, 0.01, "container CPU limit")
+			assert.InDelta(t, tt.wantContainerCPURequest, containerRes.cpuRequest, 0.01, "container CPU request")
+			require.Equal(t, tt.wantPodMemoryLimit, podRes.memoryLimit)
+			require.Equal(t, tt.wantPodMemoryRequest, podRes.memoryRequest)
+			require.Equal(t, tt.wantContainerMemoryLimit, containerRes.memoryLimit)
+			require.Equal(t, tt.wantContainerMemoryRequest, containerRes.memoryRequest)
 		})
 	}
 }

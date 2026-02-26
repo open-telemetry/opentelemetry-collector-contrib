@@ -1,0 +1,57 @@
+# Test workload for kubeletstatsreceiver: pods/containers with explicit
+# resource requests and limits so the receiver can report container and
+# pod-level resource metrics (cpu/memory request/limit).
+# Both images include bash so you can exec in and read cgroup values, e.g.:
+#   kubectl exec -it deploy/kubeletstats-test-workload -c main -- bash
+#   cat /sys/fs/cgroup/memory/memory.limit_in_bytes   # cgroup v1
+#   cat /sys/fs/cgroup/memory.max                     # cgroup v2
+#
+# Apply: kubectl apply -f testdata/e2e/test-workload-deployment.yaml
+# Remove: kubectl delete -f testdata/e2e/test-workload-deployment.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeletstats-test-workload
+  namespace: default
+  labels:
+    app: kubeletstats-test-workload
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubeletstats-test-workload
+  template:
+    metadata:
+      labels:
+        app: kubeletstats-test-workload
+    spec:
+      resources:
+        limits:
+          cpu: "1"
+          memory: "1Gi"
+        requests:
+          cpu: "0.5"
+          memory: "512Mi"
+      containers:
+        - name: main
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+        - name: sidecar
+          image: debian:bookworm-slim
+          command: ["sleep", "infinity"]
+          # resources:
+          #   requests:
+          #     cpu: "50m"
+          #     memory: "64Mi"
+          #   limits:
+          #     cpu: "100m"
+          #     memory: "128Mi"

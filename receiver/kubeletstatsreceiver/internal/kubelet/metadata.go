@@ -70,7 +70,7 @@ type NodeInfo struct {
 	MemoryCapacity float64
 }
 
-func getContainerResources(r *v1.ResourceRequirements) resources {
+func getResources(r *v1.ResourceRequirements) resources {
 	if r == nil {
 		return resources{}
 	}
@@ -99,47 +99,17 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeInfo Node
 		for i := range podsMetadata.Items {
 			pod := &podsMetadata.Items[i]
 			var podResource resources
-			allContainersCPULimitsDefined := true
-			allContainersCPURequestsDefined := true
-			allContainersMemoryLimitsDefined := true
-			allContainersMemoryRequestsDefined := true
+
+			if pod.Spec.Resources != nil {
+				podResource = getResources(pod.Spec.Resources)
+				m.podResources[string(pod.UID)] = podResource
+			}
+
 			for i := range pod.Spec.Containers {
 				container := pod.Spec.Containers[i]
-				containerResource := getContainerResources(&container.Resources)
-
-				if allContainersCPULimitsDefined && containerResource.cpuLimit == 0 {
-					allContainersCPULimitsDefined = false
-					podResource.cpuLimit = 0
-				}
-				if allContainersCPURequestsDefined && containerResource.cpuRequest == 0 {
-					allContainersCPURequestsDefined = false
-					podResource.cpuRequest = 0
-				}
-				if allContainersMemoryLimitsDefined && containerResource.memoryLimit == 0 {
-					allContainersMemoryLimitsDefined = false
-					podResource.memoryLimit = 0
-				}
-				if allContainersMemoryRequestsDefined && containerResource.memoryRequest == 0 {
-					allContainersMemoryRequestsDefined = false
-					podResource.memoryRequest = 0
-				}
-
-				if allContainersCPULimitsDefined {
-					podResource.cpuLimit += containerResource.cpuLimit
-				}
-				if allContainersCPURequestsDefined {
-					podResource.cpuRequest += containerResource.cpuRequest
-				}
-				if allContainersMemoryLimitsDefined {
-					podResource.memoryLimit += containerResource.memoryLimit
-				}
-				if allContainersMemoryRequestsDefined {
-					podResource.memoryRequest += containerResource.memoryRequest
-				}
-
+				containerResource := getResources(&container.Resources)
 				m.containerResources[string(pod.UID)+container.Name] = containerResource
 			}
-			m.podResources[string(pod.UID)] = podResource
 		}
 	}
 

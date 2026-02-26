@@ -42,14 +42,20 @@ func addCPUUtilizationMetrics(
 	}
 	if r.cpuLimit > 0 {
 		cpuMetrics.LimitUtilization(mb, currentTime, usageCores/r.cpuLimit)
+		if cpuMetrics.Limit != nil {
+			cpuMetrics.Limit(mb, currentTime, r.cpuLimit)
+		}
 	}
 	if r.cpuRequest > 0 {
 		cpuMetrics.RequestUtilization(mb, currentTime, usageCores/r.cpuRequest)
+		if cpuMetrics.Request != nil {
+			cpuMetrics.Request(mb, currentTime, r.cpuRequest)
+		}
 	}
 }
 
 func addCPUTimeMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {
-	if s.UsageCoreNanoSeconds == nil {
+	if mb == nil || recordDataPoint == nil || s == nil || s.UsageCoreNanoSeconds == nil {
 		return
 	}
 	value := float64(*s.UsageCoreNanoSeconds) / 1_000_000_000

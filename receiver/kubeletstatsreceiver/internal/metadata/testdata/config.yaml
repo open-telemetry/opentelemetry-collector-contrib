@@ -25,17 +25,23 @@ all_set:
       enabled: true
     container.uptime:
       enabled: true
+    k8s.container.cpu.limit:
+      enabled: true
+    k8s.container.cpu.limit_utilization:
+      enabled: true
     k8s.container.cpu.node.utilization:
       enabled: true
-    k8s.container.cpu_limit_utilization:
+    k8s.container.cpu.request:
       enabled: true
-    k8s.container.cpu_request_utilization:
+    k8s.container.cpu.request_utilization:
+      enabled: true
+    k8s.container.memory.limit:
+      enabled: true
+    k8s.container.memory.limit_utilization:
       enabled: true
     k8s.container.memory.node.utilization:
       enabled: true
-    k8s.container.memory_limit_utilization:
-      enabled: true
-    k8s.container.memory_request_utilization:
+    k8s.container.memory.request_utilization:
       enabled: true
     k8s.node.cpu.time:
       enabled: true
@@ -65,15 +71,19 @@ all_set:
       enabled: true
     k8s.node.uptime:
       enabled: true
+    k8s.pod.cpu.limit:
+      enabled: true
+    k8s.pod.cpu.limit_utilization:
+      enabled: true
     k8s.pod.cpu.node.utilization:
+      enabled: true
+    k8s.pod.cpu.request:
+      enabled: true
+    k8s.pod.cpu.request_utilization:
       enabled: true
     k8s.pod.cpu.time:
       enabled: true
     k8s.pod.cpu.usage:
-      enabled: true
-    k8s.pod.cpu_limit_utilization:
-      enabled: true
-    k8s.pod.cpu_request_utilization:
       enabled: true
     k8s.pod.filesystem.available:
       enabled: true
@@ -174,17 +184,23 @@ none_set:
       enabled: false
     container.uptime:
       enabled: false
+    k8s.container.cpu.limit:
+      enabled: false
+    k8s.container.cpu.limit_utilization:
+      enabled: false
     k8s.container.cpu.node.utilization:
       enabled: false
-    k8s.container.cpu_limit_utilization:
+    k8s.container.cpu.request:
       enabled: false
-    k8s.container.cpu_request_utilization:
+    k8s.container.cpu.request_utilization:
+      enabled: false
+    k8s.container.memory.limit:
+      enabled: false
+    k8s.container.memory.limit_utilization:
       enabled: false
     k8s.container.memory.node.utilization:
       enabled: false
-    k8s.container.memory_limit_utilization:
-      enabled: false
-    k8s.container.memory_request_utilization:
+    k8s.container.memory.request_utilization:
       enabled: false
     k8s.node.cpu.time:
       enabled: false
@@ -214,15 +230,19 @@ none_set:
       enabled: false
     k8s.node.uptime:
       enabled: false
+    k8s.pod.cpu.limit:
+      enabled: false
+    k8s.pod.cpu.limit_utilization:
+      enabled: false
     k8s.pod.cpu.node.utilization:
+      enabled: false
+    k8s.pod.cpu.request:
+      enabled: false
+    k8s.pod.cpu.request_utilization:
       enabled: false
     k8s.pod.cpu.time:
       enabled: false
     k8s.pod.cpu.usage:
-      enabled: false
-    k8s.pod.cpu_limit_utilization:
-      enabled: false
-    k8s.pod.cpu_request_utilization:
       enabled: false
     k8s.pod.filesystem.available:
       enabled: false

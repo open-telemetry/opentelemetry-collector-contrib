@@ -192,6 +192,22 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
+  k8s.container.cpu.limit:
+    enabled: false
+    description: "Container CPU limit in cores"
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: []
+  k8s.container.cpu.limit_utilization:
+    enabled: false
+    description: "Container cpu utilization as a ratio of the container's limits"
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: []
   k8s.container.cpu.node.utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the node's capacity"
@@ -200,17 +216,33 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  k8s.container.cpu_limit_utilization:
+  k8s.container.cpu.request:
     enabled: false
-    description: "Container cpu utilization as a ratio of the container's limits"
+    description: "Container CPU request in cores"
     unit: "1"
     stability: development
     gauge:
       value_type: double
     attributes: []
-  k8s.container.cpu_request_utilization:
+  k8s.container.cpu.request_utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's requests"
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: []
+  k8s.container.memory.limit:
+    enabled: false
+    description: "Container memory limit in bytes (TODO: Yet to be implemented)"
+    unit: By
+    stability: development
+    gauge:
+      value_type: double
+    attributes: []
+  k8s.container.memory.limit_utilization:
+    enabled: false
+    description: "Container memory utilization as a ratio of the container's limits"
     unit: "1"
     stability: development
     gauge:
@@ -224,15 +256,7 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  k8s.container.memory_limit_utilization:
-    enabled: false
-    description: "Container memory utilization as a ratio of the container's limits"
-    unit: "1"
-    stability: development
-    gauge:
-      value_type: double
-    attributes: []
-  k8s.container.memory_request_utilization:
+  k8s.container.memory.request_utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the container's requests"
     unit: "1"
@@ -360,9 +384,41 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
+  k8s.pod.cpu.limit:
+    enabled: false
+    description: "Pod CPU limit in cores"
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: []
+  k8s.pod.cpu.limit_utilization:
+    enabled: false
+    description: "Pod cpu utilization as a ratio of the pod's total container limits. If pod has no limits as introduced in k8s v1.34, the metric is not emitted."
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: []
   k8s.pod.cpu.node.utilization:
     enabled: false
     description: "Pod cpu utilization as a ratio of the node's capacity"
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: []
+  k8s.pod.cpu.request:
+    enabled: false
+    description: "Pod CPU request in cores"
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: []
+  k8s.pod.cpu.request_utilization:
+    enabled: false
+    description: "Pod cpu utilization as a ratio of the pod's total container requests. If pod has no requests as introduced in k8s v1.34, the metric is not emitted."
     unit: "1"
     stability: development
     gauge:
@@ -382,22 +438,6 @@ metrics:
     enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
-    stability: development
-    gauge:
-      value_type: double
-    attributes: []
-  k8s.pod.cpu_limit_utilization:
-    enabled: false
-    description: "Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
-    unit: "1"
-    stability: development
-    gauge:
-      value_type: double
-    attributes: []
-  k8s.pod.cpu_request_utilization:
-    enabled: false
-    description: "Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted."
-    unit: "1"
     stability: development
     gauge:
       value_type: double

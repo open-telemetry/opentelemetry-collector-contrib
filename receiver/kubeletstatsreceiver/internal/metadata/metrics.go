@@ -24,6 +24,8 @@ type CPUMetrics struct {
 	NodeUtilization    RecordDoubleDataPointFunc
 	LimitUtilization   RecordDoubleDataPointFunc
 	RequestUtilization RecordDoubleDataPointFunc
+	Limit              RecordDoubleDataPointFunc
+	Request            RecordDoubleDataPointFunc
 }
 
 var NodeCPUMetrics = CPUMetrics{
@@ -37,6 +39,8 @@ var PodCPUMetrics = CPUMetrics{
 	NodeUtilization:    (*MetricsBuilder).RecordK8sPodCPUNodeUtilizationDataPoint,
 	LimitUtilization:   (*MetricsBuilder).RecordK8sPodCPULimitUtilizationDataPoint,
 	RequestUtilization: (*MetricsBuilder).RecordK8sPodCPURequestUtilizationDataPoint,
+	Limit:              (*MetricsBuilder).RecordK8sPodCPULimitDataPoint,
+	Request:            (*MetricsBuilder).RecordK8sPodCPURequestDataPoint,
 }
 
 var ContainerCPUMetrics = CPUMetrics{
@@ -45,6 +49,8 @@ var ContainerCPUMetrics = CPUMetrics{
 	NodeUtilization:    (*MetricsBuilder).RecordK8sContainerCPUNodeUtilizationDataPoint,
 	LimitUtilization:   (*MetricsBuilder).RecordK8sContainerCPULimitUtilizationDataPoint,
 	RequestUtilization: (*MetricsBuilder).RecordK8sContainerCPURequestUtilizationDataPoint,
+	Limit:              (*MetricsBuilder).RecordK8sContainerCPULimitDataPoint,
+	Request:            (*MetricsBuilder).RecordK8sContainerCPURequestDataPoint,
 }
 
 type MemoryMetrics struct {
