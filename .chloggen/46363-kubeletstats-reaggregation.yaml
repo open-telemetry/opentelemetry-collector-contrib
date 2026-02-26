@@ -1,0 +1,22 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern (e.g. receiver/filelog)
+component: receiver/kubeletstats
+
+# A brief description of the change.
+note: Enable re-aggregation support for kubeletstatsreceiver by adding metadata reaggregation configuration and attribute level classifications.
+
+# Mandatory: One or more tracking issues related to the change.
+issues: [46363]
+
+# (Optional) Additional information for release notes.
+# Not required for this change.
+# subtext: |
+
+# Optional: Which changelog(s) this entry should appear in.
+# Include 'user' for user-facing changes.
+# Include 'api' for library/API changes.
+change_logs: [user]
