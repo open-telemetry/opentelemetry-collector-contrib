@@ -156,10 +156,10 @@ type ConsumerConfig struct {
 
 func NewDefaultConsumerConfig() ConsumerConfig {
 	return ConsumerConfig{
-		SessionTimeout:    10 * time.Second,
-		HeartbeatInterval: 3 * time.Second,
-		GroupID:           "otel-collector",
-		InitialOffset:     LatestOffset,
+		SessionTimeout:         10 * time.Second,
+		HeartbeatInterval:      3 * time.Second,
+		GroupID:                "otel-collector",
+		InitialOffset:          LatestOffset,
 		GroupRebalanceStrategy: CooperativeStickyBalanceStrategy,
 		AutoCommit: AutoCommitConfig{
 			Enable:   true,

@@ -176,10 +176,10 @@ func TestConsumerConfig(t *testing.T) {
 		},
 		"zero_min_fetch_size": {
 			expected: ConsumerConfig{
-				SessionTimeout:    10 * time.Second,
-				HeartbeatInterval: 3 * time.Second,
-				GroupID:           "otel-collector",
-				InitialOffset:     "latest",
+				SessionTimeout:         10 * time.Second,
+				HeartbeatInterval:      3 * time.Second,
+				GroupID:                "otel-collector",
+				InitialOffset:          "latest",
 				GroupRebalanceStrategy: CooperativeStickyBalanceStrategy,
 				AutoCommit: AutoCommitConfig{
 					Enable:   true,
