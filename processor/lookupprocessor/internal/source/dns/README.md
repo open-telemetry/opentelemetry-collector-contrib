@@ -53,3 +53,4 @@ Cache hit is ~5,000x faster than a network lookup, with zero allocations.
 - [ ] Support A record lookups (hostname to IPv4)
 - [ ] Support AAAA record lookups (hostname to IPv6)
 - [ ] Support TXT, CNAME, MX record lookups
+- [ ] Support multiple DNS servers
