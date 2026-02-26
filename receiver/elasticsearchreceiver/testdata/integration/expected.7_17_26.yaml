@@ -1214,7 +1214,7 @@ resourceMetrics:
             stringValue: 8e63c4f981ab
         - key: elasticsearch.node.version
           value:
-            stringValue: 7.16.3
+            stringValue: 7.17.26
     scopeMetrics:
       - metrics:
           - description: Estimated memory used for the operation.
@@ -2311,16 +2311,6 @@ resourceMetrics:
                         stringValue: completed
                     - key: thread_pool_name
                       value:
-                        stringValue: rollup_indexing
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: completed
-                    - key: thread_pool_name
-                      value:
                         stringValue: search
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
@@ -2451,7 +2441,7 @@ resourceMetrics:
                         stringValue: completed
                     - key: thread_pool_name
                       value:
-                        stringValue: transform_indexing
+                        stringValue: rollup_indexing
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
@@ -2651,16 +2641,6 @@ resourceMetrics:
                         stringValue: rejected
                     - key: thread_pool_name
                       value:
-                        stringValue: rollup_indexing
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: rejected
-                    - key: thread_pool_name
-                      value:
                         stringValue: search
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
@@ -2791,7 +2771,7 @@ resourceMetrics:
                         stringValue: rejected
                     - key: thread_pool_name
                       value:
-                        stringValue: transform_indexing
+                        stringValue: rollup_indexing
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
@@ -2950,13 +2930,6 @@ resourceMetrics:
                   attributes:
                     - key: thread_pool_name
                       value:
-                        stringValue: rollup_indexing
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: thread_pool_name
-                      value:
                         stringValue: search
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
@@ -3048,7 +3021,7 @@ resourceMetrics:
                   attributes:
                     - key: thread_pool_name
                       value:
-                        stringValue: transform_indexing
+                        stringValue: rollup_indexing
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
@@ -3242,16 +3215,6 @@ resourceMetrics:
                         stringValue: active
                     - key: thread_pool_name
                       value:
-                        stringValue: rollup_indexing
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: active
-                    - key: thread_pool_name
-                      value:
                         stringValue: search
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
@@ -3382,7 +3345,7 @@ resourceMetrics:
                         stringValue: active
                     - key: thread_pool_name
                       value:
-                        stringValue: transform_indexing
+                        stringValue: rollup_indexing
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
@@ -3582,16 +3545,6 @@ resourceMetrics:
                         stringValue: idle
                     - key: thread_pool_name
                       value:
-                        stringValue: rollup_indexing
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: idle
-                    - key: thread_pool_name
-                      value:
                         stringValue: search
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
@@ -3722,7 +3675,7 @@ resourceMetrics:
                         stringValue: idle
                     - key: thread_pool_name
                       value:
-                        stringValue: transform_indexing
+                        stringValue: rollup_indexing
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
