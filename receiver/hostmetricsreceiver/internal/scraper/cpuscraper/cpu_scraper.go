@@ -46,7 +46,14 @@ type cpuInfo struct {
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, settings scraper.Settings, cfg *Config) *cpuScraper {
-	return &cpuScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
+	return &cpuScraper{
+		settings: settings,
+		config:   cfg,
+		bootTime: host.BootTimeWithContext,
+		times:    cpu.TimesWithContext,
+		ucal:     &ucal.CPUUtilizationCalculator{},
+		now:      time.Now,
+	}
 }
 
 func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
@@ -70,13 +77,13 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	for _, cpuTime := range cpuTimes {
-		cpuInfo := cpuInfos[cpuTime.CPU]
-		s.recordCPUTimeStateDataPoints(now, cpuTime, cpuInfo.socket, cpuInfo.core)
+		timeCInfo := cpuInfos[cpuTime.CPU]
+		s.recordCPUTimeStateDataPoints(now, cpuTime, timeCInfo.socket, timeCInfo.core)
 	}
 
 	err = s.ucal.CalculateAndRecord(now, cpuTimes, func(now pcommon.Timestamp, cpuUtilization ucal.CPUUtilization) {
-		cpuInfo := cpuInfos[cpuUtilization.CPU]
-		s.recordCPUUtilization(now, cpuUtilization, cpuInfo.socket, cpuInfo.core)
+		utilCInfo := cpuInfos[cpuUtilization.CPU]
+		s.recordCPUUtilization(now, cpuUtilization, utilCInfo.socket, utilCInfo.core)
 	})
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
