@@ -21,32 +21,26 @@ resource_attributes:
     description: The ID of the application for which the metric was recorded.
     type: string
     enabled: true
-    requirement_level: required
   spark.application.name:
     description: The name of the application for which the metric was recorded.
     type: string
     enabled: true
-    requirement_level: required
   spark.executor.id:
     description: The ID of the executor for which the metric was recorded.
     type: string
     enabled: true
-    requirement_level: required
   spark.job.id:
     description: The ID of the job for which the metric was recorded.
     type: int
     enabled: true
-    requirement_level: required
   spark.stage.attempt.id:
     description: The ID of the stage attempt for which the metric was recorded.
     type: int
     enabled: false
-    requirement_level: required
   spark.stage.id:
     description: The ID of the application stage for which the metric was recorded.
     type: int
     enabled: true
-    requirement_level: required
 
 attributes:
   direction:
@@ -113,18 +107,22 @@ attributes:
   stage_active:
     name_override: active
     description: Whether the stage for which the metric was recorded is active.
+    requirement_level: recommended
     type: bool
   stage_complete:
     name_override: complete
     description: Whether the stage for which the metric was recorded is complete.
+    requirement_level: recommended
     type: bool
   stage_failed:
     name_override: failed
     description: Whether the stage for which the metric was recorded is failed.
+    requirement_level: recommended
     type: bool
   stage_pending:
     name_override: pending
     description: Whether the stage for which the metric was recorded is pending.
+    requirement_level: recommended
     type: bool
   stage_task_result:
     name_override: result
