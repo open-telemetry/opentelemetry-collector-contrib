@@ -1,10 +1,4 @@
 $defs:
-  attribute_config:
-    description: AttributeConfig holds configuration information for a particular metric.
-    type: object
-    properties:
-      enabled:
-        type: boolean
   attribute_cache_name:
     description: AttributeCacheName specifies the value cache_name attribute.
     type: integer
@@ -17,6 +11,12 @@ $defs:
   attribute_cluster_state_update_type:
     description: AttributeClusterStateUpdateType specifies the value cluster_state_update_type attribute.
     type: integer
+  attribute_config:
+    description: AttributeConfig holds configuration information for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
   attribute_direction:
     description: AttributeDirection specifies the value direction attribute.
     type: integer
@@ -60,14 +60,14 @@ $defs:
     description: MetricConfig provides common config for a particular metric.
     type: object
     properties:
-      enabled:
-        type: boolean
       aggregation_strategy:
         type: string
       attributes:
         type: array
         items:
           type: string
+      enabled:
+        type: boolean
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for elasticsearch metrics builder.
     type: object
