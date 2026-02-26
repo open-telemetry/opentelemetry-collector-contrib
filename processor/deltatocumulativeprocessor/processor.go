@@ -109,7 +109,7 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 			}
 		}
 	}
-	
+
 	metrics.Filter(md, func(m metrics.Metric) bool {
 		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta {
 			return keep
