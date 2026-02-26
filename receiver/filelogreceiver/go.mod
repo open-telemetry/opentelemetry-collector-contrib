@@ -57,7 +57,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.146.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/valyala/fastjson v1.6.7 // indirect
+	github.com/valyala/fastjson v1.6.10 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.146.2-0.20260219223409-66996adfaaf7 // indirect
@@ -65,6 +65,7 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260219223409-66996adfaaf7 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.146.2-0.20260219223409-66996adfaaf7 // indirect

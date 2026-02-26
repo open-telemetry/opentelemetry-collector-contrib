@@ -151,8 +151,8 @@ github.com/tklauser/go-sysconf v0.3.12 h1:0QaGUFOdQaIVdPgfITYzaTegZvdCjmYO52cSFA
 github.com/tklauser/go-sysconf v0.3.12/go.mod h1:Ho14jnntGE1fpdOqQEEaiKRpvIavV0hSfmBq8nJbHYI=
 github.com/tklauser/numcpus v0.6.1 h1:ng9scYS7az0Bk4OZLvrNXNSAO2Pxr1XXRAPyjhIx+Fk=
 github.com/tklauser/numcpus v0.6.1/go.mod h1:1XfjsgE2zo8GVw7POkMbHENHzVg3GzmoZ9fESEdAacY=
-github.com/vmware/govmomi v0.52.0 h1:JyxQ1IQdllrY7PJbv2am9mRsv3p9xWlIQ66bv+XnyLw=
-github.com/vmware/govmomi v0.52.0/go.mod h1:Yuc9xjznU3BH0rr6g7MNS1QGvxnJlE1vOvTJ7Lx7dqI=
+github.com/vmware/govmomi v0.53.0 h1:e1bZCotAq7wm4xy95ePN2uoWwz28pNp/ewZZhpBY7/4=
+github.com/vmware/govmomi v0.53.0/go.mod h1:EWfuzPfxT5NV+aS2we02SLFdhvJkgeY7t7+TszgBSMY=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
@@ -191,6 +191,8 @@ go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260219223409-66996adfa
 go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260219223409-66996adfaaf7/go.mod h1:gNaqTrI/3sdZxtwYcR4yei89Kd3T1rXKGFpVonPQv/U=
 go.opentelemetry.io/collector/pdata/testdata v0.146.2-0.20260219223409-66996adfaaf7 h1:nGf3hzMq7oUSu3asG4M+ybk73HHgpYmaRZgg/a6hnys=
 go.opentelemetry.io/collector/pdata/testdata v0.146.2-0.20260219223409-66996adfaaf7/go.mod h1:IcY6Hg13ObCFc3gpv6MRjZqUa0kCmLC5pojMmwlTj3U=
+go.opentelemetry.io/collector/pdata/xpdata v0.146.2-0.20260219223409-66996adfaaf7 h1:Xb+2uGxHcSj5UpAcIQkRVcvD1w/fUVWHkCJKBfy05EM=
+go.opentelemetry.io/collector/pdata/xpdata v0.146.2-0.20260219223409-66996adfaaf7/go.mod h1:rOeWBaq86aRNxeHXRTNGvoSIhOZOFfxWjhicbvvKO04=
 go.opentelemetry.io/collector/pipeline v1.52.1-0.20260219223409-66996adfaaf7 h1:urn13PVH9dGfARcMLScaIcLE0Zk6a+T7BjCl2H4x7m0=
 go.opentelemetry.io/collector/pipeline v1.52.1-0.20260219223409-66996adfaaf7/go.mod h1:RD90NG3Jbk965Xaqym3JyHkuol4uZJjQVUkD9ddXJIs=
 go.opentelemetry.io/collector/pipeline/xpipeline v0.146.2-0.20260219223409-66996adfaaf7 h1:YgWudM7gTkhB3ckpI/8gSLrhe/KEE5AE+FJkfHwBXrw=

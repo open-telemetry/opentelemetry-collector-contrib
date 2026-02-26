@@ -32,6 +32,14 @@ extensions:
     format: json
 ```
 
+## Streaming Support
+
+The table below summarizes offset tracking details for each format.
+
+| CloudWatch Metrics format | Offset Tracking |
+|---------------------------|-----------------|
+| JSON                      | Bytes processed |
+
 ## Supported Statistics (JSON format)
 
 When using the JSON format, the extension extracts the following statistics from CloudWatch Metric Streams and converts them to OpenTelemetry Summary metrics:

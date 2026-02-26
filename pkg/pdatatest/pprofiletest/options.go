@@ -49,7 +49,23 @@ func (opt ignoreResourceAttributeValue) maskProfilesResourceAttributeValue(profi
 	}
 }
 
-// IgnoreResourceAttributeValue is a CompareProfilesOption that removes a resource attribute
+// IgnoreResourceEntityRefs is a CompareProfilesOption that clears entity references
+// on all resources.
+func IgnoreResourceEntityRefs() CompareProfilesOption {
+	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
+		maskProfilesResourceEntityRefs(expected)
+		maskProfilesResourceEntityRefs(actual)
+	})
+}
+
+func maskProfilesResourceEntityRefs(profiles pprofile.Profiles) {
+	rps := profiles.ResourceProfiles()
+	for i := 0; i < rps.Len(); i++ {
+		internal.MaskResourceEntityRefs(rps.At(i).Resource())
+	}
+}
+
+// IgnoreScopeAttributeValue is a CompareProfilesOption that removes a scope attribute
 // from all resources.
 func IgnoreScopeAttributeValue(attributeName string) CompareProfilesOption {
 	return ignoreScopeAttributeValue{
