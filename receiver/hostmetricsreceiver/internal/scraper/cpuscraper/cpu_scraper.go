@@ -5,6 +5,7 @@ package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -34,12 +35,13 @@ type cpuScraper struct {
 	// for mocking
 	bootTime func(context.Context) (uint64, error)
 	times    func(context.Context, bool) ([]cpu.TimesStat, error)
+	info     func() ([]cpuInfo, error)
 	now      func() time.Time
 }
 
 type cpuInfo struct {
 	frequency float64
-	processor string
+	processor uint
 	socket    string
 	core      string
 }
@@ -51,6 +53,7 @@ func newCPUScraper(_ context.Context, settings scraper.Settings, cfg *Config) *c
 		config:   cfg,
 		bootTime: host.BootTimeWithContext,
 		times:    cpu.TimesWithContext,
+		info:     getCPUInfo,
 		ucal:     &ucal.CPUUtilizationCalculator{},
 		now:      time.Now,
 	}
@@ -71,18 +74,23 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
-	cpuInfos, err := s.getCPUInfo()
+	cpuInfos, err := s.info()
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
+	cpuInfoMap := make(map[string]cpuInfo)
+	for _, cInfo := range cpuInfos {
+		cpuInfoMap[s.formatCPUID(cInfo.processor)] = cInfo
+	}
+
 	for _, cpuTime := range cpuTimes {
-		timeCInfo := cpuInfos[cpuTime.CPU]
+		timeCInfo := cpuInfoMap[cpuTime.CPU]
 		s.recordCPUTimeStateDataPoints(now, cpuTime, timeCInfo.socket, timeCInfo.core)
 	}
 
 	err = s.ucal.CalculateAndRecord(now, cpuTimes, func(now pcommon.Timestamp, cpuUtilization ucal.CPUUtilization) {
-		utilCInfo := cpuInfos[cpuUtilization.CPU]
+		utilCInfo := cpuInfoMap[cpuUtilization.CPU]
 		s.recordCPUUtilization(now, cpuUtilization, utilCInfo.socket, utilCInfo.core)
 	})
 	if err != nil {
@@ -107,9 +115,13 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	if s.config.Metrics.SystemCPUFrequency.Enabled {
 		for _, cInfo := range cpuInfos {
-			s.mb.RecordSystemCPUFrequencyDataPoint(now, cInfo.frequency*hzInAMHz, cInfo.processor, cInfo.socket, cInfo.core)
+			s.mb.RecordSystemCPUFrequencyDataPoint(now, cInfo.frequency*hzInAMHz, s.formatCPUID(cInfo.processor), cInfo.socket, cInfo.core)
 		}
 	}
 
 	return s.mb.Emit(), nil
+}
+
+func (*cpuScraper) formatCPUID(cpuID uint) string {
+	return fmt.Sprintf("cpu%d", cpuID)
 }

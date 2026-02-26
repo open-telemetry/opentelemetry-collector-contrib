@@ -27,7 +27,7 @@ func (s *cpuScraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization 
 	s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtilization.Irq, cpuUtilization.CPU, metadata.AttributeStateInterrupt, socket, core)
 }
 
-func (*cpuScraper) getCPUInfo() (map[string]cpuInfo, error) {
-	cpuInfos := make(map[string]cpuInfo)
+func getCPUInfo() ([]cpuInfo, error) {
+	var cpuInfos []cpuInfo
 	return cpuInfos, nil
 }

@@ -6,8 +6,6 @@
 package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 
 import (
-	"fmt"
-
 	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -39,8 +37,8 @@ func (s *cpuScraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization 
 	s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtilization.Iowait, cpuUtilization.CPU, metadata.AttributeStateWait, socket, core)
 }
 
-func (*cpuScraper) getCPUInfo() (map[string]cpuInfo, error) {
-	cpuInfos := make(map[string]cpuInfo)
+func getCPUInfo() ([]cpuInfo, error) {
+	var cpuInfos []cpuInfo
 	fs, err := procfs.NewDefaultFS()
 	if err != nil {
 		return nil, scrapererror.NewPartialScrapeError(err, metricsLen)
@@ -53,11 +51,11 @@ func (*cpuScraper) getCPUInfo() (map[string]cpuInfo, error) {
 		cInfo := &cInf[i]
 		c := cpuInfo{
 			frequency: cInfo.CPUMHz,
-			processor: fmt.Sprintf("cpu%d", cInfo.Processor), // so we can match this cpu id with the cpu id in cpu.TimesStat.CPU
+			processor: cInfo.Processor,
 			socket:    cInfo.PhysicalID,
 			core:      cInfo.CoreID,
 		}
-		cpuInfos[c.processor] = c
+		cpuInfos = append(cpuInfos, c)
 	}
 	return cpuInfos, nil
 }
