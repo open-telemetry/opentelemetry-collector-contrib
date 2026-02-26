@@ -4,6 +4,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 
 import (
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,6 +15,8 @@ import (
 )
 
 // AdjustedCountCache is a simple single-entry cache for adjusted count results.
+// It has been proven effective. We may also consider adding an N-way cache in the future
+// if the need arises.
 // Use as a function-local variable to cache consecutive identical tracestates.
 // No synchronization is needed when used within a single goroutine.
 type AdjustedCountCache struct {
@@ -69,8 +72,11 @@ func GetStochasticAdjustedCountWithCache(span *ptrace.Span, cache *AdjustedCount
 	return count, isAdjusted
 }
 
-// computeAdjustedCount does the actual computation without caching.
+// computeAdjustedCount does the actual coputation without caching.
 func computeAdjustedCount(tracestate string) (uint64, bool) {
+	if !strings.Contains(tracestate, "ot=") {
+		return 1, false
+	}
 	w3cTraceState, err := sampling.NewW3CTraceState(tracestate)
 	if err != nil {
 		return 1, false
@@ -86,7 +92,9 @@ func computeAdjustedCount(tracestate string) (uint64, bool) {
 	return stochasticDiv(sampling.MaxAdjustedCount, denominator), true
 }
 
-// xorshift64star is a very fast PRNG using xor and shift.
+// xorshift64star is a very fast PRNG using xor and shift widely used in many programming languages.
+// Originally published by George Marsaglia and Sebastiano Vigna.
+// See: https://en.wikipedia.org/wiki/Xorshift
 type xorshift64star uint64
 
 func (r *xorshift64star) next() uint64 {
