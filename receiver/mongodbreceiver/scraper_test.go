@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -36,6 +37,35 @@ func TestNewMongodbScraper(t *testing.T) {
 
 	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	require.NotEmpty(t, scraper.config.hostlist())
+}
+
+func TestGenerateInstanceID(t *testing.T) {
+	t.Run("deterministic", func(t *testing.T) {
+		// Same inputs should produce the same UUID
+		id1 := generateInstanceID("localhost", 27017)
+		id2 := generateInstanceID("localhost", 27017)
+		require.Equal(t, id1, id2, "same inputs should produce same UUID")
+		require.Equal(t, "fd638985-aee9-53f2-95d3-ce3e8483c243", id1)
+	})
+
+	t.Run("unique for different ports", func(t *testing.T) {
+		id1 := generateInstanceID("localhost", 27017)
+		id2 := generateInstanceID("localhost", 27018)
+		require.NotEqual(t, id1, id2, "different ports should produce different UUIDs")
+	})
+
+	t.Run("unique for different hosts", func(t *testing.T) {
+		id1 := generateInstanceID("host1", 27017)
+		id2 := generateInstanceID("host2", 27017)
+		require.NotEqual(t, id1, id2, "different hosts should produce different UUIDs")
+	})
+
+	t.Run("valid UUID v5 format", func(t *testing.T) {
+		id := generateInstanceID("localhost", 27017)
+		parsed, err := uuid.Parse(id)
+		require.NoError(t, err, "generated ID should be a valid UUID")
+		require.Equal(t, uuid.Version(5), parsed.Version(), "should be UUID v5")
+	})
 }
 
 func TestScraperLifecycle(t *testing.T) {

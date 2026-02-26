@@ -47,6 +47,7 @@ func createDefaultConfig() component.Config {
 		Ephemeral:                     false,
 		TimeZone:                      "",
 		StickySessionEnabled:          false,
+		UpdateMetadata:                true,
 		BackOff: backOffConfig{
 			InitialInterval: backoff.DefaultInitialInterval,
 			MaxInterval:     backoff.DefaultMaxInterval,
