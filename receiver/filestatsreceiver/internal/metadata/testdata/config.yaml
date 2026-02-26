@@ -3,14 +3,41 @@ all_set:
   metrics:
     file.atime:
       enabled: true
+      attributes: []
     file.count:
       enabled: true
+      attributes: []
     file.ctime:
       enabled: true
+      attributes: ["file.permissions"]
     file.mtime:
       enabled: true
+      attributes: []
     file.size:
       enabled: true
+      attributes: []
+  resource_attributes:
+    file.name:
+      enabled: true
+    file.path:
+      enabled: true
+reaggregate_set:
+  metrics:
+    file.atime:
+      enabled: true
+      attributes: []
+    file.count:
+      enabled: true
+      attributes: []
+    file.ctime:
+      enabled: true
+      attributes: []
+    file.mtime:
+      enabled: true
+      attributes: []
+    file.size:
+      enabled: true
+      attributes: []
   resource_attributes:
     file.name:
       enabled: true
@@ -20,14 +47,19 @@ none_set:
   metrics:
     file.atime:
       enabled: false
+      attributes: []
     file.count:
       enabled: false
+      attributes: []
     file.ctime:
       enabled: false
+      attributes: ["file.permissions"]
     file.mtime:
       enabled: false
+      attributes: []
     file.size:
       enabled: false
+      attributes: []
   resource_attributes:
     file.name:
       enabled: false
