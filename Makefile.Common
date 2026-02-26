@@ -35,7 +35,7 @@ GOTEST_OPT?=$(GOTEST_RACE_OPT) -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(G
 GOTEST_INTEGRATION_OPT?=$(GOTEST_RACE_OPT) -timeout 360s -parallel 4 -skip Sudo
 GOTEST_INTEGRATION_OPT_SUDO?=$(GOTEST_RACE_OPT) -timeout 360s -parallel 4 -exec sudo -run Sudo
 COVER_OPT :=-cover -covermode=atomic -test.gocoverdir="$(COVER_DIR_ABS)"
-GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration,$(GO_BUILD_TAGS)
+GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 
@@ -156,7 +156,7 @@ INTEGRATION_TESTS := $(if $(INTEGRATION_TEST_FILES),$(shell cat $(INTEGRATION_TE
 mod-integration-test:
 	@echo "running $(GOCMD) integration test $(INTEGRATION_TESTS) in `pwd`"
 	@if [ -n "$(INTEGRATION_TESTS)" ]; then \
-		$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- -run "$(INTEGRATION_TESTS)" $(GOTEST_OPT_WITH_INTEGRATION); \
+		$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- -v -run "$(INTEGRATION_TESTS)" $(GOTEST_OPT_WITH_INTEGRATION); \
 	else \
         echo "No integration tests in `pwd`"; \
 	fi
