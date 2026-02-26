@@ -419,7 +419,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				adjustedCount, isAdjusted := metrics.GetStochasticAdjustedCountWithCache(&span, &adjustedCountCache)
 				callsDimensions := p.dimensions
 				callsDimensions = append(callsDimensions, p.callsDimensions...)
-				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
+				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr, isAdjusted)
 				attributesFun := func() pcommon.Map {
 					return p.buildAttributes(serviceName, span, resourceAttr, callsDimensions, ils.Scope(), isAdjusted)
 				}
@@ -436,7 +436,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if !p.config.Histogram.Disable {
 					durationDimensions := p.dimensions
 					durationDimensions = append(durationDimensions, p.durationDimensions...)
-					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr)
+					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr, isAdjusted)
 					attributesFun = func() pcommon.Map {
 						return p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope(), isAdjusted)
 					}
@@ -464,7 +464,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 							return true
 						})
 
-						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
+						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs, isAdjusted)
 						attributesFun = func() pcommon.Map {
 							return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope(), isAdjusted)
 						}
@@ -608,8 +608,11 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
 // or resource/event attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
+// When enable_metrics_sampling_method is true, the sampling method (extrapolated or counted) is included in the key
+// so that spans with different tracestate produce distinct metrics.
+//
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map, isAdjusted bool) metrics.Key {
 	p.keyBuf.Reset()
 
 	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -634,6 +637,14 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	for _, d := range optionalDims {
 		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
 			concatDimensionValue(p.keyBuf, v.AsString(), true)
+		}
+	}
+
+	if p.config.EnableMetricsSamplingMethod {
+		if isAdjusted {
+			concatDimensionValue(p.keyBuf, "extrapolated", true)
+		} else {
+			concatDimensionValue(p.keyBuf, "counted", true)
 		}
 	}
 
