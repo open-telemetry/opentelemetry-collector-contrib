@@ -23,7 +23,7 @@ const elasticPort = "9200"
 
 func TestIntegration(t *testing.T) {
 	t.Run("7.9.3", integrationTest("7.9.3", "7_9_3"))
-	t.Run("7.16.3", integrationTest("7.16.3", "7_16_3"))
+	t.Run("7.17.26", integrationTest("7.17.26", "7_17_26"))
 }
 
 func integrationTest(version, name string) func(*testing.T) {
