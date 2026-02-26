@@ -35,6 +35,8 @@ type mockMetadata struct {
 
 	retTags    map[string]string
 	retErrTags error
+	// retTagKeys overrides the keys returned by Tags(); if nil, keys are derived from retTags.
+	retTagKeys []string
 
 	isAvailable bool
 }
@@ -77,6 +79,9 @@ func (mm mockMetadata) Hostname(_ context.Context) (string, error) {
 func (mm mockMetadata) Tags(_ context.Context) ([]string, error) {
 	if mm.retErrTags != nil {
 		return nil, mm.retErrTags
+	}
+	if mm.retTagKeys != nil {
+		return mm.retTagKeys, nil
 	}
 	keys := make([]string, 0, len(mm.retTags))
 	for k := range mm.retTags {
@@ -245,6 +250,43 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("host.name", "example-hostname")
 				attr.PutStr("ec2.tag.tag1", "val1")
 				attr.PutStr("ec2.tag.tag2", "val2")
+				return res
+			}(),
+			tagsFromIMDS: true,
+		},
+		{
+			name: "partial IMDS tag failure returns resource with successfully fetched tags",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname: "example-hostname",
+				// retTagKeys returns tag1 and missing_tag; retTags only has tag1,
+				// so Tag("missing_tag") will error — simulating a partial fetch failure.
+				retTags:     map[string]string{"tag1": "val1"},
+				retTagKeys:  []string{"tag1", "missing_tag"},
+				isAvailable: true,
+			}},
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile(".*")},
+			args:          args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("host.name", "example-hostname")
+				attr.PutStr("ec2.tag.tag1", "val1")
 				return res
 			}(),
 			tagsFromIMDS: true,

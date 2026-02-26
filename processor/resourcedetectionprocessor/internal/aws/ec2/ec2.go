@@ -5,6 +5,7 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -182,17 +183,19 @@ func fetchIMDSTags(ctx context.Context, provider ec2provider.Provider, tagKeyReg
 	}
 
 	tags := make(map[string]string)
+	var errs []error
 	for _, key := range keys {
 		if !regexArrayMatch(tagKeyRegexes, key) {
 			continue
 		}
 		val, err := provider.Tag(ctx, key)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get tag value for key %q: %w", key, err)
+			errs = append(errs, fmt.Errorf("failed to get tag value for key %q: %w", key, err))
+			continue
 		}
 		tags[key] = val
 	}
-	return tags, nil
+	return tags, errors.Join(errs...)
 }
 
 func compileRegexes(cfg Config) ([]*regexp.Regexp, error) {
