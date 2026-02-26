@@ -180,6 +180,7 @@ func TestConsumerConfig(t *testing.T) {
 				HeartbeatInterval: 3 * time.Second,
 				GroupID:           "otel-collector",
 				InitialOffset:     "latest",
+				GroupRebalanceStrategy: CooperativeStickyBalanceStrategy,
 				AutoCommit: AutoCommitConfig{
 					Enable:   true,
 					Interval: 1 * time.Second,
@@ -190,6 +191,13 @@ func TestConsumerConfig(t *testing.T) {
 				MaxPartitionFetchSize: 1048576,
 			},
 		},
+		"custom_rebalance_extension_id": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.GroupRebalanceStrategy = "mybalancer/custom"
+				return cfg
+			}(),
+		},
 
 		// Invalid configurations
 		"invalid_initial_offset": {
@@ -197,6 +205,9 @@ func TestConsumerConfig(t *testing.T) {
 		},
 		"invalid_fetch_size": {
 			expectedErr: "max_fetch_size (100) cannot be less than min_fetch_size (1000)",
+		},
+		"invalid_group_rebalance_strategy": {
+			expectedErr: "group_rebalance_strategy should be one of 'range', 'roundrobin', 'sticky', or 'cooperative-sticky', or an extension ID. configured value bad value",
 		},
 		"negative_min_fetch_size": {
 			expectedErr: "min_fetch_size (-100) must be non-negative",

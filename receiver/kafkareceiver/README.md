@@ -80,11 +80,12 @@ The following settings can be optionally configured:
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
 - `session_timeout` (default = `10s`): The request timeout for detecting client failures when using Kafka’s group management facilities.
 - `heartbeat_interval` (default = `3s`): The expected time between heartbeats to the consumer coordinator when using Kafka’s group management facilities.
-- `group_rebalance_strategy` (default = `cooperative-sticky`): This strategy is used to assign partitions to consumers within a consumer group. This setting determines how Kafka distributes topic partitions among the consumers in the group during rebalances. Supported strategies are:
+- `group_rebalance_strategy` (default = `cooperative-sticky`): This strategy is used to assign partitions to consumers within a consumer group. This setting determines how Kafka distributes topic partitions among the consumers in the group during rebalances. Supported built-in strategies are:
   - `range`: This strategy assigns partitions to consumers based on a range. It aims to distribute partitions evenly across consumers, but it can lead to uneven distribution if the number of partitions is not a multiple of the number of consumers. For more information, refer to the Kafka RangeAssignor documentation, see [RangeAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/RangeAssignor.html).
   - `roundrobin`: This strategy assigns partitions to consumers in a round-robin fashion. It ensures a more even distribution of partitions across consumers, especially when the number of partitions is not a multiple of the number of consumers. For more information, refer to the Kafka RoundRobinAssignor documentation, see [RoundRobinAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/RoundRobinAssignor.html).
   - `sticky`: This strategy aims to maintain the same partition assignments during rebalances as much as possible. It minimizes the number of partition movements, which can be beneficial for stateful consumers. For more information, refer to the Kafka StickyAssignor documentation, see [StickyAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/StickyAssignor.html).
   - `cooperative-sticky`: This strategy is similar to `sticky`, but it supports cooperative rebalancing. It allows consumers to incrementally adjust their partition assignments without requiring a full rebalance, which can reduce downtime during rebalances. For more information, refer to the Kafka CooperativeStickyAssignor documentation, see [CooperativeStickyAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/CooperativeStickyAssignor.html).
+  - For custom / private balancing strategies, set this value to an **extension ID** (e.g. `mybalancer` or `mybalancer/custom`) that is compiled into your collector distribution, configured under `extensions`, and included in `service.extensions`. The extension must implement either franz-go’s `kgo.GroupBalancer` or provide a `Balancers() []kgo.GroupBalancer` method.
 - `group_instance_id`: A unique identifier for the consumer instance within a consumer group.
   - If set to a non-empty string, the consumer is treated as a static member of the group. This means that the consumer will maintain its partition assignments across restarts and rebalances, as long as it rejoins the group with the same `group_instance_id`.
   - If set to an empty string (or not set), the consumer is treated as a dynamic member. In this case, the consumer's partition assignments may change during rebalances.
@@ -203,6 +204,23 @@ receivers:
         username: "user"
         password: "secret"
         mechanism: "SCRAM-SHA-512"
+```
+
+#### Custom group rebalance strategy (via extension)
+
+In this example, `group_rebalance_strategy` references an enabled extension instance that provides a custom franz-go consumer-group balancer:
+
+```yaml
+extensions:
+  mybalancer:
+    # your private extension config
+
+receivers:
+  kafka:
+    group_rebalance_strategy: mybalancer
+
+service:
+  extensions: [mybalancer]
 ```
 
 #### Header extraction

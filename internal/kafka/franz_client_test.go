@@ -20,6 +20,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -430,17 +431,337 @@ func mustNewFranzConsumerGroup(t *testing.T,
 	topics []string, opts ...kgo.Opt,
 ) *kgo.Client {
 	t.Helper()
+	return mustNewFranzConsumerGroupWithHost(t, componenttest.NewNopHost(), clientConfig, consumerConfig, topics, opts...)
+}
+
+func mustNewFranzConsumerGroupWithHost(t *testing.T,
+	host component.Host,
+	clientConfig configkafka.ClientConfig,
+	consumerConfig configkafka.ConsumerConfig,
+	topics []string, opts ...kgo.Opt,
+) *kgo.Client {
+	t.Helper()
 	// We want to keep the metadata cache very short lived in tests to speed
 	// up and avoid waiting for too long.
 	minAge := 10 * time.Millisecond
 	opts = append(opts, kgo.MetadataMinAge(minAge), kgo.MetadataMaxAge(minAge*2))
 	client, err := NewFranzConsumerGroup(
-		t.Context(), componenttest.NewNopHost(), clientConfig, consumerConfig,
+		t.Context(), host, clientConfig, consumerConfig,
 		topics, nil, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
 	)
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
 	return client
+}
+
+type namedBalancer struct {
+	kgo.GroupBalancer
+	name string
+}
+
+func (b namedBalancer) ProtocolName() string { return b.name }
+
+type balancersExtension struct {
+	balancers []kgo.GroupBalancer
+}
+
+func (*balancersExtension) Start(context.Context, component.Host) error { return nil }
+func (*balancersExtension) Shutdown(context.Context) error              { return nil }
+func (e *balancersExtension) Balancers() []kgo.GroupBalancer            { return e.balancers }
+
+type hostWithExtensions struct {
+	component.Host
+	exts map[component.ID]component.Component
+}
+
+func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component { return h.exts }
+
+type balancerExtension struct{ namedBalancer }
+
+func (*balancerExtension) Start(context.Context, component.Host) error { return nil }
+func (*balancerExtension) Shutdown(context.Context) error              { return nil }
+
+type noopExtension struct{}
+
+func (*noopExtension) Start(context.Context, component.Host) error { return nil }
+func (*noopExtension) Shutdown(context.Context) error              { return nil }
+
+type bothBalancersAndSingleExtension struct {
+	namedBalancer
+	balancers []kgo.GroupBalancer
+}
+
+func (*bothBalancersAndSingleExtension) Start(context.Context, component.Host) error { return nil }
+func (*bothBalancersAndSingleExtension) Shutdown(context.Context) error              { return nil }
+func (e *bothBalancersAndSingleExtension) Balancers() []kgo.GroupBalancer            { return e.balancers }
+
+func TestNewFranzConsumerGroup_CustomBalancer_ExtensionProvider(t *testing.T) {
+	t.Parallel()
+
+	topic := "topic"
+	cluster, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
+	consumeConfig := configkafka.NewDefaultConsumerConfig()
+	consumeConfig.InitialOffset = configkafka.EarliestOffset
+	consumeConfig.GroupRebalanceStrategy = "mybalancer"
+
+	seenProtocols := make(chan []string, 1)
+	cluster.ControlKey(int16(kmsg.JoinGroup), func(kreq kmsg.Request) (kmsg.Response, error, bool) {
+		jreq, ok := kreq.(*kmsg.JoinGroupRequest)
+		require.True(t, ok)
+
+		names := make([]string, 0, len(jreq.Protocols))
+		for _, p := range jreq.Protocols {
+			names = append(names, p.Name)
+		}
+		select {
+		case seenProtocols <- names:
+		default:
+		}
+		return nil, nil, false
+	})
+
+	base := kgo.CooperativeStickyBalancer()
+	customProtocol := "private-coop-sticky"
+	ext := &balancersExtension{
+		balancers: []kgo.GroupBalancer{
+			namedBalancer{GroupBalancer: base, name: customProtocol},
+		},
+	}
+	var extID component.ID
+	require.NoError(t, extID.UnmarshalText([]byte("mybalancer")))
+	host := hostWithExtensions{
+		Host: componenttest.NewNopHost(),
+		exts: map[component.ID]component.Component{extID: ext},
+	}
+
+	client := mustNewFranzConsumerGroupWithHost(t, host, clientConfig, consumeConfig, []string{topic})
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	// Produce a record to ensure PollRecords returns promptly.
+	require.NoError(t, client.ProduceSync(ctx, &kgo.Record{
+		Topic: topic, Value: []byte("test"),
+	}).FirstErr())
+
+	fetch := client.PollRecords(ctx, 1)
+	require.NoError(t, fetch.Err())
+	require.Equal(t, 1, fetch.NumRecords())
+
+	select {
+	case names := <-seenProtocols:
+		assert.Contains(t, names, customProtocol)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for JoinGroup request")
+	}
+}
+
+func TestNewFranzConsumerGroup_CustomBalancer_DirectGroupBalancer(t *testing.T) {
+	t.Parallel()
+
+	topic := "topic"
+	cluster, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
+	consumeConfig := configkafka.NewDefaultConsumerConfig()
+	consumeConfig.InitialOffset = configkafka.EarliestOffset
+	consumeConfig.GroupRebalanceStrategy = "mybalancer2"
+
+	seenProtocols := make(chan []string, 1)
+	cluster.ControlKey(int16(kmsg.JoinGroup), func(kreq kmsg.Request) (kmsg.Response, error, bool) {
+		jreq, ok := kreq.(*kmsg.JoinGroupRequest)
+		require.True(t, ok)
+
+		names := make([]string, 0, len(jreq.Protocols))
+		for _, p := range jreq.Protocols {
+			names = append(names, p.Name)
+		}
+		select {
+		case seenProtocols <- names:
+		default:
+		}
+		return nil, nil, false
+	})
+
+	base := kgo.RangeBalancer()
+	customProtocol := "private-range"
+	ext := &balancerExtension{namedBalancer: namedBalancer{GroupBalancer: base, name: customProtocol}}
+	var extID component.ID
+	require.NoError(t, extID.UnmarshalText([]byte("mybalancer2")))
+	host := hostWithExtensions{
+		Host: componenttest.NewNopHost(),
+		exts: map[component.ID]component.Component{extID: ext},
+	}
+
+	client := mustNewFranzConsumerGroupWithHost(t, host, clientConfig, consumeConfig, []string{topic})
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	require.NoError(t, client.ProduceSync(ctx, &kgo.Record{
+		Topic: topic, Value: []byte("test"),
+	}).FirstErr())
+
+	fetch := client.PollRecords(ctx, 1)
+	require.NoError(t, fetch.Err())
+	require.Equal(t, 1, fetch.NumRecords())
+
+	select {
+	case names := <-seenProtocols:
+		assert.Contains(t, names, customProtocol)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for JoinGroup request")
+	}
+}
+
+func TestNewFranzConsumerGroup_CustomBalancer_NotFound(t *testing.T) {
+	t.Parallel()
+
+	consumeConfig := configkafka.NewDefaultConsumerConfig()
+	consumeConfig.GroupRebalanceStrategy = "mybalancer"
+
+	_, err := NewFranzConsumerGroup(
+		t.Context(),
+		componenttest.NewNopHost(),
+		configkafka.NewDefaultClientConfig(),
+		consumeConfig,
+		[]string{"topic"},
+		nil,
+		zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)),
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "custom group balancer extension")
+}
+
+func TestNewFranzConsumerGroup_CustomBalancer_PreferProviderOverSingle(t *testing.T) {
+	t.Parallel()
+
+	topic := "topic"
+	cluster, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
+	consumeConfig := configkafka.NewDefaultConsumerConfig()
+	consumeConfig.InitialOffset = configkafka.EarliestOffset
+	consumeConfig.GroupRebalanceStrategy = "mybalancer"
+
+	seenProtocols := make(chan []string, 1)
+	cluster.ControlKey(int16(kmsg.JoinGroup), func(kreq kmsg.Request) (kmsg.Response, error, bool) {
+		jreq, ok := kreq.(*kmsg.JoinGroupRequest)
+		require.True(t, ok)
+
+		names := make([]string, 0, len(jreq.Protocols))
+		for _, p := range jreq.Protocols {
+			names = append(names, p.Name)
+		}
+		select {
+		case seenProtocols <- names:
+		default:
+		}
+		return nil, nil, false
+	})
+
+	providerProtocol := "provider-protocol"
+	singleProtocol := "single-protocol"
+	ext := &bothBalancersAndSingleExtension{
+		namedBalancer: namedBalancer{GroupBalancer: kgo.RangeBalancer(), name: singleProtocol},
+		balancers: []kgo.GroupBalancer{
+			namedBalancer{GroupBalancer: kgo.CooperativeStickyBalancer(), name: providerProtocol},
+		},
+	}
+	var extID component.ID
+	require.NoError(t, extID.UnmarshalText([]byte("mybalancer")))
+	host := hostWithExtensions{
+		Host: componenttest.NewNopHost(),
+		exts: map[component.ID]component.Component{extID: ext},
+	}
+
+	client := mustNewFranzConsumerGroupWithHost(t, host, clientConfig, consumeConfig, []string{topic})
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	require.NoError(t, client.ProduceSync(ctx, &kgo.Record{
+		Topic: topic, Value: []byte("test"),
+	}).FirstErr())
+
+	fetch := client.PollRecords(ctx, 1)
+	require.NoError(t, fetch.Err())
+	require.Equal(t, 1, fetch.NumRecords())
+
+	select {
+	case names := <-seenProtocols:
+		assert.Contains(t, names, providerProtocol)
+		assert.NotContains(t, names, singleProtocol)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for JoinGroup request")
+	}
+}
+
+func TestNewFranzConsumerGroup_CustomBalancer_WrongExtensionType(t *testing.T) {
+	t.Parallel()
+
+	consumeConfig := configkafka.NewDefaultConsumerConfig()
+	consumeConfig.GroupRebalanceStrategy = "mybalancer"
+
+	var extID component.ID
+	require.NoError(t, extID.UnmarshalText([]byte("mybalancer")))
+	host := hostWithExtensions{
+		Host: componenttest.NewNopHost(),
+		exts: map[component.ID]component.Component{extID: &noopExtension{}},
+	}
+
+	_, err := NewFranzConsumerGroup(
+		t.Context(),
+		host,
+		configkafka.NewDefaultClientConfig(),
+		consumeConfig,
+		[]string{"topic"},
+		nil,
+		zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)),
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "must implement")
+}
+
+func TestNewFranzConsumerGroup_CustomBalancer_EmptyProvider(t *testing.T) {
+	t.Parallel()
+
+	consumeConfig := configkafka.NewDefaultConsumerConfig()
+	consumeConfig.GroupRebalanceStrategy = "mybalancer"
+
+	var extID component.ID
+	require.NoError(t, extID.UnmarshalText([]byte("mybalancer")))
+	host := hostWithExtensions{
+		Host: componenttest.NewNopHost(),
+		exts: map[component.ID]component.Component{extID: &balancersExtension{}},
+	}
+
+	_, err := NewFranzConsumerGroup(
+		t.Context(),
+		host,
+		configkafka.NewDefaultClientConfig(),
+		consumeConfig,
+		[]string{"topic"},
+		nil,
+		zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)),
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "returned no balancers")
+}
+
+func TestNewFranzConsumerGroup_CustomBalancer_NilHost(t *testing.T) {
+	t.Parallel()
+
+	consumeConfig := configkafka.NewDefaultConsumerConfig()
+	consumeConfig.GroupRebalanceStrategy = "mybalancer"
+
+	_, err := NewFranzConsumerGroup(
+		t.Context(),
+		nil,
+		configkafka.NewDefaultClientConfig(),
+		consumeConfig,
+		[]string{"topic"},
+		nil,
+		zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)),
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "nil component host")
 }
 
 func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
