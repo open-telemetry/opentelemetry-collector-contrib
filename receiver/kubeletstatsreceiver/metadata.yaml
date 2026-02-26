@@ -1,9 +1,8 @@
 display_name: Kubelet Stats Receiver
 type: kubeletstats
 
-description: |
-  The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
-  and sends it down the metric pipeline for further processing.
+reaggregation:
+  enabled: true
 
 status:
   class: receiver
@@ -17,34 +16,40 @@ resource_attributes:
   aws.volume.id:
     description: "[DEPRECATED] The id of the AWS Volume"
     enabled: true
+    level: opt_in
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   container.id:
     description: "Container id used to identify container"
     enabled: true
+    level: recommended
     type: string
   fs.type:
     description: "[DEPRECATED] The filesystem type of the Volume"
     enabled: true
+    level: opt_in
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   gce.pd.name:
     description: "[DEPRECATED] The name of the persistent disk in GCE"
     enabled: true
+    level: opt_in
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.endpoints.name:
     description: "[DEPRECATED] The endpoint name that details Glusterfs topology"
     enabled: true
+    level: opt_in
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.path:
     description: "[DEPRECATED] Glusterfs volume path"
     enabled: true
+    level: opt_in
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
@@ -52,38 +57,47 @@ resource_attributes:
   k8s.container.name:
     description: "Container name used by container runtime"
     enabled: true
+    level: recommended
     type: string
   k8s.namespace.name:
     description: "The name of the namespace that the pod is running in"
     enabled: true
+    level: recommended
     type: string
   k8s.node.name:
     description: "The name of the Node"
     enabled: true
+    level: required
     type: string
   k8s.persistentvolumeclaim.name:
     description: "The name of the Persistent Volume Claim"
     enabled: true
+    level: recommended
     type: string
   k8s.pod.name:
     description: "The name of the Pod"
     enabled: true
+    level: recommended
     type: string
   k8s.pod.uid:
     description: "The UID of the Pod"
     enabled: true
+    level: required
     type: string
   k8s.volume.name:
     description: "The name of the Volume"
     enabled: true
+    level: recommended
     type: string
   k8s.volume.type:
     description: "The type of the Volume"
     enabled: true
+    level: recommended
     type: string
   partition:
     description: "[DEPRECATED] The partition in the Volume"
     enabled: true
+    level: opt_in
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
@@ -92,9 +106,11 @@ attributes:
     description: Direction of flow of bytes/operations (receive or transmit).
     type: string
     enum: [receive, transmit]
+    level: required
   interface:
     description: Name of the network interface.
     type: string
+    level: recommended
 
 metrics:
   container.cpu.time:
