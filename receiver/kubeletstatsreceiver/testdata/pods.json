@@ -6,6 +6,16 @@
         "uid": "5795d0c442cb997ff93c49feeb9f6386"
       },
       "spec": {
+        "resources": {
+          "requests": {
+            "cpu": "2m",
+            "memory": "10M"
+          },
+          "limits": {
+            "cpu": "4m",
+            "memory": "100M"
+          }
+        },
         "containers": [
           {
             "name":"kube-scheduler",
