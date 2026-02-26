@@ -143,6 +143,7 @@ extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
 extension/azureauthextension
+extension/internal/credentialsfile
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension

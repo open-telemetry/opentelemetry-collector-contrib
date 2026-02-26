@@ -90,15 +90,12 @@ func TestManagerShutdown(t *testing.T) {
 	err = manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager)
 	require.NoError(t, err)
 
-	// Shutdown the manager
+	// Shutdown the manager. This blocks until the goroutine exits,
+	// which logs "Stopping target allocator" before returning.
 	manager.Shutdown()
 
-	// Wait for the shutdown to complete with a timeout
-	require.Eventually(t, func() bool {
-		// Check if the log message "Stopping target allocator" was logged
-		logEntries := logs.FilterMessage("Stopping target allocator")
-		return logEntries.Len() > 0
-	}, 5*time.Second, 50*time.Millisecond, "expected shutdown log message")
+	logEntries := logs.FilterMessage("Stopping target allocator")
+	require.Positive(t, logEntries.Len(), "expected shutdown log message")
 }
 
 func TestInstantiateShard(t *testing.T) {

@@ -25,7 +25,7 @@ require (
 require (
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
 	github.com/antchfx/xmlquery v1.5.0 // indirect
-	github.com/antchfx/xpath v1.3.5 // indirect
+	github.com/antchfx/xpath v1.3.6 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
@@ -65,6 +65,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.146.2-0.20260219223409-66996adfaaf7 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/pipeline v1.52.1-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect

@@ -8,6 +8,7 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
@@ -26,7 +27,7 @@ func (s *filesystemsScraper) recordFileSystemUsageMetric(now pcommon.Timestamp, 
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
 			metadata.AttributeStateFree)
 		s.mb.RecordSystemFilesystemUtilizationDataPoint(
-			now, deviceUsage.usage.UsedPercent/100.0,
+			now, precision.Ratio(deviceUsage.usage.Used, deviceUsage.usage.Used+deviceUsage.usage.Free),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype)
 	}
