@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"strings"
@@ -220,7 +221,7 @@ func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval t
 		return true
 	}
 
-	if collectionTime.Sub(p.lastExecutionTimestamp) >= interval {
+	if time.Duration(math.Ceil(collectionTime.Sub(p.lastExecutionTimestamp).Seconds()))*time.Second >= interval {
 		return true
 	}
 
