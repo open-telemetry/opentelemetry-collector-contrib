@@ -31,6 +31,16 @@ const (
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 	// EKS cluster version string identifier.
 	eksClusterStringIdentifier = "-eks-"
+	// EKS OIDC issuer identifier.
+	eksOIDCIssuerIdentifier = "oidc.eks."
+	// EKS IRSA token file path identifier.
+	eksIRSATokenPathIdentifier = "eks.amazonaws.com" //nolint:gosec // not a credential
+	// EKS Pod Identity token file path identifier.
+	eksPodIdentityPathIdentifier = "eks-pod-identity"
+	// Environment variable for IRSA web identity token file.
+	awsWebIdentityTokenFileEnvVar = "AWS_WEB_IDENTITY_TOKEN_FILE" //nolint:gosec // env var name, not a credential
+	// Environment variable for EKS Pod Identity authorization token file.
+	awsContainerAuthTokenFileEnvVar = "AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE" //nolint:gosec // env var name, not a credential
 
 	imdsCheckMaxRetry = 1
 )
@@ -90,7 +100,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// Check if running on EKS.
-	if isEKS, err := d.isEKS(); err != nil || !isEKS {
+	if isEKS, err := d.isEKS(ctx); err != nil || !isEKS {
 		if err != nil {
 			d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
 		}
@@ -160,11 +170,27 @@ func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string,
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
-func (d *detector) isEKS() (bool, error) {
+func (d *detector) isEKS(ctx context.Context) (bool, error) {
 	if os.Getenv(kubernetesServiceHostEnvVar) == "" {
 		return false, nil
 	}
 
+	// Check for EKS-specific IRSA token path
+	if tokenFile := os.Getenv(awsWebIdentityTokenFileEnvVar); strings.Contains(tokenFile, eksIRSATokenPathIdentifier) {
+		return true, nil
+	}
+
+	// Check for EKS Pod Identity token path
+	if authFile := os.Getenv(awsContainerAuthTokenFileEnvVar); strings.Contains(authFile, eksPodIdentityPathIdentifier) {
+		return true, nil
+	}
+
+	// Check OIDC issuer for EKS-specific identifier
+	if issuer, err := d.apiProvider.OIDCIssuer(ctx); err == nil && strings.Contains(issuer, eksOIDCIssuerIdentifier) {
+		return true, nil
+	}
+
+	// Fallback: check cluster version for -eks- identifier
 	clusterVersion, err := d.apiProvider.ClusterVersion()
 	if err != nil {
 		return false, fmt.Errorf("isEks() error retrieving cluster version: %w", err)
