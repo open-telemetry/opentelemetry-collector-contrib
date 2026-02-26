@@ -93,18 +93,25 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 				metric := sm.Metrics().At(k)
 
 				// Only sort if it's a Delta metric
-				if metric.Type() == pmetric.MetricTypeSum && metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-					metric.Sum().DataPoints().Sort(func(a, b pmetric.NumberDataPoint) bool {
-						return a.Timestamp() < b.Timestamp()
-					})
-				} else if metric.Type() == pmetric.MetricTypeHistogram && metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-					metric.Histogram().DataPoints().Sort(func(a, b pmetric.HistogramDataPoint) bool {
-						return a.Timestamp() < b.Timestamp()
-					})
-				} else if metric.Type() == pmetric.MetricTypeExponentialHistogram && metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-					metric.ExponentialHistogram().DataPoints().Sort(func(a, b pmetric.ExponentialHistogramDataPoint) bool {
-						return a.Timestamp() < b.Timestamp()
-					})
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					if metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+						metric.Sum().DataPoints().Sort(func(a, b pmetric.NumberDataPoint) bool {
+							return a.Timestamp() < b.Timestamp()
+						})
+					}
+				case pmetric.MetricTypeHistogram:
+					if metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+						metric.Histogram().DataPoints().Sort(func(a, b pmetric.HistogramDataPoint) bool {
+							return a.Timestamp() < b.Timestamp()
+						})
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					if metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+						metric.ExponentialHistogram().DataPoints().Sort(func(a, b pmetric.ExponentialHistogramDataPoint) bool {
+							return a.Timestamp() < b.Timestamp()
+						})
+					}
 				}
 			}
 		}
