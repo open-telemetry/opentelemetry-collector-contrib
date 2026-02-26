@@ -51,7 +51,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.52.1-0.20260219223409-66996adfaaf7
 	go.opentelemetry.io/otel/metric v1.40.0
 	go.uber.org/zap v1.27.1
-	golang.org/x/net v0.50.0
+	golang.org/x/net v0.51.0
 	google.golang.org/protobuf v1.36.11
 )
 
