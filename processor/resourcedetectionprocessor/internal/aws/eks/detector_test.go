@@ -41,6 +41,8 @@ func (m *mockIMDSProvider) InstanceID(_ context.Context) (string, error) {
 type mockAPIProvider struct {
 	clusterVersion    string
 	clusterVersionErr error
+	oidcIssuer        string
+	oidcIssuerErr     error
 	k8sMeta           apiprovider.InstanceMetadata
 	k8sErr            error
 	apiMeta           apiprovider.InstanceMetadata
@@ -50,6 +52,10 @@ type mockAPIProvider struct {
 
 func (m *mockAPIProvider) ClusterVersion() (string, error) {
 	return m.clusterVersion, m.clusterVersionErr
+}
+
+func (m *mockAPIProvider) OIDCIssuer(_ context.Context) (string, error) {
+	return m.oidcIssuer, m.oidcIssuerErr
 }
 
 func (m *mockAPIProvider) GetK8sInstanceMetadata(_ context.Context) (apiprovider.InstanceMetadata, error) {
@@ -83,6 +89,10 @@ func TestIsEKS(t *testing.T) {
 	tests := []struct {
 		name              string
 		k8sHostEnvVar     string
+		irsaTokenFile     string
+		podIdentityFile   string
+		oidcIssuer        string
+		oidcIssuerErr     error
 		clusterVersion    string
 		clusterVersionErr error
 		isEKS             bool
@@ -92,6 +102,31 @@ func TestIsEKS(t *testing.T) {
 			name:          "Not K8s Cluster",
 			k8sHostEnvVar: "",
 			isEKS:         false,
+		},
+		{
+			name:          "IRSA Token Path",
+			k8sHostEnvVar: "1",
+			irsaTokenFile: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token",
+			isEKS:         true,
+		},
+		{
+			name:            "Pod Identity Token Path",
+			k8sHostEnvVar:   "1",
+			podIdentityFile: "/var/run/secrets/eks-pod-identity/serviceaccount/token",
+			isEKS:           true,
+		},
+		{
+			name:          "OIDC Issuer EKS",
+			k8sHostEnvVar: "1",
+			oidcIssuer:    "https://oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E53DE1B716D3041E",
+			isEKS:         true,
+		},
+		{
+			name:           "OIDC Issuer Error Falls Through",
+			k8sHostEnvVar:  "1",
+			oidcIssuerErr:  errors.New("fail"),
+			clusterVersion: "v1.32.3-eks-d0fe756",
+			isEKS:          true,
 		},
 		{
 			name:              "ClusterVersion Error",
@@ -116,14 +151,18 @@ func TestIsEKS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv(kubernetesServiceHostEnvVar, tt.k8sHostEnvVar)
+			t.Setenv(awsWebIdentityTokenFileEnvVar, tt.irsaTokenFile)
+			t.Setenv(awsContainerAuthTokenFileEnvVar, tt.podIdentityFile)
 
 			d := &detector{
 				apiProvider: &mockAPIProvider{
 					clusterVersion:    tt.clusterVersion,
 					clusterVersionErr: tt.clusterVersionErr,
+					oidcIssuer:        tt.oidcIssuer,
+					oidcIssuerErr:     tt.oidcIssuerErr,
 				},
 			}
-			isEKS, err := d.isEKS()
+			isEKS, err := d.isEKS(t.Context())
 			if tt.err != "" {
 				assert.Error(t, err)
 				assert.ErrorContains(t, err, tt.err)
