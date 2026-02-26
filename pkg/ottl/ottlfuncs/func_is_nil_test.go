@@ -44,14 +44,13 @@ func Test_IsNil(t *testing.T) {
 	}
 }
 
-//nolint:errorlint
 func Test_IsNil_Error(t *testing.T) {
-    exprFunc := isNil[any](&ottl.StandardGetSetter[any]{
-        Getter: func(context.Context, any) (any, error) {
-            return nil, ottl.TypeError("")
-        },
-    })
-    result, err := exprFunc(t.Context(), nil)
-    assert.Equal(t, true, result)
-    require.NoError(t, err)
+	exprFunc := isNil[any](&ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return nil, ottl.TypeError("")
+		},
+	})
+	result, err := exprFunc(t.Context(), nil)
+	assert.Equal(t, true, result)
+	require.NoError(t, err)
 }

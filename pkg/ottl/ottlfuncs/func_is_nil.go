@@ -28,13 +28,12 @@ func createIsNilFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 	return isNil(args.Target), nil
 }
 
-//nolint:errorlint
 func isNil[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
-		
 		if err != nil {
-			if _, ok := err.(ottl.TypeError); ok {
+			var typeErr ottl.TypeError
+			if errors.As(err, &typeErr) {
 				return true, nil
 			}
 			return false, err
