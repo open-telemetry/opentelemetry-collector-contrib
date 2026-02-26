@@ -79,7 +79,7 @@ func (p *persistentState) writeState() error {
 // loadOrCreatePersistentState attempts to load the persistent state from disk. If it doesn't
 // exist, a new persistent state file is created.
 // instanceID must be a valid UUID string, or an empty string to generate a new UUIDv7 automatically.
-func loadOrCreatePersistentState(file string, instanceID string, logger *zap.Logger) (*persistentState, error) {
+func loadOrCreatePersistentState(file, instanceID string, logger *zap.Logger) (*persistentState, error) {
 	state, err := loadPersistentState(file, logger)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -109,7 +109,7 @@ func loadPersistentState(file string, logger *zap.Logger) (*persistentState, err
 	return state, nil
 }
 
-func createNewPersistentState(file string, instanceID string, logger *zap.Logger) (*persistentState, error) {
+func createNewPersistentState(file, instanceID string, logger *zap.Logger) (*persistentState, error) {
 	id, err := uuid.Parse(instanceID)
 	if err != nil {
 		if instanceID != "" {
