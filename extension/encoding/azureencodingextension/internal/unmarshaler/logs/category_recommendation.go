@@ -38,7 +38,7 @@ const (
 
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#recommendation-category
 type azureRecommendationLog struct {
-	azureLogRecordBase
+	activityLogRecordBase
 
 	Properties struct {
 		RecommendationSchemaVersion string `json:"recommendationSchemaVersion"`

@@ -641,6 +641,22 @@ func maskMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName st
 	}
 }
 
+// IgnoreResourceEntityRefs is a CompareMetricsOption that clears entity references
+// on all resources.
+func IgnoreResourceEntityRefs() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		maskMetricsResourceEntityRefs(expected)
+		maskMetricsResourceEntityRefs(actual)
+	})
+}
+
+func maskMetricsResourceEntityRefs(metrics pmetric.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		internal.MaskResourceEntityRefs(rms.At(i).Resource())
+	}
+}
+
 func ChangeResourceAttributeValue(attributeName string, changeFn func(string) string) CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
 		changeMetricsResourceAttributeValue(expected, attributeName, changeFn)
