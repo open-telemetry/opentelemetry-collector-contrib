@@ -57,93 +57,74 @@ const expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","
 
 func TestDynamicTemplateMode(t *testing.T) {
 	ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
-	t.Run("OTel_mode_returns_otel_template_names", func(t *testing.T) {
-		// Number: gauge double
-		m := pmetric.NewMetric()
-		m.SetName("g")
-		gauge := m.SetEmptyGauge()
-		dp := gauge.DataPoints().AppendEmpty()
-		dp.SetTimestamp(ts)
-		dp.SetDoubleValue(1.0)
-		numDP := datapoints.NewNumber(m, dp)
-		assert.Equal(t, "gauge_double", numDP.DynamicTemplate(m, datapoints.DynamicTemplateModeOTel))
 
-		// Number: counter long
-		m2 := pmetric.NewMetric()
-		m2.SetName("c")
-		sum := m2.SetEmptySum()
-		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		dp2 := sum.DataPoints().AppendEmpty()
-		dp2.SetTimestamp(ts)
-		dp2.SetIntValue(2)
-		numDP2 := datapoints.NewNumber(m2, dp2)
-		assert.Equal(t, "counter_long", numDP2.DynamicTemplate(m2, datapoints.DynamicTemplateModeOTel))
+	// Build the four metric + DataPoint fixtures once.
+	m := pmetric.NewMetric()
+	m.SetName("g")
+	gauge := m.SetEmptyGauge()
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(1.0)
 
-		// Histogram
-		m3 := pmetric.NewMetric()
-		m3.SetName("h")
-		hist := m3.SetEmptyHistogram()
-		histDp := hist.DataPoints().AppendEmpty()
-		histDp.SetTimestamp(ts)
-		histDp.ExplicitBounds().FromRaw([]float64{1, 2})
-		histDp.BucketCounts().FromRaw([]uint64{1, 2, 3})
-		histDP := datapoints.NewHistogram(m3, histDp)
-		assert.Equal(t, "histogram", histDP.DynamicTemplate(m3, datapoints.DynamicTemplateModeOTel))
+	m2 := pmetric.NewMetric()
+	m2.SetName("c")
+	sum := m2.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp2 := sum.DataPoints().AppendEmpty()
+	dp2.SetTimestamp(ts)
+	dp2.SetIntValue(2)
 
-		// Summary
-		m4 := pmetric.NewMetric()
-		m4.SetName("s")
-		summaryDp := m4.SetEmptySummary().DataPoints().AppendEmpty()
-		summaryDp.SetTimestamp(ts)
-		summaryDp.SetSum(10)
-		summaryDp.SetCount(5)
-		sumDP := datapoints.NewSummary(m4, summaryDp)
-		assert.Equal(t, "summary", sumDP.DynamicTemplate(m4, datapoints.DynamicTemplateModeOTel))
-	})
-	t.Run("ECS_mode_returns_apm_pipeline_template_names", func(t *testing.T) {
-		// Number (any gauge/counter) -> double_metrics
-		m := pmetric.NewMetric()
-		m.SetName("g")
-		gauge := m.SetEmptyGauge()
-		dp := gauge.DataPoints().AppendEmpty()
-		dp.SetTimestamp(ts)
-		dp.SetDoubleValue(1.0)
-		numDP := datapoints.NewNumber(m, dp)
-		assert.Equal(t, "double_metrics", numDP.DynamicTemplate(m, datapoints.DynamicTemplateModeECS))
+	m3 := pmetric.NewMetric()
+	m3.SetName("h")
+	hist := m3.SetEmptyHistogram()
+	histDp := hist.DataPoints().AppendEmpty()
+	histDp.SetTimestamp(ts)
+	histDp.ExplicitBounds().FromRaw([]float64{1, 2})
+	histDp.BucketCounts().FromRaw([]uint64{1, 2, 3})
 
-		m2 := pmetric.NewMetric()
-		m2.SetName("c")
-		sum := m2.SetEmptySum()
-		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		dp2 := sum.DataPoints().AppendEmpty()
-		dp2.SetTimestamp(ts)
-		dp2.SetIntValue(2)
-		numDP2 := datapoints.NewNumber(m2, dp2)
-		assert.Equal(t, "double_metrics", numDP2.DynamicTemplate(m2, datapoints.DynamicTemplateModeECS))
+	m4 := pmetric.NewMetric()
+	m4.SetName("s")
+	summaryDp := m4.SetEmptySummary().DataPoints().AppendEmpty()
+	summaryDp.SetTimestamp(ts)
+	summaryDp.SetSum(10)
+	summaryDp.SetCount(5)
 
-		// Histogram -> histogram_metrics
-		m3 := pmetric.NewMetric()
-		m3.SetName("h")
-		hist := m3.SetEmptyHistogram()
-		histDp := hist.DataPoints().AppendEmpty()
-		histDp.SetTimestamp(ts)
-		histDp.ExplicitBounds().FromRaw([]float64{1, 2})
-		histDp.BucketCounts().FromRaw([]uint64{1, 2, 3})
-		histDP := datapoints.NewHistogram(m3, histDp)
-		assert.Equal(t, "histogram_metrics", histDP.DynamicTemplate(m3, datapoints.DynamicTemplateModeECS))
+	metrics := []struct {
+		m  pmetric.Metric
+		dp datapoints.DataPoint
+	}{
+		{m, datapoints.NewNumber(m, dp)},
+		{m2, datapoints.NewNumber(m2, dp2)},
+		{m3, datapoints.NewHistogram(m3, histDp)},
+		{m4, datapoints.NewSummary(m4, summaryDp)},
+	}
 
-		// Summary -> summary_metrics
-		m4 := pmetric.NewMetric()
-		m4.SetName("s")
-		summaryDp := m4.SetEmptySummary().DataPoints().AppendEmpty()
-		summaryDp.SetTimestamp(ts)
-		summaryDp.SetSum(10)
-		summaryDp.SetCount(5)
-		sumDP := datapoints.NewSummary(m4, summaryDp)
-		assert.Equal(t, "summary_metrics", sumDP.DynamicTemplate(m4, datapoints.DynamicTemplateModeECS))
-	})
+	tests := []struct {
+		name          string
+		mode          datapoints.DynamicTemplateMode
+		wantTemplates []string
+	}{
+		{
+			name:          "OTel",
+			mode:          datapoints.DynamicTemplateModeOTel,
+			wantTemplates: []string{"gauge_double", "counter_long", "histogram", "summary"},
+		},
+		{
+			name:          "ECS",
+			mode:          datapoints.DynamicTemplateModeECS,
+			wantTemplates: []string{"double_metrics", "double_metrics", "histogram_metrics", "summary_metrics"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for i, metric := range metrics {
+				got := metric.dp.DynamicTemplate(metric.m, tc.mode)
+				require.Equal(t, tc.wantTemplates[i], got)
+			}
+		})
+	}
 }
 
 func TestEncodeSpan(t *testing.T) {
