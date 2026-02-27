@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,20 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["CouchdbAverageRequestTime"] = mb.metricCouchdbAverageRequestTime.config.AggregationStrategy
+			aggMap["CouchdbDatabaseOpen"] = mb.metricCouchdbDatabaseOpen.config.AggregationStrategy
+			aggMap["CouchdbDatabaseOperations"] = mb.metricCouchdbDatabaseOperations.config.AggregationStrategy
+			aggMap["CouchdbFileDescriptorOpen"] = mb.metricCouchdbFileDescriptorOpen.config.AggregationStrategy
+			aggMap["CouchdbHttpdBulkRequests"] = mb.metricCouchdbHttpdBulkRequests.config.AggregationStrategy
+			aggMap["CouchdbHttpdRequests"] = mb.metricCouchdbHttpdRequests.config.AggregationStrategy
+			aggMap["CouchdbHttpdResponses"] = mb.metricCouchdbHttpdResponses.config.AggregationStrategy
+			aggMap["CouchdbHttpdViews"] = mb.metricCouchdbHttpdViews.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,187 +87,421 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbAverageRequestTimeDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordCouchdbAverageRequestTimeDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbDatabaseOpenDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordCouchdbDatabaseOpenDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 1, AttributeOperationWrites)
+			if tt.name == "reaggregate_set" {
+				mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 3, AttributeOperationReads)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbFileDescriptorOpenDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordCouchdbFileDescriptorOpenDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdBulkRequestsDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordCouchdbHttpdBulkRequestsDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdRequestsDataPoint(ts, 1, AttributeHTTPMethodCOPY)
+			if tt.name == "reaggregate_set" {
+				mb.RecordCouchdbHttpdRequestsDataPoint(ts, 3, AttributeHTTPMethodDELETE)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdResponsesDataPoint(ts, 1, "http.status_code-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordCouchdbHttpdResponsesDataPoint(ts, 3, "http.status_code-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdViewsDataPoint(ts, 1, AttributeViewTemporaryViewReads)
+			if tt.name == "reaggregate_set" {
+				mb.RecordCouchdbHttpdViewsDataPoint(ts, 3, AttributeViewViewReads)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetCouchdbNodeName("couchdb.node.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricCouchdbAverageRequestTime.aggDataPoints)
+				assert.Empty(t, mb.metricCouchdbDatabaseOpen.aggDataPoints)
+				assert.Empty(t, mb.metricCouchdbDatabaseOperations.aggDataPoints)
+				assert.Empty(t, mb.metricCouchdbFileDescriptorOpen.aggDataPoints)
+				assert.Empty(t, mb.metricCouchdbHttpdBulkRequests.aggDataPoints)
+				assert.Empty(t, mb.metricCouchdbHttpdRequests.aggDataPoints)
+				assert.Empty(t, mb.metricCouchdbHttpdResponses.aggDataPoints)
+				assert.Empty(t, mb.metricCouchdbHttpdViews.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
-			var allMetricsList []pmetric.Metric
-			totalMetricsCount := 0
-			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
-				rm := metrics.ResourceMetrics().At(ri)
-				assert.Equal(t, 1, rm.ScopeMetrics().Len())
-				ms := rm.ScopeMetrics().At(0).Metrics()
-				totalMetricsCount += ms.Len()
-				for mi := 0; mi < ms.Len(); mi++ {
-					allMetricsList = append(allMetricsList, ms.At(mi))
-				}
-			}
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
+				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, totalMetricsCount)
+				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
-			for _, mi := range allMetricsList {
-				switch mi.Name() {
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
 				case "couchdb.average_request_time":
-					assert.False(t, validatedMetrics["couchdb.average_request_time"], "Found a duplicate in the metrics slice: couchdb.average_request_time")
-					validatedMetrics["couchdb.average_request_time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The average duration of a served request.", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["couchdb.average_request_time"], "Found a duplicate in the metrics slice: couchdb.average_request_time")
+						validatedMetrics["couchdb.average_request_time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The average duration of a served request.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["couchdb.average_request_time"], "Found a duplicate in the metrics slice: couchdb.average_request_time")
+						validatedMetrics["couchdb.average_request_time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The average duration of a served request.", ms.At(i).Description())
+						assert.Equal(t, "ms", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["couchdb.average_request_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "couchdb.database.open":
-					assert.False(t, validatedMetrics["couchdb.database.open"], "Found a duplicate in the metrics slice: couchdb.database.open")
-					validatedMetrics["couchdb.database.open"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of open databases.", mi.Description())
-					assert.Equal(t, "{databases}", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["couchdb.database.open"], "Found a duplicate in the metrics slice: couchdb.database.open")
+						validatedMetrics["couchdb.database.open"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of open databases.", ms.At(i).Description())
+						assert.Equal(t, "{databases}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["couchdb.database.open"], "Found a duplicate in the metrics slice: couchdb.database.open")
+						validatedMetrics["couchdb.database.open"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of open databases.", ms.At(i).Description())
+						assert.Equal(t, "{databases}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["couchdb.database.open"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "couchdb.database.operations":
-					assert.False(t, validatedMetrics["couchdb.database.operations"], "Found a duplicate in the metrics slice: couchdb.database.operations")
-					validatedMetrics["couchdb.database.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of database operations.", mi.Description())
-					assert.Equal(t, "{operations}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					operationAttrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "writes", operationAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["couchdb.database.operations"], "Found a duplicate in the metrics slice: couchdb.database.operations")
+						validatedMetrics["couchdb.database.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of database operations.", ms.At(i).Description())
+						assert.Equal(t, "{operations}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "writes", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["couchdb.database.operations"], "Found a duplicate in the metrics slice: couchdb.database.operations")
+						validatedMetrics["couchdb.database.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of database operations.", ms.At(i).Description())
+						assert.Equal(t, "{operations}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["couchdb.database.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
 				case "couchdb.file_descriptor.open":
-					assert.False(t, validatedMetrics["couchdb.file_descriptor.open"], "Found a duplicate in the metrics slice: couchdb.file_descriptor.open")
-					validatedMetrics["couchdb.file_descriptor.open"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of open file descriptors.", mi.Description())
-					assert.Equal(t, "{files}", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["couchdb.file_descriptor.open"], "Found a duplicate in the metrics slice: couchdb.file_descriptor.open")
+						validatedMetrics["couchdb.file_descriptor.open"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of open file descriptors.", ms.At(i).Description())
+						assert.Equal(t, "{files}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["couchdb.file_descriptor.open"], "Found a duplicate in the metrics slice: couchdb.file_descriptor.open")
+						validatedMetrics["couchdb.file_descriptor.open"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of open file descriptors.", ms.At(i).Description())
+						assert.Equal(t, "{files}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["couchdb.file_descriptor.open"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "couchdb.httpd.bulk_requests":
-					assert.False(t, validatedMetrics["couchdb.httpd.bulk_requests"], "Found a duplicate in the metrics slice: couchdb.httpd.bulk_requests")
-					validatedMetrics["couchdb.httpd.bulk_requests"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of bulk requests.", mi.Description())
-					assert.Equal(t, "{requests}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["couchdb.httpd.bulk_requests"], "Found a duplicate in the metrics slice: couchdb.httpd.bulk_requests")
+						validatedMetrics["couchdb.httpd.bulk_requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of bulk requests.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["couchdb.httpd.bulk_requests"], "Found a duplicate in the metrics slice: couchdb.httpd.bulk_requests")
+						validatedMetrics["couchdb.httpd.bulk_requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of bulk requests.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["couchdb.httpd.bulk_requests"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "couchdb.httpd.requests":
-					assert.False(t, validatedMetrics["couchdb.httpd.requests"], "Found a duplicate in the metrics slice: couchdb.httpd.requests")
-					validatedMetrics["couchdb.httpd.requests"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of HTTP requests by method.", mi.Description())
-					assert.Equal(t, "{requests}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpMethodAttrVal, ok := dp.Attributes().Get("http.method")
-					assert.True(t, ok)
-					assert.Equal(t, "COPY", httpMethodAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["couchdb.httpd.requests"], "Found a duplicate in the metrics slice: couchdb.httpd.requests")
+						validatedMetrics["couchdb.httpd.requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of HTTP requests by method.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("http.method")
+						assert.True(t, ok)
+						assert.Equal(t, "COPY", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["couchdb.httpd.requests"], "Found a duplicate in the metrics slice: couchdb.httpd.requests")
+						validatedMetrics["couchdb.httpd.requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of HTTP requests by method.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["couchdb.httpd.requests"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.method")
+						assert.False(t, ok)
+					}
 				case "couchdb.httpd.responses":
-					assert.False(t, validatedMetrics["couchdb.httpd.responses"], "Found a duplicate in the metrics slice: couchdb.httpd.responses")
-					validatedMetrics["couchdb.httpd.responses"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of each HTTP status code.", mi.Description())
-					assert.Equal(t, "{responses}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpStatusCodeAttrVal, ok := dp.Attributes().Get("http.status_code")
-					assert.True(t, ok)
-					assert.Equal(t, "http.status_code-val", httpStatusCodeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["couchdb.httpd.responses"], "Found a duplicate in the metrics slice: couchdb.httpd.responses")
+						validatedMetrics["couchdb.httpd.responses"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of each HTTP status code.", ms.At(i).Description())
+						assert.Equal(t, "{responses}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("http.status_code")
+						assert.True(t, ok)
+						assert.Equal(t, "http.status_code-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["couchdb.httpd.responses"], "Found a duplicate in the metrics slice: couchdb.httpd.responses")
+						validatedMetrics["couchdb.httpd.responses"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of each HTTP status code.", ms.At(i).Description())
+						assert.Equal(t, "{responses}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["couchdb.httpd.responses"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.status_code")
+						assert.False(t, ok)
+					}
 				case "couchdb.httpd.views":
-					assert.False(t, validatedMetrics["couchdb.httpd.views"], "Found a duplicate in the metrics slice: couchdb.httpd.views")
-					validatedMetrics["couchdb.httpd.views"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of views read.", mi.Description())
-					assert.Equal(t, "{views}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					viewAttrVal, ok := dp.Attributes().Get("view")
-					assert.True(t, ok)
-					assert.Equal(t, "temporary_view_reads", viewAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["couchdb.httpd.views"], "Found a duplicate in the metrics slice: couchdb.httpd.views")
+						validatedMetrics["couchdb.httpd.views"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of views read.", ms.At(i).Description())
+						assert.Equal(t, "{views}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("view")
+						assert.True(t, ok)
+						assert.Equal(t, "temporary_view_reads", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["couchdb.httpd.views"], "Found a duplicate in the metrics slice: couchdb.httpd.views")
+						validatedMetrics["couchdb.httpd.views"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of views read.", ms.At(i).Description())
+						assert.Equal(t, "{views}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["couchdb.httpd.views"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("view")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})
