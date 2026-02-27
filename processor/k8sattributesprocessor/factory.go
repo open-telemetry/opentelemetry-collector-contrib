@@ -36,6 +36,7 @@ func NewFactory() processor.Factory {
 		xprocessor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
 		xprocessor.WithLogs(createLogsProcessor, metadata.LogsStability),
 		xprocessor.WithProfiles(createProfilesProcessor, metadata.ProfilesStability),
+		xprocessor.WithDeprecatedTypeAlias(component.MustNewType("k8sattributes")),
 	)
 }
 

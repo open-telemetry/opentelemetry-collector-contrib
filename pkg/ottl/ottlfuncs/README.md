@@ -470,7 +470,8 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
-- [Base64Decode](#base64decode)
+- [Base64Decode](#base64decode-deprecated)
+- [Base64Encode](#base64encode)
 - [Bool](#bool)
 - [Decode](#decode)
 - [CommunityID](#communityid)
@@ -498,6 +499,7 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsInCIDR](#isincidr)
 - [IsInt](#isint)
 - [IsRootSpan](#isrootspan)
 - [IsMap](#ismap)
@@ -577,6 +579,28 @@ Examples:
 
 
 - `Base64Decode(resource.attributes["encoded field"])`
+
+### Base64Encode
+
+`Base64Encode(value, Optional[variant])`
+
+The `Base64Encode` Converter takes a string and returns a base64 encoded string.
+
+`value` is a string to encode.
+`variant` (optional) is the base64 encoding variant to use. Valid values are `base64` (standard, with padding), `base64-raw` (standard, no padding), `base64-url` (URL-safe, with padding), or `base64-raw-url` (URL-safe, no padding). Defaults to `base64` if not specified.
+
+Examples:
+
+- `Base64Encode("test string")`
+
+
+- `Base64Encode(resource.attributes["field"])`
+
+
+- `Base64Encode(body, "base64-url")`
+
+
+- `Base64Encode(attributes["data"], "base64-raw")`
 
 ### Bool
 
@@ -1265,6 +1289,20 @@ Examples:
 - `IsDouble(log.body)`
 
 - `IsDouble(log.attributes["maybe a double"])`
+
+### IsInCIDR
+
+`IsInCIDR(target, networks[])`
+
+The `IsInCIDR` Converter returns true if the given target IP address falls within any of the specified network ranges.
+
+The `target` is either a path expression to a telemetry field to retrieve, or a literal. The `networks` is a list of CIDR addresses.
+
+Examples:
+
+- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16"])`
+
+- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16", "10.0.0.0/8"])`
 
 ### IsInt
 

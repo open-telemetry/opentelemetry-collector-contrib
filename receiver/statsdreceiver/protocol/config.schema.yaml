@@ -1,0 +1,44 @@
+$defs:
+  explicit_bucket:
+    type: object
+    properties:
+      buckets:
+        type: array
+        items:
+          type: number
+          x-customType: float64
+      matcher_pattern:
+        type: string
+  histogram_config:
+    type: object
+    properties:
+      explicit_buckets:
+        type: array
+        items:
+          $ref: explicit_bucket
+      max_size:
+        type: integer
+        x-customType: int32
+  observer_type:
+    type: string
+  summary_config:
+    type: object
+    properties:
+      percentiles:
+        type: array
+        items:
+          type: number
+          x-customType: float64
+  timer_histogram_mapping:
+    type: object
+    properties:
+      histogram:
+        $ref: histogram_config
+      observer_type:
+        $ref: observer_type
+      statsd_type:
+        $ref: type_name
+      summary:
+        $ref: summary_config
+  type_name:
+    type: string

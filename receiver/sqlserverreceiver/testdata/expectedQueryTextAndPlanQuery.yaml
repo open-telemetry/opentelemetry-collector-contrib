@@ -61,8 +61,14 @@ resourceLogs:
               - key: db.system.name
                 value:
                   stringValue: microsoft.sql_server
+              - key: sqlserver.procedure_id
+                value:
+                  stringValue: "0"
+              - key: sqlserver.procedure_name
+                value:
+                    stringValue: ""
             body: {}
-            eventName: db.server.top_query
+            eventName: "db.server.top_query"
             spanId: ""
             timeUnixNano: "1749224037462260000"
             traceId: ""

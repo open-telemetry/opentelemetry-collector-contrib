@@ -89,7 +89,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				}
 
 				env := "default"
-				if envFromAttr := transform.GetOTelEnv(otelspan, otelres, false); envFromAttr != "" {
+				if envFromAttr := transform.GetOTelEnv(otelspan, otelres); envFromAttr != "" {
 					env = envFromAttr
 				}
 				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.env", env)
@@ -132,7 +132,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				}
 
 				metaMap := make(map[string]string)
-				code := transform.GetOTelStatusCode(otelspan, otelres, false)
+				code := transform.GetOTelStatusCode(otelspan, otelres)
 				if code != 0 {
 					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.http_status_code", fmt.Sprintf("%d", code))
 					if err != nil {

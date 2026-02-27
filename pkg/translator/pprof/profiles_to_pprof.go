@@ -14,7 +14,7 @@ import (
 	"github.com/google/pprof/profile"
 	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
 )
 
 // errNotFound is returned if something requested is not available
@@ -78,11 +78,23 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		si := s.StackIndex()
 		stack := src.Dictionary().StackTable().At(int(si))
 
+		// By convention, pprof uses the last sample type as default, while OTel Profiles
+		// uses the first profile as default. Therefore, swap first and last.
 		for i := range numProfiles {
-			if sp.At(0).Profiles().At(i).Samples().At(sampleIdx).Values().Len() != 1 {
+			// Swap first and last: first OTel profile becomes last pprof sample type
+			var mappedIdx int
+			switch i {
+			case 0:
+				mappedIdx = numProfiles - 1
+			case numProfiles - 1:
+				mappedIdx = 0
+			default:
+				mappedIdx = i
+			}
+			if sp.At(0).Profiles().At(mappedIdx).Samples().At(sampleIdx).Values().Len() != 1 {
 				return nil, errors.New("invalid number of values per sample")
 			}
-			pprofSample.Value = append(pprofSample.Value, pprofiles.At(i).Samples().At(sampleIdx).Values().At(0))
+			pprofSample.Value = append(pprofSample.Value, pprofiles.At(mappedIdx).Samples().At(sampleIdx).Values().At(0))
 		}
 
 		for _, li := range stack.LocationIndices().All() {
@@ -125,10 +137,22 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	}
 
 	// Set pprof values that should be common across all profiles.
+	// By convention, pprof uses the last sample type as default, while OTel Profiles
+	// uses the first profile as default. Therefore, swap first and last.
 	for i := range numProfiles {
+		// Swap first and last: first OTel profile becomes last pprof sample type
+		var mappedIdx int
+		switch i {
+		case 0:
+			mappedIdx = numProfiles - 1
+		case numProfiles - 1:
+			mappedIdx = 0
+		default:
+			mappedIdx = i
+		}
 		dst.SampleType = append(dst.SampleType, &profile.ValueType{
-			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(i).SampleType().TypeStrindex())),
-			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(i).SampleType().UnitStrindex())),
+			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().TypeStrindex())),
+			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().UnitStrindex())),
 		})
 	}
 
@@ -142,15 +166,15 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		dst.Comments = append(dst.Comments, commentStrs...)
 	}
 
-	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.keep_frames")
+	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileKeepFramesKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.drop_frames")
+	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileDropFramesKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.doc_url")
+	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileDocURLKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}

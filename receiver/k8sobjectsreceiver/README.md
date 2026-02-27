@@ -118,7 +118,7 @@ data:
           - name: events
             mode: watch
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: <OTLP_ENDPOINT>
         tls:
           insecure: true
@@ -127,7 +127,7 @@ data:
       pipelines:
         logs:
           receivers: [k8sobjects]
-          exporters: [otlp]
+          exporters: [otlp_grpc]
 EOF
 ```
 
@@ -244,6 +244,13 @@ spec:
             name: otelcontribcol
 EOF
 ```
+
+## Compatibility
+
+### Kubernetes Versions
+
+This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L99)
+workflow. These tested versions represent the officially supported Kubernetes versions for this component.
 
 ## Troubleshooting
 

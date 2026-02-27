@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+	tencentcvm "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 )
@@ -121,6 +122,9 @@ type DetectorConfig struct {
 	// ScalewayConfig contains user-specified configurations for the scaleway detector
 	ScalewayConfig scaleway.Config `mapstructure:"scaleway"`
 
+	// TencentCVMConfig contains user-specified configurations for the Tencent Cloud CVM detector
+	TencentCVMConfig tencentcvm.Config `mapstructure:"tencent_cvm"`
+
 	// UpcloudConfig contains user-specified configurations for the upcloud detector
 	UpcloudConfig upcloud.Config `mapstructure:"upcloud"`
 
@@ -152,6 +156,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
 		AkamaiConfig:           akamai.CreateDefaultConfig(),
 		ScalewayConfig:         scaleway.CreateDefaultConfig(),
+		TencentCVMConfig:       tencentcvm.CreateDefaultConfig(),
 		UpcloudConfig:          upcloud.CreateDefaultConfig(),
 		VultrConfig:            vultr.CreateDefaultConfig(),
 	}
@@ -203,6 +208,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.AkamaiConfig
 	case scaleway.TypeStr:
 		return d.ScalewayConfig
+	case tencentcvm.TypeStr:
+		return d.TencentCVMConfig
 	case upcloud.TypeStr:
 		return d.UpcloudConfig
 	case vultr.TypeStr:

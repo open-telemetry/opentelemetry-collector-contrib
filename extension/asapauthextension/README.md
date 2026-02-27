@@ -42,7 +42,7 @@ exporters:
     auth:
       authenticator: asapclient
 
-  otlp/withauth:
+  otlp_grpc/withauth:
     endpoint: 0.0.0.0:5000
     ca_file: /tmp/certs/ca.pem
     auth:

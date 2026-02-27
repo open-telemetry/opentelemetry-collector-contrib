@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_kafka_broker_closed
 
-The total number of connections closed. [Development]
+The total number of connections closed.
 
 Only produced when franz-go is enabled.
 
@@ -24,7 +24,7 @@ Only produced when franz-go is enabled.
 
 ### otelcol_kafka_broker_connects
 
-The total number of connections opened. [Development]
+The total number of connections opened.
 
 Only produced when franz-go is enabled.
 
@@ -41,7 +41,7 @@ Only produced when franz-go is enabled.
 
 ### otelcol_kafka_broker_throttling_duration
 
-The throttling duration in ms imposed by the broker when receiving messages. [Deprecated]
+The throttling duration in ms imposed by the broker when receiving messages.
 
 Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_throttling_latency.
 
@@ -57,7 +57,7 @@ Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_thro
 
 ### otelcol_kafka_broker_throttling_latency
 
-The throttling latency in seconds imposed by the broker when receiving records. [Development]
+The throttling latency in seconds imposed by the broker when receiving records.
 
 Only produced when franz-go is enabled.
 
@@ -73,7 +73,7 @@ Only produced when franz-go is enabled.
 
 ### otelcol_kafka_receiver_bytes
 
-The size in bytes of received records seen by the broker. [Development]
+The size in bytes of received records seen by the broker.
 
 Only produced when franz-go is enabled.
 
@@ -92,7 +92,7 @@ Only produced when franz-go is enabled.
 
 ### otelcol_kafka_receiver_bytes_uncompressed
 
-The uncompressed size in bytes of received records seen by the client. [Development]
+The uncompressed size in bytes of received records seen by the client.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -109,7 +109,7 @@ The uncompressed size in bytes of received records seen by the client. [Developm
 
 ### otelcol_kafka_receiver_current_offset
 
-Current message offset [Development]
+Current message offset
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -124,7 +124,7 @@ Current message offset [Development]
 
 ### otelcol_kafka_receiver_latency
 
-The time it took in ms to receive a batch of messages. [Deprecated]
+The time it took in ms to receive a batch of messages.
 
 Only produced when franz-go is enabled. Deprecated in favor of kafka_receiver_read_latency.
 
@@ -143,7 +143,7 @@ Only produced when franz-go is enabled. Deprecated in favor of kafka_receiver_re
 
 ### otelcol_kafka_receiver_messages
 
-The number of received messages. [Deprecated]
+The number of received messages.
 
 Deprecated in favor of kafka_receiver_records.
 
@@ -162,7 +162,7 @@ Deprecated in favor of kafka_receiver_records.
 
 ### otelcol_kafka_receiver_offset_lag
 
-Current offset lag [Development]
+Current offset lag
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -177,7 +177,7 @@ Current offset lag [Development]
 
 ### otelcol_kafka_receiver_partition_close
 
-Number of finished partitions [Development]
+Number of finished partitions
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -185,7 +185,7 @@ Number of finished partitions [Development]
 
 ### otelcol_kafka_receiver_partition_start
 
-Number of started partitions [Development]
+Number of started partitions
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -193,7 +193,7 @@ Number of started partitions [Development]
 
 ### otelcol_kafka_receiver_read_latency
 
-The time it took in seconds to receive a batch of records. [Development]
+The time it took in seconds to receive a batch of records.
 
 Only produced when franz-go is enabled.
 
@@ -212,7 +212,7 @@ Only produced when franz-go is enabled.
 
 ### otelcol_kafka_receiver_records
 
-The number of received records. [Development]
+The number of received records.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -229,7 +229,7 @@ The number of received records. [Development]
 
 ### otelcol_kafka_receiver_records_delay
 
-The time in seconds between producing and receiving a batch of records. [Development]
+The time in seconds between producing and receiving a batch of records.
 
 Optional, only reported when enabled via config.
 Note that this metric may slow down high-volume consuming.
@@ -250,7 +250,7 @@ This metric is reported with an assumption that the exporter and the receiver cl
 
 ### otelcol_kafka_receiver_unmarshal_failed_log_records
 
-Number of log records failed to be unmarshaled [Development]
+Number of log records failed to be unmarshaled
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -265,7 +265,7 @@ Number of log records failed to be unmarshaled [Development]
 
 ### otelcol_kafka_receiver_unmarshal_failed_metric_points
 
-Number of metric points failed to be unmarshaled [Development]
+Number of metric points failed to be unmarshaled
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -280,7 +280,7 @@ Number of metric points failed to be unmarshaled [Development]
 
 ### otelcol_kafka_receiver_unmarshal_failed_profiles
 
-Number of profiles failed to be unmarshaled [Development]
+Number of profiles failed to be unmarshaled
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -295,7 +295,7 @@ Number of profiles failed to be unmarshaled [Development]
 
 ### otelcol_kafka_receiver_unmarshal_failed_spans
 
-Number of spans failed to be unmarshaled [Development]
+Number of spans failed to be unmarshaled
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

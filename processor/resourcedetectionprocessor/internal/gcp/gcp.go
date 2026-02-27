@@ -14,19 +14,18 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
-	processormetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 const (
 	// TypeStr is type of detector.
 	TypeStr        = "gcp"
-	GCElabelPrefix = "gcp.gce.instance.labels."
+	gceLabelPrefix = "gcp.gce.instance.labels."
 )
 
 // NewDetector returns a detector which can detect resource attributes on:
@@ -104,9 +103,6 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
-		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
-			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID))
-		}
 	case gcp.CloudRunJob:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudRun.Value.AsString())
 		errs = multierr.Combine(errs,
@@ -116,9 +112,6 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobExecution, d.detector.CloudRunJobExecution),
 			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobTaskIndex, d.detector.CloudRunJobTaskIndex),
 		)
-		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
-			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID))
-		}
 	case gcp.CloudFunctions:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudFunctions.Value.AsString())
 		errs = multierr.Combine(errs,
@@ -127,9 +120,6 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
-		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
-			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID))
-		}
 	case gcp.AppEngineFlex:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPAppEngine.Value.AsString())
 		errs = multierr.Combine(errs,
@@ -138,9 +128,6 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.AppEngineServiceInstance),
 		)
-		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
-			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance))
-		}
 	case gcp.AppEngineStandard:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPAppEngine.Value.AsString())
 		errs = multierr.Combine(errs,
@@ -150,9 +137,6 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetFromCallable(d.rb.SetCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.AppEngineStandardCloudRegion),
 		)
-		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
-			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance))
-		}
 	case gcp.GCE:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPComputeEngine.Value.AsString())
 		errs = multierr.Combine(errs,
@@ -174,7 +158,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		zone, _, zerr := d.detector.GCEAvailabilityZoneAndRegion()
 		name, nerr := d.detector.GCEInstanceName()
 		if perr != nil || zerr != nil || nerr != nil {
-			d.logger.Warn("failed reading GCE metadata for labels", zap.Error(perr), zap.Error(zerr), zap.Error(nerr))
+			d.logger.Warn("failed reading GCE metadata for labels", zap.NamedError("project_id", perr), zap.NamedError("zone", zerr), zap.NamedError("instance_name", nerr))
 			return res, conventions.SchemaURL, errs
 		}
 
@@ -194,7 +178,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		if len(labels) > 0 {
 			attrs := res.Attributes()
 			for k, v := range labels {
-				attrs.PutStr(GCElabelPrefix+k, v)
+				attrs.PutStr(gceLabelPrefix+k, v)
 			}
 		}
 

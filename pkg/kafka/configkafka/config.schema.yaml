@@ -50,6 +50,10 @@ $defs:
       client_id:
         description: ClientID holds the client ID advertised to Kafka, which can be used for enforcing ACLs, throttling quotas, and more (default "otel-collector")
         type: string
+      conn_idle_timeout:
+        description: ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
+        type: string
+        format: duration
       metadata:
         description: Metadata holds metadata-related configuration for producers and consumers.
         $ref: metadata_config

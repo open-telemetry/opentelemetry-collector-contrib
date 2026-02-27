@@ -1,3 +1,8 @@
+description: Config defines the configuration for the pprof receiver.
 type: object
+properties:
+  include:
+    description: Include is the glob pattern for pprof files to scrape.
+    type: string
 allOf:
-  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

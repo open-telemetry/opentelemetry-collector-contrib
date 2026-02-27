@@ -27,6 +27,7 @@ This exporter writes received OpenTelemetry data to a cloud storage bucket.
 | `bucket.partition`       | Configuration for time-based partitioning. See below for details.                                                                                                                                                        | No       |         |
 | `bucket.reuse_if_exists` | If true, use the existing bucket if it already exists; if false, error if bucket exists.                                                                                                                                 | No       | `false` |
 | `bucket.region`          | Region where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.                                   | Yes      |         |
+| `bucket.compression`     | Compression algorithm used to compress data before uploading. Valid values are `gzip`, `zstd`, or no value set for no compression.                                                                                        | No       |         |
 
 ### Partition Configuration
 
@@ -58,4 +59,19 @@ exporters:
 extensions:
   # text encoding to ensure only the body is placed in the bucket
   text_encoding:
+```
+
+### Compression Example
+
+```yaml
+exporters:
+  googlecloudstorage:
+    bucket:
+      name: compressed-logs-bucket
+      project_id: my-project
+      region: us-central1
+      compression: gzip
+      file_prefix: logs
+      partition:
+        format: "year=%Y/month=%m/day=%d"
 ```

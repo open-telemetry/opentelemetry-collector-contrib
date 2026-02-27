@@ -11,6 +11,8 @@ $defs:
     properties:
       metrics:
         $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
   metrics_config:
     description: MetricsConfig provides config for redfish metrics.
     type: object
@@ -39,3 +41,27 @@ $defs:
         $ref: metric_config
       temperature.status.state:
         $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for redfish resource attributes.
+    type: object
+    properties:
+      base_url:
+        $ref: resource_attribute_config
+      system.host_name:
+        $ref: resource_attribute_config

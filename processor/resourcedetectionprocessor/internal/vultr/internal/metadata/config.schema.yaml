@@ -9,6 +9,8 @@ $defs:
     description: ResourceAttributesConfig provides config for vultrdetector resource attributes.
     type: object
     properties:
+      cloud.platform:
+        $ref: resource_attribute_config
       cloud.provider:
         $ref: resource_attribute_config
       cloud.region:

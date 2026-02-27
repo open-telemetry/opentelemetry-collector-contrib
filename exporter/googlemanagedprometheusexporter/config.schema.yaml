@@ -1,0 +1,36 @@
+$defs:
+  gmp_config:
+    description: GMPConfig is a subset of the collector config applicable to the GMP exporter.
+    type: object
+    properties:
+      metric:
+        $ref: metric_config
+      project:
+        type: string
+      user_agent:
+        type: string
+  metric_config:
+    type: object
+    properties:
+      cumulative_normalization:
+        description: CumulativeNormalization normalizes cumulative metrics without start times or with explicit reset points by subtracting subsequent points from the initial point. It is enabled by default. Since it caches starting points, it may result in increased memory usage.
+        type: boolean
+      prefix:
+        description: Prefix configures the prefix of metrics sent to GoogleManagedPrometheus.  Defaults to prometheus.googleapis.com. Changing this prefix is not recommended, as it may cause metrics to not be queryable with promql in the Cloud Monitoring UI.
+        type: string
+      resource_filters:
+        type: array
+        items:
+          x-customType: github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector.resource_filter
+    allOf:
+      - x-customType: github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector.client_config
+      - x-customType: github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus.config
+description: Config defines configuration for Google Cloud Managed Service for Prometheus exporter.
+type: object
+properties:
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: gmp_config
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

@@ -112,6 +112,9 @@ var MetricsInfo = metricsInfo{
 	SystemMemoryLinuxHugepagesUtilization: metricInfo{
 		Name: "system.memory.linux.hugepages.utilization",
 	},
+	SystemMemoryLinuxShared: metricInfo{
+		Name: "system.memory.linux.shared",
+	},
 	SystemMemoryPageSize: metricInfo{
 		Name: "system.memory.page_size",
 	},
@@ -133,6 +136,7 @@ type metricsInfo struct {
 	SystemMemoryLinuxHugepagesSurplus     metricInfo
 	SystemMemoryLinuxHugepagesUsage       metricInfo
 	SystemMemoryLinuxHugepagesUtilization metricInfo
+	SystemMemoryLinuxShared               metricInfo
 	SystemMemoryPageSize                  metricInfo
 	SystemMemoryUsage                     metricInfo
 	SystemMemoryUtilization               metricInfo
@@ -606,6 +610,58 @@ func newMetricSystemMemoryLinuxHugepagesUtilization(cfg MetricConfig) metricSyst
 	return m
 }
 
+type metricSystemMemoryLinuxShared struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.linux.shared metric with initial data.
+func (m *metricSystemMemoryLinuxShared) init() {
+	m.data.SetName("system.memory.linux.shared")
+	m.data.SetDescription("Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemMemoryLinuxShared) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxShared) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxShared) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxShared(cfg MetricConfig) metricSystemMemoryLinuxShared {
+	m := metricSystemMemoryLinuxShared{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemMemoryPageSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -779,6 +835,7 @@ type MetricsBuilder struct {
 	metricSystemMemoryLinuxHugepagesSurplus     metricSystemMemoryLinuxHugepagesSurplus
 	metricSystemMemoryLinuxHugepagesUsage       metricSystemMemoryLinuxHugepagesUsage
 	metricSystemMemoryLinuxHugepagesUtilization metricSystemMemoryLinuxHugepagesUtilization
+	metricSystemMemoryLinuxShared               metricSystemMemoryLinuxShared
 	metricSystemMemoryPageSize                  metricSystemMemoryPageSize
 	metricSystemMemoryUsage                     metricSystemMemoryUsage
 	metricSystemMemoryUtilization               metricSystemMemoryUtilization
@@ -816,6 +873,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemMemoryLinuxHugepagesSurplus:     newMetricSystemMemoryLinuxHugepagesSurplus(mbc.Metrics.SystemMemoryLinuxHugepagesSurplus),
 		metricSystemMemoryLinuxHugepagesUsage:       newMetricSystemMemoryLinuxHugepagesUsage(mbc.Metrics.SystemMemoryLinuxHugepagesUsage),
 		metricSystemMemoryLinuxHugepagesUtilization: newMetricSystemMemoryLinuxHugepagesUtilization(mbc.Metrics.SystemMemoryLinuxHugepagesUtilization),
+		metricSystemMemoryLinuxShared:               newMetricSystemMemoryLinuxShared(mbc.Metrics.SystemMemoryLinuxShared),
 		metricSystemMemoryPageSize:                  newMetricSystemMemoryPageSize(mbc.Metrics.SystemMemoryPageSize),
 		metricSystemMemoryUsage:                     newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
 		metricSystemMemoryUtilization:               newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
@@ -894,6 +952,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSystemMemoryLinuxHugepagesSurplus.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxHugepagesUsage.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxHugepagesUtilization.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxShared.emit(ils.Metrics())
 	mb.metricSystemMemoryPageSize.emit(ils.Metrics())
 	mb.metricSystemMemoryUsage.emit(ils.Metrics())
 	mb.metricSystemMemoryUtilization.emit(ils.Metrics())
@@ -961,6 +1020,11 @@ func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesUsageDataPoint(ts pcom
 // RecordSystemMemoryLinuxHugepagesUtilizationDataPoint adds a data point to system.memory.linux.hugepages.utilization metric.
 func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(ts pcommon.Timestamp, val float64, systemMemoryLinuxHugepagesStateAttributeValue AttributeSystemMemoryLinuxHugepagesState) {
 	mb.metricSystemMemoryLinuxHugepagesUtilization.recordDataPoint(mb.startTime, ts, val, systemMemoryLinuxHugepagesStateAttributeValue.String())
+}
+
+// RecordSystemMemoryLinuxSharedDataPoint adds a data point to system.memory.linux.shared metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxSharedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryLinuxShared.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemMemoryPageSizeDataPoint adds a data point to system.memory.page_size metric.

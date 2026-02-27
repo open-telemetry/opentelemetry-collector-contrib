@@ -27,7 +27,7 @@ resourceMetrics:
             stringValue: "az1"
         - key: cloud.platform
           value:
-            stringValue: azure_vm
+            stringValue: azure.vm
         - key: cloud.provider
           value:
             stringValue: azure

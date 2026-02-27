@@ -1,0 +1,31 @@
+$defs:
+  required_header:
+    type: object
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+description: Config defines configuration for the Generic Webhook receiver.
+type: object
+properties:
+  convert_headers_to_attributes:
+    type: boolean
+  header_attribute_regex:
+    type: string
+  health_path:
+    type: string
+  path:
+    type: string
+  read_timeout:
+    type: string
+  required_header:
+    $ref: required_header
+  split_logs_at_json_boundary:
+    type: boolean
+  split_logs_at_newline:
+    type: boolean
+  write_timeout:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

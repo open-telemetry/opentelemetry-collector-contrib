@@ -1,0 +1,7 @@
+type: object
+properties:
+  max_open_conn:
+    description: The maximumn number of open connections to the sql server. <= 0 means unlimited
+    type: integer
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery.config

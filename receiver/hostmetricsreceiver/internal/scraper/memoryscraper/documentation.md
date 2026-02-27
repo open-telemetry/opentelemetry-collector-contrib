@@ -120,6 +120,14 @@ Percentage of hugepages in use by state.
 | ---- | ----------- | ------ | -------- |
 | system.memory.linux.hugepages.state | Breakdown of hugepages usage by state. | Str: ``free``, ``used`` | Recommended |
 
+### system.memory.linux.shared
+
+Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
 ### system.memory.page_size
 
 A constant value for the system's configured page size.
