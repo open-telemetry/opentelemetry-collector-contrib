@@ -38,7 +38,7 @@ type franzConsumer struct {
 	excludeTopics         []string
 	settings              receiver.Settings
 	telemetryBuilder      *metadata.TelemetryBuilder
-	groupBalancerResolver GroupBalancerResolver
+	groupBalancerResolver groupBalancerResolver
 	newConsumeFn          newConsumeMessageFunc
 	consumeMessage        consumeMessageFunc
 
@@ -111,7 +111,7 @@ func newFranzKafkaConsumer(
 	topics []string,
 	excludeTopics []string,
 	newConsumeFn newConsumeMessageFunc,
-	groupBalancerResolver GroupBalancerResolver,
+	groupBalancerResolver groupBalancerResolver,
 ) (*franzConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {

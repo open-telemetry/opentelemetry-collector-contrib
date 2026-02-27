@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka/custombalancer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -45,7 +46,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, configkafka.NewDefaultConsumerConfig(), cfg.ConsumerConfig)
 }
 
-func TestNewFactory_WithGroupBalancerResolver(t *testing.T) {
+func TestNewFactory_UsesRegisteredGroupBalancerResolver(t *testing.T) {
 	resolverCalled := false
 	resolver := func(strategy configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
 		resolverCalled = true
@@ -55,7 +56,11 @@ func TestNewFactory_WithGroupBalancerResolver(t *testing.T) {
 		return nil, false, nil
 	}
 
-	f := NewFactory(WithGroupBalancerResolver(resolver))
+	base := NewFactory()
+	xf, ok := base.(xreceiver.Factory)
+	require.True(t, ok)
+	f := custombalancer.WrapFactory(xf, resolver)
+
 	cfg := createDefaultConfig().(*Config)
 	cfg.ConsumerConfig.GroupRebalanceStrategy = "private-strategy"
 
