@@ -1,0 +1,31 @@
+change_type: enhancement
+
+component: receiver/journald
+
+note: Add "enable_otel_attributes" config option to map well-known journald fields to OpenTelemetry semantic convention attributes
+
+issues: [7298]
+
+subtext: |
+  When `enable_otel_attributes: true` is set, the journald receiver maps well-known
+  systemd journal fields to their OpenTelemetry semantic convention equivalents instead
+  of placing the entire raw journal record in the log body:
+
+  - `MESSAGE` becomes the log body (string)
+  - `PRIORITY` is translated to `entry.Severity` and `entry.SeverityText`
+    (syslog levels 0–7 mapped to Fatal/Error/Warn/Info/Debug)
+  - Process and host fields become resource attributes:
+    `_PID` → `process.pid`, `_COMM` → `process.command`,
+    `_EXE` → `process.executable.path`, `_CMDLINE` → `process.command_line`,
+    `_HOSTNAME` → `host.name`
+  - Code, thread, and syslog fields become log attributes:
+    `CODE_FILE` → `code.filepath`, `CODE_FUNC` → `code.function`,
+    `CODE_LINE` → `code.lineno`, `TID` → `thread.id`,
+    `SYSLOG_FACILITY` → `syslog.facility`,
+    `SYSLOG_IDENTIFIER` → `syslog.identifier`,
+    `SYSLOG_PID` → `syslog.pid`, `ERRNO` → `system.errno`
+  - All remaining journald fields are kept as log attributes with their original names.
+
+  The default is `false` to preserve backward compatibility.
+
+change_logs: [user]

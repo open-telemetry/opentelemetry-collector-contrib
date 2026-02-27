@@ -12,6 +12,8 @@ $defs:
         type: string
       dmesg:
         type: boolean
+      enable_otel_attributes:
+        type: boolean
       files:
         type: array
         items:

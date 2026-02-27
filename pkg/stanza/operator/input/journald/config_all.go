@@ -41,8 +41,9 @@ type Config struct {
 	Dmesg               bool          `mapstructure:"dmesg,omitempty"`
 	All                 bool          `mapstructure:"all,omitempty"`
 	Namespace           string        `mapstructure:"namespace,omitempty"`
-	ConvertMessageBytes bool          `mapstructure:"convert_message_bytes,omitempty"`
-	Merge               bool          `mapstructure:"merge,omitempty"`
+	ConvertMessageBytes  bool          `mapstructure:"convert_message_bytes,omitempty"`
+	Merge                bool          `mapstructure:"merge,omitempty"`
+	EnableOtelAttributes bool          `mapstructure:"enable_otel_attributes,omitempty"`
 }
 
 type MatchConfig map[string]string

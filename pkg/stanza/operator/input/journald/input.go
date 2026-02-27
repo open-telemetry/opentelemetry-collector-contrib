@@ -30,11 +30,12 @@ type Input struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persister           operator.Persister
-	convertMessageBytes bool
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
-	errChan             chan error
+	persister            operator.Persister
+	convertMessageBytes  bool
+	enableOtelAttributes bool
+	cancel               context.CancelFunc
+	wg                   sync.WaitGroup
+	errChan              chan error
 }
 
 type cmd interface {
@@ -248,13 +249,22 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 		return nil, "", errors.New("journald field for cursor is not a string")
 	}
 
-	entry, err := operator.NewEntry(body)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to create entry: %w", err)
+	var e *entry.Entry
+	if operator.enableOtelAttributes {
+		e, err = operator.NewEntry(nil)
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to create entry: %w", err)
+		}
+		mapJournalEntryAttributes(e, body)
+	} else {
+		e, err = operator.NewEntry(body)
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to create entry: %w", err)
+		}
 	}
 
-	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
-	return entry, cursorString, nil
+	e.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
+	return e, cursorString, nil
 }
 
 // Stop will stop generating logs.
