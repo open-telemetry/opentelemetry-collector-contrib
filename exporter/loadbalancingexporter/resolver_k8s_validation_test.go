@@ -140,7 +140,7 @@ func TestK8sResolverStartWithClientDoesNotCreateNew(t *testing.T) {
 	_, tb := getTelemetryAssets(t)
 
 	// Create a fake client
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 
 	resolver, err := newK8sResolver(
 		fakeClient,
