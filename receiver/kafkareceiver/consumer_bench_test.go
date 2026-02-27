@@ -124,7 +124,7 @@ func BenchmarkTracesReceiver(b *testing.B) {
 						cfg, client := newBenchConfigClient(b, topic, p,
 							tc.AutoCommitConfig, tc.MessageMarking,
 						)
-						rcv, err := newTracesReceiver(cfg, set, &sink)
+						rcv, err := newTracesReceiver(cfg, set, &sink, nil)
 						require.NoError(b, err)
 
 						runBenchmark(b, topic, data, rcv, client)
@@ -155,7 +155,7 @@ func BenchmarkLogsReceiver(b *testing.B) {
 						cfg, client := newBenchConfigClient(b, topic, p,
 							tc.AutoCommitConfig, tc.MessageMarking,
 						)
-						rcv, err := newLogsReceiver(cfg, set, &sink)
+						rcv, err := newLogsReceiver(cfg, set, &sink, nil)
 						require.NoError(b, err)
 
 						runBenchmark(b, topic, data, rcv, client)
@@ -186,7 +186,7 @@ func BenchmarkMetricsReceiver(b *testing.B) {
 						cfg, client := newBenchConfigClient(b, topic, p,
 							tc.AutoCommitConfig, tc.MessageMarking,
 						)
-						rcv, err := newMetricsReceiver(cfg, set, &sink)
+						rcv, err := newMetricsReceiver(cfg, set, &sink, nil)
 						require.NoError(b, err)
 
 						runBenchmark(b, topic, data, rcv, client)

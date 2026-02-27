@@ -31,14 +31,19 @@ const (
 )
 
 // NewFactory creates Kafka receiver factory.
-func NewFactory() receiver.Factory {
+func NewFactory(opts ...FactoryOption) receiver.Factory {
+	var factoryOpts factoryOptions
+	for _, opt := range opts {
+		opt(&factoryOpts)
+	}
+
 	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		xreceiver.WithTraces(createTracesReceiver, metadata.TracesStability),
-		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability),
+		xreceiver.WithTraces(createTracesReceiverWithOptions(factoryOpts), metadata.TracesStability),
+		xreceiver.WithMetrics(createMetricsReceiverWithOptions(factoryOpts), metadata.MetricsStability),
+		xreceiver.WithLogs(createLogsReceiverWithOptions(factoryOpts), metadata.LogsStability),
+		xreceiver.WithProfiles(createProfilesReceiverWithOptions(factoryOpts), metadata.ProfilesStability),
 	)
 }
 
@@ -79,7 +84,7 @@ func createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-	return newTracesReceiver(cfg.(*Config), set, nextConsumer)
+	return newTracesReceiver(cfg.(*Config), set, nextConsumer, nil)
 }
 
 func createMetricsReceiver(
@@ -88,7 +93,7 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return newMetricsReceiver(cfg.(*Config), set, nextConsumer)
+	return newMetricsReceiver(cfg.(*Config), set, nextConsumer, nil)
 }
 
 func createLogsReceiver(
@@ -97,7 +102,7 @@ func createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	return newLogsReceiver(cfg.(*Config), set, nextConsumer)
+	return newLogsReceiver(cfg.(*Config), set, nextConsumer, nil)
 }
 
 func createProfilesReceiver(
@@ -106,5 +111,29 @@ func createProfilesReceiver(
 	cfg component.Config,
 	nextConsumer xconsumer.Profiles,
 ) (xreceiver.Profiles, error) {
-	return newProfilesReceiver(cfg.(*Config), set, nextConsumer)
+	return newProfilesReceiver(cfg.(*Config), set, nextConsumer, nil)
+}
+
+func createTracesReceiverWithOptions(opts factoryOptions) func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
+	return func(_ context.Context, set receiver.Settings, cfg component.Config, nextConsumer consumer.Traces) (receiver.Traces, error) {
+		return newTracesReceiver(cfg.(*Config), set, nextConsumer, opts.groupBalancerResolver)
+	}
+}
+
+func createMetricsReceiverWithOptions(opts factoryOptions) func(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+	return func(_ context.Context, set receiver.Settings, cfg component.Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+		return newMetricsReceiver(cfg.(*Config), set, nextConsumer, opts.groupBalancerResolver)
+	}
+}
+
+func createLogsReceiverWithOptions(opts factoryOptions) func(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+	return func(_ context.Context, set receiver.Settings, cfg component.Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
+		return newLogsReceiver(cfg.(*Config), set, nextConsumer, opts.groupBalancerResolver)
+	}
+}
+
+func createProfilesReceiverWithOptions(opts factoryOptions) func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (xreceiver.Profiles, error) {
+	return func(_ context.Context, set receiver.Settings, cfg component.Config, nextConsumer xconsumer.Profiles) (xreceiver.Profiles, error) {
+		return newProfilesReceiver(cfg.(*Config), set, nextConsumer, opts.groupBalancerResolver)
+	}
 }

@@ -66,7 +66,12 @@ type messageHandler[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter
 }
 
-func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Logs) (receiver.Logs, error) {
+func newLogsReceiver(
+	config *Config,
+	set receiver.Settings,
+	nextConsumer consumer.Logs,
+	groupBalancerResolver GroupBalancerResolver,
+) (receiver.Logs, error) {
 	newConsumeMessageFunc := func(host component.Host,
 		obsrecv *receiverhelper.ObsReport,
 		telBldr *metadata.TelemetryBuilder,
@@ -88,10 +93,15 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 			)
 		}, nil
 	}
-	return newReceiver(config, set, config.Logs.Topics, config.Logs.ExcludeTopics, newConsumeMessageFunc)
+	return newReceiver(config, set, config.Logs.Topics, config.Logs.ExcludeTopics, newConsumeMessageFunc, groupBalancerResolver)
 }
 
-func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+func newMetricsReceiver(
+	config *Config,
+	set receiver.Settings,
+	nextConsumer consumer.Metrics,
+	groupBalancerResolver GroupBalancerResolver,
+) (receiver.Metrics, error) {
 	newConsumeMessageFunc := func(host component.Host,
 		obsrecv *receiverhelper.ObsReport,
 		telBldr *metadata.TelemetryBuilder,
@@ -113,10 +123,15 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 			)
 		}, nil
 	}
-	return newReceiver(config, set, config.Metrics.Topics, config.Metrics.ExcludeTopics, newConsumeMessageFunc)
+	return newReceiver(config, set, config.Metrics.Topics, config.Metrics.ExcludeTopics, newConsumeMessageFunc, groupBalancerResolver)
 }
 
-func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
+func newTracesReceiver(
+	config *Config,
+	set receiver.Settings,
+	nextConsumer consumer.Traces,
+	groupBalancerResolver GroupBalancerResolver,
+) (receiver.Traces, error) {
 	consumeFn := func(host component.Host,
 		obsrecv *receiverhelper.ObsReport,
 		telBldr *metadata.TelemetryBuilder,
@@ -138,10 +153,15 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 			)
 		}, nil
 	}
-	return newReceiver(config, set, config.Traces.Topics, config.Traces.ExcludeTopics, consumeFn)
+	return newReceiver(config, set, config.Traces.Topics, config.Traces.ExcludeTopics, consumeFn, groupBalancerResolver)
 }
 
-func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xconsumer.Profiles) (xreceiver.Profiles, error) {
+func newProfilesReceiver(
+	config *Config,
+	set receiver.Settings,
+	nextConsumer xconsumer.Profiles,
+	groupBalancerResolver GroupBalancerResolver,
+) (xreceiver.Profiles, error) {
 	consumeFn := func(host component.Host,
 		obsrecv *receiverhelper.ObsReport,
 		telBldr *metadata.TelemetryBuilder,
@@ -163,7 +183,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 			)
 		}, nil
 	}
-	return newReceiver(config, set, config.Profiles.Topics, config.Profiles.ExcludeTopics, consumeFn)
+	return newReceiver(config, set, config.Profiles.Topics, config.Profiles.ExcludeTopics, consumeFn, groupBalancerResolver)
 }
 
 func newReceiver(
@@ -175,8 +195,9 @@ func newReceiver(
 		obsrecv *receiverhelper.ObsReport,
 		telBldr *metadata.TelemetryBuilder,
 	) (consumeMessageFunc, error),
+	groupBalancerResolver GroupBalancerResolver,
 ) (component.Component, error) {
-	return newFranzKafkaConsumer(config, set, topics, excludeTopics, consumeFn)
+	return newFranzKafkaConsumer(config, set, topics, excludeTopics, consumeFn, groupBalancerResolver)
 }
 
 type logsHandler struct {

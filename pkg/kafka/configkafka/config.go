@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -143,10 +142,7 @@ type ConsumerConfig struct {
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
 	// GroupRebalanceStrategy specifies the strategy to use for partition assignment.
-	// Supported built-in values are "range", "roundrobin", "sticky", and "cooperative-sticky".
-	// Any other non-empty value is treated as an extension ID (e.g. mybalancer or mybalancer/custom)
-	// and may be used to load a custom franz-go consumer-group balancer.
-	//
+	// Possible values are "range", "roundrobin", "sticky", and "cooperative-sticky".
 	// Defaults to "cooperative-sticky".
 	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy,omitempty"`
 
@@ -188,15 +184,11 @@ func (c ConsumerConfig) Validate() error {
 		case RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy:
 			// Valid
 		default:
-			// Allow extension IDs for custom balancers (e.g. mybalancer or mybalancer/custom).
-			var id component.ID
-			if err := id.UnmarshalText([]byte(c.GroupRebalanceStrategy)); err != nil {
-				return fmt.Errorf(
-					"group_rebalance_strategy should be one of '%s', '%s', '%s', or '%s', or an extension ID. configured value %v",
-					RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
-					c.GroupRebalanceStrategy,
-				)
-			}
+			return fmt.Errorf(
+				"group_rebalance_strategy should be one of '%s', '%s', '%s', or '%s'. configured value %v",
+				RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
+				c.GroupRebalanceStrategy,
+			)
 		}
 	}
 

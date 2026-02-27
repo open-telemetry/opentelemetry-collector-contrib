@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
@@ -42,6 +43,34 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, configkafka.NewDefaultClientConfig(), cfg.ClientConfig)
 	assert.Equal(t, configkafka.NewDefaultConsumerConfig(), cfg.ConsumerConfig)
+}
+
+func TestNewFactory_WithGroupBalancerResolver(t *testing.T) {
+	resolverCalled := false
+	resolver := func(strategy configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+		resolverCalled = true
+		if strategy == "private-strategy" {
+			return []kgo.GroupBalancer{kgo.RangeBalancer()}, true, nil
+		}
+		return nil, false, nil
+	}
+
+	f := NewFactory(WithGroupBalancerResolver(resolver))
+	cfg := createDefaultConfig().(*Config)
+	cfg.ConsumerConfig.GroupRebalanceStrategy = "private-strategy"
+
+	r, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+	require.NoError(t, err)
+
+	c, ok := r.(*franzConsumer)
+	require.True(t, ok)
+	require.NotNil(t, c.groupBalancerResolver)
+
+	balancers, handled, err := c.groupBalancerResolver("private-strategy")
+	require.NoError(t, err)
+	require.True(t, handled)
+	require.Len(t, balancers, 1)
+	assert.True(t, resolverCalled)
 }
 
 func TestCreateTraces(t *testing.T) {

@@ -5,7 +5,6 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"hash/fnv"
 	"strings"
@@ -99,6 +98,7 @@ func NewFranzConsumerGroup(
 	topics []string,
 	excludeTopics []string,
 	logger *zap.Logger,
+	groupBalancerResolver func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error),
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
 	opts, err := commonOpts(ctx, host, clientCfg, logger, append([]kgo.Opt{
@@ -171,57 +171,29 @@ func NewFranzConsumerGroup(
 	case "":
 		// Use franz-go defaults.
 	default:
-		extBalancers, err := loadBalancersFromExtension(host, string(consumerCfg.GroupRebalanceStrategy))
+		if groupBalancerResolver == nil {
+			return nil, fmt.Errorf(
+				"group_rebalance_strategy should be one of '%s', '%s', '%s', or '%s'. configured value %v",
+				configkafka.RangeBalanceStrategy,
+				configkafka.RoundRobinBalanceStrategy,
+				configkafka.StickyBalanceStrategy,
+				configkafka.CooperativeStickyBalanceStrategy,
+				consumerCfg.GroupRebalanceStrategy,
+			)
+		}
+		extBalancers, ok, err := groupBalancerResolver(consumerCfg.GroupRebalanceStrategy)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed resolving custom group balancer for strategy %q: %w", consumerCfg.GroupRebalanceStrategy, err)
+		}
+		if !ok {
+			return nil, fmt.Errorf("no custom group balancer found for strategy %q", consumerCfg.GroupRebalanceStrategy)
+		}
+		if len(extBalancers) == 0 {
+			return nil, fmt.Errorf("custom group balancer resolver returned no balancers for strategy %q", consumerCfg.GroupRebalanceStrategy)
 		}
 		opts = append(opts, kgo.Balancers(extBalancers...))
 	}
 	return kgo.NewClient(opts...)
-}
-
-type groupBalancersProvider interface {
-	Balancers() []kgo.GroupBalancer
-}
-
-func loadBalancersFromExtension(host component.Host, extensionID string) ([]kgo.GroupBalancer, error) {
-	var id component.ID
-	if err := id.UnmarshalText([]byte(extensionID)); err != nil {
-		return nil, fmt.Errorf("invalid group_rebalance_strategy %q: must be one of %q, %q, %q, %q or an extension ID (e.g. mybalancer or mybalancer/custom): %w",
-			extensionID,
-			configkafka.RangeBalanceStrategy,
-			configkafka.RoundRobinBalanceStrategy,
-			configkafka.StickyBalanceStrategy,
-			configkafka.CooperativeStickyBalanceStrategy,
-			err,
-		)
-	}
-
-	if host == nil {
-		return nil, errors.New("nil component host; cannot load custom group balancer")
-	}
-
-	exts := host.GetExtensions()
-	if exts == nil {
-		return nil, errors.New("component host does not support extensions; cannot load custom group balancer")
-	}
-	ext, ok := exts[id]
-	if !ok {
-		return nil, fmt.Errorf("custom group balancer extension %q not found (ensure it is configured and enabled)", extensionID)
-	}
-
-	// Allow extensions to either directly implement a single balancer, or provide many.
-	if p, ok := ext.(groupBalancersProvider); ok {
-		bs := p.Balancers()
-		if len(bs) == 0 {
-			return nil, fmt.Errorf("custom group balancer extension %q returned no balancers", extensionID)
-		}
-		return bs, nil
-	}
-	if b, ok := ext.(kgo.GroupBalancer); ok {
-		return []kgo.GroupBalancer{b}, nil
-	}
-	return nil, fmt.Errorf("custom group balancer extension %q must implement %T or %T", extensionID, (*kgo.GroupBalancer)(nil), (*groupBalancersProvider)(nil))
 }
 
 // NewFranzClient creates a franz-go client using the same commonOpts used for producer/consumer.

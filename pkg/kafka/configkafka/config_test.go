@@ -191,14 +191,6 @@ func TestConsumerConfig(t *testing.T) {
 				MaxPartitionFetchSize: 1048576,
 			},
 		},
-		"custom_rebalance_extension_id": {
-			expected: func() ConsumerConfig {
-				cfg := NewDefaultConsumerConfig()
-				cfg.GroupRebalanceStrategy = "mybalancer/custom"
-				return cfg
-			}(),
-		},
-
 		// Invalid configurations
 		"invalid_initial_offset": {
 			expectedErr: "initial_offset should be one of 'latest' or 'earliest'. configured value middle",
@@ -207,7 +199,7 @@ func TestConsumerConfig(t *testing.T) {
 			expectedErr: "max_fetch_size (100) cannot be less than min_fetch_size (1000)",
 		},
 		"invalid_group_rebalance_strategy": {
-			expectedErr: "group_rebalance_strategy should be one of 'range', 'roundrobin', 'sticky', or 'cooperative-sticky', or an extension ID. configured value bad value",
+			expectedErr: "group_rebalance_strategy should be one of 'range', 'roundrobin', 'sticky', or 'cooperative-sticky'. configured value bad value",
 		},
 		"negative_min_fetch_size": {
 			expectedErr: "min_fetch_size (-100) must be non-negative",

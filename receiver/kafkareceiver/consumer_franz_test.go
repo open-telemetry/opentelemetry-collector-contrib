@@ -189,7 +189,7 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		test := func(tb testing.TB, expected int64) {
 			ctx := t.Context()
 			consumeFn, consuming := newConsumeFunc()
-			consumer, e := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+			consumer, e := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn, nil)
 			require.NoError(tb, e)
 			require.NoError(tb, consumer.Start(ctx, componenttest.NewNopHost()))
 			require.NoError(tb, kafkaClient.ProduceSync(ctx, rs...).FirstErr())
@@ -238,7 +238,7 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 			return nil
 		}, nil
 	}
-	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, consumeFn)
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, consumeFn, nil)
 	require.NoError(t, err)
 
 	for range 2 {
@@ -281,7 +281,7 @@ func TestRaceLostVsConsume(t *testing.T) {
 		}, nil
 	}
 
-	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn, nil)
 	require.NoError(t, err)
 	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -313,7 +313,7 @@ func TestLost(t *testing.T) {
 			return nil
 		}, nil
 	}
-	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, consumeFn)
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, consumeFn, nil)
 	require.NoError(t, err)
 	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
@@ -352,7 +352,7 @@ func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 		{Topic: topic, Value: data},
 	}
 
-	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn, nil)
 	require.NoError(t, err)
 	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
 	require.NoError(t, kafkaClient.ProduceSync(t.Context(), rs...).FirstErr())
@@ -435,6 +435,7 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 		[]string{"^logs-.*"},     // Match all logs-* topics
 		[]string{"^logs-(a|b)$"}, // Exclude logs-a and logs-b
 		consumeFn,
+		nil,
 	)
 	require.NoError(t, err)
 	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))

@@ -33,13 +33,14 @@ type topicPartition struct {
 
 // franzConsumer implements a Kafka consumer using the franz-go client library.
 type franzConsumer struct {
-	config           *Config
-	topics           []string
-	excludeTopics    []string
-	settings         receiver.Settings
-	telemetryBuilder *metadata.TelemetryBuilder
-	newConsumeFn     newConsumeMessageFunc
-	consumeMessage   consumeMessageFunc
+	config                *Config
+	topics                []string
+	excludeTopics         []string
+	settings              receiver.Settings
+	telemetryBuilder      *metadata.TelemetryBuilder
+	groupBalancerResolver GroupBalancerResolver
+	newConsumeFn          newConsumeMessageFunc
+	consumeMessage        consumeMessageFunc
 
 	mu             sync.RWMutex
 	started        chan struct{}
@@ -110,6 +111,7 @@ func newFranzKafkaConsumer(
 	topics []string,
 	excludeTopics []string,
 	newConsumeFn newConsumeMessageFunc,
+	groupBalancerResolver GroupBalancerResolver,
 ) (*franzConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
@@ -117,16 +119,17 @@ func newFranzKafkaConsumer(
 	}
 
 	return &franzConsumer{
-		config:           config,
-		topics:           topics,
-		excludeTopics:    excludeTopics,
-		newConsumeFn:     newConsumeFn,
-		settings:         set,
-		telemetryBuilder: telemetryBuilder,
-		started:          make(chan struct{}),
-		consumerClosed:   make(chan struct{}),
-		closing:          make(chan struct{}),
-		assignments:      make(map[topicPartition]*pc),
+		config:                config,
+		topics:                topics,
+		excludeTopics:         excludeTopics,
+		groupBalancerResolver: groupBalancerResolver,
+		newConsumeFn:          newConsumeFn,
+		settings:              set,
+		telemetryBuilder:      telemetryBuilder,
+		started:               make(chan struct{}),
+		consumerClosed:        make(chan struct{}),
+		closing:               make(chan struct{}),
+		assignments:           make(map[topicPartition]*pc),
 	}, nil
 }
 
@@ -202,6 +205,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		c.topics,
 		c.excludeTopics,
 		c.settings.Logger,
+		c.groupBalancerResolver,
 		opts...,
 	)
 	if err != nil {

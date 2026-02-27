@@ -550,7 +550,7 @@ func TestNewLogsReceiver(t *testing.T) {
 		receiverConfig.HeaderExtraction.ExtractHeaders = true
 		receiverConfig.HeaderExtraction.Headers = []string{"key1"}
 		set, tel, _ := mustNewSettings(t)
-		r, err := newLogsReceiver(receiverConfig, set, &sink)
+		r, err := newLogsReceiver(receiverConfig, set, &sink, nil)
 		require.NoError(t, err)
 
 		// Send some logs to the otlp_logs topic.
@@ -604,7 +604,7 @@ func TestNewMetricsReceiver(t *testing.T) {
 		receiverConfig.HeaderExtraction.ExtractHeaders = true
 		receiverConfig.HeaderExtraction.Headers = []string{"key1"}
 		set, tel, _ := mustNewSettings(t)
-		r, err := newMetricsReceiver(receiverConfig, set, &sink)
+		r, err := newMetricsReceiver(receiverConfig, set, &sink, nil)
 		require.NoError(t, err)
 
 		// Send some metrics to the otlp_metrics topic.
@@ -658,7 +658,7 @@ func TestNewProfilesReceiver(t *testing.T) {
 		receiverConfig.HeaderExtraction.ExtractHeaders = true
 		receiverConfig.HeaderExtraction.Headers = []string{"key1"}
 		set, tel, _ := mustNewSettings(t)
-		r, err := newProfilesReceiver(receiverConfig, set, &sink)
+		r, err := newProfilesReceiver(receiverConfig, set, &sink, nil)
 		require.NoError(t, err)
 
 		// Send some profiles to the otlp_profiles topic.
@@ -713,7 +713,7 @@ func TestExcludeTopic(t *testing.T) {
 		receiverConfig.Traces.ExcludeTopics = []string{"^otlp_spans-test$"}
 
 		set, _, _ := mustNewSettings(t)
-		_, err := newTracesReceiver(receiverConfig, set, &consumertest.TracesSink{})
+		_, err := newTracesReceiver(receiverConfig, set, &consumertest.TracesSink{}, nil)
 		require.NoError(t, err)
 	})
 }

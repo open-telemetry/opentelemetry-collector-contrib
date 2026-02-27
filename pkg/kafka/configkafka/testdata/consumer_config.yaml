@@ -15,8 +15,6 @@ kafka/full:
 kafka/zero_min_fetch_size:
   min_fetch_size: 0
   max_fetch_size: 1048576
-kafka/custom_rebalance_extension_id:
-  group_rebalance_strategy: mybalancer/custom
 
 # Invalid configurations
 kafka/invalid_initial_offset:
