@@ -8,7 +8,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pkg.translator.azurelogs.dontEmitLegacyLogConventions` | alpha | When enabled, legacy semconv attribute names are not emitted. | v0.147.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033) |
-| `pkg.translator.azurelogs.emitStableLogConventions` | alpha | When enabled, stable semconv attribute names are emitted. | v0.147.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033) |
+| `pkg.translator.azurelogs.DontEmitV0LogConventions` | alpha | When enabled, v0 semconv attribute names are not emitted. | v0.147.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033) |
+| `pkg.translator.azurelogs.EmitV1LogConventions` | alpha | When enabled, v1 semconv attribute names are emitted. | v0.147.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
