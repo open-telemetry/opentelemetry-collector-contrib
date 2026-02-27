@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -39,6 +40,25 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "tls"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
+					Timeout:            5 * time.Second,
+				},
+				Config: docker.Config{
+					Endpoint:         "https://example.com/",
+					DockerAPIVersion: "1.44",
+					Timeout:          5 * time.Second,
+					TLS: &configtls.ClientConfig{
+						InsecureSkipVerify: true,
+					},
+				},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
