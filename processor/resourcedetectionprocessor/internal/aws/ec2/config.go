@@ -20,6 +20,13 @@ type Config struct {
 	MaxAttempts           int                               `mapstructure:"max_attempts"`
 	MaxBackoff            time.Duration                     `mapstructure:"max_backoff"`
 	FailOnMissingMetadata bool                              `mapstructure:"fail_on_missing_metadata"`
+	// TagsFromIMDS controls whether instance tags are fetched via IMDS (true)
+	// or via the EC2 DescribeTags API (false, default).
+	// IMDS does not require IAM permissions but requires InstanceMetadataTags=enabled on the instance.
+	// Note: IMDS must be network-accessible from the process; workloads running in containers
+	// (e.g., EKS pods, ECS tasks) may not have access to IMDS even if it is enabled on the host,
+	// unless the instance metadata options are configured to allow container access.
+	TagsFromIMDS bool `mapstructure:"tags_from_imds"`
 }
 
 func CreateDefaultConfig() Config {

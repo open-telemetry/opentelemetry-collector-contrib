@@ -38,6 +38,7 @@ The table below summarizes offset tracking details for each format.
 
 | CloudWatch Metrics format | Offset Tracking |
 |---------------------------|-----------------|
+| JSON                      | Bytes processed |
 
 ## Supported Statistics (JSON format)
 
