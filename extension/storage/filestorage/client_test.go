@@ -399,6 +399,38 @@ func TestClientConcurrentCompaction(t *testing.T) {
 	}
 }
 
+func TestCompactReopenFailureReturnsErrors(t *testing.T) {
+	tempDir := t.TempDir()
+	dbDir := filepath.Join(tempDir, "dbdir")
+	require.NoError(t, os.MkdirAll(dbDir, 0o755))
+	dbFile := filepath.Join(dbDir, "my_db")
+	compactionDir := filepath.Join(tempDir, "compaction")
+	require.NoError(t, os.MkdirAll(compactionDir, 0o755))
+
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	require.NoError(t, err)
+
+	ctx := t.Context()
+	require.NoError(t, client.Set(ctx, "key", []byte("value")))
+
+	// Remove the db directory while the db file is still open.
+	// On Linux the open file descriptor remains valid, so compaction
+	// reads succeed, but bbolt.Open fails when Compact tries to
+	// reopen the db at a path whose parent directory no longer exists.
+	require.NoError(t, os.RemoveAll(dbDir))
+
+	err = client.Compact(compactionDir, time.Second, 65536)
+	require.ErrorContains(t, err, "failed to open db after compaction")
+
+	// After a failed reopen, c.db points to the old (closed) DB.
+	// Operations return errors instead of panicking on a nil pointer.
+	_, err = client.Get(ctx, "key")
+	require.Error(t, err)
+
+	// Close is safe — double-close on a bbolt.DB is a no-op.
+	require.NoError(t, client.Close(ctx))
+}
+
 func BenchmarkClientGet(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
