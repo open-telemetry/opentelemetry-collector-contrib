@@ -7,55 +7,15 @@ import (
 	"context"
 
 	promconfig "github.com/prometheus/prometheus/config"
-	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
+	_ "github.com/prometheus/prometheus/plugins" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
-)
-
-// This file implements config for Prometheus receiver.
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.UseCreatedMetric",
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterToVersion("v0.141.0"),
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
-		" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.EnableNativeHistograms",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("The Prometheus receiver converts Prometheus native histograms "+
-		"to OTEL exponential histograms. To scrape native histograms, configure 'scrape_native_histograms: true' "+
-		"in your Prometheus scrape config (per-job or global). Mixed histograms will prefer native over classic."),
-	featuregate.WithRegisterFromVersion("v0.142.0"),
-	featuregate.WithRegisterToVersion("v0.145.0"),
-)
-
-var enableCreatedTimestampZeroIngestionGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Enables ingestion of created timestamp."+
-		" Created timestamps are injected as 0 valued samples when appropriate."),
-)
-
-var enableReportExtraScrapeMetricsGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.EnableReportExtraScrapeMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Enables reporting of extra scrape metrics."+
-		" Extra scrape metrics are metrics that are not scraped by Prometheus but are reported by the Prometheus server."),
-)
-
-var removeReportExtraScrapeMetricsConfigGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Removes the report_extra_scrape_metrics configuration option."),
 )
 
 // NewFactory creates a new Prometheus receiver factory.

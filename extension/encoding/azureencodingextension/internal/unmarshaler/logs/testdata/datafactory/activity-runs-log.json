@@ -1,0 +1,55 @@
+{
+  "records": [
+    {
+      "Level": 4,
+      "correlationId": "99428920-8ec1-4adf-944f-940b3f531519",
+      "time": "2020-11-04T19:23:06.6069112Z",
+      "activityRunId": "99428920-8ec1-4adf-944f-940b3f531519",
+      "pipelineRunId": "82282710-a665-4a79-9bbc-e1f207af4b1e",
+      "resourceId": "/SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.DATAFACTORY/FACTORIES/TESTDATAFACTORY",
+      "category": "ActivityRuns",
+      "level": "Informational",
+      "operationName": "dataflow1 - InProgress",
+      "activityIterationCount": 1,
+      "pipelineName": "dataFlowPipeline",
+      "activityName": "dataflow1",
+      "start": "2020-11-04T19:23:06.5819112Z",
+      "end": "1601-01-01T00:00:00Z",
+      "status": "InProgress",
+      "location": "southcentralus",
+      "properties": {
+        "Input": {
+          "dataflow": {
+            "referenceName": "dataflow1",
+            "type": "DataFlowReference",
+            "parameters": {},
+            "datasetParameters": {
+              "source1": {},
+              "sink1": {}
+            }
+          },
+          "staging": {},
+          "compute": {
+            "coreCount": 8,
+            "computeType": "General"
+          },
+          "dataFlowETag": "78004df7-0000-0500-0000-5f7d51d50000"
+        },
+        "Output": null,
+        "Error": {
+          "errorCode": "",
+          "message": "",
+          "failureType": "",
+          "target": "dataflow1"
+        },
+        "UserProperties": {},
+        "Annotations": []
+      },
+      "activityType": "ExecuteDataFlow",
+      "tags": "{}",
+      "recoveryStatus": "None",
+      "activityRetryCount": 0,
+      "billingResourceId": "/SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.DATAFACTORY/FACTORIES/TESTDATAFACTORY"
+    }
+  ]
+}

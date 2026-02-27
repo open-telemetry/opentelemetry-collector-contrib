@@ -87,6 +87,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 
 	producer, err := kafka.NewFranzSyncProducer(
 		ctx,
+		host,
 		e.cfg.ClientConfig,
 		e.cfg.Producer,
 		e.cfg.TimeoutSettings.Timeout,

@@ -107,9 +107,9 @@ func (p *glPipeline) setAttributes(attrs pcommon.Map) {
 
 	// Parent Pipeline (only added if it's a multi-pipeline)
 	if p.SourcePipeline.PipelineID > 0 {
-		attrs.PutInt(AttributeGitLabPipelineSourcePipelineID, int64(p.SourcePipeline.PipelineID))
-		attrs.PutInt(AttributeGitLabPipelineSourcePipelineProjectID, int64(p.SourcePipeline.Project.ID))
-		attrs.PutInt(AttributeGitLabPipelineSourcePipelineJobID, int64(p.SourcePipeline.JobID))
+		attrs.PutInt(AttributeGitLabPipelineSourcePipelineID, p.SourcePipeline.PipelineID)
+		attrs.PutInt(AttributeGitLabPipelineSourcePipelineProjectID, p.SourcePipeline.Project.ID)
+		attrs.PutInt(AttributeGitLabPipelineSourcePipelineJobID, p.SourcePipeline.JobID)
 		attrs.PutStr(AttributeGitLabPipelineSourcePipelineProjectNamespace, p.SourcePipeline.Project.PathWithNamespace)
 		attrs.PutStr(AttributeGitLabPipelineSourcePipelineProjectURL, p.SourcePipeline.Project.WebURL)
 	}
@@ -117,7 +117,7 @@ func (p *glPipeline) setAttributes(attrs pcommon.Map) {
 
 // glPipelineStage represents a stage in a pipeline event
 type glPipelineStage struct {
-	PipelineID         int
+	PipelineID         int64
 	Name               string
 	Status             string
 	PipelineFinishedAt string
@@ -163,37 +163,23 @@ func (*glPipelineStage) setAttributes(pcommon.Map) {
 
 // glJobEvent represents the PipelineEvent.Builds struct from the pipeline webhook event - it's not exported as type by the Gitlab API client, so we need to use this struct to represent it
 type glJobEvent struct {
-	ID             int               `json:"id"`
-	Stage          string            `json:"stage"`
-	Name           string            `json:"name"`
-	Status         string            `json:"status"`
-	CreatedAt      string            `json:"created_at"`
-	StartedAt      string            `json:"started_at"`
-	FinishedAt     string            `json:"finished_at"`
-	Duration       float64           `json:"duration"`
-	QueuedDuration float64           `json:"queued_duration"`
-	FailureReason  string            `json:"failure_reason"`
-	When           string            `json:"when"`
-	Manual         bool              `json:"manual"`
-	AllowFailure   bool              `json:"allow_failure"`
-	User           *gitlab.EventUser `json:"user"`
-	Runner         struct {
-		ID          int      `json:"id"`
-		Description string   `json:"description"`
-		Active      bool     `json:"active"`
-		IsShared    bool     `json:"is_shared"`
-		RunnerType  string   `json:"runner_type"`
-		Tags        []string `json:"tags"`
-	} `json:"runner"`
-	ArtifactsFile struct {
-		Filename string `json:"filename"`
-		Size     int    `json:"size"`
-	} `json:"artifacts_file"`
-	Environment struct {
-		Name           string `json:"name"`
-		Action         string `json:"action"`
-		DeploymentTier string `json:"deployment_tier"`
-	} `json:"environment"`
+	ID             int64                                  `json:"id"`
+	Stage          string                                 `json:"stage"`
+	Name           string                                 `json:"name"`
+	Status         string                                 `json:"status"`
+	CreatedAt      string                                 `json:"created_at"`
+	StartedAt      string                                 `json:"started_at"`
+	FinishedAt     string                                 `json:"finished_at"`
+	Duration       float64                                `json:"duration"`
+	QueuedDuration float64                                `json:"queued_duration"`
+	FailureReason  string                                 `json:"failure_reason"`
+	When           string                                 `json:"when"`
+	Manual         bool                                   `json:"manual"`
+	AllowFailure   bool                                   `json:"allow_failure"`
+	User           *gitlab.EventUser                      `json:"user"`
+	Runner         gitlab.PipelineEventBuildRunner        `json:"runner"`
+	ArtifactsFile  gitlab.PipelineEventBuildArtifactsFile `json:"artifacts_file"`
+	Environment    gitlab.EventEnvironment                `json:"environment"`
 }
 
 // glPipelineJob wraps the job event and adds additional fields like jobUrl (required for span attributes)
@@ -236,12 +222,12 @@ func (*glPipelineJob) setTimeStamps(span ptrace.Span, startTime, endTime string)
 func (j *glPipelineJob) setAttributes(attrs pcommon.Map) {
 	// Job
 	attrs.PutStr(string(conventions.CICDPipelineTaskNameKey), j.event.Name)
-	attrs.PutInt(string(conventions.CICDPipelineTaskRunIDKey), int64(j.event.ID))
+	attrs.PutInt(string(conventions.CICDPipelineTaskRunIDKey), j.event.ID)
 	attrs.PutStr(string(conventions.CICDPipelineTaskRunResultKey), j.event.Status)
 	attrs.PutStr(string(conventions.CICDPipelineTaskRunURLFullKey), j.jobURL)
 
 	// Worker/Runner
-	attrs.PutInt(string(conventions.CICDWorkerIDKey), int64(j.event.Runner.ID))
+	attrs.PutInt(string(conventions.CICDWorkerIDKey), j.event.Runner.ID)
 	attrs.PutStr(string(conventions.CICDWorkerNameKey), j.event.Runner.Description)
 
 	// ---------- The following attributes are not part of semconv yet ----------

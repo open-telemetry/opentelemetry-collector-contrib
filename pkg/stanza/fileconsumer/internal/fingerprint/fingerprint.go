@@ -12,24 +12,15 @@ import (
 	"io"
 	"os"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/compression"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 )
 
 const DefaultSize = 1000 // bytes
 
 const MinSize = 16 // bytes
-
-var DecompressedFingerprintFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"filelog.decompressFingerprint",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("Computes fingerprint for compressed files by decompressing its data"),
-	featuregate.WithRegisterFromVersion("v0.128.0"),
-	featuregate.WithRegisterToVersion("v0.142.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40256"),
-)
 
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file
@@ -45,7 +36,7 @@ func New(first []byte) *Fingerprint {
 // Set decompressData to true to compute fingerprint of compressed files by decompressing its data first
 func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logger) (*Fingerprint, error) {
 	buf := make([]byte, size)
-	if DecompressedFingerprintFeatureGate.IsEnabled() {
+	if metadata.FilelogDecompressFingerprintFeatureGate.IsEnabled() {
 		if decompressData {
 			if compression.IsGzipFile(file, logger) {
 				// If the file is of compressed type, uncompress the data before creating its fingerprint

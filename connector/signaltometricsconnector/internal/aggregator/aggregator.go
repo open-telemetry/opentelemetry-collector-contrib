@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/model"
@@ -30,10 +31,12 @@ type Aggregator[K any] struct {
 	sums        map[model.MetricKey]map[[16]byte]map[[16]byte]*sumDP
 	gauges      map[model.MetricKey]map[[16]byte]map[[16]byte]*gaugeDP
 	timestamp   time.Time
+	errorMode   ottl.ErrorMode
+	logger      *zap.Logger
 }
 
 // NewAggregator creates a new instance of aggregator.
-func NewAggregator[K any](metrics pmetric.Metrics) *Aggregator[K] {
+func NewAggregator[K any](metrics pmetric.Metrics, errorMode ottl.ErrorMode, logger *zap.Logger) *Aggregator[K] {
 	return &Aggregator[K]{
 		result:      metrics,
 		smLookup:    make(map[[16]byte]pmetric.ScopeMetrics),
@@ -41,6 +44,8 @@ func NewAggregator[K any](metrics pmetric.Metrics) *Aggregator[K] {
 		sums:        make(map[model.MetricKey]map[[16]byte]map[[16]byte]*sumDP),
 		gauges:      make(map[model.MetricKey]map[[16]byte]map[[16]byte]*gaugeDP),
 		timestamp:   time.Now(),
+		errorMode:   errorMode,
+		logger:      logger,
 	}
 }
 
@@ -60,9 +65,11 @@ func (a *Aggregator[K]) Aggregate(
 			defaultCount,
 		)
 		if err != nil {
-			return err
+			return a.handleError(err)
 		}
-		return a.aggregateValueCount(md, resAttrs, srcAttrs, val, count)
+		if err := a.aggregateValueCount(md, resAttrs, srcAttrs, val, count); err != nil {
+			return a.handleError(err)
+		}
 	case pmetric.MetricTypeHistogram:
 		val, count, err := getValueCount(
 			ctx, tCtx,
@@ -71,24 +78,30 @@ func (a *Aggregator[K]) Aggregate(
 			defaultCount,
 		)
 		if err != nil {
-			return err
+			return a.handleError(err)
 		}
-		return a.aggregateValueCount(md, resAttrs, srcAttrs, val, count)
+		if err := a.aggregateValueCount(md, resAttrs, srcAttrs, val, count); err != nil {
+			return a.handleError(err)
+		}
 	case pmetric.MetricTypeSum:
 		raw, err := md.Sum.Value.Eval(ctx, tCtx)
 		if err != nil {
-			return fmt.Errorf("failed to execute OTTL value for sum: %w", err)
+			return a.handleError(fmt.Errorf("failed to execute OTTL value for sum: %w", err))
 		}
 		switch v := raw.(type) {
 		case int64:
-			return a.aggregateInt(md, resAttrs, srcAttrs, v)
+			if err := a.aggregateInt(md, resAttrs, srcAttrs, v); err != nil {
+				return a.handleError(err)
+			}
 		case float64:
-			return a.aggregateDouble(md, resAttrs, srcAttrs, v)
+			if err := a.aggregateDouble(md, resAttrs, srcAttrs, v); err != nil {
+				return a.handleError(err)
+			}
 		default:
-			return fmt.Errorf(
+			return a.handleError(fmt.Errorf(
 				"failed to parse sum OTTL value of type %T into int64 or float64: %v",
 				v, v,
-			)
+			))
 		}
 	case pmetric.MetricTypeGauge:
 		raw, err := md.Gauge.Value.Eval(ctx, tCtx)
@@ -97,22 +110,40 @@ func (a *Aggregator[K]) Aggregate(
 				// Gracefully skip missing keys in ExtractGrokPatterns
 				return nil
 			}
-			return fmt.Errorf("failed to execute OTTL value for gauge: %w", err)
+			return a.handleError(fmt.Errorf("failed to execute OTTL value for gauge: %w", err))
 		}
 		if raw == nil {
 			return nil
 		}
 		switch v := raw.(type) {
 		case int64, float64:
-			return a.aggregateGauge(md, resAttrs, srcAttrs, v)
+			if err := a.aggregateGauge(md, resAttrs, srcAttrs, v); err != nil {
+				return a.handleError(err)
+			}
 		default:
-			return fmt.Errorf(
+			return a.handleError(fmt.Errorf(
 				"failed to parse gauge OTTL value of type %T into int64 or float64: %v",
 				v, v,
-			)
+			))
 		}
 	}
 	return nil
+}
+
+// handleError handles errors based on the configured ErrorMode.
+// It returns nil for ignore/silent modes and returns the error for propagate mode.
+func (a *Aggregator[K]) handleError(err error) error {
+	switch a.errorMode {
+	case ottl.PropagateError:
+		return err
+	case ottl.IgnoreError:
+		a.logger.Error("Error processing data", zap.Error(err))
+		return nil
+	case ottl.SilentError:
+		return nil
+	default:
+		return err
+	}
 }
 
 // Finalize finalizes the aggregations performed by the aggregator so far into

@@ -191,8 +191,7 @@ attributes:
 metrics:
   rabbitmq.consumer.count:
     description: The number of consumers currently reading from the queue.
-    stability:
-      level: development
+    stability: development
     unit: "{consumers}"
     sum:
       monotonic: false
@@ -201,8 +200,7 @@ metrics:
     enabled: true
   rabbitmq.message.acknowledged:
     description: The number of messages acknowledged by consumers.
-    stability:
-      level: development
+    stability: development
     unit: "{messages}"
     sum:
       monotonic: true
@@ -211,8 +209,7 @@ metrics:
     enabled: true
   rabbitmq.message.current:
     description: The total number of messages currently in the queue.
-    stability:
-      level: development
+    stability: development
     unit: "{messages}"
     sum:
       monotonic: false
@@ -222,8 +219,7 @@ metrics:
     enabled: true
   rabbitmq.message.delivered:
     description: The number of messages delivered to consumers.
-    stability:
-      level: development
+    stability: development
     unit: "{messages}"
     sum:
       monotonic: true
@@ -232,8 +228,7 @@ metrics:
     enabled: true
   rabbitmq.message.dropped:
     description: The number of messages dropped as unroutable.
-    stability:
-      level: development
+    stability: development
     unit: "{messages}"
     sum:
       monotonic: true
@@ -242,8 +237,7 @@ metrics:
     enabled: true
   rabbitmq.message.published:
     description: The number of messages published to a queue.
-    stability:
-      level: development
+    stability: development
     unit: "{messages}"
     sum:
       monotonic: true
@@ -252,8 +246,7 @@ metrics:
     enabled: true
   rabbitmq.node.channel_closed:
     description: Number of channels closed.
-    stability:
-      level: development
+    stability: development
     unit: '{channels}'
     sum:
       monotonic: false
@@ -262,8 +255,7 @@ metrics:
     enabled: false
   rabbitmq.node.channel_closed_details.rate:
     description: Rate of channels closed.
-    stability:
-      level: development
+    stability: development
     unit: '{channels}/s'
     sum:
       monotonic: false
@@ -272,8 +264,7 @@ metrics:
     enabled: false
   rabbitmq.node.channel_created:
     description: Number of channels created.
-    stability:
-      level: development
+    stability: development
     unit: '{channels}'
     sum:
       monotonic: false
@@ -282,8 +273,7 @@ metrics:
     enabled: false
   rabbitmq.node.channel_created_details.rate:
     description: Rate of channels created.
-    stability:
-      level: development
+    stability: development
     unit: '{channels}/s'
     sum:
       monotonic: false
@@ -292,8 +282,7 @@ metrics:
     enabled: false
   rabbitmq.node.connection_closed:
     description: Number of connections closed.
-    stability:
-      level: development
+    stability: development
     unit: '{connections}'
     sum:
       monotonic: false
@@ -302,8 +291,7 @@ metrics:
     enabled: false
   rabbitmq.node.connection_closed_details.rate:
     description: Rate of connections closed.
-    stability:
-      level: development
+    stability: development
     unit: '{connections}/s'
     sum:
       monotonic: false
@@ -312,8 +300,7 @@ metrics:
     enabled: false
   rabbitmq.node.connection_created:
     description: Number of connections created.
-    stability:
-      level: development
+    stability: development
     unit: '{connections}'
     sum:
       monotonic: false
@@ -322,8 +309,7 @@ metrics:
     enabled: false
   rabbitmq.node.connection_created_details.rate:
     description: Rate of connections created.
-    stability:
-      level: development
+    stability: development
     unit: '{connections}/s'
     sum:
       monotonic: false
@@ -332,8 +318,7 @@ metrics:
     enabled: false
   rabbitmq.node.context_switches:
     description: Total number of context switches.
-    stability:
-      level: development
+    stability: development
     unit: '{switches}'
     sum:
       monotonic: false
@@ -342,8 +327,7 @@ metrics:
     enabled: false
   rabbitmq.node.context_switches_details.rate:
     description: Rate of context switches.
-    stability:
-      level: development
+    stability: development
     unit: '{switches}/s'
     sum:
       monotonic: false
@@ -352,8 +336,7 @@ metrics:
     enabled: false
   rabbitmq.node.disk_free:
     description: Free disk space on the node.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}'
     sum:
       monotonic: false
@@ -362,8 +345,7 @@ metrics:
     enabled: false
   rabbitmq.node.disk_free_alarm:
     description: Whether disk usage has triggered an alarm.
-    stability:
-      level: development
+    stability: development
     unit: '{status}'
     sum:
       monotonic: false
@@ -372,8 +354,7 @@ metrics:
     enabled: false
   rabbitmq.node.disk_free_details.rate:
     description: Rate of disk usage change.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}/s'
     sum:
       monotonic: false
@@ -382,8 +363,7 @@ metrics:
     enabled: false
   rabbitmq.node.disk_free_limit:
     description: Minimum required free disk space before alarm.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}'
     sum:
       monotonic: false
@@ -392,8 +372,7 @@ metrics:
     enabled: false
   rabbitmq.node.fd_total:
     description: Maximum number of file descriptors available.
-    stability:
-      level: development
+    stability: development
     unit: '{fd}'
     sum:
       monotonic: false
@@ -402,8 +381,7 @@ metrics:
     enabled: false
   rabbitmq.node.fd_used:
     description: Number of file descriptors used.
-    stability:
-      level: development
+    stability: development
     unit: '{fd}'
     sum:
       monotonic: false
@@ -412,8 +390,7 @@ metrics:
     enabled: false
   rabbitmq.node.fd_used_details.rate:
     description: Rate of file descriptor usage.
-    stability:
-      level: development
+    stability: development
     unit: '{fd}/s'
     sum:
       monotonic: false
@@ -422,8 +399,7 @@ metrics:
     enabled: false
   rabbitmq.node.gc_bytes_reclaimed:
     description: Bytes reclaimed by garbage collection.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}'
     sum:
       monotonic: false
@@ -432,8 +408,7 @@ metrics:
     enabled: false
   rabbitmq.node.gc_bytes_reclaimed_details.rate:
     description: Rate of bytes reclaimed by GC.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}/s'
     sum:
       monotonic: false
@@ -442,8 +417,7 @@ metrics:
     enabled: false
   rabbitmq.node.gc_num:
     description: Number of garbage collections.
-    stability:
-      level: development
+    stability: development
     unit: '{collections}'
     sum:
       monotonic: false
@@ -452,8 +426,7 @@ metrics:
     enabled: false
   rabbitmq.node.gc_num_details.rate:
     description: Rate of garbage collections.
-    stability:
-      level: development
+    stability: development
     unit: '{collections}/s'
     sum:
       monotonic: false
@@ -462,8 +435,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_read_avg_time:
     description: Average read time in microseconds.
-    stability:
-      level: development
+    stability: development
     unit: '{microseconds}'
     sum:
       monotonic: false
@@ -472,8 +444,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_read_avg_time_details.rate:
     description: Rate of change of average read time.
-    stability:
-      level: development
+    stability: development
     unit: '{microseconds}/s'
     sum:
       monotonic: false
@@ -482,8 +453,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_read_bytes:
     description: Total bytes read.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}'
     sum:
       monotonic: false
@@ -492,8 +462,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_read_bytes_details.rate:
     description: Rate of bytes read.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}/s'
     sum:
       monotonic: false
@@ -502,8 +471,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_read_count:
     description: Number of read operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}'
     sum:
       monotonic: false
@@ -512,8 +480,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_read_count_details.rate:
     description: Rate of read operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}/s'
     sum:
       monotonic: false
@@ -522,8 +489,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_reopen_count:
     description: Number of file reopen operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}'
     sum:
       monotonic: false
@@ -532,8 +498,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_reopen_count_details.rate:
     description: Rate of file reopen operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}/s'
     sum:
       monotonic: false
@@ -542,8 +507,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_seek_avg_time:
     description: Average seek time in microseconds.
-    stability:
-      level: development
+    stability: development
     unit: '{microseconds}'
     sum:
       monotonic: false
@@ -552,8 +516,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_seek_avg_time_details.rate:
     description: Rate of change of average seek time.
-    stability:
-      level: development
+    stability: development
     unit: '{microseconds}/s'
     sum:
       monotonic: false
@@ -562,8 +525,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_seek_count:
     description: Number of seek operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}'
     sum:
       monotonic: false
@@ -572,8 +534,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_seek_count_details.rate:
     description: Rate of seek operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}/s'
     sum:
       monotonic: false
@@ -582,8 +543,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_sync_avg_time:
     description: Average sync time in microseconds.
-    stability:
-      level: development
+    stability: development
     unit: '{microseconds}'
     sum:
       monotonic: false
@@ -592,8 +552,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_sync_avg_time_details.rate:
     description: Rate of change of average sync time.
-    stability:
-      level: development
+    stability: development
     unit: '{microseconds}/s'
     sum:
       monotonic: false
@@ -602,8 +561,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_sync_count:
     description: Number of sync operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}'
     sum:
       monotonic: false
@@ -612,8 +570,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_sync_count_details.rate:
     description: Rate of sync operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}/s'
     sum:
       monotonic: false
@@ -622,8 +579,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_write_avg_time:
     description: Average write time in microseconds.
-    stability:
-      level: development
+    stability: development
     unit: '{microseconds}'
     sum:
       monotonic: false
@@ -632,8 +588,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_write_avg_time_details.rate:
     description: Rate of change of average write time.
-    stability:
-      level: development
+    stability: development
     unit: '{microseconds}/s'
     sum:
       monotonic: false
@@ -642,8 +597,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_write_bytes:
     description: Total bytes written.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}'
     sum:
       monotonic: false
@@ -652,8 +606,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_write_bytes_details.rate:
     description: Rate of bytes written.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}/s'
     sum:
       monotonic: false
@@ -662,8 +615,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_write_count:
     description: Number of write operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}'
     sum:
       monotonic: false
@@ -672,8 +624,7 @@ metrics:
     enabled: false
   rabbitmq.node.io_write_count_details.rate:
     description: Rate of write operations.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}/s'
     sum:
       monotonic: false
@@ -682,8 +633,7 @@ metrics:
     enabled: false
   rabbitmq.node.mem_alarm:
     description: Whether memory alarm is triggered.
-    stability:
-      level: development
+    stability: development
     unit: '{status}'
     sum:
       monotonic: false
@@ -692,8 +642,7 @@ metrics:
     enabled: false
   rabbitmq.node.mem_limit:
     description: The memory limit on the node.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}'
     sum:
       monotonic: false
@@ -702,8 +651,7 @@ metrics:
     enabled: false
   rabbitmq.node.mem_used:
     description: The memory used on the node.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}'
     sum:
       monotonic: false
@@ -712,8 +660,7 @@ metrics:
     enabled: false
   rabbitmq.node.mem_used_details.rate:
     description: Rate of memory usage change.
-    stability:
-      level: development
+    stability: development
     unit: '{bytes}/s'
     sum:
       monotonic: false
@@ -722,8 +669,7 @@ metrics:
     enabled: false
   rabbitmq.node.mnesia_disk_tx_count:
     description: Number of disk transactions in Mnesia.
-    stability:
-      level: development
+    stability: development
     unit: '{tx}'
     sum:
       monotonic: false
@@ -732,8 +678,7 @@ metrics:
     enabled: false
   rabbitmq.node.mnesia_disk_tx_count_details.rate:
     description: Rate of disk transactions in Mnesia.
-    stability:
-      level: development
+    stability: development
     unit: '{tx}/s'
     sum:
       monotonic: false
@@ -742,8 +687,7 @@ metrics:
     enabled: false
   rabbitmq.node.mnesia_ram_tx_count:
     description: Number of RAM transactions in Mnesia.
-    stability:
-      level: development
+    stability: development
     unit: '{tx}'
     sum:
       monotonic: false
@@ -752,8 +696,7 @@ metrics:
     enabled: false
   rabbitmq.node.mnesia_ram_tx_count_details.rate:
     description: Rate of RAM transactions in Mnesia.
-    stability:
-      level: development
+    stability: development
     unit: '{tx}/s'
     sum:
       monotonic: false
@@ -762,8 +705,7 @@ metrics:
     enabled: false
   rabbitmq.node.msg_store_read_count:
     description: Number of message store reads.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}'
     sum:
       monotonic: false
@@ -772,8 +714,7 @@ metrics:
     enabled: false
   rabbitmq.node.msg_store_read_count_details.rate:
     description: Rate of message store reads.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}/s'
     sum:
       monotonic: false
@@ -782,8 +723,7 @@ metrics:
     enabled: false
   rabbitmq.node.msg_store_write_count:
     description: Number of message store writes.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}'
     sum:
       monotonic: false
@@ -792,8 +732,7 @@ metrics:
     enabled: false
   rabbitmq.node.msg_store_write_count_details.rate:
     description: Rate of message store writes.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}/s'
     sum:
       monotonic: false
@@ -802,8 +741,7 @@ metrics:
     enabled: false
   rabbitmq.node.proc_total:
     description: Maximum allowed Erlang processes.
-    stability:
-      level: development
+    stability: development
     unit: '{processes}'
     sum:
       monotonic: false
@@ -812,8 +750,7 @@ metrics:
     enabled: false
   rabbitmq.node.proc_used:
     description: Number of Erlang processes in use.
-    stability:
-      level: development
+    stability: development
     unit: '{processes}'
     sum:
       monotonic: false
@@ -822,8 +759,7 @@ metrics:
     enabled: false
   rabbitmq.node.proc_used_details.rate:
     description: Rate of process usage.
-    stability:
-      level: development
+    stability: development
     unit: '{processes}/s'
     sum:
       monotonic: false
@@ -832,8 +768,7 @@ metrics:
     enabled: false
   rabbitmq.node.processors:
     description: Number of processors available to the node.
-    stability:
-      level: development
+    stability: development
     unit: '{processors}'
     sum:
       monotonic: false
@@ -842,8 +777,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_created:
     description: Number of queues created.
-    stability:
-      level: development
+    stability: development
     unit: '{queues}'
     sum:
       monotonic: false
@@ -852,8 +786,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_created_details.rate:
     description: Rate of queues created.
-    stability:
-      level: development
+    stability: development
     unit: '{queues}/s'
     sum:
       monotonic: false
@@ -862,8 +795,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_declared:
     description: Number of queues declared.
-    stability:
-      level: development
+    stability: development
     unit: '{queues}'
     sum:
       monotonic: false
@@ -872,8 +804,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_declared_details.rate:
     description: Rate of queues declared.
-    stability:
-      level: development
+    stability: development
     unit: '{queues}/s'
     sum:
       monotonic: false
@@ -882,8 +813,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_deleted:
     description: Number of queues deleted.
-    stability:
-      level: development
+    stability: development
     unit: '{queues}'
     sum:
       monotonic: false
@@ -892,8 +822,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_deleted_details.rate:
     description: Rate of queues deleted.
-    stability:
-      level: development
+    stability: development
     unit: '{queues}/s'
     sum:
       monotonic: false
@@ -902,8 +831,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_index_read_count:
     description: Number of queue index reads.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}'
     sum:
       monotonic: false
@@ -912,8 +840,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_index_read_count_details.rate:
     description: Rate of queue index reads.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}/s'
     sum:
       monotonic: false
@@ -922,8 +849,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_index_write_count:
     description: Number of queue index writes.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}'
     sum:
       monotonic: false
@@ -932,8 +858,7 @@ metrics:
     enabled: false
   rabbitmq.node.queue_index_write_count_details.rate:
     description: Rate of queue index writes.
-    stability:
-      level: development
+    stability: development
     unit: '{ops}/s'
     sum:
       monotonic: false
@@ -942,8 +867,7 @@ metrics:
     enabled: false
   rabbitmq.node.run_queue:
     description: Run queue length of the Erlang scheduler.
-    stability:
-      level: development
+    stability: development
     unit: '{threads}'
     sum:
       monotonic: false
@@ -952,8 +876,7 @@ metrics:
     enabled: false
   rabbitmq.node.sockets_total:
     description: Maximum allowed sockets.
-    stability:
-      level: development
+    stability: development
     unit: '{sockets}'
     sum:
       monotonic: false
@@ -962,8 +885,7 @@ metrics:
     enabled: false
   rabbitmq.node.sockets_used:
     description: Number of sockets in use.
-    stability:
-      level: development
+    stability: development
     unit: '{sockets}'
     sum:
       monotonic: false
@@ -972,8 +894,7 @@ metrics:
     enabled: false
   rabbitmq.node.sockets_used_details.rate:
     description: Rate of socket usage.
-    stability:
-      level: development
+    stability: development
     unit: '{sockets}/s'
     sum:
       monotonic: false
@@ -982,8 +903,7 @@ metrics:
     enabled: false
   rabbitmq.node.uptime:
     description: Uptime of the node.
-    stability:
-      level: development
+    stability: development
     unit: ms
     sum:
       monotonic: false

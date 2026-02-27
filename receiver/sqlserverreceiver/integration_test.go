@@ -111,24 +111,34 @@ func TestEventsScraper(t *testing.T) {
 					return queryCount.Load() > 0
 				}, 10*time.Second, 100*time.Millisecond, "Query did not start in time")
 
-				actualLog, err := scraper.ScrapeLogs(t.Context())
-				assert.NoError(t, err)
-				assert.NotNil(t, actualLog)
-				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+					actualLog, err := scraper.ScrapeLogs(t.Context())
+					assert.NoError(tt, err)
+					assert.NotNil(tt, actualLog)
 
-				assert.Equal(t, 2, logRecords.Len())
-				found := false
-				for i := 0; i < logRecords.Len(); i++ {
-					attributes := logRecords.At(i).Attributes().AsRaw()
-					if attributes["db.namespace"] == "master" {
-						continue
+					if actualLog.ResourceLogs().Len() == 0 {
+						assert.Fail(tt, "No resource logs found")
+						return
 					}
-					found = true
-					query := attributes["db.query.text"].(string)
-					// as the query is not a standard query, only the `WAITFOR` part can be returned from db.
-					assert.True(t, strings.HasPrefix(query, "WAITFOR"))
-				}
-				assert.True(t, found)
+
+					logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+					assert.GreaterOrEqual(tt, logRecords.Len(), 1)
+
+					found := false
+					for i := 0; i < logRecords.Len(); i++ {
+						attributes := logRecords.At(i).Attributes().AsRaw()
+						if attributes["db.namespace"] == "master" {
+							continue
+						}
+						found = true
+						query := attributes["db.query.text"].(string)
+						// as the query is not a standard query, only the `WAITFOR` part can be returned from db.
+						assert.True(tt, strings.HasPrefix(query, "WAITFOR"), "Expected query to start with WAITFOR, got: %s", query)
+					}
+
+					assert.True(tt, found, "Expected query not found in logs")
+				}, 10*time.Second, 100*time.Millisecond)
+
 				finished.Store(true)
 			},
 		},

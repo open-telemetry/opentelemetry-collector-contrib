@@ -1,0 +1,15 @@
+description: Config defines the user provided values for the Schema Processor
+type: object
+properties:
+  prefetch:
+    description: PreCache is a list of schema URLs that are downloaded and cached at the start of the collector runtime in order to avoid fetching data that later on could block processing of signals. (Optional field)
+    type: array
+    items:
+      type: string
+  targets:
+    description: Targets define what schema families should be translated to, allowing older and newer formats to conform to the target schema identifier.
+    type: array
+    items:
+      type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

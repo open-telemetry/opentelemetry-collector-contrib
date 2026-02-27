@@ -487,11 +487,11 @@ func testAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	assert.Equal(t, errNoJobInstance, err)
 }
 
-func TestAppendCTZeroSampleNoLabels(t *testing.T) {
+func TestAppendSTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(), 0, 100)
+	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(), 0, 100)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
@@ -499,15 +499,15 @@ func TestAppendHistogramCTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
+	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
-func TestAppendCTZeroSampleDuplicateLabels(t *testing.T) {
+func TestAppendSTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
@@ -521,7 +521,7 @@ func TestAppendHistogramCTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
@@ -531,11 +531,11 @@ func TestAppendHistogramCTZeroSampleDuplicateLabels(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid sample: non-unique label names")
 }
 
-func TestAppendCTZeroSampleEmptyMetricName(t *testing.T) {
+func TestAppendSTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
@@ -547,7 +547,7 @@ func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
@@ -555,13 +555,13 @@ func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
 	assert.ErrorContains(t, err, "metricName not found")
 }
 
-func TestAppendCTZeroSample(t *testing.T) {
+func TestAppendSTZeroSample(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
 	var atMs, ctMs int64
 	atMs, ctMs = 200, 100
-	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
@@ -595,7 +595,7 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 
 	var atMs, ctMs int64
 	atMs, ctMs = 200, 100
-	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",

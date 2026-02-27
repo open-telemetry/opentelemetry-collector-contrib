@@ -912,11 +912,11 @@ func (s *oracleScraper) calculateLookbackSeconds() int {
 		return int(s.topQueryCollectCfg.CollectionInterval.Seconds())
 	}
 
-	// vsqlRefreshLagSec is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
+	// vsqlRefreshLag is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
 	// PS: https://docs.oracle.com/en/database/oracle/oracle-database/21/refrn/V-SQL.html
-	const vsqlRefreshLagSec = 10 * time.Second
+	const vsqlRefreshLag = 10 * time.Second
 
 	return int(math.Ceil(time.Now().
-		Add(vsqlRefreshLagSec).
+		Add(vsqlRefreshLag).
 		Sub(s.lastExecutionTimestamp).Seconds()))
 }

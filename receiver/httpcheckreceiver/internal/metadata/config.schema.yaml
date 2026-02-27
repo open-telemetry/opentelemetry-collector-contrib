@@ -1,0 +1,41 @@
+$defs:
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for httpcheck metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for httpcheck metrics.
+    type: object
+    properties:
+      httpcheck.client.connection.duration:
+        $ref: metric_config
+      httpcheck.client.request.duration:
+        $ref: metric_config
+      httpcheck.dns.lookup.duration:
+        $ref: metric_config
+      httpcheck.duration:
+        $ref: metric_config
+      httpcheck.error:
+        $ref: metric_config
+      httpcheck.response.duration:
+        $ref: metric_config
+      httpcheck.response.size:
+        $ref: metric_config
+      httpcheck.status:
+        $ref: metric_config
+      httpcheck.tls.cert_remaining:
+        $ref: metric_config
+      httpcheck.tls.handshake.duration:
+        $ref: metric_config
+      httpcheck.validation.failed:
+        $ref: metric_config
+      httpcheck.validation.passed:
+        $ref: metric_config

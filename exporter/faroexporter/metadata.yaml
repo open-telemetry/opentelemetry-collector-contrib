@@ -1,4 +1,5 @@
 type: faro
+display_name: Faro Exporter
 
 status:
   class: exporter

@@ -1,0 +1,71 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.DATAFACTORY/FACTORIES/TESTDATAFACTORY
+        - key: cloud.region
+          value:
+            stringValue: southcentralus
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: PipelineRuns
+              - key: azure.operation.name
+                value:
+                  stringValue: dataFlowPipeline - Queued
+              - key: azure.correlation_id
+                value:
+                  stringValue: 82282710-a665-4a79-9bbc-e1f207af4b1e
+              - key: azure.datafactory.pipeline.start_time
+                value:
+                  stringValue: "2020-11-04T19:23:04.8245890Z"
+              - key: azure.datafactory.pipeline.end_time
+                value:
+                  stringValue: "1601-01-01T00:00:00Z"
+              - key: azure.datafactory.pipeline.run_id
+                value:
+                  stringValue: 82282710-a665-4a79-9bbc-e1f207af4b1e
+              - key: azure.datafactory.pipeline.name
+                value:
+                  stringValue: dataFlowPipeline
+              - key: azure.datafactory.pipeline.state
+                value:
+                  stringValue: Queued
+              - key: azure.datafactory.predecessors
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: Name
+                              value:
+                                stringValue: Manual
+                            - key: Id
+                              value:
+                                stringValue: 839df9dfe19f4169afc7f6ab4b7c190a
+                            - key: InvokedByType
+                              value:
+                                stringValue: Manual
+              - key: azure.datafactory.system_parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: PipelineRunRequestTime
+                        value:
+                          stringValue: "2020-11-04T19:23:04.824589+00:00"
+            body: {}
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1604517784890112000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

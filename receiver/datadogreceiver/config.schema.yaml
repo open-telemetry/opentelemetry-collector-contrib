@@ -1,0 +1,32 @@
+$defs:
+  intake_config:
+    description: IntakeConfig controls the `/intake` endpoint behavior
+    type: object
+    properties:
+      behavior:
+        description: 'Behavior sets how the `/intake` endpoint should behave. The value should be one of: `disable` (default) - disable the endpoint entirely `proxy` - proxy the requests to Datadog itself'
+        type: string
+      proxy:
+        description: Proxy controls how the `/intake` proxy operates
+        $ref: proxy_config
+  proxy_config:
+    description: ProxyConfig controls how the `/intake` proxy operates
+    type: object
+    properties:
+      api:
+        description: API defines the settings for calling Datadog with the proxied requests
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config.api_config
+type: object
+properties:
+  intake:
+    description: Intake controls the `/intake` endpoint behavior
+    $ref: intake_config
+  read_timeout:
+    description: ReadTimeout of the http server
+    type: string
+    format: duration
+  trace_id_cache_size:
+    description: TraceIDCacheSize sets the cache size for the 64 bits to 128 bits mapping
+    type: integer
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

@@ -1,0 +1,77 @@
+$defs:
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_request:
+    description: AttributeRequest specifies the value request attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for iis metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for iis metrics.
+    type: object
+    properties:
+      iis.application_pool.state:
+        $ref: metric_config
+      iis.application_pool.uptime:
+        $ref: metric_config
+      iis.connection.active:
+        $ref: metric_config
+      iis.connection.anonymous:
+        $ref: metric_config
+      iis.connection.attempt.count:
+        $ref: metric_config
+      iis.network.blocked:
+        $ref: metric_config
+      iis.network.file.count:
+        $ref: metric_config
+      iis.network.io:
+        $ref: metric_config
+      iis.request.count:
+        $ref: metric_config
+      iis.request.queue.age.max:
+        $ref: metric_config
+      iis.request.queue.count:
+        $ref: metric_config
+      iis.request.rejected:
+        $ref: metric_config
+      iis.thread.active:
+        $ref: metric_config
+      iis.uptime:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for iis resource attributes.
+    type: object
+    properties:
+      iis.application_pool:
+        $ref: resource_attribute_config
+      iis.site:
+        $ref: resource_attribute_config

@@ -40,7 +40,7 @@ func BenchmarkAppendWithCreatedLine(b *testing.B) {
 		}
 	})
 
-	b.Run("AppendWithCreatedLineWithAppendCTZeroSample", func(b *testing.B) {
+	b.Run("AppendWithCreatedLineWithAppendSTZeroSample", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for b.Loop() {
@@ -54,7 +54,7 @@ func BenchmarkAppendWithCreatedLine(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				_, err = tx.AppendCTZeroSample(0, ls[1], timestamp, int64(ctValue))
+				_, err = tx.AppendSTZeroSample(0, ls[1], timestamp, int64(ctValue))
 				if err != nil {
 					b.Fatal(err)
 				}

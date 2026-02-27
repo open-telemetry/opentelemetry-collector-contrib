@@ -15,18 +15,11 @@ import (
 	"time"
 
 	backoff "github.com/cenkalti/backoff/v5"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
-)
 
-var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.resourcedetection.propagateerrors",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, allows errors returned from resource detectors to propagate in the Start() method and stop the collector."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961"),
-	featuregate.WithRegisterFromVersion("v0.121.0"),
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 type DetectorType string
@@ -204,7 +197,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 	for _, ch := range resultsChan {
 		result := <-ch
 		if result.err != nil {
-			if allowErrorPropagationFeatureGate.IsEnabled() {
+			if metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
 				joinedErr = errors.Join(joinedErr, result.err)
 			}
 			continue
@@ -218,7 +211,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 
 	// Determine the error to return based on feature gate setting.
 	var returnErr error
-	if allowErrorPropagationFeatureGate.IsEnabled() {
+	if metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
 		// Feature gate enabled: return joined errors (if any)
 		if successes == 0 && joinedErr == nil {
 			returnErr = errors.New("resource detection failed: no detectors succeeded")
@@ -229,7 +222,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 
 	// If all detectors failed, return empty resource.
 	if successes == 0 {
-		if !allowErrorPropagationFeatureGate.IsEnabled() {
+		if !metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
 			p.logger.Warn("resource detection failed but error propagation is disabled")
 		}
 		return pcommon.NewResource(), "", returnErr

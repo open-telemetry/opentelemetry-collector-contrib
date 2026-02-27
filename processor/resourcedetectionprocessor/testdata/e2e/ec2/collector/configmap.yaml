@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    processors:
+      resourcedetection:
+        detectors: [ec2]
+        timeout: 2s
+        override: false
+        ec2:
+          resource_attributes:
+            host.name:
+              enabled: true
+            host.id:
+              enabled: true
+            cloud.provider:
+              enabled: true
+            cloud.platform:
+              enabled: true
+            cloud.account.id:
+              enabled: true
+            cloud.region:
+              enabled: true
+            cloud.availability_zone:
+              enabled: true
+            host.image.id:
+              enabled: true
+            host.type:
+              enabled: true
+    receivers:
+      hostmetrics:
+        collection_interval: 1s
+        scrapers:
+          cpu:
+    service:
+      telemetry:
+        logs:
+          level: "debug"
+      extensions:
+        - health_check
+      pipelines:
+        metrics:
+          receivers:
+            - hostmetrics
+          processors:
+            - resourcedetection
+          exporters:
+            - otlp

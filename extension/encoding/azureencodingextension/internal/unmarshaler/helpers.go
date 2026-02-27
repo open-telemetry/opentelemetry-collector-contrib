@@ -215,7 +215,7 @@ func AttrPutFloatNumberPtrIf(attrs pcommon.Map, attrKey string, attrValue *json.
 // trying to parse it from raw value
 // If parsing failed - no attribute will be set
 func AttrPutMapIf(attrs pcommon.Map, attrKey string, attrValue map[string]any) {
-	if attrKey == "" || attrValue == nil {
+	if attrKey == "" || attrValue == nil || len(attrValue) == 0 {
 		return
 	}
 

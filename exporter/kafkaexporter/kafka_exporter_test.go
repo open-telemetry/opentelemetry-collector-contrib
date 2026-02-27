@@ -949,7 +949,7 @@ func configureExporter[T any](tb testing.TB,
 		kgo.ClientID(cfg.ClientID),
 	}
 
-	client, err := kafka.NewFranzSyncProducer(tb.Context(), kcfg,
+	client, err := kafka.NewFranzSyncProducer(tb.Context(), host, kcfg,
 		cfg.Producer, 1*time.Second, zap.NewNop(), kgoClientOpts...)
 	require.NoError(tb, err, "failed to create kgo.Client with fake cluster addresses")
 

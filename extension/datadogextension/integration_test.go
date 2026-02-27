@@ -73,7 +73,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	// - hostmetrics: 1 time (metrics)
 	// - memory_limiter: 3 times (traces, metrics, logs)
 	// - debug: 3 times (traces, metrics, logs)
-	// - otlphttp: 3 times (traces, metrics, logs)
+	// - otlp_http: 3 times (traces, metrics, logs)
 	// - datadog/connector: 2 times (traces exporter, metrics receiver)
 	// Total: 2 + 3 + 1 + 3 + 3 + 3 + 2 = 17
 	expectedComponentCount := 17
@@ -116,7 +116,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 			hasDebug = true
 			assert.Equal(t, "exporter", component.Kind)
 			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
-		case "otlphttp":
+		case "otlp_http":
 			hasOtlphttp = true
 			assert.Equal(t, "exporter", component.Kind)
 			assert.Contains(t, []string{"traces", "metrics", "logs"}, component.Pipeline)
@@ -137,7 +137,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	assert.True(t, hasHostmetrics, "should have hostmetrics receiver")
 	assert.True(t, hasMemoryLimiter, "should have memory_limiter processor")
 	assert.True(t, hasDebug, "should have debug exporter")
-	assert.True(t, hasOtlphttp, "should have otlphttp exporter")
+	assert.True(t, hasOtlphttp, "should have otlp_http exporter")
 }
 
 func TestDataToFlattenedJSONStringIntegration(t *testing.T) {
@@ -441,7 +441,7 @@ func createModuleInfoFromSampleConfig() *payload.ModuleInfoJSON {
 			Configured: true,
 		},
 		{
-			Type:       "otlphttp",
+			Type:       "otlp_http",
 			Kind:       "exporter",
 			Gomod:      "go.opentelemetry.io/collector/exporter/otlphttpexporter",
 			Version:    "v0.127.0",

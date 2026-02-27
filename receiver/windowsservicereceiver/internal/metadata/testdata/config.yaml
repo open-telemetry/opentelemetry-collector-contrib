@@ -3,7 +3,14 @@ all_set:
   metrics:
     windows.service.status:
       enabled: true
+      attributes: ["name","startup_mode"]
+reaggregate_set:
+  metrics:
+    windows.service.status:
+      enabled: true
+      attributes: ["name","startup_mode"]
 none_set:
   metrics:
     windows.service.status:
       enabled: false
+      attributes: ["name","startup_mode"]

@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -98,7 +99,7 @@ type FakeReplicaSetInformer struct {
 }
 
 func NewFakeReplicaSetInformer(
-	_ kubernetes.Interface,
+	_ metadata.Interface,
 	_ string,
 ) cache.SharedInformer {
 	return &FakeInformer{

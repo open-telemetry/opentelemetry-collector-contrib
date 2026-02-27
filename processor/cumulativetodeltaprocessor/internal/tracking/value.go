@@ -90,7 +90,8 @@ func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out Exponentia
 		if out.BucketCounts == nil {
 			out.Offset = int32(bucket)
 		} else {
-			zeros := bucket - int(out.Offset) + len(out.BucketCounts)
+			nextBucket := int(out.Offset) + len(out.BucketCounts)
+			zeros := bucket - nextBucket
 			out.BucketCounts = append(out.BucketCounts, make([]uint64, zeros)...)
 		}
 		out.BucketCounts = append(out.BucketCounts, diff)

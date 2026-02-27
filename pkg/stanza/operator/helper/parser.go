@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // NewParserConfig creates a new parser config with default values
@@ -173,7 +173,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction, write WriteFunction) error {
 	value, ok := entry.Get(p.ParseFrom)
 	if !ok {
-		err := stanza_errors.NewError(
+		err := stanzaerrors.NewError(
 			"Entry is missing the expected parse_from field.",
 			"Ensure that all incoming entries contain the parse_from field.",
 			"parse_from", p.ParseFrom.String(),

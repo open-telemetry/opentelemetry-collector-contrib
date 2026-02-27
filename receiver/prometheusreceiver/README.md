@@ -122,9 +122,6 @@ receivers:
               action: keep
 
 processors:
-  batch:
-    timeout: 10s
-    send_batch_size: 1000
   resource:
     attributes:
       # Note: service.name is automatically set by the prometheus receiver from job_name
@@ -133,27 +130,35 @@ processors:
         action: upsert
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otel-collector:4317
     tls:
       insecure: false
       # For local testing only you may set `insecure: true`, but avoid this in production.
+    sending_queue:
+      batch:
+        timeout: 10s
+        send_batch_size: 1000
   prometheusremotewrite:
     endpoint: https://prometheus:9090/api/v1/write
+    sending_queue:
+      batch:
+        timeout: 10s
+        send_batch_size: 1000
 
 service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [resource, batch]
-      exporters: [otlp, prometheusremotewrite]
+      processors: [resource]
+      exporters: [otlp_grpc, prometheusremotewrite]
 ```
 
 This configuration:
 - Scrapes metrics from a service running on `localhost:9090` every 5 seconds
 - Filters metrics to keep only those matching `http_request_duration_seconds.*` using `metric_relabel_configs`
 - Adds resource attributes (`deployment.environment`) to all metrics (note: `service.name` is automatically set from the job name)
-- Batches metrics before exporting to improve efficiency when multiple scrapes occur
+- Uses exporter-level batching via `sending_queue.batch` to improve efficiency when multiple scrapes occur
 - Exports metrics to both an OTLP endpoint and Prometheus remote write endpoint
 
 ## Prometheus native histograms
@@ -203,7 +208,7 @@ receivers:
 
 The `target_allocator` section embeds the full [confighttp client configuration][confighttp].
 
-[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration
+[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#client-configuration
 
 ## Exemplars
 This receiver accepts exemplars coming in Prometheus format and converts it to OTLP format.
@@ -248,46 +253,12 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 
 ## Feature gates
 
-- `receiver.prometheusreceiver.EnableReportExtraScrapeMetrics`: Extra Prometheus scrape metrics 
-  can be reported by setting this feature gate option. This replaces the deprecated
-  `report_extra_scrape_metrics` configuration flag:
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this receiver.
+
+Feature gates can be enabled using the `--feature-gates` flag:
 
 ```shell
-"--feature-gates=receiver.prometheusreceiver.EnableReportExtraScrapeMetrics"
-```
-
-- `receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig`: When enabled, the
-  `report_extra_scrape_metrics` configuration option is ignored, and extra scrape metrics are
-  controlled solely by the `EnableReportExtraScrapeMetrics` feature gate. The intention is
-  to have extra scrape metrics all the time in the future:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig"
-```
-
-- `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion`: Enables the Prometheus feature flag [created-timestamps-zero-injection](https://prometheus.io/docs/prometheus/latest/feature_flags/#created-timestamps-zero-injection). Currently, this behaviour is disabled by default due to worse CPU performance with higher metric volumes. To enable it, use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion"
-```
-- `receiver.prometheusreceiver.EnableNativeHistograms` (Stable, enabled by default): Converts scraped native histogram metrics into OpenTelemetry exponential histograms. **Note:** You still need to configure `scrape_native_histograms: true` in your Prometheus scrape config to actually scrape native histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
-
-- `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
-  the collector start time as the metric start time if the
-  process_start_time_seconds metric yields no result (for example if targets
-  expose no process_start_time_seconds metric). This is useful when the collector
-  start time is a good approximation of the process start time - for example in
-  serverless workloads when the collector is deployed as a sidecar. To enable it,
-  use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
-```
-
-- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
+"--feature-gates=<feature-gate>"
 ```
 
 ## Troubleshooting and Best Practices
@@ -364,7 +335,7 @@ This will surface detailed scrape errors and help diagnose connectivity or confi
 
 3. **Disable Expensive Features**
    - Avoid enabling `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion` unless necessary (known CPU impact)
-   - Use `batch` processor to reduce export frequency
+   - Use exporter-level batching to reduce export frequency
    - Consider disabling extra scrape metrics if not needed
 
 **Example Configuration**:
@@ -395,7 +366,7 @@ receivers:
    - Use TargetAllocator for automatic sharding in Kubernetes
 
 2. **Optimize Batch Processing**
-   - Configure `batch` processor with appropriate `send_batch_size` and `timeout`
+   - Configure exporter-level batching with appropriate `send_batch_size` and `timeout` via `sending_queue.batch`
    - Balance between memory usage (smaller batches) and efficiency (larger batches)
 
 3. **Monitor Memory Usage**
@@ -408,9 +379,14 @@ processors:
   memory_limiter:
     limit_mib: 512
     check_interval: 1s
-  batch:
-    timeout: 10s
-    send_batch_size: 1000  # Adjust based on memory constraints
+
+exporters:
+  otlp:
+    endpoint: otel-collector:4317
+    sending_queue:
+      batch:
+        timeout: 10s
+        send_batch_size: 1000  # Adjust based on memory constraints
 ```
 
 ### Best Practices for Production
@@ -495,9 +471,6 @@ processors:
   memory_limiter:
     limit_mib: 1024
     check_interval: 1s
-  batch:
-    timeout: 10s
-    send_batch_size: 2000
   resource:
     attributes:
       - key: deployment.environment
@@ -505,11 +478,15 @@ processors:
         action: upsert
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otel-collector:4317
     tls:
       insecure: false
       ca_file: /etc/ssl/certs/ca-certificates.crt
+    sending_queue:
+      batch:
+        timeout: 10s
+        send_batch_size: 2000
 ```
 
 #### Monitoring the Receiver
@@ -578,5 +555,5 @@ Monitor the Prometheus receiver itself to ensure it's operating correctly:
 ### Additional Resources
 
 - [Prometheus Configuration Documentation](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
-- [OpenTelemetry Collector Best Practices](https://opentelemetry.io/docs/collector/best-practices/)
+- [OpenTelemetry Collector Documentation](https://opentelemetry.io/docs/collector/)
 - [Design Document](DESIGN.md) for implementation details

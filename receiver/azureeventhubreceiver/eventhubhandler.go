@@ -18,7 +18,7 @@ import (
 
 type hubWrapper interface {
 	GetRuntimeInformation(ctx context.Context) (*hubRuntimeInfo, error)
-	Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error)
+	Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool, logger *zap.Logger) (listenerHandleWrapper, error)
 	Close(ctx context.Context) error
 }
 
@@ -64,19 +64,11 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	}
 
 	if h.hub == nil { // set manually for testing.
-		if azEventHubFeatureGate.IsEnabled() {
-			newHub, err := newAzeventhubWrapper(h, host)
-			if err != nil {
-				return err
-			}
-			h.hub = newHub
-		} else {
-			newHub, err := newLegacyHubWrapper(h)
-			if err != nil {
-				return err
-			}
-			h.hub = newHub
+		newHub, err := newAzeventhubWrapper(h, host)
+		if err != nil {
+			return err
 		}
+		h.hub = newHub
 	}
 
 	if h.config.Partition != "" {
@@ -106,7 +98,7 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 }
 
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
-	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset)
+	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset, h.settings.Logger)
 	if err != nil {
 		return err
 	}
