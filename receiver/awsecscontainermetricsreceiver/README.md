@@ -120,8 +120,8 @@ Task Level Metrics | Container Level Metrics | Unit
 ecs.task.memory.usage | container.memory.usage | Bytes
 ecs.task.memory.usage.max | container.memory.usage.max | Bytes
 ecs.task.memory.usage.limit | container.memory.usage.limit | Bytes
-ecs.task.memory.reserved | container.memory.reserved | Megabytes
-ecs.task.memory.utilized | container.memory.utilized | Megabytes
+ecs.task.memory.reserved | container.memory.reserved | MiB
+ecs.task.memory.utilized | container.memory.utilized | MiB
 ecs.task.cpu.usage.total | container.cpu.usage.total | Nanoseconds
 ecs.task.cpu.usage.kernelmode | container.cpu.usage.kernelmode | Nanoseconds
 ecs.task.cpu.usage.usermode | container.cpu.usage.usermode | Nanoseconds
@@ -143,8 +143,8 @@ ecs.task.network.io.usage.tx_errors	| container.network.io.usage.tx_errors	| Cou
 ecs.task.network.io.usage.tx_dropped	| container.network.io.usage.tx_dropped	| Count
 ecs.task.storage.read_bytes | container.storage.read_bytes| Bytes
 ecs.task.storage.write_bytes | container.storage.write_bytes | Bytes
-ecs.task.ephemeral_storage.utilized | | Megabytes
-ecs.task.ephemeral_storage.reserved | | Megabytes
+ecs.task.ephemeral_storage.utilized | | MiB
+ecs.task.ephemeral_storage.reserved | | MiB
 
 
 ## Resource Attributes and Metrics Labels

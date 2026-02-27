@@ -64,7 +64,7 @@ const (
 	attributeDuration = "duration"
 
 	unitBytes       = "Bytes"
-	unitMegaBytes   = "Megabytes"
+	unitMiB         = "MiB"
 	unitNanoSecond  = "Nanoseconds"
 	unitBytesPerSec = "Bytes/Second"
 	unitCount       = "Count"

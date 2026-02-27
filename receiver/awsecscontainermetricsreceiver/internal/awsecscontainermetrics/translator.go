@@ -20,8 +20,8 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, times
 	appendIntGauge(prefix+attributeMemoryUsage, unitBytes, int64(m.MemoryUsage), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeMemoryMaxUsage, unitBytes, int64(m.MemoryMaxUsage), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeMemoryLimit, unitBytes, int64(m.MemoryLimit), timestamp, ilms.AppendEmpty())
-	appendIntGauge(prefix+attributeMemoryUtilized, unitMegaBytes, int64(m.MemoryUtilized), timestamp, ilms.AppendEmpty())
-	appendIntGauge(prefix+attributeMemoryReserved, unitMegaBytes, int64(m.MemoryReserved), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+attributeMemoryUtilized, unitMiB, int64(m.MemoryUtilized), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+attributeMemoryReserved, unitMiB, int64(m.MemoryReserved), timestamp, ilms.AppendEmpty())
 
 	appendIntSum(prefix+attributeCPUTotalUsage, unitNanoSecond, int64(m.CPUTotalUsage), timestamp, ilms.AppendEmpty())
 	appendIntSum(prefix+attributeCPUKernelModeUsage, unitNanoSecond, int64(m.CPUUsageInKernelmode), timestamp, ilms.AppendEmpty())
@@ -51,8 +51,8 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, times
 	// Ephemeral storage metrics are only available at the task level.
 	// They represent the shared ephemeral storage for the entire Fargate task.
 	if prefix == taskPrefix {
-		appendIntGauge(prefix+attributeEphemeralStorageUtilized, unitMegaBytes, m.EphemeralStorageUtilized, timestamp, ilms.AppendEmpty())
-		appendIntGauge(prefix+attributeEphemeralStorageReserved, unitMegaBytes, m.EphemeralStorageReserved, timestamp, ilms.AppendEmpty())
+		appendIntGauge(prefix+attributeEphemeralStorageUtilized, unitMiB, m.EphemeralStorageUtilized, timestamp, ilms.AppendEmpty())
+		appendIntGauge(prefix+attributeEphemeralStorageReserved, unitMiB, m.EphemeralStorageReserved, timestamp, ilms.AppendEmpty())
 	}
 
 	return md
