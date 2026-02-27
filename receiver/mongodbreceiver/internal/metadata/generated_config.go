@@ -363,7 +363,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 
 			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{"operation"},
+			requiredAttributes:  []string{},
 			definedAttributes:   []string{"operation"},
 			EnabledAttributes:   []string{"operation"},
 		},

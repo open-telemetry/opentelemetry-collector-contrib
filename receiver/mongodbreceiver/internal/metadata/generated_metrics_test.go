@@ -331,7 +331,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatencyRead)
 			if tt.name == "reaggregate_set" {
-				mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 3, AttributeOperationLatencyRead)
+				mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 3, AttributeOperationLatencyWrite)
 			}
 
 			allMetricsCount++
@@ -1795,7 +1795,7 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("operation")
-						assert.True(t, ok)
+						assert.False(t, ok)
 					}
 				case "mongodb.operation.repl.count":
 					if tt.name != "reaggregate_set" {

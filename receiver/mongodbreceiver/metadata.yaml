@@ -86,7 +86,7 @@ attributes:
     name_override: operation
     description: The MongoDB operation with regards to latency
     type: string
-    requirement_level: required
+    requirement_level: recommended
     enum:
       - read
       - write

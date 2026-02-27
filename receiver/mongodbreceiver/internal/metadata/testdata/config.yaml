@@ -246,7 +246,7 @@ reaggregate_set:
       attributes: []
     mongodb.operation.latency.time:
       enabled: true
-      attributes: ["operation"]
+      attributes: []
     mongodb.operation.repl.count:
       enabled: true
       attributes: []
