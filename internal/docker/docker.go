@@ -36,6 +36,8 @@ type Container struct {
 // It retrieves container information in two forms to produce metric data: dtypes.ContainerJSON
 // from client.ContainerInspect() for container information (id, name, hostname, labels, and env)
 // and ctypes.StatsResponse from client.ContainerStats() for metric values.
+// A persistent streaming connection is maintained per container so that the latest stats are
+// always available without opening a new connection on every scrape.
 type Client struct {
 	client               *docker.Client
 	config               *Config
@@ -43,6 +45,10 @@ type Client struct {
 	containersLock       sync.Mutex
 	excludedImageMatcher *stringMatcher
 	logger               *zap.Logger
+	latestStats          map[string]*ctypes.StatsResponse
+	latestStatsLock      sync.RWMutex
+	streamCancels        map[string]context.CancelFunc
+	streamCancelsLock    sync.Mutex
 }
 
 func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
@@ -102,12 +108,14 @@ func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*C
 		containers:           make(map[string]Container),
 		containersLock:       sync.Mutex{},
 		excludedImageMatcher: excludedImageMatcher,
+		latestStats:          make(map[string]*ctypes.StatsResponse),
+		streamCancels:        make(map[string]context.CancelFunc),
 	}
 
 	return dc, nil
 }
 
-// Containers provides a slice of Container to use for individual FetchContainerStats calls.
+// Containers provides a snapshot of the currently monitored containers.
 func (dc *Client) Containers() []Container {
 	dc.containersLock.Lock()
 	defer dc.containersLock.Unlock()
@@ -229,6 +237,89 @@ func (dc *Client) toStatsJSON(
 	return &statsJSON, nil
 }
 
+// LatestContainerStats returns the most recently received stats for the given container.
+// Returns false if no stats have been received yet (stream still starting up).
+// Only populated when stream_stats is enabled.
+func (dc *Client) LatestContainerStats(containerID string) (*ctypes.StatsResponse, bool) {
+	dc.latestStatsLock.RLock()
+	defer dc.latestStatsLock.RUnlock()
+	stats, ok := dc.latestStats[containerID]
+	return stats, ok
+}
+
+// startContainerStream opens a persistent streaming stats connection for the container
+// and continuously updates the cached latest stats in the background.
+// Cancels any existing stream for that container first.
+func (dc *Client) startContainerStream(ctx context.Context, containerID string) {
+	dc.streamCancelsLock.Lock()
+	if cancel, ok := dc.streamCancels[containerID]; ok {
+		cancel()
+	}
+	streamCtx, cancel := context.WithCancel(ctx)
+	dc.streamCancels[containerID] = cancel
+	dc.streamCancelsLock.Unlock()
+
+	go dc.runStatsStream(streamCtx, containerID)
+}
+
+// runStatsStream opens a Docker stats stream and keeps the latest stats updated.
+// Reconnects automatically on transient errors. Stops when ctx is cancelled.
+func (dc *Client) runStatsStream(ctx context.Context, containerID string) {
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		resp, err := dc.client.ContainerStats(ctx, containerID, true)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			if cerrdefs.IsNotFound(err) {
+				dc.logger.Debug(
+					"Daemon reported container doesn't exist. Stopping stats stream.",
+					zap.String("id", containerID),
+				)
+				dc.RemoveContainer(containerID)
+				return
+			}
+			dc.logger.Warn(
+				"Could not open stats stream for container, retrying",
+				zap.String("id", containerID),
+				zap.Error(err),
+			)
+			select {
+			case <-time.After(3 * time.Second):
+			case <-ctx.Done():
+				return
+			}
+			continue
+		}
+
+		decoder := json.NewDecoder(resp.Body)
+		for {
+			var stats ctypes.StatsResponse
+			if err := decoder.Decode(&stats); err != nil {
+				resp.Body.Close()
+				if ctx.Err() != nil {
+					return
+				}
+				if !errors.Is(err, io.EOF) {
+					dc.logger.Warn(
+						"Error reading stats stream, reconnecting",
+						zap.String("id", containerID),
+						zap.Error(err),
+					)
+				}
+				break
+			}
+			dc.latestStatsLock.Lock()
+			dc.latestStats[containerID] = &stats
+			dc.latestStatsLock.Unlock()
+		}
+	}
+}
+
 // Events exposes the underlying Docker clients Events channel.
 // Caller should close the events channel by canceling the context.
 // If an error occurs, processing stops and caller must reinvoke this method.
@@ -306,7 +397,7 @@ EVENT_LOOP:
 // running and not excluded.
 func (dc *Client) InspectAndPersistContainer(ctx context.Context, cid string) (*ctypes.InspectResponse, bool) {
 	if container, ok := dc.inspectedContainerIsOfInterest(ctx, cid); ok {
-		dc.persistContainer(container)
+		dc.persistContainer(ctx, container)
 		return container, ok
 	}
 	return nil, false
@@ -330,7 +421,7 @@ func (dc *Client) inspectedContainerIsOfInterest(ctx context.Context, cid string
 	return nil, false
 }
 
-func (dc *Client) persistContainer(containerJSON *ctypes.InspectResponse) {
+func (dc *Client) persistContainer(ctx context.Context, containerJSON *ctypes.InspectResponse) {
 	if containerJSON == nil {
 		return
 	}
@@ -344,17 +435,33 @@ func (dc *Client) persistContainer(containerJSON *ctypes.InspectResponse) {
 
 	dc.logger.Debug("Monitoring Docker container", zap.String("id", cid))
 	dc.containersLock.Lock()
-	defer dc.containersLock.Unlock()
 	dc.containers[cid] = Container{
 		ContainerJSON: containerJSON,
 		EnvMap:        ContainerEnvToMap(containerJSON.Config.Env),
 	}
+	dc.containersLock.Unlock()
+
+	if dc.config.StreamStats {
+		dc.startContainerStream(ctx, cid)
+	}
 }
 
 func (dc *Client) RemoveContainer(cid string) {
+	dc.streamCancelsLock.Lock()
+	if cancel, ok := dc.streamCancels[cid]; ok {
+		cancel()
+		delete(dc.streamCancels, cid)
+	}
+	dc.streamCancelsLock.Unlock()
+
+	dc.latestStatsLock.Lock()
+	delete(dc.latestStats, cid)
+	dc.latestStatsLock.Unlock()
+
 	dc.containersLock.Lock()
-	defer dc.containersLock.Unlock()
 	delete(dc.containers, cid)
+	dc.containersLock.Unlock()
+
 	dc.logger.Debug("Removed container from stores.", zap.String("id", cid))
 }
 

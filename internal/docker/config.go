@@ -37,6 +37,12 @@ type Config struct {
 	// over HTTPS. When nil (the default), the connection uses no custom TLS — suitable
 	// for Unix sockets and plain HTTP endpoints.
 	TLS configoptional.Optional[configtls.ClientConfig] `mapstructure:"tls,omitempty"`
+	// StreamStats enables a persistent streaming connection per container to collect stats.
+	// When true, each container maintains an open Docker stats stream and the scraper reads
+	// from the cached latest value, which improves CPU utilisation accuracy by providing
+	// pre_cpu_stats delta data.  When false (default), a new connection is opened and closed
+	// on every scrape cycle, matching the original behaviour.
+	StreamStats bool `mapstructure:"stream_stats"`
 }
 
 func (config *Config) Unmarshal(conf *confmap.Conf) error {

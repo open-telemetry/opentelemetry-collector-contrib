@@ -197,6 +197,72 @@ func TestFetchContainerStatsAsJSONWithSlowResponse(t *testing.T) {
 	require.NotNil(t, stats)
 }
 
+// TestStatsStreamUpdatesLatestStats verifies that startContainerStream populates
+// LatestContainerStats even when the server delays before sending the first frame.
+func TestStatsStreamUpdatesLatestStats(t *testing.T) {
+	const containerID = "testContainer"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/stats") {
+			w.Header().Set("Content-Type", "application/json")
+			w.(http.Flusher).Flush()
+			time.Sleep(10 * time.Millisecond)
+			_, _ = w.Write([]byte(`{"cpu_stats":{"cpu_usage":{"total_usage":100}},"memory_stats":{}}`))
+		}
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	cli.startContainerStream(ctx, containerID)
+
+	require.Eventually(t, func() bool {
+		_, ok := cli.LatestContainerStats(containerID)
+		return ok
+	}, 5*time.Second, 10*time.Millisecond, "timed out waiting for stats")
+
+	stats, _ := cli.LatestContainerStats(containerID)
+	require.NotNil(t, stats)
+	assert.Equal(t, uint64(100), stats.CPUStats.CPUUsage.TotalUsage)
+}
+
+// TestStatsStreamHandlesInvalidJSON verifies that the stream goroutine logs a warning
+// and leaves LatestContainerStats empty when the server sends undecodable JSON.
+func TestStatsStreamHandlesInvalidJSON(t *testing.T) {
+	const containerID = "testContainer"
+	observed, logs := observer.New(zapcore.WarnLevel)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/stats") {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"Networks": 123}`))
+		}
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.New(observed))
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	cli.startContainerStream(ctx, containerID)
+
+	require.Eventually(t, func() bool {
+		for _, l := range logs.All() {
+			if strings.Contains(l.Message, "Error reading stats stream") {
+				return true
+			}
+		}
+		return false
+	}, 5*time.Second, 10*time.Millisecond, "expected warning about invalid JSON")
+
+	_, ok := cli.LatestContainerStats(containerID)
+	assert.False(t, ok, "no valid stats should be available after decode error")
+}
+
 func TestEventLoopHandlesError(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(2) // confirm retry occurs

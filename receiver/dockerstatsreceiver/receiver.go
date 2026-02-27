@@ -87,6 +87,26 @@ func (r *metricsReceiver) shutdown(context.Context) error {
 
 func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	containers := r.client.Containers()
+	var errs error
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	if r.config.StreamStats {
+		for _, container := range containers {
+			stats, ok := r.client.LatestContainerStats(container.ID)
+			if !ok {
+				// Stream is still starting up; skip until first frame arrives.
+				errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(
+					fmt.Errorf("no stats available yet for container %s", container.ID), 0))
+				continue
+			}
+			if err := r.recordContainerStats(now, stats, &container); err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		}
+		return r.mb.Emit(), errs
+	}
+
+	// Default (non-streaming): open a fresh connection per container each scrape.
 	results := make(chan resultV2, len(containers))
 
 	wg := &sync.WaitGroup{}
@@ -111,9 +131,6 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	wg.Wait()
 	close(results)
 
-	var errs error
-
-	now := pcommon.NewTimestampFromTime(time.Now())
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
