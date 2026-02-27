@@ -118,17 +118,17 @@ func handleAppServiceAppLogs(field string, value any, attrs, attrsProps map[stri
 	case "Host":
 		attrs[string(conventions.HostIDKey)] = value
 	case "Method":
-		if !metadata.PkgTranslatorAzurelogsDontEmitLegacyLogConventionsFeatureGate.IsEnabled() {
+		if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
 			attrs["code.function"] = value
 		}
-		if metadata.PkgTranslatorAzurelogsEmitStableLogConventionsFeatureGate.IsEnabled() {
+		if metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
 			attrs[string(conventions.CodeFunctionNameKey)] = value
 		}
 	case "Source":
-		if !metadata.PkgTranslatorAzurelogsDontEmitLegacyLogConventionsFeatureGate.IsEnabled() {
+		if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
 			attrs["code.filepath"] = value
 		}
-		if metadata.PkgTranslatorAzurelogsEmitStableLogConventionsFeatureGate.IsEnabled() {
+		if metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
 			attrs[string(conventions.CodeFilePathKey)] = value
 		}
 	case "Stacktrace", "StackTrace":

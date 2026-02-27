@@ -883,9 +883,9 @@ func TestUnmarshalLogs_ResourceHealth(t *testing.T) {
 }
 
 func TestUnmarshalLogs_GateValidationError(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitLegacyLogConventionsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitLegacyLogConventionsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), false))
 	}()
 
 	u := &ResourceLogsUnmarshaler{
@@ -897,15 +897,15 @@ func TestUnmarshalLogs_GateValidationError(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = u.UnmarshalLogs(data)
-	require.ErrorContains(t, err, "pkg.translator.azurelogs.dontEmitLegacyLogConventions cannot be enabled without enabling pkg.translator.azurelogs.emitStableLogConventions")
+	require.ErrorContains(t, err, "pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
 }
 
 func TestUnmarshalLogs_StableGates(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitStableLogConventionsFeatureGate.ID(), true))
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitLegacyLogConventionsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitLegacyLogConventionsFeatureGate.ID(), false))
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitStableLogConventionsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.ID(), false))
 	}()
 
 	tests := map[string]struct {

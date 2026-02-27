@@ -6,18 +6,18 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var PkgTranslatorAzurelogsDontEmitLegacyLogConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"pkg.translator.azurelogs.dontEmitLegacyLogConventions",
+var PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.translator.azurelogs.DontEmitV0LogConventions",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, legacy semconv attribute names are not emitted."),
+	featuregate.WithRegisterDescription("When enabled, v0 semconv attribute names are not emitted."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
 )
 
-var PkgTranslatorAzurelogsEmitStableLogConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"pkg.translator.azurelogs.emitStableLogConventions",
+var PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.translator.azurelogs.EmitV1LogConventions",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, stable semconv attribute names are emitted."),
+	featuregate.WithRegisterDescription("When enabled, v1 semconv attribute names are emitted."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
 )

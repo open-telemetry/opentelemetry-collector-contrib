@@ -142,9 +142,9 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
-	if metadata.PkgTranslatorAzurelogsDontEmitLegacyLogConventionsFeatureGate.IsEnabled() &&
-		!metadata.PkgTranslatorAzurelogsEmitStableLogConventionsFeatureGate.IsEnabled() {
-		return plog.Logs{}, errors.New("pkg.translator.azurelogs.dontEmitLegacyLogConventions cannot be enabled without enabling pkg.translator.azurelogs.emitStableLogConventions")
+	if metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() &&
+		!metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
+		return plog.Logs{}, errors.New("pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
 	}
 
 	var rawRecordMap map[int]json.RawMessage
@@ -189,7 +189,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.SetTimestamp(nanos)
 		lr.SetObservedTimestamp(observedTimestamp)
-		if metadata.PkgTranslatorAzurelogsEmitStableLogConventionsFeatureGate.IsEnabled() {
+		if metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
 			lr.SetEventName("az.resource.log")
 		}
 
@@ -236,8 +236,8 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
 		// NOTE: event.name semantically belongs on each LogRecord (not the Resource).
 		// Legacy behavior incorrectly placed it on the Resource for all records.
-		// Use pkg.translator.azurelogs.emitStableLogConventions to migrate to SetEventName().
-		if !metadata.PkgTranslatorAzurelogsDontEmitLegacyLogConventionsFeatureGate.IsEnabled() {
+		// Use pkg.translator.azurelogs.EmitV1LogConventions to migrate to SetEventName().
+		if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
 			rl.Resource().Attributes().PutStr("event.name", "az.resource.log")
 		}
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
