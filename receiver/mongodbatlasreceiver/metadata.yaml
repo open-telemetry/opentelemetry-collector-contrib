@@ -16,7 +16,8 @@ status:
   codeowners:
     active: [justinianvoss22, dyl10s, ishleenk17]
     seeking_new: true
-
+    
+reaggregation_enabled: true
 resource_attributes:
   mongodb_atlas.cluster.name:
     description: Cluster Name
@@ -80,6 +81,7 @@ attributes:
       - warning
       - msg
       - user
+    requirement_level: recommended
   btree_counter_type:
     description: Database index effectiveness
     type: string
@@ -87,30 +89,35 @@ attributes:
       - accesses
       - hits
       - misses
+    requirement_level: opt_in
   cache_direction:
     description: Whether read into or written from
     type: string
     enum:
       - read_into
       - written_from
+    requirement_level: recommended
   cache_ratio_type:
     description: Cache ratio type
     type: string
     enum:
       - cache_fill
       - dirty_fill
+    requirement_level: opt_in
   cache_status:
     description: Cache status
     type: string
     enum:
       - dirty
       - used
+    requirement_level: recommended
   cluster_role:
     description: Whether process is acting as replica or primary
     type: string
     enum:
       - primary
       - replica
+    requirement_level: recommended
   cpu_state:
     description: CPU state
     type: string
@@ -123,18 +130,21 @@ attributes:
       - softirq
       - guest
       - steal
+    requirement_level: recommended
   cursor_state:
     description: Whether cursor is open or timed out
     type: string
     enum:
       - timed_out
       - open
+    requirement_level: recommended
   direction:
     description: Network traffic direction
     type: string
     enum:
       - receive
       - transmit
+    requirement_level: recommended
   disk_direction:
     description: Measurement type for disk operation
     type: string
@@ -142,12 +152,14 @@ attributes:
       - read
       - write
       - total
+    requirement_level: opt_in
   disk_status:
     description: Disk measurement type
     type: string
     enum:
       - free
       - used
+    requirement_level: recommended
   document_status:
     description: Status of documents in the database
     type: string
@@ -156,6 +168,7 @@ attributes:
       - inserted
       - updated
       - deleted
+    requirement_level: recommended
   execution_type:
     description: Type of command
     type: string
@@ -163,6 +176,7 @@ attributes:
       - reads
       - writes
       - commands
+    requirement_level: recommended
   global_lock_state:
     description: Which queue is locked
     type: string
@@ -170,6 +184,7 @@ attributes:
       - current_queue_total
       - current_queue_readers
       - current_queue_writers
+    requirement_level: opt_in
   memory_issue_type:
     description: Type of memory issue encountered
     type: string
@@ -177,6 +192,7 @@ attributes:
       - extra_info
       - global_accesses_not_in_memory
       - exceptions_thrown
+    requirement_level: recommended
   memory_state:
     description: Memory usage type
     type: string
@@ -188,6 +204,7 @@ attributes:
       - shared
       - free
       - used
+    requirement_level: opt_in
   memory_status:
     description: Memory measurement type
     type: string
@@ -198,6 +215,7 @@ attributes:
       - free
       - shared
       - used
+    requirement_level: opt_in
   object_type:
     description: MongoDB object type
     type: string
@@ -209,6 +227,7 @@ attributes:
       - view
       - storage
       - data
+    requirement_level: opt_in
   operation:
     description: Type of database operation
     type: string
@@ -221,6 +240,7 @@ attributes:
       - insert
       - scan_and_order
       - ttl_deleted
+    requirement_level: recommended
   oplog_type:
     description: Oplog type
     type: string
@@ -228,12 +248,14 @@ attributes:
       - slave_lag_master_time
       - master_time
       - master_lag_time_diff
+    requirement_level: opt_in
   scanned_type:
     description: Objects or indexes scanned during query
     type: string
     enum:
       - index_items
       - objects
+    requirement_level: opt_in
   storage_status:
     description: Views on database size
     type: string
@@ -242,12 +264,14 @@ attributes:
       - data_size
       - index_size
       - data_size_wo_system
+    requirement_level: opt_in
   ticket_type:
     description: Type of ticket available
     type: string
     enum:
       - available_reads
       - available_writes
+    requirement_level: recommended
 
 metrics:
   mongodbatlas.db.counts:

@@ -26,7 +26,7 @@ Aggregate of MongoDB Metrics DATABASE_EXTENT_COUNT, DATABASE_VIEW_COUNT, DATABAS
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| object_type | MongoDB object type | Str: ``collection``, ``index``, ``extent``, ``object``, ``view``, ``storage``, ``data`` | Recommended |
+| object_type | MongoDB object type | Str: ``collection``, ``index``, ``extent``, ``object``, ``view``, ``storage``, ``data`` | Opt-In |
 
 ### mongodbatlas.db.size
 
@@ -42,7 +42,7 @@ Aggregate of MongoDB Metrics DATABASE_DATA_SIZE, DATABASE_STORAGE_SIZE, DATABASE
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| object_type | MongoDB object type | Str: ``collection``, ``index``, ``extent``, ``object``, ``view``, ``storage``, ``data`` | Recommended |
+| object_type | MongoDB object type | Str: ``collection``, ``index``, ``extent``, ``object``, ``view``, ``storage``, ``data`` | Opt-In |
 
 ### mongodbatlas.disk.partition.iops.average
 
@@ -58,7 +58,7 @@ Aggregate of MongoDB Metrics DISK_PARTITION_IOPS_READ, DISK_PARTITION_IOPS_WRITE
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Opt-In |
 
 ### mongodbatlas.disk.partition.iops.max
 
@@ -74,7 +74,7 @@ Aggregate of MongoDB Metrics MAX_DISK_PARTITION_IOPS_WRITE, MAX_DISK_PARTITION_I
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Opt-In |
 
 ### mongodbatlas.disk.partition.latency.average
 
@@ -90,7 +90,7 @@ Aggregate of MongoDB Metrics DISK_PARTITION_LATENCY_WRITE, DISK_PARTITION_LATENC
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Opt-In |
 
 ### mongodbatlas.disk.partition.latency.max
 
@@ -106,7 +106,7 @@ Aggregate of MongoDB Metrics MAX_DISK_PARTITION_LATENCY_WRITE, MAX_DISK_PARTITIO
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Opt-In |
 
 ### mongodbatlas.disk.partition.space.average
 
@@ -467,7 +467,7 @@ Aggregate of MongoDB Metrics QUERY_EXECUTOR_SCANNED_OBJECTS, QUERY_EXECUTOR_SCAN
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| scanned_type | Objects or indexes scanned during query | Str: ``index_items``, ``objects`` | Recommended |
+| scanned_type | Objects or indexes scanned during query | Str: ``index_items``, ``objects`` | Opt-In |
 
 ### mongodbatlas.process.db.query_targeting.scanned_per_returned
 
@@ -483,7 +483,7 @@ Aggregate of MongoDB Metrics QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED, QUERY
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| scanned_type | Objects or indexes scanned during query | Str: ``index_items``, ``objects`` | Recommended |
+| scanned_type | Objects or indexes scanned during query | Str: ``index_items``, ``objects`` | Opt-In |
 
 ### mongodbatlas.process.db.storage
 
@@ -499,7 +499,7 @@ Aggregate of MongoDB Metrics DB_INDEX_SIZE_TOTAL, DB_DATA_SIZE_TOTAL_WO_SYSTEM, 
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| storage_status | Views on database size | Str: ``total``, ``data_size``, ``index_size``, ``data_size_wo_system`` | Recommended |
+| storage_status | Views on database size | Str: ``total``, ``data_size``, ``index_size``, ``data_size_wo_system`` | Opt-In |
 
 ### mongodbatlas.process.global_lock
 
@@ -515,7 +515,7 @@ Aggregate of MongoDB Metrics GLOBAL_LOCK_CURRENT_QUEUE_WRITERS, GLOBAL_LOCK_CURR
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| global_lock_state | Which queue is locked | Str: ``current_queue_total``, ``current_queue_readers``, ``current_queue_writers`` | Recommended |
+| global_lock_state | Which queue is locked | Str: ``current_queue_total``, ``current_queue_readers``, ``current_queue_writers`` | Opt-In |
 
 ### mongodbatlas.process.index.btree_miss_ratio
 
@@ -541,7 +541,7 @@ Aggregate of MongoDB Metrics INDEX_COUNTERS_BTREE_MISSES, INDEX_COUNTERS_BTREE_A
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| btree_counter_type | Database index effectiveness | Str: ``accesses``, ``hits``, ``misses`` | Recommended |
+| btree_counter_type | Database index effectiveness | Str: ``accesses``, ``hits``, ``misses`` | Opt-In |
 
 ### mongodbatlas.process.journaling.commits
 
@@ -587,7 +587,7 @@ Aggregate of MongoDB Metrics MEMORY_MAPPED, MEMORY_VIRTUAL, COMPUTED_MEMORY, MEM
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Recommended |
+| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Opt-In |
 
 ### mongodbatlas.process.network.io
 
@@ -639,7 +639,7 @@ Aggregate of MongoDB Metrics OPLOG_MASTER_TIME, OPLOG_SLAVE_LAG_MASTER_TIME, OPL
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| oplog_type | Oplog type | Str: ``slave_lag_master_time``, ``master_time``, ``master_lag_time_diff`` | Recommended |
+| oplog_type | Oplog type | Str: ``slave_lag_master_time``, ``master_time``, ``master_lag_time_diff`` | Opt-In |
 
 ### mongodbatlas.process.page_faults
 
@@ -803,7 +803,7 @@ Aggregate of MongoDB Metrics FTS_MEMORY_MAPPED, FTS_PROCESS_SHARED_MEMORY, FTS_P
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Recommended |
+| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Opt-In |
 
 ### mongodbatlas.system.memory.usage.average
 
@@ -819,7 +819,7 @@ Aggregate of MongoDB Metrics SYSTEM_MEMORY_AVAILABLE, SYSTEM_MEMORY_BUFFERS, SYS
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_status | Memory measurement type | Str: ``available``, ``buffers``, ``cached``, ``free``, ``shared``, ``used`` | Recommended |
+| memory_status | Memory measurement type | Str: ``available``, ``buffers``, ``cached``, ``free``, ``shared``, ``used`` | Opt-In |
 
 ### mongodbatlas.system.memory.usage.max
 
@@ -835,7 +835,7 @@ Aggregate of MongoDB Metrics MAX_SYSTEM_MEMORY_CACHED, MAX_SYSTEM_MEMORY_AVAILAB
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_status | Memory measurement type | Str: ``available``, ``buffers``, ``cached``, ``free``, ``shared``, ``used`` | Recommended |
+| memory_status | Memory measurement type | Str: ``available``, ``buffers``, ``cached``, ``free``, ``shared``, ``used`` | Opt-In |
 
 ### mongodbatlas.system.network.io.average
 
@@ -915,7 +915,7 @@ Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Recommended |
+| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Opt-In |
 
 ### mongodbatlas.system.paging.usage.max
 
@@ -931,7 +931,7 @@ Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Recommended |
+| memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` | Opt-In |
 
 ## Optional Metrics
 
@@ -967,7 +967,7 @@ Aggregate of MongoDB Metrics DISK_PARTITION_THROUGHPUT_READ, DISK_PARTITION_THRO
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Recommended |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` | Opt-In |
 
 ### mongodbatlas.process.cache.ratio
 
@@ -983,7 +983,7 @@ Aggregate of MongoDB Metrics CACHE_FILL_RATIO, DIRTY_FILL_RATIO
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| cache_ratio_type | Cache ratio type | Str: ``cache_fill``, ``dirty_fill`` | Recommended |
+| cache_ratio_type | Cache ratio type | Str: ``cache_fill``, ``dirty_fill`` | Opt-In |
 
 ## Resource Attributes
 

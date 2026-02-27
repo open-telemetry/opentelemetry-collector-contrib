@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/mongodb_atlas
+note: Enable re-aggregation feature for mongodbatlas receiver to support dynamic metric attribute configuration at runtime.
+issues: [46365]
+subtext:
+change_logs: [user]

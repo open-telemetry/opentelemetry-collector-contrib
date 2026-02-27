@@ -11,6 +11,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object_type"
+            default:
       mongodbatlas.db.size:
         description: "MongodbatlasDbSizeConfig provides config for the mongodbatlas.db.size metric."
         type: object
@@ -18,6 +33,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object_type"
+            default:
       mongodbatlas.disk.partition.iops.average:
         description: "MongodbatlasDiskPartitionIopsAverageConfig provides config for the mongodbatlas.disk.partition.iops.average metric."
         type: object
@@ -25,6 +55,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_direction"
+            default:
       mongodbatlas.disk.partition.iops.max:
         description: "MongodbatlasDiskPartitionIopsMaxConfig provides config for the mongodbatlas.disk.partition.iops.max metric."
         type: object
@@ -32,6 +77,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_direction"
+            default:
       mongodbatlas.disk.partition.latency.average:
         description: "MongodbatlasDiskPartitionLatencyAverageConfig provides config for the mongodbatlas.disk.partition.latency.average metric."
         type: object
@@ -39,6 +99,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_direction"
+            default:
       mongodbatlas.disk.partition.latency.max:
         description: "MongodbatlasDiskPartitionLatencyMaxConfig provides config for the mongodbatlas.disk.partition.latency.max metric."
         type: object
@@ -46,6 +121,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_direction"
+            default:
       mongodbatlas.disk.partition.queue.depth:
         description: "MongodbatlasDiskPartitionQueueDepthConfig provides config for the mongodbatlas.disk.partition.queue.depth metric."
         type: object
@@ -60,6 +150,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_status"
+            default:
+              - "disk_status"
       mongodbatlas.disk.partition.space.max:
         description: "MongodbatlasDiskPartitionSpaceMaxConfig provides config for the mongodbatlas.disk.partition.space.max metric."
         type: object
@@ -67,6 +173,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_status"
+            default:
+              - "disk_status"
       mongodbatlas.disk.partition.throughput:
         description: "MongodbatlasDiskPartitionThroughputConfig provides config for the mongodbatlas.disk.partition.throughput metric."
         type: object
@@ -74,6 +196,21 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_direction"
+            default:
       mongodbatlas.disk.partition.usage.average:
         description: "MongodbatlasDiskPartitionUsageAverageConfig provides config for the mongodbatlas.disk.partition.usage.average metric."
         type: object
@@ -81,6 +218,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_status"
+            default:
+              - "disk_status"
       mongodbatlas.disk.partition.usage.max:
         description: "MongodbatlasDiskPartitionUsageMaxConfig provides config for the mongodbatlas.disk.partition.usage.max metric."
         type: object
@@ -88,6 +241,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_status"
+            default:
+              - "disk_status"
       mongodbatlas.disk.partition.utilization.average:
         description: "MongodbatlasDiskPartitionUtilizationAverageConfig provides config for the mongodbatlas.disk.partition.utilization.average metric."
         type: object
@@ -109,6 +278,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "assert_type"
+            default:
+              - "assert_type"
       mongodbatlas.process.background_flush:
         description: "MongodbatlasProcessBackgroundFlushConfig provides config for the mongodbatlas.process.background_flush metric."
         type: object
@@ -123,6 +308,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache_direction"
+            default:
+              - "cache_direction"
       mongodbatlas.process.cache.ratio:
         description: "MongodbatlasProcessCacheRatioConfig provides config for the mongodbatlas.process.cache.ratio metric."
         type: object
@@ -130,6 +331,21 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache_ratio_type"
+            default:
       mongodbatlas.process.cache.size:
         description: "MongodbatlasProcessCacheSizeConfig provides config for the mongodbatlas.process.cache.size metric."
         type: object
@@ -137,6 +353,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache_status"
+            default:
+              - "cache_status"
       mongodbatlas.process.connections:
         description: "MongodbatlasProcessConnectionsConfig provides config for the mongodbatlas.process.connections metric."
         type: object
@@ -151,6 +383,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.process.cpu.children.normalized.usage.max:
         description: "MongodbatlasProcessCPUChildrenNormalizedUsageMaxConfig provides config for the mongodbatlas.process.cpu.children.normalized.usage.max metric."
         type: object
@@ -158,6 +406,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.process.cpu.children.usage.average:
         description: "MongodbatlasProcessCPUChildrenUsageAverageConfig provides config for the mongodbatlas.process.cpu.children.usage.average metric."
         type: object
@@ -165,6 +429,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.process.cpu.children.usage.max:
         description: "MongodbatlasProcessCPUChildrenUsageMaxConfig provides config for the mongodbatlas.process.cpu.children.usage.max metric."
         type: object
@@ -172,6 +452,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.process.cpu.normalized.usage.average:
         description: "MongodbatlasProcessCPUNormalizedUsageAverageConfig provides config for the mongodbatlas.process.cpu.normalized.usage.average metric."
         type: object
@@ -179,6 +475,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.process.cpu.normalized.usage.max:
         description: "MongodbatlasProcessCPUNormalizedUsageMaxConfig provides config for the mongodbatlas.process.cpu.normalized.usage.max metric."
         type: object
@@ -186,6 +498,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.process.cpu.usage.average:
         description: "MongodbatlasProcessCPUUsageAverageConfig provides config for the mongodbatlas.process.cpu.usage.average metric."
         type: object
@@ -193,6 +521,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.process.cpu.usage.max:
         description: "MongodbatlasProcessCPUUsageMaxConfig provides config for the mongodbatlas.process.cpu.usage.max metric."
         type: object
@@ -200,6 +544,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.process.cursors:
         description: "MongodbatlasProcessCursorsConfig provides config for the mongodbatlas.process.cursors metric."
         type: object
@@ -207,6 +567,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cursor_state"
+            default:
+              - "cursor_state"
       mongodbatlas.process.db.document.rate:
         description: "MongodbatlasProcessDbDocumentRateConfig provides config for the mongodbatlas.process.db.document.rate metric."
         type: object
@@ -214,6 +590,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "document_status"
+            default:
+              - "document_status"
       mongodbatlas.process.db.operations.rate:
         description: "MongodbatlasProcessDbOperationsRateConfig provides config for the mongodbatlas.process.db.operations.rate metric."
         type: object
@@ -221,6 +613,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "cluster_role"
+            default:
+              - "operation"
+              - "cluster_role"
       mongodbatlas.process.db.operations.time:
         description: "MongodbatlasProcessDbOperationsTimeConfig provides config for the mongodbatlas.process.db.operations.time metric."
         type: object
@@ -228,6 +638,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "execution_type"
+            default:
+              - "execution_type"
       mongodbatlas.process.db.query_executor.scanned:
         description: "MongodbatlasProcessDbQueryExecutorScannedConfig provides config for the mongodbatlas.process.db.query_executor.scanned metric."
         type: object
@@ -235,6 +661,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "scanned_type"
+            default:
       mongodbatlas.process.db.query_targeting.scanned_per_returned:
         description: "MongodbatlasProcessDbQueryTargetingScannedPerReturnedConfig provides config for the mongodbatlas.process.db.query_targeting.scanned_per_returned metric."
         type: object
@@ -242,6 +683,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "scanned_type"
+            default:
       mongodbatlas.process.db.storage:
         description: "MongodbatlasProcessDbStorageConfig provides config for the mongodbatlas.process.db.storage metric."
         type: object
@@ -249,6 +705,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "storage_status"
+            default:
       mongodbatlas.process.global_lock:
         description: "MongodbatlasProcessGlobalLockConfig provides config for the mongodbatlas.process.global_lock metric."
         type: object
@@ -256,6 +727,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "global_lock_state"
+            default:
       mongodbatlas.process.index.btree_miss_ratio:
         description: "MongodbatlasProcessIndexBtreeMissRatioConfig provides config for the mongodbatlas.process.index.btree_miss_ratio metric."
         type: object
@@ -270,6 +756,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "btree_counter_type"
+            default:
       mongodbatlas.process.journaling.commits:
         description: "MongodbatlasProcessJournalingCommitsConfig provides config for the mongodbatlas.process.journaling.commits metric."
         type: object
@@ -298,6 +799,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "memory_state"
+            default:
       mongodbatlas.process.network.io:
         description: "MongodbatlasProcessNetworkIoConfig provides config for the mongodbatlas.process.network.io metric."
         type: object
@@ -305,6 +821,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       mongodbatlas.process.network.requests:
         description: "MongodbatlasProcessNetworkRequestsConfig provides config for the mongodbatlas.process.network.requests metric."
         type: object
@@ -326,6 +858,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oplog_type"
+            default:
       mongodbatlas.process.page_faults:
         description: "MongodbatlasProcessPageFaultsConfig provides config for the mongodbatlas.process.page_faults metric."
         type: object
@@ -333,6 +880,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "memory_issue_type"
+            default:
+              - "memory_issue_type"
       mongodbatlas.process.restarts:
         description: "MongodbatlasProcessRestartsConfig provides config for the mongodbatlas.process.restarts metric."
         type: object
@@ -347,6 +910,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "ticket_type"
+            default:
+              - "ticket_type"
       mongodbatlas.system.cpu.normalized.usage.average:
         description: "MongodbatlasSystemCPUNormalizedUsageAverageConfig provides config for the mongodbatlas.system.cpu.normalized.usage.average metric."
         type: object
@@ -354,6 +933,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.system.cpu.normalized.usage.max:
         description: "MongodbatlasSystemCPUNormalizedUsageMaxConfig provides config for the mongodbatlas.system.cpu.normalized.usage.max metric."
         type: object
@@ -361,6 +956,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.system.cpu.usage.average:
         description: "MongodbatlasSystemCPUUsageAverageConfig provides config for the mongodbatlas.system.cpu.usage.average metric."
         type: object
@@ -368,6 +979,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.system.cpu.usage.max:
         description: "MongodbatlasSystemCPUUsageMaxConfig provides config for the mongodbatlas.system.cpu.usage.max metric."
         type: object
@@ -375,6 +1002,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.system.fts.cpu.normalized.usage:
         description: "MongodbatlasSystemFtsCPUNormalizedUsageConfig provides config for the mongodbatlas.system.fts.cpu.normalized.usage metric."
         type: object
@@ -382,6 +1025,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.system.fts.cpu.usage:
         description: "MongodbatlasSystemFtsCPUUsageConfig provides config for the mongodbatlas.system.fts.cpu.usage metric."
         type: object
@@ -389,6 +1048,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+            default:
+              - "cpu_state"
       mongodbatlas.system.fts.disk.used:
         description: "MongodbatlasSystemFtsDiskUsedConfig provides config for the mongodbatlas.system.fts.disk.used metric."
         type: object
@@ -403,6 +1078,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "memory_state"
+            default:
       mongodbatlas.system.memory.usage.average:
         description: "MongodbatlasSystemMemoryUsageAverageConfig provides config for the mongodbatlas.system.memory.usage.average metric."
         type: object
@@ -410,6 +1100,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "memory_status"
+            default:
       mongodbatlas.system.memory.usage.max:
         description: "MongodbatlasSystemMemoryUsageMaxConfig provides config for the mongodbatlas.system.memory.usage.max metric."
         type: object
@@ -417,6 +1122,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "memory_status"
+            default:
       mongodbatlas.system.network.io.average:
         description: "MongodbatlasSystemNetworkIoAverageConfig provides config for the mongodbatlas.system.network.io.average metric."
         type: object
@@ -424,6 +1144,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       mongodbatlas.system.network.io.max:
         description: "MongodbatlasSystemNetworkIoMaxConfig provides config for the mongodbatlas.system.network.io.max metric."
         type: object
@@ -431,6 +1167,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       mongodbatlas.system.paging.io.average:
         description: "MongodbatlasSystemPagingIoAverageConfig provides config for the mongodbatlas.system.paging.io.average metric."
         type: object
@@ -438,6 +1190,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       mongodbatlas.system.paging.io.max:
         description: "MongodbatlasSystemPagingIoMaxConfig provides config for the mongodbatlas.system.paging.io.max metric."
         type: object
@@ -445,6 +1213,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       mongodbatlas.system.paging.usage.average:
         description: "MongodbatlasSystemPagingUsageAverageConfig provides config for the mongodbatlas.system.paging.usage.average metric."
         type: object
@@ -452,6 +1236,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "memory_state"
+            default:
       mongodbatlas.system.paging.usage.max:
         description: "MongodbatlasSystemPagingUsageMaxConfig provides config for the mongodbatlas.system.paging.usage.max metric."
         type: object
@@ -459,6 +1258,21 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "memory_state"
+            default:
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for mongodb_atlas resource attributes.
     type: object
