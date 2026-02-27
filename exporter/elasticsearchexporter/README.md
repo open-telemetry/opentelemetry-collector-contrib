@@ -425,6 +425,22 @@ The metric types supported are:
 - Exponential histogram (Delta temporality only)
 - Summary
 
+### Metrics dynamic templates
+
+For metrics, the exporter sends **per-document `dynamic_templates`** with each bulk index action so that Elasticsearch can apply the correct mapping to metric fields. It uses the [bulk API `dynamic_templates` parameter](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk):
+
+> A map from the full name of fields to the name of dynamic templates. It defaults to an empty map. If a name matches a dynamic template, that template will be applied regardless of other match predicates defined in the template. If a field is already defined in the mapping, then this parameter won't be used.
+
+The index template must define dynamic templates whose names match the values sent by the exporter. Behavior depends on the mapping mode:
+
+| Mapping mode | Field path in document | Template names sent | Notes |
+| ------------ | ---------------------- | -------------------- | ----- |
+| **OTel**     | `metrics.<metric name>` | `histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. |
+| **ECS**      | `metric.<metric name>`  | `histogram_metrics`, `summary_metrics`, `double_metrics` | Relies on core templates in [metrics@mappings](https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json). Intended to match the [APM metrics ingest pipeline](https://github.com/elastic/elasticsearch/blob/b34960a2b450869aee2866e91c647e0026dd6953/x-pack/plugin/apm-data/src/main/resources/ingest-pipelines/metrics-apm%40pipeline.yaml). |
+
+- **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
+- **ECS**: Each metric is written as a top-level field `metric.<name>`; the bulk action maps that field name to one of the ECS/APM template names (`histogram_metrics`, `summary_metrics`, or `double_metrics` for gauges and counters).
+
 ## Exporting profiles
 
 Profiles support is currently in development, and should not be used in
