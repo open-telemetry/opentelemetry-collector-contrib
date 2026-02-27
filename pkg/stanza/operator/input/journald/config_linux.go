@@ -48,10 +48,11 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	return &Input{
-		InputOperator:            inputOperator,
-		newCmd:                   newCmdFunc,
-		convertMessageBytes:      c.ConvertMessageBytes,
-		includeLogRecordOriginal: c.IncludeLogRecordOriginal,
+		InputOperator:                inputOperator,
+		newCmd:                       newCmdFunc,
+		convertMessageBytes:          c.ConvertMessageBytes,
+		includeLogRecordOriginal:     c.IncludeLogRecordOriginal,
+		ConvertToSemanticConventions: c.ConvertToSemanticConventions,
 	}, nil
 }
 
