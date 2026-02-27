@@ -111,7 +111,7 @@ func mergeValue(dst map[string]any, k string, v any) {
 		if isArrayFlat(element) {
 			dst[k] = v
 		} else {
-			b, _ := json.Marshal(element)
+			b, _ := json.MarshalWithOption(element, json.DisableHTMLEscape())
 			dst[k] = string(b)
 		}
 	case map[string]any:
@@ -141,7 +141,7 @@ func flattenAndMergeMap(src, dst map[string]any, key string) {
 			if isArrayFlat(element) {
 				dst[current] = element
 			} else {
-				b, _ := json.Marshal(element)
+				b, _ := json.MarshalWithOption(element, json.DisableHTMLEscape())
 				dst[current] = string(b)
 			}
 

@@ -675,9 +675,10 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 	}
 }
 
-// marshalEvent marshals an event to JSON
+// marshalEvent marshals an event to JSON without HTML escaping, so that
+// characters like <, >, and & in Event.event are preserved as literal characters.
 func marshalEvent(event *splunk.Event, sizeLimit uint) ([]byte, error) {
-	b, err := json.Marshal(event)
+	b, err := json.MarshalWithOption(event, json.DisableHTMLEscape())
 	if err != nil {
 		return nil, err
 	}

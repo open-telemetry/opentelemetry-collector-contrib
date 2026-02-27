@@ -601,7 +601,7 @@ func TestReceiveLogs(t *testing.T) {
 			name: "1 log long event",
 			logs: func() plog.Logs {
 				l := createLogData(1, 1, 1)
-				l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(strings.Repeat("a", 1800))
+				l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(strings.Repeat("<", 1800))
 				return l
 			}(),
 			conf: func() *Config {
@@ -1481,6 +1481,37 @@ func TestInvalidJson(t *testing.T) {
 	}
 	_, err := json.Marshal(badEvent)
 	assert.Error(t, err)
+}
+
+func TestMarshalEventPreservesHTMLCharacters(t *testing.T) {
+	event := &splunk.Event{
+		Host:  "test",
+		Event: "<",
+	}
+	b, err := marshalEvent(event, 1024*1024)
+	require.NoError(t, err)
+	// Event.event should contain literal "<" not "\u003c"
+	assert.Contains(t, string(b), `"event":"<"`)
+	assert.NotContains(t, string(b), `\u003c`)
+
+	// Also verify > and & are preserved
+	event2 := &splunk.Event{
+		Host:  "test",
+		Event: ">",
+	}
+	b2, err := marshalEvent(event2, 1024*1024)
+	require.NoError(t, err)
+	assert.Contains(t, string(b2), `"event":">"`)
+	assert.NotContains(t, string(b2), `\u003e`)
+
+	event3 := &splunk.Event{
+		Host:  "test",
+		Event: "&",
+	}
+	b3, err := marshalEvent(event3, 1024*1024)
+	require.NoError(t, err)
+	assert.Contains(t, string(b3), `"event":"&"`)
+	assert.NotContains(t, string(b3), `\u0026`)
 }
 
 func Test_pushLogData_nil_Logs(t *testing.T) {
