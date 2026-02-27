@@ -1242,11 +1242,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		operator.poll(ctx)
-	}()
+	})
 
 	for !shortOne || !longOne {
 		if token := sink.NextToken(t); string(token) == shortFileLine {

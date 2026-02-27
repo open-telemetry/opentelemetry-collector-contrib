@@ -3,7 +3,11 @@ type: jmx
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    deprecated: [metrics]
+  deprecation:
+    metrics:
+      migration: "use JMX Gatherer Java program"
+      date: "2026-01-30"
   distributions: [contrib]
   codeowners:
     active: [atoulme, rogercoll]

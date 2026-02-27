@@ -4,6 +4,7 @@
 package oidcauthextension
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -17,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-jose/go-jose/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -28,6 +30,44 @@ import (
 func newTestExtension(t *testing.T, cfg *Config) extension.Extension {
 	t.Helper()
 	return newExtension(cfg, zap.NewNop())
+}
+
+func createJWKSFile(t *testing.T, pubKeys []any) string {
+	t.Helper()
+
+	keys := []jose.JSONWebKey{}
+	for _, pk := range pubKeys {
+		keys = append(keys, jose.JSONWebKey{Key: pk})
+	}
+
+	jwks := jose.JSONWebKeySet{Keys: keys}
+	data, err := json.Marshal(jwks)
+	require.NoError(t, err)
+
+	tmpFile, err := os.CreateTemp(t.TempDir(), "jwks-*.json")
+	require.NoError(t, err)
+
+	_, err = tmpFile.Write(data)
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	return tmpFile.Name()
+}
+
+func updateJWKSFile(t *testing.T, path string, pubKey crypto.PublicKey) {
+	t.Helper()
+
+	jwks := jose.JSONWebKeySet{
+		Keys: []jose.JSONWebKey{
+			{
+				Key: pubKey,
+			},
+		},
+	}
+	data, err := json.Marshal(jwks)
+	require.NoError(t, err)
+
+	require.NoError(t, os.WriteFile(path, data, 0o600))
 }
 
 func TestOIDCAuthenticationSucceeded(t *testing.T) {
@@ -567,6 +607,201 @@ func TestFailedToVerifyToken(t *testing.T) {
 	// verify
 	assert.Error(t, err)
 	assert.NotNil(t, ctx)
+}
+
+func TestOIDCAuthenticationSucceededPublicKeysFile(t *testing.T) {
+	// prepare
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	jwksFile := createJWKSFile(t, []any{oidcServer.privateKey})
+	defer os.Remove(jwksFile)
+
+	p := newTestExtension(t, &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL:      oidcServer.URL,
+				Audience:       "unit-test",
+				PublicKeysFile: jwksFile,
+			},
+		},
+	})
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	payload, _ := json.Marshal(map[string]any{
+		"sub":         "jdoe@example.com",
+		"name":        "jdoe",
+		"iss":         oidcServer.URL,
+		"aud":         "unit-test",
+		"exp":         time.Now().Add(time.Minute).Unix(),
+		"memberships": []string{"department-1", "department-2"},
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	// test
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+}
+
+func TestOIDCAuthenticationPublicKeysFileHotReload(t *testing.T) {
+	testCases := []struct {
+		name             string
+		addExtraProvider bool
+	}{
+		{
+			name:             "one provider",
+			addExtraProvider: false,
+		},
+		{
+			name:             "two providers with same key file",
+			addExtraProvider: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// prepare
+			oidcServer1, err := newOIDCServer()
+			require.NoError(t, err)
+			oidcServer1.Start()
+			defer oidcServer1.Close()
+
+			oidcServer2, err := newOIDCServer()
+			require.NoError(t, err)
+			oidcServer2.Start()
+			defer oidcServer2.Close()
+
+			// Create a JWKS file with the first server's public key
+			jwksFile := createJWKSFile(t, []any{oidcServer1.privateKey.Public()})
+			defer os.Remove(jwksFile)
+
+			// Use the second server's issuer URL but first server's keys initially
+			cfg := &Config{
+				Providers: []ProviderCfg{
+					{
+						IssuerURL:      oidcServer2.URL,
+						Audience:       "unit-test",
+						PublicKeysFile: jwksFile,
+					},
+				},
+			}
+
+			if tc.addExtraProvider {
+				cfg.Providers = append(cfg.Providers,
+					ProviderCfg{
+						IssuerURL:      "unimportant-url",
+						Audience:       "unit-test",
+						PublicKeysFile: jwksFile,
+					},
+				)
+			}
+			p := newTestExtension(t, cfg)
+
+			err = p.Start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			srvAuth, ok := p.(extensionauth.Server)
+			require.True(t, ok)
+
+			// Create a token signed by server2
+			payload, _ := json.Marshal(map[string]any{
+				"sub": "jdoe@example.com",
+				"iss": oidcServer2.URL,
+				"aud": "unit-test",
+				"exp": time.Now().Add(time.Minute).Unix(),
+			})
+			token, err := oidcServer2.token(payload)
+			require.NoError(t, err)
+
+			// Token should fail initially because JWKS was signed by first server's key
+			_, err = srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			assert.Error(t, err)
+
+			// Update JWKS file with server2's key
+			updateJWKSFile(t, jwksFile, oidcServer2.privateKey.Public())
+
+			// Wait for file watcher to detect the change
+			time.Sleep(100 * time.Millisecond)
+
+			// Token should now succeed
+			ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			assert.NoError(t, err)
+			assert.NotNil(t, ctx)
+		})
+	}
+}
+
+func TestOIDCAuthenticationInvalidPublicKeysFile(t *testing.T) {
+	testCases := []struct {
+		name        string
+		expectErr   string
+		fileBuilder func(t *testing.T) string
+	}{
+		{
+			name:      "missing",
+			expectErr: "could not read file",
+			fileBuilder: func(*testing.T) string {
+				return "/nonexistent/jwks.json"
+			},
+		},
+		{
+			name:      "invalid json",
+			expectErr: "failed to parse JWKS",
+			fileBuilder: func(t *testing.T) string {
+				tmpFile, err := os.CreateTemp(t.TempDir(), "invalid-jwks-*.json")
+				require.NoError(t, err)
+
+				_, err = tmpFile.WriteString("not valid json")
+				require.NoError(t, err)
+				tmpFile.Close()
+
+				return tmpFile.Name()
+			},
+		},
+		{
+			name:      "no keys",
+			expectErr: errNoSupportedKeys.Error(),
+			fileBuilder: func(t *testing.T) string {
+				return createJWKSFile(t, []any{})
+			},
+		},
+		{
+			name:      "unsupported key type",
+			expectErr: errNoSupportedKeys.Error(),
+			fileBuilder: func(t *testing.T) string {
+				// go-jose interprets []byte as a symmetric key, which is a valid JWK but invalid for our purposes.
+				return createJWKSFile(t, []any{[]byte{}})
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := newTestExtension(t, &Config{
+				Providers: []ProviderCfg{
+					{
+						IssuerURL:      "https://example.com",
+						Audience:       "unit-test",
+						PublicKeysFile: tc.fileBuilder(t),
+					},
+				},
+			})
+
+			err := p.Start(t.Context(), componenttest.NewNopHost())
+			require.ErrorContains(t, err, tc.expectErr)
+		})
+	}
 }
 
 func TestFailedToGetGroupsClaimFromToken(t *testing.T) {

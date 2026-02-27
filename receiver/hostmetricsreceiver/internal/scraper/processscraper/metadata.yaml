@@ -84,8 +84,7 @@ metrics:
     description: Number of times the process has been context switched.
     extended_documentation: This metric is only available on Linux.
     unit: '{count}'
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -95,8 +94,7 @@ metrics:
     enabled: true
     description: Total CPU seconds broken down by different states.
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       aggregation_temporality: cumulative
@@ -110,8 +108,7 @@ metrics:
       expressed as a value between 0 and 1.
       On the first scrape, no data point is emitted for this metric.
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: [state]
@@ -119,8 +116,7 @@ metrics:
     enabled: true
     description: Disk bytes transferred.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -131,8 +127,7 @@ metrics:
     enabled: false
     description: Number of disk operations performed by the process.
     unit: "{operations}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -143,8 +138,7 @@ metrics:
     description: Number of open handles held by the process.
     extended_documentation: This metric is only available on Windows.
     unit: '{count}'
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -154,8 +148,7 @@ metrics:
     enabled: true
     description: The amount of physical memory in use.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -165,8 +158,7 @@ metrics:
     enabled: false
     description: Percentage of total physical memory that is used by the process.
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
 
@@ -174,8 +166,7 @@ metrics:
     enabled: true
     description: Virtual memory size.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -189,8 +180,7 @@ metrics:
       by the process. If you want to capture this data on Windows use the
       `process.handles` metric instead to avoid any confusion.
     unit: '{count}'
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -201,8 +191,7 @@ metrics:
     description: Number of page faults the process has made.
     extended_documentation: This metric is only available on Linux.
     unit: "{faults}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -214,8 +203,7 @@ metrics:
     description: Number of pending signals for the process.
     extended_documentation: This metric is only available on Linux.
     unit: "{signals}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -225,8 +213,7 @@ metrics:
     enabled: false
     description: Process threads count.
     unit: "{threads}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -236,7 +223,6 @@ metrics:
     enabled: false
     description: The time the process has been running.
     unit: s
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double

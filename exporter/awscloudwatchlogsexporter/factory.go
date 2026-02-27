@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package awscloudwatchlogsexporter provides a logging exporter for the OpenTelemetry collector.
 // This package is subject to change and may break configuration settings and behavior.

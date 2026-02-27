@@ -5,13 +5,16 @@ package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper"
+	"go.opentelemetry.io/collector/scraper/xscraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
@@ -24,26 +27,40 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	scraperCfg := scraperhelper.NewDefaultControllerConfig()
+	scraperCfg.CollectionInterval = 10 * time.Second
+
 	return &Config{
-		ClientConfig: confighttp.NewDefaultClientConfig(),
+		ControllerConfig: scraperCfg,
+		Include:          "",
 	}
 }
 
 func createProfilesReceiver(
-	context.Context,
-	receiver.Settings,
-	component.Config,
-	xconsumer.Profiles,
+	_ context.Context,
+	settings receiver.Settings,
+	cfg component.Config,
+	consumer xconsumer.Profiles,
 ) (xreceiver.Profiles, error) {
-	return &rcvr{}, errors.New("not implemented")
-}
+	rCfg := cfg.(*Config)
 
-type rcvr struct{}
+	scraperFactory := xscraper.NewFactory(
+		metadata.Type,
+		func() component.Config { return &Config{} },
+		xscraper.WithProfiles(func(_ context.Context, set scraper.Settings, _ component.Config) (xscraper.Profiles, error) {
+			ps := newScraper(rCfg, receiver.Settings{
+				ID:                set.ID,
+				TelemetrySettings: set.TelemetrySettings,
+				BuildInfo:         settings.BuildInfo,
+			})
+			return xscraper.NewProfiles(ps.scrape, xscraper.WithStart(ps.start))
+		}, metadata.ProfilesStability),
+	)
 
-func (rcvr) Start(context.Context, component.Host) error {
-	return nil
-}
-
-func (rcvr) Shutdown(context.Context) error {
-	return nil
+	return xscraperhelper.NewProfilesController(
+		&rCfg.ControllerConfig,
+		settings,
+		consumer,
+		xscraperhelper.AddFactoryWithConfig(scraperFactory, rCfg),
+	)
 }

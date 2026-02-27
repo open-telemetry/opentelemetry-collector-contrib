@@ -1,0 +1,121 @@
+$defs:
+  dimension:
+    description: Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
+    type: object
+    properties:
+      default:
+        x-pointer: true
+        type: string
+      name:
+        type: string
+  events_config:
+    type: object
+    properties:
+      dimensions:
+        description: Dimensions defines the list of dimensions to add to the events metric.
+        type: array
+        items:
+          $ref: dimension
+      enabled:
+        description: Enabled is a flag to enable events.
+        type: boolean
+  exemplars_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      max_per_data_point:
+        type: integer
+  explicit_histogram_config:
+    type: object
+    properties:
+      buckets:
+        description: Buckets is the list of durations representing explicit histogram buckets.
+        type: array
+        items:
+          type: string
+          format: duration
+  exponential_histogram_config:
+    type: object
+    properties:
+      max_size:
+        type: integer
+        x-customType: int32
+  histogram_config:
+    type: object
+    properties:
+      dimensions:
+        type: array
+        items:
+          $ref: dimension
+      disable:
+        type: boolean
+      explicit:
+        x-optional: true
+        $ref: explicit_histogram_config
+      exponential:
+        x-optional: true
+        $ref: exponential_histogram_config
+      unit:
+        $ref: ./internal/metrics.unit
+description: Config defines the configuration options for spanmetricsconnector.
+type: object
+properties:
+  add_resource_attributes:
+    description: Add the resource attributes to the resulting metrics (disabled by default) This option enables the old behavior https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103
+    type: boolean
+  aggregation_cardinality_limit:
+    type: integer
+  aggregation_temporality:
+    type: string
+  calls_dimensions:
+    type: array
+    items:
+      $ref: dimension
+  dimensions:
+    description: 'Dimensions defines the list of additional dimensions on top of the provided: - service.name - span.kind - span.kind - status.code - collector.instance.id This dimensions never added unless enable feature-gate connector.spanmetrics.includeCollectorInstanceID The dimensions will be fetched from the span''s attributes. Examples of some conventionally used attributes: https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.'
+    type: array
+    items:
+      $ref: dimension
+  dimensions_cache_size:
+    description: 'DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing indefinitely over the lifetime of the collector. Optional. See defaultDimensionsCacheSize in connector.go for the default value. Deprecated [v0.130.0]:  Please use AggregationCardinalityLimit instead'
+    type: integer
+  events:
+    description: Events defines the configuration for events section of spans.
+    $ref: events_config
+  exclude_dimensions:
+    type: array
+    items:
+      type: string
+  exemplars:
+    description: Exemplars defines the configuration for exemplars.
+    $ref: exemplars_config
+  histogram:
+    $ref: histogram_config
+  include_instrumentation_scope:
+    type: array
+    items:
+      type: string
+  metric_timestamp_cache_size:
+    description: TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed
+    x-pointer: true
+    type: integer
+  metrics_expiration:
+    description: MetricsExpiration is the time period after which, if no new spans are received, metrics are considered stale and will no longer be exported. Default value (0) means that the metrics will never expire.
+    type: string
+    format: duration
+  metrics_flush_interval:
+    description: MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
+    type: string
+    format: duration
+  namespace:
+    description: Namespace is the namespace of the metrics emitted by the connector.
+    type: string
+  resource_metrics_cache_size:
+    description: ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for cumulative temporality to avoid memory leaks and correct metric timestamp resets. Optional. See defaultResourceMetricsCacheSize in connector.go for the default value.
+    type: integer
+  resource_metrics_key_attributes:
+    description: ResourceMetricsKeyAttributes filters the resource attributes used to create the resource metrics key hash. This can be used to avoid situations where resource attributes may change across service restarts, causing metric counters to break (and duplicate). A resource does not need to have all of the attributes. The list must include enough attributes to properly identify unique resources or risk aggregating data from more than one service and span. e.g. ["service.name", "telemetry.sdk.language", "telemetry.sdk.name"] See https://opentelemetry.io/docs/specs/semconv/resource/ for possible attributes.
+    type: array
+    items:
+      type: string

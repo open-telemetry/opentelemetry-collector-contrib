@@ -1,13 +1,18 @@
+display_name: Datadog Semantics Processor
 type: datadogsemantics
 
 status:
   class: processor
   stability:
-    development: [traces]
-  distributions: [contrib]
+    deprecated: [traces]
+  deprecation:
+    traces:
+      migration: "Please contact Datadog support if you need help: https://www.datadoghq.com/support/"
+      date: "2026-02-16"
+  distributions: []
   codeowners:
-    active: [songy23, IbraheemA, mx-psi, dineshg13, ankitpatel96, jade-guiton-dd]
-    emeritus: [jackgopack4]
+    active: [songy23, IbraheemA, mx-psi, dineshg13, jade-guiton-dd]
+    emeritus: [jackgopack4, ankitpatel96]
 
 tests:
   goleak:

@@ -1,0 +1,84 @@
+$defs:
+  attribute_connection_state:
+    description: AttributeConnectionState specifies the value connection_state attribute.
+    type: integer
+  attribute_cpu_level:
+    description: AttributeCPULevel specifies the value cpu_level attribute.
+    type: integer
+  attribute_cpu_mode:
+    description: AttributeCPUMode specifies the value cpu_mode attribute.
+    type: integer
+  attribute_scoreboard_state:
+    description: AttributeScoreboardState specifies the value scoreboard_state attribute.
+    type: integer
+  attribute_workers_state:
+    description: AttributeWorkersState specifies the value workers_state attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for apache metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for apache metrics.
+    type: object
+    properties:
+      apache.connections.async:
+        $ref: metric_config
+      apache.cpu.load:
+        $ref: metric_config
+      apache.cpu.time:
+        $ref: metric_config
+      apache.current_connections:
+        $ref: metric_config
+      apache.load.1:
+        $ref: metric_config
+      apache.load.5:
+        $ref: metric_config
+      apache.load.15:
+        $ref: metric_config
+      apache.request.time:
+        $ref: metric_config
+      apache.requests:
+        $ref: metric_config
+      apache.scoreboard:
+        $ref: metric_config
+      apache.traffic:
+        $ref: metric_config
+      apache.uptime:
+        $ref: metric_config
+      apache.workers:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for apache resource attributes.
+    type: object
+    properties:
+      apache.server.name:
+        $ref: resource_attribute_config
+      apache.server.port:
+        $ref: resource_attribute_config

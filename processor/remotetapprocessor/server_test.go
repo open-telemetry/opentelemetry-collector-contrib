@@ -37,6 +37,10 @@ func TestSocketConnectionLogs(t *testing.T) {
 	processor, err := NewFactory().CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
 		logSink)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		errProcessorShutdown := processor.Shutdown(t.Context())
+		require.NoError(t, errProcessorShutdown)
+	})
 	err = processor.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	rawConn, err := net.Dial("tcp", "localhost:12001")
@@ -45,6 +49,12 @@ func TestSocketConnectionLogs(t *testing.T) {
 	require.NoError(t, err)
 	wsConn, err := websocket.NewClient(wsConfig, rawConn)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		errWsClose := wsConn.Close()
+		require.NoError(t, errWsClose)
+	})
+
+	requireClientWaitingForData(t, cfg)
 	log := plog.NewLogs()
 	log.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("foo")
 	err = processor.ConsumeLogs(t.Context(), log)
@@ -55,11 +65,6 @@ func TestSocketConnectionLogs(t *testing.T) {
 		assert.Equal(tt, 107, n)
 	}, 1*time.Second, 100*time.Millisecond)
 	require.JSONEq(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"}}]}]}]}`, string(buf[0:107]))
-
-	err = processor.Shutdown(t.Context())
-	require.NoError(t, err)
-	err = rawConn.Close()
-	require.NoError(t, err)
 }
 
 func TestSocketConnectionMetrics(t *testing.T) {
@@ -76,6 +81,10 @@ func TestSocketConnectionMetrics(t *testing.T) {
 	processor, err := NewFactory().CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
 		metricsSink)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		errProcessorShutdown := processor.Shutdown(t.Context())
+		require.NoError(t, errProcessorShutdown)
+	})
 	err = processor.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	rawConn, err := net.Dial("tcp", "localhost:12002")
@@ -84,6 +93,12 @@ func TestSocketConnectionMetrics(t *testing.T) {
 	require.NoError(t, err)
 	wsConn, err := websocket.NewClient(wsConfig, rawConn)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		errWsClose := wsConn.Close()
+		require.NoError(t, errWsClose)
+	})
+
+	requireClientWaitingForData(t, cfg)
 	metric := pmetric.NewMetrics()
 	metric.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 	buf := make([]byte, 1024)
@@ -94,11 +109,6 @@ func TestSocketConnectionMetrics(t *testing.T) {
 		assert.Equal(tt, 94, n)
 	}, 1*time.Second, 100*time.Millisecond)
 	require.JSONEq(t, `{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{},"metrics":[{"name":"foo"}]}]}]}`, string(buf[0:94]))
-
-	err = processor.Shutdown(t.Context())
-	require.NoError(t, err)
-	err = rawConn.Close()
-	require.NoError(t, err)
 }
 
 func TestSocketConnectionTraces(t *testing.T) {
@@ -115,6 +125,10 @@ func TestSocketConnectionTraces(t *testing.T) {
 	processor, err := NewFactory().CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
 		tracesSink)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		errProcessorShutdown := processor.Shutdown(t.Context())
+		require.NoError(t, errProcessorShutdown)
+	})
 	err = processor.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	rawConn, err := net.Dial("tcp", "localhost:12003")
@@ -123,6 +137,12 @@ func TestSocketConnectionTraces(t *testing.T) {
 	require.NoError(t, err)
 	wsConn, err := websocket.NewClient(wsConfig, rawConn)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		errWsClose := wsConn.Close()
+		require.NoError(t, errWsClose)
+	})
+
+	requireClientWaitingForData(t, cfg)
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 	buf := make([]byte, 1024)
@@ -133,9 +153,19 @@ func TestSocketConnectionTraces(t *testing.T) {
 		assert.Equal(tt, 100, n)
 	}, 1*time.Second, 100*time.Millisecond)
 	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"name":"foo","status":{}}]}]}]}`, string(buf[0:100]))
+}
 
-	err = processor.Shutdown(t.Context())
-	require.NoError(t, err)
-	err = rawConn.Close()
-	require.NoError(t, err)
+func requireClientWaitingForData(t *testing.T, cfg *Config) {
+	wsProc := getWsProcessorUnderTesting(t, cfg)
+	require.Eventually(t, func() bool {
+		wsProc.cs.mu.RLock()
+		defer wsProc.cs.mu.RUnlock()
+		return len(wsProc.cs.chanmap) > 0
+	}, 2*time.Second, 100*time.Millisecond)
+}
+
+func getWsProcessorUnderTesting(t *testing.T, cfg *Config) *wsprocessor {
+	wp := processors.GetOrAdd(cfg, nil)
+	require.NotNil(t, wp)
+	return wp.Unwrap().(*wsprocessor)
 }

@@ -1,0 +1,282 @@
+$defs:
+  attribute_cache_name:
+    description: AttributeCacheName specifies the value cache_name attribute.
+    type: integer
+  attribute_cluster_published_difference_state:
+    description: AttributeClusterPublishedDifferenceState specifies the value cluster_published_difference_state attribute.
+    type: integer
+  attribute_cluster_state_queue_state:
+    description: AttributeClusterStateQueueState specifies the value cluster_state_queue_state attribute.
+    type: integer
+  attribute_cluster_state_update_type:
+    description: AttributeClusterStateUpdateType specifies the value cluster_state_update_type attribute.
+    type: integer
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_document_state:
+    description: AttributeDocumentState specifies the value document_state attribute.
+    type: integer
+  attribute_get_result:
+    description: AttributeGetResult specifies the value get_result attribute.
+    type: integer
+  attribute_health_status:
+    description: AttributeHealthStatus specifies the value health_status attribute.
+    type: integer
+  attribute_index_aggregation_type:
+    description: AttributeIndexAggregationType specifies the value index_aggregation_type attribute.
+    type: integer
+  attribute_indexing_pressure_stage:
+    description: AttributeIndexingPressureStage specifies the value indexing_pressure_stage attribute.
+    type: integer
+  attribute_memory_state:
+    description: AttributeMemoryState specifies the value memory_state attribute.
+    type: integer
+  attribute_operation:
+    description: AttributeOperation specifies the value operation attribute.
+    type: integer
+  attribute_query_cache_count_type:
+    description: AttributeQueryCacheCountType specifies the value query_cache_count_type attribute.
+    type: integer
+  attribute_segments_memory_object_type:
+    description: AttributeSegmentsMemoryObjectType specifies the value segments_memory_object_type attribute.
+    type: integer
+  attribute_shard_state:
+    description: AttributeShardState specifies the value shard_state attribute.
+    type: integer
+  attribute_task_state:
+    description: AttributeTaskState specifies the value task_state attribute.
+    type: integer
+  attribute_thread_state:
+    description: AttributeThreadState specifies the value thread_state attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for elasticsearch metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for elasticsearch metrics.
+    type: object
+    properties:
+      elasticsearch.breaker.memory.estimated:
+        $ref: metric_config
+      elasticsearch.breaker.memory.limit:
+        $ref: metric_config
+      elasticsearch.breaker.tripped:
+        $ref: metric_config
+      elasticsearch.cluster.data_nodes:
+        $ref: metric_config
+      elasticsearch.cluster.health:
+        $ref: metric_config
+      elasticsearch.cluster.in_flight_fetch:
+        $ref: metric_config
+      elasticsearch.cluster.indices.cache.evictions:
+        $ref: metric_config
+      elasticsearch.cluster.nodes:
+        $ref: metric_config
+      elasticsearch.cluster.pending_tasks:
+        $ref: metric_config
+      elasticsearch.cluster.published_states.differences:
+        $ref: metric_config
+      elasticsearch.cluster.published_states.full:
+        $ref: metric_config
+      elasticsearch.cluster.shards:
+        $ref: metric_config
+      elasticsearch.cluster.state_queue:
+        $ref: metric_config
+      elasticsearch.cluster.state_update.count:
+        $ref: metric_config
+      elasticsearch.cluster.state_update.time:
+        $ref: metric_config
+      elasticsearch.index.cache.evictions:
+        $ref: metric_config
+      elasticsearch.index.cache.memory.usage:
+        $ref: metric_config
+      elasticsearch.index.cache.size:
+        $ref: metric_config
+      elasticsearch.index.documents:
+        $ref: metric_config
+      elasticsearch.index.operations.completed:
+        $ref: metric_config
+      elasticsearch.index.operations.merge.current:
+        $ref: metric_config
+      elasticsearch.index.operations.merge.docs_count:
+        $ref: metric_config
+      elasticsearch.index.operations.merge.size:
+        $ref: metric_config
+      elasticsearch.index.operations.time:
+        $ref: metric_config
+      elasticsearch.index.segments.count:
+        $ref: metric_config
+      elasticsearch.index.segments.memory:
+        $ref: metric_config
+      elasticsearch.index.segments.size:
+        $ref: metric_config
+      elasticsearch.index.shards.size:
+        $ref: metric_config
+      elasticsearch.index.translog.operations:
+        $ref: metric_config
+      elasticsearch.index.translog.size:
+        $ref: metric_config
+      elasticsearch.indexing_pressure.memory.limit:
+        $ref: metric_config
+      elasticsearch.indexing_pressure.memory.total.primary_rejections:
+        $ref: metric_config
+      elasticsearch.indexing_pressure.memory.total.replica_rejections:
+        $ref: metric_config
+      elasticsearch.memory.indexing_pressure:
+        $ref: metric_config
+      elasticsearch.node.cache.count:
+        $ref: metric_config
+      elasticsearch.node.cache.evictions:
+        $ref: metric_config
+      elasticsearch.node.cache.memory.usage:
+        $ref: metric_config
+      elasticsearch.node.cache.size:
+        $ref: metric_config
+      elasticsearch.node.cluster.connections:
+        $ref: metric_config
+      elasticsearch.node.cluster.io:
+        $ref: metric_config
+      elasticsearch.node.disk.io.read:
+        $ref: metric_config
+      elasticsearch.node.disk.io.write:
+        $ref: metric_config
+      elasticsearch.node.documents:
+        $ref: metric_config
+      elasticsearch.node.fs.disk.available:
+        $ref: metric_config
+      elasticsearch.node.fs.disk.free:
+        $ref: metric_config
+      elasticsearch.node.fs.disk.total:
+        $ref: metric_config
+      elasticsearch.node.http.connections:
+        $ref: metric_config
+      elasticsearch.node.ingest.documents:
+        $ref: metric_config
+      elasticsearch.node.ingest.documents.current:
+        $ref: metric_config
+      elasticsearch.node.ingest.operations.failed:
+        $ref: metric_config
+      elasticsearch.node.open_files:
+        $ref: metric_config
+      elasticsearch.node.operations.completed:
+        $ref: metric_config
+      elasticsearch.node.operations.current:
+        $ref: metric_config
+      elasticsearch.node.operations.get.completed:
+        $ref: metric_config
+      elasticsearch.node.operations.get.time:
+        $ref: metric_config
+      elasticsearch.node.operations.time:
+        $ref: metric_config
+      elasticsearch.node.pipeline.ingest.documents.current:
+        $ref: metric_config
+      elasticsearch.node.pipeline.ingest.documents.preprocessed:
+        $ref: metric_config
+      elasticsearch.node.pipeline.ingest.operations.failed:
+        $ref: metric_config
+      elasticsearch.node.script.cache_evictions:
+        $ref: metric_config
+      elasticsearch.node.script.compilation_limit_triggered:
+        $ref: metric_config
+      elasticsearch.node.script.compilations:
+        $ref: metric_config
+      elasticsearch.node.segments.memory:
+        $ref: metric_config
+      elasticsearch.node.shards.data_set.size:
+        $ref: metric_config
+      elasticsearch.node.shards.reserved.size:
+        $ref: metric_config
+      elasticsearch.node.shards.size:
+        $ref: metric_config
+      elasticsearch.node.thread_pool.tasks.finished:
+        $ref: metric_config
+      elasticsearch.node.thread_pool.tasks.queued:
+        $ref: metric_config
+      elasticsearch.node.thread_pool.threads:
+        $ref: metric_config
+      elasticsearch.node.translog.operations:
+        $ref: metric_config
+      elasticsearch.node.translog.size:
+        $ref: metric_config
+      elasticsearch.node.translog.uncommitted.size:
+        $ref: metric_config
+      elasticsearch.os.cpu.load_avg.1m:
+        $ref: metric_config
+      elasticsearch.os.cpu.load_avg.5m:
+        $ref: metric_config
+      elasticsearch.os.cpu.load_avg.15m:
+        $ref: metric_config
+      elasticsearch.os.cpu.usage:
+        $ref: metric_config
+      elasticsearch.os.memory:
+        $ref: metric_config
+      elasticsearch.process.cpu.time:
+        $ref: metric_config
+      elasticsearch.process.cpu.usage:
+        $ref: metric_config
+      elasticsearch.process.memory.virtual:
+        $ref: metric_config
+      jvm.classes.loaded:
+        $ref: metric_config
+      jvm.gc.collections.count:
+        $ref: metric_config
+      jvm.gc.collections.elapsed:
+        $ref: metric_config
+      jvm.memory.heap.committed:
+        $ref: metric_config
+      jvm.memory.heap.max:
+        $ref: metric_config
+      jvm.memory.heap.used:
+        $ref: metric_config
+      jvm.memory.heap.utilization:
+        $ref: metric_config
+      jvm.memory.nonheap.committed:
+        $ref: metric_config
+      jvm.memory.nonheap.used:
+        $ref: metric_config
+      jvm.memory.pool.max:
+        $ref: metric_config
+      jvm.memory.pool.used:
+        $ref: metric_config
+      jvm.threads.count:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for elasticsearch resource attributes.
+    type: object
+    properties:
+      elasticsearch.cluster.name:
+        $ref: resource_attribute_config
+      elasticsearch.index.name:
+        $ref: resource_attribute_config
+      elasticsearch.node.name:
+        $ref: resource_attribute_config
+      elasticsearch.node.version:
+        $ref: resource_attribute_config

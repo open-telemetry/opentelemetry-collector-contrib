@@ -1,0 +1,29 @@
+$defs:
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for akamaidetector resource attributes.
+    type: object
+    properties:
+      cloud.account.id:
+        $ref: resource_attribute_config
+      cloud.platform:
+        $ref: resource_attribute_config
+      cloud.provider:
+        $ref: resource_attribute_config
+      cloud.region:
+        $ref: resource_attribute_config
+      host.id:
+        $ref: resource_attribute_config
+      host.image.id:
+        $ref: resource_attribute_config
+      host.image.name:
+        $ref: resource_attribute_config
+      host.name:
+        $ref: resource_attribute_config
+      host.type:
+        $ref: resource_attribute_config

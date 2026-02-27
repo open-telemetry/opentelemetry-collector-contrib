@@ -14,8 +14,3 @@ tests:
   config:
     path: testdata/log.json
   expect_consumer_error: true
-  goleak:
-    ignore:
-      top:
-        # Existing issue for leak: https://github.com/natefinch/lumberjack/issues/56
-        - "gopkg.in/natefinch/lumberjack%2ev2.(*Logger).millRun"

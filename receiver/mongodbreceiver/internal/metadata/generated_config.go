@@ -252,21 +252,21 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for mongodb resource attributes.
 type ResourceAttributesConfig struct {
-	Database      ResourceAttributeConfig `mapstructure:"database"`
-	ServerAddress ResourceAttributeConfig `mapstructure:"server.address"`
-	ServerPort    ResourceAttributeConfig `mapstructure:"server.port"`
+	ServerAddress     ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort        ResourceAttributeConfig `mapstructure:"server.port"`
+	ServiceInstanceID ResourceAttributeConfig `mapstructure:"service.instance.id"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		Database: ResourceAttributeConfig{
-			Enabled: true,
-		},
 		ServerAddress: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServerPort: ResourceAttributeConfig{
 			Enabled: false,
+		},
+		ServiceInstanceID: ResourceAttributeConfig{
+			Enabled: true,
 		},
 	}
 }

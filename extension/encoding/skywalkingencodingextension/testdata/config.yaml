@@ -3,4 +3,6 @@ extensions:
 
 receivers:
   kafka:
-    encoding: skywalking_encoding
+    traces:
+      encoding: skywalking_encoding
+      topic: skywalking-segments

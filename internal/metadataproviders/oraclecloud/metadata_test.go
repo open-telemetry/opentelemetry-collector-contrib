@@ -88,6 +88,7 @@ func TestQueryEndpointCorrect(t *testing.T) {
 		AvailabilityDomain: "AD-1",
 		Metadata: InstanceMetadata{
 			OKEClusterDisplayName: "my-oke-cluster",
+			Realm:                 "oc1",
 		},
 	}
 	marshalledMetadata, err := json.Marshal(sentMetadata)

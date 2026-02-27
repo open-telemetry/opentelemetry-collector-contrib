@@ -35,7 +35,7 @@ func (*rfc3164Formatter) formatPriority(logRecord plog.LogRecord) string {
 }
 
 func (*rfc3164Formatter) formatTimestamp(logRecord plog.LogRecord) string {
-	return logRecord.Timestamp().AsTime().Format("Jan 02 15:04:05")
+	return logRecord.Timestamp().AsTime().Format("Jan _2 15:04:05")
 }
 
 func (*rfc3164Formatter) formatHostname(logRecord plog.LogRecord) string {

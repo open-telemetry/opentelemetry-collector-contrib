@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
@@ -28,12 +29,13 @@ func NewFactory() receiver.Factory {
 		receivers: sharedcomponent.NewSharedComponents(),
 	}
 
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
-		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		xreceiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		xreceiver.WithDeprecatedTypeAlias(component.MustNewType("azureeventhub")),
 	)
 }
 

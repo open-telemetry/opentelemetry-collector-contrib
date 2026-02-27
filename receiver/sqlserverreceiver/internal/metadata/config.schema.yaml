@@ -1,0 +1,206 @@
+$defs:
+  attribute_database_status:
+    description: AttributeDatabaseStatus specifies the value database.status attribute.
+    type: integer
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_page_operations:
+    description: AttributePageOperations specifies the value page.operations attribute.
+    type: integer
+  attribute_replica_direction:
+    description: AttributeReplicaDirection specifies the value replica.direction attribute.
+    type: integer
+  attribute_table_state:
+    description: AttributeTableState specifies the value table.state attribute.
+    type: integer
+  attribute_table_status:
+    description: AttributeTableStatus specifies the value table.status attribute.
+    type: integer
+  attribute_tempdb_state:
+    description: AttributeTempdbState specifies the value tempdb.state attribute.
+    type: integer
+  event_config:
+    description: EventConfig provides common config for a particular event.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  events_config:
+    description: EventsConfig provides config for sqlserver events.
+    type: object
+    properties:
+      db.server.query_sample:
+        $ref: event_config
+      db.server.top_query:
+        $ref: event_config
+  logs_builder_config:
+    description: LogsBuilderConfig is a configuration for sqlserver logs builder.
+    type: object
+    properties:
+      events:
+        $ref: events_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for sqlserver metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for sqlserver metrics.
+    type: object
+    properties:
+      sqlserver.batch.request.rate:
+        $ref: metric_config
+      sqlserver.batch.sql_compilation.rate:
+        $ref: metric_config
+      sqlserver.batch.sql_recompilation.rate:
+        $ref: metric_config
+      sqlserver.computer.uptime:
+        $ref: metric_config
+      sqlserver.cpu.count:
+        $ref: metric_config
+      sqlserver.database.backup_or_restore.rate:
+        $ref: metric_config
+      sqlserver.database.count:
+        $ref: metric_config
+      sqlserver.database.execution.errors:
+        $ref: metric_config
+      sqlserver.database.full_scan.rate:
+        $ref: metric_config
+      sqlserver.database.io:
+        $ref: metric_config
+      sqlserver.database.latency:
+        $ref: metric_config
+      sqlserver.database.operations:
+        $ref: metric_config
+      sqlserver.database.tempdb.space:
+        $ref: metric_config
+      sqlserver.database.tempdb.version_store.size:
+        $ref: metric_config
+      sqlserver.deadlock.rate:
+        $ref: metric_config
+      sqlserver.index.search.rate:
+        $ref: metric_config
+      sqlserver.lock.timeout.rate:
+        $ref: metric_config
+      sqlserver.lock.wait.count:
+        $ref: metric_config
+      sqlserver.lock.wait.rate:
+        $ref: metric_config
+      sqlserver.lock.wait_time.avg:
+        $ref: metric_config
+      sqlserver.login.rate:
+        $ref: metric_config
+      sqlserver.logout.rate:
+        $ref: metric_config
+      sqlserver.memory.grants.pending.count:
+        $ref: metric_config
+      sqlserver.memory.usage:
+        $ref: metric_config
+      sqlserver.os.wait.duration:
+        $ref: metric_config
+      sqlserver.page.buffer_cache.free_list.stalls.rate:
+        $ref: metric_config
+      sqlserver.page.buffer_cache.hit_ratio:
+        $ref: metric_config
+      sqlserver.page.checkpoint.flush.rate:
+        $ref: metric_config
+      sqlserver.page.lazy_write.rate:
+        $ref: metric_config
+      sqlserver.page.life_expectancy:
+        $ref: metric_config
+      sqlserver.page.lookup.rate:
+        $ref: metric_config
+      sqlserver.page.operation.rate:
+        $ref: metric_config
+      sqlserver.page.split.rate:
+        $ref: metric_config
+      sqlserver.processes.blocked:
+        $ref: metric_config
+      sqlserver.replica.data.rate:
+        $ref: metric_config
+      sqlserver.resource_pool.disk.operations:
+        $ref: metric_config
+      sqlserver.resource_pool.disk.throttled.read.rate:
+        $ref: metric_config
+      sqlserver.resource_pool.disk.throttled.write.rate:
+        $ref: metric_config
+      sqlserver.table.count:
+        $ref: metric_config
+      sqlserver.transaction.delay:
+        $ref: metric_config
+      sqlserver.transaction.mirror_write.rate:
+        $ref: metric_config
+      sqlserver.transaction.rate:
+        $ref: metric_config
+      sqlserver.transaction.write.rate:
+        $ref: metric_config
+      sqlserver.transaction_log.flush.data.rate:
+        $ref: metric_config
+      sqlserver.transaction_log.flush.rate:
+        $ref: metric_config
+      sqlserver.transaction_log.flush.wait.rate:
+        $ref: metric_config
+      sqlserver.transaction_log.growth.count:
+        $ref: metric_config
+      sqlserver.transaction_log.shrink.count:
+        $ref: metric_config
+      sqlserver.transaction_log.usage:
+        $ref: metric_config
+      sqlserver.user.connection.count:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      events_exclude:
+        description: 'Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      events_include:
+        description: 'Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for sqlserver resource attributes.
+    type: object
+    properties:
+      host.name:
+        $ref: resource_attribute_config
+      server.address:
+        $ref: resource_attribute_config
+      server.port:
+        $ref: resource_attribute_config
+      service.instance.id:
+        $ref: resource_attribute_config
+      sqlserver.computer.name:
+        $ref: resource_attribute_config
+      sqlserver.database.name:
+        $ref: resource_attribute_config
+      sqlserver.instance.name:
+        $ref: resource_attribute_config
