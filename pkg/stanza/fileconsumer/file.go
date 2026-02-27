@@ -58,10 +58,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 	// initialize runtime-only tracking of unreadable paths
 	m.unreadable = make(map[string]struct{})
 
-	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.set.Logger.Warn("finding files", zap.Error(err))
-	}
-
 	// instantiate the tracker
 	m.instantiateTracker(ctx, persister)
 

@@ -78,11 +78,23 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		si := s.StackIndex()
 		stack := src.Dictionary().StackTable().At(int(si))
 
+		// By convention, pprof uses the last sample type as default, while OTel Profiles
+		// uses the first profile as default. Therefore, swap first and last.
 		for i := range numProfiles {
-			if sp.At(0).Profiles().At(i).Samples().At(sampleIdx).Values().Len() != 1 {
+			// Swap first and last: first OTel profile becomes last pprof sample type
+			var mappedIdx int
+			switch i {
+			case 0:
+				mappedIdx = numProfiles - 1
+			case numProfiles - 1:
+				mappedIdx = 0
+			default:
+				mappedIdx = i
+			}
+			if sp.At(0).Profiles().At(mappedIdx).Samples().At(sampleIdx).Values().Len() != 1 {
 				return nil, errors.New("invalid number of values per sample")
 			}
-			pprofSample.Value = append(pprofSample.Value, pprofiles.At(i).Samples().At(sampleIdx).Values().At(0))
+			pprofSample.Value = append(pprofSample.Value, pprofiles.At(mappedIdx).Samples().At(sampleIdx).Values().At(0))
 		}
 
 		for _, li := range stack.LocationIndices().All() {
@@ -125,10 +137,22 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	}
 
 	// Set pprof values that should be common across all profiles.
+	// By convention, pprof uses the last sample type as default, while OTel Profiles
+	// uses the first profile as default. Therefore, swap first and last.
 	for i := range numProfiles {
+		// Swap first and last: first OTel profile becomes last pprof sample type
+		var mappedIdx int
+		switch i {
+		case 0:
+			mappedIdx = numProfiles - 1
+		case numProfiles - 1:
+			mappedIdx = 0
+		default:
+			mappedIdx = i
+		}
 		dst.SampleType = append(dst.SampleType, &profile.ValueType{
-			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(i).SampleType().TypeStrindex())),
-			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(i).SampleType().UnitStrindex())),
+			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().TypeStrindex())),
+			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().UnitStrindex())),
 		})
 	}
 
