@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"time"
 
 	sl "github.com/leodido/go-syslog/v4"
@@ -77,7 +76,9 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 		// Determine which callback to use based on entry data
 		callback := postprocess
-		if !p.enableOctetCounting && p.allowSkipPriHeader {
+		if p.protocol == None {
+			callback = postprocessRaw
+		} else if !p.enableOctetCounting && p.allowSkipPriHeader {
 			var bytes []byte
 			bytes, err = toBytes(ent.Body)
 			if err != nil {
@@ -118,7 +119,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 // Process will parse an entry field as syslog.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
-	// For 'none' protocol, use raw postprocessing which handles optional timestamp
+	// For 'none' protocol, no postprocessing is needed
 	if p.protocol == None {
 		return p.ProcessWithCallback(ctx, entry, p.parse, postprocessRaw)
 	}
@@ -267,143 +268,10 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 }
 
 // parseRaw will parse a raw syslog message that doesn't conform to RFC3164 or RFC5424.
-// It attempts best-effort timestamp extraction and returns the original message.
-func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) map[string]any {
-	msg := syslogMessage.GetMessage()
-	value := map[string]any{
-		"message": msg,
+func (*Parser) parseRaw(syslogMessage *rawSyslogMessage) map[string]any {
+	return map[string]any{
+		"message": syslogMessage.GetMessage(),
 	}
-
-	// Attempt best-effort timestamp extraction
-	if ts := p.extractTimestamp(msg); ts != nil {
-		value["timestamp"] = *ts
-	}
-
-	return value
-}
-
-// Common timestamp formats found in syslog messages
-var timestampFormats = []string{
-	// RFC3339 and variations (RFC5424 style)
-	time.RFC3339Nano,
-	time.RFC3339,
-	"2006-01-02T15:04:05.999999Z07:00",
-	"2006-01-02T15:04:05Z07:00",
-	"2006-01-02T15:04:05.999999",
-	"2006-01-02T15:04:05",
-	// RFC3164 BSD style (month day time)
-	"Jan _2 15:04:05",
-	"Jan 02 15:04:05",
-	// BSD with year (May 20 2024 15:08:29)
-	"Jan _2 2006 15:04:05",
-	"Jan 02 2006 15:04:05",
-	// Year first with optional timezone (2023 Mar 14 22:48:42 UTC)
-	"2006 Jan _2 15:04:05 MST",
-	"2006 Jan 02 15:04:05 MST",
-	"2006 Jan _2 15:04:05",
-	"2006 Jan 02 15:04:05",
-	// Common variations
-	"2006-01-02 15:04:05.999999",
-	"2006-01-02 15:04:05",
-	"2006/01/02 15:04:05",
-	"01/02/2006 15:04:05",
-	"02/Jan/2006:15:04:05 -0700",
-	"02/Jan/2006:15:04:05",
-}
-
-// timestampPattern represents a regex pattern for extracting timestamps.
-// All patterns are anchored to the beginning of the message (after optional priority header,
-// optional version number, and optional leading colon) to avoid extracting timestamps
-// that appear in the middle of the message body.
-type timestampPattern struct {
-	regex   *regexp.Regexp
-	isEpoch bool // true if this pattern captures a Unix epoch timestamp
-}
-
-// Regex patterns to help extract potential timestamp substrings.
-// The prefix `^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*` matches:
-// - Start of string (^)
-// - Optional priority header like <167> ((?:<\d{1,3}>)?)
-// - Optional version number followed by space like "1 " ((?:\d+\s+)?)
-// - Optional colon and whitespace like ": " (:?\s*)
-var timestampPatterns = []timestampPattern{
-	// RFC5424 style: 2015-08-05T21:58:59.693Z or with timezone offset
-	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)`), false},
-	// Unix epoch timestamp: 1729780712.350113344 (10+ digits, optional fractional)
-	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{10,}(?:\.\d+)?)`), true},
-	// Year first with optional timezone (2023 Mar 14 22:48:42 UTC)
-	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{4}\s+[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\s+[A-Z]{2,4})?)`), false},
-	// BSD with year (May 20 2024 15:08:29)
-	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*([A-Z][a-z]{2}\s+\d{1,2}\s+\d{4}\s+\d{2}:\d{2}:\d{2})`), false},
-	// RFC3164 BSD style: Jan  5 15:04:05 or Jan 05 15:04:05
-	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*([A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})`), false},
-	// ISO date with space: 2006-01-02 15:04:05
-	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?)`), false},
-	// Common log format: 02/Jan/2006:15:04:05 -0700
-	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{2}/[A-Z][a-z]{2}/\d{4}:\d{2}:\d{2}:\d{2}(?:\s+[+-]\d{4})?)`), false},
-}
-
-// extractTimestamp attempts to extract a timestamp from the raw message using common formats.
-// Patterns are anchored to the beginning of the message to avoid extracting timestamps
-// that appear in the middle of the message body.
-func (p *Parser) extractTimestamp(msg string) *time.Time {
-	for _, pattern := range timestampPatterns {
-		matches := pattern.regex.FindStringSubmatch(msg)
-		if len(matches) < 2 {
-			continue
-		}
-		match := matches[1] // captured group
-
-		if pattern.isEpoch {
-			if ts := p.tryParseUnixEpoch(match); ts != nil {
-				return ts
-			}
-		} else {
-			if ts := p.tryParseTimestamp(match); ts != nil {
-				return ts
-			}
-		}
-	}
-	return nil
-}
-
-// tryParseUnixEpoch attempts to parse a Unix epoch timestamp (seconds since 1970).
-func (p *Parser) tryParseUnixEpoch(s string) *time.Time {
-	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return nil
-	}
-	// Convert float seconds to time.Time
-	sec := int64(f)
-	nsec := int64((f - float64(sec)) * 1e9)
-	ts := time.Unix(sec, nsec)
-	// Apply location if available
-	if p.location != nil {
-		ts = ts.In(p.location)
-	}
-	return &ts
-}
-
-// tryParseTimestamp attempts to parse the given string as a timestamp using known formats.
-func (p *Parser) tryParseTimestamp(s string) *time.Time {
-	for _, format := range timestampFormats {
-		if ts, err := time.Parse(format, s); err == nil {
-			// For formats without year (like RFC3164), use current year
-			if ts.Year() == 0 {
-				now := time.Now()
-				if p.location != nil {
-					now = now.In(p.location)
-				}
-				ts = ts.AddDate(now.Year(), 0, 0)
-			}
-			// Apply location if available
-			if p.location != nil && ts.Location() == time.UTC {
-				ts = time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), ts.Nanosecond(), p.location)
-			}
-			return &ts
-		}
-	}
-	return nil
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
@@ -506,15 +374,8 @@ func postprocessWithoutPriHeader(e *entry.Entry) error {
 	return cleanupTimestamp(e)
 }
 
-// postprocessRaw handles post-processing for raw syslog messages where timestamp may be absent.
-func postprocessRaw(e *entry.Entry) error {
-	timestampField := entry.NewAttributeField("timestamp")
-	// Try to get and set the timestamp if it exists
-	if ts, ok := timestampField.Delete(e); ok {
-		if timestamp, ok := ts.(time.Time); ok {
-			e.Timestamp = timestamp
-		}
-	}
+// postprocessRaw is a no-op for raw syslog messages since they have no structured fields to process.
+func postprocessRaw(_ *entry.Entry) error {
 	return nil
 }
 
