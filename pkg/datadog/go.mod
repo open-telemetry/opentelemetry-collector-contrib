@@ -51,7 +51,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.52.1-0.20260219223409-66996adfaaf7
 	go.opentelemetry.io/otel/metric v1.40.0
 	go.uber.org/zap v1.27.1
-	golang.org/x/net v0.50.0
+	golang.org/x/net v0.51.0
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -127,7 +127,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.18 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.18 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.290.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.291.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.6 // indirect

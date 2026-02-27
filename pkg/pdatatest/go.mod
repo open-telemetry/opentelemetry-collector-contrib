@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.52.1-0.20260219223409-66996adfaaf7
 	go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260219223409-66996adfaaf7
 	go.opentelemetry.io/collector/pdata/testdata v0.146.2-0.20260219223409-66996adfaaf7
+	go.opentelemetry.io/collector/pdata/xpdata v0.146.2-0.20260219223409-66996adfaaf7
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )

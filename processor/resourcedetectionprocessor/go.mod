@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.2
 	github.com/aws/aws-sdk-go-v2/config v1.32.10
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.18
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.290.1
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.291.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
 	github.com/docker/docker v28.5.2+incompatible
@@ -171,6 +171,7 @@ require (
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.146.2-0.20260219223409-66996adfaaf7 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/pipeline v1.52.1-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.146.2-0.20260219223409-66996adfaaf7 // indirect
 	go.opentelemetry.io/collector/receiver v1.52.1-0.20260219223409-66996adfaaf7 // indirect
@@ -189,7 +190,7 @@ require (
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/mod v0.32.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect

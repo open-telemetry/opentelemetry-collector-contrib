@@ -874,10 +874,34 @@ processors:
       fail_on_missing_metadata: true
 ```
 
+### Tencent Cloud CVM
+
+Uses the [Tencent Cloud metadata API](https://www.tencentcloud.com/document/product/213/4934) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Tencent Cloud CVM Detector Resource Attributes](./internal/tencent/cvm/documentation.md).
+
+Tencent Cloud CVM custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/tencent_cvm:
+    detectors: ["tencent_cvm"]
+```
+
+The Tencent Cloud CVM detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/tencent_cvm:
+    detectors: ["tencent_cvm"]
+    tencent_cvm:
+      fail_on_missing_metadata: true
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

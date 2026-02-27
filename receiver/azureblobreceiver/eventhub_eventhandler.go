@@ -15,20 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	defaultPollRate      = 5
-	defaultMaxPollEvents = 100
-	defaultConsumerGroup = "$Default"
-)
-
-type blobEventHandler interface {
-	run(ctx context.Context) error
-	close(ctx context.Context) error
-	setLogsDataConsumer(logsDataConsumer logsDataConsumer)
-	setTracesDataConsumer(tracesDataConsumer tracesDataConsumer)
-}
-
-type azureBlobEventHandler struct {
+type eventHubEventHandler struct {
 	blobClient               blobClient
 	logsDataConsumer         logsDataConsumer
 	tracesDataConsumer       tracesDataConsumer
@@ -39,15 +26,19 @@ type azureBlobEventHandler struct {
 	logger                   *zap.Logger
 	wg                       sync.WaitGroup
 	cancelFunc               context.CancelFunc
+
+	pollRate      int
+	maxPollEvents int
+	consumerGroup string
 }
 
-var _ blobEventHandler = (*azureBlobEventHandler)(nil)
+var _ eventHandler = (*eventHubEventHandler)(nil)
 
 const (
 	blobCreatedEventType = "Microsoft.Storage.BlobCreated"
 )
 
-func (p *azureBlobEventHandler) run(ctx context.Context) error {
+func (p *eventHubEventHandler) run(ctx context.Context) error {
 	if p.hub != nil {
 		return nil
 	}
@@ -57,7 +48,7 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 	hub, err := azeventhubs.NewConsumerClientFromConnectionString(
 		p.eventHubConnectionString,
 		"",
-		defaultConsumerGroup,
+		p.consumerGroup,
 		&azeventhubs.ConsumerClientOptions{},
 	)
 	if err != nil {
@@ -91,7 +82,7 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 	return nil
 }
 
-func (p *azureBlobEventHandler) receiveEvents(
+func (p *eventHubEventHandler) receiveEvents(
 	ctx context.Context,
 	pc *azeventhubs.PartitionClient,
 	handler func(ctx context.Context, event *azeventhubs.ReceivedEventData) error,
@@ -107,9 +98,9 @@ func (p *azureBlobEventHandler) receiveEvents(
 
 		timeoutCtx, cancelCtx := context.WithTimeout(
 			ctx,
-			time.Second*time.Duration(defaultPollRate),
+			time.Second*time.Duration(p.pollRate),
 		)
-		events, err := pc.ReceiveEvents(timeoutCtx, defaultMaxPollEvents, &azeventhubs.ReceiveEventsOptions{})
+		events, err := pc.ReceiveEvents(timeoutCtx, p.maxPollEvents, &azeventhubs.ReceiveEventsOptions{})
 		cancelCtx()
 		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 			p.logger.Error(
@@ -126,7 +117,7 @@ func (p *azureBlobEventHandler) receiveEvents(
 	}
 }
 
-func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
+func (p *eventHubEventHandler) newMessageHandler(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 	type eventData struct {
 		Topic           string
 		Subject         string
@@ -171,7 +162,7 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *az
 	return nil
 }
 
-func (p *azureBlobEventHandler) close(ctx context.Context) error {
+func (p *eventHubEventHandler) close(ctx context.Context) error {
 	if p.cancelFunc != nil {
 		p.cancelFunc()
 	}
@@ -187,20 +178,24 @@ func (p *azureBlobEventHandler) close(ctx context.Context) error {
 	return nil
 }
 
-func (p *azureBlobEventHandler) setLogsDataConsumer(logsDataConsumer logsDataConsumer) {
+func (p *eventHubEventHandler) setLogsDataConsumer(logsDataConsumer logsDataConsumer) {
 	p.logsDataConsumer = logsDataConsumer
 }
 
-func (p *azureBlobEventHandler) setTracesDataConsumer(tracesDataConsumer tracesDataConsumer) {
+func (p *eventHubEventHandler) setTracesDataConsumer(tracesDataConsumer tracesDataConsumer) {
 	p.tracesDataConsumer = tracesDataConsumer
 }
 
-func newBlobEventHandler(eventHubConnectionString, logsContainerName, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
-	return &azureBlobEventHandler{
+func newEventHubEventHandler(eventHubConnectionString, logsContainerName, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *eventHubEventHandler {
+	return &eventHubEventHandler{
 		blobClient:               blobClient,
 		logsContainerName:        logsContainerName,
 		tracesContainerName:      tracesContainerName,
 		eventHubConnectionString: eventHubConnectionString,
 		logger:                   logger,
+
+		pollRate:      5,
+		maxPollEvents: 100,
+		consumerGroup: "$Default",
 	}
 }

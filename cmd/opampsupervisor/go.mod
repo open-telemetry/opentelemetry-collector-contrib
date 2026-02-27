@@ -9,7 +9,7 @@ require (
 	github.com/knadh/koanf/providers/file v1.2.1
 	github.com/knadh/koanf/providers/rawbytes v1.0.0
 	github.com/knadh/koanf/v2 v2.3.2
-	github.com/open-telemetry/opamp-go v0.22.0
+	github.com/open-telemetry/opamp-go v0.23.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.146.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.52.1-0.20260219223409-66996adfaaf7
@@ -42,7 +42,7 @@ require (
 	github.com/HdrHistogram/hdrhistogram-go v1.2.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
 	github.com/antchfx/xmlquery v1.5.0 // indirect
-	github.com/antchfx/xpath v1.3.5 // indirect
+	github.com/antchfx/xpath v1.3.6 // indirect
 	github.com/apache/arrow-go/v18 v18.5.0 // indirect
 	github.com/apache/thrift v0.22.0 // indirect
 	github.com/axiomhq/hyperloglog v0.2.6 // indirect
@@ -232,7 +232,7 @@ require (
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/exp v0.0.0-20260209203927-2842357ff358 // indirect
 	golang.org/x/mod v0.33.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260209163413-e7419c687ee4 // indirect
 	golang.org/x/text v0.34.0 // indirect
