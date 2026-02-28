@@ -1,0 +1,4 @@
+change_type: enhancement
+component: pkg/ottl
+note: "Introduce ValueType enum to support future OTTL type system improvements."
+issues: [45365]
