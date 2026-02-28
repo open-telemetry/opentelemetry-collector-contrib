@@ -6,6 +6,7 @@ package traces
 import (
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,6 +24,12 @@ func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
 		originalSpanNameAttribute ottl.Optional[string]
 		wantError                 bool
 	}{
+		{
+			name:                      "valid semconv version 1.40.0 and original span name attribute",
+			semconvVersion:            "1.40.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 false,
+		},
 		{
 			name:                      "valid semconv version 1.39.0 and original span name attribute",
 			semconvVersion:            "1.39.0",
@@ -78,10 +85,14 @@ func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
 }
 
 func TestSemconvSpanName(t *testing.T) {
+	// defaultSemconvVersion is the semconv version used by all test cases that do not specify one
+	defaultSemconvVersion := maxKnownSemConvVersion.String()
+
 	tests := []struct {
 		name                   string
 		currentSpanName        string // span name currently produced by the instrumentation library
 		instrumentationLibrary string // instrumentation library used to produce the test case data
+		semconvVersion         string // semconv version to use; defaults to defaultSemconvVersion when empty
 		kind                   ptrace.SpanKind
 		addAttributes          func(pcommon.Map)
 		want                   string
@@ -294,7 +305,30 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			},
 			want: "oteldemo.AdService/GetAds",
 		},
-
+		{
+			name:                   "RPC <1.39.0 - `rpc.system` takes precedence over `rpc.system.name`",
+			currentSpanName:        "oteldemo.AdService/GetAds",
+			instrumentationLibrary: "io.opentelemetry.grpc-1.6:2.20.0-alpha",
+			kind:                   ptrace.SpanKindServer,
+			semconvVersion:         "1.37.0",
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system", "apache_dubbo")
+				attrs.PutStr("rpc.system.name", "dubbo")
+			},
+			want: "apache_dubbo",
+		},
+		{
+			name:                   "RPC >=1.39.0 - `rpc.system.name` takes precedence over the deprecated `rpc.system`",
+			currentSpanName:        "oteldemo.AdService/GetAds",
+			instrumentationLibrary: "io.opentelemetry.grpc-1.6:2.20.0-alpha",
+			kind:                   ptrace.SpanKindServer,
+			semconvVersion:         "1.39.0",
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system", "apache_dubbo")
+				attrs.PutStr("rpc.system.name", "dubbo")
+			},
+			want: "dubbo",
+		},
 		// MESSAGING - KAFKA
 		{
 			name:                   "Messaging OTel Demo - accounting - ",
@@ -492,8 +526,13 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 
+			semconvVersion := tt.semconvVersion
+			if semconvVersion == "" {
+				semconvVersion = defaultSemconvVersion
+			}
+
 			setSemconvNameFunction, err := createSetSemconvSpanNameFunction(ottl.FunctionContext{}, &setSemconvSpanNameArguments{
-				SemconvVersion:            "1.37.0",
+				SemconvVersion:            semconvVersion,
 				OriginalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
 			})
 
@@ -621,6 +660,7 @@ func Test_rpcSpanName(t *testing.T) {
 		name                   string
 		spanName               string
 		instrumentationLibrary string
+		semconvVersion         string // defaults to "1.40.0" when empty
 		kind                   ptrace.SpanKind
 		attributeNames         []string
 		addAttributes          func(pcommon.Map)
@@ -696,12 +736,58 @@ func Test_rpcSpanName(t *testing.T) {
 			name:                   "'rpc.system.name' and 'rpc.method', no 'rpc.service' - semconv 1.39+",
 			spanName:               "a span name",
 			instrumentationLibrary: "hand crafted",
+			semconvVersion:         "1.39.0",
 			kind:                   ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("rpc.system.name", "grpc")
 				attrs.PutStr("rpc.method", "oteldemo.AdService/a_method")
 			},
 			want: "oteldemo.AdService/a_method",
+		},
+		// Version-based priority: when both rpc.system.name and rpc.system are present
+		{
+			name:           "semconv 1.40.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
+			spanName:       "a span name",
+			semconvVersion: "1.40.0",
+			kind:           ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system.name", "grpc")
+				attrs.PutStr("rpc.system", "other_rpc")
+			},
+			want: "grpc",
+		},
+		{
+			name:           "semconv 1.39.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
+			spanName:       "a span name",
+			semconvVersion: "1.39.0",
+			kind:           ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system.name", "grpc")
+				attrs.PutStr("rpc.system", "other_rpc")
+			},
+			want: "grpc",
+		},
+		{
+			name:           "semconv 1.38.0: both 'rpc.system' and 'rpc.system.name' present - prioritizes 'rpc.system'",
+			spanName:       "a span name",
+			semconvVersion: "1.38.0",
+			kind:           ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system.name", "other_rpc")
+				attrs.PutStr("rpc.system", "grpc")
+			},
+			want: "grpc",
+		},
+		{
+			name:           "semconv 1.37.0: both 'rpc.system' and 'rpc.system.name' present - prioritizes 'rpc.system'",
+			spanName:       "a span name",
+			semconvVersion: "1.37.0",
+			kind:           ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system.name", "other_rpc")
+				attrs.PutStr("rpc.system", "grpc")
+			},
+			want: "grpc",
 		},
 	}
 
@@ -711,7 +797,15 @@ func Test_rpcSpanName(t *testing.T) {
 			span.SetName(tt.spanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
-			got := rpcSpanName(span)
+
+			semconvVersionStr := tt.semconvVersion
+			if semconvVersionStr == "" {
+				semconvVersionStr = "1.40.0"
+			}
+			parsedVersion, err := semver.NewVersion(semconvVersionStr)
+			require.NoError(t, err)
+
+			got := rpcSpanName(span, parsedVersion)
 			assert.Equalf(t, tt.want, got, "getRPCSpanName(%v)", span)
 		})
 	}
