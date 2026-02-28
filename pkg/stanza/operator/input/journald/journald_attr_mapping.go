@@ -40,12 +40,12 @@ var priorityToSeverityText = map[string]string{
 // attributeMapping maps journald well-known field names to OTel semantic convention log attribute names.
 // See: https://opentelemetry.io/docs/specs/semconv/
 var attributeMapping = map[string]string{
-	"CODE_FILE":         "code.filepath",
-	"CODE_FUNC":         "code.function",
-	"CODE_LINE":         "code.lineno",
+	"CODE_FILE":         "code.file.path",
+	"CODE_FUNC":         "code.function.name",
+	"CODE_LINE":         "code.line.number",
 	"TID":               "thread.id",
-	"SYSLOG_FACILITY":   "syslog.facility",
-	"SYSLOG_IDENTIFIER": "syslog.identifier",
+	"SYSLOG_FACILITY":   "syslog.facility.code",
+	"SYSLOG_IDENTIFIER": "syslog.msg.id",
 	"SYSLOG_PID":        "syslog.pid",
 	"ERRNO":             "system.errno",
 }
@@ -62,7 +62,7 @@ var resourceMapping = map[string]string{
 
 // numericFields are OTel attribute/resource keys whose journald string values should be converted to int64.
 var numericFields = map[string]bool{
-	"code.lineno":     true,
+	"code.line.number":     true,
 	"thread.id":       true,
 	"syslog.facility": true,
 	"syslog.pid":      true,
