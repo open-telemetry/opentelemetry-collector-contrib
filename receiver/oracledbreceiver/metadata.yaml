@@ -1,5 +1,7 @@
 type: oracledb
 
+reaggregation_enabled: true
+
 status:
   class: receiver
   stability:
@@ -160,12 +162,15 @@ attributes:
   session_status:
     description: Session status
     type: string
+    requirement_level: recommended
   session_type:
     description: Session type
     type: string
+    requirement_level: recommended
   tablespace_name:
     description: Tablespace name
     type: string
+    requirement_level: recommended
   # attributes for events
   ## top query
   user.name:
