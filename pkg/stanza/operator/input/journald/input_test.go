@@ -445,11 +445,11 @@ func TestInputJournaldOtelAttributes(t *testing.T) {
 
 		// OTel log attributes from known journald fields
 		require.NotNil(t, e.Attributes)
-		assert.Equal(t, "unit_log_success", e.Attributes["code.function"])
-		assert.Equal(t, "../src/core/unit.c", e.Attributes["code.filepath"])
-		assert.Equal(t, int64(5487), e.Attributes["code.lineno"])
-		assert.Equal(t, "systemd", e.Attributes["syslog.identifier"])
-		assert.Equal(t, int64(3), e.Attributes["syslog.facility"])
+		assert.Equal(t, "unit_log_success", e.Attributes["code.function.name"])
+		assert.Equal(t, "../src/core/unit.c", e.Attributes["code.file.path"])
+		assert.Equal(t, int64(5487), e.Attributes["code.line.number"])
+		assert.Equal(t, "systemd", e.Attributes["syslog.msg.id"])
+		assert.Equal(t, int64(3), e.Attributes["syslog.facility.code"])
 
 		// OTel resource attributes from trusted journald fields
 		require.NotNil(t, e.Resource)
@@ -580,7 +580,7 @@ func TestInputJournaldOtelAttributes_ErrnoAndThreadID(t *testing.T) {
 
 	select {
 	case e := <-received:
-		assert.Equal(t, int64(5), e.Attributes["system.errno"])
+		assert.Equal(t, "5", e.Attributes["ERRNO"])
 		assert.Equal(t, int64(777), e.Attributes["thread.id"])
 		assert.Equal(t, entry.Error, e.Severity)
 	case <-time.After(time.Second):

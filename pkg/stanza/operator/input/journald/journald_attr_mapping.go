@@ -47,7 +47,6 @@ var attributeMapping = map[string]string{
 	"SYSLOG_FACILITY":   "syslog.facility.code",
 	"SYSLOG_IDENTIFIER": "syslog.msg.id",
 	"SYSLOG_PID":        "syslog.pid",
-	"ERRNO":             "system.errno",
 }
 
 // resourceMapping maps journald trusted field names (prefixed with _) to OTel semantic convention resource attribute names.
@@ -63,11 +62,10 @@ var resourceMapping = map[string]string{
 // numericFields are OTel attribute/resource keys whose journald string values should be converted to int64.
 var numericFields = map[string]bool{
 	"code.line.number":     true,
-	"thread.id":       true,
+	"thread.id":            true,
 	"syslog.facility.code": true,
-	"syslog.pid":      true,
-	"process.pid":     true,
-	"system.errno":    true,
+	"syslog.pid":           true,
+	"process.pid":          true,
 }
 
 // convertFieldValue converts a journald field value to the appropriate OTel type.

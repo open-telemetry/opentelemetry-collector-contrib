@@ -29,7 +29,7 @@ func TestConvertFieldValue(t *testing.T) {
 		},
 		{
 			name:     "numeric field with negative integer",
-			otelKey:  "system.errno",
+			otelKey:  "thread.id",
 			input:    "-2",
 			expected: int64(-2),
 		},
@@ -58,8 +58,8 @@ func TestConvertFieldValue(t *testing.T) {
 			expected: "12345",
 		},
 		{
-			name:     "syslog.facility numeric conversion",
-			otelKey:  "syslog.facility",
+			name:     "syslog.facility.code numeric conversion",
+			otelKey:  "syslog.facility.code",
 			input:    "3",
 			expected: int64(3),
 		},
@@ -70,8 +70,8 @@ func TestConvertFieldValue(t *testing.T) {
 			expected: int64(9876),
 		},
 		{
-			name:     "code.lineno numeric conversion",
-			otelKey:  "code.lineno",
+			name:     "code.line.number numeric conversion",
+			otelKey:  "code.line.number",
 			input:    "42",
 			expected: int64(42),
 		},
@@ -185,19 +185,17 @@ func TestMapJournalEntryAttributes_KnownLogAttributes(t *testing.T) {
 		"SYSLOG_FACILITY":   "3",
 		"SYSLOG_IDENTIFIER": "myapp",
 		"SYSLOG_PID":        "5678",
-		"ERRNO":             "2",
 	}
 	mapJournalEntryAttributes(e, body)
 
 	require.NotNil(t, e.Attributes)
-	assert.Equal(t, "/src/unit.c", e.Attributes["code.filepath"])
-	assert.Equal(t, "unit_log_success", e.Attributes["code.function"])
-	assert.Equal(t, int64(42), e.Attributes["code.lineno"])
+	assert.Equal(t, "/src/unit.c", e.Attributes["code.file.path"])
+	assert.Equal(t, "unit_log_success", e.Attributes["code.function.name"])
+	assert.Equal(t, int64(42), e.Attributes["code.line.number"])
 	assert.Equal(t, int64(100), e.Attributes["thread.id"])
-	assert.Equal(t, int64(3), e.Attributes["syslog.facility"])
-	assert.Equal(t, "myapp", e.Attributes["syslog.identifier"])
+	assert.Equal(t, int64(3), e.Attributes["syslog.facility.code"])
+	assert.Equal(t, "myapp", e.Attributes["syslog.msg.id"])
 	assert.Equal(t, int64(5678), e.Attributes["syslog.pid"])
-	assert.Equal(t, int64(2), e.Attributes["system.errno"])
 
 	// Original journald field names must not appear
 	assert.NotContains(t, e.Attributes, "CODE_FILE")
@@ -207,7 +205,6 @@ func TestMapJournalEntryAttributes_KnownLogAttributes(t *testing.T) {
 	assert.NotContains(t, e.Attributes, "SYSLOG_FACILITY")
 	assert.NotContains(t, e.Attributes, "SYSLOG_IDENTIFIER")
 	assert.NotContains(t, e.Attributes, "SYSLOG_PID")
-	assert.NotContains(t, e.Attributes, "ERRNO")
 }
 
 func TestMapJournalEntryAttributes_KnownResourceAttributes(t *testing.T) {
@@ -276,7 +273,7 @@ func TestMapJournalEntryAttributes_KnownFieldsNotInAttributes(t *testing.T) {
 	assert.NotContains(t, e.Attributes, "_PID")
 	assert.NotContains(t, e.Attributes, "_HOSTNAME")
 	assert.NotContains(t, e.Resource, "CODE_FILE")
-	assert.NotContains(t, e.Resource, "code.filepath")
+	assert.NotContains(t, e.Resource, "code.file.path")
 }
 
 func TestMapJournalEntryAttributes_EmptyBody(t *testing.T) {
@@ -320,12 +317,12 @@ func TestMapJournalEntryAttributes_FullEntry(t *testing.T) {
 	assert.Equal(t, "err", e.SeverityText)
 
 	// Log attributes with OTel names
-	assert.Equal(t, "main.c", e.Attributes["code.filepath"])
-	assert.Equal(t, "main", e.Attributes["code.function"])
-	assert.Equal(t, int64(100), e.Attributes["code.lineno"])
+	assert.Equal(t, "main.c", e.Attributes["code.file.path"])
+	assert.Equal(t, "main", e.Attributes["code.function.name"])
+	assert.Equal(t, int64(100), e.Attributes["code.line.number"])
 	assert.Equal(t, int64(200), e.Attributes["thread.id"])
-	assert.Equal(t, int64(1), e.Attributes["syslog.facility"])
-	assert.Equal(t, "kernel", e.Attributes["syslog.identifier"])
+	assert.Equal(t, int64(1), e.Attributes["syslog.facility.code"])
+	assert.Equal(t, "kernel", e.Attributes["syslog.msg.id"])
 	assert.Equal(t, int64(1), e.Attributes["syslog.pid"])
 
 	// Resource attributes with OTel names
