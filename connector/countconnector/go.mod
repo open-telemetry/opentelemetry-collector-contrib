@@ -82,6 +82,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/collector/client v1.52.1-0.20260227062254-168030d61d7d // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.146.2-0.20260227062254-168030d61d7d // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.146.2-0.20260227062254-168030d61d7d // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.52.1-0.20260227062254-168030d61d7d // indirect
