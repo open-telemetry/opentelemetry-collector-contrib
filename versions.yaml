@@ -85,6 +85,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding

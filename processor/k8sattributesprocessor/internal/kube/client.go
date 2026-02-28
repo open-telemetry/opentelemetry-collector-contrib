@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
+	clientmeta "k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 
 	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
@@ -39,6 +40,7 @@ type WatchClient struct {
 	deleteMut              sync.Mutex
 	logger                 *zap.Logger
 	kc                     kubernetes.Interface
+	mc                     clientmeta.Interface
 	informer               cache.SharedInformer
 	namespaceInformer      cache.SharedInformer
 	nodeInformer           cache.SharedInformer
@@ -130,6 +132,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
+
 	c := &WatchClient{
 		logger:                 set.Logger,
 		Rules:                  rules,
@@ -152,15 +155,16 @@ func New(
 	c.StatefulSets = map[string]*StatefulSet{}
 	c.DaemonSets = map[string]*DaemonSet{}
 	c.Jobs = map[string]*Job{}
-	if newClientSet == nil {
-		newClientSet = k8sconfig.MakeClient
-	}
 
-	kc, err := newClientSet(apiCfg)
+	if newClientSet == nil {
+		newClientSet = k8sconfig.MakeClientBundle
+	}
+	bundle, err := newClientSet(apiCfg)
 	if err != nil {
 		return nil, err
 	}
-	c.kc = kc
+	c.kc = bundle.K8s
+	c.mc = bundle.Meta
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
@@ -211,19 +215,10 @@ func New(
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
 		}
-		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
 
-				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
-			},
-		)
-		if err != nil {
-			return nil, err
+		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.mc, c.Filters.Namespace)
+		if c.replicasetInformer == nil {
+			return nil, errors.New("failed to create ReplicaSet informer")
 		}
 	}
 
@@ -246,7 +241,6 @@ func New(
 	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
 		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
-
 	return c, err
 }
 
@@ -948,6 +942,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 						}
 					}
 				}
+
 			case "DaemonSet":
 				if c.Rules.DaemonSetUID {
 					tags[string(conventions.K8SDaemonSetUIDKey)] = string(ref.UID)
@@ -1876,11 +1871,12 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherReplicasetAdded.Add(context.Background(), 1)
 	}
-	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+	rsMeta, ok := obj.(*meta_v1.PartialObjectMetadata)
+	if !ok {
+		c.logger.Error("object received was not PartialObjectMetadata for ReplicaSet add", zap.Any("received", obj))
+		return
 	}
+	c.addOrUpdateReplicaSet(rsMeta)
 }
 
 func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
@@ -1890,11 +1886,12 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherReplicasetUpdated.Add(context.Background(), 1)
 	}
-	if replicaset, ok := newRS.(*apps_v1.ReplicaSet); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
+	rsMeta, ok := newRS.(*meta_v1.PartialObjectMetadata)
+	if !ok {
+		c.logger.Error("object received was not PartialObjectMetadata for ReplicaSet add", zap.Any("received", newRS))
+		return
 	}
+	c.addOrUpdateReplicaSet(rsMeta)
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
@@ -1904,51 +1901,47 @@ func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherReplicasetDeleted.Add(context.Background(), 1)
 	}
-	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.ReplicaSet); ok {
-		c.m.Lock()
-		key := string(replicaset.UID)
-		delete(c.ReplicaSets, key)
-		c.m.Unlock()
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+
+	// Unwrap DeletedFinalStateUnknown if present
+	o := ignoreDeletedFinalStateUnknown(obj)
+	rsMeta, ok := o.(*meta_v1.PartialObjectMetadata)
+	if !ok {
+		c.logger.Error("object received was not a ReplicaSet (apps_v1 or PartialObjectMetadata)", zap.Any("received", obj))
 	}
+	uid := string(rsMeta.GetUID())
+	if uid == "" {
+		c.logger.Warn("received ReplicaSet delete without UID")
+		return
+	}
+
+	c.m.Lock()
+	delete(c.ReplicaSets, uid)
+	c.m.Unlock()
 }
 
-func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
+func (c *WatchClient) addOrUpdateReplicaSet(replicaSet *meta_v1.PartialObjectMetadata) {
+	uid := string(replicaSet.GetUID())
 	newReplicaSet := &ReplicaSet{
-		Name:      replicaset.Name,
-		Namespace: replicaset.Namespace,
-		UID:       string(replicaset.UID),
+		Name:      replicaSet.GetName(),
+		Namespace: replicaSet.GetNamespace(),
+		UID:       uid,
 	}
 
-	for _, ownerReference := range replicaset.OwnerReferences {
-		if ownerReference.Kind == "Deployment" && ownerReference.Controller != nil && *ownerReference.Controller {
+	for _, owner := range replicaSet.GetOwnerReferences() {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
 			newReplicaSet.Deployment = Deployment{
-				Name: ownerReference.Name,
-				UID:  string(ownerReference.UID),
+				Name: owner.Name,
+				UID:  string(owner.UID),
 			}
 			break
 		}
 	}
 
 	c.m.Lock()
-	if replicaset.UID != "" {
-		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
+	if uid != "" {
+		c.ReplicaSets[uid] = newReplicaSet
 	}
 	c.m.Unlock()
-}
-
-// This function removes all data from the ReplicaSet except what is required by extraction rules
-func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
-	transformedReplicaset := apps_v1.ReplicaSet{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      replicaset.GetName(),
-			Namespace: replicaset.GetNamespace(),
-			UID:       replicaset.GetUID(),
-		},
-	}
-	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
-	return &transformedReplicaset
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete

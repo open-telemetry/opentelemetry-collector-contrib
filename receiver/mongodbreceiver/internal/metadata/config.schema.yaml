@@ -152,9 +152,9 @@ $defs:
     description: ResourceAttributesConfig provides config for mongodb resource attributes.
     type: object
     properties:
-      database:
-        $ref: resource_attribute_config
       server.address:
         $ref: resource_attribute_config
       server.port:
+        $ref: resource_attribute_config
+      service.instance.id:
         $ref: resource_attribute_config

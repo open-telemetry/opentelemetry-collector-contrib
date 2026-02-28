@@ -207,6 +207,7 @@ processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetectio
 processor/resourcedetectionprocessor/internal/openstack/nova processor/resourcedetection/internal/openstack/nova
 processor/resourcedetectionprocessor/internal/oraclecloud processor/resourcedetection/internal/oraclecloud
 processor/resourcedetectionprocessor/internal/scaleway processor/resourcedetection/internal/scaleway
+processor/resourcedetectionprocessor/internal/tencent/cvm processor/resourcedetection/internal/tencent/cvm
 processor/resourcedetectionprocessor/internal/upcloud processor/resourcedetection/internal/upcloud
 processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
@@ -230,6 +231,7 @@ receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
 receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
+receiver/carbonreceiver receiver/carbon
 receiver/chronyreceiver receiver/chrony
 receiver/ciscoosreceiver receiver/ciscoos
 receiver/ciscoosreceiver/internal/scraper/interfacesscraper receiver/ciscoos/internal/scraper/interfaces
@@ -348,5 +350,4 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
-receiver/carbonreceiver receiver/carbon
 receiver/k8slogreceiver receiver/k8slog

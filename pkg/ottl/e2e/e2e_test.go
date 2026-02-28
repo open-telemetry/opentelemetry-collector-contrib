@@ -584,6 +584,18 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Base64Encode("pass"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "cGFzcw==")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Base64Encode("data+values/items", "base64-url"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "ZGF0YSt2YWx1ZXMvaXRlbXM=")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")

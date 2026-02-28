@@ -13,7 +13,6 @@
 | cloud.platform | The cloud.platform | Any Str | true |
 | cloud.provider | The cloud.provider | Any Str | true |
 | cloud.region | The cloud.region | Any Str | true |
-| faas.id | The faas.id. | Any Str | true |
 | faas.instance | The faas.instance | Any Str | true |
 | faas.name | faas.name | Any Str | true |
 | faas.version | The faas.version | Any Str | true |
