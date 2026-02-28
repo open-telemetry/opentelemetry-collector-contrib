@@ -64,7 +64,7 @@ var resourceMapping = map[string]string{
 var numericFields = map[string]bool{
 	"code.line.number":     true,
 	"thread.id":       true,
-	"syslog.facility": true,
+	"syslog.facility.code": true,
 	"syslog.pid":      true,
 	"process.pid":     true,
 	"system.errno":    true,
