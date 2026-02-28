@@ -609,7 +609,7 @@ func TestScrapeTopQueries(t *testing.T) {
 
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(sqlmock.NewRows(expectedRows).FromCSVString(expectedValues[:len(expectedValues)-1]))
 	mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow("[{\"Plan\":{\"Node Type\":\"Merge Join\",\"Parallel Aware\":false,\"Async Capable\":false,\"Join Type\":\"Inner\",\"Startup Cost\":0.43,\"Total Cost\":55.27,\"Plan Rows\":290,\"Plan Width\":1675,\"Inner Unique\":\"?\",\"Merge Cond\":\"( e.businessentityid = p.businessentityid )\",\"Plans\":[{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Outer\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Employee_BusinessEntityID\",\"Relation Name\":\"employee\",\"Alias\":\"e\",\"Startup Cost\":0.15,\"Total Cost\":21.5,\"Plan Rows\":290,\"Plan Width\":112},{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Inner\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Person_BusinessEntityID\",\"Relation Name\":\"person\",\"Alias\":\"p\",\"Startup Cost\":0.29,\"Total Cost\":2261.87,\"Plan Rows\":19972,\"Plan Width\":1563}]}}]"))
-	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33)
+	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "top-query", "expected.yaml")
 	expectedLogs, err := golden.ReadLogs(expectedFile)
@@ -629,6 +629,61 @@ func TestScrapeTopQueries(t *testing.T) {
 	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
 	assert.True(t, planTimeExists)
 	assert.Equal(t, float64(12), planTime)
+}
+
+func TestScrapeTopQueriesCollectsOnlyWhenIntervalHasElapsed(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = 600 * time.Second
+	db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.NoError(t, err)
+
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{
+		db: db,
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	assert.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{
+		Logger: logger,
+	}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+
+	assert.True(t, scraper.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp should be zero before first collection")
+	logs1, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+	assert.NotNil(t, logs1)
+	assert.NoError(t, err)
+	assert.False(t, scraper.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp won't be zero after first collection")
+
+	collectionTime := scraper.lastExecutionTimestamp
+	logs2, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+	assert.NotNil(t, logs2)
+	assert.NoError(t, err)
+	assert.Equal(t, collectionTime, scraper.lastExecutionTimestamp, "No new collection should happen until configured collection_interval")
+}
+
+func TestIsCollectionDue(t *testing.T) {
+	collectionInterval := 20 * time.Second
+	currentCollectionTime := time.Now()
+
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	scrpr := postgreSQLScraper{
+		// setting lastExecutionTimestamp to be past 'collectionInterval'
+		lastExecutionTimestamp: currentCollectionTime.Add(-collectionInterval),
+		logger:                 logger,
+	}
+	isCollectionDue := scrpr.isCollectionDue(currentCollectionTime, collectionInterval)
+	assert.True(t, isCollectionDue, "lastExecutionTimestamp is older than collection_interval, so collection should be due.")
+
+	scrpr.lastExecutionTimestamp = currentCollectionTime.Add(-10 * time.Second)
+	isCollectionDue = scrpr.isCollectionDue(currentCollectionTime, collectionInterval)
+	assert.False(t, isCollectionDue, "collection_interval is not yet reached since lastExecutionTimestamp, so collection is not due.")
 }
 
 func TestExplainQuery(t *testing.T) {
