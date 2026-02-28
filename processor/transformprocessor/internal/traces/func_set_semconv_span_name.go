@@ -18,12 +18,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
-var semconvVersion1370 = semver.MustParse("1.37.0")
-var semconvVersion1390 = semver.MustParse("1.39.0")
-var semconvVersion1400 = semver.MustParse("1.40.0")
+var (
+	semconvVersion1370 = semver.MustParse("1.37.0")
+	semconvVersion1390 = semver.MustParse("1.39.0")
+	semconvVersion1400 = semver.MustParse("1.40.0")
+)
 
-var minKnownSemConvVersion = semconvVersion1370
-var maxKnownSemConvVersion = semconvVersion1400
+var (
+	minKnownSemConvVersion = semconvVersion1370
+	maxKnownSemConvVersion = semconvVersion1400
+)
 
 type setSemconvSpanNameArguments struct {
 	SemconvVersion            string
