@@ -37,13 +37,16 @@ type fakeJournaldCmdCustom struct {
 	stdErr   string
 }
 
-func (f *fakeJournaldCmdCustom) Start() error { return nil }
+func (*fakeJournaldCmdCustom) Start() error { return nil }
+
 func (f *fakeJournaldCmdCustom) StdoutPipe() (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader([]byte(f.response))), nil
 }
+
 func (f *fakeJournaldCmdCustom) StderrPipe() (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader([]byte(f.stdErr))), nil
 }
+
 func (*fakeJournaldCmdCustom) Wait() error { return nil }
 
 func (f *fakeJournaldCmd) Start() error {

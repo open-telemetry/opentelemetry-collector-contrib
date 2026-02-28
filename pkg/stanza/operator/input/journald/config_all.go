@@ -28,19 +28,19 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.InputConfig `mapstructure:",squash"`
 
-	RootPath            string        `mapstructure:"root_path,omitempty"`
-	JournalctlPath      string        `mapstructure:"journalctl_path,omitempty"`
-	Directory           *string       `mapstructure:"directory,omitempty"`
-	Files               []string      `mapstructure:"files,omitempty"`
-	StartAt             string        `mapstructure:"start_at,omitempty"`
-	Units               []string      `mapstructure:"units,omitempty"`
-	Priority            string        `mapstructure:"priority,omitempty"`
-	Matches             []MatchConfig `mapstructure:"matches,omitempty"`
-	Identifiers         []string      `mapstructure:"identifiers,omitempty"`
-	Grep                string        `mapstructure:"grep,omitempty"`
-	Dmesg               bool          `mapstructure:"dmesg,omitempty"`
-	All                 bool          `mapstructure:"all,omitempty"`
-	Namespace           string        `mapstructure:"namespace,omitempty"`
+	RootPath             string        `mapstructure:"root_path,omitempty"`
+	JournalctlPath       string        `mapstructure:"journalctl_path,omitempty"`
+	Directory            *string       `mapstructure:"directory,omitempty"`
+	Files                []string      `mapstructure:"files,omitempty"`
+	StartAt              string        `mapstructure:"start_at,omitempty"`
+	Units                []string      `mapstructure:"units,omitempty"`
+	Priority             string        `mapstructure:"priority,omitempty"`
+	Matches              []MatchConfig `mapstructure:"matches,omitempty"`
+	Identifiers          []string      `mapstructure:"identifiers,omitempty"`
+	Grep                 string        `mapstructure:"grep,omitempty"`
+	Dmesg                bool          `mapstructure:"dmesg,omitempty"`
+	All                  bool          `mapstructure:"all,omitempty"`
+	Namespace            string        `mapstructure:"namespace,omitempty"`
 	ConvertMessageBytes  bool          `mapstructure:"convert_message_bytes,omitempty"`
 	Merge                bool          `mapstructure:"merge,omitempty"`
 	EnableOtelAttributes bool          `mapstructure:"enable_otel_attributes,omitempty"`

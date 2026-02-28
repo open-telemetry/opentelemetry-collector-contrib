@@ -165,7 +165,7 @@ func TestMapJournalEntryAttributes_UnknownPriority(t *testing.T) {
 	// PRIORITY "8" is out of range; severity should stay Default
 	mapJournalEntryAttributes(e, map[string]any{"PRIORITY": "8"})
 	assert.Equal(t, entry.Default, e.Severity)
-	assert.Equal(t, "", e.SeverityText)
+	assert.Empty(t, e.SeverityText)
 }
 
 func TestMapJournalEntryAttributes_NonStringPriority(t *testing.T) {
