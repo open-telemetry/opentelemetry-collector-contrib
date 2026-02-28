@@ -26,7 +26,7 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.53.0
 	go.opentelemetry.io/collector/confmap v1.53.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.147.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.147.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.147.0 // indirect
 	go.opentelemetry.io/collector/exporter v1.53.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.147.0
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.147.0
@@ -130,3 +130,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/elastic/go-docappender/v2 => github.com/mauri870/go-docappender/v2 v2.0.0-20260225130734-130f7a2d44f8

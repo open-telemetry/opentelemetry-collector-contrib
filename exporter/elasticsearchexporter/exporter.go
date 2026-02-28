@@ -12,8 +12,9 @@ import (
 	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -95,24 +96,183 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
+type elasticsearchRequest struct {
+	sessions      mappingModeSessions
+	extraSessions sessionList
+	ctx           context.Context
+	count         int
+	errs          []error
+}
+
+func (r *elasticsearchRequest) ItemsCount() int {
+	return r.count
+}
+
+func (r *elasticsearchRequest) BytesSize() int {
+	var size int
+	for _, session := range r.sessions.sessions {
+		if syncSession, ok := session.(*syncBulkIndexerSession); ok && syncSession != nil && syncSession.bi != nil {
+			size += syncSession.bi.UncompressedLen()
+		}
+	}
+	for _, session := range r.extraSessions {
+		if syncSession, ok := session.(*syncBulkIndexerSession); ok && syncSession != nil && syncSession.bi != nil {
+			size += syncSession.bi.UncompressedLen()
+		}
+	}
+	return size
+}
+
+func (r *elasticsearchRequest) MergeSplit(ctx context.Context, maxSize int, sizerType exporterhelper.RequestSizerType, req xexporterhelper.Request) ([]xexporterhelper.Request, error) {
+	var st docappender.SizerType
+	if sizerType == exporterhelper.RequestSizerTypeItems {
+		st = docappender.ItemsCountSizer
+	} else if sizerType == exporterhelper.RequestSizerTypeBytes {
+		st = docappender.BytesSizer
+	} else {
+		return nil, errors.New("MergeSplit is only supported for SizerTypeItems or SizerTypeBytes")
+	}
+
+	if req != nil {
+		req2, ok := req.(*elasticsearchRequest)
+		if !ok {
+			return nil, errors.New("invalid input type for MergeSplit")
+		}
+
+		// Merge primary sessions
+		for i, session2 := range req2.sessions.sessions {
+			if syncSession2, ok := session2.(*syncBulkIndexerSession); ok && syncSession2 != nil && syncSession2.bi != nil {
+				if r.sessions.sessions[i] == nil {
+					r.sessions.sessions[i] = syncSession2
+					r.sessions.sessionList = append(r.sessions.sessionList, syncSession2)
+				} else {
+					syncSession1, ok1 := r.sessions.sessions[i].(*syncBulkIndexerSession)
+					if ok1 && syncSession1 != nil && syncSession1.bi != nil {
+						if err := syncSession1.bi.Merge(syncSession2.bi); err != nil {
+							return nil, err
+						}
+					}
+				}
+			}
+		}
+
+		// Merge extra sessions
+		for _, session2 := range req2.extraSessions {
+			if syncSession2, ok := session2.(*syncBulkIndexerSession); ok && syncSession2 != nil && syncSession2.bi != nil {
+				r.extraSessions = append(r.extraSessions, syncSession2)
+			}
+		}
+
+		r.count += req2.count
+		r.errs = append(r.errs, req2.errs...)
+	}
+
+	if maxSize == 0 {
+		return []xexporterhelper.Request{r}, nil
+	}
+
+	var newRequests []xexporterhelper.Request
+	for i, session := range r.sessions.sessions {
+		syncSession, ok := session.(*syncBulkIndexerSession)
+		if !ok || syncSession == nil || syncSession.bi == nil || syncSession.bi.Items() == 0 {
+			continue
+		}
+		splits, err := syncSession.bi.Split(maxSize, st)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, splitIndexer := range splits {
+			newReq := &elasticsearchRequest{
+				ctx:   r.ctx,
+				count: splitIndexer.Items(),
+			}
+
+			// No indexers needed for split sessions as we will only flush them
+			newSessions := mappingModeSessions{}
+
+			newSyncSession := &syncBulkIndexerSession{
+				bi: splitIndexer,
+				s:  syncSession.s,
+			}
+			newSessions.sessions[i] = newSyncSession
+			newSessions.sessionList = append(newSessions.sessionList, newSyncSession)
+
+			newReq.sessions = newSessions
+			newRequests = append(newRequests, newReq)
+		}
+	}
+	for _, session := range r.extraSessions {
+		syncSession, ok := session.(*syncBulkIndexerSession)
+		if !ok || syncSession == nil || syncSession.bi == nil || syncSession.bi.Items() == 0 {
+			continue
+		}
+		splits, err := syncSession.bi.Split(maxSize, st)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, splitIndexer := range splits {
+			newReq := &elasticsearchRequest{
+				ctx:   r.ctx,
+				count: splitIndexer.Items(),
+			}
+
+			newSyncSession := &syncBulkIndexerSession{
+				bi: splitIndexer,
+				s:  syncSession.s,
+			}
+			newReq.extraSessions = append(newReq.extraSessions, newSyncSession)
+			newRequests = append(newRequests, newReq)
+		}
+	}
+	return newRequests, nil
+}
+
+func (r *elasticsearchRequest) OnError(_ error) xexporterhelper.Request {
+	// If partial error, return this request to handle failures properly
+	return r
+}
+
+func (r *elasticsearchRequest) Export(ctx context.Context) error {
+	defer r.sessions.End()
+	defer r.extraSessions.End()
+
+	if err := r.sessions.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		r.errs = append(r.errs, err)
+	}
+	if err := r.extraSessions.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		r.errs = append(r.errs, err)
+	}
+	return errors.Join(r.errs...)
+}
+
+func (e *elasticsearchExporter) logsDataToRequest(ctx context.Context, ld plog.Logs) (xexporterhelper.Request, error) {
 	defaultMappingMode, err := e.getRequestMappingMode(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	mappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
-	defer mappingModeSessions.End()
+	sessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
+	req := &elasticsearchRequest{
+		sessions: sessions,
+		ctx:      ctx,
+	}
 
-	var errs []error
 	for _, rl := range ld.ResourceLogs().All() {
 		resource := rl.Resource()
 		for _, ill := range rl.ScopeLogs().All() {
 			scope := ill.Scope()
 			mappingMode, err := e.getScopeMappingMode(scope, defaultMappingMode)
 			if err != nil {
-				return err
+				return nil, err
 			}
-			session := mappingModeSessions.StartSession(ctx, mappingMode)
+			session := req.sessions.StartSession(ctx, mappingMode)
 			router := e.documentRouters[int(mappingMode)]
 			encoder := e.documentEncoders[int(mappingMode)]
 
@@ -126,7 +286,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 			for _, lr := range ill.LogRecords().All() {
 				if err := e.pushLogRecord(ctx, router, encoder, ec, lr, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
-						return cerr
+						return nil, cerr
 					}
 
 					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
@@ -134,19 +294,13 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 						continue
 					}
 
-					errs = append(errs, err)
+					req.errs = append(req.errs, err)
 				}
+				req.count++
 			}
 		}
 	}
-
-	if err := mappingModeSessions.Flush(ctx); err != nil {
-		if cerr := ctx.Err(); cerr != nil {
-			return cerr
-		}
-		errs = append(errs, err)
-	}
-	return errors.Join(errs...)
+	return req, nil
 }
 
 func (e *elasticsearchExporter) pushLogRecord(
@@ -189,13 +343,16 @@ func (p *dataPointsGroup) addDataPoint(dp datapoints.DataPoint) {
 	p.dataPoints = append(p.dataPoints, dp)
 }
 
-func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pmetric.Metrics) error {
+func (e *elasticsearchExporter) metricsDataToRequest(ctx context.Context, metrics pmetric.Metrics) (xexporterhelper.Request, error) {
 	defaultMappingMode, err := e.getRequestMappingMode(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	sessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
-	defer sessions.End()
+	req := &elasticsearchRequest{
+		sessions: sessions,
+		ctx:      ctx,
+	}
 
 	type mappingIndexKey struct {
 		mappingMode MappingMode
@@ -206,7 +363,6 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 	groupedDataPointsByIndex := make(map[mappingIndexKey]map[metricgroup.HashKey]*dataPointsGroup)
 
 	var validationErrs []error // log instead of returning these so that upstream does not retry
-	var errs []error
 	for _, resourceMetrics := range metrics.ResourceMetrics().All() {
 		resource := resourceMetrics.Resource()
 		var hasher metricgroup.DataPointHasher
@@ -215,7 +371,7 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 			scope := scopeMetrics.Scope()
 			mappingMode, err := e.getScopeMappingMode(scope, defaultMappingMode)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			router := e.documentRouters[int(mappingMode)]
 			if hasher == nil || mappingMode != prevScopeMappingMode {
@@ -310,7 +466,7 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 		for _, dpGroup := range groupedDataPoints {
 			buf := e.bufferPool.NewPooledBuffer()
 			encoder := e.documentEncoders[int(key.mappingMode)]
-			session := sessions.StartSession(ctx, key.mappingMode)
+			session := req.sessions.StartSession(ctx, key.mappingMode)
 
 			dynamicTemplates, err := encoder.encodeMetrics(
 				encodingContext{
@@ -326,54 +482,51 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 			)
 			if err != nil {
 				buf.Recycle()
-				errs = append(errs, err)
+				req.errs = append(req.errs, err)
 				continue
 			}
 			if err := session.Add(ctx, key.index.Index, "", "", buf, dynamicTemplates, docappender.ActionCreate); err != nil {
 				// not recycling after Add returns an error as we don't know if it's already recycled
 				if cerr := ctx.Err(); cerr != nil {
-					return cerr
+					return nil, cerr
 				}
-				errs = append(errs, err)
+				req.errs = append(req.errs, err)
 			}
+			req.count++
 		}
 	}
 	if len(validationErrs) > 0 {
 		e.set.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
 	}
 
-	if err := sessions.Flush(ctx); err != nil {
-		if cerr := ctx.Err(); cerr != nil {
-			return cerr
-		}
-		errs = append(errs, err)
-	}
-	return errors.Join(errs...)
+	return req, nil
 }
 
-func (e *elasticsearchExporter) pushTraceData(
+func (e *elasticsearchExporter) traceDataToRequest(
 	ctx context.Context,
 	td ptrace.Traces,
-) error {
+) (xexporterhelper.Request, error) {
 	// Get the partioner key from the context
 	// Decode the key to get the info
 	defaultMappingMode, err := e.getRequestMappingMode(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	sessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
-	defer sessions.End()
+	req := &elasticsearchRequest{
+		sessions: sessions,
+		ctx:      ctx,
+	}
 
-	var errs []error
 	for _, il := range td.ResourceSpans().All() {
 		resource := il.Resource()
 		for _, scopeSpan := range il.ScopeSpans().All() {
 			scope := scopeSpan.Scope()
 			mappingMode, err := e.getScopeMappingMode(scope, defaultMappingMode)
 			if err != nil {
-				return err
+				return nil, err
 			}
-			session := sessions.StartSession(ctx, mappingMode)
+			session := req.sessions.StartSession(ctx, mappingMode)
 			router := e.documentRouters[int(mappingMode)]
 			spanEventRouter := e.spanEventDocumentRouters[int(mappingMode)]
 			encoder := e.documentEncoders[int(mappingMode)]
@@ -388,26 +541,22 @@ func (e *elasticsearchExporter) pushTraceData(
 			for _, span := range scopeSpan.Spans().All() {
 				if err := e.pushTraceRecord(ctx, router, encoder, ec, span, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
-						return cerr
+						return nil, cerr
 					}
-					errs = append(errs, err)
+					req.errs = append(req.errs, err)
 				}
+				req.count++
 				for _, spanEvent := range span.Events().All() {
 					if err := e.pushSpanEvent(ctx, spanEventRouter, encoder, ec, span, spanEvent, session); err != nil {
-						errs = append(errs, err)
+						req.errs = append(req.errs, err)
 					}
+					req.count++
 				}
 			}
 		}
 	}
 
-	if err := sessions.Flush(ctx); err != nil {
-		if cerr := ctx.Err(); cerr != nil {
-			return cerr
-		}
-		errs = append(errs, err)
-	}
-	return errors.Join(errs...)
+	return req, nil
 }
 
 func (e *elasticsearchExporter) pushTraceRecord(
@@ -485,18 +634,21 @@ func (e *elasticsearchExporter) extractDocumentPipelineAttribute(m pcommon.Map) 
 	return v.AsString()
 }
 
-func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofile.Profiles) error {
+func (e *elasticsearchExporter) profilesDataToRequest(ctx context.Context, pd pprofile.Profiles) (xexporterhelper.Request, error) {
 	// TODO add support for routing profiles to different data_stream.namespaces?
 	defaultMappingMode, err := e.getRequestMappingMode(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var sessions sessionList
-	defer sessions.End()
+	req := &elasticsearchRequest{
+		sessions: mappingModeSessions{indexers: &e.bulkIndexers.modes},
+		ctx:      ctx,
+	}
+
 	startSession := func(indexer bulkIndexer) bulkIndexerSession {
 		session := indexer.StartSession(ctx)
-		sessions = append(sessions, session)
+		req.extraSessions = append(req.extraSessions, session)
 		return session
 	}
 	eventsSession := startSession(e.bulkIndexers.profilingEvents)
@@ -504,22 +656,17 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	stackFramesSession := startSession(e.bulkIndexers.profilingStackFrames)
 	executablesSession := startSession(e.bulkIndexers.profilingExecutables)
 
-	// scopeMappingModeSessions is used to create the default session according to
-	// the specified mapping mode.
-	scopeMappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
-	defer scopeMappingModeSessions.End()
 	dic := pd.Dictionary()
 
-	var errs []error
 	for _, rp := range pd.ResourceProfiles().All() {
 		resource := rp.Resource()
 		for _, sp := range rp.ScopeProfiles().All() {
 			scope := sp.Scope()
 			mappingMode, err := e.getScopeMappingMode(scope, defaultMappingMode)
 			if err != nil {
-				return err
+				return nil, err
 			}
-			defaultSession := scopeMappingModeSessions.StartSession(ctx, mappingMode)
+			defaultSession := req.sessions.StartSession(ctx, mappingMode)
 			encoder := e.documentEncoders[int(mappingMode)]
 
 			for _, profile := range sp.Profiles().All() {
@@ -534,7 +681,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 					stackTracesSession, stackFramesSession, executablesSession,
 				); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
-						return cerr
+						return nil, cerr
 					}
 
 					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
@@ -542,19 +689,14 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 						continue
 					}
 
-					errs = append(errs, err)
+					req.errs = append(req.errs, err)
 				}
+				req.count++
 			}
 		}
 	}
 
-	if err := sessions.Flush(ctx); err != nil {
-		if cerr := ctx.Err(); cerr != nil {
-			return cerr
-		}
-		errs = append(errs, err)
-	}
-	return errors.Join(errs...)
+	return req, nil
 }
 
 func (*elasticsearchExporter) pushProfileRecord(
@@ -641,12 +783,12 @@ func (e *elasticsearchExporter) getRequestMappingMode(ctx context.Context) (Mapp
 	case 1:
 		mode, err := e.parseMappingMode(values[0])
 		if err != nil {
-			return -1, consumererror.NewPermanent(fmt.Errorf("invalid context mapping mode: %w", err))
+			return -1, fmt.Errorf("invalid context mapping mode: %w", err)
 		}
 		return mode, nil
 
 	default:
-		return -1, consumererror.NewPermanent(fmt.Errorf("expected one value for client metadata key %q, got %d", metadataKey, n))
+		return -1, fmt.Errorf("expected one value for client metadata key %q, got %d", metadataKey, n)
 	}
 }
 
@@ -659,7 +801,7 @@ func (e *elasticsearchExporter) getScopeMappingMode(
 	}
 	mode, err := e.parseMappingMode(attr.AsString())
 	if err != nil {
-		return -1, consumererror.NewPermanent(fmt.Errorf("invalid scope mapping mode: %w", err))
+		return -1, fmt.Errorf("invalid scope mapping mode: %w", err)
 	}
 	return mode, nil
 }

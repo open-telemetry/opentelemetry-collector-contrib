@@ -9,11 +9,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"regexp"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/elastic/elastic-transport-go/v8/elastictransport"
@@ -81,7 +79,7 @@ func newBulkIndexer(
 	return newSyncBulkIndexer(client, config, requireDataStream, tb, logger)
 }
 
-func bulkIndexerConfig(client elastictransport.Interface, config *Config, requireDataStream bool, logger *zap.Logger) docappender.BulkIndexerConfig {
+func bulkIndexerConfig(client elastictransport.Interface, config *Config, requireDataStream bool, _ *zap.Logger) docappender.BulkIndexerConfig {
 	var maxDocRetries int
 	if config.Retry.Enabled {
 		maxDocRetries = defaultMaxRetries
@@ -102,29 +100,7 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
-		QueryParams:             getQueryParamsFromEndpoint(config, logger),
 	}
-}
-
-func getQueryParamsFromEndpoint(config *Config, logger *zap.Logger) (queryParams map[string][]string) {
-	endpoints, _ := config.endpoints()
-
-	if len(endpoints) != 0 {
-		// we check the query params set on the first endpoint only
-		// this is enough to replicate to all requests
-		parsedURL, err := url.Parse(endpoints[0])
-		if err != nil {
-			logger.Warn("Failed to parse URL from endpoint", zap.Error(err))
-		}
-
-		rawQuery := parsedURL.RawQuery
-		queryParams, err = url.ParseQuery(rawQuery)
-		if err != nil {
-			logger.Warn("Failed to parse query parameters from endpoint", zap.Error(err))
-		}
-		return queryParams
-	}
-	return nil
 }
 
 func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Value {
@@ -152,7 +128,7 @@ func newSyncBulkIndexer(
 		}
 	}
 	return &syncBulkIndexer{
-		config:                bulkIndexerConfig(client, config, requireDataStream, logger),
+		config:                bulkIndexerConfig(client, config, false, logger),
 		maxFlushBytes:         maxFlushBytes,
 		flushTimeout:          config.Timeout,
 		retryConfig:           config.Retry,
@@ -160,6 +136,7 @@ func newSyncBulkIndexer(
 		telemetryBuilder:      tb,
 		logger:                logger,
 		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
+		requireDataStream:     requireDataStream,
 	}
 }
 
@@ -172,6 +149,7 @@ type syncBulkIndexer struct {
 	telemetryBuilder      *metadata.TelemetryBuilder
 	logger                *zap.Logger
 	failedDocsInputLogger *zap.Logger
+	requireDataStream     bool
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
@@ -201,12 +179,13 @@ type syncBulkIndexerSession struct {
 // Add adds an item to the sync bulk indexer session.
 func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
 	doc := docappender.BulkIndexerItem{
-		Index:            index,
-		Body:             document,
-		DocumentID:       docID,
-		DynamicTemplates: dynamicTemplates,
-		Action:           action,
-		Pipeline:         pipeline,
+		Index:             index,
+		Body:              document,
+		DocumentID:        docID,
+		DynamicTemplates:  dynamicTemplates,
+		Action:            action,
+		Pipeline:          pipeline,
+		RequireDataStream: s.s.requireDataStream,
 	}
 	err := s.bi.Add(doc)
 	if err != nil {
@@ -485,9 +464,6 @@ func newFailedDocsInputLogger(logger *zap.Logger, config *Config) *zap.Logger {
 }
 
 type bulkIndexers struct {
-	// wg tracks active sessions
-	wg sync.WaitGroup
-
 	// NOTE(axw) we have removed async bulk indexer and there should be
 	// no reason for having one per mode or for different document types.
 	// Instead, the caller can create separate sessions as needed, and we
@@ -525,20 +501,20 @@ func (b *bulkIndexers) start(
 
 	for _, mode := range allowedMappingModes {
 		bi := newBulkIndexer(esClient, cfg, mode == MappingOTel, b.telemetryBuilder, set.Logger)
-		b.modes[mode] = &wgTrackingBulkIndexer{bulkIndexer: bi, wg: &b.wg}
+		b.modes[mode] = bi
 	}
 
 	profilingEvents := newBulkIndexer(esClient, cfg, true, b.telemetryBuilder, set.Logger)
-	b.profilingEvents = &wgTrackingBulkIndexer{bulkIndexer: profilingEvents, wg: &b.wg}
+	b.profilingEvents = profilingEvents
 
 	profilingStackTraces := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
-	b.profilingStackTraces = &wgTrackingBulkIndexer{bulkIndexer: profilingStackTraces, wg: &b.wg}
+	b.profilingStackTraces = profilingStackTraces
 
 	profilingStackFrames := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
-	b.profilingStackFrames = &wgTrackingBulkIndexer{bulkIndexer: profilingStackFrames, wg: &b.wg}
+	b.profilingStackFrames = profilingStackFrames
 
 	profilingExecutables := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
-	b.profilingExecutables = &wgTrackingBulkIndexer{bulkIndexer: profilingExecutables, wg: &b.wg}
+	b.profilingExecutables = profilingExecutables
 	return nil
 }
 
@@ -572,38 +548,7 @@ func (b *bulkIndexers) shutdown(ctx context.Context) error {
 		}
 	}
 
-	doneCh := make(chan struct{})
-	go func() {
-		b.wg.Wait()
-		close(doneCh)
-	}()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-doneCh:
-	}
 	return nil
-}
-
-type wgTrackingBulkIndexer struct {
-	bulkIndexer
-	wg *sync.WaitGroup
-}
-
-func (w *wgTrackingBulkIndexer) StartSession(ctx context.Context) bulkIndexerSession {
-	w.wg.Add(1)
-	session := w.bulkIndexer.StartSession(ctx)
-	return &wgTrackingBulkIndexerSession{bulkIndexerSession: session, wg: w.wg}
-}
-
-type wgTrackingBulkIndexerSession struct {
-	bulkIndexerSession
-	wg *sync.WaitGroup
-}
-
-func (w *wgTrackingBulkIndexerSession) End() {
-	defer w.wg.Done()
-	w.bulkIndexerSession.End()
 }
 
 type errBulkIndexerSession struct {
