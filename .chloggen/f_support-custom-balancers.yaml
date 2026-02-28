@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add compile-time `custombalancer.WrapFactory` support for private custom balancing while keeping `group_rebalance_strategy` limited to built-ins.
+note: Add compile-time `custombalancer.WrapFactory` support for private default balancing when `group_rebalance_strategy` is explicitly set to empty, while preserving strict built-in strategy validation.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46454]

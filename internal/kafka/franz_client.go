@@ -98,7 +98,6 @@ func NewFranzConsumerGroup(
 	topics []string,
 	excludeTopics []string,
 	logger *zap.Logger,
-	groupBalancerResolver func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error),
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
 	opts, err := commonOpts(ctx, host, clientCfg, logger, append([]kgo.Opt{
@@ -169,29 +168,17 @@ func NewFranzConsumerGroup(
 	case configkafka.CooperativeStickyBalanceStrategy:
 		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
 	case "":
-		// Use franz-go defaults.
+		// When unset, keep franz-go's default balancer unless the caller has
+		// already injected a custom balancer option.
 	default:
-		if groupBalancerResolver == nil {
-			return nil, fmt.Errorf(
-				"group_rebalance_strategy should be one of '%s', '%s', '%s', or '%s'. configured value %v",
-				configkafka.RangeBalanceStrategy,
-				configkafka.RoundRobinBalanceStrategy,
-				configkafka.StickyBalanceStrategy,
-				configkafka.CooperativeStickyBalanceStrategy,
-				consumerCfg.GroupRebalanceStrategy,
-			)
-		}
-		extBalancers, ok, err := groupBalancerResolver(consumerCfg.GroupRebalanceStrategy)
-		if err != nil {
-			return nil, fmt.Errorf("failed resolving custom group balancer for strategy %q: %w", consumerCfg.GroupRebalanceStrategy, err)
-		}
-		if !ok {
-			return nil, fmt.Errorf("no custom group balancer found for strategy %q", consumerCfg.GroupRebalanceStrategy)
-		}
-		if len(extBalancers) == 0 {
-			return nil, fmt.Errorf("custom group balancer resolver returned no balancers for strategy %q", consumerCfg.GroupRebalanceStrategy)
-		}
-		opts = append(opts, kgo.Balancers(extBalancers...))
+		return nil, fmt.Errorf(
+			"group_rebalance_strategy should be one of '%s', '%s', '%s', or '%s'. configured value %v",
+			configkafka.RangeBalanceStrategy,
+			configkafka.RoundRobinBalanceStrategy,
+			configkafka.StickyBalanceStrategy,
+			configkafka.CooperativeStickyBalanceStrategy,
+			consumerCfg.GroupRebalanceStrategy,
+		)
 	}
 	return kgo.NewClient(opts...)
 }

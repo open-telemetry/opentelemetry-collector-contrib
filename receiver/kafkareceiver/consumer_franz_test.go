@@ -17,6 +17,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -25,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
@@ -384,6 +386,160 @@ func TestMakeUseLeaderEpochAdjuster_ClearsEpoch(t *testing.T) {
 
 	require.Equal(t, kgo.NewOffset().At(42).WithEpoch(-1), out["t"][0])
 	require.Equal(t, kgo.NewOffset().At(100).WithEpoch(-1), out["t"][1])
+}
+
+func TestResolveCustomGroupBalancerOpt_UnsetStrategyUsesResolver(t *testing.T) {
+	t.Parallel()
+
+	resolverCalled := false
+	opt, ok, err := resolveCustomGroupBalancerOpt(
+		"",
+		func(strategy configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+			resolverCalled = true
+			require.Equal(t, configkafka.GroupRebalanceStrategy(""), strategy)
+			return []kgo.GroupBalancer{kgo.RangeBalancer()}, true, nil
+		},
+	)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.NotNil(t, opt)
+	require.True(t, resolverCalled)
+}
+
+func TestResolveCustomGroupBalancerOpt_ConfiguredStrategySkipsResolver(t *testing.T) {
+	t.Parallel()
+
+	resolverCalled := false
+	opt, ok, err := resolveCustomGroupBalancerOpt(
+		configkafka.StickyBalanceStrategy,
+		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+			resolverCalled = true
+			return []kgo.GroupBalancer{kgo.RangeBalancer()}, true, nil
+		},
+	)
+	require.NoError(t, err)
+	require.False(t, ok)
+	require.Nil(t, opt)
+	require.False(t, resolverCalled)
+}
+
+func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverNoMatch(t *testing.T) {
+	t.Parallel()
+
+	opt, ok, err := resolveCustomGroupBalancerOpt(
+		"",
+		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+			return nil, false, nil
+		},
+	)
+	require.NoError(t, err)
+	require.False(t, ok)
+	require.Nil(t, opt)
+}
+
+func TestResolveCustomGroupBalancerOpt_UnsetStrategyNilResolver(t *testing.T) {
+	t.Parallel()
+
+	opt, ok, err := resolveCustomGroupBalancerOpt("", nil)
+	require.NoError(t, err)
+	require.False(t, ok)
+	require.Nil(t, opt)
+}
+
+func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverEmpty(t *testing.T) {
+	t.Parallel()
+
+	_, _, err := resolveCustomGroupBalancerOpt(
+		"",
+		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+			return []kgo.GroupBalancer{}, true, nil
+		},
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "custom group balancer resolver returned no balancers for unset group_rebalance_strategy")
+}
+
+func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverError(t *testing.T) {
+	t.Parallel()
+
+	_, _, err := resolveCustomGroupBalancerOpt(
+		"",
+		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+			return nil, true, errors.New("resolver failure")
+		},
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed resolving custom default group balancer")
+	assert.ErrorContains(t, err, "resolver failure")
+}
+
+type namedTestBalancer struct {
+	kgo.GroupBalancer
+	name string
+}
+
+func (b namedTestBalancer) ProtocolName() string { return b.name }
+
+func TestFranzConsumer_UnsetStrategyResolverUsesCustomBalancer(t *testing.T) {
+	t.Parallel()
+
+	topic := "topic"
+	cluster, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
+	producer := mustNewClient(t, cluster)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ClientConfig = clientConfig
+	cfg.GroupID = t.Name()
+	cfg.InitialOffset = configkafka.EarliestOffset
+	cfg.GroupRebalanceStrategy = ""
+
+	seenProtocols := make(chan []string, 1)
+	cluster.ControlKey(int16(kmsg.JoinGroup), func(kreq kmsg.Request) (kmsg.Response, error, bool) {
+		jreq, ok := kreq.(*kmsg.JoinGroupRequest)
+		require.True(t, ok)
+
+		names := make([]string, 0, len(jreq.Protocols))
+		for _, p := range jreq.Protocols {
+			names = append(names, p.Name)
+		}
+		select {
+		case seenProtocols <- names:
+		default:
+		}
+		return nil, nil, false
+	})
+
+	settings, _, _ := mustNewSettings(t)
+	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+		return func(context.Context, kafkaMessage, attribute.Set) error { return nil }, nil
+	}
+
+	base := kgo.CooperativeStickyBalancer()
+	customProtocol := "private-coop-sticky"
+	resolver := func(strategy configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+		require.Equal(t, configkafka.GroupRebalanceStrategy(""), strategy)
+		return []kgo.GroupBalancer{
+			namedTestBalancer{GroupBalancer: base, name: customProtocol},
+		}, true, nil
+	}
+
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn, resolver)
+	require.NoError(t, err)
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	require.NoError(t, producer.ProduceSync(ctx, &kgo.Record{
+		Topic: topic, Value: []byte("test"),
+	}).FirstErr())
+
+	select {
+	case names := <-seenProtocols:
+		assert.Contains(t, names, customProtocol)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for JoinGroup request")
+	}
 }
 
 // TestExcludeTopicWithRegex tests that exclude_topic works correctly with regex topic patterns.

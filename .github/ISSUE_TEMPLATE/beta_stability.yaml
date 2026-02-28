@@ -166,6 +166,7 @@ body:
       - pkg/experimentalmetricmetadata
       - pkg/golden
       - pkg/kafka/configkafka
+      - pkg/kafka/custombalancer
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/pdatatest

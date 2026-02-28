@@ -3,6 +3,6 @@
 
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka/custombalancer"
+import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/custombalancer"
 
 type groupBalancerResolver = custombalancer.GroupBalancerResolver

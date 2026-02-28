@@ -142,8 +142,14 @@ type ConsumerConfig struct {
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
 	// GroupRebalanceStrategy specifies the strategy to use for partition assignment.
-	// Possible values are "range", "roundrobin", "sticky", and "cooperative-sticky".
+	//
+	// Built-in values are "range", "roundrobin", "sticky", and
+	// "cooperative-sticky".
+	//
 	// Defaults to "cooperative-sticky".
+	//
+	// Custom collector distributions can set this to empty and provide a
+	// compile-time resolver hook that supplies a custom default balancer.
 	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy,omitempty"`
 
 	// GroupInstanceID specifies the ID of the consumer

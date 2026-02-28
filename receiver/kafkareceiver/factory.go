@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka/custombalancer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/custombalancer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -74,38 +74,42 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesReceiver(
-	ctx context.Context,
+func createTracesReceiver(ctx context.Context,
 	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-	return newTracesReceiver(cfg.(*Config), set, nextConsumer, custombalancer.GroupBalancerResolverFromContext(ctx))
+	return newTracesReceiver(cfg.(*Config), set, nextConsumer,
+		custombalancer.GroupBalancerResolverFromContext(ctx),
+	)
 }
 
-func createMetricsReceiver(
-	ctx context.Context,
+func createMetricsReceiver(ctx context.Context,
 	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return newMetricsReceiver(cfg.(*Config), set, nextConsumer, custombalancer.GroupBalancerResolverFromContext(ctx))
+	return newMetricsReceiver(cfg.(*Config), set, nextConsumer,
+		custombalancer.GroupBalancerResolverFromContext(ctx),
+	)
 }
 
-func createLogsReceiver(
-	ctx context.Context,
+func createLogsReceiver(ctx context.Context,
 	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	return newLogsReceiver(cfg.(*Config), set, nextConsumer, custombalancer.GroupBalancerResolverFromContext(ctx))
+	return newLogsReceiver(cfg.(*Config), set, nextConsumer,
+		custombalancer.GroupBalancerResolverFromContext(ctx),
+	)
 }
 
-func createProfilesReceiver(
-	ctx context.Context,
+func createProfilesReceiver(ctx context.Context,
 	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer xconsumer.Profiles,
 ) (xreceiver.Profiles, error) {
-	return newProfilesReceiver(cfg.(*Config), set, nextConsumer, custombalancer.GroupBalancerResolverFromContext(ctx))
+	return newProfilesReceiver(cfg.(*Config), set, nextConsumer,
+		custombalancer.GroupBalancerResolverFromContext(ctx),
+	)
 }

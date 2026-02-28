@@ -6,6 +6,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 	"net"
 	"sync"
@@ -23,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -149,6 +151,27 @@ func (c *franzConsumer) reportRecoverable(err error) {
 	componentstatus.ReportStatus(c.host, componentstatus.NewRecoverableErrorEvent(err))
 }
 
+func resolveCustomGroupBalancerOpt(
+	strategy configkafka.GroupRebalanceStrategy,
+	resolver groupBalancerResolver,
+) (kgo.Opt, bool, error) {
+	if strategy != "" || resolver == nil {
+		return nil, false, nil
+	}
+
+	extBalancers, handled, err := resolver("")
+	if err != nil {
+		return nil, false, fmt.Errorf("failed resolving custom default group balancer: %w", err)
+	}
+	if !handled {
+		return nil, false, nil
+	}
+	if len(extBalancers) == 0 {
+		return nil, false, errors.New("custom group balancer resolver returned no balancers for unset group_rebalance_strategy")
+	}
+	return kgo.Balancers(extBalancers...), true, nil
+}
+
 func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -196,6 +219,16 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		opts = append(opts, kgo.AdjustFetchOffsetsFn(makeClearLeaderEpochAdjuster()))
 	}
 
+	balancerOpt, ok, err := resolveCustomGroupBalancerOpt(
+		c.config.GroupRebalanceStrategy, c.groupBalancerResolver,
+	)
+	if err != nil {
+		return err
+	}
+	if ok {
+		opts = append(opts, balancerOpt)
+	}
+
 	// Create franz-go consumer client
 	client, err := kafka.NewFranzConsumerGroup(
 		ctx,
@@ -205,7 +238,6 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		c.topics,
 		c.excludeTopics,
 		c.settings.Logger,
-		c.groupBalancerResolver,
 		opts...,
 	)
 	if err != nil {
