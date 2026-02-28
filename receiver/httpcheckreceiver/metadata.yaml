@@ -15,39 +15,50 @@ status:
     emeritus: [codeboten]
     seeking_new: true
 
+reaggregation_enabled: true
 resource_attributes:
 
 attributes:
   error.message:
     description: Error message recorded during check
     type: string
+    requirement_level: opt_in
   http.method:
     description: HTTP request method
     type: string
+    requirement_level: recommended
   http.status_class:
     description: HTTP response status class
     type: string
+    requirement_level: recommended
   http.status_code:
     description: HTTP response status code
     type: int
+    requirement_level: recommended
   http.tls.cn:
     description: The commonName in the subject of the certificate.
     type: string
+    requirement_level: opt_in
   http.tls.issuer:
     description: The entity that issued the certificate.
     type: string
+    requirement_level: opt_in
   http.tls.san:
     description: The Subject Alternative Name of the certificate.
     type: slice
+    requirement_level: opt_in
   http.url:
     description: Full HTTP request URL.
     type: string
+    requirement_level: recommended
   network.transport:
     description: OSI transport layer or inter-process communication method.
     type: string
+    requirement_level: recommended
   validation.type:
     description: Type of validation performed (contains, json_path, size, regex)
     type: string
+    requirement_level: opt_in
 
 metrics:
   httpcheck.client.connection.duration:

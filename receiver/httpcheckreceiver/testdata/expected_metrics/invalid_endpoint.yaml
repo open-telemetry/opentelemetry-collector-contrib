@@ -19,9 +19,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: error.message
-                      value:
-                        stringValue: 'Get "http://invalid-endpoint": dial tcp: lookup invalid-endpoint: no such host'
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint

@@ -39,7 +39,7 @@ Records errors occurring during HTTP check.
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended |
-| error.message | Error message recorded during check | Any Str | Recommended |
+| error.message | Error message recorded during check | Any Str | Opt-In |
 
 ### httpcheck.status
 
@@ -152,9 +152,9 @@ Time in seconds until certificate expiry, as specified by `NotAfter` field in th
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended |
-| http.tls.issuer | The entity that issued the certificate. | Any Str | Recommended |
-| http.tls.cn | The commonName in the subject of the certificate. | Any Str | Recommended |
-| http.tls.san | The Subject Alternative Name of the certificate. | Any Slice | Recommended |
+| http.tls.issuer | The entity that issued the certificate. | Any Str | Opt-In |
+| http.tls.cn | The commonName in the subject of the certificate. | Any Str | Opt-In |
+| http.tls.san | The Subject Alternative Name of the certificate. | Any Slice | Opt-In |
 
 ### httpcheck.tls.handshake.duration
 
@@ -183,7 +183,7 @@ Number of response validations that failed.
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended |
-| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended |
+| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Opt-In |
 
 ### httpcheck.validation.passed
 
@@ -198,4 +198,4 @@ Number of response validations that passed.
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended |
-| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended |
+| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Opt-In |
