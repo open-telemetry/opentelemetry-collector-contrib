@@ -8,11 +8,14 @@ import (
 	"strconv"
 	"testing"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -154,6 +157,95 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 
 		for i := range contexts {
 			contexts[i].Close()
+		}
+	}
+}
+
+func BenchmarkStatementSequenceExecuteTracing_Overhead(b *testing.B) {
+	scenarios := []struct {
+		name         string
+		statements   []string
+		expectErrors bool
+	}{
+		{name: "10_Statements", statements: buildLogStatements(10)},
+		{name: "50_Statements", statements: buildLogStatements(50)},
+		{name: "200_Statements", statements: buildLogStatements(200)},
+		{name: "50_Statements_With_Errors", statements: buildErrorLogStatements(50), expectErrors: true},
+	}
+
+	tracingStates := []struct {
+		name          string
+		setupSettings func() component.TelemetrySettings
+	}{
+		{
+			name: "NoTracing",
+			setupSettings: func() component.TelemetrySettings {
+				return componenttest.NewNopTelemetrySettings()
+			},
+		},
+		{
+			name: "TracingConfigured_Unsampled",
+			setupSettings: func() component.TelemetrySettings {
+				set := componenttest.NewNopTelemetrySettings()
+				set.TracerProvider = trace.NewTracerProvider(
+					trace.WithSampler(trace.NeverSample()),
+				)
+				return set
+			},
+		},
+		{
+			name: "TracingSampled_Recording",
+			setupSettings: func() component.TelemetrySettings {
+				set := componenttest.NewNopTelemetrySettings()
+				set.TracerProvider = trace.NewTracerProvider(
+					trace.WithSampler(trace.AlwaysSample()),
+					trace.WithSpanProcessor(tracetest.NewSpanRecorder()),
+				)
+				return set
+			},
+		},
+	}
+
+	ctx := b.Context()
+
+	for _, scenario := range scenarios {
+		for _, state := range tracingStates {
+			stateSettings := state.setupSettings()
+			parser, err := ottllog.NewParser(
+				ottlfuncs.StandardFuncs[*ottllog.TransformContext](),
+				stateSettings,
+				ottllog.EnablePathContextNames(),
+			)
+			if err != nil {
+				b.Fatalf("failed to create log parser: %v", err)
+			}
+
+			parsed, err := parser.ParseStatements(scenario.statements)
+			if err != nil {
+				b.Fatalf("failed to parse log statements: %v", err)
+			}
+			sequence := ottllog.NewStatementSequence(parsed, stateSettings)
+
+			contexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
+			for i := range contexts {
+				contexts[i] = newBenchmarkLogContext(len(scenario.statements))
+			}
+
+			b.Run(scenario.name+"/"+state.name, func(b *testing.B) {
+				b.ReportAllocs()
+				b.ResetTimer()
+				for i := 0; b.Loop(); i++ {
+					if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
+						if !scenario.expectErrors {
+							b.Fatalf("failed to execute log statements: %v", err)
+						}
+					}
+				}
+			})
+
+			for i := range contexts {
+				contexts[i].Close()
+			}
 		}
 	}
 }
@@ -341,6 +433,15 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 			contexts[i].Close()
 		}
 	}
+}
+
+func buildErrorLogStatements(count int) []string {
+	statements := make([]string, count)
+	for i := 0; i < count; i++ {
+		// encounters the non-numeric string error path at runtime.
+		statements[i] = `set(log.attributes["error_test"], Int("this_will_fail"))`
+	}
+	return statements
 }
 
 func buildMetricStatements(count int) []string {
