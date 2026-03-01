@@ -178,10 +178,8 @@ func BenchmarkStatementSequenceExecuteTracing_Overhead(b *testing.B) {
 		setupSettings func() component.TelemetrySettings
 	}{
 		{
-			name: "NoTracing",
-			setupSettings: func() component.TelemetrySettings {
-				return componenttest.NewNopTelemetrySettings()
-			},
+			name:          "NoTracing",
+			setupSettings: componenttest.NewNopTelemetrySettings,
 		},
 		{
 			name: "TracingConfigured_Unsampled",
@@ -437,7 +435,7 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 
 func buildErrorLogStatements(count int) []string {
 	statements := make([]string, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// encounters the non-numeric string error path at runtime.
 		statements[i] = `set(log.attributes["error_test"], Int("this_will_fail"))`
 	}
