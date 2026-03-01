@@ -17,6 +17,7 @@ const (
 	LogFilePathResolved   = "log.file.path_resolved"
 	LogFileOwnerName      = "log.file.owner.name"
 	LogFileOwnerGroupName = "log.file.owner.group.name"
+	LogFileMode           = "log.file.mode"
 	LogFileRecordNumber   = "log.file.record_number"
 	LogFileRecordOffset   = "log.file.record_offset"
 )
@@ -28,6 +29,7 @@ type Resolver struct {
 	IncludeFilePathResolved   bool `mapstructure:"include_file_path_resolved,omitempty"`
 	IncludeFileOwnerName      bool `mapstructure:"include_file_owner_name,omitempty"`
 	IncludeFileOwnerGroupName bool `mapstructure:"include_file_owner_group_name,omitempty"`
+	IncludeFileMode           bool `mapstructure:"include_file_mode,omitempty"`
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
@@ -45,6 +47,15 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 		if err != nil {
 			return nil, err
 		}
+	}
+	if r.IncludeFileMode && runtime.GOOS != "windows" {
+		fileInfo, err2 := file.Stat()
+		if err2 != nil {
+			return nil, fmt.Errorf("resolve file stat: %w", err2)
+		}
+		// Format the file mode as a 4-digit octal string (e.g., "0755")
+		mode := fmt.Sprintf("%04o", fileInfo.Mode().Perm())
+		attributes[LogFileMode] = mode
 	}
 	if !r.IncludeFileNameResolved && !r.IncludeFilePathResolved {
 		return attributes, nil

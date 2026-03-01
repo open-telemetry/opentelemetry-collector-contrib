@@ -17,9 +17,9 @@ import (
 func TestResolver(t *testing.T) {
 	t.Parallel()
 
-	for i := range 64 {
-		// Create a 6 bit string where each bit represents the value of a config option
-		bitString := fmt.Sprintf("%06b", i)
+	for i := range 128 {
+		// Create a 7 bit string where each bit represents the value of a config option
+		bitString := fmt.Sprintf("%07b", i)
 
 		// Create a resolver with a config that matches the bit pattern of i
 		r := Resolver{
@@ -29,6 +29,7 @@ func TestResolver(t *testing.T) {
 			IncludeFilePathResolved:   bitString[3] == '1',
 			IncludeFileOwnerName:      bitString[4] == '1' && runtime.GOOS != "windows",
 			IncludeFileOwnerGroupName: bitString[5] == '1' && runtime.GOOS != "windows",
+			IncludeFileMode:           bitString[6] == '1' && runtime.GOOS != "windows",
 		}
 
 		t.Run(bitString, func(t *testing.T) {
@@ -84,6 +85,13 @@ func TestResolver(t *testing.T) {
 			} else {
 				assert.Empty(t, attributes[LogFileOwnerGroupName])
 				assert.Empty(t, attributes[LogFileOwnerGroupName])
+			}
+			if r.IncludeFileMode {
+				expectLen++
+				assert.NotNil(t, attributes[LogFileMode])
+				assert.IsType(t, "", attributes[LogFileMode])
+			} else {
+				assert.Empty(t, attributes[LogFileMode])
 			}
 			assert.Len(t, attributes, expectLen)
 		})
