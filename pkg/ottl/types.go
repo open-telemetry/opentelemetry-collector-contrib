@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0
 // SPDX-License-Identifier: Apache-2.0
 
-package ottl
+package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 // ValueType represents the compile-time type of an OTTL expression.
 // This enum provides foundational infrastructure for future improvements
