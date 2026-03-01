@@ -71,6 +71,29 @@ type vals struct {
 	expo *mutex[pmetric.ExponentialHistogramDataPoint]
 }
 
+type zeroEmissions struct {
+	nums []pmetric.NumberDataPoint
+	hist []pmetric.HistogramDataPoint
+	expo []pmetric.ExponentialHistogramDataPoint
+}
+
+func (z zeroEmissions) appendTo(m metrics.Metric) {
+	switch m.Type() {
+	case pmetric.MetricTypeSum:
+		for i := range z.nums {
+			z.nums[i].CopyTo(m.Sum().DataPoints().AppendEmpty())
+		}
+	case pmetric.MetricTypeHistogram:
+		for i := range z.hist {
+			z.hist[i].CopyTo(m.Histogram().DataPoints().AppendEmpty())
+		}
+	case pmetric.MetricTypeExponentialHistogram:
+		for i := range z.expo {
+			z.expo[i].CopyTo(m.ExponentialHistogram().DataPoints().AppendEmpty())
+		}
+	}
+}
+
 func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	now := time.Now()
 
@@ -93,6 +116,7 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 		// aggregate the datapoints.
 		// using filter here, as the pmetric.*DataPoint are reference types so
 		// we can modify them using their "value".
+		var zeros zeroEmissions
 		m.Filter(func(id identity.Stream, dp any) bool {
 			// count the processed datatype.
 			// uses whatever value of attrs has at return-time
@@ -115,6 +139,17 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 				if !loaded {
 					// cached zero was stored, alloc new one
 					zero.nums = guard(pmetric.NewNumberDataPoint())
+
+					if dp.StartTimestamp() > 0 {
+						zeros.nums = append(zeros.nums, delta.GetZeroDp(dp, pmetric.NewNumberDataPoint, func(src, dst pmetric.NumberDataPoint) {
+							switch src.ValueType() {
+							case pmetric.NumberDataPointValueTypeInt:
+								dst.SetIntValue(0)
+							case pmetric.NumberDataPointValueTypeDouble:
+								dst.SetDoubleValue(0)
+							}
+						}))
+					}
 				}
 
 				last.use(func(last pmetric.NumberDataPoint) {
@@ -135,6 +170,13 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 				if !loaded {
 					// cached zero was stored, alloc new one
 					zero.hist = guard(pmetric.NewHistogramDataPoint())
+
+					if dp.StartTimestamp() > 0 {
+						zeros.hist = append(zeros.hist, delta.GetZeroDp(dp, pmetric.NewHistogramDataPoint, func(src, dst pmetric.HistogramDataPoint) {
+							src.ExplicitBounds().CopyTo(dst.ExplicitBounds())
+							dst.BucketCounts().FromRaw(make([]uint64, src.BucketCounts().Len()))
+						}))
+					}
 				}
 
 				last.use(func(last pmetric.HistogramDataPoint) {
@@ -155,6 +197,12 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 				if !loaded {
 					// cached zero was stored, alloc new one
 					zero.expo = guard(pmetric.NewExponentialHistogramDataPoint())
+
+					if dp.StartTimestamp() > 0 {
+						zeros.expo = append(zeros.expo, delta.GetZeroDp(dp, pmetric.NewExponentialHistogramDataPoint, func(src, dst pmetric.ExponentialHistogramDataPoint) {
+							dst.SetScale(src.Scale())
+						}))
+					}
 				}
 
 				last.use(func(last pmetric.ExponentialHistogramDataPoint) {
@@ -170,6 +218,8 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 
 			return keep
 		})
+
+		zeros.appendTo(m)
 
 		// all remaining datapoints of this metric are now cumulative
 		m.Typed().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
