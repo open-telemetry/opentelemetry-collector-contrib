@@ -15,8 +15,13 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -2666,6 +2671,137 @@ func Test_Statement_Execute(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func TestStatementSequence_Execute_Tracing(t *testing.T) {
+	tracingTelemetrySettings := func() (component.TelemetrySettings, *tracetest.SpanRecorder) {
+		rec := tracetest.NewSpanRecorder()
+		set := componenttest.NewNopTelemetrySettings()
+		set.TracerProvider = trace.NewTracerProvider(
+			trace.WithSampler(trace.AlwaysSample()),
+			trace.WithSpanProcessor(rec),
+		)
+		return set, rec
+	}
+	// Filter out probe span for better sample comparing
+	filterSpans := func(spans []trace.ReadOnlySpan) []trace.ReadOnlySpan {
+		var out []trace.ReadOnlySpan
+		for _, s := range spans {
+			if s.Name() != "ottl/probe" {
+				out = append(out, s)
+			}
+		}
+		return out
+	}
+
+	tests := []struct {
+		name        string
+		statements  func(set component.TelemetrySettings) []*Statement[any]
+		options     []StatementSequenceOption[any]
+		noTracing   bool
+		expectError bool
+		validate    func(t *testing.T, spans []trace.ReadOnlySpan)
+	}{
+		{
+			name:      "no tracing - never sample - no spans created",
+			noTracing: true,
+			statements: func(set component.TelemetrySettings) []*Statement[any] {
+				return []*Statement[any]{{
+					condition:         newAlwaysTrue[any](),
+					function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, nil }},
+					telemetrySettings: set,
+				}}
+			},
+			validate: func(t *testing.T, spans []trace.ReadOnlySpan) {
+				assert.Empty(t, spans)
+			},
+		},
+		{
+			name: "spans with correct attributes and hierarchy",
+			statements: func(set component.TelemetrySettings) []*Statement[any] {
+				return []*Statement[any]{{
+					condition:         newAlwaysTrue[any](),
+					function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return 1, nil }},
+					origText:          "test_statement",
+					telemetrySettings: set,
+				}}
+			},
+			validate: func(t *testing.T, spans []trace.ReadOnlySpan) {
+				require.Len(t, spans, 2)
+				child, parent := spans[0], spans[1]
+				assert.Equal(t, "ottl/StatementExecution", child.Name())
+				assert.Equal(t, "ottl/StatementSequenceExecution", parent.Name())
+				assert.Equal(t, parent.SpanContext().SpanID(), child.Parent().SpanID())
+				assert.Equal(t, parent.SpanContext().TraceID(), child.SpanContext().TraceID())
+				assert.Contains(t, child.Attributes(), conditionMatched)
+				assert.Contains(t, child.Attributes(), attribute.String("ottl.statement", "test_statement"))
+			},
+		},
+		{
+			name:        "PropagateError - last span only has error",
+			expectError: true,
+			options:     []StatementSequenceOption[any]{WithStatementSequenceErrorMode[any](PropagateError)},
+			statements: func(set component.TelemetrySettings) []*Statement[any] {
+				return []*Statement[any]{{
+					condition:         newAlwaysTrue[any](),
+					function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, errors.New("boom") }},
+					origText:          "err_statement",
+					telemetrySettings: set,
+				}}
+			},
+			validate: func(t *testing.T, spans []trace.ReadOnlySpan) {
+				require.Len(t, spans, 2)
+				assert.Equal(t, codes.Error, spans[0].Status().Code)
+				assert.NotEmpty(t, spans[0].Events())
+			},
+		},
+		{
+			name:    "IgnoreError - every statement-span has it's error status and event",
+			options: []StatementSequenceOption[any]{WithStatementSequenceErrorMode[any](IgnoreError)},
+			statements: func(set component.TelemetrySettings) []*Statement[any] {
+				return []*Statement[any]{{
+					condition:         newAlwaysTrue[any](),
+					function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, errors.New("boom") }},
+					origText:          "err_statement",
+					telemetrySettings: set,
+				}}
+			},
+			validate: func(t *testing.T, spans []trace.ReadOnlySpan) {
+				require.Len(t, spans, 2)
+				assert.Equal(t, codes.Error, spans[0].Status().Code)
+				assert.NotEmpty(t, spans[0].Events())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var set component.TelemetrySettings
+			var rec *tracetest.SpanRecorder
+
+			if tt.noTracing {
+				rec = tracetest.NewSpanRecorder()
+				set = componenttest.NewNopTelemetrySettings()
+				set.TracerProvider = trace.NewTracerProvider(
+					trace.WithSampler(trace.NeverSample()),
+					trace.WithSpanProcessor(rec),
+				)
+			} else {
+				set, rec = tracingTelemetrySettings()
+			}
+
+			seq := NewStatementSequence[any](tt.statements(set), set, tt.options...)
+			err := seq.Execute(t.Context(), nil)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			tt.validate(t, filterSpans(rec.Ended()))
 		})
 	}
 }
