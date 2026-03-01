@@ -11,6 +11,8 @@ status:
     emeritus: [StefanKurek]
     seeking_new: true
 
+reaggregation_enabled: true
+
 resource_attributes:
   host.name:
     description: The host name of SQL Server
@@ -52,6 +54,7 @@ attributes:
   database.status:
     description: The current status of a database
     type: string
+    requirement_level: recommended
     enum: [online, restoring, recovering, pending_recovery, suspect, offline]
   db.namespace:
     description: The database name.
@@ -66,13 +69,16 @@ attributes:
   direction:
     description: The direction of flow of bytes or operations.
     type: string
+    requirement_level: recommended
     enum: [read, write]
   file_type:
     description: The type of file being monitored.
     type: string
+    requirement_level: recommended
   logical_filename:
     description: The logical filename of the file being monitored.
     type: string
+    requirement_level: recommended
   network.peer.address:
     description: IP address of the peer client.
     type: string
@@ -83,16 +89,20 @@ attributes:
     name_override: type
     description: The page operation types.
     type: string
+    requirement_level: recommended
     enum: [read, write]
   performance_counter.object_name:
     description: Category to which this counter belongs
     type: string
+    requirement_level: recommended
   physical_filename:
     description: The physical filename of the file being monitored.
     type: string
+    requirement_level: recommended
   replica.direction:
     description: The direction of flow of bytes for replica.
     type: string
+    requirement_level: recommended
     enum: [transmit, receive]
   server.address:
     description: The network address of the server hosting the database.
@@ -210,14 +220,17 @@ attributes:
   table.state:
     description: The state of the table.
     type: string
+    requirement_level: recommended
     enum: [active, inactive]
   table.status:
     description: The status of the table.
     type: string
+    requirement_level: recommended
     enum: [temporary, permanent]
   tempdb.state:
     description: The status of the tempdb space usage.
     type: string
+    requirement_level: recommended
     enum: [free, used]
   user.name:
     description: Login name associated with the SQL Server session.
@@ -226,9 +239,11 @@ attributes:
   wait.category:
     description: Category of the reason for a wait.
     type: string
+    requirement_level: recommended
   wait.type:
     description: Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information.
     type: string
+    requirement_level: recommended
   # attributes for events
   ## common
 events:

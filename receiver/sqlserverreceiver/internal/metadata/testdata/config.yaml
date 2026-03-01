@@ -3,104 +3,326 @@ all_set:
   metrics:
     sqlserver.batch.request.rate:
       enabled: true
+      attributes: []
     sqlserver.batch.sql_compilation.rate:
       enabled: true
+      attributes: []
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+      attributes: []
     sqlserver.computer.uptime:
       enabled: true
+      attributes: []
     sqlserver.cpu.count:
       enabled: true
+      attributes: []
     sqlserver.database.backup_or_restore.rate:
       enabled: true
+      attributes: []
     sqlserver.database.count:
       enabled: true
+      attributes: ["database.status"]
     sqlserver.database.execution.errors:
       enabled: true
+      attributes: []
     sqlserver.database.full_scan.rate:
       enabled: true
+      attributes: []
     sqlserver.database.io:
       enabled: true
+      attributes: ["physical_filename","logical_filename","file_type","direction"]
     sqlserver.database.latency:
       enabled: true
+      attributes: ["physical_filename","logical_filename","file_type","direction"]
     sqlserver.database.operations:
       enabled: true
+      attributes: ["physical_filename","logical_filename","file_type","direction"]
     sqlserver.database.tempdb.space:
       enabled: true
+      attributes: ["tempdb.state"]
     sqlserver.database.tempdb.version_store.size:
       enabled: true
+      attributes: []
     sqlserver.deadlock.rate:
       enabled: true
+      attributes: []
     sqlserver.index.search.rate:
       enabled: true
+      attributes: []
     sqlserver.lock.timeout.rate:
       enabled: true
+      attributes: []
     sqlserver.lock.wait.count:
       enabled: true
+      attributes: []
     sqlserver.lock.wait.rate:
       enabled: true
+      attributes: []
     sqlserver.lock.wait_time.avg:
       enabled: true
+      attributes: []
     sqlserver.login.rate:
       enabled: true
+      attributes: []
     sqlserver.logout.rate:
       enabled: true
+      attributes: []
     sqlserver.memory.grants.pending.count:
       enabled: true
+      attributes: []
     sqlserver.memory.usage:
       enabled: true
+      attributes: []
     sqlserver.os.wait.duration:
       enabled: true
+      attributes: ["wait.category","wait.type"]
     sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: true
+      attributes: []
     sqlserver.page.buffer_cache.hit_ratio:
       enabled: true
+      attributes: []
     sqlserver.page.checkpoint.flush.rate:
       enabled: true
+      attributes: []
     sqlserver.page.lazy_write.rate:
       enabled: true
+      attributes: []
     sqlserver.page.life_expectancy:
       enabled: true
+      attributes: ["performance_counter.object_name"]
     sqlserver.page.lookup.rate:
       enabled: true
+      attributes: []
     sqlserver.page.operation.rate:
       enabled: true
+      attributes: ["type"]
     sqlserver.page.split.rate:
       enabled: true
+      attributes: []
     sqlserver.processes.blocked:
       enabled: true
+      attributes: []
     sqlserver.replica.data.rate:
       enabled: true
+      attributes: ["replica.direction"]
     sqlserver.resource_pool.disk.operations:
       enabled: true
+      attributes: ["direction"]
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: true
+      attributes: []
     sqlserver.resource_pool.disk.throttled.write.rate:
       enabled: true
+      attributes: []
     sqlserver.table.count:
       enabled: true
+      attributes: ["table.state","table.status"]
     sqlserver.transaction.delay:
       enabled: true
+      attributes: []
     sqlserver.transaction.mirror_write.rate:
       enabled: true
+      attributes: []
     sqlserver.transaction.rate:
       enabled: true
+      attributes: []
     sqlserver.transaction.write.rate:
       enabled: true
+      attributes: []
     sqlserver.transaction_log.flush.data.rate:
       enabled: true
+      attributes: []
     sqlserver.transaction_log.flush.rate:
       enabled: true
+      attributes: []
     sqlserver.transaction_log.flush.wait.rate:
       enabled: true
+      attributes: []
     sqlserver.transaction_log.growth.count:
       enabled: true
+      attributes: []
     sqlserver.transaction_log.shrink.count:
       enabled: true
+      attributes: []
     sqlserver.transaction_log.usage:
       enabled: true
+      attributes: []
     sqlserver.user.connection.count:
       enabled: true
+      attributes: []
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
+      enabled: true
+  resource_attributes:
+    host.name:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
+      enabled: true
+    service.instance.id:
+      enabled: true
+    sqlserver.computer.name:
+      enabled: true
+    sqlserver.database.name:
+      enabled: true
+    sqlserver.instance.name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    sqlserver.batch.request.rate:
+      enabled: true
+      attributes: []
+    sqlserver.batch.sql_compilation.rate:
+      enabled: true
+      attributes: []
+    sqlserver.batch.sql_recompilation.rate:
+      enabled: true
+      attributes: []
+    sqlserver.computer.uptime:
+      enabled: true
+      attributes: []
+    sqlserver.cpu.count:
+      enabled: true
+      attributes: []
+    sqlserver.database.backup_or_restore.rate:
+      enabled: true
+      attributes: []
+    sqlserver.database.count:
+      enabled: true
+      attributes: []
+    sqlserver.database.execution.errors:
+      enabled: true
+      attributes: []
+    sqlserver.database.full_scan.rate:
+      enabled: true
+      attributes: []
+    sqlserver.database.io:
+      enabled: true
+      attributes: []
+    sqlserver.database.latency:
+      enabled: true
+      attributes: []
+    sqlserver.database.operations:
+      enabled: true
+      attributes: []
+    sqlserver.database.tempdb.space:
+      enabled: true
+      attributes: []
+    sqlserver.database.tempdb.version_store.size:
+      enabled: true
+      attributes: []
+    sqlserver.deadlock.rate:
+      enabled: true
+      attributes: []
+    sqlserver.index.search.rate:
+      enabled: true
+      attributes: []
+    sqlserver.lock.timeout.rate:
+      enabled: true
+      attributes: []
+    sqlserver.lock.wait.count:
+      enabled: true
+      attributes: []
+    sqlserver.lock.wait.rate:
+      enabled: true
+      attributes: []
+    sqlserver.lock.wait_time.avg:
+      enabled: true
+      attributes: []
+    sqlserver.login.rate:
+      enabled: true
+      attributes: []
+    sqlserver.logout.rate:
+      enabled: true
+      attributes: []
+    sqlserver.memory.grants.pending.count:
+      enabled: true
+      attributes: []
+    sqlserver.memory.usage:
+      enabled: true
+      attributes: []
+    sqlserver.os.wait.duration:
+      enabled: true
+      attributes: []
+    sqlserver.page.buffer_cache.free_list.stalls.rate:
+      enabled: true
+      attributes: []
+    sqlserver.page.buffer_cache.hit_ratio:
+      enabled: true
+      attributes: []
+    sqlserver.page.checkpoint.flush.rate:
+      enabled: true
+      attributes: []
+    sqlserver.page.lazy_write.rate:
+      enabled: true
+      attributes: []
+    sqlserver.page.life_expectancy:
+      enabled: true
+      attributes: []
+    sqlserver.page.lookup.rate:
+      enabled: true
+      attributes: []
+    sqlserver.page.operation.rate:
+      enabled: true
+      attributes: []
+    sqlserver.page.split.rate:
+      enabled: true
+      attributes: []
+    sqlserver.processes.blocked:
+      enabled: true
+      attributes: []
+    sqlserver.replica.data.rate:
+      enabled: true
+      attributes: []
+    sqlserver.resource_pool.disk.operations:
+      enabled: true
+      attributes: []
+    sqlserver.resource_pool.disk.throttled.read.rate:
+      enabled: true
+      attributes: []
+    sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: true
+      attributes: []
+    sqlserver.table.count:
+      enabled: true
+      attributes: []
+    sqlserver.transaction.delay:
+      enabled: true
+      attributes: []
+    sqlserver.transaction.mirror_write.rate:
+      enabled: true
+      attributes: []
+    sqlserver.transaction.rate:
+      enabled: true
+      attributes: []
+    sqlserver.transaction.write.rate:
+      enabled: true
+      attributes: []
+    sqlserver.transaction_log.flush.data.rate:
+      enabled: true
+      attributes: []
+    sqlserver.transaction_log.flush.rate:
+      enabled: true
+      attributes: []
+    sqlserver.transaction_log.flush.wait.rate:
+      enabled: true
+      attributes: []
+    sqlserver.transaction_log.growth.count:
+      enabled: true
+      attributes: []
+    sqlserver.transaction_log.shrink.count:
+      enabled: true
+      attributes: []
+    sqlserver.transaction_log.usage:
+      enabled: true
+      attributes: []
+    sqlserver.user.connection.count:
+      enabled: true
+      attributes: []
   events:
     db.server.query_sample:
       enabled: true
@@ -125,104 +347,154 @@ none_set:
   metrics:
     sqlserver.batch.request.rate:
       enabled: false
+      attributes: []
     sqlserver.batch.sql_compilation.rate:
       enabled: false
+      attributes: []
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+      attributes: []
     sqlserver.computer.uptime:
       enabled: false
+      attributes: []
     sqlserver.cpu.count:
       enabled: false
+      attributes: []
     sqlserver.database.backup_or_restore.rate:
       enabled: false
+      attributes: []
     sqlserver.database.count:
       enabled: false
+      attributes: ["database.status"]
     sqlserver.database.execution.errors:
       enabled: false
+      attributes: []
     sqlserver.database.full_scan.rate:
       enabled: false
+      attributes: []
     sqlserver.database.io:
       enabled: false
+      attributes: ["physical_filename","logical_filename","file_type","direction"]
     sqlserver.database.latency:
       enabled: false
+      attributes: ["physical_filename","logical_filename","file_type","direction"]
     sqlserver.database.operations:
       enabled: false
+      attributes: ["physical_filename","logical_filename","file_type","direction"]
     sqlserver.database.tempdb.space:
       enabled: false
+      attributes: ["tempdb.state"]
     sqlserver.database.tempdb.version_store.size:
       enabled: false
+      attributes: []
     sqlserver.deadlock.rate:
       enabled: false
+      attributes: []
     sqlserver.index.search.rate:
       enabled: false
+      attributes: []
     sqlserver.lock.timeout.rate:
       enabled: false
+      attributes: []
     sqlserver.lock.wait.count:
       enabled: false
+      attributes: []
     sqlserver.lock.wait.rate:
       enabled: false
+      attributes: []
     sqlserver.lock.wait_time.avg:
       enabled: false
+      attributes: []
     sqlserver.login.rate:
       enabled: false
+      attributes: []
     sqlserver.logout.rate:
       enabled: false
+      attributes: []
     sqlserver.memory.grants.pending.count:
       enabled: false
+      attributes: []
     sqlserver.memory.usage:
       enabled: false
+      attributes: []
     sqlserver.os.wait.duration:
       enabled: false
+      attributes: ["wait.category","wait.type"]
     sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: false
+      attributes: []
     sqlserver.page.buffer_cache.hit_ratio:
       enabled: false
+      attributes: []
     sqlserver.page.checkpoint.flush.rate:
       enabled: false
+      attributes: []
     sqlserver.page.lazy_write.rate:
       enabled: false
+      attributes: []
     sqlserver.page.life_expectancy:
       enabled: false
+      attributes: ["performance_counter.object_name"]
     sqlserver.page.lookup.rate:
       enabled: false
+      attributes: []
     sqlserver.page.operation.rate:
       enabled: false
+      attributes: ["type"]
     sqlserver.page.split.rate:
       enabled: false
+      attributes: []
     sqlserver.processes.blocked:
       enabled: false
+      attributes: []
     sqlserver.replica.data.rate:
       enabled: false
+      attributes: ["replica.direction"]
     sqlserver.resource_pool.disk.operations:
       enabled: false
+      attributes: ["direction"]
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: false
+      attributes: []
     sqlserver.resource_pool.disk.throttled.write.rate:
       enabled: false
+      attributes: []
     sqlserver.table.count:
       enabled: false
+      attributes: ["table.state","table.status"]
     sqlserver.transaction.delay:
       enabled: false
+      attributes: []
     sqlserver.transaction.mirror_write.rate:
       enabled: false
+      attributes: []
     sqlserver.transaction.rate:
       enabled: false
+      attributes: []
     sqlserver.transaction.write.rate:
       enabled: false
+      attributes: []
     sqlserver.transaction_log.flush.data.rate:
       enabled: false
+      attributes: []
     sqlserver.transaction_log.flush.rate:
       enabled: false
+      attributes: []
     sqlserver.transaction_log.flush.wait.rate:
       enabled: false
+      attributes: []
     sqlserver.transaction_log.growth.count:
       enabled: false
+      attributes: []
     sqlserver.transaction_log.shrink.count:
       enabled: false
+      attributes: []
     sqlserver.transaction_log.usage:
       enabled: false
+      attributes: []
     sqlserver.user.connection.count:
       enabled: false
+      attributes: []
   events:
     db.server.query_sample:
       enabled: false
