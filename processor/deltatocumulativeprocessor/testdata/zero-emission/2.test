@@ -1,0 +1,88 @@
+-- in --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+        metrics:
+          - name: counter
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - {startTimeUnixNano: "1100", timeUnixNano: "1200", asInt: "10", attributes: [{key: "k", value: {stringValue: "v"}}]}
+          - name: histo
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - startTimeUnixNano: "1100"
+                  timeUnixNano: "1200"
+                  count: 5
+                  sum: 50
+                  explicitBounds: [1, 5, 10]
+                  bucketCounts: [1, 1, 2, 1]
+                  attributes: [{key: "k", value: {stringValue: "v"}}]
+          - name: expo
+            exponential_histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - startTimeUnixNano: "1100"
+                  timeUnixNano: "1200"
+                  count: 3
+                  sum: 15
+                  scale: 3
+                  zeroCount: 0
+                  positive:
+                    offset: 1
+                    bucketCounts: [1, 1]
+                  negative:
+                    offset: 0
+                    bucketCounts: [1]
+                  attributes: [{key: "k", value: {stringValue: "v"}}]
+
+-- out --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+        metrics:
+          - name: counter
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - {startTimeUnixNano: "1000", timeUnixNano: "1200", asInt: "52", attributes: [{key: "k", value: {stringValue: "v"}}]}
+          - name: histo
+            histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - startTimeUnixNano: "1000"
+                  timeUnixNano: "1200"
+                  count: 15
+                  sum: 150
+                  explicitBounds: [1, 5, 10]
+                  bucketCounts: [3, 4, 6, 2]
+                  attributes: [{key: "k", value: {stringValue: "v"}}]
+          - name: expo
+            exponential_histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - startTimeUnixNano: "1000"
+                  timeUnixNano: "1200"
+                  count: 8
+                  sum: 40
+                  scale: 3
+                  zeroCount: 1
+                  positive:
+                    offset: 1
+                    bucketCounts: [2, 3]
+                  negative:
+                    offset: 0
+                    bucketCounts: [2]
+                  attributes: [{key: "k", value: {stringValue: "v"}}]
+
+-- telemetry --
+# skip
