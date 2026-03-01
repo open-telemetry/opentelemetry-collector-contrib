@@ -34,6 +34,7 @@ resourceMetrics:
                 - {startTimeUnixNano: 1000, timeUnixNano: 1100, asDouble: 0}
                 - {startTimeUnixNano: 1000, timeUnixNano: 1200, asDouble: 0}
                 - {startTimeUnixNano: 1000, timeUnixNano: 1400, asDouble: 0}
+                - {startTimeUnixNano: 999, timeUnixNano: 999, asDouble: 0}
 
 -- telemetry --
 counter otelcol_deltatocumulative_datapoints:
