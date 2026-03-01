@@ -1,0 +1,10 @@
+change_type: bug_fix
+
+component: receiver/docker_stats
+
+note: Avoid cancelling docker stats request before it's done reading response
+
+issues: [34194]
+
+subtext: Resolves "context canceled" error while fetching docker stats
+
