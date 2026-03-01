@@ -1,4 +1,9 @@
+display_name: Kafka Metrics Receiver
 type: kafkametrics
+
+description: |
+  The Kafka Metrics Receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from a kafka server,
+  and converts them into otlp.
 
 status:
   class: receiver
