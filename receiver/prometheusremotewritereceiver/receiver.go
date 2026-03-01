@@ -439,6 +439,17 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
+			key := exemplarKey{
+				ScopeName:    scopeName,
+				ScopeVersion: scopeVersion,
+				MetricName:   metricName,
+				MetricType:   ts.Metadata.Type,
+			}
+			// add exemplars to counter datapoints.
+			if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 && metric.Sum().DataPoints().Len() > 0 {
+				ex.CopyTo(metric.Sum().DataPoints().At(0).Exemplars())
+			}
+
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			// Drop summary series as we will not handle them.
 			continue
@@ -555,7 +566,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			histMetric.SetDescription(description)
 		}
 		// all the exemplars for a given histogram are attached to first data point.
-		var exemplarSlice pmetric.ExemplarSlice
+		exemplarSlice := pmetric.NewExemplarSlice()
 		// Process the individual histogram
 		if histogramType == "nhcb" {
 			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats)
