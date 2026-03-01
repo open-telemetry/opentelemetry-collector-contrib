@@ -2,6 +2,8 @@ $defs:
   resolver:
     type: object
     properties:
+      include_file_mode:
+        type: boolean
       include_file_name:
         type: boolean
       include_file_name_resolved:
