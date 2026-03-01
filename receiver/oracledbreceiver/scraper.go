@@ -611,8 +611,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				objectType:   row[objectTypeAttr],
 			}
 
-			// it is possible we get a record with all deltas equal to zero. we don't want to process it any further
-			var possiblePurge, positiveDelta bool
+			var possiblePurge bool
 			for _, columnName := range metricNames {
 				delta := newCacheVal[columnName] - oldCacheVal[columnName]
 
@@ -620,15 +619,13 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				if delta < 0 {
 					possiblePurge = true
 					break
-				} else if delta > 0 {
-					positiveDelta = true
 				}
 
 				hit.metrics[columnName] = delta
 			}
 
-			// skip if possible purge or all the deltas are equal to zero
-			if !possiblePurge && positiveDelta {
+			// skip if possible purge or no new executions since last scrape
+			if !possiblePurge && hit.metrics[queryExecutionMetric] > 0 {
 				hits = append(hits, hit)
 			} else {
 				discardedHits++

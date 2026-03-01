@@ -5,9 +5,12 @@ package pprof // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
+	"math"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"slices"
 	"strconv"
 	"testing"
@@ -15,6 +18,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/pprof/profile"
 	"github.com/stretchr/testify/require"
+	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
@@ -229,6 +233,406 @@ func TestLinesToString(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLinesToString_SortingBranches(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []profile.Line
+		expected string
+	}{
+		{
+			name: "line/column/function sorting with nil functions",
+			input: []profile.Line{
+				{Line: 10, Column: 1},
+				{Line: 10, Column: 1},
+				{Function: &profile.Function{ID: 2, Name: "func2"}, Line: 10, Column: 1},
+				{Function: &profile.Function{ID: 1, Name: "func1"}, Line: 10, Column: 1},
+				{Line: 10, Column: 0},
+				{Line: 9, Column: 9},
+			},
+			expected: "-1:9:9;-1:10:0;-1:10:1;-1:10:1;1:10:1;2:10:1",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			lts := initLookupTables()
+			result := lts.linesToString(test.input)
+			require.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestGetValueHash(t *testing.T) {
+	var intBytes [8]byte
+	binary.LittleEndian.PutUint64(intBytes[:], uint64(42))
+
+	var floatBytes [8]byte
+	binary.LittleEndian.PutUint64(floatBytes[:], math.Float64bits(3.1415))
+
+	intSliceHasher := xxh3.New()
+	for _, v := range []int64{1, 2, 3} {
+		var b [8]byte
+		binary.LittleEndian.PutUint64(b[:], uint64(v))
+		_, _ = intSliceHasher.Write(b[:])
+	}
+
+	floatSliceHasher := xxh3.New()
+	for _, v := range []float64{1.5, 2.5} {
+		var b [8]byte
+		binary.LittleEndian.PutUint64(b[:], math.Float64bits(v))
+		_, _ = floatSliceHasher.Write(b[:])
+	}
+
+	tests := []struct {
+		name     string
+		value    any
+		expected uint64
+	}{
+		{name: "string", value: "otel", expected: xxh3.HashString("otel")},
+		{name: "int64", value: int64(42), expected: xxh3.Hash(intBytes[:])},
+		{name: "float64", value: 3.1415, expected: xxh3.Hash(floatBytes[:])},
+		{name: "bool true", value: true, expected: 1},
+		{name: "bool false", value: false, expected: 0},
+		{name: "int64 slice", value: []int64{1, 2, 3}, expected: intSliceHasher.Sum64()},
+		{name: "float64 slice", value: []float64{1.5, 2.5}, expected: floatSliceHasher.Sum64()},
+		{name: "byte slice", value: []byte("abc"), expected: xxh3.Hash([]byte("abc"))},
+		{name: "default nil", value: nil, expected: 0},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, test.expected, getValueHash(test.value))
+		})
+	}
+
+	require.NotEqual(t, getValueHash("stable"), getValueHash("changed"))
+}
+
+func TestGetIdxForMMAttributes(t *testing.T) {
+	keyForAttrID := func(t *testing.T, lts *lookupTables, id int32) string {
+		t.Helper()
+
+		var keyIdx int32
+		found := false
+		for key, attrID := range lts.attributeTable {
+			if attrID == id {
+				keyIdx = key.keyStrIdx
+				found = true
+				break
+			}
+		}
+		require.True(t, found)
+
+		for s, idx := range lts.stringTable {
+			if idx == keyIdx {
+				return s
+			}
+		}
+
+		t.Fatalf("string index %d not found", keyIdx)
+		return ""
+	}
+
+	tests := []struct {
+		name         string
+		mapping      *profile.Mapping
+		expectedKeys []string
+	}{
+		{
+			name: "build id only",
+			mapping: &profile.Mapping{
+				BuildID: "build-1",
+			},
+			expectedKeys: []string{
+				"process.executable.build_id.gnu",
+			},
+		},
+		{
+			name: "all has flags",
+			mapping: &profile.Mapping{
+				BuildID:         "build-2",
+				HasFunctions:    true,
+				HasFilenames:    true,
+				HasLineNumbers:  true,
+				HasInlineFrames: true,
+			},
+			expectedKeys: []string{
+				"process.executable.build_id.gnu",
+				"pprof.mapping.has_filenames",
+				"pprof.mapping.has_functions",
+				"pprof.mapping.has_inline_frames",
+				"pprof.mapping.has_line_numbers",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			lts := initLookupTables()
+			ids := lts.getIdxForMMAttributes(test.mapping)
+			require.Len(t, ids, len(test.expectedKeys))
+
+			actualKeys := make([]string, 0, len(ids))
+			for _, id := range ids {
+				actualKeys = append(actualKeys, keyForAttrID(t, &lts, id))
+			}
+
+			slices.Sort(actualKeys)
+			expectedKeys := slices.Clone(test.expectedKeys)
+			slices.Sort(expectedKeys)
+			require.Equal(t, expectedKeys, actualKeys)
+
+			buildIDHash := getValueHash(test.mapping.BuildID)
+			require.Equal(t, test.mapping.BuildID, lts.attributeHashToValue[buildIDHash])
+		})
+	}
+}
+
+func TestGetIdxForLocation(t *testing.T) {
+	lts := initLookupTables()
+
+	fn := &profile.Function{ID: 1, Name: "f", SystemName: "sys", Filename: "f.go", StartLine: 1}
+	mapping := &profile.Mapping{
+		Start:           10,
+		Limit:           20,
+		Offset:          1,
+		File:            "bin",
+		BuildID:         "build-id",
+		HasFunctions:    true,
+		HasFilenames:    true,
+		HasLineNumbers:  true,
+		HasInlineFrames: true,
+	}
+	location := &profile.Location{
+		Address:  0x1000,
+		IsFolded: true,
+		Mapping:  mapping,
+		Line: []profile.Line{
+			{Function: fn, Line: 42, Column: 7},
+		},
+	}
+
+	idx1 := lts.getIdxForLocation(location)
+	idx2 := lts.getIdxForLocation(location)
+
+	require.Equal(t, idx1, idx2)
+	require.NotEqual(t, int32(0), idx1)
+	require.Greater(t, len(lts.mappingTable), 1)
+	require.Greater(t, len(lts.attributeTable), 1)
+}
+
+func TestConvertPprofToProfiles_LabelValidationErrors(t *testing.T) {
+	baseFunction := &profile.Function{ID: 1, Name: "main", SystemName: "main", Filename: "main.go", StartLine: 1}
+	baseMapping := &profile.Mapping{ID: 1, Start: 1, Limit: 2, Offset: 0, File: "bin", BuildID: "abc"}
+	baseLocation := &profile.Location{
+		ID:      1,
+		Address: 0x1000,
+		Mapping: baseMapping,
+		Line:    []profile.Line{{Function: baseFunction, Line: 10, Column: 2}},
+	}
+
+	makeProfile := func(sample *profile.Sample) *profile.Profile {
+		return &profile.Profile{
+			SampleType: []*profile.ValueType{{Type: "cpu", Unit: "ns"}},
+			Sample:     []*profile.Sample{sample},
+			Function:   []*profile.Function{baseFunction},
+			Location:   []*profile.Location{baseLocation},
+			Mapping:    []*profile.Mapping{baseMapping},
+			PeriodType: &profile.ValueType{Type: "cpu", Unit: "ns"},
+			Period:     1,
+		}
+	}
+
+	t.Run("string label with multiple values", func(t *testing.T) {
+		sample := &profile.Sample{
+			Location: []*profile.Location{baseLocation},
+			Value:    []int64{10},
+			Label: map[string][]string{
+				"k": {"v1", "v2"},
+			},
+		}
+
+		_, err := ConvertPprofToProfiles(makeProfile(sample))
+		require.Error(t, err)
+		require.ErrorIs(t, err, errPprofInvalid)
+	})
+
+	t.Run("numeric label with multiple values", func(t *testing.T) {
+		sample := &profile.Sample{
+			Location: []*profile.Location{baseLocation},
+			Value:    []int64{10},
+			NumLabel: map[string][]int64{
+				"n": {1, 2},
+			},
+		}
+
+		_, err := ConvertPprofToProfiles(makeProfile(sample))
+		require.Error(t, err)
+		require.ErrorIs(t, err, errPprofInvalid)
+	})
+}
+
+func TestConvertPprofToProfiles_LabelAndNumUnitPaths(t *testing.T) {
+	fn := &profile.Function{ID: 1, Name: "main", SystemName: "main", Filename: "main.go", StartLine: 1}
+	mapping := &profile.Mapping{
+		ID:             1,
+		Start:          1,
+		Limit:          2,
+		Offset:         0,
+		File:           "bin",
+		BuildID:        "abc",
+		HasFunctions:   true,
+		HasFilenames:   true,
+		HasLineNumbers: true,
+	}
+	location := &profile.Location{
+		ID:      1,
+		Address: 0x1000,
+		Mapping: mapping,
+		Line: []profile.Line{
+			{Function: fn, Line: 10, Column: 2},
+		},
+	}
+
+	prof := &profile.Profile{
+		SampleType: []*profile.ValueType{{Type: "cpu", Unit: "ns"}},
+		Sample: []*profile.Sample{{
+			Location: []*profile.Location{location},
+			Value:    []int64{10},
+			Label: map[string][]string{
+				"label.with.unit": {"v"},
+				"label.no.unit":   {"x"},
+			},
+			NumLabel: map[string][]int64{
+				"num.with.unit": {7},
+				"num.no.unit":   {8},
+			},
+			NumUnit: map[string][]string{
+				"label.with.unit": {"items"},
+				"num.with.unit":   {"ms"},
+			},
+		}},
+		Function:   []*profile.Function{fn},
+		Location:   []*profile.Location{location},
+		Mapping:    []*profile.Mapping{mapping},
+		PeriodType: &profile.ValueType{Type: "cpu", Unit: "ns"},
+		Period:     1,
+		DropFrames: "drop",
+		KeepFrames: "keep",
+		Comments:   []string{"comment"},
+		DocURL:     "https://example.com",
+	}
+
+	out, err := ConvertPprofToProfiles(prof)
+	require.NoError(t, err)
+	require.NotNil(t, out)
+
+	p := out.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+	require.Equal(t, 1, p.Samples().Len())
+	require.GreaterOrEqual(t, p.Samples().At(0).AttributeIndices().Len(), 4)
+	require.GreaterOrEqual(t, p.AttributeIndices().Len(), 3)
+}
+
+func TestDumpLookupTables_Errors(t *testing.T) {
+	t.Run("invalid mapping attribute indices", func(t *testing.T) {
+		lts := initLookupTables()
+		lts.mappingTable[mm{attrIdxs: "2;1"}] = 1
+
+		dic := pprofile.NewProfiles().Dictionary()
+		err := lts.dumpLookupTables(dic)
+		require.Error(t, err)
+		require.ErrorIs(t, err, errIdxFormatInvalid)
+	})
+
+	t.Run("invalid location lines format", func(t *testing.T) {
+		lts := initLookupTables()
+		lts.locationTable[loc{lines: "invalid"}] = 1
+
+		dic := pprofile.NewProfiles().Dictionary()
+		err := lts.dumpLookupTables(dic)
+		require.Error(t, err)
+		require.ErrorIs(t, err, errIdxFormatInvalid)
+	})
+
+	t.Run("missing attribute value for non-zero attribute", func(t *testing.T) {
+		lts := initLookupTables()
+		keyIdx := lts.getIdxForString("custom.key")
+		lts.attributeTable[attr{keyStrIdx: keyIdx, valueHash: 12345, unitStrIdx: noAttrUnit}] = 1
+
+		dic := pprofile.NewProfiles().Dictionary()
+		err := lts.dumpLookupTables(dic)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid attribute")
+	})
+}
+
+func TestAllElementsSame(t *testing.T) {
+	require.False(t, allElementsSame([]int{}))
+	require.True(t, allElementsSame([]int{3, 3, 3}))
+	require.False(t, allElementsSame([]int{1, 2, 1}))
+}
+
+func TestGetAttributeString(t *testing.T) {
+	dic := pprofile.NewProfiles().Dictionary()
+	dic.StringTable().Append("")
+	dic.StringTable().Append("key.a")
+
+	attr := dic.AttributeTable().AppendEmpty()
+	attr.SetKeyStrindex(1)
+	attr.Value().SetStr("value-a")
+
+	v, err := getAttributeString(dic, "key.a")
+	require.NoError(t, err)
+	require.Equal(t, "value-a", v)
+
+	_, err = getAttributeString(dic, "missing")
+	require.Error(t, err)
+	require.ErrorIs(t, err, errNotFound)
+}
+
+func TestGetAttributeStringWithPrefix(t *testing.T) {
+	t.Run("found", func(t *testing.T) {
+		dic := pprofile.NewProfiles().Dictionary()
+		dic.StringTable().Append("")
+		dic.StringTable().Append("pprof.profile.comment" + ".1")
+		dic.StringTable().Append("pprof.profile.comment" + ".0")
+
+		attr1 := dic.AttributeTable().AppendEmpty()
+		attr1.SetKeyStrindex(1)
+		attr1.Value().SetStr("comment-1")
+
+		attr0 := dic.AttributeTable().AppendEmpty()
+		attr0.SetKeyStrindex(2)
+		attr0.Value().SetStr("comment-0")
+
+		got, err := getAttributeStringWithPrefix(dic)
+		require.NoError(t, err)
+		require.Equal(t, []string{"comment-0", "comment-1"}, got)
+	})
+
+	t.Run("invalid index", func(t *testing.T) {
+		dic := pprofile.NewProfiles().Dictionary()
+		dic.StringTable().Append("")
+		dic.StringTable().Append("pprof.profile.comment" + ".x")
+
+		attr := dic.AttributeTable().AppendEmpty()
+		attr.SetKeyStrindex(1)
+		attr.Value().SetStr("comment")
+
+		_, err := getAttributeStringWithPrefix(dic)
+		require.Error(t, err)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		dic := pprofile.NewProfiles().Dictionary()
+		dic.StringTable().Append("")
+
+		_, err := getAttributeStringWithPrefix(dic)
+		require.Error(t, err)
+		require.ErrorIs(t, err, errNotFound)
+	})
 }
 
 func TestConvertMultipleSampleTypes(t *testing.T) {
@@ -472,5 +876,58 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 		for j, val := range sample.Value {
 			require.Equal(t, val, roundTrip.Sample[i].Value[j], "Round-trip should preserve original sample values order")
 		}
+	}
+}
+
+func generatePprofTestdata(t *testing.T, typ string) *profile.Profile {
+	t.Helper()
+
+	pprofile := pprof.Lookup(typ)
+	if pprofile == nil {
+		t.Fatalf("%s is not a valid pprof profile", typ)
+	}
+
+	// Generate some "load" for pprof
+	prev, current := 0, 1
+	for i := 2; i <= 42; i++ {
+		next := prev + current
+		prev = current
+		current = next
+	}
+
+	t.Logf("Fibonacci for 42 is %d", current)
+
+	tmpFile, err := os.CreateTemp(t.TempDir(), typ)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		tmpFile.Close()
+		os.Remove(tmpFile.Name())
+	})
+
+	err = pprofile.WriteTo(tmpFile, 0)
+	require.NoError(t, err)
+
+	_, err = tmpFile.Seek(0, 0)
+	require.NoError(t, err)
+
+	output, err := profile.Parse(tmpFile)
+	require.NoError(t, err)
+
+	return output
+}
+
+func TestConvertPprofToProfiles_AllTypes(t *testing.T) {
+	// cpu profiles are covered with TestConvertPprofToPprofile and
+	// the original testdata from pprof.
+	for _, typ := range []string{"goroutine", "allocs", "heap", "threadcreate", "block", "mutex"} {
+		t.Run(typ, func(t *testing.T) {
+			pprofile := generatePprofTestdata(t, typ)
+			pprofiles, err := ConvertPprofToProfiles(pprofile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_ = pprofiles
+		})
 	}
 }

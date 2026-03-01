@@ -1,4 +1,7 @@
+display_name: Kubernetes Log Receiver
 type: k8slog
+
+description: The Kubernetes Log Receiver tails and parses logs in k8s environment.
 
 status:
   class: receiver
