@@ -45,8 +45,7 @@ type Client struct {
 	containersLock       sync.Mutex
 	excludedImageMatcher *stringMatcher
 	logger               *zap.Logger
-	latestStats          map[string]*ctypes.StatsResponse
-	latestStatsLock      sync.RWMutex
+	latestStats          sync.Map
 	streamCancels        map[string]context.CancelFunc
 	streamCancelsLock    sync.Mutex
 }
@@ -108,7 +107,6 @@ func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*C
 		containers:           make(map[string]Container),
 		containersLock:       sync.Mutex{},
 		excludedImageMatcher: excludedImageMatcher,
-		latestStats:          make(map[string]*ctypes.StatsResponse),
 		streamCancels:        make(map[string]context.CancelFunc),
 	}
 
@@ -241,10 +239,11 @@ func (dc *Client) toStatsJSON(
 // Returns false if no stats have been received yet (stream still starting up).
 // Only populated when stream_stats is enabled.
 func (dc *Client) LatestContainerStats(containerID string) (*ctypes.StatsResponse, bool) {
-	dc.latestStatsLock.RLock()
-	defer dc.latestStatsLock.RUnlock()
-	stats, ok := dc.latestStats[containerID]
-	return stats, ok
+	val, ok := dc.latestStats.Load(containerID)
+	if !ok {
+		return nil, false
+	}
+	return val.(*ctypes.StatsResponse), true
 }
 
 // startContainerStream opens a persistent streaming stats connection for the container
@@ -313,9 +312,7 @@ func (dc *Client) runStatsStream(ctx context.Context, containerID string) {
 				}
 				break
 			}
-			dc.latestStatsLock.Lock()
-			dc.latestStats[containerID] = &stats
-			dc.latestStatsLock.Unlock()
+			dc.latestStats.Store(containerID, &stats)
 		}
 	}
 }
@@ -454,9 +451,7 @@ func (dc *Client) RemoveContainer(cid string) {
 	}
 	dc.streamCancelsLock.Unlock()
 
-	dc.latestStatsLock.Lock()
-	delete(dc.latestStats, cid)
-	dc.latestStatsLock.Unlock()
+	dc.latestStats.Delete(cid)
 
 	dc.containersLock.Lock()
 	delete(dc.containers, cid)
