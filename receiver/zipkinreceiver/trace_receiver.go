@@ -21,7 +21,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
@@ -92,6 +94,13 @@ func newReceiver(config *Config, nextConsumer consumer.Traces, settings receiver
 func (zr *zipkinReceiver) Start(ctx context.Context, host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
+	}
+
+	if metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() && !metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
+		err := errors.New("pkg.translator.zipkin.DontEmitV0NetworkConventions cannot be enabled without enabling pkg.translator.zipkin.EmitV1NetworkConventions")
+		zr.settings.Logger.Error("Invalid feature gate combination", zap.Error(err))
+		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+		return err
 	}
 
 	var err error
