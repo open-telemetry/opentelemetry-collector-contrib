@@ -38,6 +38,7 @@ const (
 )
 
 func TestIntegration(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, false)()
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, false)()
 	t.Run("single_db", integrationTest("single_db", []string{"otel"}, pre17TestVersion))
 	t.Run("multi_db", integrationTest("multi_db", []string{"otel", "otel2"}, pre17TestVersion))
@@ -46,11 +47,28 @@ func TestIntegration(t *testing.T) {
 	t.Run("single_db_post17", integrationTest("single_db_post17", []string{"otel"}, post17TestVersion))
 }
 
+func TestIntegrationWithSeparateSchemaAttr(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, true)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, false)()
+	t.Run("single_db_schemaattr", integrationTest("single_db_schemaattr", []string{"otel"}, pre17TestVersion))
+	t.Run("multi_db_schemaattr", integrationTest("multi_db_schemaattr", []string{"otel", "otel2"}, pre17TestVersion))
+	t.Run("all_db_schemaattr", integrationTest("all_db_schemaattr", []string{}, pre17TestVersion))
+}
+
 func TestIntegrationWithConnectionPool(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, false)()
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, true)()
 	t.Run("single_db_connpool", integrationTest("single_db_connpool", []string{"otel"}, pre17TestVersion))
 	t.Run("multi_db_connpool", integrationTest("multi_db_connpool", []string{"otel", "otel2"}, pre17TestVersion))
 	t.Run("all_db_connpool", integrationTest("all_db_connpool", []string{}, pre17TestVersion))
+}
+
+func TestIntegrationSemconv(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, false)()
+	t.Run("single_db", integrationTestSemconv("single_db_semconv", []string{"otel"}, pre17TestVersion))
+	t.Run("multi_db", integrationTestSemconv("multi_db_semconv", []string{"otel", "otel2"}, pre17TestVersion))
+	t.Run("all_db", integrationTestSemconv("all_db_semconv", []string{}, pre17TestVersion))
 }
 
 func integrationTest(name string, databases []string, pgVersion string) func(*testing.T) {
@@ -98,6 +116,99 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricValues(
+				"postgresql.backends",
+				"postgresql.bgwriter.buffers.allocated",
+				"postgresql.bgwriter.buffers.writes",
+				"postgresql.bgwriter.checkpoint.count",
+				"postgresql.bgwriter.duration",
+				"postgresql.bgwriter.maxwritten",
+				"postgresql.blks_hit",
+				"postgresql.blks_read",
+				"postgresql.blocks_read",
+				"postgresql.commits",
+				"postgresql.connection.max",
+				"postgresql.database.count",
+				"postgresql.database.locks",
+				"postgresql.db_size",
+				"postgresql.deadlocks",
+				"postgresql.index.scans",
+				"postgresql.index.size",
+				"postgresql.operations",
+				"postgresql.replication.data_delay",
+				"postgresql.rollbacks",
+				"postgresql.rows",
+				"postgresql.sequential_scans",
+				"postgresql.table.count",
+				"postgresql.table.size",
+				"postgresql.table.vacuum.count",
+				"postgresql.tup_deleted",
+				"postgresql.tup_fetched",
+				"postgresql.tup_inserted",
+				"postgresql.tup_returned",
+				"postgresql.tup_updated",
+				"postgresql.wal.age",
+				"postgresql.wal.delay",
+				"postgresql.wal.lag",
+			),
+			pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+		),
+	).Run
+}
+
+func integrationTestSemconv(name string, databases []string, pgVersion string) func(*testing.T) {
+	expectedFile := filepath.Join("testdata", "integration", "expected_"+name+".yaml")
+	return scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithContainerRequest(
+			testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", pgVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{postgresqlPort},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			}),
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.ControllerConfig.CollectionInterval = time.Second
+				rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, postgresqlPort))
+				rCfg.Databases = databases
+				rCfg.Username = "otelu"
+				rCfg.Password = "otelp"
+				rCfg.Insecure = true
+				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
+				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
+				rCfg.Metrics.PostgresqlTempIo.Enabled = true
+				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
+				rCfg.Metrics.PostgresqlTupUpdated.Enabled = true
+				rCfg.Metrics.PostgresqlTupReturned.Enabled = true
+				rCfg.Metrics.PostgresqlTupFetched.Enabled = true
+				rCfg.Metrics.PostgresqlTupInserted.Enabled = true
+				rCfg.Metrics.PostgresqlTupDeleted.Enabled = true
+				rCfg.Metrics.PostgresqlBlksHit.Enabled = true
+				rCfg.Metrics.PostgresqlBlksRead.Enabled = true
+				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true
+				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+			}),
+		scraperinttest.WithExpectedFile(expectedFile),
+		// Uncomment line below to re-generate expected metrics.
+		// scraperinttest.WriteExpected(),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
 			pmetrictest.IgnoreResourceAttributeValue("server.address"),
@@ -217,11 +328,12 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	}
 	clientFactory := newDefaultClientFactory(&cfg)
 
-	ns := newPostgreSQLScraper(receiver.Settings{
+	ns, err := newPostgreSQLScraper(receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.Must(zap.NewProduction()),
 		},
 	}, &cfg, clientFactory, newCache(1), newTTLCache[string](1000, time.Second))
+	assert.NoError(t, err)
 	plogs, err := ns.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
 	logRecords := plogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()

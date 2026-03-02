@@ -17,6 +17,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
 
 			res := rb.Emit()
@@ -24,9 +26,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -52,6 +54,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+			}
+			serverAddressAttrVal, ok := res.Attributes().Get("server.address")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
+			}
+			serverPortAttrVal, ok := res.Attributes().Get("server.port")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, 11, serverPortAttrVal.Int())
 			}
 			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
 			assert.True(t, ok)

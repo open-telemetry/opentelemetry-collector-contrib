@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: service.instance.id
           value:
-            stringValue: localhost:32928
+            stringValue: localhost:32924
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -11,7 +11,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "785"
+                - asInt: "1060"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -77,14 +77,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 29
+                - asDouble: 32
                   attributes:
                     - key: type
                       value:
                         stringValue: sync
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 9
+                - asDouble: 10
                   attributes:
                     - key: type
                       value:
@@ -200,28 +200,15 @@ resourceMetrics:
             stringValue: otel
         - key: service.instance.id
           value:
-            stringValue: localhost:32928
+            stringValue: localhost:32924
     scopeMetrics:
       - metrics:
-          - description: The number of backends.
-            name: postgresql.backends
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: "1"
           - description: Number of times disk blocks were found already in the buffer cache.
             name: postgresql.blks_hit
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "3601"
+                - asInt: "4729"
                   attributes:
                     - key: db.namespace
                       value:
@@ -235,7 +222,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "254"
+                - asInt: "453"
                   attributes:
                     - key: db.namespace
                       value:
@@ -249,7 +236,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "8"
+                - asInt: "12"
                   attributes:
                     - key: db.namespace
                       value:
@@ -359,7 +346,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1672"
+                - asInt: "2278"
                   attributes:
                     - key: db.namespace
                       value:
@@ -387,7 +374,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1835"
+                - asInt: "7708"
                   attributes:
                     - key: db.namespace
                       value:
@@ -418,12 +405,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table1
+            stringValue: table1
         - key: service.instance.id
           value:
-            stringValue: localhost:32928
+            stringValue: localhost:32924
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -686,12 +676,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
         - key: service.instance.id
           value:
-            stringValue: localhost:32928
+            stringValue: localhost:32924
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -957,12 +950,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: table1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table1
         - key: service.instance.id
           value:
-            stringValue: localhost:32928
+            stringValue: localhost:32924
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1014,12 +1010,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: table2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table2
         - key: service.instance.id
           value:
-            stringValue: localhost:32928
+            stringValue: localhost:32924
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
