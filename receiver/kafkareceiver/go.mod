@@ -19,6 +19,7 @@ require (
 	github.com/twmb/franz-go v1.20.7
 	github.com/twmb/franz-go/pkg/kadm v1.17.2
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251021233722-4ca18825d8c0
+	github.com/twmb/franz-go/pkg/kmsg v1.12.0
 	go.opentelemetry.io/collector/client v1.52.1-0.20260227062254-168030d61d7d
 	go.opentelemetry.io/collector/component v1.52.1-0.20260227062254-168030d61d7d
 	go.opentelemetry.io/collector/component/componentstatus v0.146.2-0.20260227062254-168030d61d7d
@@ -103,7 +104,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/relvacode/iso8601 v1.7.0 // indirect
-	github.com/twmb/franz-go/pkg/kmsg v1.12.0 // indirect
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 // indirect
 	github.com/twmb/franz-go/plugin/kzap v1.1.2 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
