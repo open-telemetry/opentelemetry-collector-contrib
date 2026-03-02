@@ -114,27 +114,24 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	var errs error
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-
-	// record container status
-	rb := r.mb.NewResourceBuilder()
-	r.recordContainerStatus(now, results)
-	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-
+	// holds the value for number of containers in each state
+	counterStatus := make(map[string]int64)
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		if err := r.recordContainerStats(now, res.stats, res.container); err != nil {
+		if err := r.recordContainerStats(now, res.stats, res.container, counterStatus); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 
+	r.recordContainerStatus(now, counterStatus)
 	return r.mb.Emit(), errs
 }
 
-func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerStats *ctypes.StatsResponse, container *docker.Container) error {
+func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerStats *ctypes.StatsResponse, container *docker.Container, counterStatus map[string]int64) error {
 	var errs error
 	r.recordCPUMetrics(now, containerStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
@@ -171,20 +168,16 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 		}
 	}
 
+	// increment counter of container status
+	counterStatus[container.State.Status] += 1
 	r.mb.EmitForResource(metadata.WithResource(resource))
 	return errs
 }
 
-func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, result chan resultV2) {
-	counter := make(map[string]int, len(metadata.MapAttributeContainerState))
-
-	for res := range result {
-		container := res.container
-		counter[container.State.Status] += 1
-	}
-
-	for status, count := range counter {
-		r.mb.RecordContainerStatusDataPoint(now, int64(count), metadata.MapAttributeContainerState[status])
+// recordContainerStatus records number of containers in each state
+func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, containerStatus map[string]int64) {
+	for status, count := range containerStatus {
+		r.mb.RecordContainerStatusDataPoint(now, count, metadata.MapAttributeContainerState[status])
 	}
 }
 
