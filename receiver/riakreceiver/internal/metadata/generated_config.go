@@ -82,7 +82,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{"request"},
+			requiredAttributes:  []string{},
 			definedAttributes:   []string{"request"},
 			EnabledAttributes:   []string{"request"},
 		},
@@ -90,7 +90,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 
 			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{"request"},
+			requiredAttributes:  []string{},
 			definedAttributes:   []string{"request"},
 			EnabledAttributes:   []string{"request"},
 		},
@@ -106,7 +106,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{"operation"},
+			requiredAttributes:  []string{},
 			definedAttributes:   []string{"operation"},
 			EnabledAttributes:   []string{"operation"},
 		},
@@ -114,7 +114,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{"request"},
+			requiredAttributes:  []string{},
 			definedAttributes:   []string{"request"},
 			EnabledAttributes:   []string{"request"},
 		},

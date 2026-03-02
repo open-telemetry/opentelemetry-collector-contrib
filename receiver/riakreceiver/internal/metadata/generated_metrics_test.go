@@ -93,14 +93,14 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
-				mb.RecordRiakNodeOperationCountDataPoint(ts, 3, AttributeRequestPut)
+				mb.RecordRiakNodeOperationCountDataPoint(ts, 3, AttributeRequestGet)
 			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
-				mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 3, AttributeRequestPut)
+				mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 3, AttributeRequestGet)
 			}
 
 			defaultMetricsCount++
@@ -114,14 +114,14 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperationRead)
 			if tt.name == "reaggregate_set" {
-				mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 3, AttributeOperationRead)
+				mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 3, AttributeOperationWrite)
 			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
-				mb.RecordRiakVnodeOperationCountDataPoint(ts, 3, AttributeRequestPut)
+				mb.RecordRiakVnodeOperationCountDataPoint(ts, 3, AttributeRequestGet)
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -237,7 +237,7 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("request")
-						assert.True(t, ok)
+						assert.False(t, ok)
 					}
 				case "riak.node.operation.time.mean":
 					if tt.name != "reaggregate_set" {
@@ -277,7 +277,7 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("request")
-						assert.True(t, ok)
+						assert.False(t, ok)
 					}
 				case "riak.node.read_repair.count":
 					if tt.name != "reaggregate_set" {
@@ -360,7 +360,7 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("operation")
-						assert.True(t, ok)
+						assert.False(t, ok)
 					}
 				case "riak.vnode.operation.count":
 					if tt.name != "reaggregate_set" {
@@ -404,7 +404,7 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("request")
-						assert.True(t, ok)
+						assert.False(t, ok)
 					}
 				}
 			}
