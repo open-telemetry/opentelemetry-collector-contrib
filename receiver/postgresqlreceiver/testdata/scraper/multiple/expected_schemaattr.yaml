@@ -174,7 +174,7 @@ resourceMetrics:
           - description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
             gauge:
               dataPoints:
-                - asInt: "600"
+                - asDouble: 600.4
                   attributes:
                     - key: operation
                       value:
@@ -184,7 +184,7 @@ resourceMetrics:
                         stringValue: unix
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "700"
+                - asDouble: 700.55
                   attributes:
                     - key: operation
                       value:
@@ -194,7 +194,7 @@ resourceMetrics:
                         stringValue: unix
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "800"
+                - asDouble: 800.66
                   attributes:
                     - key: operation
                       value:
@@ -204,7 +204,7 @@ resourceMetrics:
                         stringValue: unix
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: postgresql.wal.lag
+            name: postgresql.wal.delay
             unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
@@ -1000,9 +1000,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: open
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table1
+            stringValue: table1
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -1268,9 +1271,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: open
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -1536,9 +1542,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table1
+            stringValue: table1
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -1804,9 +1813,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -2072,9 +2084,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: telemetry
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table1
+            stringValue: table1
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -2340,9 +2355,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: telemetry
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -2611,6 +2629,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: open_test1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table1
@@ -2668,6 +2689,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: open_test2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table2
@@ -2725,6 +2749,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otel_test1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table1
@@ -2782,6 +2809,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otel_test2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table2
@@ -2839,6 +2869,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: telemetry_test1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table1
@@ -2896,6 +2929,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: telemetry_test2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table2

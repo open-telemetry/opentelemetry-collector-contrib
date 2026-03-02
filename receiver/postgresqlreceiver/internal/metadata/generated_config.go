@@ -1921,6 +1921,146 @@ func DefaultEventsConfig() EventsConfig {
 	}
 }
 
+// PostgresqlDatabaseNameResourceAttributeConfig provides config for the postgresql.database.name resource attribute.
+type PostgresqlDatabaseNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *PostgresqlDatabaseNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlIndexNameResourceAttributeConfig provides config for the postgresql.index.name resource attribute.
+type PostgresqlIndexNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *PostgresqlIndexNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlSchemaNameResourceAttributeConfig provides config for the postgresql.schema.name resource attribute.
+type PostgresqlSchemaNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *PostgresqlSchemaNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTableNameResourceAttributeConfig provides config for the postgresql.table.name resource attribute.
+type PostgresqlTableNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *PostgresqlTableNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ServerAddressResourceAttributeConfig provides config for the server.address resource attribute.
 type ServerAddressResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -2098,15 +2238,31 @@ func (rac *ServiceNamespaceResourceAttributeConfig) Unmarshal(parser *confmap.Co
 
 // ResourceAttributesConfig provides config for postgresql resource attributes.
 type ResourceAttributesConfig struct {
-	ServerAddress     ServerAddressResourceAttributeConfig     `mapstructure:"server.address"`
-	ServerPort        ServerPortResourceAttributeConfig        `mapstructure:"server.port"`
-	ServiceInstanceID ServiceInstanceIDResourceAttributeConfig `mapstructure:"service.instance.id"`
-	ServiceName       ServiceNameResourceAttributeConfig       `mapstructure:"service.name"`
-	ServiceNamespace  ServiceNamespaceResourceAttributeConfig  `mapstructure:"service.namespace"`
+	PostgresqlDatabaseName PostgresqlDatabaseNameResourceAttributeConfig `mapstructure:"postgresql.database.name"`
+	PostgresqlIndexName    PostgresqlIndexNameResourceAttributeConfig    `mapstructure:"postgresql.index.name"`
+	PostgresqlSchemaName   PostgresqlSchemaNameResourceAttributeConfig   `mapstructure:"postgresql.schema.name"`
+	PostgresqlTableName    PostgresqlTableNameResourceAttributeConfig    `mapstructure:"postgresql.table.name"`
+	ServerAddress          ServerAddressResourceAttributeConfig          `mapstructure:"server.address"`
+	ServerPort             ServerPortResourceAttributeConfig             `mapstructure:"server.port"`
+	ServiceInstanceID      ServiceInstanceIDResourceAttributeConfig      `mapstructure:"service.instance.id"`
+	ServiceName            ServiceNameResourceAttributeConfig            `mapstructure:"service.name"`
+	ServiceNamespace       ServiceNamespaceResourceAttributeConfig       `mapstructure:"service.namespace"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		PostgresqlDatabaseName: PostgresqlDatabaseNameResourceAttributeConfig{
+			Enabled: true,
+		},
+		PostgresqlIndexName: PostgresqlIndexNameResourceAttributeConfig{
+			Enabled: true,
+		},
+		PostgresqlSchemaName: PostgresqlSchemaNameResourceAttributeConfig{
+			Enabled: true,
+		},
+		PostgresqlTableName: PostgresqlTableNameResourceAttributeConfig{
+			Enabled: true,
+		},
 		ServerAddress: ServerAddressResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -2129,6 +2285,18 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 // For each enabled resource attribute with a non-nil OverrideValue,
 // the override replaces any existing value in the resource.
 func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	if rac.PostgresqlDatabaseName.Enabled && rac.PostgresqlDatabaseName.OverrideValue != nil {
+		res.Attributes().PutStr("postgresql.database.name", *rac.PostgresqlDatabaseName.OverrideValue)
+	}
+	if rac.PostgresqlIndexName.Enabled && rac.PostgresqlIndexName.OverrideValue != nil {
+		res.Attributes().PutStr("postgresql.index.name", *rac.PostgresqlIndexName.OverrideValue)
+	}
+	if rac.PostgresqlSchemaName.Enabled && rac.PostgresqlSchemaName.OverrideValue != nil {
+		res.Attributes().PutStr("postgresql.schema.name", *rac.PostgresqlSchemaName.OverrideValue)
+	}
+	if rac.PostgresqlTableName.Enabled && rac.PostgresqlTableName.OverrideValue != nil {
+		res.Attributes().PutStr("postgresql.table.name", *rac.PostgresqlTableName.OverrideValue)
+	}
 	if rac.ServerAddress.Enabled && rac.ServerAddress.OverrideValue != nil {
 		res.Attributes().PutStr("server.address", *rac.ServerAddress.OverrideValue)
 	}

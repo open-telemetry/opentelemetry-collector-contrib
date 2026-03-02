@@ -3820,6 +3820,30 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:           make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:           make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["postgresql.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["postgresql.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlDatabaseName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.PostgresqlIndexName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["postgresql.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlIndexName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.PostgresqlIndexName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["postgresql.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlIndexName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.PostgresqlSchemaName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["postgresql.schema.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlSchemaName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.PostgresqlSchemaName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["postgresql.schema.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlSchemaName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.PostgresqlTableName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["postgresql.table.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlTableName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.PostgresqlTableName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["postgresql.table.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlTableName.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
 	}

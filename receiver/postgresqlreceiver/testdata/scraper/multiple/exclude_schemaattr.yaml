@@ -308,9 +308,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table1
+            stringValue: table1
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -559,9 +562,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -810,9 +816,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: telemetry
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table1
+            stringValue: table1
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -1061,9 +1070,12 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: telemetry
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
         - key: service.instance.id
           value:
             stringValue: Arves-MacBook-Pro-2.fritz.box:5432
@@ -1315,6 +1327,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otel_test1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table1
@@ -1372,6 +1387,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otel_test2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table2
@@ -1429,6 +1447,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: telemetry_test1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table1
@@ -1486,6 +1507,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: telemetry_test2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table2

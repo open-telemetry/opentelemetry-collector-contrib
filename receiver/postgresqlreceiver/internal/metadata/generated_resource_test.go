@@ -16,6 +16,10 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+			rb.SetPostgresqlIndexName("postgresql.index.name-val")
+			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
+			rb.SetPostgresqlTableName("postgresql.table.name-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
@@ -27,14 +31,34 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			postgresqlDatabaseNameAttrVal, ok := res.Attributes().Get("postgresql.database.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "postgresql.database.name-val", postgresqlDatabaseNameAttrVal.Str())
+			}
+			postgresqlIndexNameAttrVal, ok := res.Attributes().Get("postgresql.index.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "postgresql.index.name-val", postgresqlIndexNameAttrVal.Str())
+			}
+			postgresqlSchemaNameAttrVal, ok := res.Attributes().Get("postgresql.schema.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
+			}
+			postgresqlTableNameAttrVal, ok := res.Attributes().Get("postgresql.table.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
 			}
 			serverAddressAttrVal, ok := res.Attributes().Get("server.address")
 			assert.True(t, ok)
@@ -69,6 +93,10 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
 	require.NoError(t, xconfmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
+	rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+	rb.SetPostgresqlIndexName("postgresql.index.name-val")
+	rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
+	rb.SetPostgresqlTableName("postgresql.table.name-val")
 	rb.SetServerAddress("server.address-val")
 	rb.SetServerPort(11)
 	rb.SetServiceInstanceID("service.instance.id-val")
@@ -76,6 +104,34 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("postgresql.database.name")
+		assert.True(t, ok, "postgresql.database.name should be present")
+		if ok {
+			assert.Equal(t, "override-postgresql.database.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("postgresql.index.name")
+		assert.True(t, ok, "postgresql.index.name should be present")
+		if ok {
+			assert.Equal(t, "override-postgresql.index.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("postgresql.schema.name")
+		assert.True(t, ok, "postgresql.schema.name should be present")
+		if ok {
+			assert.Equal(t, "override-postgresql.schema.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("postgresql.table.name")
+		assert.True(t, ok, "postgresql.table.name should be present")
+		if ok {
+			assert.Equal(t, "override-postgresql.table.name", val.Str())
+		}
+	}
 	{
 		val, ok := res.Attributes().Get("server.address")
 		assert.True(t, ok, "server.address should be present")
@@ -121,6 +177,34 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 
 	res := rb.Emit()
 	{
+		val, ok := res.Attributes().Get("postgresql.database.name")
+		assert.True(t, ok, "postgresql.database.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-postgresql.database.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("postgresql.index.name")
+		assert.True(t, ok, "postgresql.index.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-postgresql.index.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("postgresql.schema.name")
+		assert.True(t, ok, "postgresql.schema.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-postgresql.schema.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("postgresql.table.name")
+		assert.True(t, ok, "postgresql.table.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-postgresql.table.name", val.Str())
+		}
+	}
+	{
 		val, ok := res.Attributes().Get("server.address")
 		assert.True(t, ok, "server.address should be present even without calling Set")
 		if ok {
@@ -160,6 +244,10 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 // TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
 func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	cfg.PostgresqlDatabaseName.Enabled = false
+	cfg.PostgresqlIndexName.Enabled = false
+	cfg.PostgresqlSchemaName.Enabled = false
+	cfg.PostgresqlTableName.Enabled = false
 	cfg.ServerAddress.Enabled = false
 	cfg.ServerPort.Enabled = false
 	cfg.ServiceInstanceID.Enabled = false
@@ -176,12 +264,20 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
 	require.NoError(t, xconfmap.Validate(cfg))
+	assert.Nil(t, cfg.PostgresqlDatabaseName.OverrideValue, "OverrideValue should be nil for postgresql.database.name")
+	assert.Nil(t, cfg.PostgresqlIndexName.OverrideValue, "OverrideValue should be nil for postgresql.index.name")
+	assert.Nil(t, cfg.PostgresqlSchemaName.OverrideValue, "OverrideValue should be nil for postgresql.schema.name")
+	assert.Nil(t, cfg.PostgresqlTableName.OverrideValue, "OverrideValue should be nil for postgresql.table.name")
 	assert.Nil(t, cfg.ServerAddress.OverrideValue, "OverrideValue should be nil for server.address")
 	assert.Nil(t, cfg.ServerPort.OverrideValue, "OverrideValue should be nil for server.port")
 	assert.Nil(t, cfg.ServiceInstanceID.OverrideValue, "OverrideValue should be nil for service.instance.id")
 	assert.Nil(t, cfg.ServiceName.OverrideValue, "OverrideValue should be nil for service.name")
 	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
 	rb := NewResourceBuilder(cfg)
+	rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+	rb.SetPostgresqlIndexName("postgresql.index.name-val")
+	rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
+	rb.SetPostgresqlTableName("postgresql.table.name-val")
 	rb.SetServerAddress("server.address-val")
 	rb.SetServerPort(11)
 	rb.SetServiceInstanceID("service.instance.id-val")
@@ -189,7 +285,27 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 5, res.Attributes().Len())
+	assert.Equal(t, 9, res.Attributes().Len())
+	postgresqlDatabaseNameAttrVal, ok := res.Attributes().Get("postgresql.database.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "postgresql.database.name-val", postgresqlDatabaseNameAttrVal.Str())
+	}
+	postgresqlIndexNameAttrVal, ok := res.Attributes().Get("postgresql.index.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "postgresql.index.name-val", postgresqlIndexNameAttrVal.Str())
+	}
+	postgresqlSchemaNameAttrVal, ok := res.Attributes().Get("postgresql.schema.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
+	}
+	postgresqlTableNameAttrVal, ok := res.Attributes().Get("postgresql.table.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+	}
 	serverAddressAttrVal, ok := res.Attributes().Get("server.address")
 	assert.True(t, ok)
 	if ok {

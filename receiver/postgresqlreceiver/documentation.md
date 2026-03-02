@@ -24,7 +24,7 @@ The number of backends.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.bgwriter.buffers.allocated
 
@@ -97,7 +97,7 @@ The number of blocks read.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | source | The block read source type. | Str: ``heap_read``, ``heap_hit``, ``idx_read``, ``idx_hit``, ``toast_read``, ``toast_hit``, ``tidx_read``, ``tidx_hit`` | Recommended | - |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 | db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.commits
@@ -112,7 +112,7 @@ The number of commits.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.connection.max
 
@@ -142,7 +142,7 @@ The database disk usage.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.index.scans
 
@@ -156,7 +156,7 @@ The number of index scans on a table.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 | db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 | postgresql.index.name | The name of the index on a table. | Any Str | Recommended | - |
 
@@ -172,7 +172,7 @@ The size of the index on disk.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 | db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 | postgresql.index.name | The name of the index on a table. | Any Str | Recommended | - |
 
@@ -189,7 +189,7 @@ The number of db row operations.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd`` | Recommended | - |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 | db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.replication.data_delay
@@ -218,7 +218,7 @@ The number of rollbacks.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.rows
 
@@ -233,7 +233,7 @@ The number of rows in the database.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | state | The tuple (row) state. | Str: ``dead``, ``live`` | Recommended | - |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 | db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.table.count
@@ -248,7 +248,7 @@ Number of user tables in a database.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.table.size
 
@@ -262,7 +262,7 @@ Disk space used by a table.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 | db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.table.vacuum.count
@@ -277,7 +277,7 @@ Number of times a table has manually been vacuumed.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 | db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.wal.age
@@ -329,7 +329,7 @@ Number of times disk blocks were found already in the buffer cache.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.blks_read
 
@@ -343,7 +343,7 @@ Number of disk blocks read in this database.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.database.locks
 
@@ -373,7 +373,7 @@ The number of deadlocks.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.function.calls
 
@@ -388,7 +388,7 @@ The number of calls made to a function. Requires `track_functions=pl|all` in Pos
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | function | The name of the function. | Any Str | Recommended | - |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.query.conflicts
 
@@ -416,7 +416,7 @@ The number of sequential scans.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 | db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.temp.io
@@ -431,7 +431,7 @@ Total amount of data written to temporary files by queries.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.temp_files
 
@@ -445,7 +445,7 @@ The number of temp files.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.tup_deleted
 
@@ -459,7 +459,7 @@ Number of rows deleted by queries in the database.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.tup_fetched
 
@@ -473,7 +473,7 @@ Number of rows fetched by queries in the database.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.tup_inserted
 
@@ -487,7 +487,7 @@ Number of rows inserted by queries in the database.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.tup_returned
 
@@ -501,7 +501,7 @@ Number of rows returned by queries in the database.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.tup_updated
 
@@ -515,7 +515,7 @@ Number of rows updated by queries in the database.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| db.namespace | The name of the database. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.wal.delay
 
@@ -563,7 +563,7 @@ query sample
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``postgresql`` | - |
-| db.namespace | The name of the database. | Any Str | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
 | user.name | Name of the user logged into this backend. | Any Str | - |
 | postgresql.state | Current overall state of this backend | Any Str | - |
@@ -594,7 +594,7 @@ top query
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``postgresql`` | - |
-| db.namespace | The name of the database. | Any Str | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
 | postgresql.calls | Number of times the statement was executed, reported in delta value. | Any Int | - |
 | postgresql.rows | Total number of rows retrieved or affected by the statement, reported in delta value. | Any Int | - |
@@ -614,9 +614,13 @@ top query
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| postgresql.database.name | The name of the database. | Any Str | true | - | - |
+| postgresql.index.name | The name of the index on a table. | Any Str | true | - | - |
+| postgresql.schema.name | The schema name. | Any Str | true | - | - |
+| postgresql.table.name | The table name. | Any Str | true | - | - |
 | server.address | The address of the PostgreSQL server. | Any Str | true | - | - |
 | server.port | The port number of the PostgreSQL server. | Any Int | true | - | - |
-| service.instance.id | A unique identifier of the PostgreSQL resource as a UUID v5, derived from server address and port. | Any Str | true | - | - |
+| service.instance.id | A unique identifier of the PostgreSQL instance. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:postgresql. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
 
@@ -628,5 +632,7 @@ This component has the following feature gates:
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `postgresqlreceiver.preciselagmetrics` | beta | Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
 | `receiver.postgresql.connectionPool` | beta | Use of connection pooling | v0.96.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
+| `receiver.postgresql.separateSchemaAttr` | alpha | Moves Schema Names into dedicated Attribute. | v0.122.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559) |
+| `receiver.postgresql.useOTelSemconv` | alpha | When enabled, uses a single resource per server with server.address, server.port, and service.instance.id (UUID v5) resource attributes, aligning with OpenTelemetry semantic conventions. When disabled, uses the legacy per-entity resource model with postgresql.database.name, postgresql.table.name, postgresql.index.name, and postgresql.schema.name resource attributes. | v0.148.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

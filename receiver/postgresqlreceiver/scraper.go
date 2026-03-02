@@ -32,6 +32,9 @@ import (
 )
 
 const (
+	readmeURL            = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
+	separateSchemaAttrID = "receiver.postgresql.separateSchemaAttr"
+
 	defaultPostgreSQLDatabase = "postgres"
 
 	defaultServiceName = "unknown_service:postgresql"
@@ -53,6 +56,8 @@ type postgreSQLScraper struct {
 	queryPlanCache         *expirable.LRU[string, string]
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
+	separateSchemaAttr     bool
+	useOTelSemconv         bool
 	lastExecutionTimestamp time.Time
 }
 
@@ -85,22 +90,37 @@ func newPostgreSQLScraper(
 	clientFactory postgreSQLClientFactory,
 	cache *lru.Cache[string, float64],
 	queryPlanCache *expirable.LRU[string, string],
-) *postgreSQLScraper {
+) (*postgreSQLScraper, error) {
+	separateSchemaAttr := metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.IsEnabled()
+	useOTelSemconv := metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate.IsEnabled()
+
+	if separateSchemaAttr && useOTelSemconv {
+		return nil, fmt.Errorf("feature gates %s and receiver.postgresql.useOTelSemconv are mutually exclusive and cannot both be enabled", separateSchemaAttrID)
+	}
+
+	if !separateSchemaAttr && !useOTelSemconv {
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", separateSchemaAttrID, readmeURL),
+		)
+	}
+
 	excludes := make(map[string]struct{})
 	for _, db := range config.ExcludeDatabases {
 		excludes[db] = struct{}{}
 	}
 	return &postgreSQLScraper{
-		logger:            settings.Logger,
-		config:            config,
-		clientFactory:     clientFactory,
-		mb:                metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		lb:                metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
-		excludes:          excludes,
-		cache:             cache,
-		queryPlanCache:    queryPlanCache,
-		serviceInstanceID: getInstanceID(config.Endpoint, settings.Logger),
-	}
+		logger:             settings.Logger,
+		config:             config,
+		clientFactory:      clientFactory,
+		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
+		excludes:           excludes,
+		cache:              cache,
+		queryPlanCache:     queryPlanCache,
+		serviceInstanceID:  getInstanceID(config.Endpoint, settings.Logger),
+		separateSchemaAttr: separateSchemaAttr,
+		useOTelSemconv:     useOTelSemconv,
+	}, nil
 }
 
 type dbRetrieval struct {
@@ -170,7 +190,11 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
 	p.collectDatabaseLocks(ctx, now, listClient, &errs)
 
-	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder())
+	if p.useOTelSemconv {
+		rb := p.setupSemconvResourceBuilder(p.mb.NewResourceBuilder())
+		return p.mb.Emit(metadata.WithResource(rb.Emit())), errs.combine()
+	}
+	rb := p.setupLegacyResourceBuilder(p.mb.NewResourceBuilder(), "", "", "", "")
 	return p.mb.Emit(metadata.WithResource(rb.Emit())), errs.combine()
 }
 
@@ -187,7 +211,7 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 
 	defer dbClient.Close()
 
-	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder())
+	rb := p.setupLogsResourceBuilder(p.lb.NewResourceBuilder())
 	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
 }
 
@@ -200,7 +224,7 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery,
 		p.lastExecutionTimestamp = currentCollectionTime
 	}
 
-	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder())
+	rb := p.setupLogsResourceBuilder(p.lb.NewResourceBuilder())
 	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
 }
 
@@ -494,6 +518,11 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflBufferpin, metadata.AttributePostgresqlConflictTypeBufferpin)
 		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflDeadlock, metadata.AttributePostgresqlConflictTypeDeadlock)
 	}
+
+	if !p.useOTelSemconv {
+		rb := p.setupLegacyResourceBuilder(p.mb.NewResourceBuilder(), db, "", "", "")
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
 }
 
 func formatNamespace(database, schema string) string {
@@ -538,6 +567,19 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead, namespace, tm.table)
 			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit, namespace, tm.table)
 		}
+
+		if !p.useOTelSemconv {
+			var schemaName string
+			var tableName string
+			if p.separateSchemaAttr {
+				schemaName = tm.schema
+				tableName = tm.table
+			} else {
+				tableName = fmt.Sprintf("%s.%s", tm.schema, tm.table)
+			}
+			rb := p.setupLegacyResourceBuilder(p.mb.NewResourceBuilder(), db, schemaName, tableName, "")
+			p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		}
 	}
 	return int64(len(tableMetrics))
 }
@@ -560,6 +602,15 @@ func (p *postgreSQLScraper) collectIndexes(
 
 		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans, namespace, stat.table, stat.index)
 		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size, namespace, stat.table, stat.index)
+
+		if !p.useOTelSemconv {
+			var schemaName string
+			if p.separateSchemaAttr {
+				schemaName = stat.schema
+			}
+			rb := p.setupLegacyResourceBuilder(p.mb.NewResourceBuilder(), database, schemaName, stat.table, stat.index)
+			p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		}
 	}
 }
 
@@ -580,6 +631,15 @@ func (p *postgreSQLScraper) collectFunctions(
 		namespace := formatNamespace(database, stat.schema)
 
 		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function, namespace)
+
+		if !p.useOTelSemconv {
+			var schemaName string
+			if p.separateSchemaAttr {
+				schemaName = stat.schema
+			}
+			rb := p.setupLegacyResourceBuilder(p.mb.NewResourceBuilder(), database, schemaName, "", "")
+			p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		}
 	}
 }
 
@@ -782,22 +842,46 @@ func (*postgreSQLScraper) retrieveBackends(
 	r.Unlock()
 }
 
-func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+// setupSemconvResourceBuilder sets service defaults, server.address, server.port, and UUID v5 service.instance.id.
+func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-
 	if idx := strings.LastIndex(p.serviceInstanceID, ":"); idx != -1 {
 		rb.SetServerAddress(p.serviceInstanceID[:idx])
 		if port, err := strconv.Atoi(p.serviceInstanceID[idx+1:]); err == nil {
 			rb.SetServerPort(int64(port))
 		}
 	}
-
-	// Generate deterministic UUID v5 for service.instance.id based on host:port only.
-	instanceID := uuid.NewSHA1(otelNamespaceUUID, []byte(p.serviceInstanceID)).String()
-	rb.SetServiceInstanceID(instanceID)
-
+	rb.SetServiceInstanceID(uuid.NewSHA1(otelNamespaceUUID, []byte(p.serviceInstanceID)).String())
 	return rb
+}
+
+// setupLegacyResourceBuilder sets legacy per-entity resource attributes and host:port service.instance.id.
+func (p *postgreSQLScraper) setupLegacyResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
+	rb.SetServiceName(defaultServiceName)
+	rb.SetServiceNamespace("")
+	rb.SetServiceInstanceID(p.serviceInstanceID)
+	if database != "" {
+		rb.SetPostgresqlDatabaseName(database)
+	}
+	if schema != "" {
+		rb.SetPostgresqlSchemaName(schema)
+	}
+	if table != "" {
+		rb.SetPostgresqlTableName(table)
+	}
+	if index != "" {
+		rb.SetPostgresqlIndexName(index)
+	}
+	return rb
+}
+
+// setupLogsResourceBuilder sets resource attributes for logs.
+func (p *postgreSQLScraper) setupLogsResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+	if p.useOTelSemconv {
+		return p.setupSemconvResourceBuilder(rb)
+	}
+	return p.setupLegacyResourceBuilder(rb, "", "", "", "")
 }
 
 func getInstanceID(instanceString string, logger *zap.Logger) string {
