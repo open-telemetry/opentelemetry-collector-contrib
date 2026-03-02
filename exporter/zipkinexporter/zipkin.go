@@ -61,7 +61,7 @@ func createZipkinExporter(cfg *Config, settings component.TelemetrySettings) (*z
 
 // start creates the http client
 func (ze *zipkinExporter) start(ctx context.Context, host component.Host) (err error) {
-	if err := zipkinv2.ValidateFeatureGates(); err != nil {
+	if err = zipkinv2.ValidateFeatureGates(); err != nil {
 		ze.settings.Logger.Error("Invalid feature gate combination", zap.Error(err))
 		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		return err
