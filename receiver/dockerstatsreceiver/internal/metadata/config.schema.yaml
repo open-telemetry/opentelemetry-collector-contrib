@@ -1,4 +1,7 @@
 $defs:
+  attribute_container_state:
+    description: AttributeContainerState specifies the value container.state attribute.
+    type: integer
   metric_config:
     description: MetricConfig provides common config for a particular metric.
     type: object
@@ -156,6 +159,8 @@ $defs:
       container.pids.limit:
         $ref: metric_config
       container.restarts:
+        $ref: metric_config
+      container.status:
         $ref: metric_config
       container.uptime:
         $ref: metric_config

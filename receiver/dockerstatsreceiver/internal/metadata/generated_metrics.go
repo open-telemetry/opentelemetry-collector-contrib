@@ -4046,7 +4046,7 @@ type metricContainerStatus struct {
 // init fills container.status metric with initial data.
 func (m *metricContainerStatus) init() {
 	m.data.SetName("container.status")
-	m.data.SetDescription("Status of the container. One of - created, running, paused, restarting, removing, exited and dead")
+	m.data.SetDescription("Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead")
 	m.data.SetUnit("{status}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -4083,6 +4083,7 @@ func (m *metricContainerStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerStatus(cfg MetricConfig) metricContainerStatus {
 	m := metricContainerStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

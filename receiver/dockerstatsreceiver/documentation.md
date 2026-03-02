@@ -742,9 +742,7 @@ Number of restarts for the container.
 
 ### container.status
 
-Status of the container. One of - created, running, paused, restarting, removing, exited and dead
-
-A timeseries is produced for every possible value of `container.state`. The value of this metric is 1 for a state if it is currently in said state, and is 0 for all other states
+Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

@@ -1401,7 +1401,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.status"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Status of the container. One of - created, running, paused, restarting, removing, exited and dead", ms.At(i).Description())
+					assert.Equal(t, "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead", ms.At(i).Description())
 					assert.Equal(t, "{status}", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

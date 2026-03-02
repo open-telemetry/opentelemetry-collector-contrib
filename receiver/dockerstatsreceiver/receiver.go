@@ -114,6 +114,12 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	var errs error
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+
+	// record container status
+	rb := r.mb.NewResourceBuilder()
+	r.recordContainerStatus(now, results)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
@@ -166,21 +172,20 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	}
 
 	r.mb.EmitForResource(metadata.WithResource(resource))
-	r.recordContainerStatus(now, container)
 	return errs
 }
 
-func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, container *docker.Container) {
-	current := container.State.Status
+func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, result chan resultV2) {
+	counter := make(map[string]int, len(metadata.MapAttributeContainerState))
 
-	for key, value := range metadata.MapAttributeContainerState {
-		if current == key {
-			continue
-		}
-		r.mb.RecordContainerStatusDataPoint(now, 0, value)
+	for res := range result {
+		container := res.container
+		counter[container.State.Status] += 1
 	}
 
-	r.mb.RecordContainerStatusDataPoint(now, 1, metadata.MapAttributeContainerState[current])
+	for status, count := range counter {
+		r.mb.RecordContainerStatusDataPoint(now, int64(count), metadata.MapAttributeContainerState[status])
+	}
 }
 
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *ctypes.MemoryStats) {

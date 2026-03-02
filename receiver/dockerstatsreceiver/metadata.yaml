@@ -791,10 +791,8 @@ metrics:
   # Container status
   container.status:
     enabled: false
-    stability:
-      level: development
-    description: "Status of the container. One of - created, running, paused, restarting, removing, exited and dead"
-    extended_documentation: "A timeseries is produced for every possible value of `container.state`. The value of this metric is 1 for a state if it is currently in said state, and is 0 for all other states"
+    stability: development
+    description: "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead"
     unit: "{status}"
     sum:
       value_type: int
