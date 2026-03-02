@@ -30,6 +30,8 @@ const FOCUS_COMPONENT_LABELS = new Set([
   'processor/resourcedetection',
   'receiver/filelog',
   'processor/filter',
+  'pkg/stanza',
+  'pkg/ottl',
 ]);
 // Resourcedetection has sub-labels (e.g. processor/resourcedetection/internal/azure); include those too.
 function isAllowedLabel(label) {
