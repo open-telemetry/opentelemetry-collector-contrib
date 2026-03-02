@@ -16,3 +16,10 @@ retract (
 	v0.65.0
 	v0.37.0 // Contains dependencies on v0.36.0 components, which should have been updated to v0.37.0.
 )
+
+require (
+	github.com/itchyny/timefmt-go v0.1.7
+	go.uber.org/zap v1.27.1
+)
+
+require go.uber.org/multierr v1.10.0 // indirect
