@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -11,7 +11,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1323"
+                - asInt: "1148"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -77,14 +77,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 30
+                - asDouble: 31
                   attributes:
                     - key: type
                       value:
                         stringValue: sync
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 10
+                - asDouble: 12
                   attributes:
                     - key: type
                       value:
@@ -116,7 +116,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2"
+                - asInt: "3"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{databases}'
@@ -200,7 +200,7 @@ resourceMetrics:
             stringValue: otel
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: Number of times disk blocks were found already in the buffer cache.
@@ -407,7 +407,7 @@ resourceMetrics:
             stringValue: otel2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: Number of times disk blocks were found already in the buffer cache.
@@ -611,13 +611,236 @@ resourceMetrics:
       attributes:
         - key: postgresql.database.name
           value:
-            stringValue: otel
-        - key: postgresql.table.name
-          value:
-            stringValue: public.table1
+            stringValue: postgres
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
+    scopeMetrics:
+      - metrics:
+          - description: The number of backends.
+            name: postgresql.backends
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: Number of times disk blocks were found already in the buffer cache.
+            name: postgresql.blks_hit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5435"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{blks_hit}'
+          - description: Number of disk blocks read in this database.
+            name: postgresql.blks_read
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "376"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{blks_read}'
+          - description: The number of commits.
+            name: postgresql.commits
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "23"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The database disk usage.
+            name: postgresql.db_size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8098351"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of deadlocks.
+            name: postgresql.deadlocks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{deadlock}'
+          - description: The number of rollbacks.
+            name: postgresql.rollbacks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: Number of user tables in a database.
+            name: postgresql.table.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{table}'
+          - description: Total amount of data written to temporary files by queries.
+            name: postgresql.temp.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of temp files.
+            name: postgresql.temp_files
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{temp_file}'
+          - description: Number of rows deleted by queries in the database.
+            name: postgresql.tup_deleted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_deleted}'
+          - description: Number of rows fetched by queries in the database.
+            name: postgresql.tup_fetched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2957"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_fetched}'
+          - description: Number of rows inserted by queries in the database.
+            name: postgresql.tup_inserted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_inserted}'
+          - description: Number of rows returned by queries in the database.
+            name: postgresql.tup_returned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "7900"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_returned}'
+          - description: Number of rows updated by queries in the database.
+            name: postgresql.tup_updated
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: postgres
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_updated}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
+        - key: postgresql.table.name
+          value:
+            stringValue: table1
+        - key: service.instance.id
+          value:
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -880,12 +1103,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1148,12 +1374,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel2
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.test1
+            stringValue: test1
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1416,12 +1645,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel2
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.test2
+            stringValue: test2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1687,12 +1919,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: table1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table1
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1744,12 +1979,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: table2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1801,12 +2039,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otel2index
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: test2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1858,12 +2099,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otelindex
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: test1
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1915,12 +2159,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: test1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: test1
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1972,12 +2219,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: test2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: test2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32926
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.

@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -11,7 +11,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1323"
+                - asInt: "1048"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -77,14 +77,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 30
+                - asDouble: 90
                   attributes:
                     - key: type
                       value:
                         stringValue: sync
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 10
+                - asDouble: 21
                   attributes:
                     - key: type
                       value:
@@ -200,7 +200,7 @@ resourceMetrics:
             stringValue: otel
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: Number of times disk blocks were found already in the buffer cache.
@@ -407,7 +407,7 @@ resourceMetrics:
             stringValue: otel2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: Number of times disk blocks were found already in the buffer cache.
@@ -612,12 +612,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table1
+            stringValue: table1
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -880,12 +883,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1148,12 +1154,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel2
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.test1
+            stringValue: test1
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1416,12 +1425,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel2
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
-            stringValue: public.test2
+            stringValue: test2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1687,12 +1699,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: table1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table1
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1744,12 +1759,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: table2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: table2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1801,12 +1819,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otel2index
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: test2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1858,12 +1879,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otelindex
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: test1
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1915,12 +1939,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: test1_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: test1
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1972,12 +1999,15 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: test2_pkey
+        - key: postgresql.schema.name
+          value:
+            stringValue: public
         - key: postgresql.table.name
           value:
             stringValue: test2
         - key: service.instance.id
           value:
-            stringValue: localhost:32920
+            stringValue: localhost:32925
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.

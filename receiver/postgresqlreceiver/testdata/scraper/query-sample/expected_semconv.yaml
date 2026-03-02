@@ -1,9 +1,15 @@
 resourceLogs:
   - resource:
       attributes:
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
         - key: service.instance.id
           value:
-            stringValue: localhost:5432
+            stringValue: 859dc0cd-0be0-5255-b69c-d5c7f3369774
     scopeLogs:
       - logRecords:
           - attributes:
@@ -54,7 +60,7 @@ resourceLogs:
                   doubleValue: 1.2
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1772009321416115000"
+            timeUnixNano: "1772011203177313000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

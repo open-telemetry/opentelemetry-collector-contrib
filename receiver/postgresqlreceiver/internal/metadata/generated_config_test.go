@@ -27,7 +27,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					PostgresqlBackends: PostgresqlBackendsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
 						Enabled: true,
@@ -51,18 +53,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					PostgresqlBlksHit: PostgresqlBlksHitMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBlksHitMetricAttributeKey{PostgresqlBlksHitMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlBlksRead: PostgresqlBlksReadMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBlksReadMetricAttributeKey{PostgresqlBlksReadMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlBlocksRead: PostgresqlBlocksReadMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlBlocksReadMetricAttributeKey{PostgresqlBlocksReadMetricAttributeKeySource},
+						EnabledAttributes:   []PostgresqlBlocksReadMetricAttributeKey{PostgresqlBlocksReadMetricAttributeKeySource, PostgresqlBlocksReadMetricAttributeKeyDbNamespace, PostgresqlBlocksReadMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlCommits: PostgresqlCommitsMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlCommitsMetricAttributeKey{PostgresqlCommitsMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlConnectionMax: PostgresqlConnectionMaxMetricConfig{
 						Enabled: true,
@@ -76,26 +84,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType},
 					},
 					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlDbSizeMetricAttributeKey{PostgresqlDbSizeMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlDeadlocks: PostgresqlDeadlocksMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlDeadlocksMetricAttributeKey{PostgresqlDeadlocksMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlFunctionCalls: PostgresqlFunctionCallsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlFunctionCallsMetricAttributeKey{PostgresqlFunctionCallsMetricAttributeKeyFunction},
+						EnabledAttributes:   []PostgresqlFunctionCallsMetricAttributeKey{PostgresqlFunctionCallsMetricAttributeKeyFunction, PostgresqlFunctionCallsMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlIndexScans: PostgresqlIndexScansMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlIndexScansMetricAttributeKey{PostgresqlIndexScansMetricAttributeKeyDbNamespace, PostgresqlIndexScansMetricAttributeKeyDbCollectionName, PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName},
 					},
 					PostgresqlIndexSize: PostgresqlIndexSizeMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlIndexSizeMetricAttributeKey{PostgresqlIndexSizeMetricAttributeKeyDbNamespace, PostgresqlIndexSizeMetricAttributeKeyDbCollectionName, PostgresqlIndexSizeMetricAttributeKeyPostgresqlIndexName},
 					},
 					PostgresqlOperations: PostgresqlOperationsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation},
+						EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation, PostgresqlOperationsMetricAttributeKeyDbNamespace, PostgresqlOperationsMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 						Enabled:             true,
@@ -103,45 +119,69 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []PostgresqlReplicationDataDelayMetricAttributeKey{PostgresqlReplicationDataDelayMetricAttributeKeyReplicationClient},
 					},
 					PostgresqlRollbacks: PostgresqlRollbacksMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlRollbacksMetricAttributeKey{PostgresqlRollbacksMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlRows: PostgresqlRowsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlRowsMetricAttributeKey{PostgresqlRowsMetricAttributeKeyState},
+						EnabledAttributes:   []PostgresqlRowsMetricAttributeKey{PostgresqlRowsMetricAttributeKeyState, PostgresqlRowsMetricAttributeKeyDbNamespace, PostgresqlRowsMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlSequentialScans: PostgresqlSequentialScansMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlSequentialScansMetricAttributeKey{PostgresqlSequentialScansMetricAttributeKeyDbNamespace, PostgresqlSequentialScansMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTableCount: PostgresqlTableCountMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableCountMetricAttributeKey{PostgresqlTableCountMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTableSize: PostgresqlTableSizeMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableSizeMetricAttributeKey{PostgresqlTableSizeMetricAttributeKeyDbNamespace, PostgresqlTableSizeMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTableVacuumCount: PostgresqlTableVacuumCountMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableVacuumCountMetricAttributeKey{PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTempIo: PostgresqlTempIoMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTempIoMetricAttributeKey{PostgresqlTempIoMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTempFiles: PostgresqlTempFilesMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTempFilesMetricAttributeKey{PostgresqlTempFilesMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupDeleted: PostgresqlTupDeletedMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupDeletedMetricAttributeKey{PostgresqlTupDeletedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupFetched: PostgresqlTupFetchedMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupFetchedMetricAttributeKey{PostgresqlTupFetchedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupInserted: PostgresqlTupInsertedMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupInsertedMetricAttributeKey{PostgresqlTupInsertedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupReturned: PostgresqlTupReturnedMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupReturnedMetricAttributeKey{PostgresqlTupReturnedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupUpdated: PostgresqlTupUpdatedMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupUpdatedMetricAttributeKey{PostgresqlTupUpdatedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlWalAge: PostgresqlWalAgeMetricConfig{
 						Enabled: true,
@@ -158,9 +198,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ServerAddress:     ResourceAttributeConfig{Enabled: true},
-					ServerPort:        ResourceAttributeConfig{Enabled: true},
-					ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
+					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
+					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
+					PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
+					ServerAddress:          ResourceAttributeConfig{Enabled: true},
+					ServerPort:             ResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID:      ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -169,7 +213,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					PostgresqlBackends: PostgresqlBackendsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
 						Enabled: false,
@@ -193,18 +239,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					PostgresqlBlksHit: PostgresqlBlksHitMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBlksHitMetricAttributeKey{PostgresqlBlksHitMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlBlksRead: PostgresqlBlksReadMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBlksReadMetricAttributeKey{PostgresqlBlksReadMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlBlocksRead: PostgresqlBlocksReadMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlBlocksReadMetricAttributeKey{PostgresqlBlocksReadMetricAttributeKeySource},
+						EnabledAttributes:   []PostgresqlBlocksReadMetricAttributeKey{PostgresqlBlocksReadMetricAttributeKeySource, PostgresqlBlocksReadMetricAttributeKeyDbNamespace, PostgresqlBlocksReadMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlCommits: PostgresqlCommitsMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlCommitsMetricAttributeKey{PostgresqlCommitsMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlConnectionMax: PostgresqlConnectionMaxMetricConfig{
 						Enabled: false,
@@ -218,26 +270,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType},
 					},
 					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlDbSizeMetricAttributeKey{PostgresqlDbSizeMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlDeadlocks: PostgresqlDeadlocksMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlDeadlocksMetricAttributeKey{PostgresqlDeadlocksMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlFunctionCalls: PostgresqlFunctionCallsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlFunctionCallsMetricAttributeKey{PostgresqlFunctionCallsMetricAttributeKeyFunction},
+						EnabledAttributes:   []PostgresqlFunctionCallsMetricAttributeKey{PostgresqlFunctionCallsMetricAttributeKeyFunction, PostgresqlFunctionCallsMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlIndexScans: PostgresqlIndexScansMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlIndexScansMetricAttributeKey{PostgresqlIndexScansMetricAttributeKeyDbNamespace, PostgresqlIndexScansMetricAttributeKeyDbCollectionName, PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName},
 					},
 					PostgresqlIndexSize: PostgresqlIndexSizeMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlIndexSizeMetricAttributeKey{PostgresqlIndexSizeMetricAttributeKeyDbNamespace, PostgresqlIndexSizeMetricAttributeKeyDbCollectionName, PostgresqlIndexSizeMetricAttributeKeyPostgresqlIndexName},
 					},
 					PostgresqlOperations: PostgresqlOperationsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation},
+						EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation, PostgresqlOperationsMetricAttributeKeyDbNamespace, PostgresqlOperationsMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 						Enabled:             false,
@@ -245,45 +305,69 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []PostgresqlReplicationDataDelayMetricAttributeKey{PostgresqlReplicationDataDelayMetricAttributeKeyReplicationClient},
 					},
 					PostgresqlRollbacks: PostgresqlRollbacksMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlRollbacksMetricAttributeKey{PostgresqlRollbacksMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlRows: PostgresqlRowsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlRowsMetricAttributeKey{PostgresqlRowsMetricAttributeKeyState},
+						EnabledAttributes:   []PostgresqlRowsMetricAttributeKey{PostgresqlRowsMetricAttributeKeyState, PostgresqlRowsMetricAttributeKeyDbNamespace, PostgresqlRowsMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlSequentialScans: PostgresqlSequentialScansMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlSequentialScansMetricAttributeKey{PostgresqlSequentialScansMetricAttributeKeyDbNamespace, PostgresqlSequentialScansMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTableCount: PostgresqlTableCountMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableCountMetricAttributeKey{PostgresqlTableCountMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTableSize: PostgresqlTableSizeMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableSizeMetricAttributeKey{PostgresqlTableSizeMetricAttributeKeyDbNamespace, PostgresqlTableSizeMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTableVacuumCount: PostgresqlTableVacuumCountMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableVacuumCountMetricAttributeKey{PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTempIo: PostgresqlTempIoMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTempIoMetricAttributeKey{PostgresqlTempIoMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTempFiles: PostgresqlTempFilesMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTempFilesMetricAttributeKey{PostgresqlTempFilesMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupDeleted: PostgresqlTupDeletedMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupDeletedMetricAttributeKey{PostgresqlTupDeletedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupFetched: PostgresqlTupFetchedMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupFetchedMetricAttributeKey{PostgresqlTupFetchedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupInserted: PostgresqlTupInsertedMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupInsertedMetricAttributeKey{PostgresqlTupInsertedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupReturned: PostgresqlTupReturnedMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupReturnedMetricAttributeKey{PostgresqlTupReturnedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlTupUpdated: PostgresqlTupUpdatedMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTupUpdatedMetricAttributeKey{PostgresqlTupUpdatedMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlWalAge: PostgresqlWalAgeMetricConfig{
 						Enabled: false,
@@ -300,9 +384,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ServerAddress:     ResourceAttributeConfig{Enabled: false},
-					ServerPort:        ResourceAttributeConfig{Enabled: false},
-					ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
+					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
+					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
+					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
+					PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
+					ServerAddress:          ResourceAttributeConfig{Enabled: false},
+					ServerPort:             ResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID:      ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -357,7 +445,7 @@ func TestPostgresqlBlocksReadMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []PostgresqlBlocksReadMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric postgresql.blocks_read doesn't have an attribute invalid, valid attributes: [source]")
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.blocks_read doesn't have an attribute invalid, valid attributes: [source, db.namespace, db.collection.name]")
 
 	cfg = DefaultMetricsConfig().PostgresqlBlocksRead
 	cfg.AggregationStrategy = "invalid"
@@ -381,7 +469,7 @@ func TestPostgresqlFunctionCallsMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []PostgresqlFunctionCallsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric postgresql.function.calls doesn't have an attribute invalid, valid attributes: [function]")
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.function.calls doesn't have an attribute invalid, valid attributes: [function, db.namespace]")
 
 	cfg = DefaultMetricsConfig().PostgresqlFunctionCalls
 	cfg.AggregationStrategy = "invalid"
@@ -393,7 +481,7 @@ func TestPostgresqlOperationsMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []PostgresqlOperationsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric postgresql.operations doesn't have an attribute invalid, valid attributes: [operation]")
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.operations doesn't have an attribute invalid, valid attributes: [operation, db.namespace, db.collection.name]")
 
 	cfg = DefaultMetricsConfig().PostgresqlOperations
 	cfg.AggregationStrategy = "invalid"
@@ -417,7 +505,7 @@ func TestPostgresqlRowsMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []PostgresqlRowsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric postgresql.rows doesn't have an attribute invalid, valid attributes: [state]")
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.rows doesn't have an attribute invalid, valid attributes: [state, db.namespace, db.collection.name]")
 
 	cfg = DefaultMetricsConfig().PostgresqlRows
 	cfg.AggregationStrategy = "invalid"
@@ -480,17 +568,25 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				ServerAddress:     ResourceAttributeConfig{Enabled: true},
-				ServerPort:        ResourceAttributeConfig{Enabled: true},
-				ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
+				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
+				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
+				PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
+				ServerAddress:          ResourceAttributeConfig{Enabled: true},
+				ServerPort:             ResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID:      ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				ServerAddress:     ResourceAttributeConfig{Enabled: false},
-				ServerPort:        ResourceAttributeConfig{Enabled: false},
-				ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
+				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
+				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
+				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
+				PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
+				ServerAddress:          ResourceAttributeConfig{Enabled: false},
+				ServerPort:             ResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID:      ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
