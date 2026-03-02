@@ -19,6 +19,7 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 
@@ -33,6 +34,17 @@ func createLogsReceiver(
 	return rcvr, nil
 }
 
+func createMetricsReceiver(
+	_ context.Context,
+	settings receiver.Settings,
+	rConf component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	cfg := rConf.(*Config)
+	rcvr := newMetricsReceiver(cfg, settings, consumer)
+	return rcvr, nil
+}
+
 func createDefaultConfig() component.Config {
 	return &Config{
 		Logs: LogsConfig{
@@ -43,6 +55,10 @@ func createDefaultConfig() component.Config {
 					Limit: defaultLogGroupLimit,
 				},
 			},
+		},
+		Metrics: MetricsConfig{
+			PollInterval: defaultMetricsPoll,
+			Period:       defaultMetricsPeriod,
 		},
 	}
 }

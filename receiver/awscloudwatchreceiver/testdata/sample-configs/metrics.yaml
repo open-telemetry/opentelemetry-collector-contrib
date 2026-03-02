@@ -1,0 +1,11 @@
+receivers:
+  awscloudwatch:
+    region: us-west-2
+    # profile: <your profile name>
+    metrics:
+      poll_interval: 5m
+      period: 300s
+      discovery:
+        namespace: AWS/EC2
+        limit: 50
+        stat: Average

@@ -14,9 +14,13 @@ import (
 )
 
 var (
-	defaultPollInterval  = time.Minute
-	defaultEventLimit    = 1000
-	defaultLogGroupLimit = 50
+	defaultPollInterval         = time.Minute
+	defaultEventLimit            = 1000
+	defaultLogGroupLimit         = 50
+	defaultMetricsPeriod        = 300 * time.Second
+	defaultMetricsStat           = "Average"
+	defaultMetricsPoll           = 5 * time.Minute
+	defaultMetricsDiscoverLimit = 100
 )
 
 // Config is the overall config structure for the awscloudwatchreceiver
@@ -25,7 +29,34 @@ type Config struct {
 	Profile      string        `mapstructure:"profile"`
 	IMDSEndpoint string        `mapstructure:"imds_endpoint"`
 	Logs         LogsConfig    `mapstructure:"logs"`
+	Metrics      MetricsConfig `mapstructure:"metrics"`
 	StorageID    *component.ID `mapstructure:"storage"`
+}
+
+// MetricsConfig is the configuration for the metrics (GetMetricData) portion of this receiver.
+// Either Metrics (explicit list) or Discovery (ListMetrics-based) may be set, not both.
+type MetricsConfig struct {
+	PollInterval time.Duration            `mapstructure:"poll_interval"`
+	Period       time.Duration            `mapstructure:"period"`
+	Metrics      []MetricQuery            `mapstructure:"metrics"`
+	Discovery    *MetricsDiscoveryConfig `mapstructure:"discovery,omitempty"`
+}
+
+// MetricsDiscoveryConfig configures automatic discovery of metrics via ListMetrics.
+// Discovered metrics are then scraped with GetMetricData. Mutually exclusive with metrics (explicit list).
+type MetricsDiscoveryConfig struct {
+	Namespace  string `mapstructure:"namespace"`   // optional filter, e.g. "AWS/EC2"
+	MetricName string `mapstructure:"metric_name"` // optional filter
+	Limit      int    `mapstructure:"limit"`       // max metrics to discover and scrape (default 100)
+	Stat       string `mapstructure:"stat"`        // e.g. Average, Sum; default Average
+}
+
+// MetricQuery defines a single CloudWatch metric to scrape via GetMetricData.
+type MetricQuery struct {
+	Namespace  string            `mapstructure:"namespace"`
+	MetricName string            `mapstructure:"metric_name"`
+	Dimensions map[string]string `mapstructure:"dimensions"`
+	Stat       string            `mapstructure:"stat"` // e.g. Average, Sum, Maximum, Minimum; default Average
 }
 
 // LogsConfig is the configuration for the logs portion of this receiver
@@ -65,6 +96,12 @@ var (
 	errInvalidAutodiscoverLimit       = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0")
 	errAutodiscoverAndNamedConfigured = errors.New("both autodiscover and named configs are configured, Only one or the other is permitted")
 	errPrefixAndPatternConfigured     = errors.New("cannot specify both prefix and pattern")
+	errInvalidMetricsPeriod           = errors.New("metrics period must be at least 1 second")
+	errInvalidMetricsPollInterval     = errors.New("metrics poll_interval must be at least 1 second")
+	errMetricMissingNamespace         = errors.New("metric must have namespace")
+	errMetricMissingName              = errors.New("metric must have metric_name")
+	errMetricsAndDiscoveryConfigured  = errors.New("metrics and discovery are mutually exclusive; set one or the other")
+	errInvalidDiscoveryLimit          = errors.New("metrics discovery limit must be greater than 0")
 )
 
 // Validate validates all portions of the relevant config
@@ -82,7 +119,44 @@ func (c *Config) Validate() error {
 
 	var errs error
 	errs = errors.Join(errs, c.validateLogsConfig())
+	errs = errors.Join(errs, c.validateMetricsConfig())
 	return errs
+}
+
+func (c *Config) validateMetricsConfig() error {
+	if c.Metrics.Discovery != nil && len(c.Metrics.Metrics) > 0 {
+		return errMetricsAndDiscoveryConfigured
+	}
+	if c.Metrics.Discovery != nil {
+		if c.Metrics.Discovery.Limit <= 0 {
+			return errInvalidDiscoveryLimit
+		}
+		if c.Metrics.PollInterval != 0 && c.Metrics.PollInterval < time.Second {
+			return errInvalidMetricsPollInterval
+		}
+		if c.Metrics.Period != 0 && c.Metrics.Period < time.Second {
+			return errInvalidMetricsPeriod
+		}
+		return nil
+	}
+	if len(c.Metrics.Metrics) == 0 {
+		return nil
+	}
+	if c.Metrics.PollInterval < time.Second {
+		return errInvalidMetricsPollInterval
+	}
+	if c.Metrics.Period < time.Second {
+		return errInvalidMetricsPeriod
+	}
+	for i, m := range c.Metrics.Metrics {
+		if m.Namespace == "" {
+			return fmt.Errorf("metrics[%d]: %w", i, errMetricMissingNamespace)
+		}
+		if m.MetricName == "" {
+			return fmt.Errorf("metrics[%d]: %w", i, errMetricMissingName)
+		}
+	}
+	return nil
 }
 
 // Unmarshal is a custom unmarshaller that ensures that autodiscover is nil if
