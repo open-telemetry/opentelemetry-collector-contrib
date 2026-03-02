@@ -4,7 +4,7 @@
 change_type: "enhancement"
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/translator/zipkin
+component: pkg/zipkin
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Add feature gates to migrate semconv v1.12.0 attributes to v1.38.0 equivalents"
