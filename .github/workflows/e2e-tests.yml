@@ -152,8 +152,6 @@ jobs:
           fi
 
   openshift-test-matrix:
-    env:
-      KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
     strategy:
       fail-fast: false
       matrix:
@@ -189,6 +187,8 @@ jobs:
           eval '$(crc podman-env)'
           podman load < /tmp/otelcontribcol.tar
       - name: Run OpenShift E2E tests
+        env:
+          KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
         run: |
           cd ${{ matrix.component }}
           go test -v --tags=e2e -run TestE2EOpenShiftRealCluster
