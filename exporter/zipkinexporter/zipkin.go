@@ -6,7 +6,6 @@ package zipkinexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -19,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
@@ -63,8 +61,7 @@ func createZipkinExporter(cfg *Config, settings component.TelemetrySettings) (*z
 
 // start creates the http client
 func (ze *zipkinExporter) start(ctx context.Context, host component.Host) (err error) {
-	if metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() && !metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		err := errors.New("pkg.translator.zipkin.DontEmitV0NetworkConventions cannot be enabled without enabling pkg.translator.zipkin.EmitV1NetworkConventions")
+	if err := zipkinv2.ValidateFeatureGates(); err != nil {
 		ze.settings.Logger.Error("Invalid feature gate combination", zap.Error(err))
 		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		return err
