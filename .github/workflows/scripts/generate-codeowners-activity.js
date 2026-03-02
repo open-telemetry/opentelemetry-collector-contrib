@@ -19,7 +19,7 @@ const COMPONENT_TARGET_PCT = 75;
 /** Per-code-owner target is COMPONENT_TARGET_PCT / number of code owners for that component (e.g. 75%/3 ≈ 25%). */
 
 /** PRs created by these logins are excluded from the report. */
-const EXCLUDED_PR_AUTHORS = new Set(['otelbot', 'renovate']);
+const EXCLUDED_PR_AUTHORS = new Set(['otelbot[bot]', 'renovate[bot]']);
 
 // Component labels to include in the report (matches component_labels.txt). Empty = all components.
 const FOCUS_COMPONENT_LABELS = new Set([
@@ -289,10 +289,7 @@ function formatTable(byCodeOwnerAndComponent, kind) {
     for (const [component, v] of Object.entries(byComponent)) {
       if (v.total === 0) continue;
       const pct = (100 * v.responded) / v.total;
-      const n = codeOwnerCountByComponent[component] || 1;
-      const targetPct = COMPONENT_TARGET_PCT / n;
-      const meets = pct >= targetPct ? 'Yes' : 'No';
-      rows.push([login, component, String(v.total), String(v.responded), `${Math.round(pct)}%`, meets]);
+      rows.push([login, component, String(v.total), String(v.responded), `${Math.round(pct)}%`]);
     }
   }
   rows.sort((a, b) => {
@@ -305,8 +302,8 @@ function formatTable(byCodeOwnerAndComponent, kind) {
     return `No ${kind} with component labels in this period.\n`;
   }
 
-  const header = `| Code owner | Component | Total | Responded | % | Meets 75%/n? |`;
-  const sep = '| --- | --- | --- | --- | --- | --- |';
+  const header = `| Code owner | Component | Total | Responded | % |`;
+  const sep = '| --- | --- | --- | --- | --- |';
   const body = rows.map((r) => `| ${r.join(' | ')} |`).join('\n');
   return `${header}\n${sep}\n${body}\n`;
 }
@@ -325,9 +322,8 @@ function formatComponentSummaryTable(byCodeOwnerAndComponent, componentPrStats) 
     .filter(([, v]) => v.prsTotal > 0)
     .map(([component, v]) => {
       const pct = Math.round((100 * v.prsWithResponse) / v.prsTotal);
-      const meets = pct >= COMPONENT_TARGET_PCT ? 'Yes' : 'No';
       const codeOwners = codeOwnerCountByComponent[component] ?? 0;
-      return [component, String(codeOwners), `${v.prsWithResponse}/${v.prsTotal}`, `${pct}%`, meets];
+      return [component, String(codeOwners), `${v.prsWithResponse}/${v.prsTotal}`, `${pct}%`];
     })
     .sort((a, b) => a[0].localeCompare(b[0]));
 
@@ -335,8 +331,8 @@ function formatComponentSummaryTable(byCodeOwnerAndComponent, componentPrStats) 
     return `No component data in this period.\n`;
   }
 
-  const header = `| Component | Code owners | PRs reviewed | % | Meets ${COMPONENT_TARGET_PCT}%? |`;
-  const sep = '| --- | --- | --- | --- | --- |';
+  const header = `| Component | Code owners | PRs reviewed | % |`;
+  const sep = '| --- | --- | --- | --- |';
   const body = rows.map((r) => `| ${r.join(' | ')} |`).join('\n');
   return `${header}\n${sep}\n${body}\n`;
 }
