@@ -168,6 +168,8 @@ jobs:
           go-version: oldstable
       - name: Free disk space
         run: ./.github/workflows/scripts/free-disk-space.sh
+      - name: Enable KVM access for runner
+        run: sudo chmod 666 /dev/kvm
       - name: Start MicroShift via CRC
         uses: crc-org/crc-github-action@466b8741bd91b9ee59f37db92b69f285cacada41 # v1.0.1
         with:
