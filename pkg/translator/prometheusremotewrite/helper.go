@@ -99,7 +99,7 @@ var seps = []byte{'\xff'}
 // Unpaired string values are ignored. String pairs overwrite OTLP labels if collisions happen and
 // if logOnOverwrite is true, the overwrite is logged. Resulting label names are sanitized.
 func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope pcommon.InstrumentationScope, externalLabels map[string]string,
-	ignoreAttrs []string, logOnOverwrite bool, labelNamer otlptranslator.LabelNamer, extras ...string,
+	ignoreAttrs []string, logOnOverwrite bool, labelNamer otlptranslator.LabelNamer, disableScopeInfo bool, extras ...string,
 ) ([]prompb.Label, error) {
 	resourceAttrs := resource.Attributes()
 	serviceName, haveServiceName := resourceAttrs.Get(string(conventions.ServiceNameKey))
@@ -115,15 +115,16 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 	if haveInstanceID {
 		maxLabelCount++
 	}
-
 	// Scope info
-	if scope.Name() != "" {
-		maxLabelCount++
+	if !disableScopeInfo {
+		if scope.Name() != "" {
+			maxLabelCount++
+		}
+		if scope.Version() != "" {
+			maxLabelCount++
+		}
+		maxLabelCount += scope.Attributes().Len()
 	}
-	if scope.Version() != "" {
-		maxLabelCount++
-	}
-	maxLabelCount += scope.Attributes().Len()
 
 	// map ensures no duplicate label name
 	l := make(map[string]string, maxLabelCount)
@@ -176,16 +177,25 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 		l[key] = value
 	}
 
-	if scope.Name() != "" {
-		l["otel_scope_name"] = scope.Name()
+	if !disableScopeInfo {
+		if scope.Name() != "" {
+			if key, err := labelNamer.Build("otel_scope_name"); err == nil {
+				l[key] = scope.Name()
+			}
+		}
+		if scope.Version() != "" {
+			if key, err := labelNamer.Build("otel_scope_version"); err == nil {
+				l[key] = scope.Version()
+			}
+		}
+		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+			key, err := labelNamer.Build("otel_scope_" + k)
+			if err == nil {
+				l[key] = v.AsString()
+			}
+			return true
+		})
 	}
-	if scope.Version() != "" {
-		l["otel_scope_version"] = scope.Version()
-	}
-	scope.Attributes().Range(func(k string, v pcommon.Value) bool {
-		l["otel_scope_"+k] = v.AsString()
-		return true
-	})
 
 	for i := 0; i < len(extras); i += 2 {
 		if i+1 >= len(extras) {
@@ -239,7 +249,7 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -415,14 +425,14 @@ func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 	return ts
 }
 
-func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
-	scope pcommon.InstrumentationScope, settings Settings, baseName string,
+func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource, scope pcommon.InstrumentationScope,
+	settings Settings, baseName string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -551,7 +561,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled()}, model.MetricNameLabel, name)
+	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled()}, settings.DisableScopeInfo, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}

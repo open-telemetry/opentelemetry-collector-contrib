@@ -218,6 +218,7 @@ components:
     - processor/span
     - processor/sumologic
     - processor/tail_sampling
+    - processor/tencentcvmdetector
     - processor/transform
     - processor/unroll
     - processor/upclouddetector
