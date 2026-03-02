@@ -220,11 +220,11 @@ func TestStatsStreamUpdatesLatestStats(t *testing.T) {
 	cli.startContainerStream(ctx, containerID)
 
 	require.Eventually(t, func() bool {
-		_, ok := cli.LatestContainerStats(containerID)
+		_, ok := cli.LatestContainerStats(containerID, 0)
 		return ok
 	}, 5*time.Second, 10*time.Millisecond, "timed out waiting for stats")
 
-	stats, _ := cli.LatestContainerStats(containerID)
+	stats, _ := cli.LatestContainerStats(containerID, 0)
 	require.NotNil(t, stats)
 	assert.Equal(t, uint64(100), stats.CPUStats.CPUUsage.TotalUsage)
 }
@@ -259,7 +259,7 @@ func TestStatsStreamHandlesInvalidJSON(t *testing.T) {
 		return false
 	}, 5*time.Second, 10*time.Millisecond, "expected warning about invalid JSON")
 
-	_, ok := cli.LatestContainerStats(containerID)
+	_, ok := cli.LatestContainerStats(containerID, 0)
 	assert.False(t, ok, "no valid stats should be available after decode error")
 }
 

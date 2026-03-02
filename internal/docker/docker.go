@@ -235,15 +235,26 @@ func (dc *Client) toStatsJSON(
 	return &statsJSON, nil
 }
 
+// cachedStats pairs a stats snapshot with the time it was received.
+type cachedStats struct {
+	stats    *ctypes.StatsResponse
+	recorded time.Time
+}
+
 // LatestContainerStats returns the most recently received stats for the given container.
-// Returns false if no stats have been received yet (stream still starting up).
+// Returns false if no stats have been received yet (stream still starting up) or if the
+// cached entry is older than maxAge (pass 0 to disable expiry).
 // Only populated when stream_stats is enabled.
-func (dc *Client) LatestContainerStats(containerID string) (*ctypes.StatsResponse, bool) {
+func (dc *Client) LatestContainerStats(containerID string, maxAge time.Duration) (*ctypes.StatsResponse, bool) {
 	val, ok := dc.latestStats.Load(containerID)
 	if !ok {
 		return nil, false
 	}
-	return val.(*ctypes.StatsResponse), true
+	cs := val.(*cachedStats)
+	if maxAge > 0 && time.Since(cs.recorded) > maxAge {
+		return nil, false
+	}
+	return cs.stats, true
 }
 
 // startContainerStream opens a persistent streaming stats connection for the container
@@ -306,7 +317,7 @@ func (dc *Client) runStatsStream(ctx context.Context, containerID string) {
 				}
 				break
 			}
-			dc.latestStats.Store(containerID, &stats)
+			dc.latestStats.Store(containerID, &cachedStats{stats: &stats, recorded: time.Now()})
 		}
 	}
 }
