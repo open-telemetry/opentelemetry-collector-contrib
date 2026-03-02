@@ -29,8 +29,7 @@ internal/common
 
 # Start unmaintained components list
 
-receiver/bigipreceiver
-receiver/carbonreceiver
+exporter/alibabacloudlogserviceexporter
 receiver/k8slogreceiver
 
 # End unmaintained components list

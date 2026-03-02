@@ -85,6 +85,7 @@ func (m *metricWindowsServiceStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricWindowsServiceStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, nameAttributeValue string, startupModeAttributeValue string) {

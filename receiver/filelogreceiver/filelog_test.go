@@ -35,7 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonparser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
@@ -327,7 +327,7 @@ func TestConsumeContract(t *testing.T) {
 	cfg.RetryOnFailure.MaxInterval = 10 * time.Millisecond
 	cfg.InputConfig.Include = []string{filepath.Join(tmpDir, filePattern)}
 	cfg.InputConfig.StartAt = "beginning"
-	jsonParser := json.NewConfig()
+	jsonParser := jsonparser.NewConfig()
 	tsField := entry.NewAttributeField("ts")
 	jsonParser.TimeParser = &helper.TimeParser{
 		ParseFrom:  &tsField,

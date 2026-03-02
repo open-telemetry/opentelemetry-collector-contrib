@@ -1,5 +1,5 @@
 name: Setup Go & repo tooling
-description: Common setup for Go-based workflows (disk cleanup, setup-go cache, optional gomoddownload/install-tools, cache .tools).
+description: Common setup for Go-based workflows (disk cleanup, setup-go cache, optional gomoddownload).
 
 inputs:
   repo-path:
@@ -16,10 +16,6 @@ inputs:
     default: "**/*.sum"
   gomoddownload:
     description: Whether to run `make -j2 gomoddownload` when Go cache is cold.
-    required: false
-    default: "true"
-  install-tools:
-    description: Whether to cache and build repo tools (make install-tools).
     required: false
     default: "true"
 
@@ -42,27 +38,9 @@ runs:
         # Always format the path. "./pattern" is valid, handling both root (.) and subdirs.
         cache-dependency-path: ${{ format('{0}/{1}', inputs.repo-path, inputs.cache-dependency-path) }}
 
-    - name: Cache .tools
-      if: inputs.install-tools == 'true'
-      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
-      id: tools-cache
-      with:
-        path: ${{ inputs.repo-path }}/.tools
-        # Key includes OS/Arch (binaries differ) and hashes of tools/go.mod + go.sum.
-        # This invalidates the cache if the tool versions change.
-        key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(format('{0}/internal/tools/go.mod', inputs.repo-path), format('{0}/internal/tools/go.sum', inputs.repo-path)) }}
-
     - name: Install dependencies (gomoddownload)
       # Only download if setup-go didn't restore a cache.
       if: inputs.gomoddownload == 'true' && steps.go-setup.outputs.cache-hit != 'true'
       shell: bash
       working-directory: ${{ inputs.repo-path }}
       run: make -j2 gomoddownload
-
-    - name: Install tools
-      # Only build tools if we missed BOTH the main Go cache AND the specific tools cache.
-      # If caches are hit, we assume the binaries in .tools are valid or will be built lazily by make.
-      if: inputs.install-tools == 'true' && steps.go-setup.outputs.cache-hit != 'true' && steps.tools-cache.outputs.cache-hit != 'true'
-      shell: bash
-      working-directory: ${{ inputs.repo-path }}
-      run: make install-tools

@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
+	clientmeta "k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 
 	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
@@ -39,6 +40,7 @@ type WatchClient struct {
 	deleteMut              sync.Mutex
 	logger                 *zap.Logger
 	kc                     kubernetes.Interface
+	mc                     clientmeta.Interface
 	informer               cache.SharedInformer
 	namespaceInformer      cache.SharedInformer
 	nodeInformer           cache.SharedInformer
@@ -130,6 +132,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
+
 	c := &WatchClient{
 		logger:                 set.Logger,
 		Rules:                  rules,
@@ -152,15 +155,16 @@ func New(
 	c.StatefulSets = map[string]*StatefulSet{}
 	c.DaemonSets = map[string]*DaemonSet{}
 	c.Jobs = map[string]*Job{}
-	if newClientSet == nil {
-		newClientSet = k8sconfig.MakeClient
-	}
 
-	kc, err := newClientSet(apiCfg)
+	if newClientSet == nil {
+		newClientSet = k8sconfig.MakeClientBundle
+	}
+	bundle, err := newClientSet(apiCfg)
 	if err != nil {
 		return nil, err
 	}
-	c.kc = kc
+	c.kc = bundle.K8s
+	c.mc = bundle.Meta
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
@@ -211,19 +215,10 @@ func New(
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
 		}
-		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
 
-				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
-			},
-		)
-		if err != nil {
-			return nil, err
+		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.mc, c.Filters.Namespace)
+		if c.replicasetInformer == nil {
+			return nil, errors.New("failed to create ReplicaSet informer")
 		}
 	}
 
@@ -246,7 +241,6 @@ func New(
 	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
 		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
-
 	return c, err
 }
 
@@ -383,18 +377,33 @@ func (c *WatchClient) Stop() {
 }
 
 func (c *WatchClient) handlePodAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sPodAdded.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sPodAdded.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherPodAdded.Add(context.Background(), 1)
+	}
 	if pod, ok := obj.(*api_v1.Pod); ok {
 		c.addOrUpdatePod(pod)
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
 	}
 	podTableSize := len(c.Pods)
-	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherPodCacheSize.Record(context.Background(), int64(podTableSize))
+	}
 }
 
 func (c *WatchClient) handlePodUpdate(_, newPod any) {
-	c.telemetryBuilder.OtelsvcK8sPodUpdated.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sPodUpdated.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherPodUpdated.Add(context.Background(), 1)
+	}
 	if pod, ok := newPod.(*api_v1.Pod); ok {
 		// TODO: update or remove based on whether container is ready/unready?.
 		c.addOrUpdatePod(pod)
@@ -402,22 +411,42 @@ func (c *WatchClient) handlePodUpdate(_, newPod any) {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", newPod))
 	}
 	podTableSize := len(c.Pods)
-	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherPodCacheSize.Record(context.Background(), int64(podTableSize))
+	}
 }
 
 func (c *WatchClient) handlePodDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sPodDeleted.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sPodDeleted.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherPodDeleted.Add(context.Background(), 1)
+	}
 	if pod, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Pod); ok {
 		c.forgetPod(pod)
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
 	}
 	podTableSize := len(c.Pods)
-	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherPodCacheSize.Record(context.Background(), int64(podTableSize))
+	}
 }
 
 func (c *WatchClient) handleNamespaceAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sNamespaceAdded.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sNamespaceAdded.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherNamespaceAdded.Add(context.Background(), 1)
+	}
 	if namespace, ok := obj.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
@@ -426,7 +455,12 @@ func (c *WatchClient) handleNamespaceAdd(obj any) {
 }
 
 func (c *WatchClient) handleNamespaceUpdate(_, newNamespace any) {
-	c.telemetryBuilder.OtelsvcK8sNamespaceUpdated.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sNamespaceUpdated.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherNamespaceUpdated.Add(context.Background(), 1)
+	}
 	if namespace, ok := newNamespace.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
@@ -435,7 +469,12 @@ func (c *WatchClient) handleNamespaceUpdate(_, newNamespace any) {
 }
 
 func (c *WatchClient) handleNamespaceDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sNamespaceDeleted.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sNamespaceDeleted.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherNamespaceDeleted.Add(context.Background(), 1)
+	}
 	if namespace, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Namespace); ok {
 		c.m.Lock()
 		if ns, ok := c.Namespaces[namespace.Name]; ok {
@@ -451,7 +490,12 @@ func (c *WatchClient) handleNamespaceDelete(obj any) {
 }
 
 func (c *WatchClient) handleNodeAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sNodeAdded.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sNodeAdded.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherNodeAdded.Add(context.Background(), 1)
+	}
 	if node, ok := obj.(*api_v1.Node); ok {
 		c.addOrUpdateNode(node)
 	} else {
@@ -460,7 +504,12 @@ func (c *WatchClient) handleNodeAdd(obj any) {
 }
 
 func (c *WatchClient) handleNodeUpdate(_, newNode any) {
-	c.telemetryBuilder.OtelsvcK8sNodeUpdated.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sNodeUpdated.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherNodeUpdated.Add(context.Background(), 1)
+	}
 	if node, ok := newNode.(*api_v1.Node); ok {
 		c.addOrUpdateNode(node)
 	} else {
@@ -469,7 +518,12 @@ func (c *WatchClient) handleNodeUpdate(_, newNode any) {
 }
 
 func (c *WatchClient) handleNodeDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sNodeDeleted.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sNodeDeleted.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherNodeDeleted.Add(context.Background(), 1)
+	}
 	if node, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Node); ok {
 		c.m.Lock()
 		if n, ok := c.Nodes[node.Name]; ok {
@@ -482,7 +536,12 @@ func (c *WatchClient) handleNodeDelete(obj any) {
 }
 
 func (c *WatchClient) handleDeploymentAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sDeploymentAdded.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sDeploymentAdded.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherDeploymentAdded.Add(context.Background(), 1)
+	}
 	if deployment, ok := obj.(*apps_v1.Deployment); ok {
 		c.addOrUpdateDeployment(deployment)
 	} else {
@@ -491,7 +550,12 @@ func (c *WatchClient) handleDeploymentAdd(obj any) {
 }
 
 func (c *WatchClient) handleDeploymentUpdate(_, newDeployment any) {
-	c.telemetryBuilder.OtelsvcK8sDeploymentUpdated.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sDeploymentUpdated.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherDeploymentUpdated.Add(context.Background(), 1)
+	}
 	if deployment, ok := newDeployment.(*apps_v1.Deployment); ok {
 		c.addOrUpdateDeployment(deployment)
 	} else {
@@ -500,7 +564,12 @@ func (c *WatchClient) handleDeploymentUpdate(_, newDeployment any) {
 }
 
 func (c *WatchClient) handleDeploymentDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sDeploymentDeleted.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sDeploymentDeleted.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherDeploymentDeleted.Add(context.Background(), 1)
+	}
 	if deployment, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.Deployment); ok {
 		c.m.Lock()
 		if n, ok := c.Deployments[string(deployment.UID)]; ok {
@@ -513,7 +582,12 @@ func (c *WatchClient) handleDeploymentDelete(obj any) {
 }
 
 func (c *WatchClient) handleStatefulSetAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sStatefulsetAdded.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sStatefulsetAdded.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherStatefulsetAdded.Add(context.Background(), 1)
+	}
 	if statefulset, ok := obj.(*apps_v1.StatefulSet); ok {
 		c.addOrUpdateStatefulSet(statefulset)
 	} else {
@@ -522,7 +596,12 @@ func (c *WatchClient) handleStatefulSetAdd(obj any) {
 }
 
 func (c *WatchClient) handleStatefulSetUpdate(_, newStatefulSet any) {
-	c.telemetryBuilder.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherStatefulsetUpdated.Add(context.Background(), 1)
+	}
 	if statefulset, ok := newStatefulSet.(*apps_v1.StatefulSet); ok {
 		c.addOrUpdateStatefulSet(statefulset)
 	} else {
@@ -531,7 +610,12 @@ func (c *WatchClient) handleStatefulSetUpdate(_, newStatefulSet any) {
 }
 
 func (c *WatchClient) handleStatefulSetDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherStatefulsetDeleted.Add(context.Background(), 1)
+	}
 	if statefulset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.StatefulSet); ok {
 		c.m.Lock()
 		if n, ok := c.StatefulSets[string(statefulset.UID)]; ok {
@@ -544,7 +628,12 @@ func (c *WatchClient) handleStatefulSetDelete(obj any) {
 }
 
 func (c *WatchClient) handleDaemonSetAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sDaemonsetAdded.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sDaemonsetAdded.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherDaemonsetAdded.Add(context.Background(), 1)
+	}
 	if daemonset, ok := obj.(*apps_v1.DaemonSet); ok {
 		c.addOrUpdateDaemonSet(daemonset)
 	} else {
@@ -553,7 +642,12 @@ func (c *WatchClient) handleDaemonSetAdd(obj any) {
 }
 
 func (c *WatchClient) handleDaemonSetUpdate(_, newDaemonSet any) {
-	c.telemetryBuilder.OtelsvcK8sDaemonsetUpdated.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sDaemonsetUpdated.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherDaemonsetUpdated.Add(context.Background(), 1)
+	}
 	if daemonset, ok := newDaemonSet.(*apps_v1.DaemonSet); ok {
 		c.addOrUpdateDaemonSet(daemonset)
 	} else {
@@ -562,7 +656,12 @@ func (c *WatchClient) handleDaemonSetUpdate(_, newDaemonSet any) {
 }
 
 func (c *WatchClient) handleDaemonSetDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sDaemonsetDeleted.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sDaemonsetDeleted.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherDaemonsetDeleted.Add(context.Background(), 1)
+	}
 	if daemonset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.DaemonSet); ok {
 		c.m.Lock()
 		if n, ok := c.DaemonSets[string(daemonset.UID)]; ok {
@@ -575,7 +674,12 @@ func (c *WatchClient) handleDaemonSetDelete(obj any) {
 }
 
 func (c *WatchClient) handleJobAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sJobAdded.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sJobAdded.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherJobAdded.Add(context.Background(), 1)
+	}
 	if job, ok := obj.(*batch_v1.Job); ok {
 		c.addOrUpdateJob(job)
 	} else {
@@ -584,7 +688,12 @@ func (c *WatchClient) handleJobAdd(obj any) {
 }
 
 func (c *WatchClient) handleJobUpdate(_, newJob any) {
-	c.telemetryBuilder.OtelsvcK8sJobUpdated.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sJobUpdated.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherJobUpdated.Add(context.Background(), 1)
+	}
 	if job, ok := newJob.(*batch_v1.Job); ok {
 		c.addOrUpdateJob(job)
 	} else {
@@ -593,7 +702,12 @@ func (c *WatchClient) handleJobUpdate(_, newJob any) {
 }
 
 func (c *WatchClient) handleJobDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sJobDeleted.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sJobDeleted.Add(context.Background(), 1)
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherJobDeleted.Add(context.Background(), 1)
+	}
 	if job, ok := ignoreDeletedFinalStateUnknown(obj).(*batch_v1.Job); ok {
 		c.m.Lock()
 		if n, ok := c.Jobs[string(job.UID)]; ok {
@@ -646,7 +760,12 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 		}
 	}
 	podTableSize := len(c.Pods)
-	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherPodCacheSize.Record(context.Background(), int64(podTableSize))
+	}
 	c.m.Unlock()
 }
 
@@ -661,7 +780,9 @@ func (c *WatchClient) GetPod(identifier PodIdentifier) (*Pod, bool) {
 		}
 		return pod, ok
 	}
-	c.telemetryBuilder.OtelsvcK8sIPLookupMiss.Add(context.Background(), 1)
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sIPLookupMiss.Add(context.Background(), 1)
+	}
 	return nil, false
 }
 
@@ -821,6 +942,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 						}
 					}
 				}
+
 			case "DaemonSet":
 				if c.Rules.DaemonSetUID {
 					tags[string(conventions.K8SDaemonSetUIDKey)] = string(ref.UID)
@@ -1012,11 +1134,11 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	}
 
 	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion {
-		transformedPod.Labels = pod.Labels
+		transformedPod.Labels = maps.Clone(pod.Labels)
 	}
 
 	if len(rules.Annotations) > 0 {
-		transformedPod.Annotations = pod.Annotations
+		transformedPod.Annotations = maps.Clone(pod.Annotations)
 	}
 
 	if rules.IncludesOwnerMetadata() {
@@ -1743,70 +1865,83 @@ func needContainerAttributes(rules ExtractionRules) bool {
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
-	c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
-	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
 	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherReplicasetAdded.Add(context.Background(), 1)
+	}
+	rsMeta, ok := obj.(*meta_v1.PartialObjectMetadata)
+	if !ok {
+		c.logger.Error("object received was not PartialObjectMetadata for ReplicaSet add", zap.Any("received", obj))
+		return
+	}
+	c.addOrUpdateReplicaSet(rsMeta)
 }
 
 func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
-	c.telemetryBuilder.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
-	if replicaset, ok := newRS.(*apps_v1.ReplicaSet); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
 	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherReplicasetUpdated.Add(context.Background(), 1)
+	}
+	rsMeta, ok := newRS.(*meta_v1.PartialObjectMetadata)
+	if !ok {
+		c.logger.Error("object received was not PartialObjectMetadata for ReplicaSet add", zap.Any("received", newRS))
+		return
+	}
+	c.addOrUpdateReplicaSet(rsMeta)
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
-	c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
-	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.ReplicaSet); ok {
-		c.m.Lock()
-		key := string(replicaset.UID)
-		delete(c.ReplicaSets, key)
-		c.m.Unlock()
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
 	}
+	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		c.telemetryBuilder.K8sWatcherReplicasetDeleted.Add(context.Background(), 1)
+	}
+
+	// Unwrap DeletedFinalStateUnknown if present
+	o := ignoreDeletedFinalStateUnknown(obj)
+	rsMeta, ok := o.(*meta_v1.PartialObjectMetadata)
+	if !ok {
+		c.logger.Error("object received was not a ReplicaSet (apps_v1 or PartialObjectMetadata)", zap.Any("received", obj))
+	}
+	uid := string(rsMeta.GetUID())
+	if uid == "" {
+		c.logger.Warn("received ReplicaSet delete without UID")
+		return
+	}
+
+	c.m.Lock()
+	delete(c.ReplicaSets, uid)
+	c.m.Unlock()
 }
 
-func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
+func (c *WatchClient) addOrUpdateReplicaSet(replicaSet *meta_v1.PartialObjectMetadata) {
+	uid := string(replicaSet.GetUID())
 	newReplicaSet := &ReplicaSet{
-		Name:      replicaset.Name,
-		Namespace: replicaset.Namespace,
-		UID:       string(replicaset.UID),
+		Name:      replicaSet.GetName(),
+		Namespace: replicaSet.GetNamespace(),
+		UID:       uid,
 	}
 
-	for _, ownerReference := range replicaset.OwnerReferences {
-		if ownerReference.Kind == "Deployment" && ownerReference.Controller != nil && *ownerReference.Controller {
+	for _, owner := range replicaSet.GetOwnerReferences() {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
 			newReplicaSet.Deployment = Deployment{
-				Name: ownerReference.Name,
-				UID:  string(ownerReference.UID),
+				Name: owner.Name,
+				UID:  string(owner.UID),
 			}
 			break
 		}
 	}
 
 	c.m.Lock()
-	if replicaset.UID != "" {
-		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
+	if uid != "" {
+		c.ReplicaSets[uid] = newReplicaSet
 	}
 	c.m.Unlock()
-}
-
-// This function removes all data from the ReplicaSet except what is required by extraction rules
-func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
-	transformedReplicaset := apps_v1.ReplicaSet{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      replicaset.GetName(),
-			Namespace: replicaset.GetNamespace(),
-			UID:       replicaset.GetUID(),
-		},
-	}
-	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
-	return &transformedReplicaset
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete

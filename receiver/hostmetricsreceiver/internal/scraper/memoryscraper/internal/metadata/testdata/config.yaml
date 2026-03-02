@@ -19,6 +19,8 @@ all_set:
       enabled: true
     system.memory.linux.hugepages.utilization:
       enabled: true
+    system.memory.linux.shared:
+      enabled: true
     system.memory.page_size:
       enabled: true
     system.memory.usage:
@@ -44,6 +46,8 @@ none_set:
     system.memory.linux.hugepages.usage:
       enabled: false
     system.memory.linux.hugepages.utilization:
+      enabled: false
+    system.memory.linux.shared:
       enabled: false
     system.memory.page_size:
       enabled: false

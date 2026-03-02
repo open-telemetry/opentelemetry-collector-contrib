@@ -12,9 +12,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -61,7 +61,7 @@ func TestWriterOperatorWrite(t *testing.T) {
 
 func TestWriterOperatorWriteAfterError(t *testing.T) {
 	output1 := testutil.NewMockOperator("output1")
-	output1.On("Process", mock.Anything, mock.Anything).Return(errors.NewError("Operator can not process logs.", ""))
+	output1.On("Process", mock.Anything, mock.Anything).Return(stanzaerrors.NewError("Operator can not process logs.", ""))
 	output2 := testutil.NewMockOperator("output2")
 	output2.On("Process", mock.Anything, mock.Anything).Return(nil)
 

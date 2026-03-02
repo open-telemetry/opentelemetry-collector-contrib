@@ -102,7 +102,6 @@ components:
     processor:
         - attributes
         - cumulativetodelta
-        - datadogsemantics
         - deltatocumulative
         - deltatorate
         - filter
@@ -145,7 +144,6 @@ components:
         - azure_event_hub
         - azureblob
         - azuremonitor
-        - bigip
         - carbon
         - chrony
         - cloudflare

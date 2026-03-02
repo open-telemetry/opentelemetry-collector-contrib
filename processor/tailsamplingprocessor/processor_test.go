@@ -524,8 +524,7 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	// For each batch, we consume the same trace repeatedly for at least 2x the decision wait time
 	// this ensures that batches are being consumed concurrently with policy evaluation.
 	for _, batch := range batches {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			start := time.Now()
 			// The important thing here is that we are writing as close as
 			// possible to the moment when the policy is evaluated. We can't
@@ -538,8 +537,7 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 					errCh <- err
 				}
 			}
-			wg.Done()
-		}()
+		})
 	}
 	wg.Wait()
 	close(errCh)

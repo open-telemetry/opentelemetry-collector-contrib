@@ -253,9 +253,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 
 // startCompactionLoop provides asynchronous compaction function
 func (c *fileStorageClient) startCompactionLoop() {
-	c.wg.Add(1)
-	go func() {
-		defer c.wg.Done()
+	c.wg.Go(func() {
 		c.logger.Debug("starting compaction loop",
 			zap.Duration("compaction_check_interval", c.compactionCfg.CheckInterval))
 
@@ -278,7 +276,7 @@ func (c *fileStorageClient) startCompactionLoop() {
 				return
 			}
 		}
-	}()
+	})
 }
 
 // shouldCompact checks whether the conditions for online compaction are met

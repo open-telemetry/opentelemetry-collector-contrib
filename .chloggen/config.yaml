@@ -179,6 +179,7 @@ components:
     - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
+    - pkg/xstreamencoding
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
@@ -206,17 +207,18 @@ components:
     - processor/metricstarttime
     - processor/metricstransform
     - processor/novadetector
+    - processor/oracleclouddetector
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
     - processor/resource
     - processor/resourcedetection
-    - processor/resourcedetectionprocessor/oraclecloud
     - processor/scalewaydetector
     - processor/schema
     - processor/span
     - processor/sumologic
     - processor/tail_sampling
+    - processor/tencentcvmdetector
     - processor/transform
     - processor/unroll
     - processor/upclouddetector
@@ -239,7 +241,6 @@ components:
     - receiver/azure_event_hub
     - receiver/azureblob
     - receiver/azuremonitor
-    - receiver/bigip
     - receiver/carbon
     - receiver/chrony
     - receiver/ciscoos

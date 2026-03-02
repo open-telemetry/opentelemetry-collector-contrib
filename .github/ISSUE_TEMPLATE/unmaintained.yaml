@@ -192,6 +192,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - pkg/xk8stest
+      - pkg/xstreamencoding
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
@@ -226,6 +227,7 @@ body:
       - processor/resourcedetection/internal/openstack/nova
       - processor/resourcedetection/internal/oraclecloud
       - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/tencent/cvm
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
       - processor/schema
@@ -248,7 +250,6 @@ body:
       - receiver/azureblob
       - receiver/azureeventhub
       - receiver/azuremonitor
-      - receiver/bigip
       - receiver/carbon
       - receiver/chrony
       - receiver/ciscoos

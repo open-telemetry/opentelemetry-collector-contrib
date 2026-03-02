@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/mssql/server:2025-latest@sha256:698682bab57c02c42bc0aa274b158aeb242d8e9104149a7489628d5535805816
+FROM mcr.microsoft.com/mssql/server:2025-latest@sha256:5ffdffd2ba852051c2fc2f5b310391bf896dbaf8d16cc026a3c859d6214b30d1
 
 ENV ACCEPT_EULA=Y
 ENV SA_PASSWORD=YourStrong!Passw0rd
