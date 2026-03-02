@@ -159,7 +159,7 @@ func resolveCustomGroupBalancerOpt(
 		return nil, false, nil
 	}
 
-	extBalancers, handled, err := resolver("")
+	extBalancers, handled, err := resolver(strategy)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed resolving custom default group balancer: %w", err)
 	}
@@ -168,6 +168,11 @@ func resolveCustomGroupBalancerOpt(
 	}
 	if len(extBalancers) == 0 {
 		return nil, false, errors.New("custom group balancer resolver returned no balancers for unset group_rebalance_strategy")
+	}
+	for i, balancer := range extBalancers {
+		if balancer == nil {
+			return nil, false, fmt.Errorf("custom group balancer resolver returned nil balancer at index %d for unset group_rebalance_strategy", i)
+		}
 	}
 	return kgo.Balancers(extBalancers...), true, nil
 }

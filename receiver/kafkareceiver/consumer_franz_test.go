@@ -459,6 +459,19 @@ func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverEmpty(t *testing.T) 
 	assert.ErrorContains(t, err, "custom group balancer resolver returned no balancers for unset group_rebalance_strategy")
 }
 
+func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverNilBalancer(t *testing.T) {
+	t.Parallel()
+
+	_, _, err := resolveCustomGroupBalancerOpt(
+		"",
+		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+			return []kgo.GroupBalancer{nil}, true, nil
+		},
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "custom group balancer resolver returned nil balancer at index 0 for unset group_rebalance_strategy")
+}
+
 func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverError(t *testing.T) {
 	t.Parallel()
 
