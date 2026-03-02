@@ -36,7 +36,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 		image string
 	}{
 		{
-			name:  "test rabbitmq 4.2.4",
+			name:  "test rabbitmq 4.2",
 			image: "rabbitmq:4.2",
 		},
 	}
