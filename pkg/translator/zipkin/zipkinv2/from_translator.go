@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
@@ -322,19 +323,30 @@ func zipkinEndpointFromTags(
 		redundantKeys[string(conventions.PeerServiceKey)] = true
 	}
 
-	var ipKey, portKey string
+	var ipKey, v0IPKey, portKey string
 	if remoteEndpoint {
 		ipKey, portKey = string(conventions.NetworkPeerAddressKey), string(conventionsv125.NetPeerPortKey)
+		v0IPKey = "net.peer.ip"
 	} else {
 		ipKey, portKey = string(conventions.NetworkLocalAddressKey), string(conventionsv125.NetHostPortKey)
+		v0IPKey = "net.host.ip"
 	}
 
 	var ip net.IP
 	ipv6Selected := false
-	if ipStr, ok := zTags[ipKey]; ok {
-		ipv6Selected = isIPv6Address(ipStr)
-		ip = net.ParseIP(ipStr)
-		redundantKeys[ipKey] = true
+	if metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
+		if ipStr, ok := zTags[ipKey]; ok {
+			ipv6Selected = isIPv6Address(ipStr)
+			ip = net.ParseIP(ipStr)
+			redundantKeys[ipKey] = true
+		}
+	}
+	if !metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
+		if ipStr, ok := zTags[v0IPKey]; ok && ip == nil {
+			ipv6Selected = isIPv6Address(ipStr)
+			ip = net.ParseIP(ipStr)
+			redundantKeys[v0IPKey] = true
+		}
 	}
 
 	var port uint64

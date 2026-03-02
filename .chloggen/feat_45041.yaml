@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: "breaking"
+change_type: "enhancement"
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: pkg/translator/zipkin
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Replace deprecated semconv v1.12.0 attributes with v1.38.0 equivalents"
+note: "Add feature gates to migrate semconv v1.12.0 attributes to v1.38.0 equivalents"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45076]
@@ -16,9 +16,12 @@ issues: [45076]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The following attribute keys from `go.opentelemetry.io/otel/semconv/v1.12.0` have been replaced with their `v1.38.0` equivalents:
-  - `net.host.ip` -> `network.local.address`
-  - `net.peer.ip` -> `network.peer.address`
+  The following attribute keys from `go.opentelemetry.io/otel/semconv/v1.12.0` can now be migrated to their `v1.38.0` equivalents
+  using feature gates (both default to disabled, preserving the old behavior):
+  - `net.host.ip` -> `network.local.address` (enable `pkg.translator.zipkin.EmitV1NetworkConventions`)
+  - `net.peer.ip` -> `network.peer.address` (enable `pkg.translator.zipkin.EmitV1NetworkConventions`)
+  To stop emitting the deprecated v1.12.0 attributes, also enable `pkg.translator.zipkin.DontEmitV0NetworkConventions`
+  (requires `pkg.translator.zipkin.EmitV1NetworkConventions` to also be enabled).
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
