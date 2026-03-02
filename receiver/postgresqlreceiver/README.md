@@ -127,7 +127,7 @@ separately. This could lead some resources usage and limit this will reduce the 
 - `query_plan_cache_size`: (optional, default=1000). The query plan cache size. Once we got explain for one query, we will store it in the cache.
 This defines the cache's size for query plan.
 - `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
-
+- `collection_interval`: (optional, default=60s). This receiver can collect top_query metrics on an interval. If not provided then the global collection_interval takes effect. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 ### Example Configuration
 
 ```yaml
@@ -156,6 +156,7 @@ receivers:
     top_query_collection:
       max_rows_per_query: 100
       top_n_query: 100
+      collection_interval: 60s
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
