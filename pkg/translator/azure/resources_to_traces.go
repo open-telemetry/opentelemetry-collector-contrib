@@ -114,12 +114,12 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 		traceID, traceErr := TraceIDFromHex(azureTrace.OperationID)
 		if traceErr != nil {
 			r.Logger.Warn("Invalid TraceID", zap.String("traceID", azureTrace.OperationID))
-			return t, traceErr
+			return t, err
 		}
 		spanID, spanErr := SpanIDFromHex(azureTrace.SpanID)
 		if spanErr != nil {
 			r.Logger.Warn("Invalid SpanID", zap.String("spanID", azureTrace.SpanID))
-			return t, spanErr
+			return t, err
 		}
 		parentID, parentErr := SpanIDFromHex(azureTrace.ParentID)
 		if parentErr != nil {
