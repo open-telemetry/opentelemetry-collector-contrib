@@ -242,7 +242,7 @@ func TestBulkIndexerLogsStatusCode(t *testing.T) {
 	session.End()
 	assert.NoError(t, bi.Close(ctx))
 
-	messages := observed.FilterMessage("failed to index document").FilterFieldKey("status.code")
+	messages := observed.FilterMessage("failed to index document").FilterFieldKey("http.response.status_code")
 	require.Equal(t, len(statuses), messages.Len(), "message not found; observed.All()=%v", observed.All())
 	for i, status := range statuses {
 		if i >= messages.Len() {
@@ -250,12 +250,12 @@ func TestBulkIndexerLogsStatusCode(t *testing.T) {
 			continue
 		}
 		msg := messages.All()[i]
-		statusCode, ok := msg.ContextMap()["status.code"]
+		statusCode, ok := msg.ContextMap()["http.response.status_code"]
 		if !ok {
-			t.Errorf("status.code missing in log at index %d; msg: %+v", i, msg.ContextMap())
+			t.Errorf("http.response.status_code missing in log at index %d; msg: %+v", i, msg.ContextMap())
 			continue
 		}
-		assert.Equal(t, int64(status), statusCode, "status.code does not match at index %d; msg: %s", i, msg.Message)
+		assert.Equal(t, int64(status), statusCode, "http.response.status_code does not match at index %d; msg: %s", i, msg.Message)
 	}
 }
 
