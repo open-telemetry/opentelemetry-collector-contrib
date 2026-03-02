@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonparser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
@@ -22,7 +22,7 @@ func TestCreateReceiver(t *testing.T) {
 		cfg := factory.CreateDefaultConfig().(*TestConfig)
 		cfg.Operators = []operator.Config{
 			{
-				Builder: json.NewConfig(),
+				Builder: jsonparser.NewConfig(),
 			},
 		}
 		receiver, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(factory.Type()), cfg, consumertest.NewNop())

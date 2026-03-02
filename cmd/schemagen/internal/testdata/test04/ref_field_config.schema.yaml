@@ -1,9 +1,6 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test04
-title: test04 component
 type: object
 $defs:
-  DatabaseConfig:
+  database_config:
     properties:
       host:
         type: string
@@ -14,24 +11,17 @@ $defs:
       username:
         type: string
     type: object
-  NetworkConfig:
+  network_config:
     properties:
       host:
         type: string
       port:
         type: integer
     type: object
-  internal.Authentication:
-    type: object
-    properties:
-      username:
-        type: string
-      password:
-        type: string
 properties:
   database:
-    $ref: '#/$defs/DatabaseConfig'
+    $ref: database_config
   network:
-    $ref: '#/$defs/NetworkConfig'
+    $ref: network_config
   auth:
-    $ref: '#/$defs/internal.Authentication'
+    $ref: ./internal.authentication

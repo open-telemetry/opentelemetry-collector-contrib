@@ -345,6 +345,10 @@ component_management:
     name: extension_httpforwarder
     paths:
     - extension/httpforwarderextension/**
+  - component_id: extension_internal_credentialsfile
+    name: extension_internal_credentialsfile
+    paths:
+    - extension/internal/credentialsfile/**
   - component_id: extension_jaegerremotesampling
     name: extension_jaegerremotesampling
     paths:
@@ -497,6 +501,10 @@ component_management:
     name: processor_logstransform
     paths:
     - processor/logstransformprocessor/**
+  - component_id: processor_lookup
+    name: processor_lookup
+    paths:
+    - processor/lookupprocessor/**
   - component_id: processor_metricsgeneration
     name: processor_metricsgeneration
     paths:
@@ -609,10 +617,6 @@ component_management:
     name: receiver_azuremonitor
     paths:
     - receiver/azuremonitorreceiver/**
-  - component_id: receiver_bigip
-    name: receiver_bigip
-    paths:
-    - receiver/bigipreceiver/**
   - component_id: receiver_carbon
     name: receiver_carbon
     paths:
@@ -973,6 +977,10 @@ component_management:
     name: receiver_vcenter
     paths:
     - receiver/vcenterreceiver/**
+  - component_id: receiver_vcr
+    name: receiver_vcr
+    paths:
+    - receiver/vcrreceiver/**
   - component_id: receiver_wavefront
     name: receiver_wavefront
     paths:

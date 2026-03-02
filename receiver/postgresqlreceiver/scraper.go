@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"strings"
@@ -52,10 +53,11 @@ type postgreSQLScraper struct {
 	excludes      map[string]struct{}
 	cache         *lru.Cache[string, float64]
 	// if enabled, uses a separated attribute for the schema
-	separateSchemaAttr   bool
-	queryPlanCache       *expirable.LRU[string, string]
-	newestQueryTimestamp float64
-	serviceInstanceID    string
+	separateSchemaAttr     bool
+	queryPlanCache         *expirable.LRU[string, string]
+	newestQueryTimestamp   float64
+	serviceInstanceID      string
+	lastExecutionTimestamp time.Time
 }
 
 type errsMux struct {
@@ -200,13 +202,33 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
 }
 
-func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64) (plog.Logs, error) {
+func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64, collectionInterval time.Duration) (plog.Logs, error) {
 	var errs errsMux
+	currentCollectionTime := time.Now()
 
-	p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger)
+	if p.isCollectionDue(currentCollectionTime, collectionInterval) {
+		p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger, currentCollectionTime)
+		p.lastExecutionTimestamp = currentCollectionTime
+	}
 
 	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder(), "", "", "", "")
 	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
+}
+
+func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval time.Duration) bool {
+	if p.lastExecutionTimestamp.IsZero() {
+		// This is the first collection
+		return true
+	}
+
+	if time.Duration(math.Ceil(collectionTime.Sub(p.lastExecutionTimestamp).Seconds()))*time.Second >= interval {
+		return true
+	}
+
+	p.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed." +
+		"last collection time: " + p.lastExecutionTimestamp.String() + ", current collection time: " + collectionTime.String() +
+		", collection interval: " + interval.String())
+	return false
 }
 
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
@@ -247,8 +269,8 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 	}
 }
 
-func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger, collectionTime time.Time) {
+	timestamp := pcommon.NewTimestampFromTime(collectionTime)
 
 	defaultDbClient, err := clientFactory.getClient(defaultPostgreSQLDatabase)
 	if err != nil {
@@ -341,14 +363,16 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		item := heap.Pop(&pq).(*priorityqueue.QueueItem[map[string]any, float64])
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
+		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
+		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
 		if !ok && explained < maxExplainEachInterval {
 			database := item.Value[string(semconv.DBNamespaceKey)].(string)
 			dbClient, err := clientFactory.getClient(database)
 			if err == nil {
-				plan, err = dbClient.explainQuery(query, queryID, logger)
+				plan, err = dbClient.explainQuery(rawQuery, queryID, logger)
 				if err != nil {
-					logger.Error("failed to explain query", zap.String("query", query), zap.Error(err))
+					logger.Error("failed to explain query", zap.String("query", rawQuery), zap.Error(err))
 				}
 				// to avoid flood the error message. there are some internal queries meant to not be
 				// explained. we wait for the cache to expire and report the error again.

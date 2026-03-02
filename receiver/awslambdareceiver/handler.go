@@ -117,17 +117,17 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 	}
 
 	s.logger.Debug("Processing S3 event notification.",
-		zap.String("File", parsedEvent.S3.Object.Key),
+		zap.String("File", parsedEvent.S3.Object.URLDecodedKey),
 		zap.String("S3Bucket", parsedEvent.S3.Bucket.Arn),
 	)
 
 	// Skip processing zero length objects. This includes events from folder creation and empty object.
 	if parsedEvent.S3.Object.Size == 0 {
-		s.logger.Info("Empty object, skipping download", zap.String("File", parsedEvent.S3.Object.Key))
+		s.logger.Info("Empty object, skipping download", zap.String("File", parsedEvent.S3.Object.URLDecodedKey))
 		return nil
 	}
 
-	body, err := s.s3Service.ReadObject(ctx, parsedEvent.S3.Bucket.Name, parsedEvent.S3.Object.Key)
+	body, err := s.s3Service.ReadObject(ctx, parsedEvent.S3.Bucket.Name, parsedEvent.S3.Object.URLDecodedKey)
 	if err != nil {
 		return err
 	}

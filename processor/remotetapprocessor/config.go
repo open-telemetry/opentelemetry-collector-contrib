@@ -6,12 +6,11 @@ package remotetapprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"golang.org/x/time/rate"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
-const defaultPort = 12001
+const defaultEndpoint = "localhost:12001"
 
 type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -25,10 +24,11 @@ type Config struct {
 }
 
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultEndpoint
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.EndpointForPort(defaultPort),
-		},
-		Limit: 1,
+		ServerConfig: confighttp.ServerConfig{NetAddr: netAddr},
+		Limit:        1,
 	}
 }

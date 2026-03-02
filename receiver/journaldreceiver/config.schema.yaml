@@ -1,0 +1,5 @@
+description: JournaldConfig defines configuration for the journald receiver
+type: object
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.base_config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald.config

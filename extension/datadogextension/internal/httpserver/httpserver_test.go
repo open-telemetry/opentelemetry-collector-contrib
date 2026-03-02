@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -46,7 +47,10 @@ func TestServerStart(t *testing.T) {
 					&mockSerializer{},
 					&Config{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: DefaultServerEndpoint,
+							NetAddr: confignet.AddrConfig{
+								Transport: "tcp",
+								Endpoint:  DefaultServerEndpoint,
+							},
 						},
 						Path: "/metadata",
 					},
@@ -168,7 +172,10 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 				serializer,
 				&Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: DefaultServerEndpoint,
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  DefaultServerEndpoint,
+						},
 					},
 					Path: "/metadata",
 				},
@@ -645,7 +652,10 @@ func TestServer_SendPayload(t *testing.T) {
 	logger := zap.NewNop()
 	config := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:0",
+			},
 		},
 		Path: "/test",
 	}
@@ -673,7 +683,10 @@ func TestServer_SendPayload_ForwarderNotStarted(t *testing.T) {
 	logger := zap.NewNop()
 	config := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:0",
+			},
 		},
 		Path: "/test",
 	}
@@ -737,7 +750,10 @@ func TestNewServerErrorPaths(t *testing.T) {
 			&mockSerializer{},
 			&Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0", // Valid endpoint
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:0", // Valid endpoint
+					},
 				},
 				Path: "/metadata",
 			},

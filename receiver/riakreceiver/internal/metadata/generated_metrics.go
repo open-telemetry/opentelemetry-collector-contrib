@@ -146,6 +146,7 @@ func (m *metricRiakMemoryLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRiakMemoryLimit(cfg MetricConfig) metricRiakMemoryLimit {
 	m := metricRiakMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -199,6 +200,7 @@ func (m *metricRiakNodeOperationCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRiakNodeOperationCount(cfg MetricConfig) metricRiakNodeOperationCount {
 	m := metricRiakNodeOperationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -250,6 +252,7 @@ func (m *metricRiakNodeOperationTimeMean) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRiakNodeOperationTimeMean(cfg MetricConfig) metricRiakNodeOperationTimeMean {
 	m := metricRiakNodeOperationTimeMean{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -301,6 +304,7 @@ func (m *metricRiakNodeReadRepairCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRiakNodeReadRepairCount(cfg MetricConfig) metricRiakNodeReadRepairCount {
 	m := metricRiakNodeReadRepairCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -354,6 +358,7 @@ func (m *metricRiakVnodeIndexOperationCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRiakVnodeIndexOperationCount(cfg MetricConfig) metricRiakVnodeIndexOperationCount {
 	m := metricRiakVnodeIndexOperationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -407,6 +412,7 @@ func (m *metricRiakVnodeOperationCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRiakVnodeOperationCount(cfg MetricConfig) metricRiakVnodeOperationCount {
 	m := metricRiakVnodeOperationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

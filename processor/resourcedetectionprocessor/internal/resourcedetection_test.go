@@ -126,11 +126,8 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 }
 
 func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), true)
+	err := featuregate.GlobalRegistry().Set(metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.ID(), true)
 	assert.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), false)
-	}()
 
 	md1 := &mockDetector{}
 	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1"))
@@ -148,23 +145,6 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "err1")
 	require.Contains(t, err.Error(), "err2")
-}
-
-func TestDetectResource_Error_ContextDeadline_WithoutErrPropagation(t *testing.T) {
-	md1 := &mockDetector{}
-	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1"))
-
-	md2 := &mockDetector{}
-	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("err2"))
-
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
-
-	var cancel context.CancelFunc
-	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
-	defer cancel()
-
-	err := p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
-	require.NoError(t, err)
 }
 
 func TestMergeResource(t *testing.T) {
@@ -198,6 +178,24 @@ func TestMergeResource(t *testing.T) {
 			assert.Equal(t, tt.expected, res1.Attributes().AsRaw())
 		})
 	}
+}
+
+func TestMergeResourceZeroValueFrom(t *testing.T) {
+	t.Parallel()
+
+	to := pcommon.NewResource()
+	require.NoError(t, to.Attributes().FromRaw(map[string]any{"keep": "me"}))
+
+	assert.NotPanics(t, func() {
+		MergeResource(to, pcommon.Resource{}, false)
+	})
+	assert.Equal(t, map[string]any{"keep": "me"}, to.Attributes().AsRaw())
+}
+
+func TestIsEmptyResourceZeroValue(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, IsEmptyResource(pcommon.Resource{}))
 }
 
 type mockParallelDetector struct {

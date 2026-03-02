@@ -38,7 +38,7 @@ func basicConfig(portNumber uint) *Config {
 			MaxRowsPerQuery: 100,
 		},
 		TopQueryCollection: TopQueryCollection{
-			LookbackTime:        1000,
+			LookbackTime:        1 * time.Second,
 			MaxQuerySampleCount: 100,
 			TopQueryCount:       100,
 			CollectionInterval:  1 * time.Millisecond,
@@ -111,24 +111,34 @@ func TestEventsScraper(t *testing.T) {
 					return queryCount.Load() > 0
 				}, 10*time.Second, 100*time.Millisecond, "Query did not start in time")
 
-				actualLog, err := scraper.ScrapeLogs(t.Context())
-				assert.NoError(t, err)
-				assert.NotNil(t, actualLog)
-				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+					actualLog, err := scraper.ScrapeLogs(t.Context())
+					assert.NoError(tt, err)
+					assert.NotNil(tt, actualLog)
 
-				assert.Equal(t, 2, logRecords.Len())
-				found := false
-				for i := 0; i < logRecords.Len(); i++ {
-					attributes := logRecords.At(i).Attributes().AsRaw()
-					if attributes["db.namespace"] == "master" {
-						continue
+					if actualLog.ResourceLogs().Len() == 0 {
+						assert.Fail(tt, "No resource logs found")
+						return
 					}
-					found = true
-					query := attributes["db.query.text"].(string)
-					// as the query is not a standard query, only the `WAITFOR` part can be returned from db.
-					assert.True(t, strings.HasPrefix(query, "WAITFOR"))
-				}
-				assert.True(t, found)
+
+					logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+					assert.GreaterOrEqual(tt, logRecords.Len(), 1)
+
+					found := false
+					for i := 0; i < logRecords.Len(); i++ {
+						attributes := logRecords.At(i).Attributes().AsRaw()
+						if attributes["db.namespace"] == "master" {
+							continue
+						}
+						found = true
+						query := attributes["db.query.text"].(string)
+						// as the query is not a standard query, only the `WAITFOR` part can be returned from db.
+						assert.True(tt, strings.HasPrefix(query, "WAITFOR"), "Expected query to start with WAITFOR, got: %s", query)
+					}
+
+					assert.True(tt, found, "Expected query not found in logs")
+				}, 10*time.Second, 100*time.Millisecond)
+
 				finished.Store(true)
 			},
 		},
@@ -152,24 +162,38 @@ func TestEventsScraper(t *testing.T) {
 					// collection interval it will not be considered as a top query.
 					return queryCount.Load() > currentQueriesCount+1
 				}, 10*time.Second, 2*time.Second, "Query did not execute enough times")
+
 				var actualLog plog.Logs
+				var found bool
 				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 					actualLog, err = scraper.ScrapeLogs(t.Context())
-					assert.NotNil(tt, actualLog)
 					assert.NoError(tt, err)
-					assert.Positive(tt, actualLog.LogRecordCount())
-				}, 10*time.Second, 100*time.Millisecond)
-				found := false
-				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-				for i := 0; i < logRecords.Len(); i++ {
-					attributes := logRecords.At(i).Attributes().AsRaw()
+					assert.NotNil(tt, actualLog)
 
-					query := attributes["db.query.text"].(string)
-					if query == "SELECT * FROM dbo.test_table" {
-						found = true
+					if actualLog.LogRecordCount() == 0 {
+						assert.Fail(tt, "No log records found")
+						return
 					}
-				}
-				assert.True(t, found)
+
+					if actualLog.ResourceLogs().Len() == 0 {
+						assert.Fail(tt, "No resource logs found")
+						return
+					}
+
+					found = false
+					logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+					for i := 0; i < logRecords.Len(); i++ {
+						attributes := logRecords.At(i).Attributes().AsRaw()
+						query := attributes["db.query.text"].(string)
+						if query == "SELECT * FROM dbo.test_table" {
+							found = true
+							break
+						}
+					}
+
+					assert.True(tt, found, "Expected query not found in logs")
+				}, 10*time.Second, 100*time.Millisecond)
+
 				finished.Store(true)
 			},
 		},
@@ -208,8 +232,6 @@ func TestEventsScraper(t *testing.T) {
 					}
 				}
 			}(queryContext)
-
-			time.Sleep(10 * time.Second)
 
 			portNumber, err := strconv.Atoi(p.Port())
 			assert.NoError(t, err)

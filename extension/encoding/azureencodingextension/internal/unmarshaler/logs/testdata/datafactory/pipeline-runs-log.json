@@ -1,0 +1,37 @@
+{
+  "records": [
+    {
+      "Level": 4,
+      "correlationId": "82282710-a665-4a79-9bbc-e1f207af4b1e",
+      "time": "2020-11-04T19:23:04.8901120Z",
+      "runId": "82282710-a665-4a79-9bbc-e1f207af4b1e",
+      "resourceId": "/SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.DATAFACTORY/FACTORIES/TESTDATAFACTORY",
+      "category": "PipelineRuns",
+      "level": "Informational",
+      "operationName": "dataFlowPipeline - Queued",
+      "pipelineName": "dataFlowPipeline",
+      "start": "2020-11-04T19:23:04.8245890Z",
+      "end": "1601-01-01T00:00:00Z",
+      "status": "Queued",
+      "location": "southcentralus",
+      "properties": {
+        "Parameters": {},
+        "SystemParameters": {
+          "PipelineRunRequestTime": "2020-11-04T19:23:04.824589+00:00"
+        },
+        "Predecessors": [
+          {
+            "Name": "Manual",
+            "Id": "839df9dfe19f4169afc7f6ab4b7c190a",
+            "InvokedByType": "Manual"
+          }
+        ],
+        "UserProperties": {},
+        "Annotations": [],
+        "Message": null
+      },
+      "tags": "{}",
+      "groupId": "82282710-a665-4a79-9bbc-e1f207af4b1e"
+    }
+  ]
+}

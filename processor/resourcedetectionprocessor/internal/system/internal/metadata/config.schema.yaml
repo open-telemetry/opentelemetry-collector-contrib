@@ -1,0 +1,45 @@
+$defs:
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for resourcedetectionprocessor/system resource attributes.
+    type: object
+    properties:
+      host.arch:
+        $ref: resource_attribute_config
+      host.cpu.cache.l2.size:
+        $ref: resource_attribute_config
+      host.cpu.family:
+        $ref: resource_attribute_config
+      host.cpu.model.id:
+        $ref: resource_attribute_config
+      host.cpu.model.name:
+        $ref: resource_attribute_config
+      host.cpu.stepping:
+        $ref: resource_attribute_config
+      host.cpu.vendor.id:
+        $ref: resource_attribute_config
+      host.id:
+        $ref: resource_attribute_config
+      host.interface:
+        $ref: resource_attribute_config
+      host.ip:
+        $ref: resource_attribute_config
+      host.mac:
+        $ref: resource_attribute_config
+      host.name:
+        $ref: resource_attribute_config
+      os.build.id:
+        $ref: resource_attribute_config
+      os.description:
+        $ref: resource_attribute_config
+      os.name:
+        $ref: resource_attribute_config
+      os.type:
+        $ref: resource_attribute_config
+      os.version:
+        $ref: resource_attribute_config

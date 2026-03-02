@@ -12,10 +12,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
@@ -76,10 +78,9 @@ func TestErrorModes(t *testing.T) {
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name: tt.objectName,
-					Mode: PullMode,
+					Mode: k8sinventory.PullMode,
 				},
 			}
-
 			r, err := newReceiver(
 				receivertest.NewNopSettings(metadata.Type),
 				rCfg,
@@ -117,7 +118,7 @@ func TestNewReceiver(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: k8sinventory.PullMode,
 		},
 	}
 
@@ -156,7 +157,7 @@ func TestPullObject(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:          "pods",
-			Mode:          PullMode,
+			Mode:          k8sinventory.PullMode,
 			Interval:      time.Second * 30,
 			LabelSelector: "environment=production",
 		},
@@ -194,7 +195,7 @@ func TestWatchObject(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
-			Mode:       WatchMode,
+			Mode:       k8sinventory.WatchMode,
 			Namespaces: []string{"default"},
 		},
 	}
@@ -295,7 +296,7 @@ func TestIncludeInitialState(t *testing.T) {
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name:       "pods",
-					Mode:       WatchMode,
+					Mode:       k8sinventory.WatchMode,
 					Namespaces: []string{"default"},
 				},
 			}
@@ -372,7 +373,7 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: k8sinventory.PullMode,
 		},
 	}
 
@@ -405,7 +406,7 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
-			Mode:       WatchMode,
+			Mode:       k8sinventory.WatchMode,
 			Namespaces: []string{"default"},
 			ExcludeWatchType: []apiWatch.EventType{
 				apiWatch.Deleted,
@@ -456,7 +457,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: k8sinventory.PullMode,
 		},
 	}
 	rCfg.K8sLeaderElector = &leaderElectorID
@@ -515,4 +516,64 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 		return sink.LogRecordCount() == 2
 	}, 20*time.Second, 100*time.Millisecond,
 		"logs not collected")
+}
+
+func TestNamespaceDenyListWatchObject(t *testing.T) {
+	t.Parallel()
+
+	mockClient := newMockDynamicClient()
+	mockClient.createNamespaces(
+		generateNamespace("default", "1"),
+		generateNamespace("default_ignore", "2"),
+	)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name: "pods",
+			Mode: k8sinventory.WatchMode,
+			ExcludeNamespaces: []filter.Config{
+				{
+					Regex: "default_ignore",
+				},
+			},
+		},
+	}
+
+	consumer := newMockLogConsumer()
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumer,
+	)
+
+	ctx := t.Context()
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+
+	time.Sleep(time.Millisecond * 100)
+	assert.Empty(t, consumer.Logs())
+	assert.Equal(t, 0, consumer.Count())
+
+	mockClient.createPods(
+		generatePod("pod2", "default", map[string]any{
+			"environment": "test",
+		}, "2"),
+		generatePod("pod3", "default_ignore", map[string]any{
+			"environment": "production",
+		}, "3"),
+		generatePod("pod4", "default", map[string]any{
+			"environment": "production",
+		}, "4"),
+	)
+	time.Sleep(time.Millisecond * 100)
+	assert.Len(t, consumer.Logs(), 2)
+	assert.Equal(t, 2, consumer.Count())
+
+	assert.NoError(t, r.Shutdown(ctx))
 }

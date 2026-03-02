@@ -56,6 +56,7 @@ func TestGenerateLogs(t *testing.T) {
 	cfg.Insecure = true
 	cfg.SkipSettingGRPCLogger = true
 	cfg.NumLogs = 6000
+	cfg.Batch = false
 	go func() {
 		err = logs.Start(cfg)
 		assert.NoError(t, err)

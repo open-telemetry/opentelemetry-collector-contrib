@@ -151,7 +151,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
-	require.Error(t, err)
+	require.NoError(t, err)
 	output.AssertNotCalled(t, "Process", mock.Anything, mock.Anything)
 
 	// Test output logs
@@ -251,7 +251,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
-	require.Error(t, err)
+	require.NoError(t, err)
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
 
 	// Test output logs
@@ -378,6 +378,284 @@ func TestTransformerDoesNotSplitBatches(t *testing.T) {
 	// This proves that the batch was not split.
 	output.AssertCalled(t, "ProcessBatch", ctx, testEntries)
 	output.AssertNumberOfCalls(t, "ProcessBatch", 1)
+}
+
+// TestBatchProcessingAllEntriesFailQuietMode tests that when all entries fail in a batch with quiet mode,
+// no errors are returned and entries are handled according to the quiet mode (drop or send).
+func TestBatchProcessingAllEntriesFailQuietMode(t *testing.T) {
+	testCases := []struct {
+		name             string
+		onError          string
+		expectProcessed  bool
+		expectError      bool
+		expectedLogLevel zapcore.Level
+	}{
+		{
+			name:             "DropOnErrorQuiet",
+			onError:          DropOnErrorQuiet,
+			expectProcessed:  false,
+			expectError:      false,
+			expectedLogLevel: zapcore.DebugLevel,
+		},
+		{
+			name:             "SendOnErrorQuiet",
+			onError:          SendOnErrorQuiet,
+			expectProcessed:  true,
+			expectError:      false,
+			expectedLogLevel: zapcore.DebugLevel,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := &testutil.Operator{}
+			output.On("ID").Return("test-output")
+			output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+			obs, logs := observer.New(zapcore.DebugLevel)
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zap.New(obs)
+
+			transformer := TransformerOperator{
+				OnError: tc.onError,
+				WriterOperator: WriterOperator{
+					BasicOperator: BasicOperator{
+						OperatorID:   "test-id",
+						OperatorType: "test-type",
+						set:          set,
+					},
+					OutputOperators: []operator.Operator{output},
+					OutputIDs:       []string{"test-output"},
+				},
+			}
+
+			ctx := t.Context()
+			testEntry1 := entry.New()
+			testEntry2 := entry.New()
+			testEntry3 := entry.New()
+			testEntries := []*entry.Entry{testEntry1, testEntry2, testEntry3}
+
+			// Transform function that always fails
+			transform := func(_ *entry.Entry) error {
+				return errors.New("transform failure")
+			}
+
+			err := transformer.ProcessBatchWithTransform(ctx, testEntries, transform)
+
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err, "expected no error in quiet mode")
+			}
+
+			// Verify that logs were created at the expected level
+			require.Equal(t, 3, logs.Len(), "expected 3 log entries for 3 failed entries")
+			for _, logEntry := range logs.All() {
+				require.Equal(t, tc.expectedLogLevel, logEntry.Level, "expected log level to be %v", tc.expectedLogLevel)
+			}
+
+			// Verify ProcessBatch was called
+			output.AssertCalled(t, "ProcessBatch", mock.Anything, mock.Anything)
+
+			// Check if entries were sent or dropped
+			calls := output.Calls
+			if len(calls) > 0 {
+				processedEntries := calls[0].Arguments.Get(1).([]*entry.Entry)
+				if tc.expectProcessed {
+					require.Len(t, processedEntries, 3, "expected all 3 entries to be sent in SendOnErrorQuiet mode")
+				} else {
+					require.Empty(t, processedEntries, "expected 0 entries to be sent in DropOnErrorQuiet mode")
+				}
+			}
+		})
+	}
+}
+
+// TestBatchProcessingMixedSuccessFailureQuietMode tests batch processing with a mix of successful and failed entries in quiet mode.
+func TestBatchProcessingMixedSuccessFailureQuietMode(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		onError                string
+		expectError            bool
+		expectedProcessedCount int
+		expectedLogLevel       zapcore.Level
+	}{
+		{
+			name:                   "DropOnErrorQuiet",
+			onError:                DropOnErrorQuiet,
+			expectError:            false,
+			expectedProcessedCount: 2, // Only successful entries
+			expectedLogLevel:       zapcore.DebugLevel,
+		},
+		{
+			name:                   "SendOnErrorQuiet",
+			onError:                SendOnErrorQuiet,
+			expectError:            false,
+			expectedProcessedCount: 4, // All entries (2 successful + 2 failed)
+			expectedLogLevel:       zapcore.DebugLevel,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := &testutil.Operator{}
+			output.On("ID").Return("test-output")
+			output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+			obs, logs := observer.New(zapcore.DebugLevel)
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zap.New(obs)
+
+			transformer := TransformerOperator{
+				OnError: tc.onError,
+				WriterOperator: WriterOperator{
+					BasicOperator: BasicOperator{
+						OperatorID:   "test-id",
+						OperatorType: "test-type",
+						set:          set,
+					},
+					OutputOperators: []operator.Operator{output},
+					OutputIDs:       []string{"test-output"},
+				},
+			}
+
+			ctx := t.Context()
+			testEntry1 := entry.New()
+			testEntry1.Body = "success1"
+			testEntry2 := entry.New()
+			testEntry2.Body = "fail1"
+			testEntry3 := entry.New()
+			testEntry3.Body = "success2"
+			testEntry4 := entry.New()
+			testEntry4.Body = "fail2"
+			testEntries := []*entry.Entry{testEntry1, testEntry2, testEntry3, testEntry4}
+
+			// Transform function that fails for entries with "fail" in body
+			transform := func(e *entry.Entry) error {
+				if body, ok := e.Body.(string); ok && body[:4] == "fail" {
+					return errors.New("transform failure")
+				}
+				return nil
+			}
+
+			err := transformer.ProcessBatchWithTransform(ctx, testEntries, transform)
+
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err, "expected no error in quiet mode")
+			}
+
+			// Verify that logs were created for failed entries only
+			require.Equal(t, 2, logs.Len(), "expected 2 log entries for 2 failed entries")
+			for _, logEntry := range logs.All() {
+				require.Equal(t, tc.expectedLogLevel, logEntry.Level, "expected log level to be %v", tc.expectedLogLevel)
+			}
+
+			// Verify ProcessBatch was called
+			output.AssertCalled(t, "ProcessBatch", mock.Anything, mock.Anything)
+
+			// Check the number of processed entries
+			calls := output.Calls
+			if len(calls) > 0 {
+				processedEntries := calls[0].Arguments.Get(1).([]*entry.Entry)
+				require.Len(t, processedEntries, tc.expectedProcessedCount,
+					"expected %d entries to be processed", tc.expectedProcessedCount)
+			}
+		})
+	}
+}
+
+// TestBatchProcessingAllEntriesFailNonQuietMode tests that errors are properly returned in non-quiet mode.
+func TestBatchProcessingAllEntriesFailNonQuietMode(t *testing.T) {
+	testCases := []struct {
+		name             string
+		onError          string
+		expectProcessed  bool
+		expectError      bool
+		expectedLogLevel zapcore.Level
+	}{
+		{
+			name:             "DropOnError",
+			onError:          DropOnError,
+			expectProcessed:  false,
+			expectError:      true,
+			expectedLogLevel: zapcore.ErrorLevel,
+		},
+		{
+			name:             "SendOnError",
+			onError:          SendOnError,
+			expectProcessed:  true,
+			expectError:      true,
+			expectedLogLevel: zapcore.ErrorLevel,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := &testutil.Operator{}
+			output.On("ID").Return("test-output")
+			output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+			obs, logs := observer.New(zapcore.WarnLevel)
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zap.New(obs)
+
+			transformer := TransformerOperator{
+				OnError: tc.onError,
+				WriterOperator: WriterOperator{
+					BasicOperator: BasicOperator{
+						OperatorID:   "test-id",
+						OperatorType: "test-type",
+						set:          set,
+					},
+					OutputOperators: []operator.Operator{output},
+					OutputIDs:       []string{"test-output"},
+				},
+			}
+
+			ctx := t.Context()
+			testEntry1 := entry.New()
+			testEntry2 := entry.New()
+			testEntry3 := entry.New()
+			testEntries := []*entry.Entry{testEntry1, testEntry2, testEntry3}
+
+			// Transform function that always fails
+			transform := func(_ *entry.Entry) error {
+				return errors.New("transform failure")
+			}
+
+			err := transformer.ProcessBatchWithTransform(ctx, testEntries, transform)
+
+			if tc.expectError {
+				require.Error(t, err, "expected error in non-quiet mode")
+				// Verify we get multiple errors joined together
+				require.Contains(t, err.Error(), "transform failure")
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Verify that logs were created at the expected level
+			require.Equal(t, 3, logs.Len(), "expected 3 log entries for 3 failed entries")
+			for _, logEntry := range logs.All() {
+				require.Equal(t, tc.expectedLogLevel, logEntry.Level)
+			}
+
+			// Verify ProcessBatch was called
+			output.AssertCalled(t, "ProcessBatch", mock.Anything, mock.Anything)
+
+			// Check if entries were sent or dropped
+			calls := output.Calls
+			if len(calls) > 0 {
+				processedEntries := calls[0].Arguments.Get(1).([]*entry.Entry)
+				if tc.expectProcessed {
+					require.Len(t, processedEntries, 3, "expected all 3 entries to be sent in SendOnError mode")
+				} else {
+					require.Empty(t, processedEntries, "expected 0 entries to be sent in DropOnError mode")
+				}
+			}
+		})
+	}
 }
 
 func TestTransformerIf(t *testing.T) {

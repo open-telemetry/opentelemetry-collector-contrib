@@ -6,19 +6,14 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 )
 
 type azureEvent struct {
-	EventHubEvent *eventhub.Event
-	AzEventData   *azeventhubs.ReceivedEventData
+	AzEventData *azeventhubs.ReceivedEventData
 }
 
 func (a *azureEvent) EnqueueTime() *time.Time {
-	if a.EventHubEvent != nil {
-		return a.EventHubEvent.SystemProperties.EnqueuedTime
-	}
 	if a.AzEventData != nil {
 		return a.AzEventData.EnqueuedTime
 	}
@@ -26,9 +21,6 @@ func (a *azureEvent) EnqueueTime() *time.Time {
 }
 
 func (a *azureEvent) Properties() map[string]any {
-	if a.EventHubEvent != nil {
-		return a.EventHubEvent.Properties
-	}
 	if a.AzEventData != nil {
 		return a.AzEventData.Properties
 	}
@@ -36,9 +28,6 @@ func (a *azureEvent) Properties() map[string]any {
 }
 
 func (a *azureEvent) Data() []byte {
-	if a.EventHubEvent != nil {
-		return a.EventHubEvent.Data
-	}
 	if a.AzEventData != nil {
 		return a.AzEventData.Body
 	}

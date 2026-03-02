@@ -11,47 +11,6 @@ import (
 	"strings"
 )
 
-func ExtractNameFromTag(field *ast.Field) (string, bool) {
-	if field.Tag == nil {
-		return "", false
-	}
-
-	tagLiteral := field.Tag.Value
-	if tagLiteral == "" {
-		return "", false
-	}
-
-	unquoted, err := strconv.Unquote(tagLiteral)
-	if err != nil {
-		unquoted = strings.Trim(tagLiteral, "`")
-	}
-	if unquoted == "" {
-		return "", false
-	}
-
-	tag := reflect.StructTag(unquoted)
-
-	if name := normalizeTagValue(tag.Get("mapstructure")); name != "" {
-		return name, true
-	}
-
-	return "", false
-}
-
-func normalizeTagValue(value string) string {
-	if value == "" {
-		return ""
-	}
-	if idx := strings.IndexByte(value, ','); idx >= 0 {
-		value = value[:idx]
-	}
-	value = strings.TrimSpace(value)
-	if value == "" || value == "-" {
-		return ""
-	}
-	return value
-}
-
 func ExtractDescriptionFromComment(group *ast.CommentGroup) (string, bool) {
 	if group == nil {
 		return "", false
@@ -77,10 +36,9 @@ func goPrimitiveToSchemaType(typeName string) (SchemaType, bool) {
 		return SchemaTypeString, false
 	case "rune", "byte":
 		return SchemaTypeString, true
-	case "int", "int8", "int16", "int32", "int64":
+	case "int", "uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64":
 		return SchemaTypeInteger, typeName != "int"
 	case "float32", "float64":
-
 		return SchemaTypeNumber, true
 	case "bool":
 		return SchemaTypeBoolean, false
@@ -109,4 +67,46 @@ func ParseImport(imp *ast.ImportSpec) (string, string) {
 		name = imp.Name.Name
 	}
 	return full, name
+}
+
+type TagInfo struct {
+	Name      string
+	OmitEmpty bool
+	Squash    bool
+}
+
+func ParseTag(tag *ast.BasicLit) (*TagInfo, bool) {
+	if tag == nil {
+		return nil, false
+	}
+	unquoted, err := strconv.Unquote(tag.Value)
+	if err != nil {
+		unquoted = strings.Trim(tag.Value, "`")
+	}
+	if unquoted == "" {
+		return nil, false
+	}
+
+	structTag := reflect.StructTag(unquoted)
+	mapstructureTag := structTag.Get("mapstructure")
+	if mapstructureTag == "" {
+		return nil, false
+	}
+
+	parts := strings.Split(mapstructureTag, ",")
+	info := &TagInfo{
+		Name: parts[0],
+	}
+	if info.Name == "-" {
+		return nil, false
+	}
+	for _, part := range parts[1:] {
+		if part == "omitempty" {
+			info.OmitEmpty = true
+		}
+		if part == "squash" {
+			info.Squash = true
+		}
+	}
+	return info, true
 }

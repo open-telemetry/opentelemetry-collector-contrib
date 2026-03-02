@@ -4,12 +4,12 @@
 package internal
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 
 	"gopkg.in/yaml.v3"
 )
-
-const Version = "https://json-schema.org/draft/2020-12/schema"
 
 type SchemaElement interface {
 	setIsPointer(value bool)
@@ -19,7 +19,7 @@ type SchemaElement interface {
 
 type SchemaObject interface {
 	AddProperty(name string, property SchemaElement)
-	AddEmbeddedRef(ref string)
+	AddEmbedded(element SchemaElement)
 }
 
 type BaseSchemaElement struct {
@@ -71,8 +71,17 @@ func (s *ObjectSchemaElement) AddProperty(name string, property SchemaElement) {
 	s.Properties[name] = property
 }
 
-func (s *ObjectSchemaElement) AddEmbeddedRef(ref string) {
-	s.AllOf = append(s.AllOf, CreateRefField(ref, ""))
+func (s *ObjectSchemaElement) AddEmbedded(element SchemaElement) {
+	// prevent duplicates
+	if re, ok := element.(*RefSchemaElement); ok {
+		ref := re.Ref
+		for _, refEl := range s.AllOf {
+			if r, ok := refEl.(*RefSchemaElement); ok && r.Ref == ref {
+				return
+			}
+		}
+	}
+	s.AllOf = append(s.AllOf, element)
 }
 
 type DefsSchemaElement map[string]SchemaElement
@@ -82,9 +91,6 @@ func (d DefsSchemaElement) AddDef(name string, property SchemaElement) {
 }
 
 type Schema struct {
-	Schema              string            `json:"$schema" yaml:"$schema"`
-	ID                  string            `json:"$id" yaml:"$id"`
-	Title               string            `json:"title" yaml:"title"`
 	Defs                DefsSchemaElement `json:"$defs,omitempty" yaml:"$defs,omitempty"`
 	ObjectSchemaElement `json:",inline" yaml:",inline"`
 }
@@ -94,15 +100,21 @@ func (s *Schema) ToJSON() ([]byte, error) {
 }
 
 func (s *Schema) ToYAML() ([]byte, error) {
-	return yaml.Marshal(s)
+	var b bytes.Buffer
+	enc := yaml.NewEncoder(&b)
+
+	enc.SetIndent(2)
+
+	if err := enc.Encode(s); err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
 }
 
-func CreateSchema(id, title string) *Schema {
+func CreateSchema() *Schema {
 	return &Schema{
-		Schema: Version,
-		ID:     id,
-		Title:  title,
-		Defs:   DefsSchemaElement{},
+		Defs: DefsSchemaElement{},
 	}
 }
 
@@ -172,3 +184,16 @@ const (
 	SchemaTypeAny     SchemaType = ""
 	SchemaTypeUnknown SchemaType = "-"
 )
+
+func mergeSchemas(base SchemaObject, additional SchemaElement) error {
+	if objectElement, ok := additional.(*ObjectSchemaElement); ok {
+		for name, prop := range objectElement.Properties {
+			base.AddProperty(name, prop)
+		}
+		for _, el := range objectElement.AllOf {
+			base.AddEmbedded(el)
+		}
+		return nil
+	}
+	return errors.New("cannot merge non-object schema elements")
+}

@@ -479,8 +479,12 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 }
 
 func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, accepted, refused int64) {
-	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
-	assert.NoError(t, err)
+	var got metricdata.Metrics
+	var err error
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		got, err = tt.GetMetric("otelcol_receiver_accepted_spans")
+		assert.NoError(c, err)
+	}, 5*time.Second, 100*time.Millisecond)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
@@ -500,8 +504,10 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 			},
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	got, err = tt.GetMetric("otelcol_receiver_refused_spans")
-	assert.NoError(t, err)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		got, err = tt.GetMetric("otelcol_receiver_refused_spans")
+		assert.NoError(c, err)
+	}, 5*time.Second, 100*time.Millisecond)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",

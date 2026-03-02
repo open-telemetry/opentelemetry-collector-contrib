@@ -7,6 +7,74 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.146.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonparser" instead (#45006)
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors" instead (#45006)
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/time" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/timeparser" instead (#45006)
+
+### 💡 Enhancements 💡
+
+- `processor/filter`: Introduces inferred context conditions for filtering (#37904)
+  Introduces three new top-level config fields [metric_conditions, log_conditions, trace_conditions].
+  A user can supply OTTL conditions for each without needing to supply context.
+  
+- `receiver/pprof`: Implement the functionality of transforming pprof to OTel Profiles (#45411)
+
+### 🧰 Bug fixes 🧰
+
+- `processor/sumologic`: Export config types to allow programmatic configuration via Go API (#45880)
+- `receiver/filestats`: Ensure that bsd build tags are respected by renaming filestats_darwin.go to filestats_bsd.go (#42645)
+
+<!-- previous-version -->
+
+## v0.145.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/translator/azure`: Updated OpenTelemetry semantic conversion to the latest version 1.38.0 in azure pkg. (#44801)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/ottl`: Use pointer when passing TransformContext around or calling into. (#44944)
+  Change Expr/Parser/Getter/Setter and all ottl related funcs to accept pointers to avoid unnecessary copy of a large
+  TransformContext(96B). Avoid allocating a new pcommon.Map every time a new context is created by using a Borrow/Return
+  pattern and reuse objects between calls. Deprecated funcs are:
+  - `ottlprofile.NewTransformContext` in favor of `ottlprofile.NewTransformContextPtr`;
+  - `ottlprofilesample.NewTransformContext` in favor of `ottlprofilesample.NewTransformContextPtr`;
+  - `filterprocessor.DefaultProfileFunctions` in favor of `filterprocessor.DefaultProfileFunctionsNew`
+  - `filterprocessor.WithProfileFunctions` in favor of `filterprocessor.WithProfileFunctionsNew`
+  - `transformprocessor.DefaultProfileFunctions` in favor of `transformprocessor.DefaultProfileFunctionsNew`
+  - `transformprocessor.WithProfileFunctions` in favor of `transformprocessor.WithProfileFunctionsNew`
+  
+
+### 💡 Enhancements 💡
+
+- `connector/routing`: Update existing util functions to reduce allocs. (#45061)
+- `connector/routing`: Add new util functions to copy data in routing connector. (#45061)
+- `receiver/snowflake`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+- `receiver/windowsservice`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+
+<!-- previous-version -->
+
+## v0.144.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: add unix socket support to HTTP server components (#45308)
+  HTTP server components (namely receivers) now support listening
+  on Unix domain sockets in addition to TCP addresses, by configuring
+  `transport: unix` and setting `endpoint` to a Unix socket path.
+  
+  This is a breaking change to the config structs, but is not breaking
+  for end users. Existing YAML configuration options remain unchanged.
+  
+- `receiver/aerospike`: Move mock structs to internal package. (#43995)
+
+<!-- previous-version -->
+
 ## v0.143.0
 
 ### 🛑 Breaking changes 🛑

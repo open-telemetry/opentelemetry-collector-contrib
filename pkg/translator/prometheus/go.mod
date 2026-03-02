@@ -1,12 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
 
-go 1.24.0
+go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.146.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/featuregate v1.49.0
-	go.opentelemetry.io/collector/pdata v1.49.0
+	go.opentelemetry.io/collector/featuregate v1.52.1-0.20260227062254-168030d61d7d
+	go.opentelemetry.io/collector/pdata v1.52.1-0.20260227062254-168030d61d7d
 	go.uber.org/goleak v1.3.0
 )
 

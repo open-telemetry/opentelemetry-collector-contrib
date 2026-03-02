@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -38,7 +39,10 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				HTTPConfig: &httpserver.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
 					},
 					Path: "/metadata",
 				},
@@ -54,7 +58,10 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				HTTPConfig: &httpserver.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
 					},
 					Path: "/metadata",
 				},
@@ -70,7 +77,10 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				HTTPConfig: &httpserver.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
 					},
 					Path: "/metadata",
 				},
@@ -96,7 +106,10 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				HTTPConfig: &httpserver.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
 					},
 					Path: "/metadata",
 				},
@@ -113,7 +126,10 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				HTTPConfig: &httpserver.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
 					},
 					Path: "/metadata",
 				},
@@ -130,7 +146,10 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				HTTPConfig: &httpserver.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
 					},
 					Path: "/metadata",
 				},
@@ -147,7 +166,10 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				HTTPConfig: &httpserver.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
 					},
 					Path: "/metadata",
 				},
@@ -164,7 +186,10 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				HTTPConfig: &httpserver.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
 					},
 					Path: "/metadata",
 				},
@@ -246,7 +271,10 @@ func TestConfig_DeploymentTypeDefault(t *testing.T) {
 		},
 		HTTPConfig: &httpserver.Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: "http://localhost:8080",
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:8080",
+				},
 			},
 			Path: "/metadata",
 		},
@@ -300,7 +328,10 @@ func TestConfig_DeploymentTypeValidValues(t *testing.T) {
 				},
 				HTTPConfig: &httpserver.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
 					},
 					Path: "/metadata",
 				},

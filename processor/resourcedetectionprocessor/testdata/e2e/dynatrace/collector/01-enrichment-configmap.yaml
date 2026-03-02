@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-enrichment-config
+  namespace: default
+data:
+  dt_host_metadata.properties: |
+    dt.entity.host=HOST-ABCDEF1234567890
+    host.name=test-dynatrace-host.example.com
+    dt.smartscape.host=HOST_SMARTSCAPE_ABCD1234

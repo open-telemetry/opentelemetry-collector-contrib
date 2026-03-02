@@ -374,13 +374,11 @@ func verifyReceivedEvents(t *testing.T, numEvents int, receivedEventsChan chan *
 			receivedEvents++
 			if receivedEvents == numEvents {
 				exit = true
-				break
 			}
 		case <-time.After(10 * time.Second):
 			t.Log("timed out waiting for expected events")
 			t.Fail()
 			exit = true
-			break
 		}
 		if exit {
 			break

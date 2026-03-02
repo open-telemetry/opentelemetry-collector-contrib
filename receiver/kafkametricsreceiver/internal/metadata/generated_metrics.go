@@ -130,6 +130,7 @@ func (m *metricKafkaBrokerLogRetentionPeriod) emit(metrics pmetric.MetricSlice) 
 
 func newMetricKafkaBrokerLogRetentionPeriod(cfg MetricConfig) metricKafkaBrokerLogRetentionPeriod {
 	m := metricKafkaBrokerLogRetentionPeriod{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -181,6 +182,7 @@ func (m *metricKafkaBrokers) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaBrokers(cfg MetricConfig) metricKafkaBrokers {
 	m := metricKafkaBrokers{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -234,6 +236,7 @@ func (m *metricKafkaConsumerGroupLag) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaConsumerGroupLag(cfg MetricConfig) metricKafkaConsumerGroupLag {
 	m := metricKafkaConsumerGroupLag{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -286,6 +289,7 @@ func (m *metricKafkaConsumerGroupLagSum) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaConsumerGroupLagSum(cfg MetricConfig) metricKafkaConsumerGroupLagSum {
 	m := metricKafkaConsumerGroupLagSum{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -339,6 +343,7 @@ func (m *metricKafkaConsumerGroupMembers) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaConsumerGroupMembers(cfg MetricConfig) metricKafkaConsumerGroupMembers {
 	m := metricKafkaConsumerGroupMembers{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -392,6 +397,7 @@ func (m *metricKafkaConsumerGroupOffset) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaConsumerGroupOffset(cfg MetricConfig) metricKafkaConsumerGroupOffset {
 	m := metricKafkaConsumerGroupOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -444,6 +450,7 @@ func (m *metricKafkaConsumerGroupOffsetSum) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaConsumerGroupOffsetSum(cfg MetricConfig) metricKafkaConsumerGroupOffsetSum {
 	m := metricKafkaConsumerGroupOffsetSum{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -496,6 +503,7 @@ func (m *metricKafkaPartitionCurrentOffset) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaPartitionCurrentOffset(cfg MetricConfig) metricKafkaPartitionCurrentOffset {
 	m := metricKafkaPartitionCurrentOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -548,6 +556,7 @@ func (m *metricKafkaPartitionOldestOffset) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaPartitionOldestOffset(cfg MetricConfig) metricKafkaPartitionOldestOffset {
 	m := metricKafkaPartitionOldestOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -602,6 +611,7 @@ func (m *metricKafkaPartitionReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaPartitionReplicas(cfg MetricConfig) metricKafkaPartitionReplicas {
 	m := metricKafkaPartitionReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -656,6 +666,7 @@ func (m *metricKafkaPartitionReplicasInSync) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaPartitionReplicasInSync(cfg MetricConfig) metricKafkaPartitionReplicasInSync {
 	m := metricKafkaPartitionReplicasInSync{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -707,6 +718,7 @@ func (m *metricKafkaTopicLogRetentionPeriod) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaTopicLogRetentionPeriod(cfg MetricConfig) metricKafkaTopicLogRetentionPeriod {
 	m := metricKafkaTopicLogRetentionPeriod{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -758,6 +770,7 @@ func (m *metricKafkaTopicLogRetentionSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaTopicLogRetentionSize(cfg MetricConfig) metricKafkaTopicLogRetentionSize {
 	m := metricKafkaTopicLogRetentionSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -809,6 +822,7 @@ func (m *metricKafkaTopicMinInsyncReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaTopicMinInsyncReplicas(cfg MetricConfig) metricKafkaTopicMinInsyncReplicas {
 	m := metricKafkaTopicMinInsyncReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -862,6 +876,7 @@ func (m *metricKafkaTopicPartitions) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaTopicPartitions(cfg MetricConfig) metricKafkaTopicPartitions {
 	m := metricKafkaTopicPartitions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -913,6 +928,7 @@ func (m *metricKafkaTopicReplicationFactor) emit(metrics pmetric.MetricSlice) {
 
 func newMetricKafkaTopicReplicationFactor(cfg MetricConfig) metricKafkaTopicReplicationFactor {
 	m := metricKafkaTopicReplicationFactor{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

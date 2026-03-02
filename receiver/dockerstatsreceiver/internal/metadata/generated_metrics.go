@@ -405,6 +405,7 @@ func (m *metricContainerBlockioIoMergedRecursive) emit(metrics pmetric.MetricSli
 
 func newMetricContainerBlockioIoMergedRecursive(cfg MetricConfig) metricContainerBlockioIoMergedRecursive {
 	m := metricContainerBlockioIoMergedRecursive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -460,6 +461,7 @@ func (m *metricContainerBlockioIoQueuedRecursive) emit(metrics pmetric.MetricSli
 
 func newMetricContainerBlockioIoQueuedRecursive(cfg MetricConfig) metricContainerBlockioIoQueuedRecursive {
 	m := metricContainerBlockioIoQueuedRecursive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -515,6 +517,7 @@ func (m *metricContainerBlockioIoServiceBytesRecursive) emit(metrics pmetric.Met
 
 func newMetricContainerBlockioIoServiceBytesRecursive(cfg MetricConfig) metricContainerBlockioIoServiceBytesRecursive {
 	m := metricContainerBlockioIoServiceBytesRecursive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -570,6 +573,7 @@ func (m *metricContainerBlockioIoServiceTimeRecursive) emit(metrics pmetric.Metr
 
 func newMetricContainerBlockioIoServiceTimeRecursive(cfg MetricConfig) metricContainerBlockioIoServiceTimeRecursive {
 	m := metricContainerBlockioIoServiceTimeRecursive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -625,6 +629,7 @@ func (m *metricContainerBlockioIoServicedRecursive) emit(metrics pmetric.MetricS
 
 func newMetricContainerBlockioIoServicedRecursive(cfg MetricConfig) metricContainerBlockioIoServicedRecursive {
 	m := metricContainerBlockioIoServicedRecursive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -680,6 +685,7 @@ func (m *metricContainerBlockioIoTimeRecursive) emit(metrics pmetric.MetricSlice
 
 func newMetricContainerBlockioIoTimeRecursive(cfg MetricConfig) metricContainerBlockioIoTimeRecursive {
 	m := metricContainerBlockioIoTimeRecursive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -735,6 +741,7 @@ func (m *metricContainerBlockioIoWaitTimeRecursive) emit(metrics pmetric.MetricS
 
 func newMetricContainerBlockioIoWaitTimeRecursive(cfg MetricConfig) metricContainerBlockioIoWaitTimeRecursive {
 	m := metricContainerBlockioIoWaitTimeRecursive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -790,6 +797,7 @@ func (m *metricContainerBlockioSectorsRecursive) emit(metrics pmetric.MetricSlic
 
 func newMetricContainerBlockioSectorsRecursive(cfg MetricConfig) metricContainerBlockioSectorsRecursive {
 	m := metricContainerBlockioSectorsRecursive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -839,6 +847,7 @@ func (m *metricContainerCPULimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPULimit(cfg MetricConfig) metricContainerCPULimit {
 	m := metricContainerCPULimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -888,6 +897,7 @@ func (m *metricContainerCPULogicalCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPULogicalCount(cfg MetricConfig) metricContainerCPULogicalCount {
 	m := metricContainerCPULogicalCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -937,6 +947,7 @@ func (m *metricContainerCPUShares) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUShares(cfg MetricConfig) metricContainerCPUShares {
 	m := metricContainerCPUShares{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -988,6 +999,7 @@ func (m *metricContainerCPUThrottlingDataPeriods) emit(metrics pmetric.MetricSli
 
 func newMetricContainerCPUThrottlingDataPeriods(cfg MetricConfig) metricContainerCPUThrottlingDataPeriods {
 	m := metricContainerCPUThrottlingDataPeriods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1039,6 +1051,7 @@ func (m *metricContainerCPUThrottlingDataThrottledPeriods) emit(metrics pmetric.
 
 func newMetricContainerCPUThrottlingDataThrottledPeriods(cfg MetricConfig) metricContainerCPUThrottlingDataThrottledPeriods {
 	m := metricContainerCPUThrottlingDataThrottledPeriods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1090,6 +1103,7 @@ func (m *metricContainerCPUThrottlingDataThrottledTime) emit(metrics pmetric.Met
 
 func newMetricContainerCPUThrottlingDataThrottledTime(cfg MetricConfig) metricContainerCPUThrottlingDataThrottledTime {
 	m := metricContainerCPUThrottlingDataThrottledTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1141,6 +1155,7 @@ func (m *metricContainerCPUUsageKernelmode) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUsageKernelmode(cfg MetricConfig) metricContainerCPUUsageKernelmode {
 	m := metricContainerCPUUsageKernelmode{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1194,6 +1209,7 @@ func (m *metricContainerCPUUsagePercpu) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUsagePercpu(cfg MetricConfig) metricContainerCPUUsagePercpu {
 	m := metricContainerCPUUsagePercpu{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1245,6 +1261,7 @@ func (m *metricContainerCPUUsageSystem) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUsageSystem(cfg MetricConfig) metricContainerCPUUsageSystem {
 	m := metricContainerCPUUsageSystem{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1296,6 +1313,7 @@ func (m *metricContainerCPUUsageTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUsageTotal(cfg MetricConfig) metricContainerCPUUsageTotal {
 	m := metricContainerCPUUsageTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1347,6 +1365,7 @@ func (m *metricContainerCPUUsageUsermode) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUsageUsermode(cfg MetricConfig) metricContainerCPUUsageUsermode {
 	m := metricContainerCPUUsageUsermode{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1396,6 +1415,7 @@ func (m *metricContainerCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUtilization(cfg MetricConfig) metricContainerCPUUtilization {
 	m := metricContainerCPUUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1447,6 +1467,7 @@ func (m *metricContainerMemoryActiveAnon) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryActiveAnon(cfg MetricConfig) metricContainerMemoryActiveAnon {
 	m := metricContainerMemoryActiveAnon{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1498,6 +1519,7 @@ func (m *metricContainerMemoryActiveFile) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryActiveFile(cfg MetricConfig) metricContainerMemoryActiveFile {
 	m := metricContainerMemoryActiveFile{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1549,6 +1571,7 @@ func (m *metricContainerMemoryAnon) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryAnon(cfg MetricConfig) metricContainerMemoryAnon {
 	m := metricContainerMemoryAnon{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1600,6 +1623,7 @@ func (m *metricContainerMemoryCache) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryCache(cfg MetricConfig) metricContainerMemoryCache {
 	m := metricContainerMemoryCache{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1651,6 +1675,7 @@ func (m *metricContainerMemoryDirty) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryDirty(cfg MetricConfig) metricContainerMemoryDirty {
 	m := metricContainerMemoryDirty{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1702,6 +1727,7 @@ func (m *metricContainerMemoryFails) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryFails(cfg MetricConfig) metricContainerMemoryFails {
 	m := metricContainerMemoryFails{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1753,6 +1779,7 @@ func (m *metricContainerMemoryFile) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryFile(cfg MetricConfig) metricContainerMemoryFile {
 	m := metricContainerMemoryFile{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1804,6 +1831,7 @@ func (m *metricContainerMemoryHierarchicalMemoryLimit) emit(metrics pmetric.Metr
 
 func newMetricContainerMemoryHierarchicalMemoryLimit(cfg MetricConfig) metricContainerMemoryHierarchicalMemoryLimit {
 	m := metricContainerMemoryHierarchicalMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1855,6 +1883,7 @@ func (m *metricContainerMemoryHierarchicalMemswLimit) emit(metrics pmetric.Metri
 
 func newMetricContainerMemoryHierarchicalMemswLimit(cfg MetricConfig) metricContainerMemoryHierarchicalMemswLimit {
 	m := metricContainerMemoryHierarchicalMemswLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1906,6 +1935,7 @@ func (m *metricContainerMemoryInactiveAnon) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryInactiveAnon(cfg MetricConfig) metricContainerMemoryInactiveAnon {
 	m := metricContainerMemoryInactiveAnon{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1957,6 +1987,7 @@ func (m *metricContainerMemoryInactiveFile) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryInactiveFile(cfg MetricConfig) metricContainerMemoryInactiveFile {
 	m := metricContainerMemoryInactiveFile{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2008,6 +2039,7 @@ func (m *metricContainerMemoryMappedFile) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryMappedFile(cfg MetricConfig) metricContainerMemoryMappedFile {
 	m := metricContainerMemoryMappedFile{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2057,6 +2089,7 @@ func (m *metricContainerMemoryPercent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryPercent(cfg MetricConfig) metricContainerMemoryPercent {
 	m := metricContainerMemoryPercent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2108,6 +2141,7 @@ func (m *metricContainerMemoryPgfault) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryPgfault(cfg MetricConfig) metricContainerMemoryPgfault {
 	m := metricContainerMemoryPgfault{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2159,6 +2193,7 @@ func (m *metricContainerMemoryPgmajfault) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryPgmajfault(cfg MetricConfig) metricContainerMemoryPgmajfault {
 	m := metricContainerMemoryPgmajfault{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2210,6 +2245,7 @@ func (m *metricContainerMemoryPgpgin) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryPgpgin(cfg MetricConfig) metricContainerMemoryPgpgin {
 	m := metricContainerMemoryPgpgin{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2261,6 +2297,7 @@ func (m *metricContainerMemoryPgpgout) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryPgpgout(cfg MetricConfig) metricContainerMemoryPgpgout {
 	m := metricContainerMemoryPgpgout{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2312,6 +2349,7 @@ func (m *metricContainerMemoryRss) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryRss(cfg MetricConfig) metricContainerMemoryRss {
 	m := metricContainerMemoryRss{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2363,6 +2401,7 @@ func (m *metricContainerMemoryRssHuge) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryRssHuge(cfg MetricConfig) metricContainerMemoryRssHuge {
 	m := metricContainerMemoryRssHuge{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2414,6 +2453,7 @@ func (m *metricContainerMemoryTotalActiveAnon) emit(metrics pmetric.MetricSlice)
 
 func newMetricContainerMemoryTotalActiveAnon(cfg MetricConfig) metricContainerMemoryTotalActiveAnon {
 	m := metricContainerMemoryTotalActiveAnon{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2465,6 +2505,7 @@ func (m *metricContainerMemoryTotalActiveFile) emit(metrics pmetric.MetricSlice)
 
 func newMetricContainerMemoryTotalActiveFile(cfg MetricConfig) metricContainerMemoryTotalActiveFile {
 	m := metricContainerMemoryTotalActiveFile{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2516,6 +2557,7 @@ func (m *metricContainerMemoryTotalCache) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryTotalCache(cfg MetricConfig) metricContainerMemoryTotalCache {
 	m := metricContainerMemoryTotalCache{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2567,6 +2609,7 @@ func (m *metricContainerMemoryTotalDirty) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryTotalDirty(cfg MetricConfig) metricContainerMemoryTotalDirty {
 	m := metricContainerMemoryTotalDirty{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2618,6 +2661,7 @@ func (m *metricContainerMemoryTotalInactiveAnon) emit(metrics pmetric.MetricSlic
 
 func newMetricContainerMemoryTotalInactiveAnon(cfg MetricConfig) metricContainerMemoryTotalInactiveAnon {
 	m := metricContainerMemoryTotalInactiveAnon{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2669,6 +2713,7 @@ func (m *metricContainerMemoryTotalInactiveFile) emit(metrics pmetric.MetricSlic
 
 func newMetricContainerMemoryTotalInactiveFile(cfg MetricConfig) metricContainerMemoryTotalInactiveFile {
 	m := metricContainerMemoryTotalInactiveFile{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2720,6 +2765,7 @@ func (m *metricContainerMemoryTotalMappedFile) emit(metrics pmetric.MetricSlice)
 
 func newMetricContainerMemoryTotalMappedFile(cfg MetricConfig) metricContainerMemoryTotalMappedFile {
 	m := metricContainerMemoryTotalMappedFile{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2771,6 +2817,7 @@ func (m *metricContainerMemoryTotalPgfault) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryTotalPgfault(cfg MetricConfig) metricContainerMemoryTotalPgfault {
 	m := metricContainerMemoryTotalPgfault{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2822,6 +2869,7 @@ func (m *metricContainerMemoryTotalPgmajfault) emit(metrics pmetric.MetricSlice)
 
 func newMetricContainerMemoryTotalPgmajfault(cfg MetricConfig) metricContainerMemoryTotalPgmajfault {
 	m := metricContainerMemoryTotalPgmajfault{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2873,6 +2921,7 @@ func (m *metricContainerMemoryTotalPgpgin) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryTotalPgpgin(cfg MetricConfig) metricContainerMemoryTotalPgpgin {
 	m := metricContainerMemoryTotalPgpgin{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2924,6 +2973,7 @@ func (m *metricContainerMemoryTotalPgpgout) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryTotalPgpgout(cfg MetricConfig) metricContainerMemoryTotalPgpgout {
 	m := metricContainerMemoryTotalPgpgout{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2975,6 +3025,7 @@ func (m *metricContainerMemoryTotalRss) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryTotalRss(cfg MetricConfig) metricContainerMemoryTotalRss {
 	m := metricContainerMemoryTotalRss{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3026,6 +3077,7 @@ func (m *metricContainerMemoryTotalRssHuge) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryTotalRssHuge(cfg MetricConfig) metricContainerMemoryTotalRssHuge {
 	m := metricContainerMemoryTotalRssHuge{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3077,6 +3129,7 @@ func (m *metricContainerMemoryTotalUnevictable) emit(metrics pmetric.MetricSlice
 
 func newMetricContainerMemoryTotalUnevictable(cfg MetricConfig) metricContainerMemoryTotalUnevictable {
 	m := metricContainerMemoryTotalUnevictable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3128,6 +3181,7 @@ func (m *metricContainerMemoryTotalWriteback) emit(metrics pmetric.MetricSlice) 
 
 func newMetricContainerMemoryTotalWriteback(cfg MetricConfig) metricContainerMemoryTotalWriteback {
 	m := metricContainerMemoryTotalWriteback{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3179,6 +3233,7 @@ func (m *metricContainerMemoryUnevictable) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryUnevictable(cfg MetricConfig) metricContainerMemoryUnevictable {
 	m := metricContainerMemoryUnevictable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3230,6 +3285,7 @@ func (m *metricContainerMemoryUsageLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryUsageLimit(cfg MetricConfig) metricContainerMemoryUsageLimit {
 	m := metricContainerMemoryUsageLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3281,6 +3337,7 @@ func (m *metricContainerMemoryUsageMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryUsageMax(cfg MetricConfig) metricContainerMemoryUsageMax {
 	m := metricContainerMemoryUsageMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3332,6 +3389,7 @@ func (m *metricContainerMemoryUsageTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryUsageTotal(cfg MetricConfig) metricContainerMemoryUsageTotal {
 	m := metricContainerMemoryUsageTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3383,6 +3441,7 @@ func (m *metricContainerMemoryWriteback) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryWriteback(cfg MetricConfig) metricContainerMemoryWriteback {
 	m := metricContainerMemoryWriteback{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3436,6 +3495,7 @@ func (m *metricContainerNetworkIoUsageRxBytes) emit(metrics pmetric.MetricSlice)
 
 func newMetricContainerNetworkIoUsageRxBytes(cfg MetricConfig) metricContainerNetworkIoUsageRxBytes {
 	m := metricContainerNetworkIoUsageRxBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3489,6 +3549,7 @@ func (m *metricContainerNetworkIoUsageRxDropped) emit(metrics pmetric.MetricSlic
 
 func newMetricContainerNetworkIoUsageRxDropped(cfg MetricConfig) metricContainerNetworkIoUsageRxDropped {
 	m := metricContainerNetworkIoUsageRxDropped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3542,6 +3603,7 @@ func (m *metricContainerNetworkIoUsageRxErrors) emit(metrics pmetric.MetricSlice
 
 func newMetricContainerNetworkIoUsageRxErrors(cfg MetricConfig) metricContainerNetworkIoUsageRxErrors {
 	m := metricContainerNetworkIoUsageRxErrors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3595,6 +3657,7 @@ func (m *metricContainerNetworkIoUsageRxPackets) emit(metrics pmetric.MetricSlic
 
 func newMetricContainerNetworkIoUsageRxPackets(cfg MetricConfig) metricContainerNetworkIoUsageRxPackets {
 	m := metricContainerNetworkIoUsageRxPackets{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3648,6 +3711,7 @@ func (m *metricContainerNetworkIoUsageTxBytes) emit(metrics pmetric.MetricSlice)
 
 func newMetricContainerNetworkIoUsageTxBytes(cfg MetricConfig) metricContainerNetworkIoUsageTxBytes {
 	m := metricContainerNetworkIoUsageTxBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3701,6 +3765,7 @@ func (m *metricContainerNetworkIoUsageTxDropped) emit(metrics pmetric.MetricSlic
 
 func newMetricContainerNetworkIoUsageTxDropped(cfg MetricConfig) metricContainerNetworkIoUsageTxDropped {
 	m := metricContainerNetworkIoUsageTxDropped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3754,6 +3819,7 @@ func (m *metricContainerNetworkIoUsageTxErrors) emit(metrics pmetric.MetricSlice
 
 func newMetricContainerNetworkIoUsageTxErrors(cfg MetricConfig) metricContainerNetworkIoUsageTxErrors {
 	m := metricContainerNetworkIoUsageTxErrors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3807,6 +3873,7 @@ func (m *metricContainerNetworkIoUsageTxPackets) emit(metrics pmetric.MetricSlic
 
 func newMetricContainerNetworkIoUsageTxPackets(cfg MetricConfig) metricContainerNetworkIoUsageTxPackets {
 	m := metricContainerNetworkIoUsageTxPackets{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3858,6 +3925,7 @@ func (m *metricContainerPidsCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerPidsCount(cfg MetricConfig) metricContainerPidsCount {
 	m := metricContainerPidsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3909,6 +3977,7 @@ func (m *metricContainerPidsLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerPidsLimit(cfg MetricConfig) metricContainerPidsLimit {
 	m := metricContainerPidsLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3960,6 +4029,7 @@ func (m *metricContainerRestarts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerRestarts(cfg MetricConfig) metricContainerRestarts {
 	m := metricContainerRestarts{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4062,6 +4132,7 @@ func (m *metricContainerUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerUptime(cfg MetricConfig) metricContainerUptime {
 	m := metricContainerUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

@@ -11,12 +11,13 @@ import (
 
 	commontestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func newTestParser(t *testing.T) *Parser {
-	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+	defer commontestutil.SetFeatureGateForTest(t, metadata.LogsJSONParserArrayFeatureGate, true)()
 
 	cfg := NewConfigWithID("test")
 	set := componenttest.NewNopTelemetrySettings()
@@ -26,7 +27,7 @@ func newTestParser(t *testing.T) *Parser {
 }
 
 func TestParserBuildFailure(t *testing.T) {
-	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+	defer commontestutil.SetFeatureGateForTest(t, metadata.LogsJSONParserArrayFeatureGate, true)()
 
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
@@ -42,7 +43,7 @@ func TestParserInvalidType(t *testing.T) {
 }
 
 func TestParserByteFailureHeadersMismatch(t *testing.T) {
-	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+	defer commontestutil.SetFeatureGateForTest(t, metadata.LogsJSONParserArrayFeatureGate, true)()
 
 	cfg := NewConfigWithID("test")
 	cfg.Header = "name,sev,msg"
@@ -55,7 +56,7 @@ func TestParserByteFailureHeadersMismatch(t *testing.T) {
 }
 
 func TestParserJarray(t *testing.T) {
-	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+	defer commontestutil.SetFeatureGateForTest(t, metadata.LogsJSONParserArrayFeatureGate, true)()
 
 	cases := []struct {
 		name             string
@@ -278,7 +279,7 @@ func TestParserJarray(t *testing.T) {
 }
 
 func TestParserJarrayMultiline(t *testing.T) {
-	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+	defer commontestutil.SetFeatureGateForTest(t, metadata.LogsJSONParserArrayFeatureGate, true)()
 
 	cases := []struct {
 		name     string
@@ -387,7 +388,7 @@ dd","eeee"]`,
 }
 
 func TestBuildParserJarray(t *testing.T) {
-	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+	defer commontestutil.SetFeatureGateForTest(t, metadata.LogsJSONParserArrayFeatureGate, true)()
 
 	newBasicParser := func() *Config {
 		cfg := NewConfigWithID("test")

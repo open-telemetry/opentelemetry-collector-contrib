@@ -1,0 +1,34 @@
+$defs:
+  api_token:
+    type: object
+    properties:
+      access_id:
+        type: string
+      access_key:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+  logs_config:
+    description: LogsConfig defines the logs exporter specific configuration options
+    type: object
+    properties:
+      resource_mapping_op:
+        description: Operation to be performed for resource mapping. Valid values are `and`, `or`.
+        $ref: mapping_operation
+  mapping_operation:
+    type: string
+description: Config defines configuration for LogicMonitor exporter.
+type: object
+properties:
+  api_token:
+    description: ApiToken of Logicmonitor Platform
+    $ref: api_token
+  logs:
+    description: Logs defines the Logs exporter specific configuration
+    $ref: logs_config
+  resource_to_telemetry_conversion:
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry.settings
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

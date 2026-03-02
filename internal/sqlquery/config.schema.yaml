@@ -1,0 +1,107 @@
+$defs:
+  config:
+    type: object
+    properties:
+      additional_params:
+        type: object
+        additionalProperties:
+          x-customType: any
+      database:
+        type: string
+      datasource:
+        type: string
+      driver:
+        type: string
+      host:
+        type: string
+      password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      port:
+        type: integer
+      queries:
+        type: array
+        items:
+          $ref: query
+      storage:
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+      telemetry:
+        $ref: telemetry_config
+      username:
+        type: string
+    allOf:
+      - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  logs_cfg:
+    type: object
+    properties:
+      attribute_columns:
+        type: array
+        items:
+          type: string
+      body_column:
+        type: string
+  metric_aggregation:
+    type: string
+  metric_cfg:
+    type: object
+    properties:
+      aggregation:
+        $ref: metric_aggregation
+      attribute_columns:
+        type: array
+        items:
+          type: string
+      data_type:
+        $ref: metric_type
+      description:
+        type: string
+      metric_name:
+        type: string
+      monotonic:
+        type: boolean
+      start_ts_column:
+        type: string
+      static_attributes:
+        type: object
+        additionalProperties:
+          type: string
+      ts_column:
+        type: string
+      unit:
+        type: string
+      value_column:
+        type: string
+      value_type:
+        $ref: metric_value_type
+  metric_type:
+    type: string
+  metric_value_type:
+    type: string
+  query:
+    type: object
+    properties:
+      logs:
+        type: array
+        items:
+          $ref: logs_cfg
+      metrics:
+        type: array
+        items:
+          $ref: metric_cfg
+      sql:
+        type: string
+      tracking_column:
+        type: string
+      tracking_start_value:
+        type: string
+  telemetry_config:
+    type: object
+    properties:
+      logs:
+        $ref: telemetry_logs_config
+  telemetry_logs_config:
+    type: object
+    properties:
+      query:
+        type: boolean

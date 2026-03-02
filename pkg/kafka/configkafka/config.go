@@ -76,14 +76,18 @@ type ClientConfig struct {
 	//
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
+
+	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
+	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Brokers:        []string{"localhost:9092"},
-		ClientID:       "otel-collector",
-		Metadata:       NewDefaultMetadataConfig(),
-		UseLeaderEpoch: true,
+		Brokers:         []string{"localhost:9092"},
+		ClientID:        "otel-collector",
+		Metadata:        NewDefaultMetadataConfig(),
+		UseLeaderEpoch:  true,
+		ConnIdleTimeout: 9 * time.Minute,
 	}
 }
 
@@ -95,6 +99,9 @@ func (c ClientConfig) Validate() error {
 		if _, err := sarama.ParseKafkaVersion(c.ProtocolVersion); err != nil {
 			return fmt.Errorf("invalid protocol version: %w", err)
 		}
+	}
+	if c.ConnIdleTimeout <= 0 {
+		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
 	}
 	return nil
 }
@@ -233,7 +240,7 @@ type ProducerConfig struct {
 	RequiredAcks RequiredAcks `mapstructure:"required_acks"`
 
 	// Compression Codec used to produce messages
-	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
+	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#CompressionCodec
 	// The options are: 'none' (default), 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 

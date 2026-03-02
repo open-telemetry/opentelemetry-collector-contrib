@@ -70,6 +70,18 @@ docker run -p 4317:4317 -v $(pwd)/config.yaml:/etc/otelcol-contrib/config.yaml g
 
 Other options for running the collector are documented here https://opentelemetry.io/docs/collector/getting-started/
 
+## Batching signals
+
+All telemetry signals have batching capability configurable with the following flags:
+
+```console
+--batch=false #Defaults to true, no flag needed for batching
+```
+
+```console
+--batch-size=1000 #Defaults to 100
+```
+
 Once the OpenTelemetry Collector instance is up and running, run `telemetrygen` for your desired telemetry:
 
 ### Traces
