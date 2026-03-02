@@ -294,8 +294,10 @@ func TestSortRows(t *testing.T) {
 	}
 }
 
-var _ sqlquery.DbClient = (*mockClient)(nil)
-var _ sqlquery.DbClient = (*mockMultiStatementProcClient)(nil)
+var (
+	_ sqlquery.DbClient = (*mockClient)(nil)
+	_ sqlquery.DbClient = (*mockMultiStatementProcClient)(nil)
+)
 
 type mockClient struct {
 	SQL                 string
@@ -680,14 +682,14 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 	procID := "1431676148"
 
 	for _, pair := range [][2]string{{stmt1Hash, stmt1PlanHash}, {stmt2Hash, stmt2PlanHash}} {
-		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_elapsed_time", 1)
 		scraper.cacheAndDiff(pair[0], pair[1], procID, "execution_count", 1)
-		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_worker_time", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_elapsed_time", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_grant_kb", 1)
 		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_logical_reads", 1)
 		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_logical_writes", 1)
 		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_physical_reads", 1)
 		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_rows", 1)
-		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_grant_kb", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_worker_time", 1)
 	}
 
 	scraper.client = mockMultiStatementProcClient{
@@ -724,6 +726,6 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 		assert.True(t, ok)
 		seenHashes[qh.Str()] = true
 	}
-	assert.Equal(t, 2, len(seenHashes),
+	assert.Len(t, seenHashes, 2,
 		"Expected 2 distinct query_hash values, got duplicates")
 }
