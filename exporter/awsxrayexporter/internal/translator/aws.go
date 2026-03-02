@@ -9,8 +9,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
@@ -90,7 +91,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 			sdkLanguage = value.Str()
 		case string(conventions.TelemetrySDKVersionKey):
 			sdkVersion = value.Str()
-		case string(conventions.TelemetryDistroVersionKey):
+		case "telemetry.auto.version", string(conventions.TelemetryDistroVersionKey):
 			autoVersion = value.Str()
 		case string(conventions.ContainerIDKey):
 			containerID = value.Str()
@@ -149,8 +150,16 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	}
 
 	// Favor Semantic Conventions for specific SQS and DynamoDB attributes.
-	if value, ok := attributes[string(conventions.MessagingDestinationNameKey)]; ok {
-		queueURL = value.Str()
+	// TODO: Remove "messaging.url" fallback when exporter.awsxray.DontEmitV0HTTPNetworkConventions is removed.
+	if !metadata.ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate.IsEnabled() {
+		if value, ok := attributes["messaging.url"]; ok {
+			queueURL = value.Str()
+		}
+	}
+	if metadata.ExporterAwsxrayEmitV1HTTPNetworkConventionsFeatureGate.IsEnabled() {
+		if value, ok := attributes[string(conventions.MessagingDestinationNameKey)]; ok {
+			queueURL = value.Str()
+		}
 	}
 	if value, ok := attributes[string(conventions.AWSDynamoDBTableNamesKey)]; ok {
 		switch value.Type() {

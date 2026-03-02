@@ -66,9 +66,9 @@ func BenchmarkWithPool(b *testing.B) {
 
 func constructWriterPoolSpan() ptrace.Span {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.full"] = "https://api.example.com/users/junit"
-	attributes["client.address"] = "192.168.15.32"
-	attributes["http.response.status_code"] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	return constructHTTPServerSpan(attributes)
 }

@@ -62,7 +62,7 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 func TestMakeCauseAwsSdkSpan(t *testing.T) {
 	errorMsg := "this is a test"
 	attributeMap := make(map[string]any)
-	attributeMap["rpc.system.name"] = "aws-api"
+	attributeMap["rpc.system"] = "aws-api"
 	span := constructExceptionServerSpan(attributeMap, ptrace.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 

@@ -232,7 +232,7 @@ func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 func TestAwsWithAwsSqsSemConvAttributes(t *testing.T) {
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]pcommon.Value)
-	attributes["messaging.destination.name"] = pcommon.NewValueStr(queueURL)
+	attributes["messaging.url"] = pcommon.NewValueStr(queueURL)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
@@ -348,7 +348,7 @@ func TestJavaAutoInstrumentation(t *testing.T) {
 	resource.Attributes().PutStr("telemetry.sdk.name", "opentelemetry")
 	resource.Attributes().PutStr("telemetry.sdk.language", "java")
 	resource.Attributes().PutStr("telemetry.sdk.version", "1.2.3")
-	resource.Attributes().PutStr("telemetry.distro.version", "3.4.5")
+	resource.Attributes().PutStr("telemetry.auto.version", "3.4.5")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 

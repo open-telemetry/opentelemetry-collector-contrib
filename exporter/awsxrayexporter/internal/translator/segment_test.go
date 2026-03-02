@@ -36,13 +36,13 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "dynamodb.us-east-1.amazonaws.com"
-	attributes["url.path"] = "/"
-	attributes["service.peer.name"] = "DynamoDB"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "dynamodb.us-east-1.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "DynamoDB"
 	attributes["rpc.method"] = "GetItem"
-	attributes["rpc.system.name"] = "aws-api"
+	attributes["rpc.system"] = "aws-api"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
 	resource := constructDefaultResource()
@@ -69,10 +69,10 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "dynamodb.us-east-1.amazonaws.com"
-	attributes["url.path"] = "/"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "dynamodb.us-east-1.amazonaws.com"
+	attributes["http.target"] = "/"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
 	attributes["rpc.method"] = "IncorrectAWSSDKOperation"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
@@ -101,11 +101,11 @@ func TestClientSpanWithPeerService(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "dynamodb.us-east-1.amazonaws.com"
-	attributes["url.path"] = "/"
-	attributes["service.peer.name"] = "cats-table"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "dynamodb.us-east-1.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["peer.service"] = "cats-table"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
@@ -124,12 +124,12 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.full"] = "https://api.example.org/api/locations"
-	attributes["url.path"] = "/api/locations"
-	attributes["http.response.status_code"] = 500
+	attributes["http.method"] = http.MethodPost
+	attributes["http.url"] = "https://api.example.org/api/locations"
+	attributes["http.target"] = "/api/locations"
+	attributes["http.status_code"] = 500
 	attributes["http.status_text"] = "java.lang.NullPointerException"
-	attributes["user.agent.original"] = userAgent
+	attributes["http.user_agent"] = userAgent
 	attributes["enduser.id"] = enduser
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, errorMessage, attributes)
@@ -151,12 +151,12 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.full"] = "https://api.example.org/api/locations"
-	attributes["url.path"] = "/api/locations"
-	attributes["http.response.status_code"] = 429
+	attributes["http.method"] = http.MethodPost
+	attributes["http.url"] = "https://api.example.org/api/locations"
+	attributes["http.target"] = "/api/locations"
+	attributes["http.status_code"] = 429
 	attributes["http.status_text"] = "java.lang.NullPointerException"
-	attributes["user.agent.original"] = userAgent
+	attributes["http.user_agent"] = userAgent
 	attributes["enduser.id"] = enduser
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, errorMessage, attributes)
@@ -219,12 +219,13 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	parentSpanID := newSegmentID()
 	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
 	attributes := make(map[string]any)
-	attributes["db.system.name"] = "mysql"
-	attributes["db.namespace"] = "customers"
-	attributes["db.query.text"] = spanName
-	attributes["user.name"] = "userprefsvc"
-	attributes["server.address"] = "db.dev.example.com"
-	attributes["server.port"] = "3306"
+	attributes["db.system"] = "mysql"
+	attributes["db.name"] = "customers"
+	attributes["db.statement"] = spanName
+	attributes["db.user"] = "userprefsvc"
+	attributes["db.connection_string"] = "jdbc:mysql://db.dev.example.com:3306"
+	attributes["net.peer.name"] = "db.dev.example.com"
+	attributes["net.peer.port"] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
@@ -257,12 +258,13 @@ func TestClientSpanWithHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "https"
-	attributes["network.peer.address"] = "2607:f8b0:4000:80c::2004"
-	attributes["server.port"] = "9443"
-	attributes["url.path"] = "/"
-	attributes["server.address"] = "foo.com"
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.port"] = "9443"
+	attributes["http.target"] = "/"
+	attributes["http.host"] = "foo.com"
+	attributes["net.peer.name"] = "bar.com"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
@@ -276,12 +278,12 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "https"
-	attributes["network.peer.address"] = "2607:f8b0:4000:80c::2004"
-	attributes["server.port"] = "9443"
-	attributes["url.path"] = "/"
-	attributes["server.address"] = "bar.com"
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.port"] = "9443"
+	attributes["http.target"] = "/"
+	attributes["net.peer.name"] = "bar.com"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
@@ -295,13 +297,13 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	spanName := "GET /com.foo.AnimalService/GetCats"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "https"
-	attributes["network.peer.address"] = "2607:f8b0:4000:80c::2004"
-	attributes["server.port"] = "9443"
-	attributes["url.path"] = "/com.foo.AnimalService/GetCats"
-	attributes["service.peer.name"] = "com.foo.AnimalService"
-	attributes["server.address"] = "bar.com"
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.port"] = "9443"
+	attributes["http.target"] = "/com.foo.AnimalService/GetCats"
+	attributes["rpc.service"] = "com.foo.AnimalService"
+	attributes["net.peer.name"] = "bar.com"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
@@ -314,11 +316,11 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 func TestSpanWithInvalidTraceId(t *testing.T) {
 	spanName := "platformapi.widgets.searchWidgets"
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "ipv6"
-	attributes["network.peer.address"] = "2607:f8b0:4000:80c::2004"
-	attributes["server.port"] = "9443"
-	attributes["url.path"] = spanName
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "ipv6"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.port"] = "9443"
+	attributes["http.target"] = spanName
 	resource := constructDefaultResource()
 	span := constructClientSpan(pcommon.NewSpanIDEmpty(), spanName, ptrace.StatusCodeUnset, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -349,11 +351,11 @@ func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "payment.amazonaws.com"
-	attributes["url.path"] = "/"
-	attributes["service.peer.name"] = "ABC"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "payment.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "ABC"
 	attributes[awsRemoteService] = "ProducerService"
 
 	resource := constructDefaultResource()
@@ -1065,11 +1067,11 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "payment.amazonaws.com"
-	attributes["url.path"] = "/"
-	attributes["service.peer.name"] = "ABC"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "payment.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "ABC"
 	attributes[awsRemoteService] = "PaymentService"
 
 	resource := constructDefaultResource()
@@ -1093,10 +1095,10 @@ func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes["rpc.system.name"] = "aws-api"
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["service.peer.name"] = "DynamoDb"
+	attributes["rpc.system"] = "aws-api"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["rpc.service"] = "DynamoDb"
 	attributes[awsRemoteService] = "AWS.SDK.DynamoDb"
 
 	resource := constructDefaultResource()
@@ -1121,10 +1123,10 @@ func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes["rpc.system.name"] = "aws-api"
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["service.peer.name"] = "DynamoDb"
+	attributes["rpc.system"] = "aws-api"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["rpc.service"] = "DynamoDb"
 	attributes[awsRemoteService] = "AWS::DynamoDB"
 
 	resource := constructDefaultResource()
@@ -1149,11 +1151,11 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "payment.amazonaws.com"
-	attributes["url.path"] = "/"
-	attributes["service.peer.name"] = "ABC"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "payment.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "ABC"
 	attributes[awsRemoteService] = "ProducerService"
 
 	resource := constructDefaultResource()
@@ -1177,7 +1179,7 @@ func TestProducerSpanNonAwsRemoteServiceName(t *testing.T) {
 	spanName := "my-topic send"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes["service.peer.name"] = "ProducerService"
+	attributes["peer.service"] = "ProducerService"
 	resource := constructDefaultResource()
 	span := constructProducerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -1213,11 +1215,11 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "payment.amazonaws.com"
-	attributes["url.path"] = "/"
-	attributes["service.peer.name"] = "ABC"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "payment.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "ABC"
 	attributes[awsLocalService] = "PaymentLocalService"
 	attributes[awsRemoteService] = "PaymentService"
 
@@ -1371,7 +1373,7 @@ func validateLocalRootSegmentTypeServiceSegment(t *testing.T, segment *awsxray.S
 func getBasicAttributes() map[string]any {
 	attributes := make(map[string]any)
 
-	attributes["http.request.method"] = http.MethodPost
+	attributes["http.method"] = http.MethodPost
 	attributes["messaging.operation"] = "receive"
 
 	attributes["otel.resource.attributes"] = "service.name=myTest"
@@ -1401,7 +1403,7 @@ func getBasicResource() pcommon.Resource {
 
 	resource.Attributes().PutStr("telemetry.sdk.name", "MySDK")
 	resource.Attributes().PutStr("telemetry.sdk.version", "1.20.0")
-	resource.Attributes().PutStr("telemetry.distro.version", "1.2.3")
+	resource.Attributes().PutStr("telemetry.auto.version", "1.2.3")
 
 	return resource
 }
@@ -1500,7 +1502,7 @@ func TestLocalRootConsumerAWSNamespace(t *testing.T) {
 	parentSpanID := newSegmentID()
 
 	attributes := getBasicAttributes()
-	attributes["rpc.system.name"] = "aws-api"
+	attributes["rpc.system"] = "aws-api"
 
 	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
 
@@ -1559,10 +1561,10 @@ func TestLocalRootClientAwsServiceMetrics(t *testing.T) {
 
 	attributes := getBasicAttributes()
 	attributes[awsSpanKind] = "LOCAL_ROOT"
-	attributes["rpc.system.name"] = "aws-api"
-	attributes["http.request.method"] = http.MethodPost
-	attributes["url.scheme"] = "https"
-	attributes["service.peer.name"] = "SQS"
+	attributes["rpc.system"] = "aws-api"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["rpc.service"] = "SQS"
 	attributes[awsRemoteService] = "AWS.SDK.SQS"
 
 	span := constructClientSpan(parentSpanID, spanName, 200, "OK", attributes)
@@ -2022,7 +2024,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm pcommon.Timestamp) ptrace.S
 	eventAttr.PutStr("message.type", "RECEIVED")
 	eventAttr.PutInt("messaging.message_id", 1)
 	eventAttr.PutInt("messaging.message_payload_compressed_size_bytes", 6478)
-	eventAttr.PutInt("messaging.message.body.size", 12452)
+	eventAttr.PutInt("messaging.message_payload_size_bytes", 12452)
 
 	event.SetTimestamp(tm)
 	event.SetDroppedAttributesCount(0)
@@ -2037,7 +2039,7 @@ func constructTimedEventsWithSentMessageEvent(tm pcommon.Timestamp) ptrace.SpanE
 	eventAttr := event.Attributes()
 	eventAttr.PutStr("message.type", "SENT")
 	eventAttr.PutInt("messaging.message_id", 1)
-	eventAttr.PutInt("messaging.message.body.size", 7480)
+	eventAttr.PutInt("messaging.message_payload_size_bytes", 7480)
 
 	event.SetTimestamp(tm)
 	event.SetDroppedAttributesCount(0)

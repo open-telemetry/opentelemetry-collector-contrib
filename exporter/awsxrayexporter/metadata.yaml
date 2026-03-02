@@ -15,3 +15,40 @@ tests:
   expect_consumer_error: true
   goleak:
     skip: true
+
+feature_gates:
+  - id: exporter.awsxray.DontEmitV0DBConventions
+    stage: alpha
+    description: >-
+      When enabled, the AWS X-Ray exporter no longer reads deprecated
+      semconv v1.12.0 database attribute keys. Requires
+      exporter.awsxray.EmitV1DBConventions to also be enabled.
+    from_version: v0.147.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533
+  - id: exporter.awsxray.DontEmitV0HTTPNetworkConventions
+    stage: alpha
+    description: >-
+      When enabled, the AWS X-Ray exporter no longer reads deprecated
+      semconv v1.12.0 HTTP and network attribute keys. Requires
+      exporter.awsxray.EmitV1HTTPNetworkConventions to also be enabled.
+    from_version: v0.147.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533
+  - id: exporter.awsxray.EmitV1DBConventions
+    stage: alpha
+    description: >-
+      When enabled, the AWS X-Ray exporter reads database span attributes
+      using semconv v1.38.0 keys (db.namespace, db.system.name,
+      db.query.text, user.name) instead of the deprecated v1.12.0 keys
+      (db.name, db.system, db.statement, db.user).
+    from_version: v0.147.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533
+  - id: exporter.awsxray.EmitV1HTTPNetworkConventions
+    stage: alpha
+    description: >-
+      When enabled, the AWS X-Ray exporter reads HTTP and network span
+      attributes using semconv v1.38.0 keys (e.g. http.request.method,
+      server.address, server.port, client.address,
+      messaging.destination.address, messaging.message.body.size) instead
+      of the deprecated v1.12.0 keys.
+    from_version: v0.147.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533

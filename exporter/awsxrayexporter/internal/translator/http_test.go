@@ -17,9 +17,9 @@ import (
 
 func TestClientSpanWithURLAttribute(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.full"] = "https://api.example.com/users/junit"
-	attributes["http.response.status_code"] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.status_code"] = 200
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -53,11 +53,11 @@ func TestClientSpanWithURLAttributeStable(t *testing.T) {
 
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "api.example.com"
-	attributes["url.path"] = "/users/junit"
-	attributes["http.response.status_code"] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "api.example.com"
+	attributes["http.target"] = "/users/junit"
+	attributes["http.status_code"] = 200
 	attributes["user.id"] = "junit"
 	span := constructHTTPClientSpan(attributes)
 
@@ -76,7 +76,7 @@ func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.request.method"] = "GET"
 	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "api.example.com"
+	attributes["http.host"] = "api.example.com"
 	attributes["url.path"] = "/users/junit"
 	attributes["url.query"] = "v=1"
 	attributes["http.response.status_code"] = 200
@@ -96,13 +96,13 @@ func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "http"
-	attributes["server.address"] = "kb234.example.com"
-	attributes["server.port"] = 8080
-	attributes["network.peer.address"] = "10.8.17.36"
-	attributes["url.path"] = "/users/junit"
-	attributes["http.response.status_code"] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "http"
+	attributes["net.peer.name"] = "kb234.example.com"
+	attributes["net.peer.port"] = 8080
+	attributes["net.peer.ip"] = "10.8.17.36"
+	attributes["http.target"] = "/users/junit"
+	attributes["http.status_code"] = 200
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -124,9 +124,9 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes["http.request.method"] = http.MethodGet
 	attributes["url.scheme"] = "http"
-	attributes["server.address"] = "kb234.example.com"
-	attributes["server.port"] = 8080
-	attributes["network.peer.address"] = "10.8.17.36"
+	attributes["net.peer.name"] = "kb234.example.com"
+	attributes["net.peer.port"] = 8080
+	attributes["net.peer.ip"] = "10.8.17.36"
 	attributes["url.query"] = "users=junit"
 	attributes["http.response.status_code"] = 200
 	span := constructHTTPClientSpan(attributes)
@@ -147,8 +147,8 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 
 func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["client.address"] = "1.2.3.4"
-	attributes["network.peer.address"] = "10.8.17.36"
+	attributes["http.client_ip"] = "1.2.3.4"
+	attributes["net.peer.ip"] = "10.8.17.36"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -176,11 +176,11 @@ func TestClientSpanWithHttpPeerAttributesStable(t *testing.T) {
 
 func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "http"
-	attributes["server.address"] = "10.8.17.36"
-	attributes["server.port"] = "8080"
-	attributes["url.path"] = "/users/junit"
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "http"
+	attributes["net.peer.ip"] = "10.8.17.36"
+	attributes["net.peer.port"] = "8080"
+	attributes["http.target"] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -195,11 +195,11 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 
 func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "2001:db8:85a3::8a2e:370:7334"
-	attributes["server.port"] = "443"
-	attributes["url.path"] = "/users/junit"
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["net.peer.ip"] = "2001:db8:85a3::8a2e:370:7334"
+	attributes["net.peer.port"] = "443"
+	attributes["http.target"] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -214,11 +214,11 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 
 func TestServerSpanWithURLAttribute(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.full"] = "https://api.example.com/users/junit"
-	attributes["client.address"] = "192.168.15.32"
-	attributes["user_agent.original"] = "PostmanRuntime/7.21.0"
-	attributes["http.response.status_code"] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.user_agent"] = "PostmanRuntime/7.21.0"
+	attributes["http.status_code"] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -254,12 +254,12 @@ func TestServerSpanWithURLAttributeStable(t *testing.T) {
 
 func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "api.example.com"
-	attributes["url.path"] = "/users/junit"
-	attributes["client.address"] = "192.168.15.32"
-	attributes["http.response.status_code"] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "api.example.com"
+	attributes["http.target"] = "/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -318,13 +318,13 @@ func TestServerSpanWithNewConventionsWithURLPath(t *testing.T) {
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "https"
-	attributes["server.address"] = "api.example.com"
-	attributes["server.port"] = 443
-	attributes["url.path"] = "/users/junit"
-	attributes["client.address"] = "192.168.15.32"
-	attributes["http.response.status_code"] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["http.server_name"] = "api.example.com"
+	attributes["net.host.port"] = 443
+	attributes["http.target"] = "/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -362,13 +362,13 @@ func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) 
 
 func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "http"
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "http"
 	attributes["host.name"] = "kb234.example.com"
-	attributes["server.port"] = 8080
-	attributes["url.path"] = "/users/junit"
-	attributes["client.address"] = "192.168.15.32"
-	attributes["http.response.status_code"] = 200
+	attributes["net.host.port"] = 8080
+	attributes["http.target"] = "/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
@@ -410,13 +410,14 @@ func TestServerSpanWithSchemeNamePortTargetAttributesStable(t *testing.T) {
 
 func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	attributes := make(map[string]any)
-	attributes["http.request.method"] = http.MethodGet
-	attributes["url.scheme"] = "http"
-	attributes["client.address"] = "192.168.15.32"
-	attributes["user_agent.original"] = "PostmanRuntime/7.21.0"
-	attributes["url.path"] = "/users/junit"
-	attributes["server.port"] = 443
-	attributes["http.response.status_code"] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "http"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.user_agent"] = "PostmanRuntime/7.21.0"
+	attributes["http.target"] = "/users/junit"
+	attributes["net.host.port"] = 443
+	attributes["net.peer.port"] = 8080
+	attributes["http.status_code"] = 200
 	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
@@ -460,12 +461,20 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributesStable(t *testing.T) {
 
 func TestSpanWithNotEnoughHTTPRequestURLAttributesDuplicated(t *testing.T) {
 	attributes := make(map[string]any)
+	attributes["http.method"] = http.MethodGet
 	attributes["http.request.method"] = http.MethodGet
+	attributes["http.scheme"] = "http"
 	attributes["url.scheme"] = "http"
+	attributes["http.client_ip"] = "192.168.15.32"
 	attributes["client.address"] = "192.168.15.32"
+	attributes["http.user_agent"] = "PostmanRuntime/7.21.0"
 	attributes["user_agent.original"] = "PostmanRuntime/7.21.0"
+	attributes["http.target"] = "/users/junit"
 	attributes["url.path"] = "/users/junit"
+	attributes["net.host.port"] = 443
 	attributes["server.port"] = 443
+	attributes["net.peer.port"] = 8080
+	attributes["http.status_code"] = 200
 	attributes["http.response.status_code"] = 200
 	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())

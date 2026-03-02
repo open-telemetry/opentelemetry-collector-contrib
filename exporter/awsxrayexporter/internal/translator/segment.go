@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -19,8 +20,9 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	xraymetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -307,7 +309,7 @@ func MakeDocumentFromSegment(segment *awsxray.Segment) (string, error) {
 
 func isAwsSdkSpan(span ptrace.Span) bool {
 	attributes := span.Attributes()
-	if rpcSystem, ok := attributes.Get(string(conventions.RPCSystemNameKey)); ok {
+	if rpcSystem, ok := attributes.Get(string(conventions.RPCSystemKey)); ok {
 		return rpcSystem.Str() == awsAPIRPCSystem
 	}
 	return false
@@ -381,7 +383,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	// peer.service should always be prioritized for segment names when it set by users and
 	// the new x-ray specific service name attributes are not found
 	if name == "" {
-		if peerService, ok := attributes.Get(string(conventions.ServicePeerNameKey)); ok {
+		if peerService, ok := attributes.Get(string(conventions.PeerServiceKey)); ok {
 			name = peerService.Str()
 		}
 	}
@@ -405,13 +407,26 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	if name == "" {
-		if dbInstance, ok := attributes.Get(string(conventions.DBNamespaceKey)); ok {
-			// For database queries, the segment name convention is <db name>@<db host>
-			name = dbInstance.Str()
-			if dbHost, ok := attributes.Get(string(conventions.ServerAddressKey)); ok {
-				if dbHost.Str() != "" {
-					name += "@" + dbHost.Str()
+		// TODO: Remove old DB key lookups when exporter.awsxray.DontEmitV0DBConventions is removed.
+		if !xraymetadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
+			if dbInstance, ok := attributes.Get("db.name"); ok {
+				// For database queries, the segment name convention is <db name>@<db host>
+				name = dbInstance.Str()
+				if dbURL, ok := attributes.Get("db.connection_string"); ok {
+					// Trim JDBC connection string if starts with "jdbc:", otherwise no change
+					// jdbc:mysql://db.dev.example.com:3306
+					dbURLStr := strings.TrimPrefix(dbURL.Str(), "jdbc:")
+					if parsed, _ := url.Parse(dbURLStr); parsed != nil {
+						if parsed.Hostname() != "" {
+							name += "@" + parsed.Hostname()
+						}
+					}
 				}
+			}
+		}
+		if name == "" && xraymetadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
+			if dbInstance, ok := attributes.Get(string(conventions.DBNamespaceKey)); ok {
+				name = dbInstance.Str()
 			}
 		}
 	}
@@ -424,14 +439,31 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	if name == "" {
-		if rpcservice, ok := attributes.Get(string(conventions.RPCMethodKey)); ok {
+		if rpcservice, ok := attributes.Get(string(conventions.RPCServiceKey)); ok {
 			name = rpcservice.Str()
 		}
 	}
 
 	if name == "" {
-		if host, ok := attributes.Get(string(conventions.ServerAddressKey)); ok {
-			name = host.Str()
+		// TODO: Remove "http.host" lookup when exporter.awsxray.DontEmitV0HTTPNetworkConventions is removed.
+		if !xraymetadata.ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate.IsEnabled() {
+			if host, ok := attributes.Get("http.host"); ok {
+				name = host.Str()
+			}
+		}
+		if name == "" && xraymetadata.ExporterAwsxrayEmitV1HTTPNetworkConventionsFeatureGate.IsEnabled() {
+			if addr, ok := attributes.Get(string(conventions.ServerAddressKey)); ok {
+				name = addr.Str()
+			}
+		}
+	}
+
+	if name == "" {
+		// TODO: Remove "net.peer.name" lookup when exporter.awsxray.DontEmitV0HTTPNetworkConventions is removed.
+		if !xraymetadata.ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate.IsEnabled() {
+			if peer, ok := attributes.Get("net.peer.name"); ok {
+				name = peer.Str()
+			}
 		}
 	}
 
