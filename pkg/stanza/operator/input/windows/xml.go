@@ -322,7 +322,7 @@ func sanitizeXMLBytes(data []byte) []byte {
 // check, and the only illegal multi-byte sequences handled explicitly are
 // U+FFFE (EF BF BE) and U+FFFF (EF BF BF).
 func hasIllegalXMLBytes(data []byte) bool {
-	for i := 0; i < len(data); i++ {
+	for i := range len(data) {
 		b := data[i]
 		if b < 0x20 {
 			// 0x09 (tab), 0x0A (LF), 0x0D (CR) are the only legal control chars.
