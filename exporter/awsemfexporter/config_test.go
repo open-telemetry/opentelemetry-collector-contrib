@@ -185,7 +185,7 @@ func TestValidateTags(t *testing.T) {
 
 	// Create a map with no items and then one with too many items for testing
 	bigMap := make(map[string]string)
-	for i := 0; i < 51; i++ {
+	for i := range 51 {
 		bigMap[strconv.Itoa(i)] = basicValue
 	}
 
@@ -311,10 +311,10 @@ func TestIsApplicationSignalsEnabled(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			if len(tc.metricNameSpace) > 0 {
+			if tc.metricNameSpace != "" {
 				cfg.Namespace = tc.metricNameSpace
 			}
-			if len(tc.logGroupName) > 0 {
+			if tc.logGroupName != "" {
 				cfg.LogGroupName = tc.logGroupName
 			}
 

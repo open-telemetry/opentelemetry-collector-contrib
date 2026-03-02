@@ -6,7 +6,6 @@
 package zipkin
 
 import (
-	"context"
 	"testing"
 
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestDeserializeWithBadListStart(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	spanBytes, err := SerializeThrift(ctx, []*zipkincore.Span{{}})
 	require.NoError(t, err)
 	_, err = DeserializeThrift(ctx, append([]byte{0, 255, 255}, spanBytes...))
@@ -22,7 +21,7 @@ func TestDeserializeWithBadListStart(t *testing.T) {
 }
 
 func TestDeserializeWithCorruptedList(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	spanBytes, err := SerializeThrift(ctx, []*zipkincore.Span{{}})
 	require.NoError(t, err)
 	spanBytes[2] = 255
@@ -31,7 +30,7 @@ func TestDeserializeWithCorruptedList(t *testing.T) {
 }
 
 func TestDeserialize(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	spanBytes, err := SerializeThrift(ctx, []*zipkincore.Span{{}})
 	require.NoError(t, err)
 	_, err = DeserializeThrift(ctx, spanBytes)

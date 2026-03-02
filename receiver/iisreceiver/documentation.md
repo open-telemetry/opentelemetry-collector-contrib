@@ -12,145 +12,135 @@ metrics:
     enabled: false
 ```
 
-### iis.connection.active
-
-Number of active connections.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | false |
-
-### iis.connection.anonymous
-
-Number of connections established anonymously.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | true |
-
-### iis.connection.attempt.count
-
-Total number of attempts to connect to the server.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {attempts} | Sum | Int | Cumulative | true |
-
-### iis.network.blocked
-
-Number of bytes blocked due to bandwidth throttling.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
-
-### iis.network.file.count
-
-Number of transmitted files.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {files} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction data is moving. | Str: ``sent``, ``received`` |
-
-### iis.network.io
-
-Total amount of bytes sent and received.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction data is moving. | Str: ``sent``, ``received`` |
-
-### iis.request.count
-
-Total number of requests of a given type.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {requests} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| request | The type of request sent by a client. | Str: ``delete``, ``get``, ``head``, ``options``, ``post``, ``put``, ``trace`` |
-
-### iis.request.queue.age.max
-
-Age of oldest request in the queue.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
-
-### iis.request.queue.count
-
-Current number of requests in the queue.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {requests} | Sum | Int | Cumulative | false |
-
-### iis.request.rejected
-
-Total number of requests rejected.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {requests} | Sum | Int | Cumulative | true |
-
-### iis.thread.active
-
-Current number of active threads.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {threads} | Sum | Int | Cumulative | false |
-
-### iis.uptime
-
-The amount of time the server has been up.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
-
-## Optional Metrics
-
-The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
-
-```yaml
-metrics:
-  <metric_name>:
-    enabled: true
-```
-
 ### iis.application_pool.state
 
-The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
+The current status of the application pool (1 - Uninitialized, 2 - Initialized, 3 - Running, 4 - Disabling, 5 - Disabled, 6 - Shutdown Pending, 7 - Delete Pending).
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {state} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {state} | Gauge | Int | Development |
 
 ### iis.application_pool.uptime
 
 The application pools uptime period since the last restart.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {ms} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {ms} | Gauge | Int | Development |
+
+### iis.connection.active
+
+Number of active connections.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connections} | Sum | Int | Cumulative | false | Development |
+
+### iis.connection.anonymous
+
+Number of connections established anonymously.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connections} | Sum | Int | Cumulative | true | Development |
+
+### iis.connection.attempt.count
+
+Total number of attempts to connect to the server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {attempts} | Sum | Int | Cumulative | true | Development |
+
+### iis.network.blocked
+
+Number of bytes blocked due to bandwidth throttling.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+### iis.network.file.count
+
+Number of transmitted files.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {files} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` | Recommended |
+
+### iis.network.io
+
+Total amount of bytes sent and received.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` | Recommended |
+
+### iis.request.count
+
+Total number of requests of a given type.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| request | The type of request sent by a client. | Str: ``delete``, ``get``, ``head``, ``options``, ``post``, ``put``, ``trace`` | Recommended |
+
+### iis.request.queue.age.max
+
+Age of oldest request in the queue.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | Development |
+
+### iis.request.queue.count
+
+Current number of requests in the queue.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | false | Development |
+
+### iis.request.rejected
+
+Total number of requests rejected.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | true | Development |
+
+### iis.thread.active
+
+Current number of active threads.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {threads} | Sum | Int | Cumulative | false | Development |
+
+### iis.uptime
+
+The amount of time the server has been up.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | Development |
 
 ## Resource Attributes
 

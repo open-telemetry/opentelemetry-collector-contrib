@@ -15,14 +15,22 @@ import (
 // Config holds all the parameters to start an HTTP server that can be sent logs from CloudFlare
 type Config struct {
 	Logs LogsConfig `mapstructure:"logs"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type LogsConfig struct {
-	Secret         string                  `mapstructure:"secret"`
-	Endpoint       string                  `mapstructure:"endpoint"`
-	TLS            *configtls.ServerConfig `mapstructure:"tls"`
-	Attributes     map[string]string       `mapstructure:"attributes"`
-	TimestampField string                  `mapstructure:"timestamp_field"`
+	Secret          string                  `mapstructure:"secret"`
+	Endpoint        string                  `mapstructure:"endpoint"`
+	TLS             *configtls.ServerConfig `mapstructure:"tls"`
+	Attributes      map[string]string       `mapstructure:"attributes"`
+	TimestampField  string                  `mapstructure:"timestamp_field"`
+	TimestampFormat string                  `mapstructure:"timestamp_format"`
+	Separator       string                  `mapstructure:"separator"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (
@@ -30,7 +38,9 @@ var (
 	errNoCert     = errors.New("tls was configured, but no cert file was specified")
 	errNoKey      = errors.New("tls was configured, but no key file was specified")
 
-	defaultTimestampField = "EdgeStartTimestamp"
+	defaultTimestampField  = "EdgeStartTimestamp"
+	defaultTimestampFormat = "rfc3339"
+	defaultSeparator       = "."
 )
 
 func (c *Config) Validate() error {
@@ -39,6 +49,15 @@ func (c *Config) Validate() error {
 	}
 
 	var errs error
+	// Validate timestamp_format if provided
+	if c.Logs.TimestampFormat != "" {
+		switch c.Logs.TimestampFormat {
+		case "unix", "unixnano", "rfc3339":
+		default:
+			errs = multierr.Append(errs, fmt.Errorf("invalid timestamp_format %q, must be one of: unix, unixnano, rfc3339", c.Logs.TimestampFormat))
+		}
+	}
+
 	if c.Logs.TLS != nil {
 		// Missing key
 		if c.Logs.TLS.KeyFile == "" {

@@ -4,7 +4,6 @@
 package faro // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro"
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -39,7 +38,7 @@ func TestTranslateToTraces(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			actualTraces, err := TranslateToTraces(context.TODO(), tt.faroPayload)
+			actualTraces, err := TranslateToTraces(t.Context(), tt.faroPayload)
 			if !tt.wantErr(t, err) {
 				return
 			}

@@ -17,7 +17,7 @@ type testRestClient struct {
 	invalidJSON bool
 }
 
-func (f testRestClient) StatsSummary() ([]byte, error) {
+func (testRestClient) StatsSummary() ([]byte, error) {
 	return []byte{}, nil
 }
 

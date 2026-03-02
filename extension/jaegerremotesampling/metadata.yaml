@@ -1,3 +1,4 @@
+display_name: Jaeger Remote Sampling Extension
 type: jaegerremotesampling
 
 status:

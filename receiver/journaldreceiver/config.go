@@ -24,17 +24,17 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// ReceiverType implements adapter.LogReceiverType
+// receiverType implements adapter.LogReceiverType
 // to create a journald receiver
-type ReceiverType struct{}
+type receiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() component.Type {
+func (receiverType) Type() component.Type {
 	return metadata.Type
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
+func (receiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*JournaldConfig).BaseConfig
 }
 
@@ -42,9 +42,17 @@ func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 type JournaldConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
 	InputConfig        journald.Config `mapstructure:",squash"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (receiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*JournaldConfig).InputConfig)
+}
+
+// CreateDefaultConfig creates a config with type and version
+func (receiverType) CreateDefaultConfig() component.Config {
+	return createDefaultConfig()
 }

@@ -1,0 +1,24 @@
+description: Config defines the configuration for the processor.
+type: object
+properties:
+  error_mode:
+    description: ErrorMode determines how the processor reacts to errors that occur while processing a statement. Valid values are `ignore` and `propagate`. `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode. `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector. The default value is `propagate`.
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.error_mode
+  flatten_data:
+    type: boolean
+  log_statements:
+    type: array
+    items:
+      $ref: ./internal/common.context_statements
+  metric_statements:
+    type: array
+    items:
+      $ref: ./internal/common.context_statements
+  profile_statements:
+    type: array
+    items:
+      $ref: ./internal/common.context_statements
+  trace_statements:
+    type: array
+    items:
+      $ref: ./internal/common.context_statements

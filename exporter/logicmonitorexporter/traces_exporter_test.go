@@ -4,7 +4,6 @@
 package logicmonitorexporter
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -29,7 +28,7 @@ func Test_NewTracesExporter(t *testing.T) {
 			APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
 		}
 		set := exportertest.NewNopSettings(metadata.Type)
-		exp := newTracesExporter(context.Background(), config, set)
+		exp := newTracesExporter(t.Context(), config, set)
 		assert.NotNil(t, exp)
 	})
 }
@@ -52,7 +51,7 @@ func TestPushTraceData(t *testing.T) {
 		},
 		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := f.CreateTraces(ctx, params, config)
 	assert.NoError(t, err)
 	assert.NoError(t, exp.Start(ctx, componenttest.NewNopHost()))
@@ -60,7 +59,7 @@ func TestPushTraceData(t *testing.T) {
 
 	testTraces := ptrace.NewTraces()
 	generateTraces().CopyTo(testTraces)
-	err = exp.ConsumeTraces(context.Background(), testTraces)
+	err = exp.ConsumeTraces(t.Context(), testTraces)
 	assert.NoError(t, err)
 }
 

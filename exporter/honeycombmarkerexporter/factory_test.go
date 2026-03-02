@@ -4,7 +4,6 @@
 package honeycombmarkerexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,9 +29,9 @@ func TestFactory_CreateLogs(t *testing.T) {
 		cfg.APIURL = defaultURL
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
+	exporter, err := factory.CreateLogs(t.Context(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
-	require.NoError(t, exporter.Shutdown(context.TODO()))
+	require.NoError(t, exporter.Shutdown(t.Context()))
 }

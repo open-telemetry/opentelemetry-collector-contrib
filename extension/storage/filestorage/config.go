@@ -31,6 +31,8 @@ type Config struct {
 	CreateDirectory            bool   `mapstructure:"create_directory,omitempty"`
 	DirectoryPermissions       string `mapstructure:"directory_permissions,omitempty"`
 	directoryPermissionsParsed int64  `mapstructure:"-,omitempty"`
+
+	Recreate bool `mapstructure:"recreate,omitempty"`
 }
 
 // CompactionConfig defines configuration for optional file storage compaction.

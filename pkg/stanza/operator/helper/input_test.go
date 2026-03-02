@@ -4,7 +4,6 @@
 package helper
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -85,7 +84,7 @@ func TestInputOperatorProcess(t *testing.T) {
 		},
 	}
 	entry := entry.New()
-	ctx := context.Background()
+	ctx := t.Context()
 	err := input.Process(ctx, entry)
 	require.Error(t, err)
 	require.Equal(t, "Operator can not process logs.", err.Error())

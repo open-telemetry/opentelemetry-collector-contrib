@@ -42,7 +42,7 @@ func getNodeWithCPUCapacity(nodeName string, cpuCap int) *v1.Node {
 	}
 }
 
-func getNodeWithMemoryCapacity(nodeName string, memoryCap string) *v1.Node {
+func getNodeWithMemoryCapacity(nodeName, memoryCap string) *v1.Node {
 	resourceList := make(v1.ResourceList)
 	q := resource.QuantityValue{}
 	_ = q.Set(memoryCap)

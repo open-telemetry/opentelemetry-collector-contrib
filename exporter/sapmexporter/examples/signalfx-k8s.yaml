@@ -38,7 +38,6 @@ data:
       # https://github.com/signalfx/signalfx-istio-adapter
       zipkin:
     processors:
-      batch:
       # Optional: If you have a different environment tag name
       # If this option is enabled it must be added to the pipeline section below
       #attributes/copyfromexistingkey:
@@ -69,24 +68,28 @@ data:
       sapm:
         access_token: "${env:SFX_TOKEN}"
         endpoint: "https://ingest.${env:SFX_REALM}.signalfx.com/v2/trace"
+        sending_queue:
+          batch:
       # Metrics
       signalfx:
         access_token: "${env:SFX_TOKEN}"
         realm: "${env:SFX_REALM}"
+        sending_queue:
+          batch:
     service:
       extensions: [health_check, http_forwarder, zpages]
       pipelines:
         traces:
           receivers: [sapm, zipkin]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter]
           exporters: [sapm]
         metrics:
           receivers: [signalfx, prometheus]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter]
           exporters: [signalfx]
         logs:
           receivers: [signalfx]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter]
           exporters: [signalfx]
 ---
 apiVersion: v1

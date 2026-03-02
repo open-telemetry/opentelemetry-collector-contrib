@@ -106,7 +106,7 @@ func (rb *perScopeBatcher) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 	return err
 }
 
-func copyResourceLogs(src plog.ResourceLogs, dest plog.ResourceLogs, isProfiling bool) {
+func copyResourceLogs(src, dest plog.ResourceLogs, isProfiling bool) {
 	src.Resource().CopyTo(dest.Resource())
 	for j := 0; j < src.ScopeLogs().Len(); j++ {
 		sl := src.ScopeLogs().At(j)

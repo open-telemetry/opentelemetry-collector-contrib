@@ -6,7 +6,6 @@
 package udpserver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -35,7 +34,7 @@ func TestTBufferedServerSendReceive(t *testing.T) {
 		n, err := client.Write([]byte("span1"))
 		require.NoError(t, err)
 		require.Equal(t, 5, n)
-		require.NoError(t, client.Flush(context.Background()))
+		require.NoError(t, client.Flush(t.Context()))
 
 		select {
 		case buf := <-server.DataChan():

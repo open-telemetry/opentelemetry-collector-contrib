@@ -728,7 +728,7 @@ type GetAccessLogsOptions struct {
 }
 
 // GetAccessLogs returns the access logs specified for the cluster requested
-func (s *MongoDBAtlasClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
+func (s *MongoDBAtlasClient) GetAccessLogs(ctx context.Context, groupID, clusterName string, opts *GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
 	options := mongodbatlas.AccessLogOptions{
 		// Earliest Timestamp in epoch milliseconds from when Atlas should access log results
 		Start: strconv.FormatInt(opts.MinDate.UTC().UnixMilli(), 10),

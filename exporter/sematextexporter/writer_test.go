@@ -4,7 +4,6 @@
 package sematextexporter
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -173,11 +172,11 @@ func TestSematextHTTPWriterBatchMaxPayload(t *testing.T) {
 			}
 			defer batch.httpClient.CloseIdleConnections()
 
-			err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
+			err := batch.EnqueuePoint(t.Context(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
 			require.NoError(t, err)
-			err = batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(2)}, time.Unix(2, 0), 0)
+			err = batch.EnqueuePoint(t.Context(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(2)}, time.Unix(2, 0), 0)
 			require.NoError(t, err)
-			err = batch.WriteBatch(context.Background())
+			err = batch.WriteBatch(t.Context())
 			require.NoError(t, err)
 
 			if testCase.expectMultipleRequests {
@@ -219,7 +218,7 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 	defer sematextWriter.httpClient.CloseIdleConnections()
 
 	err = sematextWriterBatch.EnqueuePoint(
-		context.Background(),
+		t.Context(),
 		"m",
 		map[string]string{"k": "v", "empty": ""},
 		map[string]any{"f": int64(1)},
@@ -227,7 +226,7 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 		common.InfluxMetricValueTypeUntyped)
 	require.NoError(t, err)
 
-	err = sematextWriterBatch.WriteBatch(context.Background())
+	err = sematextWriterBatch.WriteBatch(t.Context())
 
 	require.NoError(t, err)
 

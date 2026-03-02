@@ -59,7 +59,6 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
-
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -180,7 +179,7 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 	}
 }
 
-func getContainerRuntimeInfo(rawInfo string) (runtime string, version string) {
+func getContainerRuntimeInfo(rawInfo string) (runtime, version string) {
 	// Kubelet reports container runtime version in the following format:
 	// <runtime-name>://<version>
 	parts := strings.Split(rawInfo, "://")

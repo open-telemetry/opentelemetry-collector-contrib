@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -67,8 +68,8 @@ func Test_IsInt(t *testing.T) {
 					return tt.value, nil
 				},
 			})
-			result, err := exprFunc(context.Background(), nil)
-			assert.NoError(t, err)
+			result, err := exprFunc(t.Context(), nil)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -81,7 +82,7 @@ func Test_IsInt_Error(t *testing.T) {
 			return nil, ottl.TypeError("")
 		},
 	})
-	result, err := exprFunc(context.Background(), nil)
+	result, err := exprFunc(t.Context(), nil)
 	assert.Equal(t, false, result)
 	assert.Error(t, err)
 	_, ok := err.(ottl.TypeError)

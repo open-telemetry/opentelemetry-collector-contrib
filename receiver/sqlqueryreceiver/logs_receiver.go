@@ -32,9 +32,8 @@ type logsReceiver struct {
 	queryReceivers   []*logsQueryReceiver
 	nextConsumer     consumer.Logs
 
-	isStarted                bool
-	collectionIntervalTicker *time.Ticker
-	shutdownRequested        chan struct{}
+	isStarted         bool
+	shutdownRequested chan struct{}
 
 	id            component.ID
 	storageClient storage.Client
@@ -56,11 +55,21 @@ func newLogsReceiver(
 		return nil, err
 	}
 
+	var dataSource string
+	if config.DataSource != "" {
+		dataSource = config.DataSource
+	} else {
+		dataSource, err = sqlquery.BuildDataSourceString(config.Config)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	receiver := &logsReceiver{
 		config:   config,
 		settings: settings,
 		createConnection: func() (*sql.DB, error) {
-			return sqlOpenerFunc(config.Driver, config.DataSource)
+			return sqlOpenerFunc(config.Driver, dataSource)
 		},
 		createClient:      createClient,
 		nextConsumer:      nextConsumer,
@@ -124,14 +133,28 @@ func (receiver *logsReceiver) createQueryReceivers() error {
 }
 
 func (receiver *logsReceiver) startCollecting() {
-	receiver.collectionIntervalTicker = time.NewTicker(receiver.config.CollectionInterval)
+	initialDelay := receiver.config.InitialDelay
 
 	go func() {
-		for {
+		if initialDelay > 0 {
+			timer := time.NewTimer(initialDelay)
 			select {
-			case <-receiver.collectionIntervalTicker.C:
+			case <-timer.C:
 				receiver.collect()
 			case <-receiver.shutdownRequested:
+				timer.Stop()
+				return
+			}
+		}
+
+		collectionIntervalTicker := time.NewTicker(receiver.config.CollectionInterval)
+
+		for {
+			select {
+			case <-collectionIntervalTicker.C:
+				receiver.collect()
+			case <-receiver.shutdownRequested:
+				collectionIntervalTicker.Stop()
 				return
 			}
 		}
@@ -191,9 +214,6 @@ func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (receiver *logsReceiver) stopCollecting() {
-	if receiver.collectionIntervalTicker != nil {
-		receiver.collectionIntervalTicker.Stop()
-	}
 	close(receiver.shutdownRequested)
 }
 
@@ -281,7 +301,10 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 		rows, err = queryReceiver.client.QueryRows(ctx)
 	}
 	if err != nil {
-		return logs, fmt.Errorf("error getting rows: %w", err)
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return logs, fmt.Errorf("scraper: %w", err)
+		}
+		queryReceiver.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
 
 	var errs []error
@@ -335,7 +358,7 @@ func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.Lo
 	return errors.Join(errs...)
 }
 
-func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) error {
+func (queryReceiver *logsQueryReceiver) shutdown(context.Context) error {
 	if queryReceiver.db == nil {
 		return nil
 	}

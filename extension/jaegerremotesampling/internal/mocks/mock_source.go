@@ -13,7 +13,7 @@ type MockCfgMgr struct {
 	GetSamplingStrategyFunc func(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error)
 }
 
-func (m *MockCfgMgr) Close() error {
+func (*MockCfgMgr) Close() error {
 	return nil
 }
 

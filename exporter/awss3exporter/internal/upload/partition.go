@@ -5,25 +5,35 @@ package upload // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"math/rand/v2"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/itchyny/timefmt-go"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
 var compressionFileExtensions = map[configcompression.Type]string{
 	configcompression.TypeGzip: ".gz",
+	configcompression.TypeZstd: ".zst",
 }
 
 type PartitionKeyBuilder struct {
+	// PartitionBasePrefix defines the root S3
+	// directory (key) prefix used to write the file.
+	PartitionBasePrefix string
 	// PartitionPrefix defines the S3 directory (key)
-	// prefix used to write the file
+	// prefix used to write the file.
+	// Appended to PartitionBasePrefix if provided.
 	PartitionPrefix string
 	// PartitionFormat is used to separate values into
 	// different time buckets.
 	// Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
 	PartitionFormat string
+	// PartitionTimeLocation is used to provide timezone for partition time. Defaults to Local time location.
+	PartitionTimeLocation *time.Location
 	// FilePrefix is used to define the prefix of the file written
 	// to the directory in S3.
 	FilePrefix string
@@ -39,13 +49,15 @@ type PartitionKeyBuilder struct {
 	// UniqueKeyFunc allows for overwriting the default behavior of
 	// generating a new unique string to avoid collisions on file upload
 	// across many different instances.
-	//
-	// TODO: Expose the ability to config additional UniqueKeyField via config
 	UniqueKeyFunc func() string
+	// IsCompressed when true keeps files compressed in S3
+	// by omitting ContentEncoding headers. When false, ContentEncoding
+	// is set for HTTP transfer compression (AWS auto-decompresses).
+	IsCompressed bool
 }
 
 func (pki *PartitionKeyBuilder) Build(ts time.Time, overridePrefix string) string {
-	return pki.bucketKeyPrefix(ts, overridePrefix) + "/" + pki.fileName()
+	return path.Join(pki.bucketKeyPrefix(ts, overridePrefix), pki.fileName())
 }
 
 func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix string) string {
@@ -55,10 +67,24 @@ func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix str
 	if overridePrefix != "" {
 		prefix = overridePrefix
 	}
-	if prefix != "" {
-		prefix += "/"
+
+	var pathParts []string
+
+	if pki.PartitionBasePrefix != "" {
+		pathParts = append(pathParts, pki.PartitionBasePrefix)
 	}
-	return prefix + timefmt.Format(ts, pki.PartitionFormat)
+
+	if prefix != "" {
+		pathParts = append(pathParts, prefix)
+	}
+
+	location := pki.PartitionTimeLocation
+	if location == nil {
+		location = time.Local
+	}
+	pathParts = append(pathParts, timefmt.Format(ts.In(location), pki.PartitionFormat))
+
+	return strings.Join(pathParts, "/")
 }
 
 func (pki *PartitionKeyBuilder) fileName() string {
@@ -76,10 +102,27 @@ func (pki *PartitionKeyBuilder) fileName() string {
 }
 
 func (pki *PartitionKeyBuilder) uniqueKey() string {
+	// If a custom function is provided, use it to generate the unique key.
+	// If it fails, fall back to the default random integer generation
+	// so that uploads are not blocked.
 	if pki.UniqueKeyFunc != nil {
-		return pki.UniqueKeyFunc()
+		if k := pki.UniqueKeyFunc(); k != "" {
+			return k
+		}
 	}
 
+	return pki.randInt()
+}
+
+func GenerateUUIDv7() string {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return ""
+	}
+	return id.String()
+}
+
+func (*PartitionKeyBuilder) randInt() string {
 	// This follows the original "uniqueness" algorithm
 	// to avoid collisions on file uploads across different nodes.
 	const (

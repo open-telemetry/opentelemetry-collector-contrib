@@ -306,7 +306,7 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 	return datapoints, true
 }
 
-func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex int, currentPositiveIndex int) (int, int) {
+func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex, currentPositiveIndex int) (int, int) {
 	if split.isFull() || currentPositiveIndex < 0 {
 		return currentBucketIndex, currentPositiveIndex
 	}
@@ -347,7 +347,7 @@ func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.
 	return currentBucketIndex, currentPositiveIndex
 }
 
-func collectDatapointsWithZeroBucket(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex int, currentZeroIndex int) (int, int) {
+func collectDatapointsWithZeroBucket(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex, currentZeroIndex int) (int, int) {
 	if metric.ZeroCount() > 0 && !split.isFull() && currentZeroIndex == 0 {
 		split.appendMetricData(0, metric.ZeroCount())
 
@@ -365,7 +365,7 @@ func collectDatapointsWithZeroBucket(split *dataPointSplit, metric pmetric.Expon
 	return currentBucketIndex, currentZeroIndex
 }
 
-func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex int, currentNegativeIndex int) (int, int) {
+func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex, currentNegativeIndex int) (int, int) {
 	// According to metrics spec, the value in histogram is expected to be non-negative.
 	// https://opentelemetry.io/docs/specs/otel/metrics/api/#histogram
 	// However, the negative support is defined in metrics data model.
@@ -463,8 +463,9 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 		// Instead of sending metrics as a Statistical Set (contains min,max, count, sum), the emfexporter will enrich the
 		// values by sending each quantile values as a datapoint (from quantile 0 ... 1)
 		values := metric.QuantileValues()
-		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, summarySumSuffix), value: sum, labels: labels, timestampMs: timestampMs})
-		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, summaryCountSuffix), value: count, labels: labels, timestampMs: timestampMs})
+		datapoints = append(datapoints,
+			dataPoint{name: fmt.Sprint(dps.metricName, summarySumSuffix), value: sum, labels: labels, timestampMs: timestampMs},
+			dataPoint{name: fmt.Sprint(dps.metricName, summaryCountSuffix), value: count, labels: labels, timestampMs: timestampMs})
 
 		for i := 0; i < values.Len(); i++ {
 			cLabels := maps.Clone(labels)

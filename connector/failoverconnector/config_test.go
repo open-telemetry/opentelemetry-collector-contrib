@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
@@ -26,6 +28,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				PipelinePriority: [][]pipeline.ID{
 					{
 						pipeline.NewIDWithName(pipeline.SignalTraces, ""),
@@ -37,6 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				PipelinePriority: [][]pipeline.ID{
 					{
 						pipeline.NewIDWithName(pipeline.SignalTraces, "first"),

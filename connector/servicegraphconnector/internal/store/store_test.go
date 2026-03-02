@@ -103,7 +103,7 @@ func TestStoreExpire(t *testing.T) {
 	const testSize = 100
 
 	keys := map[Key]struct{}{}
-	for i := 0; i < testSize; i++ {
+	for i := range testSize {
 		keys[NewKey(pcommon.TraceID([16]byte{byte(i)}), pcommon.SpanID([8]byte{1, 2, 3}))] = struct{}{}
 	}
 
@@ -162,10 +162,10 @@ func TestStoreConcurrency(t *testing.T) {
 	close(end)
 }
 
-func noopCallback(_ *Edge) {}
+func noopCallback(*Edge) {}
 
 func countingCallback(counter *int) func(*Edge) {
-	return func(_ *Edge) {
+	return func(*Edge) {
 		*counter++
 	}
 }

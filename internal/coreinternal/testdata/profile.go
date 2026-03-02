@@ -36,42 +36,46 @@ func GenerateProfilesOneEmptyProfile() pprofile.Profiles {
 
 func GenerateProfilesOneProfile() pprofile.Profiles {
 	pd := GenerateProfilesOneEmptyProfile()
-	fillProfileOne(pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0))
+	fillProfileOne(pd.Dictionary(), pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0))
 	return pd
 }
 
 func GenerateProfilesTwoProfilesSameResource() pprofile.Profiles {
 	pd := GenerateProfilesOneEmptyProfile()
 	profiles := pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles()
-	fillProfileOne(profiles.At(0))
-	fillProfileTwo(profiles.AppendEmpty())
+	fillProfileOne(pd.Dictionary(), profiles.At(0))
+	fillProfileTwo(pd.Dictionary(), profiles.AppendEmpty())
 	return pd
 }
 
-func fillProfileOne(profile pprofile.Profile) {
-	profile.SetStartTime(TestProfileStartTimestamp)
+func fillProfileOne(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
+	profile.SetTime(TestProfileStartTimestamp)
 	profile.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04})
 
 	profile.AttributeIndices().Append(0)
-	a := profile.AttributeTable().AppendEmpty()
-	a.SetKey("app")
+	a := dic.AttributeTable().AppendEmpty()
+	a.SetKeyStrindex(int32(dic.StringTable().Len()))
+	dic.StringTable().Append("app")
 	a.Value().SetStr("server")
 	profile.AttributeIndices().Append(0)
-	a = profile.AttributeTable().AppendEmpty()
-	a.SetKey("instance_num")
+	a = dic.AttributeTable().AppendEmpty()
+	a.SetKeyStrindex(int32(dic.StringTable().Len()))
+	dic.StringTable().Append("instance_num")
 	a.Value().SetInt(1)
 }
 
-func fillProfileTwo(profile pprofile.Profile) {
-	profile.SetStartTime(TestProfileStartTimestamp)
+func fillProfileTwo(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
+	profile.SetTime(TestProfileStartTimestamp)
 	profile.SetProfileID([16]byte{0x05, 0x06, 0x07, 0x08})
 
 	profile.AttributeIndices().Append(0)
-	a := profile.AttributeTable().AppendEmpty()
-	a.SetKey("customer")
+	a := dic.AttributeTable().AppendEmpty()
+	a.SetKeyStrindex(int32(dic.StringTable().Len()))
+	dic.StringTable().Append("customer")
 	a.Value().SetStr("acme")
 	profile.AttributeIndices().Append(0)
-	a = profile.AttributeTable().AppendEmpty()
-	a.SetKey("env")
+	a = dic.AttributeTable().AppendEmpty()
+	a.SetKeyStrindex(int32(dic.StringTable().Len()))
+	dic.StringTable().Append("env")
 	a.Value().SetStr("dev")
 }

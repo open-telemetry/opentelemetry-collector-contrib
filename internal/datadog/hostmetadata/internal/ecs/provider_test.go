@@ -4,11 +4,10 @@
 package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/ecs"
 
 import (
-	"context"
 	"errors"
 	"testing"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -91,14 +90,14 @@ func TestECSProvider(t *testing.T) {
 				missingEndpoint: testInstance.missingEndpoint,
 				ecsMetadata:     testInstance.provider,
 			}
-			src, srcErr := p.Source(context.Background())
+			src, srcErr := p.Source(t.Context())
 			if srcErr != nil || testInstance.srcErr != "" {
 				assert.EqualError(t, srcErr, testInstance.srcErr)
 			} else {
 				assert.Equal(t, testInstance.src, src)
 			}
 
-			onECSFargate, onErr := p.OnECSFargate(context.Background())
+			onECSFargate, onErr := p.OnECSFargate(t.Context())
 			if onErr != nil || testInstance.onErr != "" {
 				assert.EqualError(t, onErr, testInstance.onErr)
 			} else {

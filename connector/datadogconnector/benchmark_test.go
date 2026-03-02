@@ -4,7 +4,6 @@
 package datadogconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -13,11 +12,15 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
+)
+
+var (
+	testTraceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	testSpanID1 = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 )
 
 func genTrace() ptrace.Traces {
@@ -42,21 +45,7 @@ func genTrace() ptrace.Traces {
 	return traces
 }
 
-func BenchmarkPeerTags_Native(b *testing.B) {
-	benchmarkPeerTags(b)
-}
-
-func BenchmarkPeerTags_Legacy(b *testing.B) {
-	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	assert.NoError(b, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
-	}()
-
-	benchmarkPeerTags(b)
-}
-
-func benchmarkPeerTags(b *testing.B) {
+func BenchmarkPeerTags(b *testing.B) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ComputeStatsBySpanKind = true
 	cfg.Traces.PeerTagsAggregation = true
@@ -67,22 +56,20 @@ func benchmarkPeerTags(b *testing.B) {
 	creationParams := connectortest.NewNopSettings(metadata.Type)
 	metricsSink := &consumertest.MetricsSink{}
 
-	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
+	tconn, err := factory.CreateTracesToMetrics(b.Context(), creationParams, cfg, metricsSink)
 	assert.NoError(b, err)
 
-	err = tconn.Start(context.Background(), componenttest.NewNopHost())
+	err = tconn.Start(b.Context(), componenttest.NewNopHost())
 	if err != nil {
 		b.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		require.NoError(b, tconn.Shutdown(context.Background()))
+		require.NoError(b, tconn.Shutdown(b.Context()))
 	}()
 
-	b.ResetTimer()
-
-	for n := 0; n < b.N; n++ {
-		err = tconn.ConsumeTraces(context.Background(), genTrace())
+	for b.Loop() {
+		err = tconn.ConsumeTraces(b.Context(), genTrace())
 		assert.NoError(b, err)
 		for {
 			metrics := metricsSink.AllMetrics()

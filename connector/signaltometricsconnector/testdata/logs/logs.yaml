@@ -20,7 +20,7 @@ resourceLogs:
                 value:
                   doubleValue: 101.5
             body:
-              stringValue: This is a log message
+              stringValue: "2025-02-09 16:53:23 Memory usage 340MB CPU usage 0.76"
             spanId: ""
             timeUnixNano: "1581452773000000789"
             traceId: ""
@@ -35,7 +35,7 @@ resourceLogs:
                 value:
                   doubleValue: 11.4
             body:
-              stringValue: This is a log message
+              stringValue: "2025-02-09 16:54:00 Memory usage 600MB"
             spanId: ""
             timeUnixNano: "1581452773000000789"
             traceId: ""
@@ -47,7 +47,7 @@ resourceLogs:
                 value:
                   doubleValue: 8.1
             body:
-              stringValue: This is a log message
+              stringValue: "2025-02-09 16:55:00 Memory usage 612MB CPU usage 0.32"
             spanId: ""
             timeUnixNano: "1581452773000000789"
             traceId: ""
@@ -56,7 +56,7 @@ resourceLogs:
                 value:
                   doubleValue: 7
             body:
-              stringValue: This is a log message
+              stringValue: "2025-02-09 17:28:00 Memory usage 22MB CPU usage 0.55"
             spanId: ""
             timeUnixNano: "1581452773000000789"
             traceId: ""

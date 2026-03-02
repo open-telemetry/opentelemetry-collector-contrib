@@ -4,7 +4,6 @@
 package consul
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -42,7 +41,7 @@ func TestConsulHappyPath(t *testing.T) {
 	client, err := api.NewClient(config)
 	require.NoError(t, err)
 	provider := NewProvider(client, allowedLabels)
-	meta, err := provider.Metadata(context.TODO())
+	meta, err := provider.Metadata(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, "hostname", meta.Hostname)
 	assert.Equal(t, "dc1", meta.Datacenter)

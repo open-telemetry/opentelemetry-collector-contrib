@@ -1,9 +1,13 @@
+display_name: Google Client Auth Extension
 type: googleclientauth
+
+description: This extension provides Google OAuth2 Client Credentials and Metadata for gRPC and http based exporters.
 
 status:
   class: extension
   stability:
-    alpha: [extension]
+    beta: [extension]
+  distributions: [contrib]
   codeowners:
     active: [dashpole, aabmass, braydonk, jsuereth, psx95, ridwanmsharif]
 

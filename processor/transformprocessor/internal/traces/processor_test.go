@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -29,6 +31,9 @@ var (
 	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 	spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
+
+	DefaultSpanFunctions      = SpanFunctions()
+	DefaultSpanEventFunctions = SpanEventFunctions()
 )
 
 func Test_ProcessTraces_ResourceContext(t *testing.T) {
@@ -44,7 +49,7 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
-			want: func(_ ptrace.Traces) {
+			want: func(ptrace.Traces) {
 			},
 		},
 		{
@@ -58,11 +63,11 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -85,7 +90,7 @@ func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(resource.attributes["test"], "pass") where resource.attributes["host.name"] == "wrong"`,
-			want: func(_ ptrace.Traces) {
+			want: func(ptrace.Traces) {
 			},
 		},
 		{
@@ -99,11 +104,11 @@ func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -126,7 +131,7 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
-			want: func(_ ptrace.Traces) {
+			want: func(ptrace.Traces) {
 			},
 		},
 		{
@@ -140,11 +145,11 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -167,7 +172,7 @@ func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(scope.attributes["test"], "pass") where scope.version == 2`,
-			want: func(_ ptrace.Traces) {
+			want: func(ptrace.Traces) {
 			},
 		},
 		{
@@ -181,11 +186,11 @@ func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -394,7 +399,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
-			want:      func(_ ptrace.Traces) {},
+			want:      func(ptrace.Traces) {},
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["total.string"], 3, 3))`,
@@ -411,7 +416,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["not_exist"], 3, 3))`,
-			want:      func(_ ptrace.Traces) {},
+			want:      func(ptrace.Traces) {},
 		},
 		{
 			statement: `set(attributes["test"], ["A", "B", "C"]) where name == "operationA"`,
@@ -467,7 +472,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		{
 			statement: `limit(attributes, 0, []) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
 			},
 		},
 		{
@@ -481,11 +486,11 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -694,7 +699,7 @@ func Test_ProcessTraces_InferredTraceContext(t *testing.T) {
 		},
 		{
 			statement: `set(span.attributes["test"], Split(span.attributes["not_exist"], "|"))`,
-			want:      func(_ ptrace.Traces) {},
+			want:      func(ptrace.Traces) {},
 		},
 		{
 			statement: `set(span.attributes["test"], Substring(span.attributes["total.string"], 3, 3))`,
@@ -711,7 +716,7 @@ func Test_ProcessTraces_InferredTraceContext(t *testing.T) {
 		},
 		{
 			statement: `set(span.attributes["test"], Substring(span.attributes["not_exist"], 3, 3))`,
-			want:      func(_ ptrace.Traces) {},
+			want:      func(ptrace.Traces) {},
 		},
 		{
 			statement: `set(span.attributes["test"], ["A", "B", "C"]) where span.name == "operationA"`,
@@ -767,7 +772,7 @@ func Test_ProcessTraces_InferredTraceContext(t *testing.T) {
 		{
 			statement: `limit(span.attributes, 0, []) where span.name == "operationA"`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().RemoveIf(func(string, pcommon.Value) bool { return true })
 			},
 		},
 		{
@@ -781,11 +786,11 @@ func Test_ProcessTraces_InferredTraceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -811,11 +816,11 @@ func Test_ProcessTraces_SpanEventContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "spanevent", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "spanevent", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -841,11 +846,11 @@ func Test_ProcessTraces_InferredSpanEventContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -958,11 +963,11 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -994,11 +999,11 @@ func Test_ProcessTraces_ErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(string(tt.context), func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON(1))`}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.Error(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.Error(t, err)
 		})
 	}
 }
@@ -1015,7 +1020,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 			name:      "span: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(span.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(span.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(span.attributes["test"], "pass") where span.name == "operationA" `}},
 			},
 			want: func(td ptrace.Traces) {
@@ -1026,16 +1031,16 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 			name:      "span: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(span.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(span.attributes["test"], ParseJSON(true))`}},
+				{Statements: []string{`set(span.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(span.attributes["test"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 		{
 			name:      "spanevent: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(spanevent.attributes["test"], "pass") where spanevent.name == "eventA" `}},
 			},
 			want: func(td ptrace.Traces) {
@@ -1046,16 +1051,16 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 			name:      "spanevent: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON(true))`}},
+				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 		{
 			name:      "resource: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
 			},
 			want: func(td ptrace.Traces) {
@@ -1066,16 +1071,16 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 			name:      "resource: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(true))`}},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 		{
 			name:      "scope: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
 			},
 			want: func(td ptrace.Traces) {
@@ -1086,19 +1091,19 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 			name:      "scope: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(true))`}},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: `expected string but got bool`,
+			wantErrorWith: `could not convert parsed value of type bool to JSON object`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
-			_, err = processor.ProcessTraces(context.Background(), td)
+			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			if tt.wantErrorWith != "" {
 				if err == nil {
 					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -1106,7 +1111,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 				assert.Contains(t, err.Error(), tt.wantErrorWith)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			exTd := constructTraces()
 			tt.want(exTd)
 			assert.Equal(t, exTd, td)
@@ -1253,11 +1258,11 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -1310,11 +1315,11 @@ func Test_ProcessTraces_InferredContextFromConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
 
 			exTd := constructTraces()
 			tt.want(exTd)
@@ -1380,7 +1385,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 		t.Run(ctx, func(t *testing.T) {
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
-					_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+					_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 					if tt.wantErrorWith != "" {
 						if err == nil {
 							t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -1391,6 +1396,101 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 					require.NoError(t, err)
 				})
 			}
+		})
+	}
+}
+
+type TestFuncArguments[K any] struct{}
+
+func createTestFunc[K any](ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(context.Context, K) (any, error) {
+		return nil, nil
+	}, nil
+}
+
+func NewTestSpanFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestSpanFunc", &TestFuncArguments[K]{}, createTestFunc[K])
+}
+
+func NewTestSpanEventFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestSpanEventFunc", &TestFuncArguments[K]{}, createTestFunc[K])
+}
+
+func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
+	type testCase struct {
+		name               string
+		statements         []common.ContextStatements
+		wantErrorWith      string
+		spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
+		spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
+	}
+
+	tests := []testCase{
+		{
+			name: "span functions : statement with added span func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("span"),
+					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
+				},
+			},
+			spanFunctions: map[string]ottl.Factory[*ottlspan.TransformContext]{
+				"set":          DefaultSpanFunctions["set"],
+				"TestSpanFunc": NewTestSpanFuncFactory[*ottlspan.TransformContext](),
+			},
+			spanEventFunctions: DefaultSpanEventFunctions,
+		},
+		{
+			name: "span functions : statement with missing span func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("span"),
+					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
+				},
+			},
+			wantErrorWith:      `undefined function "TestSpanFunc"`,
+			spanFunctions:      DefaultSpanFunctions,
+			spanEventFunctions: DefaultSpanEventFunctions,
+		},
+		{
+			name: "span event functions : statement with added span event func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("spanevent"),
+					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
+				},
+			},
+			spanFunctions: DefaultSpanFunctions,
+			spanEventFunctions: map[string]ottl.Factory[*ottlspanevent.TransformContext]{
+				"set":               DefaultSpanEventFunctions["set"],
+				"TestSpanEventFunc": NewTestSpanEventFuncFactory[*ottlspanevent.TransformContext](),
+			},
+		},
+		{
+			name: "span event functions : statement with missing span event func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("spanevent"),
+					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
+				},
+			},
+			wantErrorWith:      `undefined function "TestSpanEventFunc"`,
+			spanFunctions:      DefaultSpanFunctions,
+			spanEventFunctions: DefaultSpanEventFunctions,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), tt.spanFunctions, tt.spanEventFunctions)
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
@@ -1431,13 +1531,15 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(b, err)
+			b.ReportAllocs()
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(b, err)
+			b.ResetTimer()
+			for b.Loop() {
 				td := constructTraces()
-				_, err = processor.ProcessTraces(context.Background(), td)
-				assert.NoError(b, err)
+				_, err = processor.ProcessTraces(b.Context(), td)
+				require.NoError(b, err)
 			}
 		})
 	}
@@ -1464,7 +1566,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 			statements: func() []string {
 				var statements []string
 				statements = append(statements, `set(status.code, 1) where name == "operationA"`)
-				for i := 0; i < 99; i++ {
+				for range 99 {
 					statements = append(statements, `keep_keys(attributes, ["http.method"]) where name == "unknownOperation"`)
 				}
 				return statements
@@ -1473,15 +1575,34 @@ func BenchmarkHundredSpans(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
-			assert.NoError(b, err)
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(b, err)
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				td := constructTracesNum(100)
-				_, err = processor.ProcessTraces(context.Background(), td)
-				assert.NoError(b, err)
+				_, err = processor.ProcessTraces(b.Context(), td)
+				require.NoError(b, err)
 			}
 		})
+	}
+}
+
+// Benchmark that do not re-allocate data and does not change data to measure only overhead of calling the ottl framework.
+func BenchmarkSetName(b *testing.B) {
+	processor, err := NewProcessor([]common.ContextStatements{{
+		Context:    "span",
+		Statements: []string{`set(name, "operationA") where name == "operationA"`},
+	}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+	require.NoError(b, err)
+
+	td := constructTraces()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, err = processor.ProcessTraces(b.Context(), td)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -1502,7 +1623,7 @@ func constructTracesNum(num int) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
 	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
-	for i := 0; i < num; i++ {
+	for range num {
 		fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	}
 	return td

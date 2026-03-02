@@ -27,11 +27,11 @@ type metricModelGauge struct {
 	metricModelCommon[dMetricGauge]
 }
 
-func (m *metricModelGauge) metricType() pmetric.MetricType {
+func (*metricModelGauge) metricType() pmetric.MetricType {
 	return pmetric.MetricTypeGauge
 }
 
-func (m *metricModelGauge) tableSuffix() string {
+func (*metricModelGauge) tableSuffix() string {
 	return "_gauge"
 }
 

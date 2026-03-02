@@ -4,7 +4,7 @@
 package datapoints // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 
 import (
-	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -34,7 +34,7 @@ func (dp Histogram) Value() (pcommon.Value, error) {
 		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 		return vm, nil
 	}
-	return histogramToValue(dp.HistogramDataPoint)
+	return histogramToValue(dp.HistogramDataPoint, dp.metric)
 }
 
 func (dp Histogram) DynamicTemplate(_ pmetric.Metric) string {
@@ -52,13 +52,11 @@ func (dp Histogram) Metric() pmetric.Metric {
 	return dp.metric
 }
 
-func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
-	// Histogram conversion function is from
-	// https://github.com/elastic/apm-data/blob/3b28495c3cbdc0902983134276eb114231730249/input/otlp/metrics.go#L277
+func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric) (pcommon.Value, error) {
 	bucketCounts := dp.BucketCounts()
 	explicitBounds := dp.ExplicitBounds()
-	if bucketCounts.Len() != explicitBounds.Len()+1 || explicitBounds.Len() == 0 {
-		return pcommon.Value{}, errors.New("invalid histogram data point")
+	if bucketCounts.Len() > 0 && bucketCounts.Len() != explicitBounds.Len()+1 {
+		return pcommon.Value{}, fmt.Errorf("invalid histogram data point %q", metric.Name())
 	}
 
 	vm := pcommon.NewValueMap()
@@ -66,10 +64,21 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 	counts := m.PutEmptySlice("counts")
 	values := m.PutEmptySlice("values")
 
-	values.EnsureCapacity(bucketCounts.Len())
+	if explicitBounds.Len() == 0 {
+		// It is possible for explicit bounds to be nil. In this case create
+		// a bucket using the count and sum which are required to be present.
+		// See https://opentelemetry.io/docs/specs/otel/metrics/data-model/#histogram
+		if dp.Count() > 0 {
+			counts.AppendEmpty().SetInt(safeUint64ToInt64(dp.Count()))
+			values.AppendEmpty().SetDouble(dp.Sum() / float64(dp.Count()))
+		}
+
+		return vm, nil
+	}
+
 	counts.EnsureCapacity(bucketCounts.Len())
-	for i := 0; i < bucketCounts.Len(); i++ {
-		count := bucketCounts.At(i)
+	values.EnsureCapacity(bucketCounts.Len())
+	for i, count := range bucketCounts.All() {
 		if count == 0 {
 			continue
 		}

@@ -235,7 +235,7 @@ func buildEventFromLog(
 	}
 }
 
-func (e *DatasetExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
+func (e *datasetExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	var events []*add_events.EventBundle
 
 	resourceLogs := ld.ResourceLogs()

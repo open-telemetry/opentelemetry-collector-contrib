@@ -6,7 +6,6 @@
 package windowsperfcountersreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,7 @@ func TestCreateMetrics(t *testing.T) {
 			Gauge:       GaugeMetric{},
 		},
 	}
-	mReceiver, err := factory.CreateMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
 
 	assert.EqualError(t, err, "the windows perf counters receiver is only supported on Windows")
 	assert.Nil(t, mReceiver)

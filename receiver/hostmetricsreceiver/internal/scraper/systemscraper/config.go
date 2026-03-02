@@ -7,7 +7,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper/internal/metadata"
 )
 
-// Config relating to Uptime Metric Scraper.
+// Config relating to System Metric Scraper.
 type Config struct {
 	// MetricsBuilderConfig allows to customize scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`

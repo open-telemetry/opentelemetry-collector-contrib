@@ -6,7 +6,6 @@
 package activedirectorydsreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,7 +16,7 @@ import (
 func TestCreateMetrics(t *testing.T) {
 	t.Parallel()
 
-	recv, err := createMetricsReceiver(context.Background(), receiver.Settings{}, &Config{}, &consumertest.MetricsSink{})
+	recv, err := createMetricsReceiver(t.Context(), receiver.Settings{}, &Config{}, &consumertest.MetricsSink{})
 	require.Nil(t, recv)
 	require.ErrorIs(t, err, errReceiverNotSupported)
 }

@@ -1,0 +1,20 @@
+type: googlecloudstorage
+display_name: Google Cloud Storage Exporter
+
+status:
+  class: exporter
+  distributions: [contrib]
+  stability:
+    alpha: [logs]
+    development: [traces]
+  codeowners:
+    active: [constanca-m, braydonk]
+    seeking_new: true
+
+tests:
+  # we skip the generated tests since and implement our own, as we make requests to google
+  # API on new GCS exporter
+  skip_shutdown: true
+  # we skip the generated tests since and implement our own, as we make requests to google
+  # API on new GCS exporter
+  skip_lifecycle: true

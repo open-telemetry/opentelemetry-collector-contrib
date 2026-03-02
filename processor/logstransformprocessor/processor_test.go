@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -143,16 +144,16 @@ func TestLogsTransformProcessor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tln := new(consumertest.LogsSink)
 			factory := NewFactory()
-			ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
+			ltp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, ltp.Capabilities().MutatesData)
 
-			err = ltp.Start(context.Background(), nil)
+			err = ltp.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			sourceLogData := generateLogData(tt.sourceMessages)
 			wantLogData := generateLogData(tt.parsedMessages)
-			err = ltp.ConsumeLogs(context.Background(), sourceLogData)
+			err = ltp.ConsumeLogs(t.Context(), sourceLogData)
 			require.NoError(t, err)
 			time.Sleep(200 * time.Millisecond)
 			logs := tln.AllLogs()
@@ -223,7 +224,7 @@ func (t *laggyOperator) Process(ctx context.Context, e *entry.Entry) error {
 	return t.Write(ctx, e)
 }
 
-func (t *laggyOperator) CanProcess() bool {
+func (*laggyOperator) CanProcess() bool {
 	return true
 }
 
@@ -261,18 +262,18 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 
 	tln := new(consumertest.LogsSink)
 	factory := NewFactory()
-	ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), config, tln)
+	ltp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), config, tln)
 	require.NoError(t, err)
 	assert.True(t, ltp.Capabilities().MutatesData)
 
-	err = ltp.Start(context.Background(), nil)
+	err = ltp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	testLog := plog.NewLogs()
 	scopeLogs := testLog.ResourceLogs().AppendEmpty().
 		ScopeLogs().AppendEmpty()
 
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.Body().SetStr("Test message")
 	}
@@ -281,9 +282,9 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 	// a closed channel, since that'll cause a panic.
 	// In order to test, we send a lot of logs to be consumed, then shutdown immediately.
 
-	err = ltp.ConsumeLogs(context.Background(), testLog)
+	err = ltp.ConsumeLogs(t.Context(), testLog)
 	require.NoError(t, err)
 
-	err = ltp.Shutdown(context.Background())
+	err = ltp.Shutdown(t.Context())
 	require.NoError(t, err)
 }

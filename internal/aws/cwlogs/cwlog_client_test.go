@@ -201,7 +201,7 @@ func TestPutLogEvents(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger := zap.NewNop()
 			client := newCloudWatchLogClient(test.client, 0, nil, logger)
-			err := client.PutLogEvents(context.Background(), &cloudwatchlogs.PutLogEventsInput{
+			err := client.PutLogEvents(t.Context(), &cloudwatchlogs.PutLogEventsInput{
 				LogGroupName:  aws.String(logGroup),
 				LogStreamName: aws.String(logStreamName),
 			}, defaultRetryCount)
@@ -312,7 +312,7 @@ func TestPutLogEvents_WithOpts(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger := zap.NewNop()
 			client := newCloudWatchLogClient(test.client, test.logRetention, nil, logger)
-			err := client.PutLogEvents(context.Background(), &cloudwatchlogs.PutLogEventsInput{}, defaultRetryCount)
+			err := client.PutLogEvents(t.Context(), &cloudwatchlogs.PutLogEventsInput{}, defaultRetryCount)
 			if test.expectErr {
 				assert.Error(t, err)
 			} else {
@@ -369,7 +369,7 @@ func TestCreateStream(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger := zap.NewNop()
 			client := newCloudWatchLogClient(test.client, 0, nil, logger)
-			err := client.CreateStream(context.Background(), &logGroup, &logStreamName)
+			err := client.CreateStream(t.Context(), &logGroup, &logStreamName)
 			if test.expectErr {
 				assert.Error(t, err)
 			} else {
@@ -383,19 +383,19 @@ type UnknownError struct {
 	otherField string
 }
 
-func (err *UnknownError) Error() string {
+func (*UnknownError) Error() string {
 	return "Error"
 }
 
-func (err *UnknownError) Code() string {
+func (*UnknownError) Code() string {
 	return "Code"
 }
 
-func (err *UnknownError) Message() string {
+func (*UnknownError) Message() string {
 	return "Message"
 }
 
-func (err *UnknownError) OrigErr() error {
+func (*UnknownError) OrigErr() error {
 	return errors.New("OrigErr")
 }
 

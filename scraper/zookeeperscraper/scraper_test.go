@@ -192,7 +192,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
-			setConnectionDeadline: func(_ net.Conn, _ time.Time) error {
+			setConnectionDeadline: func(net.Conn, time.Time) error {
 				return errors.New("")
 			},
 		},
@@ -222,7 +222,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
-			closeConnection: func(_ net.Conn) error {
+			closeConnection: func(net.Conn) error {
 				return errors.New("")
 			},
 		},
@@ -238,7 +238,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.ErrorLevel,
 				},
 			},
-			sendCmd: func(_ net.Conn, _ string) (*bufio.Scanner, error) {
+			sendCmd: func(net.Conn, string) (*bufio.Scanner, error) {
 				return nil, errors.New("")
 			},
 		},
@@ -306,11 +306,11 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.sendCmd != nil {
 				z.sendCmd = tt.sendCmd
 			}
-			require.NoError(t, z.Start(context.Background(), componenttest.NewNopHost()))
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			require.NoError(t, z.Start(t.Context(), componenttest.NewNopHost()))
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 			defer cancel()
 			actualMetrics, err := z.ScrapeMetrics(ctx)
-			require.NoError(t, z.Shutdown(context.Background()))
+			require.NoError(t, z.Shutdown(t.Context()))
 
 			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
 			for i, log := range tt.expectedLogs {
@@ -323,7 +323,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					require.Error(t, err)
 					require.Equal(t, pmetric.NewMetrics(), actualMetrics)
 				}
-				require.NoError(t, z.Shutdown(context.Background()))
+				require.NoError(t, z.Shutdown(t.Context()))
 				return
 			}
 
@@ -340,8 +340,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	z := newZookeeperMetricsScraper(scrapertest.NewNopSettings(metadata.Type), cfg)
-	require.NoError(t, z.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, z.Shutdown(context.Background()))
+	require.NoError(t, z.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, z.Shutdown(t.Context()))
 }
 
 type mockedServer struct {

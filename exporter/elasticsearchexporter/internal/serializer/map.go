@@ -51,9 +51,8 @@ func WriteValue(v *json.Visitor, val pcommon.Value, stringifyMaps bool) {
 		}
 	case pcommon.ValueTypeSlice:
 		_ = v.OnArrayStart(-1, structform.AnyType)
-		slice := val.Slice()
-		for i := 0; i < slice.Len(); i++ {
-			WriteValue(v, slice.At(i), stringifyMaps)
+		for _, item := range val.Slice().All() {
+			WriteValue(v, item, stringifyMaps)
 		}
 		_ = v.OnArrayFinished()
 	}

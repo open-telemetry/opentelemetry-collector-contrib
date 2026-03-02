@@ -8,7 +8,6 @@
 package kubeletstatsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -44,7 +43,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	traceReceiver, err := factory.CreateTraces(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig(),
 		nil,
@@ -56,7 +55,7 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		tlsConfig(),
 		consumertest.NewNop(),
@@ -71,7 +70,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabel("invalid-label")},
 	}
 	metricsReceiver, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		&cfg,
 		consumertest.NewNop(),
@@ -91,7 +90,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 		},
 	}
 	_, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),

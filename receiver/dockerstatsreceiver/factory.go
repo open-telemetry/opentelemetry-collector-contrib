@@ -28,13 +28,12 @@ func createDefaultConfig() component.Config {
 	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 10 * time.Second
 	scs.Timeout = 5 * time.Second
+	config := *docker.NewDefaultConfig()
+	config.DockerAPIVersion = defaultDockerAPIVersion
+	config.Timeout = scs.Timeout
 	return &Config{
-		ControllerConfig: scs,
-		Config: docker.Config{
-			Endpoint:         "unix:///var/run/docker.sock",
-			DockerAPIVersion: defaultDockerAPIVersion,
-			Timeout:          scs.Timeout,
-		},
+		ControllerConfig:     scs,
+		Config:               config,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
@@ -53,5 +52,5 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewMetricsController(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
+	return scraperhelper.NewMetricsController(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, scrp))
 }

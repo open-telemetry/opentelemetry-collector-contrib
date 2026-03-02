@@ -19,7 +19,7 @@ func msgpWriterWithLimit(t *testing.T, l int) *msgp.Writer {
 	w := msgp.NewWriterSize(&limitedWriter{
 		maxLen: l,
 	}, 18+l)
-	_, err := w.Write(bytes.Repeat([]byte{0x00}, 18))
+	_, err := w.Write(make([]byte, 18))
 	require.NoError(t, err)
 	return w
 }
@@ -55,6 +55,6 @@ func (lw *limitedWriter) Write(p []byte) (n int, err error) {
 }
 
 // Close closes the writer.
-func (lw *limitedWriter) Close() error {
+func (*limitedWriter) Close() error {
 	return nil
 }

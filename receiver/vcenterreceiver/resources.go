@@ -115,7 +115,7 @@ func (v *vcenterMetricScraper) createVMResourceBuilder(
 	}
 	rb.SetVcenterHostName(hs.Name)
 
-	if vm.Config.Template {
+	if vm.Config != nil && vm.Config.Template {
 		rb.SetVcenterVMTemplateName(vm.Name)
 		rb.SetVcenterVMTemplateID(vm.Config.InstanceUuid)
 
@@ -123,7 +123,9 @@ func (v *vcenterMetricScraper) createVMResourceBuilder(
 	}
 
 	rb.SetVcenterVMName(vm.Name)
-	rb.SetVcenterVMID(vm.Config.InstanceUuid)
+	if vm.Config != nil {
+		rb.SetVcenterVMID(vm.Config.InstanceUuid)
+	}
 
 	if rp == nil {
 		return nil, fmt.Errorf("no Resource Pool found for VM: %s", vm.Name)

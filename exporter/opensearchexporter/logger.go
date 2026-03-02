@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/opensearch-project/opensearch-go/v2/opensearchtransport"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchtransport"
 	"go.uber.org/zap"
 )
 

@@ -147,7 +147,7 @@ func (d *deduplicator) isDup(r *request) (isDup bool) {
 	case http.MethodDelete:
 		return d.dedupDelete(r)
 	default:
-		return
+		return isDup
 	}
 }
 

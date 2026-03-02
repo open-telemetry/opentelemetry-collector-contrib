@@ -15,7 +15,7 @@ import (
 
 type jaegerProtobufTrace struct{}
 
-func (j jaegerProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
+func (jaegerProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	span := &jaegerproto.Span{}
 	err := span.Unmarshal(buf)
 	if err != nil {
@@ -26,7 +26,7 @@ func (j jaegerProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) 
 
 type jaegerJSONTrace struct{}
 
-func (j jaegerJSONTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
+func (jaegerJSONTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	span := &jaegerproto.Span{}
 	err := jsonpb.Unmarshal(bytes.NewReader(buf), span)
 	if err != nil {

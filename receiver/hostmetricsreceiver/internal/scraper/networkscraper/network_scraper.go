@@ -97,7 +97,7 @@ func (s *networkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	err = s.recordNetworkConntrackMetrics(ctx)
 	if err != nil {
-		errors.AddPartial(connectionsMetricsLen, err)
+		errors.AddPartial(conntrackMetricsLen, err)
 	}
 
 	return s.mb.Emit(), errors.Combine()

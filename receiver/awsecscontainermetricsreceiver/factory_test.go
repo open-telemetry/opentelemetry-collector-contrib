@@ -4,7 +4,6 @@
 package awsecscontainermetricsreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +22,7 @@ func TestValidConfig(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
@@ -36,7 +35,7 @@ func TestCreateMetricsWithEnv(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://www.test.com")
 
 	metricsReceiver, err := createMetricsReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
@@ -49,7 +48,7 @@ func TestCreateMetricsWithBadUrl(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "bad-url-format")
 
 	metricsReceiver, err := createMetricsReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
@@ -60,7 +59,7 @@ func TestCreateMetricsWithBadUrl(t *testing.T) {
 
 func TestCreateMetricsWithNilConsumer(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		nil,

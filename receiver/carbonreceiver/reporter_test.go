@@ -4,7 +4,6 @@
 package carbonreceiver
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -24,13 +23,13 @@ func TestReporterObservability(t *testing.T) {
 	receiverID := component.NewIDWithName(metadata.Type, "fake_receiver")
 	tt := componenttest.NewTelemetry()
 	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
+		require.NoError(t, tt.Shutdown(t.Context()))
 	}()
 
 	reporter, err := newReporter(receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	require.NoError(t, err)
 
-	ctx := reporter.OnDataReceived(context.Background())
+	ctx := reporter.OnDataReceived(t.Context())
 
 	reporter.OnMetricsProcessed(ctx, 17, nil)
 
@@ -50,7 +49,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_metric_points",
-			Description: "Number of metric points successfully pushed into the pipeline. [alpha]",
+			Description: "Number of metric points successfully pushed into the pipeline. [Alpha]",
 			Unit:        "{datapoints}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -71,7 +70,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_metric_points",
-			Description: "Number of metric points that could not be pushed into the pipeline. [alpha]",
+			Description: "Number of metric points that could not be pushed into the pipeline. [Alpha]",
 			Unit:        "{datapoints}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,

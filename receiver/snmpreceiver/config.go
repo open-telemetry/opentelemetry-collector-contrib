@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -152,6 +153,9 @@ type ResourceAttributeConfig struct {
 	// as an attribute on that resource. The related indexed metric values will then be used to associate metric datapoints to
 	// those resources.
 	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"` // required and valid if no oid or scalar_oid field
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // AttributeConfig contains config info about all of the metric attributes that will be used by this receiver.
@@ -192,6 +196,9 @@ type MetricConfig struct {
 type GaugeMetric struct {
 	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // SumMetric contains info about the value of the sum metric
@@ -202,6 +209,9 @@ type SumMetric struct {
 	Monotonic bool `mapstructure:"monotonic"`
 	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ScalarOID holds OID info for a scalar metric as well as any {resource} attributes
@@ -214,6 +224,9 @@ type ScalarOID struct {
 	// Attributes is optional and may contain names and values associated with enum
 	// AttributeConfigs to associate with the value of the scalar OID
 	Attributes []Attribute `mapstructure:"attributes"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ColumnOID holds OID info for an indexed metric as well as any attributes
@@ -246,7 +259,7 @@ func (cfg *Config) Validate() error {
 
 	combinedErr = errors.Join(combinedErr, validateEndpoint(cfg))
 	combinedErr = errors.Join(combinedErr, validateVersion(cfg))
-	if strings.ToUpper(cfg.Version) == "V3" {
+	if strings.EqualFold(cfg.Version, "V3") {
 		combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
 	}
 	combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))
@@ -446,7 +459,7 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 			}
 
 			if len(attrCfg.Enum) > 0 {
-				if !contains(attrCfg.Enum, attribute.Value) {
+				if !slices.Contains(attrCfg.Enum, attribute.Value) {
 					combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnAttributeBadValue, metricName, attribute.Name, attribute.Value))
 				}
 				continue
@@ -524,7 +537,7 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 			continue
 		}
 
-		if !contains(attrCfg.Enum, attribute.Value) {
+		if !slices.Contains(attrCfg.Enum, attribute.Value) {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarAttributeBadValue, metricName, attribute.Name, attribute.Value))
 		}
 	}
@@ -622,14 +635,4 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		}
 	}
 	return combinedErr
-}
-
-// contains checks if string slice contains a string value
-func contains(elements []string, value string) bool {
-	for _, element := range elements {
-		if value == element {
-			return true
-		}
-	}
-	return false
 }

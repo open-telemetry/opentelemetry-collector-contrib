@@ -3,10 +3,11 @@ type: syslog
 status:
   class: receiver
   stability:
-    alpha: [logs]
+    beta: [logs]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, andrzej-stencel]
+    active: [andrzej-stencel]
+    emeritus: [djaglowski]
     seeking_new: true
 
 tests:

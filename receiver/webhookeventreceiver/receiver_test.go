@@ -6,7 +6,6 @@ package webhookeventreceiver
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -44,7 +44,10 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined config success",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:8080",
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:8080",
+					},
 				},
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
@@ -61,7 +64,10 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined config success with header_attribute_regex supplied",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:8080",
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:8080",
+					},
 				},
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
@@ -79,7 +85,10 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined read timeout exceeds max value",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:8080",
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:8080",
+					},
 				},
 				ReadTimeout:  "11s",
 				WriteTimeout: "5s",
@@ -97,7 +106,10 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined write timeout exceeds max value",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:8080",
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:8080",
+					},
 				},
 				ReadTimeout:  "5s",
 				WriteTimeout: "11s",
@@ -115,7 +127,10 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined regex fails to compile",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:8080",
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:8080",
+					},
 				},
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
@@ -148,7 +163,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 // these requests should all succeed
 func TestHandleReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0"
+	cfg.NetAddr.Endpoint = "localhost:0"
 
 	tests := []struct {
 		desc string
@@ -181,8 +196,11 @@ func TestHandleReq(t *testing.T) {
 				gzipWriter := gzip.NewWriter(&msg)
 				_, err = gzipWriter.Write(msgJSON)
 				require.NoError(t, err, "Gzip writer failed")
+				err = gzipWriter.Close()
+				require.NoError(t, err, "Gzip writer failed to close")
 
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", &msg)
+				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
 		},
@@ -200,13 +218,13 @@ func TestHandleReq(t *testing.T) {
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
-			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Failed to start receiver")
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()), "Failed to start receiver")
 			defer func() {
-				require.NoError(t, r.Shutdown(context.Background()), "Failed to shutdown receiver")
+				require.NoError(t, r.Shutdown(t.Context()), "Failed to shutdown receiver")
 			}()
 
 			w := httptest.NewRecorder()
-			r.handleReq(w, test.req, httprouter.ParamsFromContext(context.Background()))
+			r.handleReq(w, test.req, httprouter.ParamsFromContext(t.Context()))
 
 			response := w.Result()
 			_, err = io.ReadAll(response.Body)
@@ -220,9 +238,9 @@ func TestHandleReq(t *testing.T) {
 // failure in its many forms
 func TestFailedReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0"
+	cfg.NetAddr.Endpoint = "localhost:0"
 	headerCfg := createDefaultConfig().(*Config)
-	headerCfg.Endpoint = "localhost:0"
+	headerCfg.NetAddr.Endpoint = "localhost:0"
 	headerCfg.RequiredHeader.Key = "key-present"
 	headerCfg.RequiredHeader.Value = "value-present"
 
@@ -235,7 +253,7 @@ func TestFailedReq(t *testing.T) {
 		{
 			desc:   "Invalid method",
 			cfg:    *cfg,
-			req:    httptest.NewRequest(http.MethodGet, "http://localhost/events", nil),
+			req:    httptest.NewRequest(http.MethodGet, "http://localhost/events", http.NoBody),
 			status: http.StatusBadRequest,
 		},
 		{
@@ -274,6 +292,22 @@ func TestFailedReq(t *testing.T) {
 			}(),
 			status: http.StatusUnauthorized,
 		},
+		{
+			desc: "Request body exceeds max size",
+			cfg: func() Config {
+				c := createDefaultConfig().(*Config)
+				c.NetAddr.Endpoint = "localhost:0"
+				c.MaxRequestBodySize = 70 * 1024 // Set to 70KB limit
+				c.SplitLogsAtNewLine = true
+				return *c
+			}(),
+			req: func() *http.Request {
+				// Create a payload larger than 70KB to ensure it exceeds the limit
+				largeBody := strings.Repeat("X", 80*1024)
+				return httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(largeBody))
+			}(),
+			status: http.StatusBadRequest,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
@@ -282,13 +316,13 @@ func TestFailedReq(t *testing.T) {
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
-			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Failed to start receiver")
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()), "Failed to start receiver")
 			defer func() {
-				require.NoError(t, r.Shutdown(context.Background()), "Failed to shutdown receiver")
+				require.NoError(t, r.Shutdown(t.Context()), "Failed to shutdown receiver")
 			}()
 
 			w := httptest.NewRecorder()
-			r.handleReq(w, test.req, httprouter.ParamsFromContext(context.Background()))
+			r.handleReq(w, test.req, httprouter.ParamsFromContext(t.Context()))
 
 			response := w.Result()
 			require.Equal(t, test.status, response.StatusCode)
@@ -298,19 +332,19 @@ func TestFailedReq(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.Endpoint = "localhost:0"
+	defaultConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
 	r := receiver.(*eventReceiver)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "failed to start receiver")
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()), "failed to start receiver")
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown receiver")
+		require.NoError(t, r.Shutdown(t.Context()), "failed to shutdown receiver")
 	}()
 
 	w := httptest.NewRecorder()
-	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", nil), httprouter.ParamsFromContext(context.Background()))
+	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", http.NoBody), httprouter.ParamsFromContext(t.Context()))
 
 	response := w.Result()
 	require.Equal(t, http.StatusOK, response.StatusCode)

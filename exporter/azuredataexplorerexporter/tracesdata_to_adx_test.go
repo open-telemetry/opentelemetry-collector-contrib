@@ -28,7 +28,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 		spanDatafn       func() ptrace.Span // function that generates the required spans for the test
 		resourceFn       func() pcommon.Resource
 		insScopeFn       func() pcommon.InstrumentationScope
-		expectedAdxTrace *AdxTrace
+		expectedAdxTrace *adxTrace
 	}{
 		{
 			name: "valid",
@@ -47,7 +47,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 			},
 			resourceFn: newDummyResource,
 			insScopeFn: newScopeWithData,
-			expectedAdxTrace: &AdxTrace{
+			expectedAdxTrace: &adxTrace{
 				TraceID:            "00000000000000000000000000000064",
 				SpanID:             "0000000000000032",
 				ParentID:           "",
@@ -70,7 +70,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 			},
 			resourceFn: pcommon.NewResource,
 			insScopeFn: newScopeWithData,
-			expectedAdxTrace: &AdxTrace{
+			expectedAdxTrace: &adxTrace{
 				SpanStatus:         "STATUS_CODE_UNSET",
 				SpanKind:           "SPAN_KIND_UNSPECIFIED",
 				StartTime:          defaultTime,
@@ -107,7 +107,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 			},
 			resourceFn: newDummyResource,
 			insScopeFn: newScopeWithData,
-			expectedAdxTrace: &AdxTrace{
+			expectedAdxTrace: &adxTrace{
 				TraceID:            "00000000000000000000000000000064",
 				SpanID:             "0000000000000032",
 				ParentID:           "",
@@ -118,14 +118,14 @@ func Test_mapToAdxTrace(t *testing.T) {
 				EndTime:            tstr,
 				ResourceAttributes: tmap,
 				TraceAttributes:    newMapFromAttr(`{"traceAttribKey":"traceAttribVal", "scope.name":"testscope", "scope.version":"1.0"}`),
-				Events: []*Event{
+				Events: []*event{
 					{
 						EventName:       "eventName",
 						EventAttributes: newMapFromAttr(`{"eventkey": "eventvalue"}`),
 						Timestamp:       tstr,
 					},
 				},
-				Links: []*Link{{
+				Links: []*link{{
 					TraceID:            "00000000000000000000000000000064",
 					SpanID:             "0000000000000032",
 					TraceState:         "",
@@ -159,7 +159,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 			},
 			resourceFn: newDummyResource,
 			insScopeFn: newScopeWithData,
-			expectedAdxTrace: &AdxTrace{
+			expectedAdxTrace: &adxTrace{
 				TraceID:            "00000000000000000000000000000064",
 				SpanID:             "0000000000000032",
 				ParentID:           "",
@@ -171,14 +171,14 @@ func Test_mapToAdxTrace(t *testing.T) {
 				EndTime:            tstr,
 				ResourceAttributes: tmap,
 				TraceAttributes:    newMapFromAttr(`{"traceAttribKey":"traceAttribVal", "scope.name":"testscope", "scope.version":"1.0"}`),
-				Events: []*Event{
+				Events: []*event{
 					{
 						EventName:       "eventName",
 						EventAttributes: newMapFromAttr(`{"eventkey": "eventvalue"}`),
 						Timestamp:       tstr,
 					},
 				},
-				Links: []*Link{{
+				Links: []*link{{
 					TraceID:            "00000000000000000000000000000064",
 					SpanID:             "0000000000000032",
 					TraceState:         "",
@@ -197,10 +197,10 @@ func Test_mapToAdxTrace(t *testing.T) {
 	}
 }
 
-func getEmptyEvents() []*Event {
-	return []*Event{}
+func getEmptyEvents() []*event {
+	return []*event{}
 }
 
-func getEmptyLinks() []*Link {
-	return []*Link{}
+func getEmptyLinks() []*link {
+	return []*link{}
 }

@@ -10,9 +10,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-type getNetworkDataFunc func(s *stats.NetworkStats) (rx *uint64, tx *uint64)
+type getNetworkDataFunc func(s *stats.NetworkStats) (rx, tx *uint64)
 
-type getInterfaceDataFunc func(s *stats.InterfaceStats) (rx *uint64, tx *uint64)
+type getInterfaceDataFunc func(s *stats.InterfaceStats) (rx, tx *uint64)
 
 func addNetworkMetrics(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetrics, s *stats.NetworkStats, currentTime pcommon.Timestamp, allInterfaces bool) {
 	if s == nil {

@@ -34,7 +34,7 @@ func (dp Summary) Value() (pcommon.Value, error) {
 	return vm, nil
 }
 
-func (dp Summary) DynamicTemplate(_ pmetric.Metric) string {
+func (Summary) DynamicTemplate(pmetric.Metric) string {
 	return "summary"
 }
 

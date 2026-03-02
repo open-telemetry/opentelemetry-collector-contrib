@@ -14,17 +14,19 @@ const (
 
 type Config struct {
 	// Export raw log string instead of log wrapper
-	Mode JSONEncodingMode `mapstructure:"mode,omitempty"`
+	Mode      JSONEncodingMode `mapstructure:"mode,omitempty"`
+	ArrayMode bool             `mapstructure:"array_mode,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func (c *Config) Validate() error {
+	// validate marshaling mode
 	switch c.Mode {
-	case JSONEncodingModeBodyWithInlineAttributes:
-	case JSONEncodingModeBody:
-	default:
-		return fmt.Errorf("invalid mode %q", c.Mode)
+	case JSONEncodingModeBodyWithInlineAttributes, JSONEncodingModeBody:
+		return nil
 	}
-	return nil
+
+	return fmt.Errorf("invalid mode %q", c.Mode)
 }

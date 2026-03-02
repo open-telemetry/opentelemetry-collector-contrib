@@ -62,7 +62,7 @@ func defaultClient(
 	host component.Host,
 	settings component.TelemetrySettings,
 ) (*clientImpl, error) {
-	client, err := clientSettings.ToClient(ctx, host, settings)
+	client, err := clientSettings.ToClient(ctx, host.GetExtensions(), settings)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 
 func (c *clientImpl) buildReq(path string) (*http.Request, error) {
 	url := c.baseURL.String() + path
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

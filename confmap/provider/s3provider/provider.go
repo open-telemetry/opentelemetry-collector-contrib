@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package s3provider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider"
 
@@ -52,7 +52,7 @@ func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newWithSettings)
 }
 
-func newWithSettings(_ confmap.ProviderSettings) confmap.Provider {
+func newWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{client: nil}
 }
 

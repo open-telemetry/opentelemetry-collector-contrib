@@ -48,13 +48,35 @@ var apiDict = map[string]string{
 	`SplunkHealth`:                      `/services/server/health/splunkd/details?output_mode=json`,
 	`SplunkInfo`:                        `/services/server/info?output_mode=json`,
 	`SplunkIndexerClusterManagerStatus`: `/services/cluster/manager/status?output_mode=json`,
+	`SplunkLicenses`:                    `/services/licenser/licenses?output_mode=json`,
 }
 
+// Struct containing information relating to search based metrics
 type searchResponse struct {
+	// search job being run
 	search string
-	Jobid  *string `xml:"sid"`
+
+	// id of job running the search
+	Jobid *string `xml:"sid"`
+
+	// response code
 	Return int
+
+	// number of responses per page
+	count int
+
+	// offset of first result value in a page
+	offset int
+
+	// total number of responses for the query results
+	TotalCount metaField `xml:"meta>fieldOrder>field"`
+
+	// returned results
 	Fields []*field `xml:"result>field"`
+}
+
+type metaField struct {
+	Count int `xml:"summary.count,attr"`
 }
 
 type field struct {
@@ -145,7 +167,7 @@ type kvEntry struct {
 
 type kvStatus struct {
 	Current   kvStoreCurrent `json:"current"`
-	KVService kvService      `json:"externalKVStore,omitempty"`
+	KVService kvService      `json:"externalKVStore,omitzero"`
 }
 
 type kvService struct {
@@ -178,6 +200,10 @@ type dispatchArtifactContent struct {
 	InfoCacheSize      string `json:"cached_job_status_info_csv_size_mb"`
 	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
+	AdhocSize          string `json:"adhoc_size_mb"`
+	ScheduledSize      string `json:"scheduled_size_mb"`
+	CompletedSize      string `json:"completed_size_mb"`
+	IncompleteSize     string `json:"incomple_size_mb"`
 }
 
 // '/services/server/health/splunkd/details'
@@ -195,7 +221,7 @@ type healthDetails struct {
 }
 
 // '/services/server/info'
-type Info struct {
+type info struct {
 	Host    string      `json:"origin"`
 	Entries []infoEntry `json:"entry"`
 }
@@ -209,7 +235,7 @@ type infoContent struct {
 	Version string `json:"version"`
 }
 
-type infoDict map[any]Info
+type infoDict map[any]info
 
 // '/services/search/jobs/{search_id}'
 type searchMetaEntries struct {
@@ -240,4 +266,20 @@ type idxClusterManagerStatusContent struct {
 	RollingRestartType      string `json:"rolling_restart_type,omitempty"`
 	SearchableRolling       bool   `json:"searchable_rolling,omitempty"`
 	ServiceReadyFlag        bool   `json:"service_ready_flag,omitempty"`
+}
+
+// '/services/licenser/licenses'
+type licenses struct {
+	Entries []licenseEntry `json:"entry"`
+}
+
+type licenseEntry struct {
+	Content licenseContent `json:"content"`
+}
+
+type licenseContent struct {
+	ExpirationTime int64  `json:"expiration_time"`
+	Label          string `json:"label"`
+	Status         string `json:"status"`
+	Type           string `json:"type"`
 }

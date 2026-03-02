@@ -82,7 +82,7 @@ func TestPublishAckedWithinTimeout(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 
 	require.NoError(t, err)
 	client.AssertExpectations(t)
@@ -99,7 +99,7 @@ func TestPublishNackedWithinTimeout(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 
 	assert.EqualError(t, err, "received nack from rabbitmq publishing confirmation")
 	client.AssertExpectations(t)
@@ -119,7 +119,7 @@ func TestPublishTimeoutBeforeAck(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 
 	assert.EqualError(t, err, "timeout waiting for publish confirmation after 20ms")
 	client.AssertExpectations(t)
@@ -142,9 +142,9 @@ func TestPublishTwiceReusingSameConnection(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	require.NoError(t, err)
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	require.NoError(t, err)
 
 	client.AssertNumberOfCalls(t, "DialConfig", 1)
@@ -170,7 +170,7 @@ func TestRestoreUnhealthyConnectionDuringPublish(t *testing.T) {
 	connectionErrChan <- amqp.ErrClosed
 	connection.On("Close").Return(nil)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 
 	require.NoError(t, err)
 	connection.AssertNumberOfCalls(t, "ReconnectIfUnhealthy", 1)
@@ -188,7 +188,7 @@ func TestRestoreClosedConnectionDuringPublish(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	require.NoError(t, err)
 	client.AssertNumberOfCalls(t, "DialConfig", 1)
 	client.AssertExpectations(t)
@@ -209,7 +209,7 @@ func TestFailRestoreConnectionDuringPublishing(t *testing.T) {
 	resetCall(t, client.ExpectedCalls, "DialConfig")
 	client.On("DialConfig", connectURL, mock.Anything).Return(nil, errors.New("simulated connection error"))
 
-	_ = publisher.Publish(context.Background(), makePublishMessage())
+	_ = publisher.Publish(t.Context(), makePublishMessage())
 	client.AssertNumberOfCalls(t, "DialConfig", 1)
 }
 
@@ -222,7 +222,7 @@ func TestErrCreatingChannel(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	assert.EqualError(t, err, "simulated error creating channel")
 }
 
@@ -235,7 +235,7 @@ func TestErrSettingChannelConfirmMode(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	assert.EqualError(t, err, "simulated error setting channel confirm mode")
 }
 
@@ -252,7 +252,7 @@ func TestErrPublishing(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	assert.EqualError(t, err, "error publishing message\nsimulated error publishing")
 }
 

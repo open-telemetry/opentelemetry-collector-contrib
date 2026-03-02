@@ -13,7 +13,7 @@ import (
 
 // sanitize replaces non-alphanumeric characters with underscores in s.
 func sanitize(s string) string {
-	if len(s) == 0 {
+	if s == "" {
 		return s
 	}
 

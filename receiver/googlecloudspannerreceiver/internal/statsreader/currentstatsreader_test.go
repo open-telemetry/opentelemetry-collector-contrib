@@ -4,7 +4,6 @@
 package statsreader
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -26,7 +25,7 @@ const (
 
 func TestCurrentStatsReader_Name(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := spanner.NewClient(ctx, "")
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	metricsMetadata := &metadata.MetricsMetadata{
@@ -44,7 +43,7 @@ func TestCurrentStatsReader_Name(t *testing.T) {
 
 func TestNewCurrentStatsReader(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := spanner.NewClient(ctx, "")
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	metricsMetadata := &metadata.MetricsMetadata{

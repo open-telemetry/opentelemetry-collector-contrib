@@ -45,5 +45,6 @@ General purpose:
 - [remove](./remove.md)
 - [retain](./retain.md)
 - [router](./router.md)
+- [sanitize_utf8](./sanitize_utf8.md)
 - [unquote](./unquote.md)
 - [assign_keys](./assign_keys.md)

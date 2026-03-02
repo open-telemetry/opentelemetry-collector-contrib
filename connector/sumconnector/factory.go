@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package sumconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector"
 
@@ -47,9 +47,9 @@ func createTracesToMetrics(
 ) (connector.Traces, error) {
 	c := cfg.(*Config)
 
-	spanMetricDefs := make(map[string]metricDef[ottlspan.TransformContext], len(c.Spans))
+	spanMetricDefs := make(map[string]metricDef[*ottlspan.TransformContext], len(c.Spans))
 	for name, info := range c.Spans {
-		md := metricDef[ottlspan.TransformContext]{
+		md := metricDef[*ottlspan.TransformContext]{
 			desc:       info.Description,
 			attrs:      info.Attributes,
 			sourceAttr: info.SourceAttribute,
@@ -62,9 +62,9 @@ func createTracesToMetrics(
 		spanMetricDefs[name] = md
 	}
 
-	spanEventMetricDefs := make(map[string]metricDef[ottlspanevent.TransformContext], len(c.SpanEvents))
+	spanEventMetricDefs := make(map[string]metricDef[*ottlspanevent.TransformContext], len(c.SpanEvents))
 	for name, info := range c.SpanEvents {
-		md := metricDef[ottlspanevent.TransformContext]{
+		md := metricDef[*ottlspanevent.TransformContext]{
 			desc:       info.Description,
 			attrs:      info.Attributes,
 			sourceAttr: info.SourceAttribute,
@@ -93,9 +93,9 @@ func createMetricsToMetrics(
 ) (connector.Metrics, error) {
 	c := cfg.(*Config)
 
-	metricMetricDefs := make(map[string]metricDef[ottlmetric.TransformContext], len(c.Metrics))
+	metricMetricDefs := make(map[string]metricDef[*ottlmetric.TransformContext], len(c.Metrics))
 	for name, info := range c.Metrics {
-		md := metricDef[ottlmetric.TransformContext]{
+		md := metricDef[*ottlmetric.TransformContext]{
 			desc:       info.Description,
 			sourceAttr: info.SourceAttribute,
 		}
@@ -107,9 +107,9 @@ func createMetricsToMetrics(
 		metricMetricDefs[name] = md
 	}
 
-	dataPointMetricDefs := make(map[string]metricDef[ottldatapoint.TransformContext], len(c.DataPoints))
+	dataPointMetricDefs := make(map[string]metricDef[*ottldatapoint.TransformContext], len(c.DataPoints))
 	for name, info := range c.DataPoints {
-		md := metricDef[ottldatapoint.TransformContext]{
+		md := metricDef[*ottldatapoint.TransformContext]{
 			desc:       info.Description,
 			attrs:      info.Attributes,
 			sourceAttr: info.SourceAttribute,
@@ -138,9 +138,9 @@ func createLogsToMetrics(
 ) (connector.Logs, error) {
 	c := cfg.(*Config)
 
-	metricDefs := make(map[string]metricDef[ottllog.TransformContext], len(c.Logs))
+	metricDefs := make(map[string]metricDef[*ottllog.TransformContext], len(c.Logs))
 	for name, info := range c.Logs {
-		md := metricDef[ottllog.TransformContext]{
+		md := metricDef[*ottllog.TransformContext]{
 			desc:       info.Description,
 			attrs:      info.Attributes,
 			sourceAttr: info.SourceAttribute,

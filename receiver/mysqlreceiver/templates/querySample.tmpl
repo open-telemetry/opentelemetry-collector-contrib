@@ -1,0 +1,41 @@
+SELECT
+    thread.thread_id,
+    COALESCE(thread.processlist_user, ''),
+    COALESCE(processlist.host, ''),
+    COALESCE(thread.processlist_db, ''),
+    COALESCE(thread.processlist_command, ''),
+    COALESCE(thread.processlist_state, ''),
+    COALESCE(statement.sql_text, COALESCE(thread.PROCESSLIST_info, '')) AS sql_text,
+    COALESCE(statement.digest, ''),
+    COALESCE(wait.event_id, statement.event_id, 0),
+    IF(wait.thread_id IS NULL,
+        'other',
+        COALESCE(
+            IF(thread.processlist_state = 'User sleep', 'User sleep',
+            IF(wait.event_id = wait.end_event_id, 'CPU', wait.event_name)), 'CPU'
+        )
+    ) AS wait_event,
+    COALESCE(wait.timer_wait/1e12, 0)
+FROM
+    performance_schema.threads AS thread
+    LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
+    LEFT JOIN performance_schema.events_waits_current AS wait ON wait.thread_id = thread.thread_id
+    LEFT JOIN information_schema.processlist AS processlist on processlist.id = thread.thread_id
+WHERE
+    thread.processlist_state IS NOT NULL
+    AND thread.processlist_command != 'Sleep'
+    AND thread.processlist_id != CONNECTION_ID()
+    AND thread.PROCESSLIST_COMMAND != 'Daemon'
+    AND (wait.EVENT_NAME != 'idle' OR wait.EVENT_NAME IS NULL)
+    AND (wait.operation != 'idle' OR wait.operation IS NULL)
+    -- events_waits_current can have multiple rows per thread, thus we use EVENT_ID to identify the row we want to use.
+    -- Additionally, we want the row with the highest EVENT_ID which reflects the most recent and current wait.
+    AND (
+        wait.event_id = (
+           SELECT
+              MAX(current_waits.EVENT_ID)
+          FROM  performance_schema.events_waits_current AS current_waits
+          Where current_waits.thread_id = thread.thread_id
+    ) OR wait.event_id is NULL)
+    AND COALESCE(statement.sql_text, thread.PROCESSLIST_info) != ''
+LIMIT {{ .limit }}

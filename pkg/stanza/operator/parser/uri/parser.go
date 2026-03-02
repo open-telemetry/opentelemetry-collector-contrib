@@ -7,25 +7,11 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/featuregate"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
-
-const semconvCompliantFeatureGateID = "parser.uri.ecscompliant"
-
-var semconvCompliantFeatureGate *featuregate.Gate
-
-func init() {
-	semconvCompliantFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		semconvCompliantFeatureGateID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled resulting map will be in semconv compliant format."),
-		featuregate.WithRegisterFromVersion("v0.103.0"),
-	)
-}
 
 // Parser is an operator that parses a uri.
 type Parser struct {
@@ -33,7 +19,7 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	return p.ProcessBatchWith(ctx, entries, p.parse)
 }
 
 // Process will parse an entry.
@@ -42,10 +28,10 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // parse will parse a uri from a field and attach it to an entry.
-func (p *Parser) parse(value any) (any, error) {
+func (*Parser) parse(value any) (any, error) {
 	switch m := value.(type) {
 	case string:
-		return parseutils.ParseURI(m, semconvCompliantFeatureGate.IsEnabled())
+		return parseutils.ParseURI(m, metadata.ParserURIEcscompliantFeatureGate.IsEnabled())
 	default:
 		return nil, fmt.Errorf("type '%T' cannot be parsed as URI", value)
 	}

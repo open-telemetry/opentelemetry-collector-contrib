@@ -36,7 +36,7 @@ const (
 type FromTranslator struct{}
 
 // FromMetrics converts pmetric.Metrics to SignalFx proto data points.
-func (ft *FromTranslator) FromMetrics(md pmetric.Metrics, dropHistogramBuckets bool, processHistograms bool) ([]*sfxpb.DataPoint, error) {
+func (ft *FromTranslator) FromMetrics(md pmetric.Metrics, dropHistogramBuckets, processHistograms bool) ([]*sfxpb.DataPoint, error) {
 	var sfxDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
@@ -57,7 +57,7 @@ func (ft *FromTranslator) FromMetrics(md pmetric.Metrics, dropHistogramBuckets b
 
 // FromMetric converts pmetric.Metric to SignalFx proto data points.
 // TODO: Remove this and change signalfxexporter to us FromMetrics.
-func (ft *FromTranslator) FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.Dimension, dropHistogramBuckets bool, processHistograms bool) []*sfxpb.DataPoint {
+func (*FromTranslator) FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.Dimension, dropHistogramBuckets, processHistograms bool) []*sfxpb.DataPoint {
 	var dps []*sfxpb.DataPoint
 
 	mt := fromMetricTypeToMetricType(m)

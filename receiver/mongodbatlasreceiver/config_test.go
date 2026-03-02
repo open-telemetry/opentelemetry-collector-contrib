@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -128,7 +129,7 @@ func TestValidate(t *testing.T) {
 			name: "Valid Metrics Config",
 			input: Config{
 				BaseURL: mongodbatlas.CloudURL,
-				Projects: []*ProjectConfig{
+				Projects: []ProjectConfig{
 					{
 						Name: "Project1",
 					},
@@ -140,7 +141,7 @@ func TestValidate(t *testing.T) {
 			name: "Valid Metrics Config with multiple projects with an inclusion or exclusion",
 			input: Config{
 				BaseURL: mongodbatlas.CloudURL,
-				Projects: []*ProjectConfig{
+				Projects: []ProjectConfig{
 					{
 						Name:            "Project1",
 						IncludeClusters: []string{"Cluster1"},
@@ -157,7 +158,7 @@ func TestValidate(t *testing.T) {
 			name: "invalid Metrics Config",
 			input: Config{
 				BaseURL: mongodbatlas.CloudURL,
-				Projects: []*ProjectConfig{
+				Projects: []ProjectConfig{
 					{
 						Name:            "Project1",
 						IncludeClusters: []string{"Cluster1"},
@@ -304,9 +305,9 @@ func TestValidate(t *testing.T) {
 			name: "Invalid events config - no projects",
 			input: Config{
 				BaseURL: mongodbatlas.CloudURL,
-				Events: &EventsConfig{
+				Events: configoptional.Some(EventsConfig{
 					Projects: []*ProjectConfig{},
-				},
+				}),
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoEvents.Error(),
@@ -416,7 +417,7 @@ func TestLoadConfig(t *testing.T) {
 		PollInterval: time.Minute,
 	}
 
-	expected.Events = &EventsConfig{
+	expected.Events = configoptional.Some(EventsConfig{
 		Projects: []*ProjectConfig{
 			{
 				Name: "Project 0",
@@ -430,6 +431,6 @@ func TestLoadConfig(t *testing.T) {
 		PollInterval: time.Minute,
 		MaxPages:     defaultEventsMaxPages,
 		PageSize:     defaultEventsPageSize,
-	}
+	})
 	require.Equal(t, expected, cfg)
 }

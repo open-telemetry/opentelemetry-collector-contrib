@@ -3,27 +3,59 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []string `mapstructure:"attributes"`
+	definedAttributes   []string
+	requiredAttributes  []string
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+	for _, val := range ms.EnabledAttributes {
+		if !slices.Contains(ms.definedAttributes, val) {
+			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		}
+	}
+
+	for _, val := range ms.requiredAttributes {
+		if !slices.Contains(ms.EnabledAttributes, val) {
+			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		}
+	}
+
+	if ms.AggregationStrategy != AggregationStrategySum &&
+		ms.AggregationStrategy != AggregationStrategyAvg &&
+		ms.AggregationStrategy != AggregationStrategyMin &&
+		ms.AggregationStrategy != AggregationStrategyMax {
+		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for oracledb metrics.
@@ -44,6 +76,7 @@ type MetricsConfig struct {
 	OracledbExecutions                            MetricConfig `mapstructure:"oracledb.executions"`
 	OracledbHardParses                            MetricConfig `mapstructure:"oracledb.hard_parses"`
 	OracledbLogicalReads                          MetricConfig `mapstructure:"oracledb.logical_reads"`
+	OracledbLogons                                MetricConfig `mapstructure:"oracledb.logons"`
 	OracledbParallelOperationsDowngraded1To25Pct  MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
 	OracledbParallelOperationsDowngraded25To50Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
 	OracledbParallelOperationsDowngraded50To75Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
@@ -75,126 +108,375 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		OracledbConsistentGets: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbCPUTime: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbDbBlockGets: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbDdlStatementsParallelized: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbDmlLocksLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbDmlLocksUsage: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbDmlStatementsParallelized: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbEnqueueDeadlocks: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbEnqueueLocksLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbEnqueueLocksUsage: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbEnqueueResourcesLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbEnqueueResourcesUsage: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbExchangeDeadlocks: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbExecutions: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbHardParses: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbLogicalReads: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
+		},
+		OracledbLogons: MetricConfig{
+			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbParallelOperationsDowngraded1To25Pct: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbParallelOperationsDowngraded25To50Pct: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbParallelOperationsDowngraded50To75Pct: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbParallelOperationsDowngraded75To99Pct: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbParallelOperationsDowngradedToSerial: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbParallelOperationsNotDowngraded: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbParseCalls: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbPgaMemory: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbPhysicalReadIoRequests: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbPhysicalReads: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbPhysicalReadsDirect: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbPhysicalWriteIoRequests: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbPhysicalWrites: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbPhysicalWritesDirect: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbProcessesLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbProcessesUsage: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbQueriesParallelized: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbSessionsLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbSessionsUsage: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"session_type", "session_status"},
+			EnabledAttributes:   []string{"session_type", "session_status"},
 		},
 		OracledbTablespaceSizeLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"tablespace_name"},
+			EnabledAttributes:   []string{"tablespace_name"},
 		},
 		OracledbTablespaceSizeUsage: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"tablespace_name"},
+			EnabledAttributes:   []string{"tablespace_name"},
 		},
 		OracledbTransactionsLimit: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbTransactionsUsage: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbUserCommits: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		OracledbUserRollbacks: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
+		},
+	}
+}
+
+// EventConfig provides common config for a particular event.
+type EventConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// EventsConfig provides config for oracledb events.
+type EventsConfig struct {
+	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
+}
+
+func DefaultEventsConfig() EventsConfig {
+	return EventsConfig{
+		DbServerQuerySample: EventConfig{
+			Enabled: false,
+		},
+		DbServerTopQuery: EventConfig{
+			Enabled: false,
 		},
 	}
 }
@@ -209,6 +491,13 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -227,12 +516,20 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for oracledb resource attributes.
 type ResourceAttributesConfig struct {
+	HostName             ResourceAttributeConfig `mapstructure:"host.name"`
 	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
+	ServiceInstanceID    ResourceAttributeConfig `mapstructure:"service.instance.id"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		HostName: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		OracledbInstanceName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServiceInstanceID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
@@ -247,6 +544,19 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+	}
+}
+
+// LogsBuilderConfig is a configuration for oracledb logs builder.
+type LogsBuilderConfig struct {
+	Events             EventsConfig             `mapstructure:"events"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig{
+		Events:             DefaultEventsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }

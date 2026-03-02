@@ -5,7 +5,6 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -25,20 +24,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
 
-type Server struct {
+type mockTCPserver struct {
 	host     string
 	port     string
 	listener net.Listener
 }
 
-func newTCPServer(host string, port string) *Server {
-	return &Server{
+func newTCPServer(host, port string) *mockTCPserver {
+	return &mockTCPserver{
 		host: host,
 		port: port,
 	}
 }
 
-func (server *Server) runTCPServer(t *testing.T) string {
+func (server *mockTCPserver) runTCPServer(t *testing.T) string {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", server.host, server.port))
 	require.NoError(t, err)
 	server.listener = listener
@@ -50,7 +49,7 @@ func (server *Server) runTCPServer(t *testing.T) string {
 	return listener.Addr().String()
 }
 
-func (server *Server) runTCPServerError() (string, error) {
+func (server *mockTCPserver) runTCPServerError() (string, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", server.host, server.port))
 	if err != nil {
 		return "", err
@@ -66,7 +65,7 @@ func (server *Server) runTCPServerError() (string, error) {
 	return listener.Addr().String(), nil
 }
 
-func (server *Server) shutdown() {
+func (server *mockTCPserver) shutdown() {
 	server.listener.Close()
 }
 
@@ -161,7 +160,7 @@ func TestScraper(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scraper := newScraper(cfg, settings)
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			actualMetrics.ResourceMetrics()
 			require.NoError(t, err, "failed scrape")
 			require.NoError(
@@ -221,7 +220,7 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			// Initialize metrics builder
 			scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
 
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			require.Error(t, err, "expected connection refused error")
 
 			for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
@@ -319,7 +318,7 @@ func TestScraper_ErrorEnumCounts(t *testing.T) {
 	scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
 
 	// Run a single scrape to collect all errors
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.Error(t, err, "expected errors from scrape")
 
 	// Print all metrics for debugging
@@ -416,8 +415,8 @@ func TestScraper_MultipleEndpoints_ErrorSum(t *testing.T) {
 	scraper := newScraper(cfg, settings)
 
 	// Simulate 5 failed scrapes
-	for idx := 0; idx < 5; idx++ {
-		metrics, err := scraper.scrape(context.Background())
+	for idx := range 5 {
+		metrics, err := scraper.scrape(t.Context())
 		require.Error(t, err)
 		require.NotNil(t, metrics)
 

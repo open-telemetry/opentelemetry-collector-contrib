@@ -7,6 +7,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -20,10 +22,11 @@ const (
 	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
 	// defaultEndpoint = "localhost:8080"
-	defaultReadTimeout  = "500ms"
-	defaultWriteTimeout = "500ms"
-	defaultPath         = "/events"
-	defaultHealthPath   = "/health_check"
+	defaultReadTimeout        = "500ms"
+	defaultWriteTimeout       = "500ms"
+	defaultPath               = "/events"
+	defaultHealthPath         = "/health_check"
+	defaultMaxRequestBodySize = 100 * 1024 // 100KB
 )
 
 // NewFactory creates a factory for Generic Webhook Receiver.
@@ -37,13 +40,20 @@ func NewFactory() receiver.Factory {
 
 // Default configuration for the generic webhook receiver
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
 	return &Config{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr:            netAddr,
+			MaxRequestBodySize: defaultMaxRequestBodySize,
+		},
 		Path:                       defaultPath,
 		HealthPath:                 defaultHealthPath,
 		ReadTimeout:                defaultReadTimeout,
 		WriteTimeout:               defaultWriteTimeout,
 		ConvertHeadersToAttributes: false, // optional, off by default
 		SplitLogsAtNewLine:         false,
+		SplitLogsAtJSONBoundary:    false,
 	}
 }
 

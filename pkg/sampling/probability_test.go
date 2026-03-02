@@ -279,7 +279,7 @@ func TestProbabilityToThresholdWithPrecision(t *testing.T) {
 					// Requested precision is independent of leading zeros,
 					// so strip them to calculate test precision.
 					strip := round
-					for len(strip) > 0 && strip[0] == '0' {
+					for strip != "" && strip[0] == '0' {
 						strip = strip[1:]
 					}
 					rth, err := ProbabilityToThresholdWithPrecision(test.prob, len(strip))

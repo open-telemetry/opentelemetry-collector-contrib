@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
-	"sort"
+	"slices"
 	"testing"
 	"time"
 
@@ -61,16 +61,16 @@ func filterAttributeMap(attrMap pcommon.Map, selectedKeys []string) pcommon.Map 
 	return filteredAttrMap
 }
 
-func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog.Logs {
+func someComplexLogs(withResourceAttrIndex bool, rlCount, illCount int) plog.Logs {
 	logs := plog.NewLogs()
 
-	for i := 0; i < rlCount; i++ {
+	for i := range rlCount {
 		rl := logs.ResourceLogs().AppendEmpty()
 		if withResourceAttrIndex {
 			rl.Resource().Attributes().PutInt("resourceAttrIndex", int64(i))
 		}
 
-		for j := 0; j < illCount; j++ {
+		for range illCount {
 			log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 			log.Attributes().PutStr("commonGroupedAttr", "abc")
 			log.Attributes().PutStr("commonNonGroupedAttr", "xyz")
@@ -80,16 +80,16 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog
 	return logs
 }
 
-func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) ptrace.Traces {
+func someComplexTraces(withResourceAttrIndex bool, rsCount, ilsCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
-	for i := 0; i < rsCount; i++ {
+	for i := range rsCount {
 		rs := traces.ResourceSpans().AppendEmpty()
 		if withResourceAttrIndex {
 			rs.Resource().Attributes().PutInt("resourceAttrIndex", int64(i))
 		}
 
-		for j := 0; j < ilsCount; j++ {
+		for j := range ilsCount {
 			span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			span.Attributes().PutStr("commonGroupedAttr", "abc")
@@ -100,21 +100,21 @@ func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pt
 	return traces
 }
 
-func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int) pmetric.Metrics {
+func someComplexMetrics(withResourceAttrIndex bool, rmCount, ilmCount, dataPointCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
-	for i := 0; i < rmCount; i++ {
+	for i := range rmCount {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		if withResourceAttrIndex {
 			rm.Resource().Attributes().PutInt("resourceAttrIndex", int64(i))
 		}
 
-		for j := 0; j < ilmCount; j++ {
+		for j := range ilmCount {
 			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			dps := metric.SetEmptyGauge().DataPoints()
 
-			for k := 0; k < dataPointCount; k++ {
+			for k := range dataPointCount {
 				dataPoint := dps.AppendEmpty()
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				dataPoint.SetIntValue(int64(k))
@@ -127,25 +127,25 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 	return metrics
 }
 
-func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int, histogramSize int) pmetric.Metrics {
+func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount, ilmCount, dataPointCount, histogramSize int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
-	for i := 0; i < rmCount; i++ {
+	for i := range rmCount {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		if withResourceAttrIndex {
 			rm.Resource().Attributes().PutInt("resourceAttrIndex", int64(i))
 		}
 
-		for j := 0; j < ilmCount; j++ {
+		for j := range ilmCount {
 			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
-			for k := 0; k < dataPointCount; k++ {
+			for range dataPointCount {
 				dataPoint := metric.Histogram().DataPoints().AppendEmpty()
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				buckets := randUIntArr(histogramSize)
-				sort.Slice(buckets, func(i, j int) bool { return buckets[i] < buckets[j] })
+				slices.Sort(buckets)
 				dataPoint.BucketCounts().FromRaw(buckets)
 				dataPoint.ExplicitBounds().FromRaw(randFloat64Arr(histogramSize))
 				dataPoint.SetCount(sum(buckets))
@@ -160,7 +160,7 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 
 func randUIntArr(size int) []uint64 {
 	arr := make([]uint64, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		arr[i] = rand.Uint64()
 	}
 	return arr
@@ -176,7 +176,7 @@ func sum(arr []uint64) uint64 {
 
 func randFloat64Arr(size int) []float64 {
 	arr := make([]float64, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		arr[i] = rand.Float64()
 	}
 	return arr
@@ -275,21 +275,21 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputHistogramMetrics := someComplexHistogramMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2, 2)
 
 			tel := componenttest.NewTelemetry()
-			t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+			t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 
 			gap, err := createGroupByAttrsProcessor(metadatatest.NewSettings(tel), tt.groupByKeys)
 			require.NoError(t, err)
 
-			processedLogs, err := gap.processLogs(context.Background(), inputLogs)
+			processedLogs, err := gap.processLogs(t.Context(), inputLogs)
 			assert.NoError(t, err)
 
-			processedSpans, err := gap.processTraces(context.Background(), inputTraces)
+			processedSpans, err := gap.processTraces(t.Context(), inputTraces)
 			assert.NoError(t, err)
 
-			processedMetrics, err := gap.processMetrics(context.Background(), inputMetrics)
+			processedMetrics, err := gap.processMetrics(t.Context(), inputMetrics)
 			assert.NoError(t, err)
 
-			processedHistogramMetrics, err := gap.processMetrics(context.Background(), inputHistogramMetrics)
+			processedHistogramMetrics, err := gap.processMetrics(t.Context(), inputHistogramMetrics)
 			assert.NoError(t, err)
 
 			// Following are record-level attributes that should be preserved after processing
@@ -529,25 +529,25 @@ func TestAttributeGrouping(t *testing.T) {
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)
 			expectedAttributes := filterAttributeMap(attrMap, tt.nonGroupedKeys)
 
-			processedLogs, err := gap.processLogs(context.Background(), logs)
+			processedLogs, err := gap.processLogs(t.Context(), logs)
 			assert.NoError(t, err)
 
-			processedSpans, err := gap.processTraces(context.Background(), spans)
+			processedSpans, err := gap.processTraces(t.Context(), spans)
 			assert.NoError(t, err)
 
-			processedGaugeMetrics, err := gap.processMetrics(context.Background(), gaugeMetrics)
+			processedGaugeMetrics, err := gap.processMetrics(t.Context(), gaugeMetrics)
 			assert.NoError(t, err)
 
-			processedSumMetrics, err := gap.processMetrics(context.Background(), sumMetrics)
+			processedSumMetrics, err := gap.processMetrics(t.Context(), sumMetrics)
 			assert.NoError(t, err)
 
-			processedSummaryMetrics, err := gap.processMetrics(context.Background(), summaryMetrics)
+			processedSummaryMetrics, err := gap.processMetrics(t.Context(), summaryMetrics)
 			assert.NoError(t, err)
 
-			processedHistogramMetrics, err := gap.processMetrics(context.Background(), histogramMetrics)
+			processedHistogramMetrics, err := gap.processMetrics(t.Context(), histogramMetrics)
 			assert.NoError(t, err)
 
-			processedExponentialHistogramMetrics, err := gap.processMetrics(context.Background(), exponentialHistogramMetrics)
+			processedExponentialHistogramMetrics, err := gap.processMetrics(t.Context(), exponentialHistogramMetrics)
 			assert.NoError(t, err)
 
 			assert.Equal(t, 1, processedLogs.ResourceLogs().Len())
@@ -624,12 +624,12 @@ func TestAttributeGrouping(t *testing.T) {
 	}
 }
 
-func someSpans(attrs pcommon.Map, instrumentationLibraryCount int, spanCount int) ptrace.Traces {
+func someSpans(attrs pcommon.Map, instrumentationLibraryCount, spanCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < spanCount; j++ {
+		for j := range spanCount {
 			ils := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 			ils.Scope().SetName(ilName)
 			span := ils.Spans().AppendEmpty()
@@ -640,12 +640,12 @@ func someSpans(attrs pcommon.Map, instrumentationLibraryCount int, spanCount int
 	return traces
 }
 
-func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) plog.Logs {
+func someLogs(attrs pcommon.Map, instrumentationLibraryCount, logCount int) plog.Logs {
 	logs := plog.NewLogs()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < logCount; j++ {
+		for range logCount {
 			sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 			sl.Scope().SetName(ilName)
 			log := sl.LogRecords().AppendEmpty()
@@ -655,12 +655,12 @@ func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) 
 	return logs
 }
 
-func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -672,12 +672,12 @@ func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metric
 	return metrics
 }
 
-func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -689,12 +689,12 @@ func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCo
 	return metrics
 }
 
-func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -706,12 +706,12 @@ func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metr
 	return metrics
 }
 
-func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -723,12 +723,12 @@ func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, me
 	return metrics
 }
 
-func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
+func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -837,7 +837,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{"host.name"})
 	require.NoError(t, err)
 
-	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
+	processedMetrics, err := gap.processMetrics(t.Context(), metrics)
 	assert.NoError(t, err)
 
 	// We must have 3 resulting resources
@@ -922,11 +922,11 @@ func TestCompacting(t *testing.T) {
 	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 	require.NoError(t, err)
 
-	processedSpans, err := gap.processTraces(context.Background(), spans)
+	processedSpans, err := gap.processTraces(t.Context(), spans)
 	assert.NoError(t, err)
-	processedLogs, err := gap.processLogs(context.Background(), logs)
+	processedLogs, err := gap.processLogs(t.Context(), logs)
 	assert.NoError(t, err)
-	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
+	processedMetrics, err := gap.processMetrics(t.Context(), metrics)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, processedSpans.ResourceSpans().Len())
@@ -945,7 +945,7 @@ func TestCompacting(t *testing.T) {
 	assert.Equal(t, 10, rls.ScopeLogs().Len())
 	assert.Equal(t, 10, rlm.ScopeMetrics().Len())
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		ils := rss.ScopeSpans().At(i)
 		sl := rls.ScopeLogs().At(i)
 		ilm := rlm.ScopeMetrics().At(i)
@@ -1035,8 +1035,8 @@ func BenchmarkCompacting(bb *testing.B) {
 			require.NoError(b, err)
 
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
-				_, err := gap.processTraces(context.Background(), spans)
+			for b.Loop() {
+				_, err := gap.processTraces(bb.Context(), spans)
 				if err != nil {
 					return
 				}

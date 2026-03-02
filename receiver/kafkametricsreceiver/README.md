@@ -22,7 +22,22 @@ This receiver supports Kafka versions:
   -  2.X
   -  3.X
 
+## Feature gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
+
+Feature gates can be enabled using the `--feature-gates` flag:
+
+```shell
+"--feature-gates=<feature-gate>"
+```
+
 ## Getting Started
+
+> [!NOTE]
+> You can opt out of using the [`franz-go`](https://github.com/twmb/franz-go) client by disabling the feature gate
+> `receiver.kafkametricsreceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
+> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
 
 Required settings (no defaults):
 
@@ -30,7 +45,7 @@ Required settings (no defaults):
     - `topics`
     - `consumers`
     - `brokers`
-    
+
 Metrics collected by the associated scraper are listed in [metadata.yaml](metadata.yaml)
 
 Optional Settings (with defaults):
@@ -52,9 +67,9 @@ Optional Settings (with defaults):
     - `sasl`
         - `username`: The username to use.
         - `password`: The password to use.
-        - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
-        - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
-        - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
+        - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
+        - `aws_msk`
+            - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
     - `tls` ((Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
     - `kerberos`
         - `service_name`: Kerberos service name

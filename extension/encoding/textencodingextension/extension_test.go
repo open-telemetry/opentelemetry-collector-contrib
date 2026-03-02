@@ -4,13 +4,15 @@
 package textencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestExtension_Start(t *testing.T) {
@@ -23,7 +25,7 @@ func TestExtension_Start(t *testing.T) {
 			name: "text",
 			getExtension: func() (extension.Extension, error) {
 				factory := NewFactory()
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig())
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig())
 			},
 		},
 		{
@@ -32,7 +34,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Encoding = "gbk"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 		{
@@ -41,7 +43,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Encoding = "blabla"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 			expectedErr: "unsupported encoding 'blabla'",
 		},
@@ -54,7 +56,7 @@ func TestExtension_Start(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			err = ext.Start(context.Background(), componenttest.NewNopHost())
+			err = ext.Start(t.Context(), componenttest.NewNopHost())
 			if test.expectedErr != "" && err != nil {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {
@@ -62,4 +64,32 @@ func TestExtension_Start(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_MarshalUnmarshal(t *testing.T) {
+	factory := NewFactory()
+	ext, err := factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig())
+	require.NoError(t, err)
+	err = ext.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	e := ext.(*textExtension)
+	logs := plog.NewLogs()
+	lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	lr.Body().SetStr("foo")
+	b, err := e.MarshalLogs(logs)
+	require.NoError(t, err)
+	result, err := e.UnmarshalLogs(b)
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(logs, result, plogtest.IgnoreTimestamp(), plogtest.IgnoreObservedTimestamp()))
+}
+
+func Test_StartSeparatorConfig(t *testing.T) {
+	factory := NewFactory()
+	ext, err := factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig())
+	require.NoError(t, err)
+	err = ext.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	e := ext.(*textExtension)
+	require.Equal(t, e.config.MarshalingSeparator, e.textEncoder.marshalingSeparator)
+	require.Equal(t, e.config.UnmarshalingSeparator, e.textEncoder.unmarshalingSeparator.String())
 }

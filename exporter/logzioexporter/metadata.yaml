@@ -1,4 +1,5 @@
 type: logzio
+display_name: Logz.io Exporter
 
 status:
   class: exporter

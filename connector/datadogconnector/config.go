@@ -12,12 +12,4 @@ import (
 var _ component.Config = (*Config)(nil)
 
 // Config defines configuration for the Datadog connector.
-type Config struct {
-	// Traces defines the Traces specific configuration
-	Traces datadogconfig.TracesConnectorConfig `mapstructure:"traces"`
-}
-
-// Validate checks if the configuration is valid
-func (c *Config) Validate() error {
-	return c.Traces.Validate()
-}
+type Config = datadogconfig.ConnectorComponentConfig

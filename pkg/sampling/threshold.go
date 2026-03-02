@@ -63,7 +63,7 @@ func TValueToThreshold(s string) (Threshold, error) {
 	if len(s) > NumHexDigits {
 		return AlwaysSampleThreshold, ErrTValueSize
 	}
-	if len(s) == 0 {
+	if s == "" {
 		return AlwaysSampleThreshold, ErrTValueEmpty
 	}
 

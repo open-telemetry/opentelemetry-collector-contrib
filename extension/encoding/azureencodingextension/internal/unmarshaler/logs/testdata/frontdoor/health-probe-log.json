@@ -1,0 +1,23 @@
+{
+  "records": [
+    {
+      "time": "2021-02-02T07:15:37.3640748Z",
+      "resourceId": "/SUBSCRIPTIONS/mySubscriptionID/RESOURCEGROUPS/myResourceGroup/PROVIDERS/MICROSOFT.CDN/PROFILES/MyProfile",
+      "category": "FrontDoorHealthProbeLog",
+      "operationName": "Microsoft.Cdn/Profiles/FrontDoorHealthProbeLog/Write",
+      "properties": {
+        "healthProbeId": "9642AEA07BA64675A0A7AD214ACF746E",
+        "POP": "MAA",
+        "httpVerb": "HEAD",
+        "result": "OriginError",
+        "httpStatusCode": "400",
+        "probeURL": "http://www.example.com:80/",
+        "originName": "www.example.com",
+        "originIP": "0.0.0.0:12345",
+        "totalLatencyMilliseconds": "141",
+        "connectionLatencyMilliseconds": "68",
+        "DNSLatencyMicroseconds": "1814"
+      }
+    }
+  ]
+}

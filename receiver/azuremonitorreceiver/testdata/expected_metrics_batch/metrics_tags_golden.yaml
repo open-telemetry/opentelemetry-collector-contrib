@@ -28,6 +28,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -57,6 +60,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -86,6 +92,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -115,6 +124,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -144,6 +156,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -173,6 +188,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -202,6 +220,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -231,6 +252,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -286,6 +310,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -367,6 +394,9 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
+                    - key: tags_tagName2
+                      value:
+                        stringValue: tagValue2
                     - key: timegrain
                       value:
                         stringValue: PT1M
@@ -467,110 +497,6 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric7_total
-            unit: BitsPerSecond
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /subscriptions/subscriptionId3/resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: timegrain
-                      value:
-                        stringValue: PT1M
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
-            name: azure_metric7_maximum
-            unit: BitsPerSecond
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /subscriptions/subscriptionId3/resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: timegrain
-                      value:
-                        stringValue: PT1M
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
-            name: azure_metric7_minimum
-            unit: BitsPerSecond
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /subscriptions/subscriptionId3/resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: timegrain
-                      value:
-                        stringValue: PT1M
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
-            name: azure_metric7_average
-            unit: BitsPerSecond
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /subscriptions/subscriptionId3/resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: timegrain
-                      value:
-                        stringValue: PT1M
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
-            name: azure_metric7_count
             unit: BitsPerSecond
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver

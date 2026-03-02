@@ -18,4 +18,7 @@ type Config struct {
 
 	// ProxyServer defines configurations related to the local TCP proxy server.
 	ProxyServer *proxy.Config `mapstructure:"proxy_server"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

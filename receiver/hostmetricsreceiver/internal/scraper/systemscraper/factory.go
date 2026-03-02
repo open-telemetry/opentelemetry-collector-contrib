@@ -14,6 +14,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper/internal/metadata"
 )
 
+var (
+	supportedOS      = runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin"
+	errUnsupportedOS = errors.New("the system scraper is only available on Linux, Windows, or macOS")
+)
+
 // NewFactory for System scraper.
 func NewFactory() scraper.Factory {
 	return scraper.NewFactory(metadata.Type, createDefaultConfig, scraper.WithMetrics(createMetricsScraper, metadata.MetricsStability))
@@ -32,14 +37,14 @@ func createMetricsScraper(
 	settings scraper.Settings,
 	cfg component.Config,
 ) (scraper.Metrics, error) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
-		return nil, errors.New("uptime scraper only available on Linux, Windows, or macOS")
+	if !supportedOS {
+		return nil, errUnsupportedOS
 	}
 
-	uptimeScraper := newUptimeScraper(ctx, settings, cfg.(*Config))
+	systemScraper := newSystemScraper(ctx, settings, cfg.(*Config))
 
 	return scraper.NewMetrics(
-		uptimeScraper.scrape,
-		scraper.WithStart(uptimeScraper.start),
+		systemScraper.scrape,
+		scraper.WithStart(systemScraper.start),
 	)
 }

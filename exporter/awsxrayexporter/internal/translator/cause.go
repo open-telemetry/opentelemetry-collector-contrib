@@ -14,8 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -60,7 +60,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	switch {
 	case hasExceptions:
 		language := ""
-		if val, ok := resource.Attributes().Get(string(conventionsv112.TelemetrySDKLanguageKey)); ok {
+		if val, ok := resource.Attributes().Get(string(conventions.TelemetrySDKLanguageKey)); ok {
 			language = val.Str()
 		}
 		isRemote := false
@@ -76,15 +76,15 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 				message = ""
 				stacktrace := ""
 
-				if val, ok := event.Attributes().Get(string(conventionsv112.ExceptionTypeKey)); ok {
+				if val, ok := event.Attributes().Get(string(conventions.ExceptionTypeKey)); ok {
 					exceptionType = val.Str()
 				}
 
-				if val, ok := event.Attributes().Get(string(conventionsv112.ExceptionMessageKey)); ok {
+				if val, ok := event.Attributes().Get(string(conventions.ExceptionMessageKey)); ok {
 					message = val.Str()
 				}
 
-				if val, ok := event.Attributes().Get(string(conventionsv112.ExceptionStacktraceKey)); ok {
+				if val, ok := event.Attributes().Get(string(conventions.ExceptionStacktraceKey)); ok {
 					stacktrace = val.Str()
 				}
 
@@ -154,7 +154,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	val, ok := span.Attributes().Get(string(conventionsv112.HTTPStatusCodeKey))
+	val, ok := span.Attributes().Get(string(conventionsv125.HTTPStatusCodeKey))
 	if !ok {
 		val, ok = span.Attributes().Get(string(conventions.HTTPResponseStatusCodeKey))
 	}
@@ -188,7 +188,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	return isError, isFault, isThrottle, filtered, cause
 }
 
-func parseException(exceptionType string, message string, stacktrace string, isRemote bool, language string) []awsxray.Exception {
+func parseException(exceptionType, message, stacktrace string, isRemote bool, language string) []awsxray.Exception {
 	exceptions := make([]awsxray.Exception, 0, 1)
 	segmentID := newSegmentID()
 	exceptions = append(exceptions, awsxray.Exception{
@@ -555,7 +555,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 	var path string
 	var lineNumber int
 
-	plnre := regexp.MustCompile(`([^:\s]+)\:(\d+)`)
+	plnre := regexp.MustCompile(`([^:\s]+):(\d+)`)
 	re := regexp.MustCompile(`^goroutine.*\brunning\b.*:$`)
 
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
@@ -573,7 +573,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 	exception.Stack = nil
 	for {
-		match := re.Match([]byte(line))
+		match := re.MatchString(line)
 		if match {
 			line, _ = r.ReadLine()
 		}

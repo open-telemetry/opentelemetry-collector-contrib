@@ -36,7 +36,7 @@ func TestSharedComponents_GetOrAdd(t *testing.T) {
 	assert.Same(t, got, comps.GetOrAdd(id, createNop))
 
 	// Shutdown nop will remove
-	assert.NoError(t, got.Shutdown(context.Background()))
+	assert.NoError(t, got.Shutdown(t.Context()))
 	assert.Empty(t, comps.comps)
 	assert.NotSame(t, got, comps.GetOrAdd(id, createNop))
 }
@@ -59,14 +59,14 @@ func TestSharedComponent(t *testing.T) {
 
 	comps := NewSharedComponents()
 	got := comps.GetOrAdd(id, createComp)
-	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Equal(t, wantErr, got.Start(t.Context(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
 	// Second time is not called anymore.
-	assert.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, got.Start(t.Context(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
-	assert.Equal(t, wantErr, got.Shutdown(context.Background()))
+	assert.Equal(t, wantErr, got.Shutdown(t.Context()))
 	assert.Equal(t, 1, calledStop)
 	// Second time is not called anymore.
-	assert.NoError(t, got.Shutdown(context.Background()))
+	assert.NoError(t, got.Shutdown(t.Context()))
 	assert.Equal(t, 1, calledStop)
 }

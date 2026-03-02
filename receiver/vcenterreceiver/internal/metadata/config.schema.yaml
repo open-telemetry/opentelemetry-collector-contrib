@@ -1,0 +1,247 @@
+$defs:
+  attribute_cpu_reservation_type:
+    description: AttributeCPUReservationType specifies the value cpu_reservation_type attribute.
+    type: integer
+  attribute_cpu_state:
+    description: AttributeCPUState specifies the value cpu_state attribute.
+    type: integer
+  attribute_disk_direction:
+    description: AttributeDiskDirection specifies the value disk_direction attribute.
+    type: integer
+  attribute_disk_state:
+    description: AttributeDiskState specifies the value disk_state attribute.
+    type: integer
+  attribute_disk_type:
+    description: AttributeDiskType specifies the value disk_type attribute.
+    type: integer
+  attribute_entity_status:
+    description: AttributeEntityStatus specifies the value entity_status attribute.
+    type: integer
+  attribute_host_power_state:
+    description: AttributeHostPowerState specifies the value host_power_state attribute.
+    type: integer
+  attribute_memory_granted_type:
+    description: AttributeMemoryGrantedType specifies the value memory_granted_type attribute.
+    type: integer
+  attribute_memory_usage_type:
+    description: AttributeMemoryUsageType specifies the value memory_usage_type attribute.
+    type: integer
+  attribute_throughput_direction:
+    description: AttributeThroughputDirection specifies the value throughput_direction attribute.
+    type: integer
+  attribute_vm_count_power_state:
+    description: AttributeVMCountPowerState specifies the value vm_count_power_state attribute.
+    type: integer
+  attribute_vsan_latency_type:
+    description: AttributeVsanLatencyType specifies the value vsan_latency_type attribute.
+    type: integer
+  attribute_vsan_operation_type:
+    description: AttributeVsanOperationType specifies the value vsan_operation_type attribute.
+    type: integer
+  attribute_vsan_throughput_direction:
+    description: AttributeVsanThroughputDirection specifies the value vsan_throughput_direction attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for vcenter metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for vcenter metrics.
+    type: object
+    properties:
+      vcenter.cluster.cpu.effective:
+        $ref: metric_config
+      vcenter.cluster.cpu.limit:
+        $ref: metric_config
+      vcenter.cluster.host.count:
+        $ref: metric_config
+      vcenter.cluster.memory.effective:
+        $ref: metric_config
+      vcenter.cluster.memory.limit:
+        $ref: metric_config
+      vcenter.cluster.vm.count:
+        $ref: metric_config
+      vcenter.cluster.vm_template.count:
+        $ref: metric_config
+      vcenter.cluster.vsan.congestions:
+        $ref: metric_config
+      vcenter.cluster.vsan.latency.avg:
+        $ref: metric_config
+      vcenter.cluster.vsan.operations:
+        $ref: metric_config
+      vcenter.cluster.vsan.throughput:
+        $ref: metric_config
+      vcenter.datacenter.cluster.count:
+        $ref: metric_config
+      vcenter.datacenter.cpu.limit:
+        $ref: metric_config
+      vcenter.datacenter.datastore.count:
+        $ref: metric_config
+      vcenter.datacenter.disk.space:
+        $ref: metric_config
+      vcenter.datacenter.host.count:
+        $ref: metric_config
+      vcenter.datacenter.memory.limit:
+        $ref: metric_config
+      vcenter.datacenter.vm.count:
+        $ref: metric_config
+      vcenter.datastore.disk.usage:
+        $ref: metric_config
+      vcenter.datastore.disk.utilization:
+        $ref: metric_config
+      vcenter.host.cpu.capacity:
+        $ref: metric_config
+      vcenter.host.cpu.reserved:
+        $ref: metric_config
+      vcenter.host.cpu.usage:
+        $ref: metric_config
+      vcenter.host.cpu.utilization:
+        $ref: metric_config
+      vcenter.host.disk.latency.avg:
+        $ref: metric_config
+      vcenter.host.disk.latency.max:
+        $ref: metric_config
+      vcenter.host.disk.throughput:
+        $ref: metric_config
+      vcenter.host.memory.capacity:
+        $ref: metric_config
+      vcenter.host.memory.usage:
+        $ref: metric_config
+      vcenter.host.memory.utilization:
+        $ref: metric_config
+      vcenter.host.network.packet.drop.rate:
+        $ref: metric_config
+      vcenter.host.network.packet.error.rate:
+        $ref: metric_config
+      vcenter.host.network.packet.rate:
+        $ref: metric_config
+      vcenter.host.network.throughput:
+        $ref: metric_config
+      vcenter.host.network.usage:
+        $ref: metric_config
+      vcenter.host.vsan.cache.hit_rate:
+        $ref: metric_config
+      vcenter.host.vsan.congestions:
+        $ref: metric_config
+      vcenter.host.vsan.latency.avg:
+        $ref: metric_config
+      vcenter.host.vsan.operations:
+        $ref: metric_config
+      vcenter.host.vsan.throughput:
+        $ref: metric_config
+      vcenter.resource_pool.cpu.shares:
+        $ref: metric_config
+      vcenter.resource_pool.cpu.usage:
+        $ref: metric_config
+      vcenter.resource_pool.memory.ballooned:
+        $ref: metric_config
+      vcenter.resource_pool.memory.granted:
+        $ref: metric_config
+      vcenter.resource_pool.memory.shares:
+        $ref: metric_config
+      vcenter.resource_pool.memory.swapped:
+        $ref: metric_config
+      vcenter.resource_pool.memory.usage:
+        $ref: metric_config
+      vcenter.vm.cpu.readiness:
+        $ref: metric_config
+      vcenter.vm.cpu.time:
+        $ref: metric_config
+      vcenter.vm.cpu.usage:
+        $ref: metric_config
+      vcenter.vm.cpu.utilization:
+        $ref: metric_config
+      vcenter.vm.disk.latency.avg:
+        $ref: metric_config
+      vcenter.vm.disk.latency.max:
+        $ref: metric_config
+      vcenter.vm.disk.throughput:
+        $ref: metric_config
+      vcenter.vm.disk.usage:
+        $ref: metric_config
+      vcenter.vm.disk.utilization:
+        $ref: metric_config
+      vcenter.vm.memory.ballooned:
+        $ref: metric_config
+      vcenter.vm.memory.granted:
+        $ref: metric_config
+      vcenter.vm.memory.swapped:
+        $ref: metric_config
+      vcenter.vm.memory.swapped_ssd:
+        $ref: metric_config
+      vcenter.vm.memory.usage:
+        $ref: metric_config
+      vcenter.vm.memory.utilization:
+        $ref: metric_config
+      vcenter.vm.network.broadcast.packet.rate:
+        $ref: metric_config
+      vcenter.vm.network.multicast.packet.rate:
+        $ref: metric_config
+      vcenter.vm.network.packet.drop.rate:
+        $ref: metric_config
+      vcenter.vm.network.packet.rate:
+        $ref: metric_config
+      vcenter.vm.network.throughput:
+        $ref: metric_config
+      vcenter.vm.network.usage:
+        $ref: metric_config
+      vcenter.vm.vsan.latency.avg:
+        $ref: metric_config
+      vcenter.vm.vsan.operations:
+        $ref: metric_config
+      vcenter.vm.vsan.throughput:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for vcenter resource attributes.
+    type: object
+    properties:
+      vcenter.cluster.name:
+        $ref: resource_attribute_config
+      vcenter.datacenter.name:
+        $ref: resource_attribute_config
+      vcenter.datastore.name:
+        $ref: resource_attribute_config
+      vcenter.host.name:
+        $ref: resource_attribute_config
+      vcenter.resource_pool.inventory_path:
+        $ref: resource_attribute_config
+      vcenter.resource_pool.name:
+        $ref: resource_attribute_config
+      vcenter.virtual_app.inventory_path:
+        $ref: resource_attribute_config
+      vcenter.virtual_app.name:
+        $ref: resource_attribute_config
+      vcenter.vm.id:
+        $ref: resource_attribute_config
+      vcenter.vm.name:
+        $ref: resource_attribute_config
+      vcenter.vm_template.id:
+        $ref: resource_attribute_config
+      vcenter.vm_template.name:
+        $ref: resource_attribute_config

@@ -4,7 +4,6 @@
 package mysqlreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -36,7 +35,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			ControllerConfig: scraperhelper.ControllerConfig{
@@ -53,4 +52,37 @@ func TestCreateMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
+}
+
+func TestCreateLogs(t *testing.T) {
+	factory := NewFactory()
+	logsReceiver, err := factory.CreateLogs(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			ControllerConfig: scraperhelper.ControllerConfig{
+				CollectionInterval: 10 * time.Second,
+				InitialDelay:       time.Second,
+			},
+			Username: "otel",
+			Password: "otel",
+			AddrConfig: confignet.AddrConfig{
+				Endpoint: "localhost:3306",
+			},
+			LogsBuilderConfig: metadata.LogsBuilderConfig{
+				Events: metadata.EventsConfig{
+					DbServerQuerySample: metadata.EventConfig{
+						Enabled: true,
+					},
+					DbServerTopQuery: metadata.EventConfig{
+						Enabled: true,
+					},
+				},
+				ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, logsReceiver)
 }

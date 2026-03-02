@@ -25,3 +25,11 @@ func TestURL(t *testing.T) {
 	}
 	assert.Equal(t, "https://opentelemetry.io%0D%0A/%0D%0Apath%3Fq=go%0D%0A", URL(&u))
 }
+
+func TestString(t *testing.T) {
+	s := "https://opentelemetry.io/path?q=go"
+	assert.Equal(t, "https://opentelemetry.io/path?q=go", String(s))
+
+	s = "https:\r/\n/opentelemetry.io\r\n/\r\npath?q=go\r\n"
+	assert.Equal(t, "https://opentelemetry.io/path?q=go", String(s))
+}

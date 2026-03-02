@@ -4,7 +4,6 @@
 package awsxrayexporter
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -20,7 +19,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
+func setSkipTimestampValidation(tb testing.TB, value bool) {
+	tb.Helper()
+	prev := skipTimestampValidationFeatureGate.IsEnabled()
+	require.NoError(tb, featuregate.GlobalRegistry().Set(skipTimestampValidationFeatureGate.ID(), value))
+	tb.Cleanup(func() {
+		require.NoError(tb, featuregate.GlobalRegistry().Set(skipTimestampValidationFeatureGate.ID(), prev))
+	})
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
@@ -79,7 +88,7 @@ func TestCreateTraces(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exporter, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
@@ -95,7 +104,7 @@ func TestCreateMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exporter, err := factory.CreateMetrics(ctx, exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.Error(t, err)
 	assert.Nil(t, exporter)

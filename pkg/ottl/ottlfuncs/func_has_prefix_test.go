@@ -18,25 +18,25 @@ func Test_HasPrefix(t *testing.T) {
 	tests := []struct {
 		name     string
 		target   any
-		prefix   string
+		prefix   ottl.StringGetter[any]
 		expected bool
 	}{
 		{
 			name:     "has prefix true",
 			target:   "hello world",
-			prefix:   "hello ",
+			prefix:   &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello ", nil }},
 			expected: true,
 		},
 		{
 			name:     "has prefix false",
 			target:   "hello world",
-			prefix:   " world",
+			prefix:   &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " world", nil }},
 			expected: false,
 		},
 		{
 			name:     "target pcommon.Value",
 			target:   pcommon.NewValueStr("hello world"),
-			prefix:   `hello`,
+			prefix:   &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello", nil }},
 			expected: true,
 		},
 	}
@@ -47,14 +47,14 @@ func Test_HasPrefix(t *testing.T) {
 				ottl.FunctionContext{},
 				&HasPrefixArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
-						Getter: func(_ context.Context, _ any) (any, error) {
+						Getter: func(context.Context, any) (any, error) {
 							return tt.target, nil
 						},
 					},
 					Prefix: tt.prefix,
 				})
-			assert.NoError(t, err)
-			result, err := exprFunc(context.Background(), nil)
+			require.NoError(t, err)
+			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -63,12 +63,32 @@ func Test_HasPrefix(t *testing.T) {
 
 func Test_HasPrefix_Error(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return true, nil
 		},
 	}
-	exprFunc, err := HasPrefix[any](target, "test")
-	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	prefix := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "test", nil
+		},
+	}
+	exprFunc := HasPrefix[any](target, prefix)
+	_, err := exprFunc(t.Context(), nil)
+	require.Error(t, err)
+}
+
+func Test_HasPrefix_Error_prefix(t *testing.T) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return true, nil
+		},
+	}
+	prefix := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return true, nil
+		},
+	}
+	exprFunc := HasPrefix[any](target, prefix)
+	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }

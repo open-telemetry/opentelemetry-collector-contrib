@@ -8,22 +8,22 @@ type MockECSInfo struct {
 	InstanceIP  string
 }
 
-func (e *MockECSInfo) GetRunningTaskCount() int64 {
+func (*MockECSInfo) GetRunningTaskCount() int64 {
 	return 2
 }
 
-func (e *MockECSInfo) GetCPUReserved() int64 {
+func (*MockECSInfo) GetCPUReserved() int64 {
 	return 32
 }
 
-func (e *MockECSInfo) GetMemReserved() int64 {
+func (*MockECSInfo) GetMemReserved() int64 {
 	return 213
 }
 
-func (e *MockECSInfo) GetContainerInstanceID() string {
+func (*MockECSInfo) GetContainerInstanceID() string {
 	return "eeee12.dsfr"
 }
 
-func (e *MockECSInfo) GetClusterName() string {
+func (*MockECSInfo) GetClusterName() string {
 	return "ecs-cluster"
 }

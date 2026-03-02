@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -74,8 +75,14 @@ func TestStart(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			cfg := &Config{}
-			ctx := context.TODO()
+			cfg := &Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+					},
+				},
+			}
+			ctx := t.Context()
 			r := testFirehoseReceiver(cfg, &nopFirehoseConsumer{})
 			got := r.Start(ctx, testCase.host)
 			require.Equal(t, testCase.wantErr, got)
@@ -92,10 +99,13 @@ func TestStart(t *testing.T) {
 		})
 		cfg := &Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: listener.Addr().String(),
+				NetAddr: confignet.AddrConfig{
+					Transport: "tcp",
+					Endpoint:  listener.Addr().String(),
+				},
 			},
 		}
-		ctx := context.TODO()
+		ctx := t.Context()
 		r := testFirehoseReceiver(cfg, &nopFirehoseConsumer{})
 		got := r.Start(ctx, componenttest.NewNopHost())
 		require.Error(t, got)
@@ -312,11 +322,11 @@ type plogUnmarshalerExtension struct {
 	logs plog.Logs
 }
 
-func (e plogUnmarshalerExtension) Start(context.Context, component.Host) error {
+func (plogUnmarshalerExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e plogUnmarshalerExtension) Shutdown(context.Context) error {
+func (plogUnmarshalerExtension) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -328,11 +338,11 @@ type pmetricUnmarshalerExtension struct {
 	metrics pmetric.Metrics
 }
 
-func (e pmetricUnmarshalerExtension) Start(context.Context, component.Host) error {
+func (pmetricUnmarshalerExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e pmetricUnmarshalerExtension) Shutdown(context.Context) error {
+func (pmetricUnmarshalerExtension) Shutdown(context.Context) error {
 	return nil
 }
 

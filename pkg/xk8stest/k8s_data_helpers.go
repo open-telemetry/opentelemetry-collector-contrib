@@ -5,6 +5,7 @@ package xk8stest // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"net"
 	"runtime"
 	"testing"
 	"time"
@@ -22,15 +23,30 @@ func HostEndpoint(t *testing.T) string {
 
 	client, err := docker.NewClientWithOpts(docker.FromEnv)
 	require.NoError(t, err)
-	client.NegotiateAPIVersion(context.Background())
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	client.NegotiateAPIVersion(t.Context())
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	network, err := client.NetworkInspect(ctx, "kind", network2.InspectOptions{})
 	require.NoError(t, err)
+
+	// Prefer IPv4 gateways, but fallback to IPv6 if no IPv4 gateway is found.
+	// IPv6 addresses are wrapped in brackets so that callers can safely append
+	// ":port" (e.g. [fc00:f853:ccd:e793::1]:4317).
+	var ipv6Fallback string
 	for _, ipam := range network.IPAM.Config {
-		if ipam.Gateway != "" {
+		if ipam.Gateway == "" {
+			continue
+		}
+		ip := net.ParseIP(ipam.Gateway)
+		if ip != nil && ip.To4() != nil {
 			return ipam.Gateway
 		}
+		if ipv6Fallback == "" {
+			ipv6Fallback = "[" + ipam.Gateway + "]"
+		}
+	}
+	if ipv6Fallback != "" {
+		return ipv6Fallback
 	}
 	require.Fail(t, "failed to find host endpoint")
 	return ""

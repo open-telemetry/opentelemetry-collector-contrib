@@ -1,0 +1,26 @@
+name: Lychee Config Check
+
+on:
+  pull_request:
+    paths:
+      - '.github/lychee.toml'
+  push:
+    paths:
+      - '.github/lychee.toml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-lychee-config:
+    runs-on: ubuntu-latest
+    name: Validate Lychee Config
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Lychee Config Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@a8c4c7cb88f0c7386610c35eb25108e448569cb0 # v2.7.0
+        with:
+          args: "--verbose --config .github/lychee.toml --dump .github/lychee.toml"
+          failIfEmpty: false

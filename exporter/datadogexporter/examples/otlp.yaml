@@ -6,18 +6,13 @@ receivers:
       grpc:
         endpoint: "localhost:4317"
 
-
-processors:
-  batch:
-    send_batch_max_size: 1000
-    send_batch_size: 100
-    timeout: 10s
-
 exporters:
   datadog:
     api:
       site: ${env:DD_SITE}
       key: ${env:DD_API_KEY}
+    sending_queue:
+      batch:
 
 connectors:
     datadog/connector:
@@ -26,17 +21,13 @@ service:
   pipelines:
     metrics:
       receivers: [otlp, datadog/connector]
-      processors: [batch]
       exporters: [datadog]
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [datadog/connector]
     traces/2:
       receivers: [datadog/connector]
-      processors: [batch]
       exporters: [datadog]
     logs:
       receivers: [otlp]
-      processors: [batch]
       exporters: [datadog]

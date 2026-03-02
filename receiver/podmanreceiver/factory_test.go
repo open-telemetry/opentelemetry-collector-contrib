@@ -6,7 +6,6 @@
 package podmanreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,11 +31,11 @@ func TestCreateReceiver(t *testing.T) {
 	config := factory.CreateDefaultConfig()
 
 	params := receivertest.NewNopSettings(metadata.Type)
-	traceReceiver, err := factory.CreateTraces(context.Background(), params, config, consumertest.NewNop())
+	traceReceiver, err := factory.CreateTraces(t.Context(), params, config, consumertest.NewNop())
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, traceReceiver)
 
-	metricReceiver, err := factory.CreateMetrics(context.Background(), params, config, consumertest.NewNop())
+	metricReceiver, err := factory.CreateMetrics(t.Context(), params, config, consumertest.NewNop())
 	assert.NoError(t, err, "Metric receiver creation failed")
 	assert.NotNil(t, metricReceiver, "Receiver creation failed")
 }

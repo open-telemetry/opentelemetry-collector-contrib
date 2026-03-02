@@ -7,24 +7,23 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
 
 func TestAbsolute(t *testing.T) {
-	is := datatest.New(t)
-
 	bs := expotest.Bins{ø, 1, 2, 3, 4, 5, ø, ø}.Into()
 	abs := expo.Abs(bs)
 
 	lo, up := abs.Lower(), abs.Upper()
-	is.Equalf(-2, lo, "lower-bound")
-	is.Equalf(3, up, "upper-bound")
+	assert.Equal(t, -2, lo, "lower-bound")
+	assert.Equal(t, 3, up, "upper-bound")
 
 	for i := lo; i < up; i++ {
 		got := abs.Abs(i)
-		is.Equal(bs.BucketCounts().At(i+2), got)
+		assert.Equal(t, bs.BucketCounts().At(i+2), got)
 	}
 }
 

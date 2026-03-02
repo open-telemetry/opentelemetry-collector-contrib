@@ -160,7 +160,7 @@ func TestChannel(t *testing.T) {
 	err = channel.Confirm(false)
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	deferredConf, err := channel.PublishWithDeferredConfirmWithContext(ctx, "exchange", "key", false, false, amqp.Publishing{})
 	assert.NoError(t, err)
 	assert.NotNil(t, deferredConf)
@@ -177,7 +177,7 @@ func TestChannel(t *testing.T) {
 func TestPublishWithDeferredConfirmWithContext(t *testing.T) {
 	mockChan := new(MockChannel)
 	mockDefConf := new(MockDeferredConfirmation)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	mockChan.On("PublishWithDeferredConfirmWithContext", ctx, "exchange", "key", false, false, mock.Anything).Return(mockDefConf, nil)
 

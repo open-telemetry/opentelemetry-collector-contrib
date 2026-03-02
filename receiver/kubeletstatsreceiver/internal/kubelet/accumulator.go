@@ -70,7 +70,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	))
 }
 
-func (a *metricDataAccumulator) podStats(s stats.PodStats) {
+func (a *metricDataAccumulator) podStats(s *stats.PodStats) {
 	if !a.metricGroupsToCollect[PodMetricGroup] {
 		return
 	}
@@ -92,7 +92,7 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	))
 }
 
-func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.ContainerStats) {
+func (a *metricDataAccumulator) containerStats(sPod *stats.PodStats, s *stats.ContainerStats) {
 	if !a.metricGroupsToCollect[ContainerMetricGroup] {
 		return
 	}
@@ -121,7 +121,7 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 	))
 }
 
-func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeStats) {
+func (a *metricDataAccumulator) volumeStats(sPod *stats.PodStats, s *stats.VolumeStats) {
 	if !a.metricGroupsToCollect[VolumeMetricGroup] {
 		return
 	}

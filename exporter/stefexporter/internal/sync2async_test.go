@@ -65,7 +65,7 @@ func TestSync2Async(t *testing.T) {
 	const syncProducers = 100
 	s2a := NewSync2Async(logger, syncProducers, async)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	var wg sync.WaitGroup
 	const countPerProducer = 100
 	const totalCount = syncProducers * countPerProducer
@@ -73,11 +73,11 @@ func TestSync2Async(t *testing.T) {
 	expectedErr := false
 	var unexpectedErr error
 
-	for i := 0; i < syncProducers; i++ {
+	for i := range syncProducers {
 		wg.Add(1)
 		go func(data int) {
 			defer wg.Done()
-			for j := 0; j < countPerProducer; j++ {
+			for range countPerProducer {
 				err := s2a.DoSync(ctx, data)
 				if data%10 == 0 {
 					// Must be an error.

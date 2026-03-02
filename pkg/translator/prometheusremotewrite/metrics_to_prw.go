@@ -9,25 +9,28 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type Settings struct {
 	Namespace         string
 	ExternalLabels    map[string]string
 	DisableTargetInfo bool
+	DisableScopeInfo  bool
 	AddMetricSuffixes bool
 	SendMetadata      bool
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
-	c := newPrometheusConverter()
+	c := newPrometheusConverter(settings)
 	errs := c.fromMetrics(md, settings)
 	tss := c.timeSeries()
 	out := make(map[string]*prompb.TimeSeries, len(tss))
@@ -42,12 +45,19 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.Time
 type prometheusConverter struct {
 	unique    map[uint64]*prompb.TimeSeries
 	conflicts map[uint64][]*prompb.TimeSeries
+
+	metricNamer otlptranslator.MetricNamer
+	labelNamer  otlptranslator.LabelNamer
+	unitNamer   otlptranslator.UnitNamer
 }
 
-func newPrometheusConverter() *prometheusConverter {
+func newPrometheusConverter(settings Settings) *prometheusConverter {
 	return &prometheusConverter{
-		unique:    map[uint64]*prompb.TimeSeries{},
-		conflicts: map[uint64][]*prompb.TimeSeries{},
+		unique:      map[uint64]*prompb.TimeSeries{},
+		conflicts:   map[uint64][]*prompb.TimeSeries{},
+		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
+		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }
 
@@ -62,7 +72,9 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 		// use with the "target" info metric
 		var mostRecentTimestamp pcommon.Timestamp
 		for j := 0; j < scopeMetricsSlice.Len(); j++ {
-			metricSlice := scopeMetricsSlice.At(j).Metrics()
+			scopeMetrics := scopeMetricsSlice.At(j)
+			metricSlice := scopeMetrics.Metrics()
+			scope := scopeMetrics.Scope()
 
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
@@ -74,7 +86,11 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					continue
 				}
 
-				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
+				promName, err := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				if err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
 
 				// handle individual metrics based on type
 				//exhaustive:enforce
@@ -85,21 +101,21 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName)
+					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName))
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName)
+					errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, metric, settings, promName))
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					c.addHistogramDataPoints(dataPoints, resource, settings, promName)
+					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scope, settings, promName))
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					if dataPoints.Len() == 0 {
@@ -109,6 +125,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
 						dataPoints,
 						resource,
+						scope,
 						settings,
 						promName,
 					))
@@ -118,16 +135,16 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					c.addSummaryDataPoints(dataPoints, resource, settings, promName)
+					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scope, settings, promName))
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
 			}
 		}
-		addResourceTargetInfo(resource, settings, mostRecentTimestamp, c)
+		errs = multierr.Append(errs, addResourceTargetInfo(resource, settings, mostRecentTimestamp, c))
 	}
 
-	return
+	return errs
 }
 
 // timeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.
@@ -163,7 +180,7 @@ func isSameMetric(ts *prompb.TimeSeries, lbls []prompb.Label) bool {
 
 // addExemplars adds exemplars for the dataPoint. For each exemplar, if it can find a bucket bound corresponding to its value,
 // the exemplar is added to the bucket bound's time series, provided that the time series' has samples.
-func (c *prometheusConverter) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsData) {
+func (*prometheusConverter) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsData) {
 	if len(bucketBounds) == 0 {
 		return
 	}

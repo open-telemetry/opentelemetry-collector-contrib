@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
@@ -58,6 +59,14 @@ func TestComponentLifecycle(t *testing.T) {
 				return factory.CreateTracesToMetrics(ctx, set, cfg, router)
 			},
 		},
+
+		{
+			name: "profiles_to_metrics",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{pipeline.NewID(pipeline.SignalMetrics): consumertest.NewNop()})
+				return factory.(xconnector.Factory).CreateProfilesToMetrics(ctx, set, cfg, router)
+			},
+		},
 	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
@@ -77,7 +86,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			firstConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := newMdatagenNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstConnector.Start(context.Background(), host))
 			require.NoError(t, firstConnector.Shutdown(context.Background()))
@@ -87,4 +96,20 @@ func TestComponentLifecycle(t *testing.T) {
 			require.NoError(t, secondConnector.Shutdown(context.Background()))
 		})
 	}
+}
+
+var _ component.Host = (*mdatagenNopHost)(nil)
+
+type mdatagenNopHost struct{}
+
+func newMdatagenNopHost() component.Host {
+	return &mdatagenNopHost{}
+}
+
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
 }

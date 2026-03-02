@@ -4,110 +4,51 @@
 package coralogixexporter
 
 import (
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func TestProcessError(t *testing.T) {
-	tests := []struct {
-		name     string
-		err      error
-		expected error
-	}{
-		{
-			name:     "nil error returns nil",
-			err:      nil,
-			expected: nil,
-		},
-		{
-			name:     "non-gRPC error returns permanent error",
-			err:      errors.New("some error"),
-			expected: consumererror.NewPermanent(errors.New("some error")),
-		},
-		{
-			name:     "OK status returns nil",
-			err:      status.Error(codes.OK, "ok"),
-			expected: nil,
-		},
-		{
-			name:     "permanent error returns permanent error",
-			err:      status.Error(codes.InvalidArgument, "invalid argument"),
-			expected: consumererror.NewPermanent(status.Error(codes.InvalidArgument, "invalid argument")),
-		},
-		{
-			name:     "retryable error returns original error",
-			err:      status.Error(codes.Unavailable, "unavailable"),
-			expected: status.Error(codes.Unavailable, "unavailable"),
-		},
-		{
-			name: "throttled error returns throttle retry",
-			err:  status.Error(codes.ResourceExhausted, "resource exhausted"),
-			expected: func() error {
-				st := status.New(codes.ResourceExhausted, "resource exhausted")
-				st, _ = st.WithDetails(&errdetails.RetryInfo{
-					RetryDelay: durationpb.New(time.Second),
-				})
-				return exporterhelper.NewThrottleRetry(st.Err(), time.Second)
-			}(),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := processError(tt.err)
-			if tt.expected == nil {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err)
-				if consumererror.IsPermanent(err) {
-					assert.True(t, consumererror.IsPermanent(err))
-				} else {
-					assert.Contains(t, err.Error(), tt.expected.Error())
-				}
-			}
-		})
-	}
-}
-
 func TestShouldRetry(t *testing.T) {
 	tests := []struct {
-		name      string
-		code      codes.Code
-		retryInfo *errdetails.RetryInfo
-		expected  bool
+		name             string
+		code             codes.Code
+		retryInfo        *errdetails.RetryInfo
+		expected         bool
+		expectedThrottle bool
 	}{
 		{
-			name:      "Canceled is retryable",
-			code:      codes.Canceled,
-			retryInfo: nil,
-			expected:  true,
+			name:             "Canceled is retryable",
+			code:             codes.Canceled,
+			retryInfo:        nil,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "DeadlineExceeded is retryable",
-			code:      codes.DeadlineExceeded,
-			retryInfo: nil,
-			expected:  true,
+			name:             "DeadlineExceeded is retryable",
+			code:             codes.DeadlineExceeded,
+			retryInfo:        nil,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "Unavailable is retryable",
-			code:      codes.Unavailable,
-			retryInfo: nil,
-			expected:  true,
+			name:             "Unavailable is retryable",
+			code:             codes.Unavailable,
+			retryInfo:        nil,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "ResourceExhausted without retry info is not retryable",
-			code:      codes.ResourceExhausted,
-			retryInfo: nil,
-			expected:  false,
+			name:             "ResourceExhausted without retry info is not retryable",
+			code:             codes.ResourceExhausted,
+			retryInfo:        nil,
+			expected:         false,
+			expectedThrottle: true,
 		},
 		{
 			name: "ResourceExhausted with retry info is retryable",
@@ -115,20 +56,23 @@ func TestShouldRetry(t *testing.T) {
 			retryInfo: &errdetails.RetryInfo{
 				RetryDelay: durationpb.New(time.Second),
 			},
-			expected: true,
+			expected:         true,
+			expectedThrottle: false,
 		},
 		{
-			name:      "InvalidArgument is not retryable",
-			code:      codes.InvalidArgument,
-			retryInfo: nil,
-			expected:  false,
+			name:             "InvalidArgument is not retryable",
+			code:             codes.InvalidArgument,
+			retryInfo:        nil,
+			expected:         false,
+			expectedThrottle: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := shouldRetry(tt.code, tt.retryInfo)
+			result, isThrottle := shouldRetry(tt.code, tt.retryInfo)
 			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expectedThrottle, isThrottle)
 		})
 	}
 }
@@ -201,6 +145,159 @@ func TestGetThrottleDuration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := getThrottleDuration(tt.retryInfo)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestShouldRetryHTTP(t *testing.T) {
+	tests := []struct {
+		name             string
+		statusCode       int
+		expectedRetry    bool
+		expectedThrottle bool
+	}{
+		{
+			name:             "OK status should not retry",
+			statusCode:       200,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Bad Request is permanent error",
+			statusCode:       400,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Unauthorized triggers rate limit flag",
+			statusCode:       401,
+			expectedRetry:    false,
+			expectedThrottle: true,
+		},
+		{
+			name:             "Forbidden triggers rate limit flag",
+			statusCode:       403,
+			expectedRetry:    false,
+			expectedThrottle: true,
+		},
+		{
+			name:             "Not Found is permanent error",
+			statusCode:       404,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Method Not Allowed is permanent error",
+			statusCode:       405,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Request Timeout is retryable",
+			statusCode:       408,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Unprocessable Entity is permanent error",
+			statusCode:       422,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Too Many Requests is retryable",
+			statusCode:       429,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Bad Gateway is retryable",
+			statusCode:       502,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Service Unavailable is retryable",
+			statusCode:       503,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Gateway Timeout is retryable",
+			statusCode:       504,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Unknown status code defaults to no retry",
+			statusCode:       418,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			retry, throttle := shouldRetryHTTP(tt.statusCode)
+			assert.Equal(t, tt.expectedRetry, retry)
+			assert.Equal(t, tt.expectedThrottle, throttle)
+		})
+	}
+}
+
+func TestGetHTTPThrottleDuration(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		headers    map[string]string
+		expected   time.Duration
+	}{
+		{
+			name:       "Non-429 status returns 0",
+			statusCode: 503,
+			headers:    map[string]string{"Retry-After": "30"},
+			expected:   0,
+		},
+		{
+			name:       "429 without Retry-After returns 0",
+			statusCode: 429,
+			headers:    map[string]string{},
+			expected:   0,
+		},
+		{
+			name:       "429 with integer Retry-After",
+			statusCode: 429,
+			headers:    map[string]string{"Retry-After": "30"},
+			expected:   30 * time.Second,
+		},
+		{
+			name:       "429 with invalid Retry-After",
+			statusCode: 429,
+			headers:    map[string]string{"Retry-After": "invalid"},
+			expected:   0,
+		},
+		{
+			name:       "429 with zero seconds",
+			statusCode: 429,
+			headers:    map[string]string{"Retry-After": "0"},
+			expected:   0,
+		},
+		{
+			name:       "429 with negative seconds",
+			statusCode: 429,
+			headers:    map[string]string{"Retry-After": "-10"},
+			expected:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			headers := make(map[string][]string)
+			for k, v := range tt.headers {
+				headers[k] = []string{v}
+			}
+			result := getHTTPThrottleDuration(tt.statusCode, headers)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

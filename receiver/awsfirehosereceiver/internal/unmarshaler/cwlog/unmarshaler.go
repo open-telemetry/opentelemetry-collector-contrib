@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
@@ -141,6 +141,6 @@ func parseLog(data []byte) (log cWLog, control bool, _ error) {
 }
 
 // Type of the serialized messages.
-func (u *Unmarshaler) Type() string {
+func (*Unmarshaler) Type() string {
 	return TypeStr
 }

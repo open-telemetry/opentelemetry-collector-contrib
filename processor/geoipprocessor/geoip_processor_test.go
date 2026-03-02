@@ -6,7 +6,7 @@ package geoipprocessor
 import (
 	"context"
 	"errors"
-	"net"
+	"net/netip"
 	"path/filepath"
 	"testing"
 
@@ -37,7 +37,7 @@ type providerFactoryMock struct {
 }
 
 type providerMock struct {
-	LocationF func(context.Context, net.IP) (attribute.Set, error)
+	LocationF func(context.Context, netip.Addr) (attribute.Set, error)
 	CloseF    func(context.Context) error
 }
 
@@ -58,7 +58,7 @@ func (fm *providerFactoryMock) CreateGeoIPProvider(ctx context.Context, settings
 	return fm.CreateGeoIPProviderF(ctx, settings, cfg)
 }
 
-func (pm *providerMock) Location(ctx context.Context, ip net.IP) (attribute.Set, error) {
+func (pm *providerMock) Location(ctx context.Context, ip netip.Addr) (attribute.Set, error) {
 	return pm.LocationF(ctx, ip)
 }
 
@@ -67,7 +67,7 @@ func (pm *providerMock) Close(ctx context.Context) error {
 }
 
 var baseMockProvider = providerMock{
-	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
+	LocationF: func(context.Context, netip.Addr) (attribute.Set, error) {
 		return attribute.Set{}, nil
 	},
 	CloseF: func(context.Context) error {
@@ -85,7 +85,7 @@ var baseMockFactory = providerFactoryMock{
 }
 
 var baseProviderMock = providerMock{
-	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
+	LocationF: func(context.Context, netip.Addr) (attribute.Set, error) {
 		return attribute.Set{}, nil
 	},
 	CloseF: func(context.Context) error {
@@ -149,7 +149,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		// compare metrics
 		nextMetrics := new(consumertest.MetricsSink)
-		metricsProcessor, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nextMetrics)
+		metricsProcessor, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nextMetrics)
 		require.NoError(t, err)
 
 		inputMetrics, err := golden.ReadMetrics(filepath.Join(dir, "input-metrics.yaml"))
@@ -158,9 +158,9 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		expectedMetrics, err := golden.ReadMetrics(filepath.Join(dir, "output-metrics.yaml"))
 		require.NoError(t, err)
 
-		err = metricsProcessor.ConsumeMetrics(context.Background(), inputMetrics)
+		err = metricsProcessor.ConsumeMetrics(t.Context(), inputMetrics)
 		require.NoError(t, err)
-		require.NoError(t, metricsProcessor.Shutdown(context.Background()))
+		require.NoError(t, metricsProcessor.Shutdown(t.Context()))
 
 		actualMetrics := nextMetrics.AllMetrics()
 		require.Len(t, actualMetrics, 1)
@@ -169,7 +169,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		// compare traces
 		nextTraces := new(consumertest.TracesSink)
-		tracesProcessor, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nextTraces)
+		tracesProcessor, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nextTraces)
 		require.NoError(t, err)
 
 		inputTraces, err := golden.ReadTraces(filepath.Join(dir, "input-traces.yaml"))
@@ -178,9 +178,9 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		expectedTraces, err := golden.ReadTraces(filepath.Join(dir, "output-traces.yaml"))
 		require.NoError(t, err)
 
-		err = tracesProcessor.ConsumeTraces(context.Background(), inputTraces)
+		err = tracesProcessor.ConsumeTraces(t.Context(), inputTraces)
 		require.NoError(t, err)
-		require.NoError(t, tracesProcessor.Shutdown(context.Background()))
+		require.NoError(t, tracesProcessor.Shutdown(t.Context()))
 
 		actualTraces := nextTraces.AllTraces()
 		require.Len(t, actualTraces, 1)
@@ -189,13 +189,13 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		// compare logs
 		nextLogs := new(consumertest.LogsSink)
-		logsProcessor, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nextLogs)
+		logsProcessor, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nextLogs)
 		require.NoError(t, err)
 
 		inputLogs, err := golden.ReadLogs(filepath.Join(dir, "input-logs.yaml"))
 		require.NoError(t, err)
 
-		err = logsProcessor.ConsumeLogs(context.Background(), inputLogs)
+		err = logsProcessor.ConsumeLogs(t.Context(), inputLogs)
 		require.NoError(t, err)
 
 		expectedLogs, err := golden.ReadLogs(filepath.Join(dir, "output-logs.yaml"))
@@ -205,7 +205,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		require.Len(t, actualLogs, 1)
 		// golden.WriteLogs(t, filepath.Join(dir, "output-logs.yaml"), actualLogs[0])
 		require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs[0]))
-		require.NoError(t, logsProcessor.Shutdown(context.Background()))
+		require.NoError(t, logsProcessor.Shutdown(t.Context()))
 	}
 }
 
@@ -216,8 +216,8 @@ func TestProcessor(t *testing.T) {
 		return &baseProviderMock, nil
 	}
 
-	baseProviderMock.LocationF = func(_ context.Context, sourceIP net.IP) (attribute.Set, error) {
-		if sourceIP.Equal(net.IPv4(1, 2, 3, 4)) {
+	baseProviderMock.LocationF = func(_ context.Context, sourceIP netip.Addr) (attribute.Set, error) {
+		if sourceIP.Compare(netip.AddrFrom4([4]byte{1, 2, 3, 4})) == 0 {
 			return attribute.NewSet([]attribute.KeyValue{
 				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
 				attribute.String(conventions.AttributeGeoContinentCode, "EU"),
@@ -266,5 +266,5 @@ func TestProcessorShutdownError(t *testing.T) {
 		},
 	}
 
-	assert.EqualError(t, processor.shutdown(context.Background()), "test error 1; test error 2")
+	assert.EqualError(t, processor.shutdown(t.Context()), "test error 1; test error 2")
 }

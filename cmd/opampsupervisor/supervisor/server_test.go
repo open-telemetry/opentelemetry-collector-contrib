@@ -4,7 +4,6 @@
 package supervisor
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -28,7 +27,7 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 	t.Run("accept connection", func(t *testing.T) {
 		onConnectingFuncCalled := false
 		fs := flattenedSettings{
-			onConnecting: func(_ *http.Request) (shouldConnect bool, rejectStatusCode int) {
+			onConnecting: func(*http.Request) (shouldConnect bool, rejectStatusCode int) {
 				onConnectingFuncCalled = true
 				return true, 0
 			},
@@ -43,7 +42,7 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 	t.Run("do not accept connection", func(t *testing.T) {
 		onConnectingFuncCalled := false
 		fs := flattenedSettings{
-			onConnecting: func(_ *http.Request) (shouldConnect bool, rejectStatusCode int) {
+			onConnecting: func(*http.Request) (shouldConnect bool, rejectStatusCode int) {
 				onConnectingFuncCalled = true
 				return false, 500
 			},
@@ -60,13 +59,13 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 func Test_flattenedSettings_OnMessage(t *testing.T) {
 	onMessageFuncCalled := false
 	fs := flattenedSettings{
-		onMessage: func(_ serverTypes.Connection, _ *protobufs.AgentToServer) *protobufs.ServerToAgent {
+		onMessage: func(serverTypes.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
 			onMessageFuncCalled = true
 			return &protobufs.ServerToAgent{}
 		},
 	}
 
-	sta := fs.OnMessage(context.TODO(), &mockConn{}, &protobufs.AgentToServer{})
+	sta := fs.OnMessage(t.Context(), &mockConn{}, &protobufs.AgentToServer{})
 
 	require.True(t, onMessageFuncCalled)
 	require.NotNil(t, sta)
@@ -75,7 +74,7 @@ func Test_flattenedSettings_OnMessage(t *testing.T) {
 func Test_flattenedSettings_OnConnectionClose(t *testing.T) {
 	onConnectionCloseFuncCalled := false
 	fs := flattenedSettings{
-		onConnectionClose: func(_ serverTypes.Connection) {
+		onConnectionClose: func(serverTypes.Connection) {
 			onConnectionCloseFuncCalled = true
 		},
 	}

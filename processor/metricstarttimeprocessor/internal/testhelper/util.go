@@ -11,7 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TimestampFromMs(timeAtMs int64) pcommon.Timestamp {
@@ -44,8 +46,8 @@ func MetricsFromResourceMetrics(metrics ...pmetric.ResourceMetrics) pmetric.Metr
 
 func ResourceMetrics(job, instance string, metrics ...pmetric.Metric) pmetric.ResourceMetrics {
 	mr := pmetric.NewResourceMetrics()
-	mr.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), job)
-	mr.Resource().Attributes().PutStr(string(semconv.ServiceInstanceIDKey), instance)
+	mr.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), job)
+	mr.Resource().Attributes().PutStr(string(conventions.ServiceInstanceIDKey), instance)
 	ms := mr.ScopeMetrics().AppendEmpty().Metrics()
 
 	for _, metric := range metrics {
@@ -172,7 +174,40 @@ func ExponentialHistogramPointNoValue(attributes []*KV, startTimestamp, timestam
 	return hdp
 }
 
-func DoublePointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
+// exponentialHistogramPointSimplified let's you define an exponential
+// histogram with just a few parameters.
+// Scale and ZeroCount are set to the provided values.
+// Positive and negative buckets are generated using the offset and bucketCount
+// parameters by adding buckets from offset in both positive and negative
+// directions. Bucket counts start from 1 and increase by 1 for each bucket.
+// Sum and Count will be proportional to the bucket count.
+func ExponentialHistogramPointSimplified(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, offset int32, bucketCount int) pmetric.ExponentialHistogramDataPoint {
+	hdp := ExponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+	hdp.SetScale(scale)
+	hdp.SetZeroCount(zeroCount)
+
+	positive := hdp.Positive()
+	positive.SetOffset(offset)
+	positive.BucketCounts().EnsureCapacity(bucketCount)
+	negative := hdp.Negative()
+	negative.SetOffset(offset)
+	negative.BucketCounts().EnsureCapacity(bucketCount)
+
+	var sum float64
+	var count uint64
+	for i := range bucketCount {
+		positive.BucketCounts().Append(uint64(i + 1))
+		negative.BucketCounts().Append(uint64(i + 1))
+		count += uint64(i+1) + uint64(i+1)
+		sum += float64(i+1)*10 + float64(i+1)*10.0
+	}
+	hdp.SetCount(count)
+	hdp.SetSum(sum)
+
+	return hdp
+}
+
+func NumberPointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
 	ndp := pmetric.NewNumberDataPoint()
 	ndp.SetStartTimestamp(startTimestamp)
 	ndp.SetTimestamp(timestamp)
@@ -185,13 +220,19 @@ func DoublePointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestam
 }
 
 func DoublePoint(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, value float64) pmetric.NumberDataPoint {
-	ndp := DoublePointRaw(attributes, startTimestamp, timestamp)
+	ndp := NumberPointRaw(attributes, startTimestamp, timestamp)
 	ndp.SetDoubleValue(value)
 	return ndp
 }
 
+func IntPoint(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, value int64) pmetric.NumberDataPoint {
+	ndp := NumberPointRaw(attributes, startTimestamp, timestamp)
+	ndp.SetIntValue(value)
+	return ndp
+}
+
 func DoublePointNoValue(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
-	ndp := DoublePointRaw(attributes, startTimestamp, timestamp)
+	ndp := NumberPointRaw(attributes, startTimestamp, timestamp)
 	ndp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	return ndp
 }
@@ -244,7 +285,7 @@ func SummaryPoint(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp,
 	sdp.SetSum(sum)
 
 	qvL := sdp.QuantileValues()
-	for i := 0; i < len(quantiles); i++ {
+	for i := range quantiles {
 		qvi := qvL.AppendEmpty()
 		qvi.SetQuantile(quantiles[i])
 		qvi.SetValue(values[i])
@@ -296,7 +337,7 @@ func RunScript(t *testing.T, ma Adjuster, tests []*MetricsAdjusterTest, addition
 				}
 			}
 			var err error
-			adjusted, err = ma.AdjustMetrics(context.Background(), adjusted)
+			adjusted, err = ma.AdjustMetrics(t.Context(), adjusted)
 			assert.NoError(t, err)
 
 			// Add the instance/job to the expected metrics as well if they aren't already present.
@@ -306,7 +347,7 @@ func RunScript(t *testing.T, ma Adjuster, tests []*MetricsAdjusterTest, addition
 					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
 				}
 			}
-			assert.Equal(t, test.Adjusted, adjusted)
+			assert.NoError(t, pmetrictest.CompareMetrics(test.Adjusted, adjusted))
 		})
 	}
 }

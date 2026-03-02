@@ -143,23 +143,23 @@ func TestProduceRaw(t *testing.T) {
 	require.Equal(t, 3, records.Len()) // Should have one record per flow record
 
 	// Each record should be a raw string representation of the ProducerMessage
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		record := records.At(i)
 		msg := messages[i]
 		assert.Equal(t, fmt.Sprintf("%+v", msg), record.Body().Str())
 	}
 }
 
-// This PanicProducer replaces the ProtoProducer, to simulate it producing a panic
-type PanicProducer struct{}
+// This panicProducer replaces the ProtoProducer, to simulate it producing a panic
+type panicProducer struct{}
 
-func (m *PanicProducer) Produce(_ any, _ *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
+func (*panicProducer) Produce(any, *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
 	panic("producer panic!")
 }
 
-func (m *PanicProducer) Close() {}
+func (*panicProducer) Close() {}
 
-func (m *PanicProducer) Commit(_ []producer.ProducerMessage) {}
+func (*panicProducer) Commit([]producer.ProducerMessage) {}
 
 func TestProducerPanic(t *testing.T) {
 	// Create a mock logger that can capture logged messages
@@ -169,8 +169,8 @@ func TestProducerPanic(t *testing.T) {
 	// Create a mock consumer
 	mockConsumer := consumertest.NewNop()
 
-	// Wrap a PanicProducer (instead of ProtoProducer) in the OtelLogsProducerWrapper
-	wrapper := newOtelLogsProducer(&PanicProducer{}, mockConsumer, logger, false)
+	// Wrap a panicProducer (instead of ProtoProducer) in the otelLogsProducerWrapper
+	wrapper := newOtelLogsProducer(&panicProducer{}, mockConsumer, logger, false)
 
 	// Call Produce which should recover from panic
 	messages, err := wrapper.Produce(nil, &producer.ProduceArgs{

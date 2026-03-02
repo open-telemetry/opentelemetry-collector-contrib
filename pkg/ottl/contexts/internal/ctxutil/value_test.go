@@ -4,7 +4,6 @@
 package ctxutil_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,6 +18,6 @@ func Test_SetIndexableValue_InvalidValue(t *testing.T) {
 	keys := []ottl.Key[any]{
 		&pathtest.Key[any]{},
 	}
-	err := ctxutil.SetIndexableValue[any](context.Background(), nil, pcommon.NewValueStr("str"), nil, keys)
+	err := ctxutil.SetIndexableValue[any](t.Context(), nil, pcommon.NewValueStr("str"), nil, keys)
 	assert.Error(t, err)
 }

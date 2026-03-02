@@ -4,7 +4,7 @@
 package oidcauthextension
 
 import (
-	"context"
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-jose/go-jose/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,6 +30,44 @@ import (
 func newTestExtension(t *testing.T, cfg *Config) extension.Extension {
 	t.Helper()
 	return newExtension(cfg, zap.NewNop())
+}
+
+func createJWKSFile(t *testing.T, pubKeys []any) string {
+	t.Helper()
+
+	keys := []jose.JSONWebKey{}
+	for _, pk := range pubKeys {
+		keys = append(keys, jose.JSONWebKey{Key: pk})
+	}
+
+	jwks := jose.JSONWebKeySet{Keys: keys}
+	data, err := json.Marshal(jwks)
+	require.NoError(t, err)
+
+	tmpFile, err := os.CreateTemp(t.TempDir(), "jwks-*.json")
+	require.NoError(t, err)
+
+	_, err = tmpFile.Write(data)
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	return tmpFile.Name()
+}
+
+func updateJWKSFile(t *testing.T, path string, pubKey crypto.PublicKey) {
+	t.Helper()
+
+	jwks := jose.JSONWebKeySet{
+		Keys: []jose.JSONWebKey{
+			{
+				Key: pubKey,
+			},
+		},
+	}
+	data, err := json.Marshal(jwks)
+	require.NoError(t, err)
+
+	require.NoError(t, os.WriteFile(path, data, 0o600))
 }
 
 func TestOIDCAuthenticationSucceeded(t *testing.T) {
@@ -45,7 +84,7 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	}
 	p := newTestExtension(t, config)
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	payload, _ := json.Marshal(map[string]any{
@@ -63,20 +102,234 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	require.True(t, ok)
 
 	// test
-	ctx, err := srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
 	// test, upper-case header
-	ctx, err = srvAuth.Authenticate(context.Background(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", token)}})
+	ctx, err = srvAuth.Authenticate(t.Context(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
 	// TODO(jpkroehling): assert that the authentication routine set the subject/membership to the resource
+}
+
+func TestOIDCAuthenticationSucceededMultipleProviders(t *testing.T) {
+	// prepare
+	oidcServer1, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer1.Start()
+	defer oidcServer1.Close()
+
+	oidcServer2, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer2.Start()
+	defer oidcServer2.Close()
+
+	config := &Config{
+		IssuerURL:   oidcServer1.URL,
+		Audience:    "unit-test-1",
+		GroupsClaim: "memberships",
+		Providers: []ProviderCfg{
+			{
+				IssuerURL:   oidcServer2.URL,
+				Audience:    "unit-test-2",
+				GroupsClaim: "groups",
+			},
+		},
+	}
+	p := newTestExtension(t, config)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	payload1, _ := json.Marshal(map[string]any{
+		"sub":         "jdoe@example.com",
+		"name":        "jdoe",
+		"iss":         oidcServer1.URL,
+		"aud":         "unit-test-1",
+		"exp":         time.Now().Add(time.Minute).Unix(),
+		"memberships": []string{"department-1", "department-2"},
+	})
+	token1, err := oidcServer1.token(payload1)
+	require.NoError(t, err)
+
+	payload2, _ := json.Marshal(map[string]any{
+		"sub":    "jdough@example.com",
+		"name":   "jdough",
+		"iss":    oidcServer2.URL,
+		"aud":    "unit-test-2",
+		"exp":    time.Now().Add(time.Minute).Unix(),
+		"groups": []string{"department-1", "department-2"},
+	})
+	token2, err := oidcServer2.token(payload2)
+	require.NoError(t, err)
+
+	for _, token := range []string{token1, token2} {
+		// test
+		ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+		// verify
+		assert.NoError(t, err)
+		assert.NotNil(t, ctx)
+
+		// test, upper-case header
+		ctx, err = srvAuth.Authenticate(t.Context(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+		// verify
+		assert.NoError(t, err)
+		assert.NotNil(t, ctx)
+	}
+}
+
+func TestOIDCAuthenticationFailedAudienceMismatchMultipleProviders(t *testing.T) {
+	// prepare
+	oidcServer1, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer1.Start()
+	defer oidcServer1.Close()
+
+	oidcServer2, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer2.Start()
+	defer oidcServer2.Close()
+
+	config := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL: oidcServer1.URL,
+				Audience:  "unit-test-1",
+			},
+			{
+				IssuerURL: oidcServer2.URL,
+				Audience:  "unit-test-2",
+			},
+		},
+	}
+	p := newTestExtension(t, config)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	payload1, _ := json.Marshal(map[string]any{
+		"sub":         "jdoe@example.com",
+		"name":        "jdoe",
+		"iss":         oidcServer1.URL,
+		"aud":         "unit-test-2", // this is the mismatch
+		"exp":         time.Now().Add(time.Minute).Unix(),
+		"memberships": []string{"department-1", "department-2"},
+	})
+	token, err := oidcServer1.token(payload1)
+	require.NoError(t, err)
+
+	// test
+	_, err = srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.Error(t, err)
+}
+
+func TestOIDCAuthenticationFailedNoMatchingIssuers(t *testing.T) {
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	config := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL: oidcServer.URL,
+				Audience:  "unit-test-1",
+			},
+		},
+	}
+	p := newTestExtension(t, config)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	payload, _ := json.Marshal(map[string]any{
+		"sub":         "jdoe@example.com",
+		"name":        "jdoe",
+		"iss":         "https://someotherissuer.com",
+		"aud":         "unit-test-1",
+		"exp":         time.Now().Add(time.Minute).Unix(),
+		"memberships": []string{"department-1", "department-2"},
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	// test
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.Error(t, err)
+	assert.NotNil(t, ctx)
+}
+
+// When only one provider is configured, we should verify against that regardless
+// of the issuer in the token. In that case, the issuer provided in the extension
+// config doesn't necessarily have to match the issuer in the token since it's
+// only used for discovery.
+// This code path doesn't actually work (for now) since Start() will fail when the issuer
+// in the config doesn't match the issuer returned by the discovery server, but this test
+// remains out of an abundance of caution.
+func TestOIDCAuthenticationSucceededSingleIssuerMismatch(t *testing.T) {
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	reverseProxy := newReverseProxy(t, oidcServer.URL)
+	defer reverseProxy.Close()
+
+	assert.NotEqual(t, oidcServer.URL, reverseProxy.URL)
+
+	config := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL: reverseProxy.URL,
+				Audience:  "unit-test-1",
+			},
+		},
+	}
+	p := newTestExtension(t, config)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.ErrorContains(t, err, "did not match")
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	payload, _ := json.Marshal(map[string]any{
+		"sub":         "jdoe@example.com",
+		"name":        "jdoe",
+		"iss":         oidcServer.URL,
+		"aud":         "unit-test-1",
+		"exp":         time.Now().Add(time.Minute).Unix(),
+		"memberships": []string{"department-1", "department-2"},
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.Error(t, err)
+	assert.NotNil(t, ctx)
 }
 
 func TestOIDCAuthenticationSucceededIgnoreAudienceMismatch(t *testing.T) {
@@ -93,7 +346,7 @@ func TestOIDCAuthenticationSucceededIgnoreAudienceMismatch(t *testing.T) {
 	}
 	p := newTestExtension(t, config)
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	payload, _ := json.Marshal(map[string]any{
@@ -108,7 +361,7 @@ func TestOIDCAuthenticationSucceededIgnoreAudienceMismatch(t *testing.T) {
 	require.True(t, ok)
 
 	// test
-	ctx, err := srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
 	assert.NoError(t, err)
@@ -128,7 +381,7 @@ func TestOIDCAuthenticationFailAudienceMismatch(t *testing.T) {
 	}
 	p := newTestExtension(t, config)
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	payload, _ := json.Marshal(map[string]any{
@@ -143,7 +396,7 @@ func TestOIDCAuthenticationFailAudienceMismatch(t *testing.T) {
 	require.True(t, ok)
 
 	// test
-	_, err = srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	_, err = srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
 	assert.Error(t, err)
@@ -192,14 +445,17 @@ func TestOIDCProviderForConfigWithTLS(t *testing.T) {
 	}
 
 	// test
-	e := &oidcExtension{}
-	err = e.setProviderConfig(context.Background(), config)
+	e := &oidcExtension{
+		providerContainers: make(map[string]*providerContainer),
+	}
+	err = e.processProviderConfig(t.Context(), config.getProviderConfigs()[0])
 
 	// verify
 	assert.NoError(t, err)
-	assert.NotNil(t, e.provider)
-	assert.NotNil(t, e.client)
-	assert.NotNil(t, e.transport)
+	assert.NotNil(t, e.providerContainers)
+	assert.NotNil(t, e.providerContainers[oidcServer.URL].provider)
+	assert.NotNil(t, e.providerContainers[oidcServer.URL].client)
+	assert.NotNil(t, e.providerContainers[oidcServer.URL].transport)
 }
 
 func TestOIDCLoadIssuerCAFromPath(t *testing.T) {
@@ -260,7 +516,7 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 	file, err := os.CreateTemp(os.TempDir(), "cert")
 	require.NoError(t, err)
 	defer os.Remove(file.Name())
-	_, err = file.Write([]byte("foobar"))
+	_, err = file.WriteString("foobar")
 	require.NoError(t, err)
 
 	config := &Config{
@@ -268,14 +524,14 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 	}
 
 	// test
-	e := &oidcExtension{}
-	err = e.setProviderConfig(context.Background(), config)
+	e := &oidcExtension{
+		providerContainers: make(map[string]*providerContainer),
+	}
+	err = e.processProviderConfig(t.Context(), *config.getLegacyProviderConfig())
 
 	// verify
 	assert.Error(t, err)
-	assert.Nil(t, e.provider)
-	assert.Nil(t, e.client)
-	assert.NotNil(t, e.transport)
+	assert.Empty(t, e.providerContainers)
 }
 
 func TestOIDCInvalidAuthHeader(t *testing.T) {
@@ -287,7 +543,7 @@ func TestOIDCInvalidAuthHeader(t *testing.T) {
 	require.True(t, ok)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
+	ctx, err := p.Authenticate(t.Context(), map[string][]string{"authorization": {"some-value"}})
 
 	// verify
 	assert.Equal(t, errInvalidAuthenticationHeaderFormat, err)
@@ -303,7 +559,7 @@ func TestOIDCNotAuthenticated(t *testing.T) {
 	require.True(t, ok)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), make(map[string][]string))
+	ctx, err := p.Authenticate(t.Context(), make(map[string][]string))
 
 	// verify
 	assert.Equal(t, errNotAuthenticated, err)
@@ -318,12 +574,12 @@ func TestProviderNotReachable(t *testing.T) {
 	})
 
 	// test
-	err := p.Start(context.Background(), componenttest.NewNopHost())
+	err := p.Start(t.Context(), componenttest.NewNopHost())
 
 	// verify
 	assert.Error(t, err)
 
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 
@@ -339,18 +595,213 @@ func TestFailedToVerifyToken(t *testing.T) {
 		Audience:  "unit-test",
 	})
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	srvAuth, ok := p.(extensionauth.Server)
 	require.True(t, ok)
 
 	// test
-	ctx, err := srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer some-token"}})
 
 	// verify
 	assert.Error(t, err)
 	assert.NotNil(t, ctx)
+}
+
+func TestOIDCAuthenticationSucceededPublicKeysFile(t *testing.T) {
+	// prepare
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	jwksFile := createJWKSFile(t, []any{oidcServer.privateKey})
+	defer os.Remove(jwksFile)
+
+	p := newTestExtension(t, &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL:      oidcServer.URL,
+				Audience:       "unit-test",
+				PublicKeysFile: jwksFile,
+			},
+		},
+	})
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	payload, _ := json.Marshal(map[string]any{
+		"sub":         "jdoe@example.com",
+		"name":        "jdoe",
+		"iss":         oidcServer.URL,
+		"aud":         "unit-test",
+		"exp":         time.Now().Add(time.Minute).Unix(),
+		"memberships": []string{"department-1", "department-2"},
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	// test
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+}
+
+func TestOIDCAuthenticationPublicKeysFileHotReload(t *testing.T) {
+	testCases := []struct {
+		name             string
+		addExtraProvider bool
+	}{
+		{
+			name:             "one provider",
+			addExtraProvider: false,
+		},
+		{
+			name:             "two providers with same key file",
+			addExtraProvider: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// prepare
+			oidcServer1, err := newOIDCServer()
+			require.NoError(t, err)
+			oidcServer1.Start()
+			defer oidcServer1.Close()
+
+			oidcServer2, err := newOIDCServer()
+			require.NoError(t, err)
+			oidcServer2.Start()
+			defer oidcServer2.Close()
+
+			// Create a JWKS file with the first server's public key
+			jwksFile := createJWKSFile(t, []any{oidcServer1.privateKey.Public()})
+			defer os.Remove(jwksFile)
+
+			// Use the second server's issuer URL but first server's keys initially
+			cfg := &Config{
+				Providers: []ProviderCfg{
+					{
+						IssuerURL:      oidcServer2.URL,
+						Audience:       "unit-test",
+						PublicKeysFile: jwksFile,
+					},
+				},
+			}
+
+			if tc.addExtraProvider {
+				cfg.Providers = append(cfg.Providers,
+					ProviderCfg{
+						IssuerURL:      "unimportant-url",
+						Audience:       "unit-test",
+						PublicKeysFile: jwksFile,
+					},
+				)
+			}
+			p := newTestExtension(t, cfg)
+
+			err = p.Start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			srvAuth, ok := p.(extensionauth.Server)
+			require.True(t, ok)
+
+			// Create a token signed by server2
+			payload, _ := json.Marshal(map[string]any{
+				"sub": "jdoe@example.com",
+				"iss": oidcServer2.URL,
+				"aud": "unit-test",
+				"exp": time.Now().Add(time.Minute).Unix(),
+			})
+			token, err := oidcServer2.token(payload)
+			require.NoError(t, err)
+
+			// Token should fail initially because JWKS was signed by first server's key
+			_, err = srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			assert.Error(t, err)
+
+			// Update JWKS file with server2's key
+			updateJWKSFile(t, jwksFile, oidcServer2.privateKey.Public())
+
+			// Wait for file watcher to detect the change
+			time.Sleep(100 * time.Millisecond)
+
+			// Token should now succeed
+			ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			assert.NoError(t, err)
+			assert.NotNil(t, ctx)
+		})
+	}
+}
+
+func TestOIDCAuthenticationInvalidPublicKeysFile(t *testing.T) {
+	testCases := []struct {
+		name        string
+		expectErr   string
+		fileBuilder func(t *testing.T) string
+	}{
+		{
+			name:      "missing",
+			expectErr: "could not read file",
+			fileBuilder: func(*testing.T) string {
+				return "/nonexistent/jwks.json"
+			},
+		},
+		{
+			name:      "invalid json",
+			expectErr: "failed to parse JWKS",
+			fileBuilder: func(t *testing.T) string {
+				tmpFile, err := os.CreateTemp(t.TempDir(), "invalid-jwks-*.json")
+				require.NoError(t, err)
+
+				_, err = tmpFile.WriteString("not valid json")
+				require.NoError(t, err)
+				tmpFile.Close()
+
+				return tmpFile.Name()
+			},
+		},
+		{
+			name:      "no keys",
+			expectErr: errNoSupportedKeys.Error(),
+			fileBuilder: func(t *testing.T) string {
+				return createJWKSFile(t, []any{})
+			},
+		},
+		{
+			name:      "unsupported key type",
+			expectErr: errNoSupportedKeys.Error(),
+			fileBuilder: func(t *testing.T) string {
+				// go-jose interprets []byte as a symmetric key, which is a valid JWK but invalid for our purposes.
+				return createJWKSFile(t, []any{[]byte{}})
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := newTestExtension(t, &Config{
+				Providers: []ProviderCfg{
+					{
+						IssuerURL:      "https://example.com",
+						Audience:       "unit-test",
+						PublicKeysFile: tc.fileBuilder(t),
+					},
+				},
+			})
+
+			err := p.Start(t.Context(), componenttest.NewNopHost())
+			require.ErrorContains(t, err, tc.expectErr)
+		})
+	}
 }
 
 func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
@@ -396,7 +847,7 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 		t.Run(tt.casename, func(t *testing.T) {
 			p := newTestExtension(t, tt.config)
 
-			err = p.Start(context.Background(), componenttest.NewNopHost())
+			err = p.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			payload, _ := json.Marshal(map[string]any{
@@ -412,7 +863,7 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 			require.True(t, ok)
 
 			// test
-			ctx, err := srvAuth.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 			// verify
 			assert.ErrorIs(t, err, tt.expectedError)
@@ -548,7 +999,7 @@ func TestShutdown(t *testing.T) {
 	require.NotNil(t, p)
 
 	// test
-	err := p.Shutdown(context.Background()) // for now, we never fail
+	err := p.Shutdown(t.Context()) // for now, we never fail
 
 	// verify
 	assert.NoError(t, err)

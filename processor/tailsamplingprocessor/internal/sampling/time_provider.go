@@ -18,6 +18,6 @@ type TimeProvider interface {
 // to have fake clocks).
 type MonotonicClock struct{}
 
-func (c MonotonicClock) getCurSecond() int64 {
+func (MonotonicClock) getCurSecond() int64 {
 	return time.Now().Unix()
 }

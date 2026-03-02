@@ -4,7 +4,6 @@
 package jaegerremotesampling
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +17,10 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
 	expected := &Config{
-		HTTPServerConfig: &confighttp.ServerConfig{Endpoint: "localhost:5778"},
+		HTTPServerConfig: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:5778",
+			Transport: confignet.TransportTypeTCP,
+		}},
 		GRPCServerConfig: &configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
 			Endpoint:  "localhost:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -36,7 +38,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
+	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 }

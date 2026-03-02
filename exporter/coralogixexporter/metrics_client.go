@@ -26,13 +26,14 @@ func newMetricsExporter(cfg component.Config, set exporter.Settings) (*metricsEx
 	}
 
 	return &metricsExporter{
-		signalExporter: *signalExporter,
+		signalExporter: signalExporter,
 	}, nil
 }
 
 type metricsExporter struct {
-	metricExporter pmetricotlp.GRPCClient
-	signalExporter
+	grpcMetricsExporter pmetricotlp.GRPCClient
+	httpMetricsExporter httpMetricsExporter
+	*signalExporter
 }
 
 func (e *metricsExporter) start(ctx context.Context, host component.Host) (err error) {
@@ -40,11 +41,19 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) (err e
 	if err := e.startSignalExporter(ctx, host, wrapper); err != nil {
 		return err
 	}
-	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
+	if e.config.Protocol == httpProtocol {
+		e.httpMetricsExporter = newHTTPMetricsExporter(e.clientHTTP, e.config)
+	} else {
+		e.grpcMetricsExporter = pmetricotlp.NewGRPCClient(e.clientConn)
+	}
 	return nil
 }
 
 func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if !e.canSend() {
+		return e.rateError.GetError()
+	}
+
 	rss := md.ResourceMetrics()
 	for i := 0; i < rss.Len(); i++ {
 		resourceMetric := rss.At(i)
@@ -53,19 +62,48 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 		resourceMetric.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
 	}
 
-	resp, err := e.metricExporter.Export(e.enhanceContext(ctx), pmetricotlp.NewExportRequestFromMetrics(md), e.callOptions...)
+	er := pmetricotlp.NewExportRequestFromMetrics(md)
+	var resp pmetricotlp.ExportResponse
+	var err error
+	if e.config.Protocol == httpProtocol {
+		resp, err = e.httpMetricsExporter.Export(ctx, er)
+	} else {
+		resp, err = e.grpcMetricsExporter.Export(e.enhanceContext(ctx), er, e.callOptions...)
+	}
+
 	if err != nil {
-		return processError(err)
+		return e.processError(err)
 	}
 
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
-		e.settings.Logger.Error("Partial success response from Coralogix",
+		logFields := []zap.Field{
 			zap.String("message", partialSuccess.ErrorMessage()),
 			zap.Int64("rejected_data_points", partialSuccess.RejectedDataPoints()),
+		}
+
+		if e.settings.Logger.Level() == zap.DebugLevel {
+			var metricNames []string
+			rss := md.ResourceMetrics()
+			for i := 0; i < rss.Len(); i++ {
+				rm := rss.At(i)
+				sm := rm.ScopeMetrics()
+				for j := 0; j < sm.Len(); j++ {
+					metrics := sm.At(j).Metrics()
+					for k := 0; k < metrics.Len(); k++ {
+						metricNames = append(metricNames, metrics.At(k).Name())
+					}
+				}
+			}
+			logFields = append(logFields, zap.Strings("metric_names", metricNames))
+		}
+
+		e.settings.Logger.Error("Partial success response from Coralogix",
+			logFields...,
 		)
 	}
 
+	e.rateError.errorCount.Store(0)
 	return nil
 }
 

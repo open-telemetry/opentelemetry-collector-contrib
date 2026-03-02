@@ -4,7 +4,6 @@
 package exceptionsconnector
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ func TestConnectorLogConsumeTraces(t *testing.T) {
 
 	p := newTestLogsConnector(lsink, zaptest.NewLogger(t))
 
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
 	err := p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)

@@ -22,7 +22,7 @@ type mockReader struct {
 	mock.Mock
 }
 
-func (r *mockReader) Name() string {
+func (*mockReader) Name() string {
 	return "mockReader"
 }
 
@@ -32,7 +32,7 @@ func (r *mockReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, er
 }
 
 func TestNewDatabaseReader(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
 	serviceAccountPath := "../../testdata/serviceAccount.json"
 	readerConfig := ReaderConfig{
@@ -54,7 +54,7 @@ func TestNewDatabaseReader(t *testing.T) {
 }
 
 func TestNewDatabaseReaderWithError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
 	serviceAccountPath := "does not exist"
 	readerConfig := ReaderConfig{
@@ -101,7 +101,7 @@ func TestInitializeReaders(t *testing.T) {
 
 func TestDatabaseReader_Name(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	logger := zaptest.NewLogger(t)
@@ -117,7 +117,7 @@ func TestDatabaseReader_Name(t *testing.T) {
 
 func TestDatabaseReader_Shutdown(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	logger := zaptest.NewLogger(t)
@@ -132,7 +132,7 @@ func TestDatabaseReader_Shutdown(t *testing.T) {
 
 func TestDatabaseReader_Read(t *testing.T) {
 	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
 	logger := zaptest.NewLogger(t)

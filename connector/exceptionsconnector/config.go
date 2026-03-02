@@ -13,10 +13,14 @@ import (
 type Dimension struct {
 	Name    string  `mapstructure:"name"`
 	Default *string `mapstructure:"default"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Exemplars struct {
 	Enabled bool `mapstructure:"enabled"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines the configuration options for exceptionsconnector

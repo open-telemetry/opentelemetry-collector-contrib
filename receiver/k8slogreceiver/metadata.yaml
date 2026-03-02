@@ -1,8 +1,12 @@
+display_name: Kubernetes Log Receiver
 type: k8slog
+
+description: The Kubernetes Log Receiver tails and parses logs in k8s environment.
 
 status:
   class: receiver
   stability:
-    development: [logs]
+    unmaintained: [logs]
   codeowners:
-    active: [h0cheung, TylerHelmuth]
+    emeritus: [h0cheung, TylerHelmuth]
+    seeking_new: true

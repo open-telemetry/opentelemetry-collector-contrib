@@ -4,7 +4,6 @@
 package router
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -12,9 +11,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -196,7 +195,7 @@ func TestTransformer(t *testing.T) {
 			mock1.On(
 				"Process", mock.Anything, mock.Anything,
 			).Return(
-				errors.NewError("Operator can not process logs.", ""),
+				stanzaerrors.NewError("Operator can not process logs.", ""),
 			).Run(func(args mock.Arguments) {
 				results["output1"]++
 				if e, ok := args[1].(*entry.Entry); ok {
@@ -215,7 +214,7 @@ func TestTransformer(t *testing.T) {
 			err = op.SetOutputs([]operator.Operator{mock1, mock2})
 			require.NoError(t, err)
 
-			err = op.ProcessBatch(context.Background(), []*entry.Entry{tc.input})
+			err = op.ProcessBatch(t.Context(), []*entry.Entry{tc.input})
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectedCounts, results)

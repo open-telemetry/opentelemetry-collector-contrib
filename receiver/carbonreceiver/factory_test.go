@@ -4,7 +4,6 @@
 package carbonreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
 	params := receivertest.NewNopSettings(metadata.Type)
-	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	tReceiver, err := createMetricsReceiver(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }

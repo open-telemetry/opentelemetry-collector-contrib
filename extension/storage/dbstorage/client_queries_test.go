@@ -4,7 +4,6 @@
 package dbstorage
 
 import (
-	"context"
 	"regexp"
 	"testing"
 
@@ -40,7 +39,7 @@ func Test_dbDialect_Prepare(t *testing.T) {
 		mock.ExpectPrepare(regexp.QuoteMeta(dialect.Queries.QueryGetRow))
 		mock.ExpectPrepare(regexp.QuoteMeta(dialect.Queries.QuerySetRow))
 		mock.ExpectPrepare(regexp.QuoteMeta(dialect.Queries.QueryDeleteRow))
-		require.NoError(t, dialect.Prepare(context.Background(), db))
+		require.NoError(t, dialect.Prepare(t.Context(), db))
 	})
 }
 

@@ -74,7 +74,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newCPUScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: test.metricsConfig})
+			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: test.metricsConfig})
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -82,14 +82,14 @@ func TestScrape(t *testing.T) {
 				scraper.times = test.timesFunc
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			if test.initializationErr != "" {
 				assert.EqualError(t, err, test.initializationErr)
 				return
 			}
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
@@ -116,6 +116,102 @@ func TestScrape(t *testing.T) {
 				}
 
 				internal.AssertSameTimeStampForAllMetrics(t, metrics)
+			}
+		})
+	}
+}
+
+func TestScrape_CpuCount(t *testing.T) {
+	type testCase struct {
+		name                 string
+		enabledPhysicalCount bool
+		enabledLogicalCount  bool
+	}
+
+	testCases := []testCase{
+		{
+			name:                 "Both Physical and Logical CPU count enabled",
+			enabledPhysicalCount: true,
+			enabledLogicalCount:  true,
+		},
+		{
+			name:                 "Physical CPU count enabled",
+			enabledPhysicalCount: true,
+			enabledLogicalCount:  false,
+		},
+		{
+			name:                 "Logical CPU count enabled",
+			enabledPhysicalCount: false,
+			enabledLogicalCount:  true,
+		},
+		{
+			name:                 "Both Physical and Logical CPU count disabled",
+			enabledPhysicalCount: false,
+			enabledLogicalCount:  false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := metadata.DefaultMetricsBuilderConfig()
+			cfg.Metrics.SystemCPUTime.Enabled = false
+			cfg.Metrics.SystemCPUPhysicalCount.Enabled = test.enabledPhysicalCount
+			cfg.Metrics.SystemCPULogicalCount.Enabled = test.enabledLogicalCount
+
+			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: cfg})
+
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize CPU scraper: %v", err)
+
+			md, err := scraper.scrape(t.Context())
+			require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+			expectedMetricCount := 0
+			if test.enabledPhysicalCount {
+				expectedMetricCount++
+			}
+			if test.enabledLogicalCount {
+				expectedMetricCount++
+			}
+
+			require.Equal(t, expectedMetricCount, md.MetricCount(),
+				"Expected %d metrics but got %d", expectedMetricCount, md.MetricCount())
+
+			if expectedMetricCount == 0 {
+				return
+			}
+
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			reportedMetrics := make(map[string]int)
+
+			for _, metric := range metrics.All() {
+				reportedMetrics[metric.Name()]++
+
+				switch metric.Name() {
+				case "system.cpu.physical.count":
+					require.True(t, test.enabledPhysicalCount, "Physical count metric found but test expects it disabled")
+					assertCPUPhysicalCountMetricValid(t, metric)
+				case "system.cpu.logical.count":
+					require.True(t, test.enabledLogicalCount, "Logical count metric found but test expects it disabled")
+					assertCPULogicalCountMetricValid(t, metric)
+				default:
+					require.Fail(t, "unexpected-metric", "Unexpected metric %q found", metric.Name())
+				}
+			}
+
+			for metricName, count := range reportedMetrics {
+				require.Equal(t, 1, count, "Metric %q reported %d times, expected 1", metricName, count)
+			}
+
+			if test.enabledPhysicalCount {
+				_, found := reportedMetrics["system.cpu.physical.count"]
+				require.True(t, found, "Physical count metric is enabled but not found")
+			}
+			if test.enabledLogicalCount {
+				_, found := reportedMetrics["system.cpu.logical.count"]
+				require.True(t, found, "Logical count metric is enabled but not found")
 			}
 		})
 	}
@@ -172,14 +268,14 @@ func TestScrape_CpuUtilization(t *testing.T) {
 				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
 			}
 
-			scraper := newCPUScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: settings})
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: settings})
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
-			_, err = scraper.scrape(context.Background())
+			_, err = scraper.scrape(t.Context())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 			// 2nd scrape will trigger utilization metrics calculation
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
@@ -209,22 +305,22 @@ func TestScrape_CpuUtilization(t *testing.T) {
 
 // Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
-	scraper := newCPUScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
 	// mock times function to force an error in next scrape
 	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
 	}
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
-	_, err = scraper.scrape(context.Background())
+	_, err = scraper.scrape(t.Context())
 	// Force error not finding CPU info
 	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{}, nil
 	}
 	require.NoError(t, err, "Failed to scrape metrics: %v", err)
 	// 2nd scrape will trigger utilization metrics calculation
-	md, err := scraper.scrape(context.Background())
+	md, err := scraper.scrape(t.Context())
 	var partialScrapeErr scrapererror.PartialScrapeError
 	assert.ErrorAs(t, err, &partialScrapeErr)
 	assert.Equal(t, 0, md.MetricCount())
@@ -277,7 +373,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		},
 	}
 
-	cpuScraper := newCPUScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: overriddenMetricsSettings})
+	cpuScraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: overriddenMetricsSettings})
 	for _, scrapeData := range scrapesData {
 		// mock TimeStats and Now
 		cpuScraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
@@ -288,10 +384,10 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 			return now
 		}
 
-		err := cpuScraper.start(context.Background(), componenttest.NewNopHost())
+		err := cpuScraper.start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
-		md, err := cpuScraper.scrape(context.Background())
+		md, err := cpuScraper.scrape(t.Context())
 		require.NoError(t, err)
 		// no metrics in the first scrape
 		if len(scrapeData.expectedDps) == 0 {
@@ -362,6 +458,36 @@ func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Met
 		pcommon.NewValueStr(metadata.AttributeStateSteal.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 7, "state",
 		pcommon.NewValueStr(metadata.AttributeStateWait.String()))
+}
+
+func assertCPULogicalCountMetricValid(t *testing.T, metric pmetric.Metric) {
+	expected := pmetric.NewMetric()
+	expected.SetName("system.cpu.logical.count")
+	expected.SetDescription("Number of available logical CPUs.")
+	expected.SetUnit("{cpu}")
+	expected.SetEmptySum()
+	internal.AssertDescriptorEqual(t, expected, metric)
+
+	require.False(t, metric.Sum().IsMonotonic())
+	require.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+	require.Equal(t, 1, metric.Sum().DataPoints().Len())
+	dataPoint := metric.Sum().DataPoints().At(0)
+	require.Positive(t, dataPoint.IntValue(), "Logical CPU count should be greater than 0")
+}
+
+func assertCPUPhysicalCountMetricValid(t *testing.T, metric pmetric.Metric) {
+	expected := pmetric.NewMetric()
+	expected.SetName("system.cpu.physical.count")
+	expected.SetDescription("Number of available physical CPUs.")
+	expected.SetUnit("{cpu}")
+	expected.SetEmptySum()
+	internal.AssertDescriptorEqual(t, expected, metric)
+
+	require.False(t, metric.Sum().IsMonotonic())
+	require.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+	require.Equal(t, 1, metric.Sum().DataPoints().Len())
+	dataPoint := metric.Sum().DataPoints().At(0)
+	require.Positive(t, dataPoint.IntValue(), "Physical CPU count should be greater than 0")
 }
 
 func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {

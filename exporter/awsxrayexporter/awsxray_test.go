@@ -4,7 +4,6 @@
 package awsxrayexporter
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
@@ -19,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
@@ -29,7 +27,7 @@ import (
 
 func TestTraceExport(t *testing.T) {
 	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
-	ctx := context.Background()
+	ctx := t.Context()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
@@ -45,7 +43,7 @@ func TestXraySpanTraceResourceExtraction(t *testing.T) {
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
-	ctx := context.Background()
+	ctx := t.Context()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
@@ -54,12 +52,14 @@ func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	td := constructXrayAndW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 4, "4 spans have xray/w3c trace id")
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have w3c trace id")
@@ -77,9 +77,9 @@ func TestTelemetryEnabled(t *testing.T) {
 	require.Equal(t, sink, sender)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter, err := newTracesExporter(context.Background(), cfg, set, registry)
+	traceExporter, err := newTracesExporter(t.Context(), cfg, set, registry)
 	assert.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
 	td := constructSpanData()
 	err = traceExporter.ConsumeTraces(ctx, td)
@@ -90,14 +90,15 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.EqualValues(t, 1, sink.StopCount.Load())
 	assert.True(t, sink.HasRecording())
 	got := sink.Rotate()
-	assert.EqualValues(t, 0, *got.BackendConnectionErrors.HTTPCode4XXCount)
+	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
+	assert.EqualValues(t, 0, *got.BackendConnectionErrors.OtherCount)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
 	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
-		ctx := context.Background()
+		ctx := b.Context()
 		td := constructSpanData()
 		b.StartTimer()
 		err := traceExporter.ConsumeTraces(ctx, td)
@@ -107,7 +108,7 @@ func BenchmarkForTracesExporter(b *testing.B) {
 
 func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	tb.Helper()
-	traceExporter, err := newTracesExporter(context.Background(), exporterConfig, exportertest.NewNopSettings(metadata.Type), registry)
+	traceExporter, err := newTracesExporter(tb.Context(), exporterConfig, exportertest.NewNopSettings(metadata.Type), registry)
 	if err != nil {
 		panic(err)
 	}
@@ -171,22 +172,22 @@ func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 func constructResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(string(conventionsv112.ServiceNameKey), "signup_aggregator")
-	attrs.PutStr(string(conventionsv112.ContainerNameKey), "signup_aggregator")
-	attrs.PutStr(string(conventionsv112.ContainerImageNameKey), "otel/signupaggregator")
-	attrs.PutStr(string(conventionsv112.ContainerImageTagKey), "v1")
-	attrs.PutStr(string(conventionsv112.CloudProviderKey), conventionsv112.CloudProviderAWS.Value.AsString())
-	attrs.PutStr(string(conventionsv112.CloudAccountIDKey), "999999998")
-	attrs.PutStr(string(conventionsv112.CloudRegionKey), "us-west-2")
-	attrs.PutStr(string(conventionsv112.CloudAvailabilityZoneKey), "us-west-1b")
+	attrs.PutStr("service.name", "signup_aggregator")
+	attrs.PutStr("container.name", "signup_aggregator")
+	attrs.PutStr("container.image.name", "otel/signupaggregator")
+	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.account.id", "999999998")
+	attrs.PutStr("cloud.region", "us-west-2")
+	attrs.PutStr("cloud.availability_zone", "us-west-1b")
 	return resource
 }
 
 func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
-	attributes[string(conventionsv112.HTTPURLKey)] = "https://api.example.com/users/junit"
-	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -211,10 +212,10 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 
 func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
-	attributes[string(conventionsv112.HTTPURLKey)] = "https://api.example.com/users/junit"
-	attributes[string(conventionsv112.HTTPClientIPKey)] = "192.168.15.32"
-	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -240,11 +241,12 @@ func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
-		if cast, ok := value.(int); ok {
+		switch cast := value.(type) {
+		case int:
 			attrs.PutInt(key, int64(cast))
-		} else if cast, ok := value.(int64); ok {
+		case int64:
 			attrs.PutInt(key, cast)
-		} else {
+		default:
 			attrs.PutStr(key, fmt.Sprintf("%v", value))
 		}
 	}

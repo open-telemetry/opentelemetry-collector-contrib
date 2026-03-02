@@ -29,11 +29,11 @@ type ReplicaSetClient interface {
 
 type noOpReplicaSetClient struct{}
 
-func (nc *noOpReplicaSetClient) ReplicaSetToDeployment() map[string]string {
+func (*noOpReplicaSetClient) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
 }
 
-func (nc *noOpReplicaSetClient) shutdown() {
+func (*noOpReplicaSetClient) shutdown() {
 }
 
 type replicaSetClientOption func(*replicaSetClient)
@@ -74,11 +74,10 @@ func (c *replicaSetClient) refresh() {
 	tmpMap := make(map[string]string)
 	for _, obj := range objsList {
 		replicaSet := obj.(*replicaSetInfo)
-	ownerLoop:
 		for _, owner := range replicaSet.owners {
 			if owner.kind == deployment && owner.name != "" {
 				tmpMap[replicaSet.name] = owner.name
-				break ownerLoop
+				break
 			}
 		}
 	}

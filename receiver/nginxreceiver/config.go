@@ -14,4 +14,7 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	confighttp.ClientConfig        `mapstructure:",squash"`
 	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

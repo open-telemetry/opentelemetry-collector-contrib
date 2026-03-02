@@ -30,7 +30,7 @@ func (fs *FilterSet) Matches(dp *sfxpb.DataPoint) bool {
 	return false
 }
 
-func NewFilterSet(excludes []MetricFilter, includes []MetricFilter) (*FilterSet, error) {
+func NewFilterSet(excludes, includes []MetricFilter) (*FilterSet, error) {
 	excludeSet, err := getDataPointFilters(excludes)
 	if err != nil {
 		return nil, err

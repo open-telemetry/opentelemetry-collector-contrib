@@ -35,5 +35,7 @@ service:
     telemetry:
         logs:
             encoding: json
+            error_output_paths: ["stderr"]
+            output_paths: ["stdout"]
         resource:
             service.name: otelcol

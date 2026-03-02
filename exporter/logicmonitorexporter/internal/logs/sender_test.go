@@ -32,12 +32,12 @@ func TestSendLogs(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		sender, err := NewSender(ctx, zap.NewNop(), buildLogIngestTestOpts(ts.URL, ts.Client())...)
 		assert.NoError(t, err)
 
-		logInput := translator.ConvertToLMLogInput("test msg", utils.NewTimestampFromTime(time.Now()).String(), map[string]any{"system.hostname": "test"}, map[string]any{"cloud.provider": "aws"})
+		logInput := translator.ConvertToLMLogInput("test msg", "ERROR", utils.NewTimestampFromTime(time.Now()).String(), map[string]any{"system.hostname": "test"}, map[string]any{"cloud.provider": "aws"})
 		err = sender.SendLogs(ctx, []model.LogInput{logInput})
 		cancel()
 		assert.NoError(t, err)
@@ -54,12 +54,12 @@ func TestSendLogs(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		sender, err := NewSender(ctx, zap.NewNop(), buildLogIngestTestOpts(ts.URL, ts.Client())...)
 		assert.NoError(t, err)
 
-		logInput := translator.ConvertToLMLogInput("test msg", utils.NewTimestampFromTime(time.Now()).String(), map[string]any{"system.hostname": "test"}, map[string]any{"cloud.provider": "aws"})
+		logInput := translator.ConvertToLMLogInput("test msg", "INFO", utils.NewTimestampFromTime(time.Now()).String(), map[string]any{"system.hostname": "test"}, map[string]any{"cloud.provider": "aws"})
 		err = sender.SendLogs(ctx, []model.LogInput{logInput})
 		cancel()
 		assert.Error(t, err)
@@ -77,12 +77,12 @@ func TestSendLogs(t *testing.T) {
 		}))
 		defer ts.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		sender, err := NewSender(ctx, zap.NewNop(), buildLogIngestTestOpts(ts.URL, ts.Client())...)
 		assert.NoError(t, err)
 
-		logInput := translator.ConvertToLMLogInput("test msg", utils.NewTimestampFromTime(time.Now()).String(), map[string]any{"system.hostname": "test"}, map[string]any{"cloud.provider": "aws"})
+		logInput := translator.ConvertToLMLogInput("test msg", "DEBUG", utils.NewTimestampFromTime(time.Now()).String(), map[string]any{"system.hostname": "test"}, map[string]any{"cloud.provider": "aws"})
 		err = sender.SendLogs(ctx, []model.LogInput{logInput})
 		cancel()
 		assert.Error(t, err)

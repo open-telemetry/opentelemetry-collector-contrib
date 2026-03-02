@@ -5,10 +5,12 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -339,17 +341,29 @@ func Test_flatten(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := pcommon.NewMap()
 			err := m.FromRaw(tt.target)
-			assert.NoError(t, err)
-			target := ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+			require.NoError(t, err)
+
+			setterWasCalled := false
+			target := ottl.StandardPMapGetSetter[any]{
+				Getter: func(context.Context, any) (pcommon.Map, error) {
 					return m, nil
+				},
+				Setter: func(_ context.Context, _, val any) error {
+					setterWasCalled = true
+					if v, ok := val.(pcommon.Map); ok {
+						v.CopyTo(m)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
 				},
 			}
 
 			exprFunc, err := flatten[any](target, tt.prefix, tt.depth, ottl.NewTestingOptional[bool](tt.conflict))
-			assert.NoError(t, err)
+			require.NoError(t, err)
+
 			_, err = exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			assert.Equal(t, tt.expected, m.AsRaw())
 		})
@@ -489,17 +503,29 @@ func Test_flatten_undeterministic(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := pcommon.NewMap()
 			err := m.FromRaw(tt.target)
-			assert.NoError(t, err)
-			target := ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+			require.NoError(t, err)
+
+			setterWasCalled := false
+			target := ottl.StandardPMapGetSetter[any]{
+				Getter: func(context.Context, any) (pcommon.Map, error) {
 					return m, nil
+				},
+				Setter: func(_ context.Context, _, val any) error {
+					setterWasCalled = true
+					if v, ok := val.(pcommon.Map); ok {
+						v.CopyTo(m)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
 				},
 			}
 
 			exprFunc, err := flatten[any](target, tt.prefix, tt.depth, ottl.NewTestingOptional[bool](tt.conflict))
-			assert.NoError(t, err)
+			require.NoError(t, err)
+
 			_, err = exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
+			assert.True(t, setterWasCalled)
 
 			keys, val := extractKeysAndValues(m.AsRaw())
 
@@ -507,18 +533,6 @@ func Test_flatten_undeterministic(t *testing.T) {
 			assert.True(t, compareSlices(val, tt.expectedValues))
 		})
 	}
-}
-
-func Test_flatten_bad_target(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return 1, nil
-		},
-	}
-	exprFunc, err := flatten[any](target, ottl.Optional[string]{}, ottl.Optional[int64]{}, ottl.NewTestingOptional[bool](false))
-	assert.NoError(t, err)
-	_, err = exprFunc(nil, nil)
-	assert.Error(t, err)
 }
 
 func Test_flatten_bad_depth(t *testing.T) {
@@ -538,8 +552,8 @@ func Test_flatten_bad_depth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := &ottl.StandardPMapGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+			target := &ottl.StandardPMapGetSetter[any]{
+				Getter: func(context.Context, any) (pcommon.Map, error) {
 					return pcommon.NewMap(), nil
 				},
 			}

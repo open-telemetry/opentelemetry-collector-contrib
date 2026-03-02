@@ -74,8 +74,10 @@ type LabelMatcher struct {
 }
 
 func (config Config) Validate() error {
-	if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
-		return err
+	if config.DockerAPIVersion != "" {
+		if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
+			return err
+		}
 	}
 
 	if config.ContainerLabelsToResourceAttributes != nil {

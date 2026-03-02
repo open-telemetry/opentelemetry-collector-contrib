@@ -11,8 +11,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
-	cm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster/mocks"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
+	cm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/cluster/mocks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/mocks"
 )
 
 func TestAerospike_Info(t *testing.T) {

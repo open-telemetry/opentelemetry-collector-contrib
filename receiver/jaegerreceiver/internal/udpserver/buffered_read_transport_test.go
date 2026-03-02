@@ -7,7 +7,6 @@ package udpserver
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -49,7 +48,7 @@ func TestTBufferedReadTransportEmptyFunctions(t *testing.T) {
 	err = trans.Close()
 	require.NoError(t, err)
 
-	err = trans.Flush(context.Background())
+	err = trans.Flush(t.Context())
 	require.NoError(t, err)
 
 	n, err := trans.Write(byteArr)

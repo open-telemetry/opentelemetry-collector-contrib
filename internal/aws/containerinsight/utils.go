@@ -33,12 +33,13 @@ func SumFields(fields []map[string]any) map[string]float64 {
 		return result
 	}
 
-	for i := 1; i < len(fields); i++ {
+	for _, currentField := range fields[1:] {
 		for k, v := range result {
-			if fields[i][k] == nil {
+			fieldValue, exists := currentField[k]
+			if !exists || fieldValue == nil {
 				continue
 			}
-			if fv, ok := fields[i][k].(float64); ok {
+			if fv, ok := fieldValue.(float64); ok {
 				result[k] = v + fv
 			}
 		}
@@ -138,12 +139,12 @@ func getPrefixByMetricType(mType string) string {
 
 // MetricName returns the metric name based on metric type and measurement name
 // For example, a type "node" and a measurement "cpu_utilization" gives "node_cpu_utilization"
-func MetricName(mType string, measurement string) string {
+func MetricName(mType, measurement string) string {
 	return getPrefixByMetricType(mType) + measurement
 }
 
 // RemovePrefix removes the prefix (e.g. "node_", "pod_") from the metric name
-func RemovePrefix(mType string, metricName string) string {
+func RemovePrefix(mType, metricName string) string {
 	prefix := getPrefixByMetricType(mType)
 	return strings.Replace(metricName, prefix, "", 1)
 }
@@ -206,7 +207,7 @@ func ConvertToOTLPMetrics(fields map[string]any, tags map[string]string, logger 
 	return md
 }
 
-func intGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value int64, ts pcommon.Timestamp) {
+func intGauge(ilm pmetric.ScopeMetrics, metricName, unit string, value int64, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
 	intGauge := metric.SetEmptyGauge()
@@ -217,7 +218,7 @@ func intGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value in
 	dataPoint.SetTimestamp(ts)
 }
 
-func doubleGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value float64, ts pcommon.Timestamp) {
+func doubleGauge(ilm pmetric.ScopeMetrics, metricName, unit string, value float64, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
 	doubleGauge := metric.SetEmptyGauge()

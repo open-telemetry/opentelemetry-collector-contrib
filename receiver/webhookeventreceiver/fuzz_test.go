@@ -5,13 +5,13 @@ package webhookeventreceiver
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -30,7 +30,10 @@ func FuzzHandleReq(f *testing.F) {
 
 		consumer := consumertest.NewNop()
 		receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), Config{ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:8080",
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:8080",
+			},
 		}}, consumer)
 		if err != nil {
 			t.Fatal(err)
@@ -39,6 +42,6 @@ func FuzzHandleReq(f *testing.F) {
 		r := receiver.(*eventReceiver)
 
 		w := httptest.NewRecorder()
-		r.handleReq(w, req, httprouter.ParamsFromContext(context.Background()))
+		r.handleReq(w, req, httprouter.ParamsFromContext(t.Context()))
 	})
 }

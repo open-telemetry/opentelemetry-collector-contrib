@@ -1,4 +1,5 @@
 type: otlpjson
+display_name: OTLP JSON Connector
 
 status:
   class: connector
@@ -6,4 +7,5 @@ status:
     alpha: [logs_to_metrics, logs_to_traces, logs_to_logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [djaglowski, ChrsMark]
+    active: [ChrsMark]
+    emeritus: [djaglowski]

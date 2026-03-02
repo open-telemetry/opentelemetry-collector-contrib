@@ -47,6 +47,26 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "append_tags_all"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.SubscriptionIDs = []string{"test"}
+				cfg.Credentials = defaultCredentials
+				cfg.AppendTagsAsAttributes = []string{"*"}
+				return cfg
+			}(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "append_tags_specific"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.SubscriptionIDs = []string{"test"}
+				cfg.Credentials = defaultCredentials
+				cfg.AppendTagsAsAttributes = []string{"service", "environment"}
+				return cfg
+			}(),
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "missing_subscription"),
 			expectedErr: errMissingSubscriptionIDs.Error(),
 		},
@@ -108,6 +128,10 @@ func TestLoadConfig(t *testing.T) {
 				cfg.Credentials = "does-not-matter"
 				return cfg
 			}(),
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "max_resources_per_batch_negative_value"),
+			expectedErr: errInvalidMaxResPerBatch.Error(),
 		},
 	}
 

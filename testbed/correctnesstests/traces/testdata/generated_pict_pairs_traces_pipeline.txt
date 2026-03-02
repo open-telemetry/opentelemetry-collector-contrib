@@ -1,13 +1,7 @@
 Receiver	Exporter
-zipkin	opencensus
-otlp	opencensus
-jaeger	opencensus
-zipkin	otlp
-opencensus	opencensus
+zipkin	otlp_grpc
 otlp	zipkin
 jaeger	zipkin
-opencensus	zipkin
-otlp	otlp
-jaeger	otlp
-opencensus	otlp
+otlp	otlp_grpc
+jaeger	otlp_grpc
 zipkin	zipkin

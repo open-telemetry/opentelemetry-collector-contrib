@@ -10,9 +10,9 @@ The following telemetry is emitted by this component.
 
 Response latency in ms for the backends.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Development |
 
 #### Attributes
 
@@ -24,9 +24,9 @@ Response latency in ms for the backends.
 
 Number of successes and failures for each endpoint.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {outcomes} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {outcomes} | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -38,9 +38,9 @@ Number of successes and failures for each endpoint.
 
 Number of times the list of backends was updated.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {updates} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {updates} | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -52,9 +52,9 @@ Number of times the list of backends was updated.
 
 Current number of backends in use.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {backends} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {backends} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -66,9 +66,9 @@ Current number of backends in use.
 
 Number of times the resolver has triggered new resolutions.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {resolutions} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {resolutions} | Sum | Int | true | Development |
 
 #### Attributes
 

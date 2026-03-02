@@ -6,6 +6,7 @@ package logs
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,24 +19,33 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 type worker struct {
-	running        *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
-	numLogs        int             // how many logs the worker has to generate (only when duration==0)
-	body           string          // the body of the log
-	severityNumber log.Severity    // the severityNumber of the log
-	severityText   string          // the severityText of the log
-	totalDuration  time.Duration   // how long to run the test for (overrides `numLogs`)
-	limitPerSecond rate.Limit      // how many logs per second to generate
-	wg             *sync.WaitGroup // notify when done
-	logger         *zap.Logger     // logger
-	index          int             // worker index
-	traceID        string          // traceID string
-	spanID         string          // spanID string
+	running        *atomic.Bool          // pointer to shared flag that indicates it's time to stop the test
+	numLogs        int                   // how many logs the worker has to generate (only when duration==0)
+	body           string                // the body of the log
+	severityNumber log.Severity          // the severityNumber of the log
+	severityText   string                // the severityText of the log
+	totalDuration  types.DurationWithInf // how long to run the test for (overrides `numLogs`)
+	limitPerSecond rate.Limit            // how many logs per second to generate
+	wg             *sync.WaitGroup       // notify when done
+	logger         *zap.Logger           // logger
+	index          int                   // worker index
+	traceID        string                // traceID string
+	spanID         string                // spanID string
+	batch          bool                  // whether to batch logs
+	batchBuffer    []sdklog.Record       // buffer for batching logs
+	bufferMutex    sync.Mutex            // mutex for thread-safe access to buffer
+	batchSize      int                   // number of logs to batch before flushing
+	loadSize       int                   // desired minimum size in MB of string data for each generated log
+	allowFailures  bool                  // whether to continue on export failures
 }
 
-func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, telemetryAttributes []attribute.KeyValue) {
+func (w *worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, telemetryAttributes []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int64
 
@@ -55,8 +65,15 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 		}
 
 		attrs := []log.KeyValue{log.String("app", "server")}
-		for i, attr := range telemetryAttributes {
-			attrs = append(attrs, log.String(string(attr.Key), telemetryAttributes[i].Value.AsString()))
+		for _, attr := range telemetryAttributes {
+			attrs = append(attrs, log.KeyValueFromAttribute(attr))
+		}
+
+		// Add load size attributes if specified
+		if w.loadSize > 0 {
+			for j := 0; j < w.loadSize; j++ {
+				attrs = append(attrs, log.String(fmt.Sprintf("load-%v", j), string(make([]byte, config.CharactersPerMB))))
+			}
 		}
 
 		rf := logtest.RecordFactory{
@@ -77,8 +94,16 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 			w.logger.Fatal("limiter wait failed, retry", zap.Error(err))
 		}
 
-		if err := exporter.Export(context.Background(), logs); err != nil {
-			w.logger.Fatal("exporter failed", zap.Error(err))
+		if w.batch {
+			w.addToBuffer(logs[0], exporter)
+		} else {
+			if err := exporter.Export(context.Background(), logs); err != nil {
+				if w.allowFailures {
+					w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+				} else {
+					w.logger.Fatal("exporter failed", zap.Error(err))
+				}
+			}
 		}
 
 		i++
@@ -87,6 +112,38 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 		}
 	}
 
+	// Flush any remaining logs in the buffer
+	if w.batch && len(w.batchBuffer) > 0 {
+		w.flushBuffer(exporter)
+	}
+
 	w.logger.Info("logs generated", zap.Int64("logs", i))
 	w.wg.Done()
+}
+
+func (w *worker) addToBuffer(log sdklog.Record, exporter sdklog.Exporter) {
+	w.bufferMutex.Lock()
+	defer w.bufferMutex.Unlock()
+
+	w.batchBuffer = append(w.batchBuffer, log)
+
+	// Check if we should flush based on batch size
+	if len(w.batchBuffer) >= w.batchSize {
+		w.flushBuffer(exporter)
+	}
+}
+
+func (w *worker) flushBuffer(exporter sdklog.Exporter) {
+	if len(w.batchBuffer) == 0 {
+		return
+	}
+
+	if err := exporter.Export(context.Background(), w.batchBuffer); err != nil {
+		w.logger.Error("failed to export batched logs", zap.Error(err))
+	} else {
+		w.logger.Debug("exported batched logs", zap.Int("count", len(w.batchBuffer)))
+	}
+
+	// Clear buffer
+	w.batchBuffer = w.batchBuffer[:0]
 }

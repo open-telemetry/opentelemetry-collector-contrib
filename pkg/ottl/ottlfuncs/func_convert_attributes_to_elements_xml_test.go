@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -81,17 +82,17 @@ func Test_ConvertAttributesToElementsXML(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			args := &ConvertAttributesToElementsXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return tt.document, nil
 					},
 				},
 				XPath: ottl.NewTestingOptional(tt.xPath),
 			}
 			exprFunc, err := createConvertAttributesToElementsXMLFunction[any](ottl.FunctionContext{}, args)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
-			assert.NoError(t, err)
+			result, err := exprFunc(t.Context(), nil)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
 	}
@@ -119,8 +120,8 @@ func TestCreateConvertAttributesToElementsXMLFunc(t *testing.T) {
 		fCtx, &ConvertAttributesToElementsXMLArguments[any]{
 			Target: invalidXMLGetter(),
 		})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
-	_, err = exprFunc(context.Background(), nil)
+	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

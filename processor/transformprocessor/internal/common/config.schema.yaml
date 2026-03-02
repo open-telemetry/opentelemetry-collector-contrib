@@ -1,0 +1,19 @@
+$defs:
+  context_id:
+    type: string
+  context_statements:
+    type: object
+    properties:
+      conditions:
+        type: array
+        items:
+          type: string
+      context:
+        $ref: context_id
+      error_mode:
+        description: ErrorMode determines how the processor reacts to errors that occur while processing this group of statements. When provided, it overrides the default Config ErrorMode.
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.error_mode
+      statements:
+        type: array
+        items:
+          type: string

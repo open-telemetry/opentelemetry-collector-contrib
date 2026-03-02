@@ -134,7 +134,7 @@ func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pcommon.Ti
 func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	operations := []metadata.AttributeOperation{metadata.AttributeOperationReads, metadata.AttributeOperationWrites}
 	keyPaths := [][]string{{"database_reads", "value"}, {"database_writes", "value"}}
-	for i := 0; i < len(operations); i++ {
+	for i := range operations {
 		key := keyPaths[i]
 		value, err := getValueFromBody(key, stats)
 		if err != nil {
@@ -167,7 +167,7 @@ func getValueFromBody(keys []string, body map[string]any) (any, error) {
 	return currentValue, nil
 }
 
-func (c *couchdbScraper) parseInt(value any) (int64, error) {
+func (*couchdbScraper) parseInt(value any) (int64, error) {
 	switch i := value.(type) {
 	case int64:
 		return i, nil
@@ -177,7 +177,7 @@ func (c *couchdbScraper) parseInt(value any) (int64, error) {
 	return 0, errors.New("could not parse value as int")
 }
 
-func (c *couchdbScraper) parseFloat(value any) (float64, error) {
+func (*couchdbScraper) parseFloat(value any) (float64, error) {
 	if f, ok := value.(float64); ok {
 		return f, nil
 	}

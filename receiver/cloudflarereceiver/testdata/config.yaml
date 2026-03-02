@@ -6,6 +6,7 @@ cloudflare:
     endpoint: 0.0.0.0:12345
     secret: 1234567890abcdef1234567890abcdef
     timestamp_field: EdgeStartTimestamp
+    timestamp_format: rfc3339 # `rfc3339`, `unix`, `unixnano`
     attributes:
       ClientIP: http_request.client_ip
       ClientRequestURI: http_request.uri

@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -32,17 +34,20 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: "localhost:8080",
-				TLSSetting: &configtls.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Transport: "tcp",
+					Endpoint:  "localhost:8080",
+				},
+				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "test.crt",
 						KeyFile:  "test.key",
 					},
-				},
-				CORS: &confighttp.CORSConfig{
+				}),
+				CORS: configoptional.Some(confighttp.CORSConfig{
 					AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 					MaxAge:         7200,
-				},
+				}),
 			},
 		}, cfg)
 }

@@ -1,0 +1,21 @@
+sqlquery:
+  collection_interval: 10s
+  driver: mysql
+  datasource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable"
+  host: localhost
+  port: 5432
+  database: mydb
+  username: me
+  password: s3cr3t
+  queries:
+    - sql: "select count(*) as count, type from mytable group by type"
+      metrics:
+        - metric_name: "val.count"
+          value_column: "count"
+          attribute_columns: ["type"]
+          monotonic: false
+          value_type: "int"
+          data_type: "sum"
+          aggregation: "cumulative"
+          static_attributes:
+            foo: "bar"

@@ -5,7 +5,6 @@ package upload
 
 import (
 	"compress/gzip"
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -67,7 +67,7 @@ func TestS3ManagerUpload(t *testing.T) {
 			uploadOpts:  nil,
 		},
 		{
-			name: "successful compression upload",
+			name: "successful compression upload gzip",
 			handler: func(t *testing.T) http.Handler {
 				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 					assert.Equal(
@@ -91,6 +91,35 @@ func TestS3ManagerUpload(t *testing.T) {
 				})
 			},
 			compression: configcompression.TypeGzip,
+			data:        []byte("hello world"),
+			errVal:      "",
+			uploadOpts:  nil,
+		},
+		{
+			name: "successful compression upload zstd",
+			handler: func(t *testing.T) http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					assert.Equal(
+						t,
+						"/my-bucket/telemetry/year=2024/month=01/day=10/hour=10/minute=30/signal-data-noop_random.metrics.zst",
+						r.URL.Path,
+						"Must match the expected path",
+					)
+
+					reader, err := zstd.NewReader(r.Body)
+					if !assert.NoError(t, err, "Must not error creating zstd reader") {
+						return
+					}
+
+					data, err := io.ReadAll(reader)
+					assert.Equal(t, []byte("hello world"), data, "Must match the expected data")
+					assert.NoError(t, err, "Must not error reading data from reader")
+
+					reader.Close()
+					_ = r.Body.Close()
+				})
+			},
+			compression: configcompression.TypeZstd,
 			data:        []byte("hello world"),
 			errVal:      "",
 			uploadOpts:  nil,
@@ -177,6 +206,88 @@ func TestS3ManagerUpload(t *testing.T) {
 			errVal:      "",
 			uploadOpts:  &UploadOptions{OverridePrefix: ""},
 		},
+		{
+			name: "upload with s3 bucket from resource attributes",
+			handler: func(t *testing.T) http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					_, _ = io.Copy(io.Discard, r.Body)
+					_ = r.Body.Close()
+
+					assert.Equal(
+						t,
+						"/custom-bucket/telemetry/year=2024/month=01/day=10/hour=10/minute=30/signal-data-noop_random.metrics",
+						r.URL.Path,
+						"Must match the expected path with custom bucket",
+					)
+				})
+			},
+			compression: configcompression.Type(""),
+			data:        []byte("hello world"),
+			errVal:      "",
+			uploadOpts:  &UploadOptions{OverrideBucket: "custom-bucket"},
+		},
+		{
+			name: "upload with s3 bucket and prefix from resource attributes",
+			handler: func(t *testing.T) http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					_, _ = io.Copy(io.Discard, r.Body)
+					_ = r.Body.Close()
+
+					assert.Equal(
+						t,
+						"/custom-bucket/custom-prefix/year=2024/month=01/day=10/hour=10/minute=30/signal-data-noop_random.metrics",
+						r.URL.Path,
+						"Must match the expected path with custom bucket and prefix",
+					)
+				})
+			},
+			compression: configcompression.Type(""),
+			data:        []byte("hello world"),
+			errVal:      "",
+			uploadOpts:  &UploadOptions{OverrideBucket: "custom-bucket", OverridePrefix: "custom-prefix"},
+		},
+		{
+			name: "upload with s3 bucket override empty",
+			handler: func(t *testing.T) http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					_, _ = io.Copy(io.Discard, r.Body)
+					_ = r.Body.Close()
+
+					assert.Equal(
+						t,
+						"/my-bucket/telemetry/year=2024/month=01/day=10/hour=10/minute=30/signal-data-noop_random.metrics",
+						r.URL.Path,
+						"Must match the expected path with default bucket when override is empty",
+					)
+				})
+			},
+			compression: configcompression.Type(""),
+			data:        []byte("hello world"),
+			errVal:      "",
+			uploadOpts:  &UploadOptions{OverrideBucket: ""},
+		},
+		{
+			name: "upload with s3 bucket override and custom storage class",
+			handler: func(t *testing.T) http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					_, _ = io.Copy(io.Discard, r.Body)
+					_ = r.Body.Close()
+
+					assert.Equal(
+						t,
+						"/custom-bucket/telemetry/year=2024/month=01/day=10/hour=10/minute=30/signal-data-noop_random.metrics",
+						r.URL.Path,
+						"Must match the expected path with custom bucket",
+					)
+					assert.Equal(t, "STANDARD_IA", r.Header.Get("x-amz-storage-class"), "Must have correct storage class header")
+				})
+			},
+			compression:  configcompression.Type(""),
+			data:         []byte("hello world"),
+			errVal:       "",
+			storageClass: "STANDARD_IA",
+			uploadOpts:   &UploadOptions{OverrideBucket: "custom-bucket"},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -209,7 +320,7 @@ func TestS3ManagerUpload(t *testing.T) {
 			// to reduce the potential of flaky tests
 			mc := clock.NewMock(time.Date(2024, 0o1, 10, 10, 30, 40, 100, time.Local))
 
-			err := sm.Upload(clock.Context(context.Background(), mc), tc.data, tc.uploadOpts)
+			err := sm.Upload(clock.Context(t.Context(), mc), tc.data, tc.uploadOpts)
 			if tc.errVal != "" {
 				assert.EqualError(t, err, tc.errVal, "Must match the expected error")
 			} else {

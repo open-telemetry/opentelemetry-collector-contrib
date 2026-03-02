@@ -115,6 +115,7 @@ func (m *metricTcpcheckDuration) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTcpcheckDuration(cfg MetricConfig) metricTcpcheckDuration {
 	m := metricTcpcheckDuration{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -132,7 +133,7 @@ type metricTcpcheckError struct {
 func (m *metricTcpcheckError) init() {
 	m.data.SetName("tcpcheck.error")
 	m.data.SetDescription("Records errors occurring during TCP check.")
-	m.data.SetUnit("{error}")
+	m.data.SetUnit("{errors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -169,6 +170,7 @@ func (m *metricTcpcheckError) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTcpcheckError(cfg MetricConfig) metricTcpcheckError {
 	m := metricTcpcheckError{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -220,6 +222,7 @@ func (m *metricTcpcheckStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTcpcheckStatus(cfg MetricConfig) metricTcpcheckStatus {
 	m := metricTcpcheckStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

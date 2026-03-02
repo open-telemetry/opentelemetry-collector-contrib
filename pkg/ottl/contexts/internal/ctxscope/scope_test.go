@@ -4,10 +4,10 @@
 package ctxscope_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -364,16 +364,16 @@ func TestPathGetSetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxscope.PathGetSetter[*testContext](tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			is := createInstrumentationScope()
 
-			got, err := accessor.Get(context.Background(), newTestContext(is))
-			assert.NoError(t, err)
+			got, err := accessor.Get(t.Context(), newTestContext(is))
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newTestContext(is), tt.newVal)
-			assert.NoError(t, err)
+			err = accessor.Set(t.Context(), newTestContext(is), tt.newVal)
+			require.NoError(t, err)
 
 			expectedIS := createInstrumentationScope()
 			tt.modified(expectedIS)

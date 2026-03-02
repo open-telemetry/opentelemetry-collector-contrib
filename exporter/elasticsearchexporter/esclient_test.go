@@ -84,6 +84,6 @@ func (tsr *testStatusReporter) Report(event *componentstatus.Event) {
 	tsr.statusChan <- event
 }
 
-func (tsr *testStatusReporter) GetExtensions() map[component.ID]component.Component {
+func (*testStatusReporter) GetExtensions() map[component.ID]component.Component {
 	return make(map[component.ID]component.Component)
 }

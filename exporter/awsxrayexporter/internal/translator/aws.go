@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -132,17 +132,14 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 			}
 		case awsxray.AWSRegionAttribute:
 			remoteRegion = value.Str()
-		case awsxray.AWSRequestIDAttribute:
-			fallthrough
-		case awsxray.AWSRequestIDAttribute2:
+		case awsxray.AWSRequestIDAttribute,
+			awsxray.AWSRequestIDAttribute2:
 			requestID = value.Str()
-		case awsxray.AWSQueueURLAttribute:
-			fallthrough
-		case awsxray.AWSQueueURLAttribute2:
+		case awsxray.AWSQueueURLAttribute,
+			awsxray.AWSQueueURLAttribute2:
 			queueURL = value.Str()
-		case awsxray.AWSTableNameAttribute:
-			fallthrough
-		case awsxray.AWSTableNameAttribute2:
+		case awsxray.AWSTableNameAttribute,
+			awsxray.AWSTableNameAttribute2:
 			tableName = value.Str()
 		default:
 			filtered[key] = value

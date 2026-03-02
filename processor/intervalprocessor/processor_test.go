@@ -37,7 +37,7 @@ func TestAggregation(t *testing.T) {
 		{name: "summaries_are_passed_through", passThrough: true},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	var config *Config
@@ -50,7 +50,7 @@ func TestAggregation(t *testing.T) {
 
 			factory := NewFactory()
 			mgp, err := factory.CreateMetrics(
-				context.Background(),
+				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				config,
 				next,
@@ -66,8 +66,8 @@ func TestAggregation(t *testing.T) {
 			err = mgp.ConsumeMetrics(ctx, md)
 			require.NoError(t, err)
 
-			require.IsType(t, &Processor{}, mgp)
-			processor := mgp.(*Processor)
+			require.IsType(t, &intervalProcessor{}, mgp)
+			processor := mgp.(*intervalProcessor)
 
 			// Pretend we hit the interval timer and call export
 			processor.exportMetrics()

@@ -4,12 +4,12 @@
 package ctxspanevent_test
 
 import (
-	"context"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -406,22 +406,22 @@ func TestPathGetSetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxspanevent.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			spanEvent := createTelemetry()
 
 			tCtx := newTestContext(spanEvent)
 
-			got, err := accessor.Get(context.Background(), tCtx)
-			assert.NoError(t, err)
+			got, err := accessor.Get(t.Context(), tCtx)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), tCtx, tt.newVal)
+			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			if tt.expectSetterError {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exSpanEvent := createTelemetry()
 			tt.modified(exSpanEvent)
@@ -483,7 +483,7 @@ func (l *testContext) GetSpanEvent() ptrace.SpanEvent {
 	return l.spanEvent
 }
 
-func (l *testContext) GetEventIndex() (int64, error) {
+func (*testContext) GetEventIndex() (int64, error) {
 	return 1, nil
 }
 

@@ -39,6 +39,6 @@ func (e *jaegerExtension) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e *jaegerExtension) Shutdown(_ context.Context) error {
+func (*jaegerExtension) Shutdown(context.Context) error {
 	return nil
 }

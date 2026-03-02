@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -20,9 +21,9 @@ import (
 func TestStaleness(t *testing.T) {
 	synctest.Run(func() {
 		ctx := context.Background()
-		iface, _ := setup(t, &Config{MaxStale: 5 * time.Minute, MaxStreams: 50}, &CountingSink{})
-		proc := iface.(*Processor)
-		err := proc.Start(ctx, nil)
+		iface, _ := setup(t, &Config{MaxStale: 5 * time.Minute, MaxStreams: 50}, &countingSink{})
+		proc := iface.(*deltaToCumulativeProcessor)
+		err := proc.Start(ctx, componenttest.NewNopHost())
 		time.Sleep(1 * time.Second) // ticker startup
 		require.NoError(t, err)
 		defer proc.Shutdown(ctx)

@@ -6,6 +6,7 @@ package sqlserverreceiver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -105,6 +106,19 @@ func TestValidate(t *testing.T) {
 			},
 			expectedSuccess: false,
 		},
+		{
+			desc: "config with invalid LookbackTime",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				TopQueryCollection: TopQueryCollection{
+					MaxQuerySampleCount: 100,
+					TopQueryCount:       200000,
+					LookbackTime:        -1,
+				},
+			},
+			expectedSuccess: false,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -144,6 +158,39 @@ func TestLoadConfig(t *testing.T) {
 		expected.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
 			Metrics: metadata.DefaultMetricsConfig(),
 			ResourceAttributes: metadata.ResourceAttributesConfig{
+				HostName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverInstanceName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverComputerName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				ServerAddress: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				ServerPort: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+			},
+		}
+		expected.LogsBuilderConfig = metadata.LogsBuilderConfig{
+			Events: metadata.EventsConfig{
+				DbServerQuerySample: metadata.EventConfig{
+					Enabled: true,
+				},
+				DbServerTopQuery: metadata.EventConfig{
+					Enabled: true,
+				},
+			},
+			ResourceAttributes: metadata.ResourceAttributesConfig{
+				HostName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
 				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
@@ -163,13 +210,12 @@ func TestLoadConfig(t *testing.T) {
 		}
 		expected.ComputerName = "CustomServer"
 		expected.InstanceName = "CustomInstance"
-		expected.TopQueryCollection.Enabled = true
-		expected.LookbackTime = 60
+		expected.LookbackTime = 60 * time.Second
 		expected.TopQueryCount = 200
 		expected.MaxQuerySampleCount = 1000
+		expected.TopQueryCollection.CollectionInterval = 80 * time.Second
 
 		expected.QuerySample = QuerySample{
-			Enabled:         true,
 			MaxRowsPerQuery: 1450,
 		}
 
@@ -178,8 +224,19 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		assert.NoError(t, xconfmap.Validate(cfg))
-		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(Config{}), cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(Config{}), cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.EventConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
 			t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 		}
+	})
+
+	t.Run("effectiveLookBackTime", func(t *testing.T) {
+		factory := NewFactory()
+		config := factory.CreateDefaultConfig().(*Config)
+
+		config.TopQueryCollection.CollectionInterval = 10 * time.Second
+		assert.Equal(t, 2*config.TopQueryCollection.CollectionInterval, config.EffectiveLookbackTime(), "By default the 'EffectiveLookbackTime' value should be 2 x 'TopQueryCollection.CollectionInterval'")
+
+		config.LookbackTime = 60 * time.Second
+		assert.Equal(t, 60*time.Second, config.EffectiveLookbackTime(), "'EffectiveLookbackTime' should return the user provided 'LookbackTime' if any.")
 	})
 }

@@ -5,7 +5,7 @@ endpoint-1:
         attributes:
           - key: service.name
             value:
-              stringValue: serviceA
+              stringValue: service-gamma
       scopeMetrics:
         - schemaUrl: https://test-scope-schema.com/schema
           scope:
@@ -21,18 +21,20 @@ endpoint-1:
                 aggregationTemporality: 2
                 isMonotonic: true
                 dataPoints:
-                  - timeUnixNano: 50
-                    asDouble: 333
+                  - timeUnixNano: 90
+                    asDouble: 666
                     attributes:
                       - key: aaa
                         value:
                           stringValue: bbb
+endpoint-2:
+  resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
         attributes:
           - key: service.name
             value:
-              stringValue: serviceB
+              stringValue: service-beta
       scopeMetrics:
         - schemaUrl: https://test-scope-schema.com/schema
           scope:
@@ -54,8 +56,6 @@ endpoint-1:
                       - key: aaa
                         value:
                           stringValue: bbb
-endpoint-2:
-  resourceMetrics: []
 endpoint-3:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
@@ -63,7 +63,7 @@ endpoint-3:
         attributes:
           - key: service.name
             value:
-              stringValue: serviceC
+              stringValue: service-alpha
       scopeMetrics:
         - schemaUrl: https://test-scope-schema.com/schema
           scope:
@@ -79,8 +79,8 @@ endpoint-3:
                 aggregationTemporality: 2
                 isMonotonic: true
                 dataPoints:
-                  - timeUnixNano: 90
-                    asDouble: 666
+                  - timeUnixNano: 50
+                    asDouble: 333
                     attributes:
                       - key: aaa
                         value:

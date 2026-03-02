@@ -8,8 +8,8 @@ import (
 	"errors"
 	"sync"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -81,7 +81,8 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 		netReporter:  netReporter,
 		boundedQueue: bq,
 	}
-	if err = zstd.SetDecoderConfig(cfg.Arrow.Zstd); err != nil {
+	err = zstd.SetDecoderConfig(cfg.Arrow.Zstd)
+	if err != nil {
 		return nil, err
 	}
 
@@ -104,14 +105,11 @@ func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, host co
 	if err != nil {
 		return err
 	}
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
-
+	r.shutdownWG.Go(func() {
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 		}
-	}()
+	})
 	return nil
 }
 
@@ -122,14 +120,14 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 	if r.netReporter != nil {
 		serverOpts = append(serverOpts, configgrpc.WithGrpcServerOption(grpc.StatsHandler(r.netReporter.Handler())))
 	}
-	r.serverGRPC, err = r.cfg.GRPC.ToServer(ctx, host, r.settings.TelemetrySettings, serverOpts...)
+	r.serverGRPC, err = r.cfg.GRPC.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, serverOpts...)
 	if err != nil {
 		return err
 	}
 
 	var authServer extensionauth.Server
-	if r.cfg.GRPC.Auth != nil {
-		authServer, err = r.cfg.GRPC.Auth.GetServerAuthenticator(ctx, host.GetExtensions())
+	if r.cfg.GRPC.Auth.HasValue() {
+		authServer, err = r.cfg.GRPC.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
 			return err
 		}

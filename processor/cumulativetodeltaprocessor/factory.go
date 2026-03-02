@@ -6,6 +6,7 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -26,7 +27,9 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		MaxStaleness: 1 * time.Hour,
+	}
 }
 
 func createMetricsProcessor(

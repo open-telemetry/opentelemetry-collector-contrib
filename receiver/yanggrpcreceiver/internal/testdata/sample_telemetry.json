@@ -1,0 +1,76 @@
+{
+  "node_id": "YOUR-SWITCH-NAME",
+  "subscription": "interface-stats",
+  "encoding_path": "Cisco-IOS-XE-interfaces-oper:interfaces/interface/statistics",
+  "interfaces": [
+    {
+      "name": "GigabitEthernet1/0/1",
+      "statistics": {
+        "in-octets": 409369815291,
+        "in-unicast-pkts": 388324417,
+        "in-broadcast-pkts": 708677,
+        "in-multicast-pkts": 1089928,
+        "in-discards": 0,
+        "in-errors": 0,
+        "out-octets": 2785599867,
+        "out-unicast-pkts": 237579869,
+        "out-broadcast-pkts": 40989872,
+        "out-multicast-pkts": 86837950,
+        "out-discards": 1947,
+        "out-errors": 0,
+        "rx-pps": 191,
+        "rx-kbps": 2014,
+        "tx-pps": 66,
+        "tx-kbps": 41,
+        "num-flaps": 0,
+        "in-crc-errors": 0
+      }
+    },
+    {
+      "name": "TenGigabitEthernet1/0/48",
+      "statistics": {
+        "in-octets": 17986853328726,
+        "in-unicast-pkts": 22871874518,
+        "in-broadcast-pkts": 6952002,
+        "in-multicast-pkts": 1775257,
+        "in-discards": 0,
+        "in-errors": 0,
+        "out-octets": 917990342,
+        "out-unicast-pkts": 24496004270,
+        "out-broadcast-pkts": 42491898,
+        "out-multicast-pkts": 116172899,
+        "out-discards": 1578153,
+        "out-errors": 0,
+        "rx-pps": 2332,
+        "rx-kbps": 21004,
+        "tx-pps": 2389,
+        "tx-kbps": 21700,
+        "num-flaps": 0,
+        "in-crc-errors": 0
+      }
+    },
+    {
+      "name": "VLAN1010",
+      "statistics": {
+        "in-octets": 309179668770,
+        "in-unicast-pkts": 423933707,
+        "in-broadcast-pkts": 14950,
+        "in-multicast-pkts": 18818,
+        "in-discards": 0,
+        "in-errors": 0,
+        "out-octets": 3086550873,
+        "out-unicast-pkts": 782635848,
+        "out-broadcast-pkts": 3219365,
+        "out-multicast-pkts": 3611833,
+        "out-discards": 245701,
+        "out-errors": 0,
+        "rx-pps": 237,
+        "rx-kbps": 830,
+        "tx-pps": 495,
+        "tx-kbps": 4801,
+        "num-flaps": 0,
+        "in-crc-errors": 0
+      }
+    }
+  ]
+}

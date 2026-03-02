@@ -7,9 +7,9 @@ import (
 	"math"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
@@ -188,7 +188,6 @@ func TestExpoAdd(t *testing.T) {
 		run := func(dp, in, want expdp) func(t *testing.T) {
 			return func(t *testing.T) {
 				var add Adder
-				is := datatest.New(t)
 
 				var (
 					dp   = dp.Into()
@@ -197,8 +196,8 @@ func TestExpoAdd(t *testing.T) {
 				)
 
 				err := add.Exponential(dp, in)
-				is.Equal(nil, err)
-				is.Equal(want, dp)
+				assert.NoError(t, err)
+				assert.Equal(t, want, dp)
 			}
 		}
 
@@ -213,6 +212,85 @@ func TestExpoAdd(t *testing.T) {
 		}
 		t.Run(cs.name, run(cs.dp, cs.in, cs.want))
 	}
+
+	t.Run("empty-buckets", func(t *testing.T) {
+		var add Adder
+
+		t.Run("both-empty", func(t *testing.T) {
+			state := expdp{
+				Scale:  2,
+				PosNeg: pmetric.NewExponentialHistogramDataPointBuckets(),
+			}.Into()
+			state.Positive().SetOffset(1)
+
+			in := expdp{
+				Scale:  2,
+				PosNeg: pmetric.NewExponentialHistogramDataPointBuckets(),
+			}.Into()
+
+			assert.NotPanics(t, func() {
+				err := add.Exponential(state, in)
+				assert.NoError(t, err)
+			})
+		})
+
+		t.Run("state-empty-in-has-data", func(t *testing.T) {
+			state := expdp{
+				Scale:  1,
+				PosNeg: pmetric.NewExponentialHistogramDataPointBuckets(),
+			}.Into()
+			state.Positive().SetOffset(3)
+
+			in := expdp{
+				Scale:  1,
+				PosNeg: bins{ø, ø, ø, 1, 2, 3, ø, ø}.Into(),
+				Count:  2 * (1 + 2 + 3),
+			}.Into()
+
+			assert.NotPanics(t, func() {
+				err := add.Exponential(state, in)
+				assert.NoError(t, err)
+			})
+		})
+
+		t.Run("in-empty-state-has-data", func(t *testing.T) {
+			state := expdp{
+				Scale:  1,
+				PosNeg: bins{ø, ø, ø, 1, 2, 3, ø, ø}.Into(),
+				Count:  2 * (1 + 2 + 3),
+			}.Into()
+
+			in := expdp{
+				Scale:  1,
+				PosNeg: pmetric.NewExponentialHistogramDataPointBuckets(),
+			}.Into()
+			in.Positive().SetOffset(3)
+
+			assert.NotPanics(t, func() {
+				err := add.Exponential(state, in)
+				assert.NoError(t, err)
+			})
+		})
+
+		t.Run("different-scales-with-empty", func(t *testing.T) {
+			state := expdp{
+				Scale:  3,
+				PosNeg: pmetric.NewExponentialHistogramDataPointBuckets(),
+			}.Into()
+			state.Positive().SetOffset(5)
+
+			in := expdp{
+				Scale:  1,
+				PosNeg: pmetric.NewExponentialHistogramDataPointBuckets(),
+			}.Into()
+			in.Positive().SetOffset(7)
+
+			assert.NotPanics(t, func() {
+				err := add.Exponential(state, in)
+				assert.NoError(t, err)
+			})
+		})
+	})
 }
 
 func cloneNegExpdp(dp expotest.Histogram) expotest.Histogram {

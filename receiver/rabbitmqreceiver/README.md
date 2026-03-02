@@ -16,7 +16,6 @@
 
 This receiver fetches stats from a RabbitMQ node using the [RabbitMQ Management Plugin](https://www.rabbitmq.com/management.html).
 
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 ## Prerequisites
 
 This receiver supports RabbitMQ versions `3.8` and `3.9`.
@@ -46,7 +45,7 @@ receivers:
     username: otelu
     password: ${env:RABBITMQ_PASSWORD}
     collection_interval: 10s
-     metrics:  # Enable node metrics by explicitly setting them to true
+    metrics:  # Enable node metrics by explicitly setting them to true
       rabbitmq.node.disk_free:
         enabled: true
       rabbitmq.node.disk_free_limit:

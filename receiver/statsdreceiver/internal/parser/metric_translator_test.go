@@ -217,7 +217,58 @@ func TestBuildSummaryMetricSampled(t *testing.T) {
 	}
 }
 
-func TestBuildHistogramMetric(t *testing.T) {
+func TestBuildHistogramMetricWithExplicitBucket(t *testing.T) {
+	timeNow := time.Now()
+	startTime := timeNow.Add(-5 * time.Second)
+
+	attrs := attribute.NewSet(
+		attribute.String("mykey", "myvalue"),
+		attribute.String("mykey2", "myvalue2"),
+	)
+
+	desc := statsDMetricDescription{
+		name:       "testHistogram",
+		metricType: HistogramType,
+		attrs:      attrs,
+	}
+	eb := new(explicitBucket)
+	eb.Init([]float64{0.1, 0.5, 1})
+	eb.UpdateByIncr(0.05, 1)
+	eb.UpdateByIncr(0.64, 2)
+	eb.UpdateByIncr(1.01, 3)
+	eb.UpdateByIncr(.01, 4)
+
+	histMetric := histogramMetric{
+		explicitBucket: eb,
+	}
+
+	ilm := pmetric.NewScopeMetrics()
+
+	buildHistogramMetric(desc, histMetric, startTime, timeNow, ilm)
+
+	r := require.New(t)
+	r.NotNil(ilm.Metrics())
+	r.Equal("testHistogram", ilm.Metrics().At(0).Name())
+
+	hist := ilm.Metrics().At(0).Histogram()
+	r.NotNil(hist)
+	r.Equal(1, hist.DataPoints().Len())
+	r.Equal(pmetric.AggregationTemporalityDelta, hist.AggregationTemporality())
+
+	datapoint := hist.DataPoints().At(0)
+	r.Equal(uint64(10), datapoint.Count())
+	r.Equal(4.4, datapoint.Sum())
+	r.Equal(0.01, datapoint.Min())
+	r.Equal(1.01, datapoint.Max())
+	val, _ := datapoint.Attributes().Get("mykey")
+	r.Equal("myvalue", val.Str())
+	val, _ = datapoint.Attributes().Get("mykey2")
+	r.Equal("myvalue2", val.Str())
+	r.Equal([]float64{0.1, 0.5, 1}, datapoint.ExplicitBounds().AsRaw())
+	r.Equal([]uint64{5, 0, 2, 3}, datapoint.BucketCounts().AsRaw())
+}
+
+func TestBuildHistogramMetricWithExpoHisto(t *testing.T) {
 	timeNow := time.Now()
 	startTime := timeNow.Add(-5 * time.Second)
 

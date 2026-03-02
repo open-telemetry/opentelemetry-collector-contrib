@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package textutils
+package textutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 
 import (
 	"testing"
@@ -25,6 +25,11 @@ func TestUTF8Encoding(t *testing.T) {
 			name:         "UTF8 encoding",
 			encoding:     unicode.UTF8,
 			encodingName: "utf8",
+		},
+		{
+			name:         "UTF8-raw encoding",
+			encoding:     UTF8Raw,
+			encodingName: "utf8-raw",
 		},
 		{
 			name:         "GBK encoding",

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 )
@@ -150,7 +150,7 @@ func TestChain(t *testing.T) {
 				return
 			}
 
-			src, err := provider.Source(context.Background())
+			src, err := provider.Source(t.Context())
 			if err != nil || testInstance.queryErr != "" {
 				assert.EqualError(t, err, testInstance.queryErr)
 			} else {

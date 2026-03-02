@@ -4,7 +4,6 @@
 package sumologicprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -135,7 +134,7 @@ func TestAddCloudNamespaceForLogs(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newCloudNamespaceConfig(testCase.addCloudNamespace))
 
 			// Act
-			outputLogs, err := processor.processLogs(context.Background(), testCase.createLogs())
+			outputLogs, err := processor.processLogs(t.Context(), testCase.createLogs())
 			require.NoError(t, err)
 
 			// Assert
@@ -261,7 +260,7 @@ func TestAddCloudNamespaceForMetrics(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newCloudNamespaceConfig(testCase.addCloudNamespace))
 
 			// Act
-			outputMetrics, err := processor.processMetrics(context.Background(), testCase.createMetrics())
+			outputMetrics, err := processor.processMetrics(t.Context(), testCase.createMetrics())
 			require.NoError(t, err)
 
 			// Assert
@@ -387,7 +386,7 @@ func TestAddCloudNamespaceForTraces(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newCloudNamespaceConfig(testCase.addCloudNamespace))
 
 			// Act
-			outputTraces, err := processor.processTraces(context.Background(), testCase.createTraces())
+			outputTraces, err := processor.processTraces(t.Context(), testCase.createTraces())
 			require.NoError(t, err)
 
 			// Assert
@@ -495,7 +494,7 @@ func TestTranslateAttributesForLogs(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newTranslateAttributesConfig(testCase.translateAttributes))
 
 			// Act
-			outputLogs, err := processor.processLogs(context.Background(), testCase.createLogs())
+			outputLogs, err := processor.processLogs(t.Context(), testCase.createLogs())
 			require.NoError(t, err)
 
 			// Assert
@@ -544,7 +543,7 @@ func TestTranslateAttributesForMetrics(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newTranslateAttributesConfig(testCase.translateAttributes))
 
 			// Act
-			outputMetrics, err := processor.processMetrics(context.Background(), testCase.createMetrics())
+			outputMetrics, err := processor.processMetrics(t.Context(), testCase.createMetrics())
 			require.NoError(t, err)
 
 			// Assert
@@ -594,7 +593,7 @@ func TestTranslateAttributesForTraces(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newTranslateAttributesConfig(testCase.translateAttributes))
 
 			// Act
-			outputTraces, err := processor.processTraces(context.Background(), testCase.createTraces())
+			outputTraces, err := processor.processTraces(t.Context(), testCase.createTraces())
 			require.NoError(t, err)
 
 			// Assert
@@ -636,7 +635,7 @@ func TestTranslateTelegrafMetrics(t *testing.T) {
 			}
 
 			// Act
-			resultMetrics, err := processor.processMetrics(context.Background(), metrics)
+			resultMetrics, err := processor.processMetrics(t.Context(), metrics)
 			require.NoError(t, err)
 
 			// Assert
@@ -708,7 +707,7 @@ func TestTranslateDockerMetrics(t *testing.T) {
 			}
 
 			// Act
-			resultMetrics, err := processor.processMetrics(context.Background(), metrics)
+			resultMetrics, err := processor.processMetrics(t.Context(), metrics)
 			require.NoError(t, err)
 
 			// Assert
@@ -801,7 +800,7 @@ func TestNestingAttributesForLogs(t *testing.T) {
 
 			logs := testCase.createLogs()
 
-			resultLogs, err := processor.processLogs(context.Background(), logs)
+			resultLogs, err := processor.processLogs(t.Context(), logs)
 			require.NoError(t, err)
 
 			testCase.test(t, resultLogs)
@@ -894,7 +893,7 @@ func TestNestingAttributesForMetrics(t *testing.T) {
 
 			metrics := testCase.createMetrics()
 
-			resultMetrics, err := processor.processMetrics(context.Background(), metrics)
+			resultMetrics, err := processor.processMetrics(t.Context(), metrics)
 			require.NoError(t, err)
 
 			testCase.test(t, resultMetrics)
@@ -983,7 +982,7 @@ func TestNestingAttributesForTraces(t *testing.T) {
 
 			traces := testCase.createTraces()
 
-			resultTraces, err := processor.processTraces(context.Background(), traces)
+			resultTraces, err := processor.processTraces(t.Context(), traces)
 			require.NoError(t, err)
 
 			testCase.test(t, resultTraces)
@@ -997,13 +996,13 @@ func TestNestingAttributesForTraces(t *testing.T) {
 func TestAggregateAttributesForLogs(t *testing.T) {
 	testCases := []struct {
 		name       string
-		config     []aggregationPair
+		config     []AggregationPair
 		createLogs func() plog.Logs
 		test       func(plog.Logs)
 	}{
 		{
 			name: "simple aggregation",
-			config: []aggregationPair{
+			config: []AggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{"pod_labels_"},
@@ -1041,7 +1040,7 @@ func TestAggregateAttributesForLogs(t *testing.T) {
 		},
 		{
 			name: "no-op",
-			config: []aggregationPair{
+			config: []AggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{},
@@ -1081,7 +1080,7 @@ func TestAggregateAttributesForLogs(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newAggregateAttributesConfig(testCase.config))
 
 			// Act
-			outputLogs, err := processor.processLogs(context.Background(), testCase.createLogs())
+			outputLogs, err := processor.processLogs(t.Context(), testCase.createLogs())
 			require.NoError(t, err)
 
 			// Assert
@@ -1093,13 +1092,13 @@ func TestAggregateAttributesForLogs(t *testing.T) {
 func TestAggregateAttributesForMetrics(t *testing.T) {
 	testCases := []struct {
 		name          string
-		config        []aggregationPair
+		config        []AggregationPair
 		createMetrics func() pmetric.Metrics
 		test          func(pmetric.Metrics)
 	}{
 		{
 			name: "simple aggregation",
-			config: []aggregationPair{
+			config: []AggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{"pod_labels_"},
@@ -1139,7 +1138,7 @@ func TestAggregateAttributesForMetrics(t *testing.T) {
 		},
 		{
 			name: "no-op",
-			config: []aggregationPair{
+			config: []AggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{},
@@ -1181,7 +1180,7 @@ func TestAggregateAttributesForMetrics(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newAggregateAttributesConfig(testCase.config))
 
 			// Act
-			outputMetrics, err := processor.processMetrics(context.Background(), testCase.createMetrics())
+			outputMetrics, err := processor.processMetrics(t.Context(), testCase.createMetrics())
 			require.NoError(t, err)
 
 			// Assert
@@ -1193,13 +1192,13 @@ func TestAggregateAttributesForMetrics(t *testing.T) {
 func TestAggregateAttributesForTraces(t *testing.T) {
 	testCases := []struct {
 		name         string
-		config       []aggregationPair
+		config       []AggregationPair
 		createTraces func() ptrace.Traces
 		test         func(ptrace.Traces)
 	}{
 		{
 			name: "simple aggregation",
-			config: []aggregationPair{
+			config: []AggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{"pod_labels_"},
@@ -1237,7 +1236,7 @@ func TestAggregateAttributesForTraces(t *testing.T) {
 		},
 		{
 			name: "no-op",
-			config: []aggregationPair{
+			config: []AggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{},
@@ -1277,7 +1276,7 @@ func TestAggregateAttributesForTraces(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newAggregateAttributesConfig(testCase.config))
 
 			// Act
-			outputTraces, err := processor.processTraces(context.Background(), testCase.createTraces())
+			outputTraces, err := processor.processTraces(t.Context(), testCase.createTraces())
 			require.NoError(t, err)
 
 			// Assert
@@ -1328,7 +1327,7 @@ func TestLogFieldsConversionLogs(t *testing.T) {
 			processor := newsumologicProcessor(newProcessorCreateSettings(), newLogFieldsConversionConfig())
 
 			// Act
-			outputLogs, err := processor.processLogs(context.Background(), testCase.createLogs())
+			outputLogs, err := processor.processLogs(t.Context(), testCase.createLogs())
 			require.NoError(t, err)
 
 			// Assert
@@ -1351,7 +1350,7 @@ func newCloudNamespaceConfig(addCloudNamespace bool) *Config {
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
 	return config
@@ -1363,7 +1362,7 @@ func newTranslateAttributesConfig(translateAttributes bool) *Config {
 	config.TranslateAttributes = translateAttributes
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
 	return config
@@ -1375,7 +1374,7 @@ func newTranslateTelegrafAttributesConfig(translateTelegrafAttributes bool) *Con
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = translateTelegrafAttributes
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
 	return config
@@ -1387,7 +1386,7 @@ func newTranslateDockerMetricsConfig(translateDockerMetrics bool) *Config {
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = translateDockerMetrics
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
 	return config
@@ -1399,14 +1398,14 @@ func newNestAttributesConfig(separator string, enabled bool) *Config {
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Separator: separator,
 		Enabled:   enabled,
 	}
 	return config
 }
 
-func newAggregateAttributesConfig(aggregations []aggregationPair) *Config {
+func newAggregateAttributesConfig(aggregations []AggregationPair) *Config {
 	config := createDefaultConfig().(*Config)
 	config.AddCloudNamespace = false
 	config.TranslateAttributes = false
@@ -1422,14 +1421,14 @@ func newLogFieldsConversionConfig() *Config {
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
-	config.LogFieldsAttributes = &logFieldAttributesConfig{
-		&logFieldAttribute{Enabled: true, Name: "definitely_not_default_name"},
-		&logFieldAttribute{Enabled: true, Name: SeverityTextAttributeName},
-		&logFieldAttribute{Enabled: true, Name: SpanIDAttributeName},
-		&logFieldAttribute{Enabled: true, Name: TraceIDAttributeName},
+	config.LogFieldsAttributes = LogFieldAttributesConfig{
+		SeverityNumberAttribute: &LogFieldAttribute{Enabled: true, Name: "definitely_not_default_name"},
+		SeverityTextAttribute:   &LogFieldAttribute{Enabled: true, Name: SeverityTextAttributeName},
+		SpanIDAttribute:         &LogFieldAttribute{Enabled: true, Name: SpanIDAttributeName},
+		TraceIDAttribute:        &LogFieldAttribute{Enabled: true, Name: TraceIDAttributeName},
 	}
 	return config
 }

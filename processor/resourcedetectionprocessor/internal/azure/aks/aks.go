@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -96,7 +96,7 @@ func parseClusterName(resourceGroup string) string {
 	// Code inspired by https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/internal/hostmetadata/internal/azure/provider.go#L36
 	splitAll := strings.Split(resourceGroup, "_")
 
-	if len(splitAll) == 4 && strings.ToLower(splitAll[0]) == "mc" {
+	if len(splitAll) == 4 && strings.EqualFold(splitAll[0], "mc") {
 		return splitAll[len(splitAll)-2]
 	}
 

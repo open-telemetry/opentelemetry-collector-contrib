@@ -9,8 +9,7 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
@@ -18,10 +17,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
@@ -31,6 +32,8 @@ type MetricsConfig struct {
 	SqlserverBatchRequestRate                   MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
 	SqlserverBatchSQLRecompilationRate          MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverComputerUptime                     MetricConfig `mapstructure:"sqlserver.computer.uptime"`
+	SqlserverCPUCount                           MetricConfig `mapstructure:"sqlserver.cpu.count"`
 	SqlserverDatabaseBackupOrRestoreRate        MetricConfig `mapstructure:"sqlserver.database.backup_or_restore.rate"`
 	SqlserverDatabaseCount                      MetricConfig `mapstructure:"sqlserver.database.count"`
 	SqlserverDatabaseExecutionErrors            MetricConfig `mapstructure:"sqlserver.database.execution.errors"`
@@ -43,12 +46,14 @@ type MetricsConfig struct {
 	SqlserverDeadlockRate                       MetricConfig `mapstructure:"sqlserver.deadlock.rate"`
 	SqlserverIndexSearchRate                    MetricConfig `mapstructure:"sqlserver.index.search.rate"`
 	SqlserverLockTimeoutRate                    MetricConfig `mapstructure:"sqlserver.lock.timeout.rate"`
+	SqlserverLockWaitCount                      MetricConfig `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
 	SqlserverLockWaitTimeAvg                    MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
 	SqlserverLoginRate                          MetricConfig `mapstructure:"sqlserver.login.rate"`
 	SqlserverLogoutRate                         MetricConfig `mapstructure:"sqlserver.logout.rate"`
 	SqlserverMemoryGrantsPendingCount           MetricConfig `mapstructure:"sqlserver.memory.grants.pending.count"`
 	SqlserverMemoryUsage                        MetricConfig `mapstructure:"sqlserver.memory.usage"`
+	SqlserverOsWaitDuration                     MetricConfig `mapstructure:"sqlserver.os.wait.duration"`
 	SqlserverPageBufferCacheFreeListStallsRate  MetricConfig `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
 	SqlserverPageBufferCacheHitRatio            MetricConfig `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
 	SqlserverPageCheckpointFlushRate            MetricConfig `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
@@ -87,6 +92,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverBatchSQLRecompilationRate: MetricConfig{
 			Enabled: true,
 		},
+		SqlserverComputerUptime: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverCPUCount: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverDatabaseBackupOrRestoreRate: MetricConfig{
 			Enabled: false,
 		},
@@ -123,6 +134,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLockTimeoutRate: MetricConfig{
 			Enabled: false,
 		},
+		SqlserverLockWaitCount: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverLockWaitRate: MetricConfig{
 			Enabled: true,
 		},
@@ -139,6 +153,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverMemoryUsage: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverOsWaitDuration: MetricConfig{
 			Enabled: false,
 		},
 		SqlserverPageBufferCacheFreeListStallsRate: MetricConfig{
@@ -219,6 +236,42 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
+// EventConfig provides common config for a particular event.
+type EventConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// EventsConfig provides config for sqlserver events.
+type EventsConfig struct {
+	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
+}
+
+func DefaultEventsConfig() EventsConfig {
+	return EventsConfig{
+		DbServerQuerySample: EventConfig{
+			Enabled: false,
+		},
+		DbServerTopQuery: EventConfig{
+			Enabled: false,
+		},
+	}
+}
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -229,6 +282,13 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -247,8 +307,10 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sqlserver resource attributes.
 type ResourceAttributesConfig struct {
+	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
 	ServerAddress         ResourceAttributeConfig `mapstructure:"server.address"`
 	ServerPort            ResourceAttributeConfig `mapstructure:"server.port"`
+	ServiceInstanceID     ResourceAttributeConfig `mapstructure:"service.instance.id"`
 	SqlserverComputerName ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
 	SqlserverDatabaseName ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
 	SqlserverInstanceName ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
@@ -256,11 +318,17 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		HostName: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		ServerAddress: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		ServerPort: ResourceAttributeConfig{
 			Enabled: false,
+		},
+		ServiceInstanceID: ResourceAttributeConfig{
+			Enabled: true,
 		},
 		SqlserverComputerName: ResourceAttributeConfig{
 			Enabled: false,
@@ -283,6 +351,19 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+	}
+}
+
+// LogsBuilderConfig is a configuration for sqlserver logs builder.
+type LogsBuilderConfig struct {
+	Events             EventsConfig             `mapstructure:"events"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig{
+		Events:             DefaultEventsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }

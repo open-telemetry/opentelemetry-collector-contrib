@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -21,7 +22,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "simple toSnake",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "simpleString", nil
 				},
 			},
@@ -30,7 +31,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "noop already snake case",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "simple_string", nil
 				},
 			},
@@ -39,7 +40,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "multiple uppercase",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "CPUUtilizationMetric", nil
 				},
 			},
@@ -48,7 +49,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "hyphens",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "simple-string", nil
 				},
 			},
@@ -57,7 +58,7 @@ func Test_toSnakeCase(t *testing.T) {
 		{
 			name: "empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "", nil
 				},
 			},
@@ -68,7 +69,7 @@ func Test_toSnakeCase(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := toSnakeCase(tt.target)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -83,7 +84,7 @@ func Test_toSnakeCaseRuntimeError(t *testing.T) {
 		{
 			name: "non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 10, nil
 				},
 			},
@@ -92,7 +93,7 @@ func Test_toSnakeCaseRuntimeError(t *testing.T) {
 		{
 			name: "nil",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 			},
@@ -102,7 +103,7 @@ func Test_toSnakeCaseRuntimeError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := toSnakeCase[any](tt.target)
-			_, err := exprFunc(context.Background(), nil)
+			_, err := exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}

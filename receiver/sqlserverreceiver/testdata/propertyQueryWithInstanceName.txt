@@ -64,7 +64,8 @@ SELECT
 	,dbs.[db_recovering]
 	,dbs.[db_recoveryPending]
 	,dbs.[db_suspect]
-	,dbs.[db_offline]'
+	,dbs.[db_offline]
+	,(si.[ms_ticks]/1000) AS [computer_uptime]'
 	+ @Columns + N'
 	FROM sys.[dm_os_sys_info] AS si
 	CROSS APPLY (

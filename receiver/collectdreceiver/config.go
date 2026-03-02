@@ -22,7 +22,7 @@ type Config struct {
 func (c *Config) Validate() error {
 	// CollectD receiver only supports JSON encoding. We expose a config option
 	// to make it explicit and obvious to the users.
-	if strings.ToLower(c.Encoding) != defaultEncodingFormat {
+	if !strings.EqualFold(c.Encoding, defaultEncodingFormat) {
 		return fmt.Errorf(
 			"CollectD only support JSON encoding format. %s is not supported",
 			c.Encoding,

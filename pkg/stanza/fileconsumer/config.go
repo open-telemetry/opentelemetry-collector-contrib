@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -36,20 +35,6 @@ const (
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
-)
-
-var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
-	"filelog.allowFileDeletion",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
-)
-
-var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
-	"filelog.allowHeaderMetadataParsing",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
 )
 
 // NewConfig creates a new input config with default values
@@ -87,8 +72,9 @@ type Config struct {
 	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
 	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
+	IncludeFileRecordOffset bool            `mapstructure:"include_file_record_offset,omitempty"`
 	Compression             string          `mapstructure:"compression,omitempty"`
-	PollsToArchive          int             `mapstructure:"-"` // TODO: activate this config once archiving is set up
+	PollsToArchive          int             `mapstructure:"polls_to_archive,omitempty"`
 	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
@@ -190,6 +176,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatches:       c.MaxBatches,
 		telemetryBuilder: telemetryBuilder,
 		noTracking:       o.noTracking,
+		pollsToArchive:   c.PollsToArchive,
 	}, nil
 }
 
@@ -220,8 +207,8 @@ func (c Config) validate() error {
 	}
 
 	if c.DeleteAfterRead {
-		if !allowFileDeletion.IsEnabled() {
-			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", allowFileDeletion.ID())
+		if !metadata.FilelogAllowFileDeletionFeatureGate.IsEnabled() {
+			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", metadata.FilelogAllowFileDeletionFeatureGate.ID())
 		}
 		if c.StartAt == "end" {
 			return errors.New("'delete_after_read' cannot be used with 'start_at: end'")
@@ -229,8 +216,8 @@ func (c Config) validate() error {
 	}
 
 	if c.Header != nil {
-		if !AllowHeaderMetadataParsing.IsEnabled() {
-			return fmt.Errorf("'header' requires feature gate '%s'", AllowHeaderMetadataParsing.ID())
+		if !metadata.FilelogAllowHeaderMetadataParsingFeatureGate.IsEnabled() {
+			return fmt.Errorf("'header' requires feature gate '%s'", metadata.FilelogAllowHeaderMetadataParsingFeatureGate.ID())
 		}
 		if c.StartAt == "end" {
 			return errors.New("'header' cannot be specified with 'start_at: end'")
@@ -242,7 +229,7 @@ func (c Config) validate() error {
 	}
 
 	if runtime.GOOS == "windows" && (c.IncludeFileOwnerName || c.IncludeFileOwnerGroupName) {
-		return fmt.Errorf("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported for windows: %w", err)
+		return errors.New("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported on Windows")
 	}
 
 	return nil

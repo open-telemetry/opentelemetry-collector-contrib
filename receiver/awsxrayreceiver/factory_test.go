@@ -4,7 +4,6 @@
 package awsxrayreceiver
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -35,10 +34,13 @@ func TestCreateTraces(t *testing.T) {
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0"
+
 	_, err := factory.CreateTraces(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
-		factory.CreateDefaultConfig().(*Config),
+		cfg,
 		consumertest.NewNop(),
 	)
 	assert.NoError(t, err, "trace receiver can be created")
@@ -47,7 +49,7 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),

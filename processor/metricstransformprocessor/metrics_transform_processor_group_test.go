@@ -4,7 +4,6 @@
 package metricstransformprocessor
 
 import (
-	"context"
 	"path/filepath"
 	"regexp"
 	"testing"
@@ -67,7 +66,7 @@ func TestMetricsGrouping(t *testing.T) {
 				}
 
 				mtp, err := processorhelper.NewMetrics(
-					context.Background(),
+					t.Context(),
 					processortest.NewNopSettings(metadata.Type),
 					&Config{},
 					next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
@@ -81,14 +80,14 @@ func TestMetricsGrouping(t *testing.T) {
 				expected, err := golden.ReadMetrics(filepath.Join("testdata", "operation_group", test.name+"_out.yaml"))
 				require.NoError(t, err)
 
-				cErr := mtp.ConsumeMetrics(context.Background(), input)
+				cErr := mtp.ConsumeMetrics(t.Context(), input)
 				assert.NoError(t, cErr)
 
 				got := next.AllMetrics()
 				require.Len(t, got, 1)
 				require.NoError(t, pmetrictest.CompareMetrics(expected, got[0], pmetrictest.IgnoreMetricValues()))
 
-				assert.NoError(t, mtp.Shutdown(context.Background()))
+				assert.NoError(t, mtp.Shutdown(t.Context()))
 			})
 		}
 	}

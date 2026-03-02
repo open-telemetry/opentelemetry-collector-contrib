@@ -1,0 +1,60 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: AppServiceHTTPLogs
+              - key: client.address
+                value:
+                  stringValue: 123.45.67.89
+              - key: server.address
+                value:
+                  stringValue: 10-10-10-10
+              - key: server.port
+                value:
+                  intValue: "80"
+              - key: http.request.size
+                value:
+                  intValue: "1635"
+              - key: http.request.header.host
+                value:
+                  stringValue: test-site.azurewebsites.net
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.query
+                value:
+                  stringValue: _=1652036313179
+              - key: url.path
+                value:
+                  stringValue: /api/site/wwwroot/
+              - key: http.response.size
+                value:
+                  intValue: "494"
+              - key: http.response.status_code
+                value:
+                  intValue: "200"
+              - key: azure.request.duration
+                value:
+                  doubleValue: 19619
+              - key: user_agent.original
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36 Edg/101.0.1210.39
+            body:
+              stringValue: Success
+            timeUnixNano: "1652040855000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

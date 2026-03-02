@@ -6,7 +6,6 @@
 package sqlserverreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -57,14 +56,14 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.True(t, databaseIOScraperFound)
 
 				r, err := factory.CreateMetrics(
-					context.Background(),
+					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-				require.NoError(t, r.Shutdown(context.Background()))
+				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+				require.NoError(t, r.Shutdown(t.Context()))
 			},
 		},
 		{
@@ -90,7 +89,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.TopQueryCollection.Enabled = true
+				cfg.Events.DbServerTopQuery.Enabled = true
 				scrapers, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -111,14 +110,14 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.True(t, databaseTopQueryScraperFound)
 
 				r, err := factory.CreateLogs(
-					context.Background(),
+					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-				require.NoError(t, r.Shutdown(context.Background()))
+				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+				require.NoError(t, r.Shutdown(t.Context()))
 			},
 		},
 	}

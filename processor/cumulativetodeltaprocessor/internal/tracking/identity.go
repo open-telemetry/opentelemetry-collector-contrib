@@ -71,5 +71,5 @@ func (mi *MetricIdentity) IsFloatVal() bool {
 }
 
 func (mi *MetricIdentity) IsSupportedMetricType() bool {
-	return mi.MetricType == pmetric.MetricTypeSum || mi.MetricType == pmetric.MetricTypeHistogram
+	return mi.MetricType == pmetric.MetricTypeSum || mi.MetricType == pmetric.MetricTypeHistogram || mi.MetricType == pmetric.MetricTypeExponentialHistogram
 }

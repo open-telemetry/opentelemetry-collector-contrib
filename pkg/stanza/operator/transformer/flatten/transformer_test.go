@@ -3,7 +3,6 @@
 package flatten
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -331,7 +330,7 @@ func TestBuildAndProcess(t *testing.T) {
 			fake := testutil.NewFakeOutput(t)
 			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
-			err = op.ProcessBatch(context.Background(), []*entry.Entry{val})
+			err = op.ProcessBatch(t.Context(), []*entry.Entry{val})
 
 			if tc.expectErr {
 				require.Error(t, err)

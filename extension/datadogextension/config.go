@@ -4,8 +4,7 @@
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
-	"fmt"
-	"strings"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -25,6 +24,9 @@ type Config struct {
 	Hostname string `mapstructure:"hostname"`
 	// HTTPConfig is v2 config for the http metadata service.
 	HTTPConfig *httpserver.Config `mapstructure:"http"`
+	// DeploymentType indicates the type of deployment (gateway, daemonset, or unknown).
+	// Defaults to "unknown" if not set.
+	DeploymentType string `mapstructure:"deployment_type"`
 }
 
 // Validate ensures that the configuration is valid.
@@ -35,9 +37,16 @@ func (c *Config) Validate() error {
 	if c.API.Key == "" {
 		return datadogconfig.ErrUnsetAPIKey
 	}
-	invalidAPIKeyChars := datadogconfig.NonHexRegex.FindAllString(string(c.API.Key), -1)
-	if len(invalidAPIKeyChars) > 0 {
-		return fmt.Errorf("%w: invalid characters: %s", datadogconfig.ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
+	if c.HTTPConfig == nil {
+		return errors.New("http config is required")
+	}
+	// Validate deployment_type if set
+	if c.DeploymentType != "" && c.DeploymentType != "gateway" && c.DeploymentType != "daemonset" && c.DeploymentType != "unknown" {
+		return errors.New("deployment_type must be one of: gateway, daemonset, or unknown")
+	}
+	// Set default if not provided
+	if c.DeploymentType == "" {
+		c.DeploymentType = "unknown"
 	}
 	return nil
 }

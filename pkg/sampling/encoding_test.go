@@ -284,10 +284,10 @@ func BenchmarkThresholdCompareAsUint64(b *testing.B) {
 	}
 
 	b.ReportAllocs()
-	b.ResetTimer()
+
 	yes := 0
 	no := 0
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		idx := i % len(tids)
 		tid := tids[idx]
 		comp := comps[idx]

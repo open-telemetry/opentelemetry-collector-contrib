@@ -4,7 +4,6 @@
 package trace
 
 import (
-	"context"
 	"encoding/hex"
 	"testing"
 
@@ -160,7 +159,7 @@ func TestProcess(t *testing.T) {
 			op, err := tc.op()
 			require.NoError(t, err, "did not expect operator function to return an error, this is a bug with the test case")
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
 		})
@@ -275,19 +274,19 @@ func TestTraceParserParse(t *testing.T) {
 			}
 			require.Equal(t, tc.expectedRecord, e.Body)
 			traceID, _ := hex.DecodeString(tc.traceID)
-			if len(tc.traceID) == 0 {
+			if tc.traceID == "" {
 				require.Nil(t, e.TraceID)
 			} else {
 				require.Equal(t, traceID, e.TraceID)
 			}
 			spanID, _ := hex.DecodeString(tc.spanID)
-			if len(tc.spanID) == 0 {
+			if tc.spanID == "" {
 				require.Nil(t, e.SpanID)
 			} else {
 				require.Equal(t, spanID, e.SpanID)
 			}
 			traceFlags, _ := hex.DecodeString(tc.traceFlags)
-			if len(tc.traceFlags) == 0 {
+			if tc.traceFlags == "" {
 				require.Nil(t, e.TraceFlags)
 			} else {
 				require.Equal(t, traceFlags, e.TraceFlags)

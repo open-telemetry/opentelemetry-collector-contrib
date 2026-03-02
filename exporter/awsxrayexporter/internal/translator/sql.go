@@ -68,27 +68,17 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 
 func isSQL(system string) bool {
 	switch system {
-	case "db2":
-		fallthrough
-	case "derby":
-		fallthrough
-	case "hive":
-		fallthrough
-	case "mariadb":
-		fallthrough
-	case "mssql":
-		fallthrough
-	case "mysql":
-		fallthrough
-	case "oracle":
-		fallthrough
-	case "postgresql":
-		fallthrough
-	case "sqlite":
-		fallthrough
-	case "teradata":
-		fallthrough
-	case "other_sql":
+	case "db2",
+		"derby",
+		"hive",
+		"mariadb",
+		"mssql",
+		"mysql",
+		"oracle",
+		"postgresql",
+		"sqlite",
+		"teradata",
+		"other_sql":
 		return true
 	default:
 	}

@@ -80,5 +80,5 @@ func handleRenamedSettings(configMap *confmap.Conf, cfg *Config) (warnings []err
 	}
 	err = errors.Join(errs...)
 
-	return
+	return warnings, err
 }

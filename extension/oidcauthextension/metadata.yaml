@@ -1,3 +1,4 @@
+display_name: OIDC Authenticator Extension
 type: oidc
 
 status:
@@ -7,6 +8,7 @@ status:
   distributions: [contrib, k8s]
   codeowners:
     seeking_new: true
+    active: [asweet-confluent]
     emeritus: [jpkrohling]
 
 tests:

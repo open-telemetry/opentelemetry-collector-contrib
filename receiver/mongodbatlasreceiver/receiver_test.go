@@ -21,7 +21,7 @@ func TestDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	require.Equal(t, 3*time.Minute, cfg.(*Config).CollectionInterval)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	recv, err := createMetricsReceiver(ctx, receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())

@@ -8,16 +8,18 @@ Contains tests for metricexporter.go and metric_to_envelopes.go
 */
 
 import (
-	"context"
 	"testing"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
 )
 
 // Test onMetricData callback for the test metrics data
@@ -27,7 +29,7 @@ func TestExporterMetricDataCallback(t *testing.T) {
 
 	metrics := getTestMetrics()
 
-	assert.NoError(t, exporter.consumeMetrics(context.Background(), metrics))
+	assert.NoError(t, exporter.consumeMetrics(t.Context(), metrics))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 5)
 }
@@ -142,6 +144,7 @@ func getAzureMonitorExporter(config *Config, transportChannel appinsights.Teleme
 	return &azureMonitorExporter{
 		config,
 		transportChannel,
+		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
 		zap.NewNop(),
 		newMetricPacker(zap.NewNop()),
 	}

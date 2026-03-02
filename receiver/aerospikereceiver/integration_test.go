@@ -72,7 +72,7 @@ func integrationTest(cfgMod func(*Config)) func(*testing.T) {
 
 type waitStrategy struct{}
 
-func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
+func (waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
 	if err := wait.ForAll(
 		wait.ForListeningPort(nat.Port(aerospikePort)),
 		wait.ForLog("service ready: soon there will be cake!"),
@@ -175,7 +175,7 @@ func populateMetrics(host *as.Host) error {
 	sibin := "bin2"
 
 	// write 100 records to get some memory usage
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		var key *as.Key
 		key, err = as.NewKey(ns, set, i)
 		if err != nil {
@@ -202,7 +202,7 @@ func populateMetrics(host *as.Host) error {
 	if err != nil {
 		return errors.New("failed registering udf file")
 	}
-	if nil != <-task.OnComplete() {
+	if <-task.OnComplete() != nil {
 		return errors.New("failed while registering udf file")
 	}
 

@@ -4,7 +4,6 @@
 package json
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -266,7 +265,7 @@ func TestParser(t *testing.T) {
 			tc.input.ObservedTimestamp = ots
 			tc.expect.ObservedTimestamp = ots
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 			fake.ExpectEntry(t, tc.expect)
 		})
@@ -304,8 +303,8 @@ func benchmarkOperator(b *testing.B, parser operator.Operator) {
 
 	e := entry.Entry{Body: string(body)}
 
-	for i := 0; i < b.N; i++ {
-		err := parser.Process(context.Background(), &e)
+	for b.Loop() {
+		err := parser.Process(b.Context(), &e)
 		require.NoError(b, err)
 	}
 }

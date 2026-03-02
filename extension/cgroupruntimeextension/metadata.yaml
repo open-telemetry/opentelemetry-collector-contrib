@@ -1,9 +1,10 @@
+display_name: Cgroup Go Runtime Extension
 type: cgroupruntime
 
 status:
   class: extension
   stability:
-    development: [extension]
+    alpha: [extension]
   distributions: [contrib]
   codeowners:
     active: [mx-psi, rogercoll]

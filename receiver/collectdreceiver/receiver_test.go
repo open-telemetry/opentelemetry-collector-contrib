@@ -5,7 +5,6 @@ package collectdreceiver
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -48,7 +48,10 @@ func TestNewReceiver(t *testing.T) {
 			args: args{
 				config: &Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: ":0",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  ":0",
+						},
 					},
 				},
 				attrsPrefix:  "default_attr_",
@@ -78,7 +81,10 @@ func TestCollectDServer(t *testing.T) {
 
 	config := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:8081",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:8081",
+			},
 		},
 	}
 	defaultAttrsPrefix := "dap_"
@@ -151,9 +157,9 @@ func TestCollectDServer(t *testing.T) {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
-	require.NoError(t, cdr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, cdr.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		err := cdr.Shutdown(context.Background())
+		err := cdr.Shutdown(t.Context())
 		if err != nil {
 			t.Fatalf("Error stopping metrics reception: %v", err)
 		}
@@ -166,7 +172,7 @@ func TestCollectDServer(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
 				tt.HTTPMethod,
-				"http://"+config.Endpoint+"?"+tt.QueryParams,
+				"http://"+config.NetAddr.Endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)
@@ -212,8 +218,8 @@ func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 	return testMetrics
 }
 
-func assertMetricsAreEqual(t *testing.T, expectedData []pmetric.Metrics, actualData []pmetric.Metrics) {
-	for i := 0; i < len(expectedData); i++ {
+func assertMetricsAreEqual(t *testing.T, expectedData, actualData []pmetric.Metrics) {
+	for i := range expectedData {
 		err := pmetrictest.CompareMetrics(expectedData[i], actualData[i])
 		require.NoError(t, err)
 	}

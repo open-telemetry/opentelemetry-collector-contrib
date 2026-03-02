@@ -9,9 +9,13 @@ import (
 	"os"
 	"testing"
 
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/endpoints"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/session"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -33,7 +37,7 @@ func (m *mock) getEC2Region(_ *session.Session) (string, error) {
 	return ec2Region, nil
 }
 
-func (m *mock) newAWSSession(_ string, _ string, _ *zap.Logger) (*session.Session, error) {
+func (m *mock) newAWSSession(string, string, *zap.Logger) (*session.Session, error) {
 	return m.sn, nil
 }
 
@@ -43,19 +47,19 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 }
 
 func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
-	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error),
+	f2 func(roleArn, region string, logger *zap.Logger) (*session.Session, error),
 ) {
 	f1 = getEC2Region
 	f2 = newAWSSession
 	m := mock{sn: sess}
 	getEC2Region = m.getEC2Region
 	newAWSSession = m.newAWSSession
-	return
+	return f1, f2
 }
 
 func tearDownMock(
 	f1 func(s *session.Session) (string, error),
-	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error),
+	f2 func(roleArn, region string, logger *zap.Logger) (*session.Session, error),
 ) {
 	getEC2Region = f1
 	newAWSSession = f2
@@ -402,19 +406,19 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 
 type mockAWSErr struct{}
 
-func (m *mockAWSErr) Error() string {
+func (*mockAWSErr) Error() string {
 	return "mockAWSErr"
 }
 
-func (m *mockAWSErr) Code() string {
+func (*mockAWSErr) Code() string {
 	return sts.ErrCodeRegionDisabledException
 }
 
-func (m *mockAWSErr) Message() string {
+func (*mockAWSErr) Message() string {
 	return ""
 }
 
-func (m *mockAWSErr) OrigErr() error {
+func (*mockAWSErr) OrigErr() error {
 	return errors.New("mockAWSErr")
 }
 
@@ -430,7 +434,7 @@ func (m *mockProvider) Retrieve() (credentials.Value, error) {
 	return val, nil
 }
 
-func (m *mockProvider) IsExpired() bool {
+func (*mockProvider) IsExpired() bool {
 	return true
 }
 

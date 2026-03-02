@@ -146,14 +146,15 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 	var ingestor azkustoingest.Ingestor
 
 	var ingestOptions []azkustoingest.FileOption
-	ingestOptions = append(ingestOptions, azkustoingest.FileFormat(azkustoingest.JSON))
-	ingestOptions = append(ingestOptions, azkustoingest.CompressionType(ingestoptions.GZIP))
+	ingestOptions = append(ingestOptions,
+		azkustoingest.FileFormat(azkustoingest.JSON),
+		azkustoingest.CompressionType(ingestoptions.GZIP))
 	// Expect that this mapping is already existent
 	if refOption := getMappingRef(config, telemetryDataType); refOption != nil {
 		ingestOptions = append(ingestOptions, refOption)
 	}
 	// The exporter could be configured to run in either modes. Using managedstreaming or batched queueing
-	if strings.ToLower(config.IngestionType) == managedIngestType {
+	if strings.EqualFold(config.IngestionType, managedIngestType) {
 		mi, err := createManagedStreamingIngestor(config, version, tableName)
 		if err != nil {
 			return nil, err
@@ -194,7 +195,7 @@ func getMappingRef(config *Config, telemetryDataType int) azkustoingest.FileOpti
 
 func createKcsb(config *Config, version string) *azkustodata.ConnectionStringBuilder {
 	var kcsb *azkustodata.ConnectionStringBuilder
-	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
+	isManagedIdentity := strings.TrimSpace(config.ManagedIdentityID) != ""
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
 	switch {
@@ -212,7 +213,7 @@ func createKcsb(config *Config, version string) *azkustodata.ConnectionStringBui
 }
 
 // Depending on the table, create separate ingestors
-func createManagedStreamingIngestor(config *Config, version string, tablename string) (*azkustoingest.Managed, error) {
+func createManagedStreamingIngestor(config *Config, version, tablename string) (*azkustoingest.Managed, error) {
 	kcsb := createKcsb(config, version)
 	ingestopts := []azkustoingest.Option{
 		azkustoingest.WithDefaultDatabase(config.Database),
@@ -223,7 +224,7 @@ func createManagedStreamingIngestor(config *Config, version string, tablename st
 }
 
 // A queued ingestor in case that is provided as the config option
-func createQueuedIngestor(config *Config, version string, tablename string) (*azkustoingest.Ingestion, error) {
+func createQueuedIngestor(config *Config, version, tablename string) (*azkustoingest.Ingestion, error) {
 	kcsb := createKcsb(config, version)
 	ingestopts := []azkustoingest.Option{
 		azkustoingest.WithDefaultDatabase(config.Database),

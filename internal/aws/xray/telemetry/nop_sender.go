@@ -18,31 +18,31 @@ var nopSenderInstance Sender = &nopSender{}
 
 type nopSender struct{}
 
-func (n nopSender) Rotate() types.TelemetryRecord {
+func (nopSender) Rotate() types.TelemetryRecord {
 	return types.TelemetryRecord{}
 }
 
-func (n nopSender) HasRecording() bool {
+func (nopSender) HasRecording() bool {
 	return false
 }
 
-func (n nopSender) Start(_ context.Context) {
+func (nopSender) Start(context.Context) {
 }
 
-func (n nopSender) Stop() {
+func (nopSender) Stop() {
 }
 
-func (n nopSender) RecordSegmentsReceived(int) {
+func (nopSender) RecordSegmentsReceived(int) {
 }
 
-func (n nopSender) RecordSegmentsSent(int) {
+func (nopSender) RecordSegmentsSent(int) {
 }
 
-func (n nopSender) RecordSegmentsSpillover(int) {
+func (nopSender) RecordSegmentsSpillover(int) {
 }
 
-func (n nopSender) RecordSegmentsRejected(int) {
+func (nopSender) RecordSegmentsRejected(int) {
 }
 
-func (n nopSender) RecordConnectionError(error) {
+func (nopSender) RecordConnectionError(error) {
 }

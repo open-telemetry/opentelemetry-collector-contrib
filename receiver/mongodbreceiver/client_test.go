@@ -111,7 +111,7 @@ func TestListDatabaseNames(t *testing.T) {
 	client := &mongodbClient{
 		Client: c,
 	}
-	dbNames, err := client.ListDatabaseNames(context.Background(), bson.D{})
+	dbNames, err := client.ListDatabaseNames(t.Context(), bson.D{})
 	require.NoError(t, err)
 	require.Equal(t, "admin", dbNames[0])
 }
@@ -185,11 +185,11 @@ func TestRunCommands(t *testing.T) {
 		var result bson.M
 		switch tc.cmd {
 		case serverStatusType:
-			result, err = client.ServerStatus(context.Background(), "test")
+			result, err = client.ServerStatus(t.Context(), "test")
 		case dbStatsType:
-			result, err = client.DBStats(context.Background(), "test")
+			result, err = client.DBStats(t.Context(), "test")
 		case topType:
-			result, err = client.TopStats(context.Background())
+			result, err = client.TopStats(t.Context())
 		}
 		require.NoError(t, err)
 		if tc.validate != nil {
@@ -217,7 +217,7 @@ func TestGetVersion(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	version, err := client.GetVersion(context.TODO())
+	version, err := client.GetVersion(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, "4.4.10", version.String())
 }
@@ -265,7 +265,7 @@ func TestGetVersionFailures(t *testing.T) {
 			logger: zap.NewNop(),
 		}
 
-		_, err = client.GetVersion(context.Background())
+		_, err = client.GetVersion(t.Context())
 		require.ErrorContains(t, err, tc.partialError)
 	}
 }

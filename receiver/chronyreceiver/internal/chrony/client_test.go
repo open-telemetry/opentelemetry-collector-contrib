@@ -220,7 +220,7 @@ func TestGettingTrackingData(t *testing.T) {
 			})
 			require.NoError(t, err, "Must not error when creating client")
 
-			data, err := client.GetTrackingData(context.Background())
+			data, err := client.GetTrackingData(t.Context())
 			assert.Equal(t, tc.data, data, "Must match the expected data")
 			assert.ErrorIs(t, err, tc.err, "Must match the expected error")
 		})

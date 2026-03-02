@@ -9,4 +9,7 @@ type Config struct {
 	// of the form `<ip addr>:<port>` (TCP) or `unix://<socket_path>` (Unix
 	// domain socket).
 	ListenAddress string `mapstructure:"endpoint"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

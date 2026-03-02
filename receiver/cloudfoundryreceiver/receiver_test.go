@@ -4,7 +4,6 @@
 package cloudfoundryreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -36,7 +35,7 @@ func TestDefaultValidMetricsReceiver(t *testing.T) {
 	require.NotNil(t, receiver, "receiver creation failed")
 
 	// Test start
-	ctx := context.Background()
+	ctx := t.Context()
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -61,7 +60,7 @@ func TestDefaultValidLogsReceiver(t *testing.T) {
 	require.NotNil(t, receiver, "receiver creation failed")
 
 	// Test start
-	ctx := context.Background()
+	ctx := t.Context()
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 

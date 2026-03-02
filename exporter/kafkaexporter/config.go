@@ -4,20 +4,25 @@
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 var _ component.Config = (*Config)(nil)
 
+var errLogsPartitionExclusive = errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
+
 // Config defines configuration for Kafka exporter.
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueBatchConfig          configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	configkafka.ClientConfig  `mapstructure:",squash"`
 	Producer                  configkafka.ProducerConfig `mapstructure:"producer"`
@@ -30,6 +35,9 @@ type Config struct {
 
 	// Traces holds configuration about how traces should be sent to Kafka.
 	Traces SignalConfig `mapstructure:"traces"`
+
+	// Profiles holds configuration about how profiles should be sent to Kafka.
+	Profiles SignalConfig `mapstructure:"profiles"`
 
 	// Topic holds the name of the Kafka topic to which data should be exported.
 	//
@@ -68,6 +76,21 @@ type Config struct {
 	// If this is true, then the message key will be set to a hash of the resource's identifying
 	// attributes.
 	PartitionLogsByResourceAttributes bool `mapstructure:"partition_logs_by_resource_attributes"`
+
+	// PartitionLogsByTraceID controls partitioning of log messages by trace ID only.
+	// When enabled, the exporter splits incoming logs per TraceID (using SplitLogs)
+	// and sets the Kafka message key to the 16-byte hex string of that TraceID.
+	// If a LogRecord has an empty TraceID, the key may be empty and partition
+	// selection falls back to the Kafka client’s default strategy. Resource
+	// attributes are not used for the key when this option is enabled.
+	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
+}
+
+func (c *Config) Validate() (err error) {
+	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
+		return errLogsPartitionExclusive
+	}
+	return err
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
@@ -91,6 +114,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		if zeroConfig.Traces.Topic == "" {
 			c.Traces.Topic = c.Topic
 		}
+		if zeroConfig.Profiles.Topic == "" {
+			c.Profiles.Topic = c.Topic
+		}
 	}
 	if c.Encoding != "" {
 		if zeroConfig.Logs.Encoding == "" {
@@ -101,6 +127,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		}
 		if zeroConfig.Traces.Encoding == "" {
 			c.Traces.Encoding = c.Encoding
+		}
+		if zeroConfig.Profiles.Encoding == "" {
+			c.Profiles.Encoding = c.Encoding
 		}
 	}
 	return conf.Unmarshal(c)
@@ -115,7 +144,13 @@ type SignalConfig struct {
 	//  - "otlp_spans" for traces
 	//  - "otlp_metrics" for metrics
 	//  - "otlp_logs" for logs
+	//  - "otlp_profiles" for profiles
 	Topic string `mapstructure:"topic"`
+
+	// TopicFromMetadataKey holds the name of the metadata key to use as the
+	// topic name for this signal type. If this is set, it takes precedence
+	// over the topic name set in the topic field.
+	TopicFromMetadataKey string `mapstructure:"topic_from_metadata_key"`
 
 	// Encoding holds the encoding of messages for the signal type.
 	//

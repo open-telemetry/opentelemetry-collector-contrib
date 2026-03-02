@@ -4,14 +4,12 @@
 package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
@@ -36,14 +34,14 @@ func TestCreateAndShutdown(t *testing.T) {
 	cfg := defaultConfig.(*WindowsLogConfig) // This cast should work on all platforms.
 	cfg.InputConfig.Channel = "Application"  // Must be explicitly set to a valid channel.
 
-	ctx := context.Background()
+	ctx := t.Context()
 	settings := receivertest.NewNopSettings(metadata.Type)
 	sink := new(consumertest.LogsSink)
 	receiver, err := factory.CreateLogs(ctx, settings, cfg, sink)
 
 	if runtime.GOOS != "windows" {
 		assert.Error(t, err)
-		assert.IsType(t, pipeline.ErrSignalNotSupported, err)
+		assert.ErrorContains(t, err, "windows eventlog receiver is only supported on Windows")
 		assert.Nil(t, receiver)
 	} else {
 		assert.NoError(t, err)

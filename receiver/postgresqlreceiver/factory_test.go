@@ -4,10 +4,10 @@
 package postgresqlreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -34,7 +34,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			ControllerConfig: scraperhelper.ControllerConfig{
@@ -48,4 +48,15 @@ func TestCreateMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	defaultCfg := createDefaultConfig().(*Config)
+	assert.Equal(t, int64(1000), defaultCfg.TopQueryCollection.MaxRowsPerQuery)
+	assert.Equal(t, int64(200), defaultCfg.TopNQuery)
+	assert.Equal(t, int64(1000), defaultCfg.MaxExplainEachInterval)
+	assert.Equal(t, 1000, defaultCfg.QueryPlanCacheSize)
+	assert.Equal(t, time.Hour, defaultCfg.QueryPlanCacheTTL)
+
+	assert.Equal(t, int64(1000), defaultCfg.QuerySampleCollection.MaxRowsPerQuery)
 }

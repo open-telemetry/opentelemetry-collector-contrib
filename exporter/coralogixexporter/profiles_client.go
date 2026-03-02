@@ -26,17 +26,18 @@ func newProfilesExporter(cfg component.Config, set exporter.Settings) (*profiles
 	}
 
 	return &profilesExporter{
-		signalExporter: *signalExporter,
+		signalExporter: signalExporter,
 	}, nil
 }
 
 type profilesExporter struct {
 	profilesExporter pprofileotlp.GRPCClient
-	signalExporter
+	*signalExporter
 }
 
 func (e *profilesExporter) start(ctx context.Context, host component.Host) (err error) {
-	wrapper := &signalConfigWrapper{config: &e.config.Profiles}
+	transportConfig := TransportConfig{ClientConfig: e.config.Profiles}
+	wrapper := &signalConfigWrapper{config: &transportConfig}
 	if err := e.startSignalExporter(ctx, host, wrapper); err != nil {
 		return err
 	}
@@ -45,6 +46,10 @@ func (e *profilesExporter) start(ctx context.Context, host component.Host) (err 
 }
 
 func (e *profilesExporter) pushProfiles(ctx context.Context, md pprofile.Profiles) error {
+	if !e.canSend() {
+		return e.rateError.GetError()
+	}
+
 	rss := md.ResourceProfiles()
 	for i := 0; i < rss.Len(); i++ {
 		resourceProfile := rss.At(i)
@@ -55,7 +60,7 @@ func (e *profilesExporter) pushProfiles(ctx context.Context, md pprofile.Profile
 
 	resp, err := e.profilesExporter.Export(e.enhanceContext(ctx), pprofileotlp.NewExportRequestFromProfiles(md), e.callOptions...)
 	if err != nil {
-		return processError(err)
+		return e.processError(err)
 	}
 
 	partialSuccess := resp.PartialSuccess()
@@ -65,6 +70,7 @@ func (e *profilesExporter) pushProfiles(ctx context.Context, md pprofile.Profile
 			zap.Int64("rejected_profiles", partialSuccess.RejectedProfiles()),
 		)
 	}
+	e.rateError.errorCount.Store(0)
 	return nil
 }
 

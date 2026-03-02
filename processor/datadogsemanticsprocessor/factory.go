@@ -6,11 +6,12 @@ package datadogsemanticsprocessor // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/metadata"
 )
@@ -18,6 +19,8 @@ import (
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Datadog semantics processor.
+//
+// Deprecated: [v0.146.0] This processor is deprecated and will be removed in a future release.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
@@ -35,6 +38,7 @@ func newTracesProcessor(
 	set processor.Settings,
 	cfg *Config,
 ) (*tracesProcessor, error) {
+	set.Logger.Warn("The 'datadogsemantics' processor is deprecated and will be removed in a future release. Please contact Datadog support if you need help.", zap.String("Datadog Support URL", "https://www.datadoghq.com/support/"))
 	attrsTranslator, err := attributes.NewTranslator(set.TelemetrySettings)
 	if err != nil {
 		return nil, err

@@ -4,7 +4,6 @@
 package awss3exporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createMetricsExporter(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
@@ -34,7 +33,7 @@ func TestCreateMetrics(t *testing.T) {
 func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createTracesExporter(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
@@ -44,7 +43,7 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createLogsExporter(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
@@ -55,14 +54,14 @@ func TestUnsupportedMarshalerOptions(t *testing.T) {
 	cfg := createDefaultConfig()
 	cfg.(*Config).MarshalerName = SumoIC
 	exp, err := createMetricsExporter(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.Error(t, err)
 	require.Nil(t, exp)
 
 	exp2, err := createTracesExporter(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.Error(t, err)

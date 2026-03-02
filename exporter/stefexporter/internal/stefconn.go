@@ -10,7 +10,7 @@ import (
 
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
-	"github.com/splunk/stef/go/otel/oteltef"
+	"github.com/splunk/stef/go/otel/otelstef"
 	"github.com/splunk/stef/go/pkg"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -26,7 +26,7 @@ type StefConnCreator struct {
 // StefConn implements Conn interface for STEF/gRPC connections.
 type StefConn struct {
 	client *stefgrpc.Client
-	writer *oteltef.MetricsWriter
+	writer *otelstef.MetricsWriter
 
 	// cancel func for the context that was used to create the gRPC stream.
 	// Calling it will cancel stream operations.
@@ -57,7 +57,7 @@ func (s *StefConnCreator) Create(ctx context.Context) (Conn, error) {
 	grpcClient := stef_proto.NewSTEFDestinationClient(s.grpcConn)
 
 	// Let server know about our schema.
-	schema, err := oteltef.MetricsWireSchema()
+	schema, err := otelstef.MetricsWireSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (s *StefConnCreator) Create(ctx context.Context) (Conn, error) {
 	settings := stefgrpc.ClientSettings{
 		Logger:       &loggerWrapper{s.logger},
 		GrpcClient:   grpcClient,
-		ClientSchema: stefgrpc.ClientSchema{WireSchema: &schema, RootStructName: oteltef.MetricsStructName},
+		ClientSchema: stefgrpc.ClientSchema{WireSchema: &schema, RootStructName: otelstef.MetricsStructName},
 		Callbacks: stefgrpc.ClientCallbacks{
 			OnAck: func(ackId uint64) error { return conn.onGrpcAck(ackId) },
 		},
@@ -97,6 +97,15 @@ func (s *StefConnCreator) Create(ctx context.Context) (Conn, error) {
 			// for connection to be established. We have to cancel the
 			// connection attempt (and the whole connection if it raced us and
 			// managed to connect - we will reconnect later again in that case).
+			select {
+			case <-connectionAttemptDone:
+				// Connection attempt already finished, nothing to do. This can happen
+				// if <-ctx.Done() above selects sooner than <-connectionAttemptDone.
+				// That is ok, we are done.
+				return
+			default:
+			}
+
 			s.logger.Debug("Canceling connection context because Create() caller cancelled.")
 			connCancel()
 		case <-connectionAttemptDone:
@@ -119,7 +128,7 @@ func (s *StefConnCreator) Create(ctx context.Context) (Conn, error) {
 	opts.Compression = s.compression
 
 	// Create STEF record writer over gRPC.
-	conn.writer, err = oteltef.NewMetricsWriter(grpcWriter, opts)
+	conn.writer, err = otelstef.NewMetricsWriter(grpcWriter, opts)
 	if err != nil {
 		connCancel()
 		return nil, err
@@ -138,7 +147,7 @@ func (s *StefConnCreator) Create(ctx context.Context) (Conn, error) {
 }
 
 // Writer returns the metrics writer that exists over this connection.
-func (s *StefConn) Writer() *oteltef.MetricsWriter {
+func (s *StefConn) Writer() *otelstef.MetricsWriter {
 	return s.writer
 }
 

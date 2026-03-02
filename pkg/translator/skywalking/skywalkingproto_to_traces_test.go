@@ -215,7 +215,7 @@ func Test_stringToTraceID_Unique(t *testing.T) {
 	}
 
 	var results [2][16]byte
-	for i := 0; i < len(tests); i++ {
+	for i := range tests {
 		tt := tests[i]
 		t.Run(tt.name, func(_ *testing.T) {
 			got := swTraceIDToTraceID(tt.segmentObject.traceID)
@@ -289,15 +289,22 @@ func Test_segmentIdToSpanId_Unique(t *testing.T) {
 		},
 	}
 	var results [2][8]byte
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
+		if i >= len(tests) {
+			break
+		}
 		tt := tests[i]
 		t.Run(tt.name, func(_ *testing.T) {
 			got := segmentIDToSpanID(tt.args.segmentID, tt.args.spanID)
-			results[i] = got
+			if i < len(results) {
+				results[i] = got
+			}
 		})
 	}
 
-	assert.NotEqual(t, results[0], results[1])
+	if len(results) >= 2 {
+		assert.NotEqual(t, results[0], results[1])
+	}
 }
 
 func Test_swSpanToSpan_ParentSpanId(t *testing.T) {

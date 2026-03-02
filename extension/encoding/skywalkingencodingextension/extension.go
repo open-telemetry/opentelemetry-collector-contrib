@@ -18,10 +18,10 @@ func (e *skywalkingExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error)
 	return e.unmarshaler.UnmarshalTraces(buf)
 }
 
-func (e *skywalkingExtension) Start(_ context.Context, _ component.Host) error {
+func (*skywalkingExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (e *skywalkingExtension) Shutdown(_ context.Context) error {
+func (*skywalkingExtension) Shutdown(context.Context) error {
 	return nil
 }

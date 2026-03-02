@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	faro "github.com/grafana/faro/pkg/go"
 	"go.opentelemetry.io/collector/component"
@@ -39,7 +40,7 @@ func newFaroReceiver(cfg *Config, set *receiver.Settings) (*faroReceiver, error)
 	}
 
 	transport := "http"
-	if cfg.TLSSetting != nil {
+	if cfg.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -56,8 +57,10 @@ func newFaroReceiver(cfg *Config, set *receiver.Settings) (*faroReceiver, error)
 }
 
 type faroReceiver struct {
-	cfg        *Config
+	cfg *Config
+
 	serverHTTP *http.Server
+	shutdownWg sync.WaitGroup
 
 	nextTraces consumer.Traces
 	nextLogs   consumer.Logs
@@ -76,10 +79,13 @@ func (r *faroReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (r *faroReceiver) Shutdown(ctx context.Context) error {
+	var err error
 	if r.serverHTTP != nil {
-		return r.serverHTTP.Shutdown(ctx)
+		err = r.serverHTTP.Shutdown(ctx)
 	}
-	return nil
+
+	r.shutdownWg.Wait()
+	return err
 }
 
 func (r *faroReceiver) RegisterTracesConsumer(tc consumer.Traces) {
@@ -96,7 +102,7 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return nil
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
 
 	httpMux := http.NewServeMux()
 	httpMux.HandleFunc(faroPath, func(resp http.ResponseWriter, req *http.Request) {
@@ -105,7 +111,7 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	var err error
 	if r.serverHTTP, err = r.cfg.ToServer(
 		ctx,
-		host,
+		host.GetExtensions(),
 		r.settings.TelemetrySettings,
 		httpMux,
 		confighttp.WithErrorHandler(r.errorHandler),
@@ -120,12 +126,12 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return err
 	}
 
-	go func() {
+	r.shutdownWg.Go(func() {
 		if err := r.serverHTTP.Serve(listener); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			r.settings.Logger.Error("Failed to start HTTP server", zap.Error(err))
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	}()
+	})
 
 	r.settings.Logger.Info("HTTP server started", zap.String("address", r.serverHTTP.Addr))
 	return nil
@@ -205,7 +211,7 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	resp.WriteHeader(http.StatusOK)
+	resp.WriteHeader(http.StatusAccepted)
 }
 
 type errorResponse struct {

@@ -248,9 +248,9 @@ func BenchmarkUDPInput(b *testing.B) {
 		}
 	}()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		<-fakeOutput.Received
 	}
 
-	defer close(done)
+	close(done)
 }

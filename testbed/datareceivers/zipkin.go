@@ -31,7 +31,7 @@ func NewZipkinDataReceiver(port int) testbed.DataReceiver {
 func (zr *zipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := zipkinreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
-	cfg.Endpoint = fmt.Sprintf("127.0.0.1:%d", zr.Port)
+	cfg.NetAddr.Endpoint = fmt.Sprintf("127.0.0.1:%d", zr.Port)
 
 	set := receivertest.NewNopSettings(factory.Type())
 	var err error
@@ -55,6 +55,6 @@ func (zr *zipkinDataReceiver) GenConfigYAMLStr() string {
     format: json`, zr.Port)
 }
 
-func (zr *zipkinDataReceiver) ProtocolName() string {
+func (*zipkinDataReceiver) ProtocolName() string {
 	return "zipkin"
 }

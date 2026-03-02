@@ -27,6 +27,24 @@ func TestMergeStringMaps(t *testing.T) {
 	require.Equal(t, expected, actual)
 }
 
+func TestMergeRawMaps(t *testing.T) {
+	m1 := map[string]any{
+		"key-1": "val-1",
+	}
+
+	m2 := map[string]any{
+		"key-2": "val-2",
+	}
+
+	actual := MergeRawMaps(m1, m2)
+	expected := map[string]any{
+		"key-1": "val-1",
+		"key-2": "val-2",
+	}
+
+	require.Equal(t, expected, actual)
+}
+
 func TestCloneStringMap(t *testing.T) {
 	m := map[string]string{
 		"key-1": "val-1",

@@ -6,7 +6,6 @@
 package pagingscraper
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -29,6 +28,8 @@ func TestScrape_Errors(t *testing.T) {
 		getPageFileStats             func() ([]*pageFileStats, error)
 		pageReadsScrapeErr           error
 		pageWritesScrapeErr          error
+		pageMajFaultsScrapeErr       error
+		pageFaultsScrapeErr          error
 		expectedErr                  string
 		expectedErrCount             int
 		expectedUsedValue            int64
@@ -71,11 +72,32 @@ func TestScrape_Errors(t *testing.T) {
 			expectedErrCount:    pagingMetricsLen,
 		},
 		{
-			name:               "multipleErrors",
-			getPageFileStats:   func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
-			pageReadsScrapeErr: errors.New("err2"),
-			expectedErr:        "failed to read page file stats: err1; err2",
-			expectedErrCount:   pagingUsageMetricsLen + pagingMetricsLen,
+			name:                   "pageMajFaultsScrapeError",
+			pageMajFaultsScrapeErr: errors.New("err3"),
+			expectedErr:            "err3",
+			expectedErrCount:       2, // If major faults failed to be scraped, the code can't report minor faults either
+		},
+		{
+			name:                "pageFaultsScrapeError",
+			pageFaultsScrapeErr: errors.New("err4"),
+			expectedErr:         "err4",
+			expectedErrCount:    1,
+		},
+		{
+			name:                   "multipleErrors-majorFaultErr",
+			getPageFileStats:       func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
+			pageReadsScrapeErr:     errors.New("err2"),
+			pageMajFaultsScrapeErr: errors.New("err3"),
+			expectedErr:            "failed to read page file stats: err1; err2; err3",
+			expectedErrCount:       4, // If major faults failed to be scraped, the code can't report minor faults either
+		},
+		{
+			name:                "multipleErrors-minorFaultErr",
+			getPageFileStats:    func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
+			pageReadsScrapeErr:  errors.New("err2"),
+			pageFaultsScrapeErr: errors.New("err3"),
+			expectedErr:         "failed to read page file stats: err1; err2; err3",
+			expectedErrCount:    3,
 		},
 	}
 
@@ -84,7 +106,7 @@ func TestScrape_Errors(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
+			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
@@ -98,25 +120,52 @@ func TestScrape_Errors(t *testing.T) {
 				assert.Zero(t, pageSize%4096) // page size on Windows should always be a multiple of 4KB
 			}
 
+			const (
+				defaultPageReadsPerSec  int64 = 1000
+				defaultPageWritesPerSec int64 = 500
+				defaultPageFaultsPerSec int64 = 300
+				defaultPageMajPerSec    int64 = 200
+			)
 			scraper.perfCounterFactory = func(_, _, counter string) (winperfcounters.PerfCounterWatcher, error) {
-				if counter == pageReadsPerSec && test.pageReadsScrapeErr != nil {
-					return &testmocks.PerfCounterWatcherMock{
-						ScrapeErr: test.pageReadsScrapeErr,
-					}, nil
-				}
-				if counter == pageWritesPerSec && test.pageWritesScrapeErr != nil {
-					return &testmocks.PerfCounterWatcherMock{
-						ScrapeErr: test.pageWritesScrapeErr,
-					}, nil
+				perfCounterMock := &testmocks.PerfCounterWatcherMock{}
+				switch counter {
+				case pageReadsPerSec:
+					perfCounterMock.Val = defaultPageReadsPerSec
+					if test.pageReadsScrapeErr != nil {
+						return &testmocks.PerfCounterWatcherMock{
+							ScrapeErr: test.pageReadsScrapeErr,
+						}, nil
+					}
+				case pageWritesPerSec:
+					perfCounterMock.Val = defaultPageWritesPerSec
+					if test.pageWritesScrapeErr != nil {
+						return &testmocks.PerfCounterWatcherMock{
+							ScrapeErr: test.pageWritesScrapeErr,
+						}, nil
+					}
+				case pageFaultsPerSec:
+					perfCounterMock.Val = defaultPageFaultsPerSec
+					if test.pageFaultsScrapeErr != nil {
+						return &testmocks.PerfCounterWatcherMock{
+							ScrapeErr: test.pageFaultsScrapeErr,
+						}, nil
+					}
+				case pageMajPerSec:
+					perfCounterMock.Val = defaultPageMajPerSec
+					if test.pageMajFaultsScrapeErr != nil {
+						return &testmocks.PerfCounterWatcherMock{
+							ScrapeErr: test.pageMajFaultsScrapeErr,
+						}, nil
+					}
 				}
 
-				return &testmocks.PerfCounterWatcherMock{}, nil
+				return perfCounterMock, nil
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
@@ -134,13 +183,25 @@ func TestScrape_Errors(t *testing.T) {
 			assert.NoError(t, err)
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-			pagingUsageMetric := metrics.At(1)
-			assert.Equal(t, test.expectedUsedValue, pagingUsageMetric.Sum().DataPoints().At(0).IntValue())
-			assert.Equal(t, test.expectedFreeValue, pagingUsageMetric.Sum().DataPoints().At(1).IntValue())
-
-			pagingUtilizationMetric := metrics.At(2)
-			assert.Equal(t, test.expectedUtilizationUsedValue, pagingUtilizationMetric.Gauge().DataPoints().At(0).DoubleValue())
-			assert.Equal(t, test.expectedUtilizationFreeValue, pagingUtilizationMetric.Gauge().DataPoints().At(1).DoubleValue())
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				switch metric.Name() {
+				case metadata.MetricsInfo.SystemPagingFaults.Name:
+					assert.Equal(t, defaultPageMajPerSec, metric.Sum().DataPoints().At(0).IntValue())
+					assert.Equal(t, defaultPageFaultsPerSec-defaultPageMajPerSec, metric.Sum().DataPoints().At(1).IntValue())
+				case metadata.MetricsInfo.SystemPagingOperations.Name:
+					assert.Equal(t, defaultPageReadsPerSec, metric.Sum().DataPoints().At(0).IntValue())
+					assert.Equal(t, defaultPageWritesPerSec, metric.Sum().DataPoints().At(1).IntValue())
+				case metadata.MetricsInfo.SystemPagingUsage.Name:
+					assert.Equal(t, test.expectedUsedValue, metric.Sum().DataPoints().At(0).IntValue())
+					assert.Equal(t, test.expectedFreeValue, metric.Sum().DataPoints().At(1).IntValue())
+				case metadata.MetricsInfo.SystemPagingUtilization.Name:
+					assert.Equal(t, test.expectedUtilizationUsedValue, metric.Gauge().DataPoints().At(0).DoubleValue())
+					assert.Equal(t, test.expectedUtilizationFreeValue, metric.Gauge().DataPoints().At(1).DoubleValue())
+				default:
+					assert.Fail(t, "Unexpected metric found", metric.Name())
+				}
+			}
 		})
 	}
 }
@@ -149,20 +210,20 @@ func TestPagingScrapeWithRealData(t *testing.T) {
 	config := Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
-	scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &config)
+	scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start the paging scraper")
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err, "Failed to scrape metrics")
 	require.NotNil(t, metrics, "Metrics cannot be nil")
 
 	// Expected metric names for paging scraper.
-	// Note: the `system.paging.faults` is enabled by default, but is not being collected on Windows.
 	expectedMetrics := map[string]bool{
-		"system.paging.operations": false,
-		"system.paging.usage":      false,
+		metadata.MetricsInfo.SystemPagingOperations.Name: false,
+		metadata.MetricsInfo.SystemPagingUsage.Name:      false,
+		metadata.MetricsInfo.SystemPagingFaults.Name:     false,
 	}
 
 	internal.AssertExpectedMetrics(t, expectedMetrics, metrics)
@@ -192,13 +253,13 @@ func TestStart_Error(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
+			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
 
 			if tc.newPerfCounterFactory != nil {
 				scraper.perfCounterFactory = tc.newPerfCounterFactory
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
 			require.Equal(t, tc.expectedSkipScrape, scraper.skipScrape)

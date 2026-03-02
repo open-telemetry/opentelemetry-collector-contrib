@@ -3,7 +3,6 @@ signalfx/allsettings:
   # endpoint specifies the network interface and port which will receive
   # SignalFx metrics.
   endpoint: localhost:9943
-  access_token_passthrough: true
 signalfx/tls:
   tls:
     cert_file: /test.crt

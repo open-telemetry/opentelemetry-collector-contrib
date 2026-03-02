@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -87,7 +88,7 @@ func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	var k8sHost string
 	if authType != AuthTypeKubeConfig {
 		host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-		if len(host) == 0 || len(port) == 0 {
+		if host == "" || port == "" {
 			return nil, errors.New("unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 		}
 		k8sHost = "https://" + net.JoinHostPort(host, port)
@@ -147,6 +148,46 @@ func MakeClient(apiConf APIConfig) (k8s.Interface, error) {
 	}
 
 	return client, nil
+}
+
+// ClientBundle groups the two Kubernetes clients:
+//
+//   - K8s (typed client): kubernetes.Interface for full resource objects
+//     (spec/status/metadata). Use when you need complete data or typed informers.
+//
+//   - Meta (metadata client): metadata.Interface for PartialObjectMetadata
+//     (name/namespace/UID/labels/annotations/ownerRefs). Use for lightweight
+//     list/watch when only metadata is needed (e.g., high-churn resources).
+type ClientBundle struct {
+	K8s  k8s.Interface
+	Meta metadata.Interface
+}
+
+// MakeClientBundle builds both clients from a single RestConfig,
+// ensuring shared auth/transport. In unit tests, inject a fake
+// metadata client (metadata/fake) to avoid network calls, while
+// typed resources can use kubernetes/fake.
+func MakeClientBundle(apiConf APIConfig) (ClientBundle, error) {
+	if err := apiConf.Validate(); err != nil {
+		return ClientBundle{}, err
+	}
+
+	rc, err := CreateRestConfig(apiConf)
+	if err != nil {
+		return ClientBundle{}, err
+	}
+
+	kc, err := k8s.NewForConfig(rc)
+	if err != nil {
+		return ClientBundle{}, err
+	}
+
+	mc, err := metadata.NewForConfig(rc)
+	if err != nil {
+		return ClientBundle{}, err
+	}
+
+	return ClientBundle{K8s: kc, Meta: mc}, nil
 }
 
 // MakeDynamicClient can take configuration if needed for other types of auth

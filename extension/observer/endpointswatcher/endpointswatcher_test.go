@@ -345,6 +345,42 @@ func TestEndpointsEqual(t *testing.T) {
 			areEqual: false,
 		},
 		{
+			name:     "equal observer.Port ContainerName",
+			first:    observer.Endpoint{Details: &observer.Port{ContainerName: "container_name"}},
+			second:   observer.Endpoint{Details: &observer.Port{ContainerName: "container_name"}},
+			areEqual: true,
+		},
+		{
+			name:     "unequal observer.Port ContainerName",
+			first:    observer.Endpoint{Details: &observer.Port{ContainerName: "first"}},
+			second:   observer.Endpoint{Details: &observer.Port{ContainerName: "second"}},
+			areEqual: false,
+		},
+		{
+			name:     "equal observer.Port ContainerID",
+			first:    observer.Endpoint{Details: &observer.Port{ContainerID: "container_id"}},
+			second:   observer.Endpoint{Details: &observer.Port{ContainerID: "container_id"}},
+			areEqual: true,
+		},
+		{
+			name:     "unequal observer.Port ContainerID",
+			first:    observer.Endpoint{Details: &observer.Port{ContainerID: "first"}},
+			second:   observer.Endpoint{Details: &observer.Port{ContainerID: "second"}},
+			areEqual: false,
+		},
+		{
+			name:     "equal observer.Port ContainerImage",
+			first:    observer.Endpoint{Details: &observer.Port{ContainerImage: "container_image"}},
+			second:   observer.Endpoint{Details: &observer.Port{ContainerImage: "container_image"}},
+			areEqual: true,
+		},
+		{
+			name:     "unequal observer.Port ContainerImage",
+			first:    observer.Endpoint{Details: &observer.Port{ContainerImage: "first"}},
+			second:   observer.Endpoint{Details: &observer.Port{ContainerImage: "second"}},
+			areEqual: false,
+		},
+		{
 			name: "equal observer.Port",
 			first: observer.Endpoint{
 				ID:     observer.EndpointID("port_id"),

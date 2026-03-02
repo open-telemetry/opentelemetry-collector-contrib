@@ -65,9 +65,7 @@ func newMongoDBAtlasLogsReceiver(settings rcvr.Settings, cfg *Config, consumer c
 
 // Log receiver logic
 func (s *logsReceiver) Start(ctx context.Context, _ component.Host) error {
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		s.start = time.Now().Add(-collectionInterval)
 		s.end = time.Now()
 		for {
@@ -83,7 +81,7 @@ func (s *logsReceiver) Start(ctx context.Context, _ component.Host) error {
 				s.end = time.Now()
 			}
 		}
-	}()
+	})
 	return nil
 }
 
@@ -101,7 +99,7 @@ func parseHostNames(s string, logger *zap.Logger) []string {
 		return []string{}
 	}
 
-	for _, t := range strings.Split(s, ",") {
+	for t := range strings.SplitSeq(s, ",") {
 		// separate hostname from scheme and port
 		host, _, err := net.SplitHostPort(strings.TrimPrefix(t, "mongodb://"))
 		if err != nil {
@@ -160,7 +158,8 @@ type clusterInfo struct {
 }
 
 func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg LogsProjectConfig, pc projectContext) {
-	for _, cluster := range clusters {
+	for i := range clusters {
+		cluster := &clusters[i]
 		c := clusterInfo{
 			ClusterName:         cluster.Name,
 			RegionName:          cluster.ProviderSettings.RegionName,
@@ -210,7 +209,8 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 	}
 
 	var filtered []mongodbatlas.Cluster
-	for _, cluster := range clusters {
+	for i := range clusters {
+		cluster := clusters[i]
 		if _, ok := clusterNameSet[cluster.Name]; (!ok && !allowed) || (ok && allowed) {
 			filtered = append(filtered, cluster)
 		}
@@ -218,7 +218,7 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 	return filtered, nil
 }
 
-func (s *logsReceiver) getHostLogs(groupID, hostname, logName string, clusterMajorVersion string) ([]model.LogEntry, error) {
+func (s *logsReceiver) getHostLogs(groupID, hostname, logName, clusterMajorVersion string) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
 	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, s.start, s.end)
 	if err != nil {

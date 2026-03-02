@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 func TestDefaultTracesMarshalers(t *testing.T) {
@@ -75,11 +74,11 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 	traces.ResourceSpans().AppendEmpty()
 
 	rs := traces.ResourceSpans().At(0)
-	rs.SetSchemaUrl(conventions.SchemaURL)
+	rs.SetSchemaUrl("https://opentelemetry.io/schemas/1.27.0")
 	rs.ScopeSpans().AppendEmpty()
 
 	ils := rs.ScopeSpans().At(0)
-	ils.SetSchemaUrl(conventions.SchemaURL)
+	ils.SetSchemaUrl("https://opentelemetry.io/schemas/1.27.0")
 	ils.Spans().AppendEmpty()
 
 	span := ils.Spans().At(0)
@@ -111,7 +110,6 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 						"scope": map[string]any{},
 						"spans": []any{
 							map[string]any{
-								"traceId":           "",
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
 								"name":              t.Name(),
@@ -121,10 +119,10 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 								"status":            map[string]any{},
 							},
 						},
-						"schemaUrl": conventions.SchemaURL,
+						"schemaUrl": "https://opentelemetry.io/schemas/1.27.0",
 					},
 				},
-				"schemaUrl": conventions.SchemaURL,
+				"schemaUrl": "https://opentelemetry.io/schemas/1.27.0",
 			},
 		},
 	}

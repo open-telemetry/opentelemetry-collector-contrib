@@ -4,7 +4,6 @@
 package uri
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -154,7 +153,7 @@ func TestProcess(t *testing.T) {
 			op, err := tc.op()
 			require.NoError(t, err, "did not expect operator function to return an error, this is a bug with the test case")
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
 		})
@@ -217,7 +216,7 @@ func TestBuildParserURL(t *testing.T) {
 func BenchmarkParserParse(b *testing.B) {
 	v := "https://dev:password@www.golang.org:8443/v1/app/stage?token=d9e28b1d-2c7b-4853-be6a-d94f34a5d4ab&env=prod&env=stage&token=c6fa29f9-a31b-4584-b98d-aa8473b0e18d&region=us-east1b&mode=fast"
 	parser := Parser{}
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		if _, err := parser.parse(v); err != nil {
 			b.Fatal(err)
 		}

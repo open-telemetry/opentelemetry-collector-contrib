@@ -21,9 +21,9 @@ type Config struct {
 	// forwards HTTP requests to AWS X-Ray backend through.
 	ProxyAddress string `mapstructure:"proxy_address"`
 
-	// TLSSetting struct exposes TLS client configuration when forwarding
+	// TLS struct exposes TLS client configuration when forwarding
 	// calls to the AWS X-Ray backend.
-	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// Region is the AWS region the local TCP server forwards requests to.
 	Region string `mapstructure:"region"`
@@ -52,7 +52,7 @@ func DefaultConfig() *Config {
 			Endpoint: testutil.EndpointForPort(2000),
 		},
 		ProxyAddress: "",
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure:   false,
 			ServerName: "",
 		},

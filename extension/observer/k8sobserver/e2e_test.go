@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -26,6 +28,19 @@ const (
 	namespacedCollectorObjectsDir = "./testdata/e2e/namespaced/collector/"
 )
 
+// getOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+	if opt.HasValue() {
+		return opt.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	require.NoError(t, empty.Unmarshal(opt))
+	val := opt.Get()
+	require.NotNil(t, "Expected a default value to be set for %T", val)
+	return val
+}
+
 func TestE2ENamespaced(t *testing.T) {
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
@@ -34,8 +49,7 @@ func TestE2ENamespaced(t *testing.T) {
 
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-	cfg.HTTP = nil
-	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
+	getOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
 	metricsConsumer := new(consumertest.MetricsSink)
 
 	rcvr, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, metricsConsumer)

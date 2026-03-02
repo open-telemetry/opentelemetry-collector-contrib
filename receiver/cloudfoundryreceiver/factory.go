@@ -35,7 +35,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultURL
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: false,
 	}
 	return &Config{
@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 		UAA: UAAConfig{
 			LimitedClientConfig: LimitedClientConfig{
 				Endpoint: defaultURL,
-				TLSSetting: LimitedTLSClientSetting{
+				TLS: LimitedTLSClientSetting{
 					InsecureSkipVerify: false,
 				},
 			},

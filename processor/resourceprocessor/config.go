@@ -16,6 +16,9 @@ type Config struct {
 	// AttributesActions specifies the list of actions to be applied on resource attributes.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
 	AttributesActions []attraction.ActionKeyValue `mapstructure:"attributes"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

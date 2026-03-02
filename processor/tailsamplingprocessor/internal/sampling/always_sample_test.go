@@ -4,20 +4,21 @@
 package sampling
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestEvaluate_AlwaysSample(t *testing.T) {
 	filter := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
-	decision, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{
+	decision, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{
 		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
 		16,
 	}), newTraceStringAttrs(nil, "example", "value"))
 	assert.NoError(t, err)
-	assert.Equal(t, Sampled, decision)
+	assert.Equal(t, samplingpolicy.Sampled, decision)
 }

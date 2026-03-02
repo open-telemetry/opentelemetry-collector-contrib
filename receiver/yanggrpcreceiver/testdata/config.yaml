@@ -1,0 +1,63 @@
+yanggrpc/default:
+  endpoint: localhost:57500
+  transport: tcp
+  keepalive:
+    server_parameters:
+      time: 30s
+      timeout: 10s
+  max_concurrent_streams: 100
+  max_recv_msg_size_mib: 4
+  security:
+    connection_timeout: 30s
+    enable_metrics: true
+    rate_limiting:
+      burst_size: 10
+      cleanup_interval: 1m0s
+      enabled: false
+      requests_per_second: 100
+  yang:
+    cache_modules: true
+    enable_rfc_parser: true
+    max_modules: 1000
+yanggrpc/prod:
+  endpoint: "0.0.0.0:57500"
+  # TLS/mTLS Configuration
+  tls:
+    enabled: true
+    cert_file: "/etc/otel/certs/server.crt"
+    key_file: "/etc/otel/certs/server.key"
+    ca_file: "/etc/otel/certs/ca.crt"
+    client_auth_type: "RequireAndVerifyClientCert"
+    min_version: "1.2"
+    max_version: "1.3"
+    reload_interval: 5m
+
+  # Security & Rate Limiting
+  security:
+    rate_limiting:
+      enabled: true
+      requests_per_second: 100.0
+      burst_size: 10
+      cleanup_interval: 1m
+    allowed_clients:
+      - "10.0.0.0/8"
+      - "192.168.0.0/16"
+    max_connections: 1000
+    connection_timeout: 30s
+    enable_metrics: true
+
+    # Performance Settings
+    max_concurrent_streams: 100
+    max_recv_msg_size_mib: 4
+
+    # Keep-Alive Configuration
+    keepalive:
+      server_parameters:
+        time: 30s
+        timeout: 10s
+
+    # YANG Parser Configuration
+    yang:
+      enable_rfc_parser: true
+      cache_modules: true
+      max_modules: 1000

@@ -1,14 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 //go:build integration && linux
-// +build integration,linux
 
 // Privileged access is required to set cgroup's memory and cpu max values
 
 package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension"
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -104,7 +102,7 @@ func cgroupMaxCPU(filename string) (quota int64, period uint64, err error) {
 // startExtension starts the extension with the given config
 func startExtension(t *testing.T, config *Config) {
 	factory := NewFactory()
-	ctx := context.Background()
+	ctx := t.Context()
 	extension, err := factory.Create(ctx, extensiontest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 

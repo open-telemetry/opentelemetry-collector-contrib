@@ -24,34 +24,34 @@ type dummyReportService struct {
 }
 
 // for sw InstanceProperties
-func (d *dummyReportService) ReportInstanceProperties(_ context.Context, _ *management.InstanceProperties) (*common.Commands, error) {
+func (*dummyReportService) ReportInstanceProperties(context.Context, *management.InstanceProperties) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
 // for sw InstancePingPkg
-func (d *dummyReportService) KeepAlive(_ context.Context, _ *management.InstancePingPkg) (*common.Commands, error) {
+func (*dummyReportService) KeepAlive(context.Context, *management.InstancePingPkg) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
 // for sw JVMMetric
-func (d *dummyReportService) Collect(_ context.Context, _ *agent.JVMMetricCollection) (*common.Commands, error) {
+func (*dummyReportService) Collect(context.Context, *agent.JVMMetricCollection) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
 // for sw agent cds
-func (d *dummyReportService) FetchConfigurations(_ context.Context, _ *v3c.ConfigurationSyncRequest) (*common.Commands, error) {
+func (*dummyReportService) FetchConfigurations(context.Context, *v3c.ConfigurationSyncRequest) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
 // for sw profile
-func (d *dummyReportService) GetProfileTaskCommands(_ context.Context, _ *profile.ProfileTaskCommandQuery) (*common.Commands, error) {
+func (*dummyReportService) GetProfileTaskCommands(context.Context, *profile.ProfileTaskCommandQuery) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
-func (d *dummyReportService) CollectSnapshot(_ profile.ProfileTask_CollectSnapshotServer) error {
+func (*dummyReportService) CollectSnapshot(profile.ProfileTask_CollectSnapshotServer) error {
 	return nil
 }
 
-func (d *dummyReportService) ReportTaskFinish(_ context.Context, _ *profile.ProfileTaskFinishReport) (*common.Commands, error) {
+func (*dummyReportService) ReportTaskFinish(context.Context, *profile.ProfileTaskFinishReport) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }

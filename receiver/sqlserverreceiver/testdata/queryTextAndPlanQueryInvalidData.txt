@@ -13,7 +13,9 @@
 		"total_logical_writes": "4A",
 		"total_rows": "2A",
 		"total_grant_kb": "3096A",
-		"query_text": "[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]/(10000)*(3600)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(10000)/(100)*(60)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(100)",
-		"query_plan": "<ShowPlanXML"
+		"query_text": "SELECT cpu_time AS [CPU Usage (time)",
+		"query_plan": "<ShowPlanXML",
+		"procedure_id": "0",
+		"procedure_name": ""
 	}
 ]

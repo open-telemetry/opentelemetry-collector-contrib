@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package servicegraphconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 
@@ -64,8 +64,9 @@ func createDefaultConfig() component.Config {
 			TTL:      2 * time.Second,
 			MaxItems: 1000,
 		},
-		CacheLoop:           time.Minute,
-		StoreExpirationLoop: 2 * time.Second,
+		CacheLoop:              time.Minute,
+		StoreExpirationLoop:    2 * time.Second,
+		MetricsTimestampOffset: 0,
 	}
 }
 

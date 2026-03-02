@@ -214,7 +214,11 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 		return writer, nil
 	}
 
-	err := os.MkdirAll(path.Dir(fullPath), 0o755)
+	perm := os.FileMode(0o755)
+	if e.conf.directoryPermissionsParsed != 0 {
+		perm = os.FileMode(e.conf.directoryPermissionsParsed)
+	}
+	err := os.MkdirAll(path.Dir(fullPath), perm)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +302,7 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 	e.pathSuffix = pathParts[1]
 	e.maxOpenFiles = e.conf.GroupBy.MaxOpenFiles
 	e.newFileWriter = func(path string) (*fileWriter, error) {
-		return newFileWriter(path, e.conf.Append, nil, e.conf.FlushInterval, export)
+		return newFileWriter(path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export)
 	}
 
 	writers, err := simplelru.NewLRU(e.conf.GroupBy.MaxOpenFiles, e.onEvict)

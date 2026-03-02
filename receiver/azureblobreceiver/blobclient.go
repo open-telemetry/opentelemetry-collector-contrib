@@ -13,7 +13,8 @@ import (
 )
 
 type blobClient interface {
-	readBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error)
+	readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error)
+	listBlobs(ctx context.Context, containerName string) ([]string, error)
 }
 
 type azureBlobClient struct {
@@ -23,7 +24,24 @@ type azureBlobClient struct {
 
 var _ blobClient = (*azureBlobClient)(nil)
 
-func (bc *azureBlobClient) readBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
+func (bc *azureBlobClient) listBlobs(ctx context.Context, containerName string) ([]string, error) {
+	var blobs []string
+	pager := bc.serviceClient.NewListBlobsFlatPager(containerName, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, blob := range page.Segment.BlobItems {
+			if blob.Name != nil {
+				blobs = append(blobs, *blob.Name)
+			}
+		}
+	}
+	return blobs, nil
+}
+
+func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error) {
 	defer func() {
 		_, blobDeleteErr := bc.serviceClient.DeleteBlob(ctx, containerName, blobName, nil)
 		if blobDeleteErr != nil {

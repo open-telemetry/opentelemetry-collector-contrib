@@ -1,0 +1,23 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+        - key: aws.s3.bucket
+          value:
+            stringValue: test-bucket
+        - key: aws.s3.key
+          value:
+            stringValue: test-file.txt
+    scopeLogs:
+      - logRecords:
+          - attributes:
+            body:
+              stringValue: Some log in S3 object
+            observedTimeUnixNano: "1764625361000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver

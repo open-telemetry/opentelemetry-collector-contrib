@@ -4,7 +4,6 @@
 package bmchelixexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +21,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := createDefaultConfig()
-	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	_, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 }
 
@@ -31,11 +30,11 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 	exp, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
-	assert.NoError(t, exp.Shutdown(context.Background()))
+	assert.NoError(t, exp.Shutdown(t.Context()))
 }

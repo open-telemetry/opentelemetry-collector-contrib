@@ -35,7 +35,8 @@ type fileStorageClient struct {
 	db              *bbolt.DB
 	compactionCfg   *CompactionConfig
 	openTimeout     time.Duration
-	cancel          context.CancelFunc
+	stopCh          chan struct{}
+	wg              sync.WaitGroup
 	closed          bool
 }
 
@@ -64,9 +65,16 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compa
 		return nil, err
 	}
 
-	client := &fileStorageClient{logger: logger, db: db, compactionCfg: compactionCfg, openTimeout: timeout}
+	client := &fileStorageClient{
+		logger:        logger,
+		db:            db,
+		compactionCfg: compactionCfg,
+		openTimeout:   timeout,
+		stopCh:        make(chan struct{}),
+		wg:            sync.WaitGroup{},
+	}
 	if compactionCfg.OnRebound {
-		client.startCompactionLoop(context.Background())
+		client.startCompactionLoop()
 	}
 
 	return client, nil
@@ -140,9 +148,12 @@ func (c *fileStorageClient) Close(_ context.Context) error {
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()
 
-	if c.cancel != nil {
-		c.cancel()
+	if c.closed {
+		return nil
 	}
+
+	close(c.stopCh)
+	c.wg.Wait()
 	c.closed = true
 	return c.db.Close()
 }
@@ -195,7 +206,8 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 
 	compactionStart := time.Now()
 
-	if err = bbolt.Compact(compactedDb, c.db, maxTransactionSize); err != nil {
+	err = bbolt.Compact(compactedDb, c.db, maxTransactionSize)
+	if err != nil {
 		return err
 	}
 
@@ -240,10 +252,8 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 }
 
 // startCompactionLoop provides asynchronous compaction function
-func (c *fileStorageClient) startCompactionLoop(ctx context.Context) {
-	ctx, c.cancel = context.WithCancel(ctx)
-
-	go func() {
+func (c *fileStorageClient) startCompactionLoop() {
+	c.wg.Go(func() {
 		c.logger.Debug("starting compaction loop",
 			zap.Duration("compaction_check_interval", c.compactionCfg.CheckInterval))
 
@@ -261,12 +271,12 @@ func (c *fileStorageClient) startCompactionLoop(ctx context.Context) {
 							zap.Error(err))
 					}
 				}
-			case <-ctx.Done():
+			case <-c.stopCh:
 				c.logger.Debug("shutting down compaction loop")
 				return
 			}
 		}
-	}()
+	})
 }
 
 // shouldCompact checks whether the conditions for online compaction are met
@@ -297,7 +307,7 @@ func (c *fileStorageClient) shouldCompact() bool {
 	return true
 }
 
-func (c *fileStorageClient) getDbSize() (totalSizeResult int64, dataSizeResult int64, errResult error) {
+func (c *fileStorageClient) getDbSize() (totalSizeResult, dataSizeResult int64, errResult error) {
 	var totalSize int64
 
 	err := c.db.View(func(tx *bbolt.Tx) error {
@@ -315,7 +325,7 @@ func (c *fileStorageClient) getDbSize() (totalSizeResult int64, dataSizeResult i
 
 // moveFileWithFallback is the equivalent of os.Rename, except it falls back to
 // a non-atomic Truncate and Copy if the arguments are on different filesystems
-func moveFileWithFallback(src string, dest string) error {
+func moveFileWithFallback(src, dest string) error {
 	var err error
 	if err = os.Rename(src, dest); err == nil {
 		return nil
@@ -333,11 +343,13 @@ func moveFileWithFallback(src string, dest string) error {
 		return err
 	}
 
-	if err = os.Truncate(dest, 0); err != nil {
+	err = os.Truncate(dest, 0)
+	if err != nil {
 		return err
 	}
 
-	if err = os.WriteFile(dest, data, 0o600); err != nil {
+	err = os.WriteFile(dest, data, 0o600)
+	if err != nil {
 		return err
 	}
 

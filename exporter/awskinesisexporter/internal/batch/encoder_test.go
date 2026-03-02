@@ -13,7 +13,7 @@ import (
 func NewTestTraces(spanCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
-	for i := 0; i < spanCount; i++ {
+	for range spanCount {
 		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("foo")
 		span.SetStartTimestamp(pcommon.Timestamp(10))
@@ -28,7 +28,7 @@ func NewTestTraces(spanCount int) ptrace.Traces {
 func NewTestMetrics(metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
-	for i := 0; i < metricCount; i++ {
+	for i := range metricCount {
 		metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foo")
 		metric.SetUnit("bar")
@@ -41,7 +41,7 @@ func NewTestMetrics(metricCount int) pmetric.Metrics {
 func NewTestLogs(logCount int) plog.Logs {
 	logs := plog.NewLogs()
 
-	for i := 0; i < logCount; i++ {
+	for range logCount {
 		log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		log.SetSeverityText("bar")
 	}

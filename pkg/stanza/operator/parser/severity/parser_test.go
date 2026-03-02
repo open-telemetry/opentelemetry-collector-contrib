@@ -221,7 +221,7 @@ func TestSeverityParser(t *testing.T) {
 	}
 }
 
-func runSeverityParseTest(cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected entry.Severity) func(*testing.T) {
+func runSeverityParseTest(cfg *Config, ent *entry.Entry, buildErr, parseErr bool, expected entry.Severity) func(*testing.T) {
 	return func(t *testing.T) {
 		set := componenttest.NewNopTelemetrySettings()
 		op, err := cfg.Build(set)

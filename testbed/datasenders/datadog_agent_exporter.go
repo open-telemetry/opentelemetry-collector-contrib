@@ -56,6 +56,6 @@ func (dd *datadogDataSender) GenConfigYAMLStr() string {
     endpoint: %s`, dd.GetEndpoint())
 }
 
-func (dd *datadogDataSender) ProtocolName() string {
+func (*datadogDataSender) ProtocolName() string {
 	return "datadog"
 }

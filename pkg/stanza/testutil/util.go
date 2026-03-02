@@ -88,7 +88,7 @@ func Trim(s string) string {
 	lines := strings.Split(s, "\n")
 	trimmed := make([]string, 0, len(lines))
 	for _, line := range lines {
-		if len(line) == 0 {
+		if line == "" {
 			continue
 		}
 		trimmed = append(trimmed, strings.Trim(line, " \t\n"))

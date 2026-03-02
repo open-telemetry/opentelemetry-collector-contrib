@@ -72,7 +72,7 @@ func TestExporter_BaseTest(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, exp)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			err = exp.start(ctx, componenttest.NewNopHost())
 			require.NoError(t, err)
 
@@ -118,7 +118,7 @@ func createServer(t *testing.T) *httptest.Server {
 	}))
 }
 
-func TestExporter_ErrorCases(t *testing.T) {
+func TestExporter_ResponseHandling(t *testing.T) {
 	testCases := []struct {
 		name               string
 		statusCode         int
@@ -160,6 +160,14 @@ func TestExporter_ErrorCases(t *testing.T) {
 			responseBody:      "Service temporarily unavailable",
 			checkResponseBody: true,
 		},
+		{
+			name:       "ok",
+			statusCode: http.StatusOK,
+		},
+		{
+			name:       "accepted",
+			statusCode: http.StatusAccepted,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -183,7 +191,7 @@ func TestExporter_ErrorCases(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, exp)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			err = exp.start(ctx, componenttest.NewNopHost())
 			require.NoError(t, err)
 
@@ -227,7 +235,7 @@ func TestExportContextCanceled(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	err = exp.start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 	cancel()

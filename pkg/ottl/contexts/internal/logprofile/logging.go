@@ -13,100 +13,24 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type Profile pprofile.Profile
-
-func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
-	pp := pprofile.Profile(p)
-	var joinedErr error
-
-	vts, err := newValueTypes(p, pp.SampleType())
-	joinedErr = errors.Join(joinedErr, err)
-	joinedErr = errors.Join(joinedErr, encoder.AddArray("sample_type", vts))
-
-	ss, err := newSamples(p, pp.Sample())
-	joinedErr = errors.Join(joinedErr, err)
-	joinedErr = errors.Join(joinedErr, encoder.AddArray("sample", ss))
-
-	encoder.AddInt64("time_nanos", int64(pp.Time()))
-	encoder.AddInt64("duration_nanos", int64(pp.Duration()))
-
-	vt, err := newValueType(p, pp.PeriodType())
-	joinedErr = errors.Join(joinedErr, err)
-	joinedErr = errors.Join(joinedErr, encoder.AddObject("period_type", vt))
-
-	encoder.AddInt64("period", pp.Period())
-
-	cs, err := p.getComments()
-	joinedErr = errors.Join(joinedErr, err)
-	joinedErr = errors.Join(joinedErr, encoder.AddArray("comments", cs))
-
-	dst, err := p.getString(pp.DefaultSampleTypeStrindex())
-	joinedErr = errors.Join(joinedErr, err)
-	encoder.AddString("default_sample_type", dst)
-
-	pid := pp.ProfileID()
-	encoder.AddString("profile_id", hex.EncodeToString(pid[:]))
-	encoder.AddUint32("dropped_attributes_count", pp.DroppedAttributesCount())
-	encoder.AddString("original_payload_format", pp.OriginalPayloadFormat())
-	encoder.AddByteString("original_payload", pp.OriginalPayload().AsRaw())
-
-	ats, err := newAttributes(p, pp.AttributeIndices())
-	joinedErr = errors.Join(joinedErr, err)
-	joinedErr = errors.Join(joinedErr, encoder.AddArray("attributes", ats))
-
-	return joinedErr
-}
-
-func (p Profile) getString(idx int32) (string, error) {
-	pp := pprofile.Profile(p)
-	strTable := pp.StringTable()
-	if idx >= int32(strTable.Len()) {
-		return "", fmt.Errorf("string index out of bounds: %d", idx)
-	}
-	return strTable.At(int(idx)), nil
-}
-
-func (p Profile) getFunction(idx int32) (function, error) {
-	pp := pprofile.Profile(p)
-	fnTable := pp.FunctionTable()
-	if idx >= int32(fnTable.Len()) {
-		return function{}, fmt.Errorf("function index out of bounds: %d", idx)
-	}
-	return newFunction(p, fnTable.At(int(idx)))
-}
-
-func (p Profile) getMapping(idx int32) (mapping, error) {
-	pp := pprofile.Profile(p)
-	mTable := pp.MappingTable()
+func getMapping(dict pprofile.ProfilesDictionary, idx int32) (mapping, error) {
+	mTable := dict.MappingTable()
 	if idx >= int32(mTable.Len()) {
 		return mapping{}, fmt.Errorf("mapping index out of bounds: %d", idx)
 	}
-	return newMapping(p, mTable.At(int(idx)))
+	return newMapping(dict, mTable.At(int(idx)))
 }
 
-func (p Profile) getLink(idx int32) (link, error) {
-	pp := pprofile.Profile(p)
-	lTable := pp.LinkTable()
-	if idx >= int32(lTable.Len()) {
-		return link{}, fmt.Errorf("link index out of bounds: %d", idx)
-	}
-	return link{lTable.At(int(idx))}, nil
-}
-
-func (p Profile) getLocations(start, length int32) (locations, error) {
-	pp := pprofile.Profile(p)
-	locTable := pp.LocationTable()
-	if start >= int32(locTable.Len()) {
-		return locations{}, fmt.Errorf("location start index out of bounds: %d", start)
-	}
-	if start+length > int32(locTable.Len()) {
-		return locations{}, fmt.Errorf("location end index out of bounds: %d", start+length)
-	}
+func getLocations(dict pprofile.ProfilesDictionary, stackIDx int32) (locations, error) {
+	locTable := dict.LocationTable()
+	stackTable := dict.StackTable()
 
 	var joinedErr error
-	ls := make(locations, 0, length)
-	for i := range length {
-		l, err := newLocation(p, locTable.At(int(start+i)))
+	locIdxs := stackTable.At(int(stackIDx)).LocationIndices()
+	ls := make(locations, 0, locIdxs.Len())
+	for i := range locIdxs.Len() {
+		locIdx := locIdxs.At(i)
+		l, err := newLocation(dict, locTable.At(int(locIdx)))
 		joinedErr = errors.Join(joinedErr, err)
 		ls = append(ls, l)
 	}
@@ -114,93 +38,114 @@ func (p Profile) getLocations(start, length int32) (locations, error) {
 	return ls, joinedErr
 }
 
-func (p Profile) getAttribute(idx int32) (attribute, error) {
-	pp := pprofile.Profile(p)
-	attrTable := pp.AttributeTable()
+func getFunction(dict pprofile.ProfilesDictionary, idx int32) (function, error) {
+	fnTable := dict.FunctionTable()
+	if idx >= int32(fnTable.Len()) {
+		return function{}, fmt.Errorf("function index out of bounds: %d", idx)
+	}
+	return newFunction(dict, fnTable.At(int(idx)))
+}
+
+func getLink(dict pprofile.ProfilesDictionary, idx int32) (link, error) {
+	lTable := dict.LinkTable()
+	if idx >= int32(lTable.Len()) {
+		return link{}, fmt.Errorf("link index out of bounds: %d", idx)
+	}
+	return link{lTable.At(int(idx))}, nil
+}
+
+func getString(dict pprofile.ProfilesDictionary, idx int32) (string, error) {
+	strTable := dict.StringTable()
+	if idx >= int32(strTable.Len()) {
+		return "", fmt.Errorf("string index out of bounds: %d", idx)
+	}
+	return strTable.At(int(idx)), nil
+}
+
+func getAttribute(dict pprofile.ProfilesDictionary, idx int32) (attribute, error) {
+	attrTable := dict.AttributeTable()
+	strTable := dict.StringTable()
 	if idx >= int32(attrTable.Len()) {
 		return attribute{}, fmt.Errorf("attribute index out of bounds: %d", idx)
 	}
 	attr := attrTable.At(int(idx))
 	// Is there a better way to marshal the value?
-	return attribute{attr.Key(), attr.Value().AsString()}, nil
+	return attribute{strTable.At(int(attr.KeyStrindex())), attr.Value().AsString()}, nil
 }
 
-type samples []sample
+type Profile struct {
+	pprofile.Profile
+	Dictionary pprofile.ProfilesDictionary
+}
 
-func (ss samples) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
+func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	var joinedErr error
-	for _, s := range ss {
-		joinedErr = errors.Join(joinedErr, encoder.AppendObject(s))
+
+	vts, err := newValueType(p, p.SampleType())
+	joinedErr = errors.Join(joinedErr, err)
+	joinedErr = errors.Join(joinedErr, encoder.AddObject("sample_type", vts))
+
+	samples := p.Samples()
+	for _, s := range samples.All() {
+		joinedErr = errors.Join(joinedErr, encoder.AddObject("sample", ProfileSample{
+			s,
+			p.Profile,
+			p.Dictionary,
+		}))
 	}
+
+	encoder.AddInt64("time_nanos", int64(p.Time()))
+	encoder.AddInt64("duration_nanos", int64(p.DurationNano()))
+
+	vt, err := newValueType(p, p.PeriodType())
+	joinedErr = errors.Join(joinedErr, err)
+	joinedErr = errors.Join(joinedErr, encoder.AddObject("period_type", vt))
+
+	encoder.AddInt64("period", p.Period())
+
+	pid := p.ProfileID()
+	encoder.AddString("profile_id", hex.EncodeToString(pid[:]))
+	encoder.AddUint32("dropped_attributes_count", p.DroppedAttributesCount())
+	encoder.AddString("original_payload_format", p.OriginalPayloadFormat())
+	encoder.AddByteString("original_payload", p.OriginalPayload().AsRaw())
+
+	ats, err := newAttributes(p.Dictionary, p.AttributeIndices())
+	joinedErr = errors.Join(joinedErr, err)
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("attributes", ats))
+
 	return joinedErr
 }
 
-func newSamples(p Profile, sampleSlice pprofile.SampleSlice) (samples, error) {
-	var joinedErr error
-	ss := make(samples, 0, sampleSlice.Len())
-	for i := range sampleSlice.Len() {
-		s, err := newSample(p, sampleSlice.At(i))
-		joinedErr = errors.Join(joinedErr, err)
-		ss = append(ss, s)
-	}
-	return ss, joinedErr
+type ProfileSample struct {
+	pprofile.Sample
+	Profile    pprofile.Profile
+	Dictionary pprofile.ProfilesDictionary
 }
 
-type sample struct {
-	timestamps timestamps
-	attributes attributes
-	locations  locations
-	values     values
-	link       *link
-}
-
-func newSample(p Profile, ps pprofile.Sample) (sample, error) {
-	var s sample
-	var err, joinedErr error
-
-	s.timestamps = newTimestamps(ps.TimestampsUnixNano())
-	s.values = newValues(ps.Value())
-	s.attributes, err = newAttributes(p, ps.AttributeIndices())
-	joinedErr = errors.Join(joinedErr, err)
-	s.locations, err = p.getLocations(ps.LocationsStartIndex(), ps.LocationsLength())
-	joinedErr = errors.Join(joinedErr, err)
-	if ps.HasLinkIndex() { // optional
-		l, err := p.getLink(ps.LinkIndex())
-		joinedErr = errors.Join(joinedErr, err)
-		s.link = &l
-	}
-
-	return s, joinedErr
-}
-
-func (s sample) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
-	err := encoder.AddArray("timestamps_unix_nano", s.timestamps)
-	err = errors.Join(err, encoder.AddArray("attributes", s.attributes))
-	err = errors.Join(err, encoder.AddArray("locations", s.locations))
-	return errors.Join(err, encoder.AddArray("values", s.values))
-}
-
-type valueTypes []valueType
-
-func (s valueTypes) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
-	var err error
-	for _, vt := range s {
-		err = errors.Join(err, encoder.AppendObject(vt))
-	}
-	return err
-}
-
-func newValueTypes(p Profile, sampleTypes pprofile.ValueTypeSlice) (valueTypes, error) {
+func (s ProfileSample) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	var joinedErr error
 
-	vts := make(valueTypes, 0, sampleTypes.Len())
-	for i := range sampleTypes.Len() {
-		vt, err := newValueType(p, sampleTypes.At(i))
+	locs, err := getLocations(s.Dictionary, s.StackIndex())
+	joinedErr = errors.Join(joinedErr, err)
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("locations", locs))
+
+	values := newValues(s.Values())
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("values", values))
+
+	ats, err := newAttributes(s.Dictionary, s.AttributeIndices())
+	joinedErr = errors.Join(joinedErr, err)
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("attributes", ats))
+
+	if s.LinkIndex() > 0 {
+		l, err := getLink(s.Dictionary, s.LinkIndex())
 		joinedErr = errors.Join(joinedErr, err)
-		vts = append(vts, vt)
+		joinedErr = errors.Join(joinedErr, encoder.AddObject("link", l))
 	}
 
-	return vts, joinedErr
+	ts := newTimestamps(s.TimestampsUnixNano())
+	joinedErr = errors.Join(joinedErr, encoder.AddArray("timestamps_unix_nano", ts))
+
+	return joinedErr
 }
 
 type valueType struct {
@@ -213,10 +158,9 @@ func newValueType(p Profile, vt pprofile.ValueType) (valueType, error) {
 	var result valueType
 	var err, joinedErr error
 
-	result.aggregationTemporality = int32(vt.AggregationTemporality())
-	result.typ, err = p.getString(vt.TypeStrindex())
+	result.typ, err = getString(p.Dictionary, vt.TypeStrindex())
 	joinedErr = errors.Join(joinedErr, err)
-	result.unit, err = p.getString(vt.UnitStrindex())
+	result.unit, err = getString(p.Dictionary, vt.UnitStrindex())
 	joinedErr = errors.Join(joinedErr, err)
 
 	return result, joinedErr
@@ -243,62 +187,51 @@ type location struct {
 	mapping    mapping
 	address    uint64
 	lines      lines
-	isFolded   bool
 	attributes attributes
 }
 
-func newLocation(p Profile, pl pprofile.Location) (location, error) {
+func newLocation(dict pprofile.ProfilesDictionary, pl pprofile.Location) (location, error) {
 	var l location
 	var err, joinedErr error
 
 	if pl.MappingIndex() != 0 { // optional
-		if l.mapping, err = p.getMapping(pl.MappingIndex()); err != nil {
+		if l.mapping, err = getMapping(dict, pl.MappingIndex()); err != nil {
 			joinedErr = errors.Join(joinedErr, err)
 		}
 	}
-	if l.attributes, err = newAttributes(p, pl.AttributeIndices()); err != nil {
+	if l.attributes, err = newAttributes(dict, pl.AttributeIndices()); err != nil {
 		joinedErr = errors.Join(joinedErr, err)
 	}
-	if l.lines, err = newLines(p, pl.Line()); err != nil {
+	if l.lines, err = newLines(dict, pl.Lines()); err != nil {
 		joinedErr = errors.Join(joinedErr, err)
 	}
 	l.address = pl.Address()
-	l.isFolded = pl.IsFolded()
 
 	return l, joinedErr
 }
 
 func (l location) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	encoder.AddUint64("address", l.address)
-	encoder.AddBool("is_folded", l.isFolded)
 	err := encoder.AddObject("mapping", l.mapping)
 	err = errors.Join(err, encoder.AddArray("lines", l.lines))
 	return errors.Join(err, encoder.AddArray("attributes", l.attributes))
 }
 
 type mapping struct {
-	filename        string
-	memoryStart     uint64
-	memoryLimit     uint64
-	fileOffset      uint64
-	hasFunctions    bool
-	hasFilenames    bool
-	hasLineNumbers  bool
-	hasInlineFrames bool
+	filename    string
+	memoryStart uint64
+	memoryLimit uint64
+	fileOffset  uint64
 }
 
-func newMapping(p Profile, pm pprofile.Mapping) (mapping, error) {
+func newMapping(dict pprofile.ProfilesDictionary, pm pprofile.Mapping) (mapping, error) {
 	var m mapping
 	var err error
 
-	m.filename, err = p.getString(pm.FilenameStrindex())
+	m.filename, err = getString(dict, pm.FilenameStrindex())
 	m.memoryStart = pm.MemoryStart()
 	m.memoryLimit = pm.MemoryLimit()
 	m.fileOffset = pm.FileOffset()
-	m.hasFunctions = pm.HasFunctions()
-	m.hasFilenames = pm.HasFilenames()
-	m.hasLineNumbers = pm.HasLineNumbers()
-	m.hasInlineFrames = pm.HasInlineFrames()
 
 	return m, err
 }
@@ -308,10 +241,6 @@ func (m mapping) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	encoder.AddUint64("memory_start", m.memoryStart)
 	encoder.AddUint64("memory_limit", m.memoryLimit)
 	encoder.AddUint64("file_offset", m.fileOffset)
-	encoder.AddBool("has_functions", m.hasFunctions)
-	encoder.AddBool("has_filenames", m.hasFilenames)
-	encoder.AddBool("has_line_numbers", m.hasLineNumbers)
-	encoder.AddBool("has_inline_frames", m.hasInlineFrames)
 	return nil
 }
 
@@ -339,11 +268,11 @@ func (s attributes) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	return joinedErr
 }
 
-func newAttributes(p Profile, pattrs pcommon.Int32Slice) (attributes, error) {
+func newAttributes(dict pprofile.ProfilesDictionary, pattrs pcommon.Int32Slice) (attributes, error) {
 	var joinedErr error
 	as := make(attributes, 0, pattrs.Len())
 	for i := range pattrs.Len() {
-		a, err := p.getAttribute(pattrs.At(i))
+		a, err := getAttribute(dict, pattrs.At(i))
 		if err != nil {
 			joinedErr = errors.Join(joinedErr, err)
 		}
@@ -375,11 +304,11 @@ func (s lines) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	return joinedErr
 }
 
-func newLines(p Profile, plines pprofile.LineSlice) (lines, error) {
+func newLines(dict pprofile.ProfilesDictionary, plines pprofile.LineSlice) (lines, error) {
 	var joinedErr error
 	ls := make(lines, 0, plines.Len())
 	for i := range plines.Len() {
-		l, err := newLine(p, plines.At(i))
+		l, err := newLine(dict, plines.At(i))
 		if err != nil {
 			joinedErr = errors.Join(joinedErr, err)
 		}
@@ -394,11 +323,11 @@ type line struct {
 	column   int64
 }
 
-func newLine(p Profile, pl pprofile.Line) (line, error) {
+func newLine(dict pprofile.ProfilesDictionary, pl pprofile.Line) (line, error) {
 	var l line
 	var err, joinedErr error
 
-	if l.function, err = p.getFunction(pl.FunctionIndex()); err != nil {
+	if l.function, err = getFunction(dict, pl.FunctionIndex()); err != nil {
 		joinedErr = errors.Join(joinedErr, err)
 	}
 	l.line = pl.Line()
@@ -420,17 +349,17 @@ type function struct {
 	startLine  int64
 }
 
-func newFunction(p Profile, pf pprofile.Function) (function, error) {
+func newFunction(dict pprofile.ProfilesDictionary, pf pprofile.Function) (function, error) {
 	var f function
 	var err, joinedErr error
 
-	if f.name, err = p.getString(pf.NameStrindex()); err != nil {
+	if f.name, err = getString(dict, pf.NameStrindex()); err != nil {
 		joinedErr = errors.Join(joinedErr, err)
 	}
-	if f.systemName, err = p.getString(pf.SystemNameStrindex()); err != nil {
+	if f.systemName, err = getString(dict, pf.SystemNameStrindex()); err != nil {
 		joinedErr = errors.Join(joinedErr, err)
 	}
-	if f.filename, err = p.getString(pf.FilenameStrindex()); err != nil {
+	if f.filename, err = getString(dict, pf.FilenameStrindex()); err != nil {
 		joinedErr = errors.Join(joinedErr, err)
 	}
 	f.startLine = pf.StartLine()
@@ -497,29 +426,5 @@ type value int64
 
 func (v value) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	encoder.AddInt64("value", int64(v))
-	return nil
-}
-
-type comments []string
-
-func (p Profile) getComments() (comments, error) {
-	var joinedErr error
-	pp := pprofile.Profile(p)
-	l := pp.CommentStrindices().Len()
-	cs := make(comments, 0, l)
-	for i := range l {
-		c, err := p.getString(pp.CommentStrindices().At(i))
-		if err != nil {
-			joinedErr = errors.Join(joinedErr, err)
-		}
-		cs = append(cs, c)
-	}
-	return cs, joinedErr
-}
-
-func (cs comments) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
-	for _, s := range cs {
-		encoder.AppendString(s)
-	}
 	return nil
 }

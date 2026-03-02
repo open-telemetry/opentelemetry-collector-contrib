@@ -5,7 +5,6 @@ package faroreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -41,19 +40,19 @@ func TestFaroReceiver_Start(t *testing.T) {
 		{
 			name:               "minimal-traces-only",
 			payload:            filepath.Join("testdata", "traces", "minimal-traces-only.json"),
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusAccepted,
 			expectedTraces:     filepath.Join("testdata", "golden", "minimal-traces-only.yaml"),
 		},
 		{
 			name:               "minimal-logs-only",
 			payload:            filepath.Join("testdata", "logs", "minimal-logs-only.json"),
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusAccepted,
 			expectedLogs:       filepath.Join("testdata", "golden", "minimal-logs-only.yaml"),
 		},
 		{
 			name:               "minimal-logs-and-traces-only",
 			payload:            filepath.Join("testdata", "logsandtraces", "minimal-only.json"),
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusAccepted,
 			expectedLogs:       filepath.Join("testdata", "golden", "minimal-logs-only.yaml"),
 			expectedTraces:     filepath.Join("testdata", "golden", "minimal-traces-only.yaml"),
 		},
@@ -71,9 +70,9 @@ func TestFaroReceiver_Start(t *testing.T) {
 	receiver.RegisterTracesConsumer(nextTraces)
 	receiver.RegisterLogsConsumer(nextLogs)
 
-	err = receiver.Start(context.Background(), componenttest.NewNopHost())
+	err = receiver.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer func() { require.NoError(t, receiver.Shutdown(context.Background())) }()
+	defer func() { require.NoError(t, receiver.Shutdown(t.Context())) }()
 
 	server := httptest.NewServer(http.HandlerFunc(receiver.handleFaroRequest))
 	defer server.Close()
@@ -108,7 +107,7 @@ func TestFaroReceiver_Start(t *testing.T) {
 				require.Len(t, logs, 1)
 				expected, err := golden.ReadLogs(tc.expectedLogs)
 				require.NoError(t, err)
-				require.NoError(t, plogtest.CompareLogs(expected, logs[0]))
+				require.NoError(t, plogtest.CompareLogs(expected, logs[0], plogtest.IgnoreObservedTimestamp()))
 			}
 		})
 	}

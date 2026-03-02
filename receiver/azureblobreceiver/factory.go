@@ -43,7 +43,7 @@ func NewFactory() receiver.Factory {
 		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability))
 }
 
-func (f *blobReceiverFactory) createDefaultConfig() component.Config {
+func (*blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
 		Logs:           LogsConfig{ContainerName: logsContainerName},
 		Traces:         TracesConfig{ContainerName: tracesContainerName},
@@ -98,8 +98,8 @@ func (f *blobReceiverFactory) getReceiver(
 			return nil
 		}
 
-		var beh blobEventHandler
-		beh, err = f.getBlobEventHandler(receiverConfig, set.Logger)
+		var beh eventHandler
+		beh, err = f.getEventHandler(receiverConfig, set.Logger)
 		if err != nil {
 			return nil
 		}
@@ -116,7 +116,7 @@ func (f *blobReceiverFactory) getReceiver(
 	return r.Unwrap(), err
 }
 
-func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
+func (*blobReceiverFactory) getEventHandler(cfg *Config, logger *zap.Logger) (eventHandler, error) {
 	var bc blobClient
 	var err error
 
@@ -148,6 +148,10 @@ func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logge
 		return nil, fmt.Errorf("unknown authentication %v", cfg.Authentication)
 	}
 
-	return newBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
+	// If Event Hub is not configured, use the Blob Event Handler
+	if cfg.EventHub.EndPoint == "" {
+		return newBlobEventHandler(cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger), nil
+	}
+	return newEventHubEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
 		nil
 }

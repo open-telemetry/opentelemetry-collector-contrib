@@ -9,6 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -36,6 +38,8 @@ type DataReceiver interface {
 type DataReceiverBase struct {
 	// Port on which to listen.
 	Port int
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // TODO: Move these constants.
@@ -47,7 +51,7 @@ const (
 // BaseOTLPDataReceiver implements the OTLP format receiver.
 type BaseOTLPDataReceiver struct {
 	DataReceiverBase
-	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
+	// One of the "otlp_grpc" for OTLP over gRPC or "otlp_http" for OTLP over HTTP.
 	exporterType    string
 	traceReceiver   receiver.Traces
 	metricsReceiver receiver.Metrics
@@ -59,16 +63,31 @@ type BaseOTLPDataReceiver struct {
 	batcher         string
 }
 
+// InsertDefault is a helper function to insert a default value for a configoptional.Optional type.
+func InsertDefault[T any](opt *configoptional.Optional[T]) error {
+	if opt.HasValue() {
+		return nil
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	return empty.Unmarshal(opt)
+}
+
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	if bor.exporterType == "otlp" {
-		cfg.GRPC.NetAddr = confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: confignet.TransportTypeTCP}
-		cfg.HTTP = nil
+	if bor.exporterType == "otlp_grpc" {
+		if err := InsertDefault(&cfg.GRPC); err != nil {
+			return err
+		}
+		cfg.GRPC.Get().NetAddr = confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: confignet.TransportTypeTCP}
 	} else {
-		cfg.HTTP.ServerConfig.Endpoint = fmt.Sprintf("127.0.0.1:%d", bor.Port)
-		cfg.GRPC = nil
+		if err := InsertDefault(&cfg.HTTP); err != nil {
+			return err
+		}
+		cfg.HTTP.Get().ServerConfig.NetAddr.Endpoint = fmt.Sprintf("127.0.0.1:%d", bor.Port)
 	}
+
 	var err error
 	set := receivertest.NewNopSettings(factory.Type())
 	if bor.traceReceiver, err = factory.CreateTraces(context.Background(), set, cfg, tc); err != nil {
@@ -121,7 +140,7 @@ func (bor *BaseOTLPDataReceiver) ProtocolName() string {
 
 func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	addr := fmt.Sprintf("127.0.0.1:%d", bor.Port)
-	if bor.exporterType == "otlphttp" {
+	if bor.exporterType == "otlp_http" {
 		addr = "http://" + addr
 	}
 	// Note that this generates an exporter config for agent.
@@ -151,7 +170,7 @@ var _ DataReceiver = (*BaseOTLPDataReceiver)(nil)
 func NewOTLPDataReceiver(port int) *BaseOTLPDataReceiver {
 	return &BaseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
-		exporterType:     "otlp",
+		exporterType:     "otlp_grpc",
 	}
 }
 
@@ -160,6 +179,6 @@ func NewOTLPDataReceiver(port int) *BaseOTLPDataReceiver {
 func NewOTLPHTTPDataReceiver(port int) *BaseOTLPDataReceiver {
 	return &BaseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
-		exporterType:     "otlphttp",
+		exporterType:     "otlp_http",
 	}
 }

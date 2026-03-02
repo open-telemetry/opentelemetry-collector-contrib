@@ -4,7 +4,6 @@
 package zipkinreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig()
 
 	tReceiver, err := createTracesReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop())
@@ -33,7 +32,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	tReceiver, err = createTracesReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop())

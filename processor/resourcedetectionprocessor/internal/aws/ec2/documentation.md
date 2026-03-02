@@ -16,4 +16,4 @@
 | host.id | The host.id | Any Str | true |
 | host.image.id | The host image id | Any Str | true |
 | host.name | The hostname | Any Str | true |
-| host.type | The host id | Any Str | true |
+| host.type | The host instance type | Any Str | true |

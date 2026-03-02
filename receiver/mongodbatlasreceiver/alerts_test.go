@@ -590,14 +590,14 @@ func TestAlertsRetrieval(t *testing.T) {
 			require.NoError(t, err)
 			alertsRcvr.client = tc.client()
 
-			err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
+			err = alertsRcvr.Start(t.Context(), componenttest.NewNopHost(), storage.NewNopClient())
 			require.NoError(t, err)
 
 			require.Eventually(t, func() bool {
 				return logSink.LogRecordCount() > 0
 			}, 10*time.Second, 10*time.Millisecond)
 
-			require.NoError(t, alertsRcvr.Shutdown(context.Background()))
+			require.NoError(t, alertsRcvr.Shutdown(t.Context()))
 			logs := logSink.AllLogs()[0]
 
 			tc.validateEntries(t, logs)
@@ -625,14 +625,14 @@ func TestAlertPollingExclusions(t *testing.T) {
 	require.NoError(t, err)
 	alertsRcvr.client = testClient()
 
-	err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
+	err = alertsRcvr.Start(t.Context(), componenttest.NewNopHost(), storage.NewNopClient())
 	require.NoError(t, err)
 
 	require.Never(t, func() bool {
 		return logSink.LogRecordCount() > 0
 	}, 3*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, alertsRcvr.Shutdown(context.Background()))
+	require.NoError(t, alertsRcvr.Shutdown(t.Context()))
 }
 
 func testClient() *mockAlertsClient {

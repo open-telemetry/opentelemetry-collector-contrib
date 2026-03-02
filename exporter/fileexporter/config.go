@@ -5,6 +5,8 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +17,12 @@ import (
 const (
 	rotationFieldName = "rotation"
 	backupsFieldName  = "max_backups"
+)
+
+var (
+	errInvalidOctal          = errors.New("directory_permissions value must be a valid octal representation")
+	errInvalidPermissionBits = errors.New("directory_permissions contain invalid bits for file access")
+	errDirPermsRequireCreate = errors.New("directory_permissions requires create_directory to be true")
 )
 
 // Config defines configuration for file exporter.
@@ -28,8 +36,7 @@ type Config struct {
 	// - true:  appends to the file.
 	Append bool `mapstructure:"append"`
 
-	// Rotation defines an option about rotation of telemetry files. Ignored
-	// when GroupByAttribute is used.
+	// Rotation defines an option about rotation of telemetry files.
 	Rotation *Rotation `mapstructure:"rotation"`
 
 	// FormatType define the data format of encoded telemetry data
@@ -52,6 +59,13 @@ type Config struct {
 
 	// GroupBy enables writing to separate files based on a resource attribute.
 	GroupBy *GroupBy `mapstructure:"group_by"`
+
+	// CreateDirectory specifies that the parent directory of the output file should be created automatically on start.
+	CreateDirectory bool `mapstructure:"create_directory"`
+	// DirectoryPermissions specifies permissions used when creating directories (minus process umask).
+	// Value must be an octal string like "0755".
+	DirectoryPermissions       string `mapstructure:"directory_permissions"`
+	directoryPermissionsParsed int64  `mapstructure:"-"`
 }
 
 // Rotation an option to rolling log files
@@ -78,7 +92,7 @@ type Rotation struct {
 }
 
 type GroupBy struct {
-	// Enables group_by. When group_by is enabled, rotation setting is ignored.  Default is false.
+	// Enables group_by. Default is false.
 	Enabled bool `mapstructure:"enabled"`
 
 	// ResourceAttribute specifies the name of the resource attribute that
@@ -121,13 +135,34 @@ func (cfg *Config) Validate() error {
 			return errors.New("path must contain exactly one * when group_by is enabled")
 		}
 
-		if len(pathParts[0]) == 0 {
+		if pathParts[0] == "" {
 			return errors.New("path must not start with * when group_by is enabled")
 		}
 
 		if cfg.GroupBy.ResourceAttribute == "" {
 			return errors.New("resource_attribute must not be empty when group_by is enabled")
 		}
+	}
+
+	// If directory auto-creation is enabled, validate and parse permissions.
+	if cfg.CreateDirectory {
+		permStr := cfg.DirectoryPermissions
+		// Default to 0755 if not provided.
+		if permStr == "" {
+			permStr = "0755"
+			cfg.DirectoryPermissions = permStr
+		}
+		permissions, err := strconv.ParseInt(permStr, 8, 32)
+		if err != nil {
+			return errInvalidOctal
+		}
+		if permissions&int64(os.ModePerm) != permissions {
+			return errInvalidPermissionBits
+		}
+		cfg.directoryPermissionsParsed = permissions
+	} else if cfg.DirectoryPermissions != "" {
+		// If not creating directories, directory_permissions must not be set.
+		return errDirPermsRequireCreate
 	}
 
 	return nil

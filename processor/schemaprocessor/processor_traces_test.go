@@ -4,7 +4,6 @@
 package schemaprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -102,7 +101,7 @@ func TestTraces_SpanRenameAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := newTestSchemaProcessor(t, tt.transformations, tt.targetVersion)
-			ctx := context.Background()
+			ctx := t.Context()
 			out, err := pr.processTraces(ctx, tt.in)
 			if err != nil {
 				t.Errorf("Error while processing traces: %v", err)

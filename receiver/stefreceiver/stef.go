@@ -11,7 +11,7 @@ import (
 
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
-	"github.com/splunk/stef/go/otel/oteltef"
+	"github.com/splunk/stef/go/otel/otelstef"
 	stefpdatametrics "github.com/splunk/stef/go/pdata/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -43,13 +43,13 @@ func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
 	r.stopping.Store(false)
 
 	var err error
-	if r.serverGRPC, err = r.cfg.ToServer(ctx, host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = r.cfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
 
-	schema, err := oteltef.MetricsWireSchema()
+	schema, err := otelstef.MetricsWireSchema()
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown is a method to turn off receiving.
-func (r *stefReceiver) Shutdown(_ context.Context) error {
+func (r *stefReceiver) Shutdown(context.Context) error {
 	r.stopping.Store(true)
 
 	if r.serverGRPC != nil {
@@ -104,7 +104,7 @@ func (r *stefReceiver) Shutdown(_ context.Context) error {
 func (r *stefReceiver) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.STEFStream) error {
 	r.settings.Logger.Debug("Incoming STEF/gRPC connection.")
 
-	reader, err := oteltef.NewMetricsReader(grpcReader)
+	reader, err := otelstef.NewMetricsReader(grpcReader)
 	if err != nil {
 		r.settings.Logger.Error("Cannot decode data on incoming STEF/gRPC connection", zap.Error(err))
 		return err
@@ -115,7 +115,7 @@ func (r *stefReceiver) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.
 	defer resp.Stop()
 	go resp.Run()
 
-	converter := stefpdatametrics.STEFToOTLPUnsorted{}
+	converter := stefpdatametrics.StefToOtlpUnsorted{}
 
 	// Read, decode, convert the incoming data and push it to the next consumer.
 	for {
@@ -142,7 +142,7 @@ func (r *stefReceiver) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.
 		// Read and convert records. We use ConvertTillEndOfFrame to make sure we are not
 		// blocked in the middle of a batch indefinitely, with lingering data in memory,
 		// neither pushed to pipeline, nor acked.
-		mdata, err := converter.ConvertTillEndOfFrame(reader)
+		mdata, err := converter.Convert(reader, false)
 		if err != nil {
 			st, ok := status.FromError(err)
 			if ok && st.Code() == codes.Canceled {

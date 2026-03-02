@@ -62,7 +62,7 @@ func threePointOne[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
-func testTime[K any](time string, format string) (ExprFunc[K], error) {
+func testTime[K any](time, format string) (ExprFunc[K], error) {
 	loc, err := timeutils.GetLocation(nil, &format)
 	if err != nil {
 		return nil, err
@@ -224,6 +224,96 @@ func Test_evaluateMathExpression(t *testing.T) {
 			input:    "4 / 2.0",
 			expected: 2.0,
 		},
+		{
+			name:     "unary minus multiplication",
+			input:    "3 * -5",
+			expected: int64(-15),
+		},
+		{
+			name:     "unary minus addition",
+			input:    "10 + -3",
+			expected: int64(7),
+		},
+		{
+			name:     "unary minus subtraction",
+			input:    "10 - -3",
+			expected: int64(13),
+		},
+		{
+			name:     "unary plus addition",
+			input:    "10 + +3",
+			expected: int64(13),
+		},
+		{
+			name:     "complex unary operations",
+			input:    "2 + -3 * -4",
+			expected: int64(14),
+		},
+		{
+			name:     "complex unary operations no spaces",
+			input:    "2+-3*-4",
+			expected: int64(14),
+		},
+		{
+			name:     "multiple unary minus",
+			input:    "-5 + -10",
+			expected: int64(-15),
+		},
+		{
+			name:     "unary minus with parentheses",
+			input:    "(-5) * 3",
+			expected: int64(-15),
+		},
+		{
+			name:     "unary minus float",
+			input:    "2.0 * -1.5",
+			expected: -3.0,
+		},
+		{
+			name:     "unary minus with int path",
+			input:    "-one",
+			expected: int64(-1),
+		},
+		{
+			name:     "complex unary operation with int paths",
+			input:    "-two + -one + -1",
+			expected: int64(-4),
+		},
+		{
+			name:     "unary minus with float path",
+			input:    "-three.one",
+			expected: -3.1,
+		},
+		{
+			name:     "complex unary operation with float paths",
+			input:    "-three.one + -one + -1.0",
+			expected: -5.1,
+		},
+		{
+			name:     "unary minus with subexpression",
+			input:    "-(1 + 1)",
+			expected: int64(-2),
+		},
+		{
+			name:     "unary plus with subexpression",
+			input:    "+(-1 + -1)",
+			expected: int64(-2),
+		},
+		{
+			name:     "unary minus with function",
+			input:    "-Sum([1, 2, 3])",
+			expected: int64(-6),
+		},
+		{
+			name:     "unary plus int no-op",
+			input:    "+2",
+			expected: int64(2),
+		},
+		{
+			name:     "unary plus float no-op",
+			input:    "+3.1",
+			expected: 3.1,
+		},
 	}
 
 	functions := CreateFactoryMap(
@@ -245,13 +335,13 @@ func Test_evaluateMathExpression(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			parsed, err := mathParser.ParseString("", tt.input)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			getter, err := p.evaluateMathExpression(parsed.MathExpression)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			result, err := getter.Get(context.Background(), nil)
-			assert.NoError(t, err)
+			result, err := getter.Get(t.Context(), nil)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.expected, result)
 		})
@@ -572,19 +662,19 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 					assert.Error(t, err)
 					assert.ErrorContains(t, err, tt.errorMsg)
 				} else {
-					result, err := getter.Get(context.Background(), nil)
+					result, err := getter.Get(t.Context(), nil)
 					assert.Nil(t, result)
 					assert.Error(t, err)
 					assert.ErrorContains(t, err, tt.errorMsg)
 				}
 			} else {
 				parsed, err := mathParser.ParseString("", tt.input)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				getter, err := p.evaluateMathExpression(parsed.MathExpression)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
-				result, err := getter.Get(context.Background(), nil)
+				result, err := getter.Get(t.Context(), nil)
 				assert.Nil(t, result)
 				assert.Error(t, err)
 			}
@@ -1148,10 +1238,10 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		getter, err := p.evaluateMathExpression(tt.mathExpr)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		result, err := getter.Get(context.Background(), nil)
-		assert.NoError(t, err)
+		result, err := getter.Get(t.Context(), nil)
+		require.NoError(t, err)
 		assert.Equal(t, tt.expected, result)
 	}
 }
