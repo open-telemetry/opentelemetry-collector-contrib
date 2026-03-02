@@ -263,6 +263,48 @@ func TestStatsStreamHandlesInvalidJSON(t *testing.T) {
 	assert.False(t, ok, "no valid stats should be available after decode error")
 }
 
+// TestLatestContainerStatsMaxAge verifies that LatestContainerStats respects the maxAge threshold.
+func TestLatestContainerStatsMaxAge(t *testing.T) {
+	const containerID = "testContainer"
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	defer srv.Close()
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+
+	freshStats := &cachedStats{
+		stats:    &ctypes.StatsResponse{},
+		recorded: time.Now(),
+	}
+	staleStats := &cachedStats{
+		stats:    &ctypes.StatsResponse{},
+		recorded: time.Now().Add(-10 * time.Second),
+	}
+
+	t.Run("no expiry when maxAge is zero", func(t *testing.T) {
+		cli.latestStats.Store(containerID, staleStats)
+		_, ok := cli.LatestContainerStats(containerID, 0)
+		assert.True(t, ok)
+	})
+
+	t.Run("fresh entry within maxAge is returned", func(t *testing.T) {
+		cli.latestStats.Store(containerID, freshStats)
+		_, ok := cli.LatestContainerStats(containerID, 5*time.Second)
+		assert.True(t, ok)
+	})
+
+	t.Run("stale entry beyond maxAge is a miss", func(t *testing.T) {
+		cli.latestStats.Store(containerID, staleStats)
+		_, ok := cli.LatestContainerStats(containerID, 5*time.Second)
+		assert.False(t, ok)
+	})
+
+	t.Run("missing entry is a miss", func(t *testing.T) {
+		cli.latestStats.Delete(containerID)
+		_, ok := cli.LatestContainerStats(containerID, 5*time.Second)
+		assert.False(t, ok)
+	})
+}
+
 func TestEventLoopHandlesError(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(2) // confirm retry occurs
