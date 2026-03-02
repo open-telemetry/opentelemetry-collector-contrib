@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,18 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["RiakMemoryLimit"] = mb.metricRiakMemoryLimit.config.AggregationStrategy
+			aggMap["RiakNodeOperationCount"] = mb.metricRiakNodeOperationCount.config.AggregationStrategy
+			aggMap["RiakNodeOperationTimeMean"] = mb.metricRiakNodeOperationTimeMean.config.AggregationStrategy
+			aggMap["RiakNodeReadRepairCount"] = mb.metricRiakNodeReadRepairCount.config.AggregationStrategy
+			aggMap["RiakVnodeIndexOperationCount"] = mb.metricRiakVnodeIndexOperationCount.config.AggregationStrategy
+			aggMap["RiakVnodeOperationCount"] = mb.metricRiakVnodeOperationCount.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,31 +85,57 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakMemoryLimitDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRiakMemoryLimitDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRiakNodeOperationCountDataPoint(ts, 3, AttributeRequestPut)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequestPut)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 3, AttributeRequestPut)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeReadRepairCountDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRiakNodeReadRepairCountDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperationRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 3, AttributeOperationRead)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
+			if tt.name == "reaggregate_set" {
+				mb.RecordRiakVnodeOperationCountDataPoint(ts, 3, AttributeRequestPut)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetRiakNodeName("riak.node.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricRiakMemoryLimit.aggDataPoints)
+				assert.Empty(t, mb.metricRiakNodeOperationCount.aggDataPoints)
+				assert.Empty(t, mb.metricRiakNodeOperationTimeMean.aggDataPoints)
+				assert.Empty(t, mb.metricRiakNodeReadRepairCount.aggDataPoints)
+				assert.Empty(t, mb.metricRiakVnodeIndexOperationCount.aggDataPoints)
+				assert.Empty(t, mb.metricRiakVnodeOperationCount.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -116,99 +157,255 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "riak.memory.limit":
-					assert.False(t, validatedMetrics["riak.memory.limit"], "Found a duplicate in the metrics slice: riak.memory.limit")
-					validatedMetrics["riak.memory.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory allocated to the node.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["riak.memory.limit"], "Found a duplicate in the metrics slice: riak.memory.limit")
+						validatedMetrics["riak.memory.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of memory allocated to the node.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["riak.memory.limit"], "Found a duplicate in the metrics slice: riak.memory.limit")
+						validatedMetrics["riak.memory.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of memory allocated to the node.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["riak.memory.limit"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "riak.node.operation.count":
-					assert.False(t, validatedMetrics["riak.node.operation.count"], "Found a duplicate in the metrics slice: riak.node.operation.count")
-					validatedMetrics["riak.node.operation.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of operations performed by the node.", ms.At(i).Description())
-					assert.Equal(t, "{operation}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("request")
-					assert.True(t, ok)
-					assert.Equal(t, "put", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["riak.node.operation.count"], "Found a duplicate in the metrics slice: riak.node.operation.count")
+						validatedMetrics["riak.node.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations performed by the node.", ms.At(i).Description())
+						assert.Equal(t, "{operation}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("request")
+						assert.True(t, ok)
+						assert.Equal(t, "put", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["riak.node.operation.count"], "Found a duplicate in the metrics slice: riak.node.operation.count")
+						validatedMetrics["riak.node.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations performed by the node.", ms.At(i).Description())
+						assert.Equal(t, "{operation}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["riak.node.operation.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("request")
+						assert.True(t, ok)
+					}
 				case "riak.node.operation.time.mean":
-					assert.False(t, validatedMetrics["riak.node.operation.time.mean"], "Found a duplicate in the metrics slice: riak.node.operation.time.mean")
-					validatedMetrics["riak.node.operation.time.mean"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The mean time between request and response for operations performed by the node over the last minute.", ms.At(i).Description())
-					assert.Equal(t, "us", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("request")
-					assert.True(t, ok)
-					assert.Equal(t, "put", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["riak.node.operation.time.mean"], "Found a duplicate in the metrics slice: riak.node.operation.time.mean")
+						validatedMetrics["riak.node.operation.time.mean"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The mean time between request and response for operations performed by the node over the last minute.", ms.At(i).Description())
+						assert.Equal(t, "us", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("request")
+						assert.True(t, ok)
+						assert.Equal(t, "put", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["riak.node.operation.time.mean"], "Found a duplicate in the metrics slice: riak.node.operation.time.mean")
+						validatedMetrics["riak.node.operation.time.mean"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The mean time between request and response for operations performed by the node over the last minute.", ms.At(i).Description())
+						assert.Equal(t, "us", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["riak.node.operation.time.mean"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("request")
+						assert.True(t, ok)
+					}
 				case "riak.node.read_repair.count":
-					assert.False(t, validatedMetrics["riak.node.read_repair.count"], "Found a duplicate in the metrics slice: riak.node.read_repair.count")
-					validatedMetrics["riak.node.read_repair.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of read repairs performed by the node.", ms.At(i).Description())
-					assert.Equal(t, "{read_repair}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["riak.node.read_repair.count"], "Found a duplicate in the metrics slice: riak.node.read_repair.count")
+						validatedMetrics["riak.node.read_repair.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of read repairs performed by the node.", ms.At(i).Description())
+						assert.Equal(t, "{read_repair}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["riak.node.read_repair.count"], "Found a duplicate in the metrics slice: riak.node.read_repair.count")
+						validatedMetrics["riak.node.read_repair.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of read repairs performed by the node.", ms.At(i).Description())
+						assert.Equal(t, "{read_repair}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["riak.node.read_repair.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "riak.vnode.index.operation.count":
-					assert.False(t, validatedMetrics["riak.vnode.index.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.index.operation.count")
-					validatedMetrics["riak.vnode.index.operation.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of index operations performed by vnodes on the node.", ms.At(i).Description())
-					assert.Equal(t, "{operation}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["riak.vnode.index.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.index.operation.count")
+						validatedMetrics["riak.vnode.index.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of index operations performed by vnodes on the node.", ms.At(i).Description())
+						assert.Equal(t, "{operation}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["riak.vnode.index.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.index.operation.count")
+						validatedMetrics["riak.vnode.index.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of index operations performed by vnodes on the node.", ms.At(i).Description())
+						assert.Equal(t, "{operation}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["riak.vnode.index.operation.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+					}
 				case "riak.vnode.operation.count":
-					assert.False(t, validatedMetrics["riak.vnode.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.operation.count")
-					validatedMetrics["riak.vnode.operation.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of operations performed by vnodes on the node.", ms.At(i).Description())
-					assert.Equal(t, "{operation}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("request")
-					assert.True(t, ok)
-					assert.Equal(t, "put", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["riak.vnode.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.operation.count")
+						validatedMetrics["riak.vnode.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations performed by vnodes on the node.", ms.At(i).Description())
+						assert.Equal(t, "{operation}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("request")
+						assert.True(t, ok)
+						assert.Equal(t, "put", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["riak.vnode.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.operation.count")
+						validatedMetrics["riak.vnode.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations performed by vnodes on the node.", ms.At(i).Description())
+						assert.Equal(t, "{operation}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["riak.vnode.operation.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("request")
+						assert.True(t, ok)
+					}
 				}
 			}
 		})
