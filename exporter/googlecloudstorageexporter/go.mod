@@ -10,10 +10,10 @@ require (
 	github.com/lestrrat-go/strftime v1.1.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.52.1-0.20260301214332-7a2d8b5a5cac
-	go.opentelemetry.io/collector/component/componenttest v0.146.2-0.20260227062254-168030d61d7d
+	go.opentelemetry.io/collector/component/componenttest v0.146.2-0.20260301214332-7a2d8b5a5cac
 	go.opentelemetry.io/collector/config/configcompression v1.52.1-0.20260301214332-7a2d8b5a5cac
 	go.opentelemetry.io/collector/confmap v1.52.1-0.20260301214332-7a2d8b5a5cac
-	go.opentelemetry.io/collector/confmap/xconfmap v0.146.2-0.20260227062254-168030d61d7d
+	go.opentelemetry.io/collector/confmap/xconfmap v0.146.2-0.20260301214332-7a2d8b5a5cac
 	go.opentelemetry.io/collector/consumer v1.52.1-0.20260301214332-7a2d8b5a5cac
 	go.opentelemetry.io/collector/exporter v1.52.1-0.20260301214332-7a2d8b5a5cac
 	go.opentelemetry.io/collector/extension v1.52.1-0.20260301214332-7a2d8b5a5cac
@@ -61,7 +61,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.52.1-0.20260301214332-7a2d8b5a5cac // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.146.2-0.20260227062254-168030d61d7d // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.146.2-0.20260301214332-7a2d8b5a5cac // indirect
 	go.opentelemetry.io/collector/pipeline v1.52.1-0.20260301214332-7a2d8b5a5cac // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect

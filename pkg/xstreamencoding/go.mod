@@ -20,8 +20,8 @@ require (
 	go.opentelemetry.io/collector/component v1.52.1-0.20260301214332-7a2d8b5a5cac // indirect
 	go.opentelemetry.io/collector/extension v1.52.1-0.20260301214332-7a2d8b5a5cac // indirect
 	go.opentelemetry.io/collector/featuregate v1.52.1-0.20260301214332-7a2d8b5a5cac // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.146.2-0.20260227062254-168030d61d7d // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260227062254-168030d61d7d // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.146.2-0.20260301214332-7a2d8b5a5cac // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260301214332-7a2d8b5a5cac // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
