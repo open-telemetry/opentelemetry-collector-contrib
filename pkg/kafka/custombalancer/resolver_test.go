@@ -32,20 +32,20 @@ func TestContextWithGroupBalancerResolver_NilContext(t *testing.T) {
 		return nil, false, nil
 	}
 
-	ctx := ContextWithGroupBalancerResolver(nil, resolver)
+	ctx := ContextWithGroupBalancerResolver(nil, resolver) //nolint:staticcheck
 	require.NotNil(t, ctx)
 	require.NotNil(t, GroupBalancerResolverFromContext(ctx))
 }
 
 func TestContextWithGroupBalancerResolver_NilResolver(t *testing.T) {
-	ctx := ContextWithGroupBalancerResolver(context.Background(), nil)
+	ctx := ContextWithGroupBalancerResolver(t.Context(), nil)
 	require.NotNil(t, ctx)
 	require.Nil(t, GroupBalancerResolverFromContext(ctx))
 }
 
 func TestWrapFactory_InjectsResolverIntoContext(t *testing.T) {
 	resolverCalled := false
-	resolver := func(strategy configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+	resolver := func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
 		resolverCalled = true
 		return nil, false, nil
 	}
@@ -68,7 +68,7 @@ func TestWrapFactory_InjectsResolverIntoContext(t *testing.T) {
 	require.NoError(t, err)
 
 	set := receiver.Settings{ID: component.NewID(component.MustNewType("custombalancer_test"))}
-	_, err = wrapped.CreateLogs(nil, set, wrapped.CreateDefaultConfig(), nextLogs)
+	_, err = wrapped.CreateLogs(t.Context(), set, wrapped.CreateDefaultConfig(), nextLogs)
 	require.NoError(t, err)
 	require.True(t, resolverCalled)
 }
