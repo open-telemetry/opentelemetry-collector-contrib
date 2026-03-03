@@ -387,7 +387,6 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.147.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.147.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.147.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.15.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.65.0 // indirect

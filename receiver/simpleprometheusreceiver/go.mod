@@ -224,7 +224,6 @@ require (
 	go.opentelemetry.io/collector/processor v1.53.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.147.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.65.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.66.0 // indirect
 	go.opentelemetry.io/otel v1.41.0 // indirect

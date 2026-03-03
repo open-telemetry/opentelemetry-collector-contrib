@@ -72,7 +72,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.53.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.147.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.128.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
