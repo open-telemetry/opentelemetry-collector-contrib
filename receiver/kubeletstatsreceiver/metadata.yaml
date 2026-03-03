@@ -1,4 +1,9 @@
+display_name: Kubelet Stats Receiver
 type: kubeletstats
+
+description: |
+  The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
+  and sends it down the metric pipeline for further processing.
 
 status:
   class: receiver
