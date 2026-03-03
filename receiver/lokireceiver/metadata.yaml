@@ -1,4 +1,12 @@
+display_name: Loki Receiver
 type: loki
+
+description: |
+  The Loki receiver implements the [Loki push api](https://grafana.com/docs/loki/latest/clients/promtail/#loki-push-api)
+  as specified in [Loki HTTP API: Ingest logs](https://grafana.com/docs/loki/latest/reference/loki-http-api/#ingest-logs).
+  It allows Promtail instances to specify the open telemetry collector as their lokiAddress.
+  
+  This receiver runs HTTP and GRPC servers to ingest log entries in Loki format.
 
 status:
   class: receiver
