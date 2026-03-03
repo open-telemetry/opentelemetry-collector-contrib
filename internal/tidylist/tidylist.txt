@@ -132,7 +132,6 @@ exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
-exporter/sapmexporter
 exporter/sematextexporter
 exporter/sentryexporter
 extension/sumologicextension
