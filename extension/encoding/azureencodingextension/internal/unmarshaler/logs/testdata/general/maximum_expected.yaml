@@ -4,12 +4,12 @@ resourceLogs:
         - key: cloud.provider
           value:
             stringValue: azure
-        - key: cloud.resource_id
-          value:
-            stringValue: /RESOURCE_ID-1
         - key: cloudevents.event_source
           value:
             stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /RESOURCE_ID-1
         - key: cloud.region
           value:
             stringValue: ukso
@@ -19,15 +19,15 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
+              - key: azure.category
+                value:
+                  stringValue: AuditEvent
               - key: azure.operation.name
                 value:
                   stringValue: SecretGet
               - key: azure.operation.version
                 value:
                   stringValue: "7.0"
-              - key: azure.category
-                value:
-                  stringValue: AuditEvent
               - key: azure.result.type
                 value:
                   stringValue: Success
@@ -46,17 +46,6 @@ resourceLogs:
               - key: azure.operation.duration
                 value:
                   intValue: "1234"
-              - key: azure.identity
-                value:
-                  kvlistValue:
-                    values:
-                      - key: claim
-                        value:
-                          kvlistValue:
-                            values:
-                              - key: oid
-                                value:
-                                  stringValue: 607964b6-41a5-4e24-a5db-db7aab3b9b34
               - key: string
                 value:
                   stringValue: string
@@ -81,12 +70,12 @@ resourceLogs:
         - key: cloud.provider
           value:
             stringValue: azure
-        - key: cloud.resource_id
-          value:
-            stringValue: /RESOURCE_ID-2
         - key: cloudevents.event_source
           value:
             stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /RESOURCE_ID-2
         - key: cloud.region
           value:
             stringValue: ukso
@@ -96,15 +85,15 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
+              - key: azure.category
+                value:
+                  stringValue: AuditEvent
               - key: azure.operation.name
                 value:
                   stringValue: SecretSet
               - key: azure.operation.version
                 value:
                   stringValue: "7.0"
-              - key: azure.category
-                value:
-                  stringValue: AuditEvent
               - key: azure.result.type
                 value:
                   stringValue: Success
@@ -123,17 +112,6 @@ resourceLogs:
               - key: azure.operation.duration
                 value:
                   intValue: "4321"
-              - key: azure.identity
-                value:
-                  kvlistValue:
-                    values:
-                      - key: claim
-                        value:
-                          kvlistValue:
-                            values:
-                              - key: oid
-                                value:
-                                  stringValue: 96317703-2132-4a8d-a5d7-e18d2f486783
               - key: string
                 value:
                   stringValue: string
@@ -151,15 +129,15 @@ resourceLogs:
             severityText: Warning
             timeUnixNano: "1668142109676714500"
           - attributes:
+              - key: azure.category
+                value:
+                  stringValue: AuditEvent
               - key: azure.operation.name
                 value:
                   stringValue: SecretGet
               - key: azure.operation.version
                 value:
                   stringValue: "7.0"
-              - key: azure.category
-                value:
-                  stringValue: AuditEvent
               - key: azure.result.type
                 value:
                   stringValue: Success
@@ -178,17 +156,6 @@ resourceLogs:
               - key: azure.operation.duration
                 value:
                   intValue: "321"
-              - key: azure.identity
-                value:
-                  kvlistValue:
-                    values:
-                      - key: claim
-                        value:
-                          kvlistValue:
-                            values:
-                              - key: oid
-                                value:
-                                  stringValue: 4ae807da-39d9-4327-b5b4-0ab685a57f9a
               - key: string
                 value:
                   stringValue: string

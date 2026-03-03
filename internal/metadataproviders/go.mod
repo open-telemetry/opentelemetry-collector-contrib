@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.291.0
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/hashicorp/consul/api v1.32.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.147.0
 	github.com/shirou/gopsutil/v4 v4.26.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.40.0
@@ -96,11 +96,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
-	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/term v0.37.0 // indirect
-	golang.org/x/text v0.31.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/term v0.40.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
 	google.golang.org/grpc v1.76.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect

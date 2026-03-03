@@ -4,6 +4,8 @@ type: haproxy
 description: |
   The HAProxy receiver generates metrics by polling periodically the HAProxy process through a dedicated socket or HTTP URL.
 
+reaggregation_enabled: true
+
 status:
   class: receiver
   stability:
@@ -30,6 +32,7 @@ attributes:
   status_code:
     description: Status code category, 1xx, 2xx, 3xx, 4xx, 5xx or other
     type: string
+    requirement_level: recommended
     enum:
       - "1xx"
       - "2xx"

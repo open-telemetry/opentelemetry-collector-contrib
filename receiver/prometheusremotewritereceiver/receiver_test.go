@@ -1862,6 +1862,399 @@ func TestTranslateV2(t *testing.T) {
 				Exemplars:  2,
 			},
 		},
+		{
+			name: "counter metric with exemplar",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1,2
+					"instance", "host1", // 3,4
+					"__name__", "request_duration_ms", // 5,6
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7,8
+					"span_id", "00f067aa0ba902b7", // 9,10,
+					"4bf92f3577b34da6a3ce929d0e0e4740", "fff067aa0ba902b7", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+						},
+					},
+					// We're sending exemplars disconnected from counters because
+					// remote-write 2.0 emits exemplars independently of counter samples.
+					// See https://github.com/prometheus/prometheus/issues/17857.
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.0,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									7, 8, // trace_id
+									9, 10, // span_id
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+
+				m.SetName("request_duration_ms")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				ex := dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.0)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				traceID, _ := hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				var tid [16]byte
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ := hex.DecodeString("00f067aa0ba902b7")
+				var sid [8]byte
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Samples:   1,
+				Exemplars: 1,
+				Confirmed: true,
+			},
+		},
+		{
+			name: "counter metric with exemplar, multiple data points",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1,2
+					"instance", "host1", // 3,4
+					"__name__", "request_duration_ms", // 5,6
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7,8
+					"span_id", "00f067aa0ba902b7", // 9,10,
+					"4bf92f3577b34da6a3ce929d0e0e4740", "fff067aa0ba902b7", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+							{
+								Value:     2,
+								Timestamp: 2,
+							},
+						},
+					},
+					// We're sending exemplars disconnected from counters because
+					// remote-write 2.0 emits exemplars independently of counter samples.
+					// See https://github.com/prometheus/prometheus/issues/17857.
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.0,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									7, 8, // trace_id
+									9, 10, // span_id
+								},
+							},
+							{
+								Value:     2.0,
+								Timestamp: 2,
+								LabelsRefs: []uint32{
+									7, 8, // trace_id
+									9, 10, // span_id
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+
+				m.SetName("request_duration_ms")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				ex := dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.0)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				traceID, _ := hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				var tid [16]byte
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ := hex.DecodeString("00f067aa0ba902b7")
+				var sid [8]byte
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				// 2nd exemplar
+				ex = dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(2.0)
+				ex.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+
+				traceID, _ = hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ = hex.DecodeString("00f067aa0ba902b7")
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				dp = sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(2)
+				dp.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Exemplars: 2,
+				Samples:   2,
+				Confirmed: true,
+			},
+		},
+		{
+			name: "multiple counter metrics with exemplar",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1,2
+					"instance", "host1", // 3,4
+					"__name__", "request_duration_ms", // 5,6
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7,8
+					"span_id", "00f067aa0ba902b7", // 9,10,
+					"4bf92f3577b34da6a3ce929d0e0e4740", "fff067aa0ba902b7", // 11, 12
+					"latency_ms",                                           // 13
+					"4bf92f3577b34da6a3ce929d0e0e47ab", "fff067aa0ba902ff", // 14, 15
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+						},
+					},
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 13, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     2,
+								Timestamp: 1,
+							},
+						},
+					},
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.0,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									7, 8, // trace_id
+									9, 10, // span_id
+								},
+							},
+						},
+					},
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 13, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.0,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									7, 14, // trace_id
+									9, 15, // span_id
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("request_duration_ms")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				ex := dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.0)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				traceID, _ := hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				var tid [16]byte
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ := hex.DecodeString("00f067aa0ba902b7")
+				var sid [8]byte
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				m = sm.Metrics().AppendEmpty()
+				m.SetName("latency_ms")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+
+				sum = m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp = sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(2)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				ex = dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.0)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				traceID, _ = hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e47ab")
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ = hex.DecodeString("fff067aa0ba902ff")
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Exemplars: 2,
+				Samples:   2,
+				Confirmed: true,
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
