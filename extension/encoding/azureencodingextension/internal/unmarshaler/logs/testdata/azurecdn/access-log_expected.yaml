@@ -103,6 +103,6 @@ resourceLogs:
           attributes:
             - key: encoding.format
               value:
-                stringValue: azure.cdn_access
+                stringValue: azure.cdn
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

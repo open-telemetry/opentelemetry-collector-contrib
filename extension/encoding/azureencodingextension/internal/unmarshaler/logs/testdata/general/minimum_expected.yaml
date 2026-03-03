@@ -25,6 +25,6 @@ resourceLogs:
           attributes:
             - key: encoding.format
               value:
-                stringValue: azure.audit_event
+                stringValue: azure.activity
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

@@ -153,6 +153,6 @@ resourceLogs:
           attributes:
             - key: encoding.format
               value:
-                stringValue: azure.storage_read
+                stringValue: azure.storage
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

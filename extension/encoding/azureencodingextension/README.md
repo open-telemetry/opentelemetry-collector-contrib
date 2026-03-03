@@ -176,49 +176,31 @@ receivers:
 
 ### Log format identification
 
-All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their Azure service and log type.
+All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the log family. This allows you to filter and route logs by Azure service while keeping the data model consistent at the family level.
 
 The pattern used is `azure.<format_name>`.
 
 Examples:
 
-- Application Gateway Access: `encoding.format:"azure.application_gateway_access"`
-- App Service HTTP: `encoding.format:"azure.appservice_http"`
-- Front Door WAF: `encoding.format:"azure.frontdoor_waf"`
+- Application Gateway: `encoding.format:"azure.application_gateway"`
+- App Service: `encoding.format:"azure.appservice"`
+- Front Door: `encoding.format:"azure.frontdoor"`
+- Activity/audit: `encoding.format:"azure.activity"`
 
 #### Format values
 
-The following format values are supported in the `azureencodingextension` to identify different Azure log types:
+The following format values are supported at the **log family** level:
 
-| **Azure log type** | **Format value** | **Description** |
-|--------------------|------------------|-----------------|
-| Application Gateway Access | `azure.application_gateway_access` | Application Gateway access logs |
-| Application Gateway Performance | `azure.application_gateway_performance` | Application Gateway performance logs |
-| Application Gateway Firewall | `azure.application_gateway_firewall` | Application Gateway WAF logs |
-| App Service App | `azure.appservice_app` | App Service application logs |
-| App Service Audit | `azure.appservice_audit` | App Service audit logs |
-| App Service Authentication | `azure.appservice_authentication` | App Service authentication logs |
-| App Service Console | `azure.appservice_console` | App Service console logs |
-| App Service File Audit | `azure.appservice_file_audit` | App Service file audit logs |
-| App Service HTTP | `azure.appservice_http` | App Service HTTP logs |
-| App Service IPsec Audit | `azure.appservice_ipsec_audit` | App Service IPsec audit logs |
-| App Service Platform | `azure.appservice_platform` | App Service platform logs |
-| CDN Access | `azure.cdn_access` | Azure CDN access logs |
-| Messaging Application Metrics | `azure.messaging_application_metrics` | Event Hubs/Service Bus application metrics |
-| Messaging Diagnostic Error | `azure.messaging_diagnostic_error` | Event Hubs/Service Bus diagnostic errors |
-| Messaging Operational | `azure.messaging_operational` | Event Hubs/Service Bus operational logs |
-| Messaging Runtime Audit | `azure.messaging_runtime_audit` | Event Hubs/Service Bus runtime audit logs |
-| Messaging VNet Filter | `azure.messaging_vnet_filter` | Event Hubs/Service Bus VNet and IP filtering logs |
-| Data Factory Activity Runs | `azure.datafactory_activity_runs` | Data Factory activity run logs |
-| Data Factory Pipeline Runs | `azure.datafactory_pipeline_runs` | Data Factory pipeline run logs |
-| Data Factory Trigger Runs | `azure.datafactory_trigger_runs` | Data Factory trigger run logs |
-| Front Door Access | `azure.frontdoor_access` | Front Door access logs |
-| Front Door Health Probe | `azure.frontdoor_health_probe` | Front Door health probe logs |
-| Front Door WAF | `azure.frontdoor_waf` | Front Door Web Application Firewall logs |
+| **Azure log family** | **Format value** | **Description** |
+|----------------------|------------------|-----------------|
+| Activity | `azure.activity` | Azure activity/audit logs |
+| Application Gateway | `azure.application_gateway` | Application Gateway logs (access, performance, firewall) |
+| App Service | `azure.appservice` | App Service logs (app, audit, HTTP, platform, etc.) |
+| CDN | `azure.cdn` | Azure CDN access logs |
+| Data Factory | `azure.datafactory` | Data Factory logs (activity, pipeline, trigger runs) |
+| Front Door | `azure.frontdoor` | Front Door logs (access, health probe, WAF) |
 | Function App | `azure.function_app` | Azure Functions application logs |
+| Messaging | `azure.messaging` | Event Hubs/Service Bus logs (operational, metrics, audit, etc.) |
 | Recommendation | `azure.recommendation` | Azure Advisor recommendation logs |
-| Storage Read | `azure.storage_read` | Storage read operation logs |
-| Storage Write | `azure.storage_write` | Storage write operation logs |
-| Storage Delete | `azure.storage_delete` | Storage delete operation logs |
-| Audit Event | `azure.audit_event` | Azure activity/audit logs |
+| Storage | `azure.storage` | Storage operation logs (read, write, delete) |
 | Resource Log (unknown) | `azure.resource` | Unknown or raw Azure resource log records |

@@ -46,6 +46,6 @@ resourceLogs:
           attributes:
             - key: encoding.format
               value:
-                stringValue: azure.application_gateway_performance
+                stringValue: azure.application_gateway
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

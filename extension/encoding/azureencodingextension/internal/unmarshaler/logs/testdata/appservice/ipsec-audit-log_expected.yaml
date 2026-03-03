@@ -53,6 +53,6 @@ resourceLogs:
           attributes:
             - key: encoding.format
               value:
-                stringValue: azure.appservice_ipsec_audit
+                stringValue: azure.appservice
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

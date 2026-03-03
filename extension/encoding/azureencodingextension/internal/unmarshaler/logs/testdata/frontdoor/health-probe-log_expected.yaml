@@ -71,6 +71,6 @@ resourceLogs:
           attributes:
             - key: encoding.format
               value:
-                stringValue: azure.frontdoor_health_probe
+                stringValue: azure.frontdoor
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

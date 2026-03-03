@@ -97,6 +97,6 @@ resourceLogs:
           attributes:
             - key: encoding.format
               value:
-                stringValue: azure.datafactory_activity_runs
+                stringValue: azure.datafactory
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
