@@ -174,6 +174,27 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestFetchContainerStatsAsJSONWithSlowResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/stats") {
+			w.Header().Set("Content-Type", "application/json")
+			w.(http.Flusher).Flush()
+			time.Sleep(10 * time.Millisecond)
+			_, _ = w.Write([]byte(`{"cpu_stats":{},"memory_stats":{}}`))
+		}
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+
+	stats, err := cli.FetchContainerStatsAsJSON(t.Context(), Container{
+		ContainerJSON: &ctypes.InspectResponse{ContainerJSONBase: &ctypes.ContainerJSONBase{ID: "test"}},
+	})
+	require.NoError(t, err, "should not fail with context canceled")
+	require.NotNil(t, stats)
+}
+
 func TestEventLoopHandlesError(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(2) // confirm retry occurs
