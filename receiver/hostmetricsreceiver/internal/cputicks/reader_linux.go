@@ -10,11 +10,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
-
-const defaultProcStatPath = "/proc/stat"
 
 type reader struct {
 	path           string
@@ -22,9 +21,14 @@ type reader struct {
 }
 
 // NewReader returns a Reader that parses /proc/stat.
+// rootPath is the host root directory (e.g. "/host" for container environments);
+// pass "" to use the default /proc/stat.
 // ticksPerSecond is the OS timer resolution (USER_HZ, typically 100 on Linux).
-func NewReader(ticksPerSecond uint64) Reader {
-	return &reader{path: defaultProcStatPath, ticksPerSecond: ticksPerSecond}
+func NewReader(rootPath string, ticksPerSecond uint64) Reader {
+	if rootPath == "" {
+		rootPath = "/"
+	}
+	return &reader{path: filepath.Join(rootPath, "proc", "stat"), ticksPerSecond: ticksPerSecond}
 }
 
 func (r *reader) TicksPerSecond() uint64 { return r.ticksPerSecond }
