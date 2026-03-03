@@ -4,6 +4,8 @@
 package googlecloudpubsubreceiver
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"testing"
 	"time"
@@ -359,4 +361,51 @@ func TestEncodingExtensionMismatch(t *testing.T) {
 	assert.Nil(t, receiver.tracesConsumer)
 	assert.Nil(t, receiver.metricsConsumer)
 	assert.NotNil(t, receiver.logsConsumer)
+}
+
+func TestEncodingWithCompressionConfig(t *testing.T) {
+	ctx := t.Context()
+	srv, receiver := createBaseReceiver()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	_, err := srv.GServer.CreateTopic(ctx, &pb.Topic{
+		Name: "projects/my-project/topics/otlp",
+	})
+	assert.NoError(t, err)
+	_, err = srv.GServer.CreateSubscription(ctx, &pb.Subscription{
+		Topic:              "projects/my-project/topics/otlp",
+		Name:               "projects/my-project/subscriptions/otlp",
+		AckDeadlineSeconds: 10,
+	})
+	assert.NoError(t, err)
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.NewID(metadata.Type),
+		Transport:              reportTransport,
+		LongLivedCtx:           false,
+		ReceiverCreateSettings: receiver.settings,
+	})
+	require.NoError(t, err)
+
+	traceSink := new(consumertest.TracesSink)
+	receiver.obsrecv = obsrecv
+	receiver.config.Encoding = "otlp_proto_trace"
+	receiver.config.Compression = "gzip"
+	receiver.tracesConsumer = traceSink
+	assert.NoError(t, receiver.Start(ctx, fakeHost{}))
+
+	// Publish a gzip-compressed trace message
+	traceData := createTraceExport()
+	var buf bytes.Buffer
+	w := gzip.NewWriter(&buf)
+	_, _ = w.Write(traceData)
+	_ = w.Close()
+	srv.Publish("projects/my-project/topics/otlp", buf.Bytes(), map[string]string{})
+
+	assert.Eventually(t, func() bool {
+		return len(traceSink.AllTraces()) == 1
+	}, time.Second, 10*time.Millisecond)
 }

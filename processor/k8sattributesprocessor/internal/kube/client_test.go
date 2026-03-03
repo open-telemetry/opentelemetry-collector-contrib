@@ -24,18 +24,23 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	clientmeta "k8s.io/client-go/metadata"
+	clientmetafake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
-func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-	return fake.NewClientset(), nil
+func newFakeAPIClientset(_ k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
+	kc := fake.NewClientset()
+	mc := clientmetafake.NewSimpleMetadataClient(runtime.NewScheme())
+	return k8sconfig.ClientBundle{K8s: kc, Meta: mc}, nil
 }
 
 func newPodIdentifier(from, name, value string) PodIdentifier {
@@ -198,9 +203,9 @@ func TestConstructorErrors(t *testing.T) {
 		apiCfg := k8sconfig.APIConfig{
 			AuthType: "test-auth-type",
 		}
-		clientProvider := func(c k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		clientProvider := func(c k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
 			gotAPIConfig = c
-			return nil, errors.New("error creating k8s client")
+			return k8sconfig.ClientBundle{}, errors.New("error creating k8s client")
 		}
 		factory := InformersFactoryList{
 			newInformer:          NewFakeInformer,
@@ -232,12 +237,12 @@ func TestReplicaSetHandler(t *testing.T) {
 	c, _ := newTestClient(t)
 	assert.Empty(t, c.ReplicaSets)
 
-	replicaset := &apps_v1.ReplicaSet{}
+	replicaset := &meta_v1.PartialObjectMetadata{}
 	c.handleReplicaSetAdd(replicaset)
 	assert.Empty(t, c.ReplicaSets)
 
 	// test add replicaset
-	replicaset = &apps_v1.ReplicaSet{}
+	replicaset = &meta_v1.PartialObjectMetadata{}
 	replicaset.Name = "deployment-aaa"
 	replicaset.Namespace = "namespaceA"
 	replicaset.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
@@ -685,7 +690,7 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	isController := true
-	replicaset := &apps_v1.ReplicaSet{
+	replicaset := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "auth-service-66f5996c7c",
 			Namespace: "ns1",
@@ -1123,13 +1128,13 @@ func TestExtractionRules(t *testing.T) {
 			maps.Copy(podCopy.Annotations, tc.additionalAnnotations)
 			maps.Copy(podCopy.Labels, tc.additionalLabels)
 			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
+			c.handleReplicaSetAdd(replicaset)
 
 			if tc.rules.Node || tc.rules.NodeUID {
 				assert.Equal(t, podCopy.Spec.NodeName, transformedPod.Spec.NodeName, "NodeName should be preserved when Node or NodeUID rule is enabled")
 			}
 
-			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
-			c.handleReplicaSetAdd(transformedReplicaset)
+			c.handleReplicaSetAdd(replicaset)
 			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", podCopy.Status.PodIP))
 			require.True(t, ok)
@@ -1145,48 +1150,6 @@ func TestExtractionRules(t *testing.T) {
 }
 
 func TestReplicaSetExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
-	// Disable saving ip into k8s.pod.ip
-	c.Associations[0].Sources[0].Name = ""
-
-	pod := &api_v1.Pod{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:              "auth-service-abc12-xyz3",
-			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-			Namespace:         "ns1",
-			CreationTimestamp: meta_v1.Now(),
-			Labels: map[string]string{
-				"label1": "lv1",
-				"label2": "k1=v1 k5=v5 extra!",
-			},
-			Annotations: map[string]string{
-				"annotation1": "av1",
-			},
-			OwnerReferences: []meta_v1.OwnerReference{
-				{
-					APIVersion: "apps/v1",
-					Kind:       "ReplicaSet",
-					Name:       "auth-service-66f5996c7c",
-					UID:        "207ea729-c779-401d-8347-008ecbc137e3",
-				},
-			},
-		},
-		Spec: api_v1.PodSpec{
-			NodeName: "node1",
-		},
-		Status: api_v1.PodStatus{
-			PodIP: "1.1.1.1",
-		},
-	}
-
-	replicaset := &apps_v1.ReplicaSet{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      "auth-service-66f5996c7c",
-			Namespace: "ns1",
-			UID:       "207ea729-c779-401d-8347-008ecbc137e3",
-		},
-	}
-
 	isController := true
 	isNotController := false
 	testCases := []struct {
@@ -1278,14 +1241,56 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c.Rules = tc.rules
-			replicaset.OwnerReferences = tc.ownerReferences
+			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+			// Disable saving ip into k8s.pod.ip
+			c.Associations[0].Sources[0].Name = ""
 
-			// manually call the data removal functions here
-			// normally the informer does this, but fully emulating the informer in this test is annoying
+			// fresh pod and replicaset per test
+			pod := &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:              "auth-service-abc12-xyz3",
+					UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+					Namespace:         "ns1",
+					CreationTimestamp: meta_v1.Now(),
+					Labels: map[string]string{
+						"label1": "lv1",
+						"label2": "k1=v1 k5=v5 extra!",
+					},
+					Annotations: map[string]string{
+						"annotation1": "av1",
+					},
+					OwnerReferences: []meta_v1.OwnerReference{
+						{
+							APIVersion: "apps/v1",
+							Kind:       "ReplicaSet",
+							Name:       "auth-service-66f5996c7c",
+							UID:        "207ea729-c779-401d-8347-008ecbc137e3",
+						},
+					},
+				},
+				Spec: api_v1.PodSpec{
+					NodeName: "node1",
+				},
+				Status: api_v1.PodStatus{
+					PodIP: "1.1.1.1",
+				},
+			}
+
+			rs := &meta_v1.PartialObjectMetadata{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "auth-service-66f5996c7c",
+					Namespace: "ns1",
+					UID:       "207ea729-c779-401d-8347-008ecbc137e3",
+				},
+			}
+
+			// apply per-case rules and RS owner refs
+			c.Rules = tc.rules
+			rs.OwnerReferences = tc.ownerReferences
+
+			// transform and feed events
 			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
-			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
-			c.handleReplicaSetAdd(transformedReplicaset)
+			c.handleReplicaSetAdd(rs)
 			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
@@ -1298,6 +1303,36 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRemoveUnnecessaryPodData_ClonesLabelsAndAnnotations(t *testing.T) {
+	rules := ExtractionRules{
+		Labels:      []FieldExtractionRule{{From: MetadataFromPod}},
+		Annotations: []FieldExtractionRule{{From: MetadataFromPod}},
+	}
+
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Labels: map[string]string{
+				"app": "web",
+			},
+			Annotations: map[string]string{
+				"anno": "value",
+			},
+		},
+	}
+
+	transformed := removeUnnecessaryPodData(pod, rules)
+
+	pod.Labels["new"] = "label"
+	pod.Annotations["new"] = "annotation"
+
+	_, ok := transformed.Labels["new"]
+	assert.False(t, ok)
+	_, ok = transformed.Annotations["new"]
+	assert.False(t, ok)
+	assert.Equal(t, "web", transformed.Labels["app"])
+	assert.Equal(t, "value", transformed.Annotations["anno"])
 }
 
 func TestNamespaceExtractionRules(t *testing.T) {
@@ -3576,6 +3611,7 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 		newNamespaceInformer:  NewFakeNamespaceInformer,
 		newReplicaSetInformer: NewFakeReplicaSetInformer,
 	}
+
 	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, factory, false, 10*time.Second)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
@@ -4122,9 +4158,9 @@ func (i *trackableInformer) hasRun() bool {
 	return i.runCalled
 }
 
-func newTrackableInformer(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
+func newTrackableInformer(client clientmeta.Interface, namespace string) cache.SharedInformer {
 	return &trackableInformer{
-		SharedInformer: NewFakeInformer(client, namespace, labelSelector, fieldSelector),
+		SharedInformer: NewFakeReplicaSetInformer(client, namespace),
 	}
 }
 
@@ -4164,11 +4200,9 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := InformersFactoryList{
-				newInformer:          NewFakeInformer,
-				newNamespaceInformer: NewFakeNamespaceInformer,
-				newReplicaSetInformer: func(kc kubernetes.Interface, ns string) cache.SharedInformer {
-					return newTrackableInformer(kc, ns, labels.Everything(), fields.Everything())
-				},
+				newInformer:           NewFakeInformer,
+				newNamespaceInformer:  NewFakeNamespaceInformer,
+				newReplicaSetInformer: newTrackableInformer,
 			}
 
 			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second)
@@ -4524,9 +4558,7 @@ func TestHandleDaemonSetDelete(t *testing.T) {
 			Namespace: "default",
 			UID:       "daemonset-uid-123",
 		},
-	}
-
-	// Add daemonset
+	} // Add daemonset
 	c.handleDaemonSetAdd(daemonset)
 	assert.Len(t, c.DaemonSets, 1)
 
@@ -4595,4 +4627,61 @@ func TestHandleJobDelete(t *testing.T) {
 	_, ok := c.GetJob(string(job.UID))
 	assert.False(t, ok)
 	assert.Empty(t, c.Jobs)
+}
+
+func TestCreateRestConfigFailure(t *testing.T) {
+	// Simulate a failure in CreateRestConfig by returning nil for the informer
+	factory := InformersFactoryList{
+		newReplicaSetInformer: func(_ clientmeta.Interface, _ string) cache.SharedInformer {
+			return nil // Simulate failure
+		},
+	}
+
+	// Set a rule to enable deployment monitoring
+	rules := ExtractionRules{
+		DeploymentName: true, // This ensures that the replicasetInformer is created
+	}
+
+	c, err := New(
+		componenttest.NewNopTelemetrySettings(),
+		k8sconfig.APIConfig{}, // Invalid API config
+		rules,                 // Pass the rules for deployment monitoring
+		Filters{},
+		[]Association{},
+		Excludes{},
+		newFakeAPIClientset,
+		factory,
+		false,
+		10*time.Second,
+	)
+
+	// Assert that the client is nil and an error is returned
+	assert.Nil(t, c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create ReplicaSet informer")
+}
+
+func TestMetadataNewForConfigFailure(t *testing.T) {
+	factory := InformersFactoryList{
+		newInformer: NewFakeInformer,
+	}
+	clientProvider := func(_ k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
+		return k8sconfig.ClientBundle{}, errors.New("metadata.NewForConfig failed")
+	}
+
+	c, err := New(
+		componenttest.NewNopTelemetrySettings(),
+		k8sconfig.APIConfig{},
+		ExtractionRules{},
+		Filters{},
+		[]Association{},
+		Excludes{},
+		clientProvider,
+		factory,
+		false,
+		10*time.Second,
+	)
+	assert.Nil(t, c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "metadata.NewForConfig failed")
 }

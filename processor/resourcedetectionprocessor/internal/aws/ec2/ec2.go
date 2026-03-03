@@ -5,6 +5,7 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -57,6 +58,7 @@ type Detector struct {
 	rb                    *metadata.ResourceBuilder
 	ec2ClientBuilder      ec2ifaceBuilder
 	failOnMissingMetadata bool
+	tagsFromIMDS          bool
 }
 
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -83,6 +85,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		ec2ClientBuilder:      &ec2ClientBuilder{},
 		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		tagsFromIMDS:          cfg.TagsFromIMDS,
 	}, nil
 }
 
@@ -117,19 +120,28 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
-		httpClient := getClientConfig(ctx, d.logger)
-		ec2Client, err := d.ec2ClientBuilder.buildClient(ctx, meta.Region, httpClient)
-		if err != nil {
-			d.logger.Warn("failed to build ec2 client", zap.Error(err))
-			return res, conventions.SchemaURL, nil
-		}
-		tags, err := fetchEC2Tags(ctx, ec2Client, meta.InstanceID, d.tagKeyRegexes)
-		if err != nil {
-			d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
-		} else {
-			for key, val := range tags {
-				res.Attributes().PutStr(tagPrefix+key, val)
+		var tags map[string]string
+		if d.tagsFromIMDS {
+			// Use IMDS: no IAM permissions needed, requires InstanceMetadataTags=enabled on the instance
+			tags, err = fetchIMDSTags(ctx, d.metadataProvider, d.tagKeyRegexes)
+			if err != nil {
+				d.logger.Warn("failed to fetch tags from IMDS", zap.Error(err))
 			}
+		} else {
+			// Use EC2 DescribeTags API (default): requires ec2:DescribeTags IAM permission
+			httpClient := getClientConfig(ctx, d.logger)
+			ec2Client, err := d.ec2ClientBuilder.buildClient(ctx, meta.Region, httpClient)
+			if err != nil {
+				d.logger.Warn("failed to build ec2 client", zap.Error(err))
+				return res, conventions.SchemaURL, nil
+			}
+			tags, err = fetchEC2Tags(ctx, ec2Client, meta.InstanceID, d.tagKeyRegexes)
+			if err != nil {
+				d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
+			}
+		}
+		for key, val := range tags {
+			res.Attributes().PutStr(tagPrefix+key, val)
 		}
 	}
 	return res, conventions.SchemaURL, nil
@@ -162,6 +174,28 @@ func fetchEC2Tags(ctx context.Context, svc ec2.DescribeTagsAPIClient, instanceID
 		}
 	}
 	return tags, nil
+}
+
+func fetchIMDSTags(ctx context.Context, provider ec2provider.Provider, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+	keys, err := provider.Tags(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tags := make(map[string]string)
+	var errs []error
+	for _, key := range keys {
+		if !regexArrayMatch(tagKeyRegexes, key) {
+			continue
+		}
+		val, err := provider.Tag(ctx, key)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to get tag value for key %q: %w", key, err))
+			continue
+		}
+		tags[key] = val
+	}
+	return tags, errors.Join(errs...)
 }
 
 func compileRegexes(cfg Config) ([]*regexp.Regexp, error) {

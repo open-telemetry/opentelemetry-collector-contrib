@@ -1,4 +1,9 @@
+display_name: Kafka Metrics Receiver
 type: kafkametrics
+
+description: |
+  The Kafka Metrics Receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from a kafka server,
+  and converts them into otlp.
 
 status:
   class: receiver
@@ -7,6 +12,14 @@ status:
   distributions: [contrib]
   codeowners:
     active: [dmitryax]
+
+feature_gates:
+  - id: receiver.kafkametricsreceiver.UseFranzGo
+    stage: beta
+    description: >-
+      When enabled, the Kafka Metrics receiver will use the franz-go client to connect to Kafka.
+    from_version: v0.137.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41480
 
 resource_attributes:
   kafka.cluster.alias:

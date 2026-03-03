@@ -886,7 +886,6 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 }
 
 func TestSupervisorBootstrapsCollector(t *testing.T) {
-	t.Skip("broken test: http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42108")
 	tests := []struct {
 		name     string
 		cfg      string
@@ -2245,11 +2244,12 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				gotSpans := []string{}
 				expectedSpans := []string{"GetBootstrapInfo", "onMessage"}
 				require.EventuallyWithT(t, func(collect *assert.CollectT) {
-					require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
+					require.GreaterOrEqual(collect, len(mockBackend.GetReceivedTraces()), len(expectedSpans))
 				}, 10*time.Second, 250*time.Millisecond)
 
-				for i := 0; i < len(mockBackend.ReceivedTraces); i++ {
-					gotSpans = append(gotSpans, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+				receivedTraces := mockBackend.GetReceivedTraces()
+				for i := 0; i < len(receivedTraces); i++ {
+					gotSpans = append(gotSpans, receivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 				}
 
 				for _, expectedSpan := range expectedSpans {
@@ -2511,24 +2511,25 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	expectedSpans := []string{"GetBootstrapInfo"}
 
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
+		require.GreaterOrEqual(collect, len(mockBackend.GetReceivedTraces()), len(expectedSpans))
 	}, 10*time.Second, 250*time.Millisecond)
 
-	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
-	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get("service.name")
+	receivedTraces := mockBackend.GetReceivedTraces()
+	require.Equal(t, 1, receivedTraces[0].ResourceSpans().Len())
+	gotServiceName, ok := receivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get("service.name")
 	require.True(t, ok)
 	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
 
 	for _, expectedSpan := range expectedSpans {
 		gotSpan := false
-		for i := 0; i < len(mockBackend.ReceivedTraces); i++ {
-			require.Equal(t, 1, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().Len())
-			require.Equal(t, 1, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
-			if mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name() != expectedSpan {
+		for i := 0; i < len(receivedTraces); i++ {
+			require.Equal(t, 1, receivedTraces[i].ResourceSpans().At(0).ScopeSpans().Len())
+			require.Equal(t, 1, receivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+			if receivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name() != expectedSpan {
 				continue
 			}
 			gotSpan = true
-			require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+			require.Equal(t, ptrace.StatusCodeOk, receivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
 		}
 		require.Truef(t, gotSpan, "expected to find span '%s', but did not find it", expectedSpan)
 	}

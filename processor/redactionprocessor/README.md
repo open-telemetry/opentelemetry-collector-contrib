@@ -165,7 +165,25 @@ The value is then masked according to the configuration.
 `hash_function` defines the function for hashing values of matched keys or matches in values
 instead of masking them with a fixed string. By default, no hash function is used
 and masking with a fixed string is performed. The supported hash functions
-are `md5`, `sha1` and `sha3` (SHA-256).
+are `md5`, `sha1`, `sha3` (SHA-256), `hmac-sha256`, and `hmac-sha512`.
+
+### HMAC Hash Functions
+
+For enhanced security, especially when dealing with low-entropy data like IP addresses, HMAC (Hash-based Message Authentication Code) hash functions are recommended over simple hash functions like MD5, SHA1, or SHA3.
+
+#### Configuration Example
+
+```yaml
+processors:
+  redaction:
+    allow_all_keys: true
+    blocked_values:
+      - "(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"  # IPv4 addresses
+      - "(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}"  # IPv6 addresses
+    hash_function: hmac-sha256  # or hmac-sha512
+    hmac_key: "${env:REDACTION_SECRET_KEY}"  # Load from environment variable
+    summary: silent
+```
 
 The `url_sanitizer` configuration enables sanitization of URLs in specified attributes by removing potentially sensitive information like UUIDs, timestamps, and other non-essential path segments. This is particularly useful for reducing cardinality in telemetry data while preserving the essential parts of URLs for troubleshooting.
 
@@ -201,7 +219,7 @@ Example configuration with database sanitization:
 processors:
   redaction:
     # ... other redaction settings ...
-    
+
     # Database sanitization configuration
     db_sanitizer:
       # sanitize_span_name controls whether span names should be sanitized for database queries (default: true)
@@ -216,7 +234,7 @@ processors:
         attributes: ["db.statement", "redis.command"]
       memcached:
         enabled: true
-        attributes: ["db.statement", "memcached.command"] 
+        attributes: ["db.statement", "memcached.command"]
       mongo:
         enabled: true
         attributes: ["db.statement", "mongodb.query"]
@@ -239,3 +257,5 @@ The database sanitizer will:
 By default, database query sanitization also applies to span names for client span types. You can disable this behavior by setting `sanitize_span_name: false` in the `db_sanitizer` configuration, which allows you to keep original database query span names while still sanitizing the query values in attributes.
 
 This provides an additional layer of protection when collecting telemetry that includes database operations.
+
+**Trace and metric behaviour:** Database sanitization for spans and metric attributes only runs when the telemetry includes a `db.system.name` or `db.system` attribute and the span kind is `CLIENT` or `SERVER`. This prevents non-database spans from being rewritten. Logs automatically enable a sequential fallback internally, so database attributes without `db.system` can still be sanitized when they appear in log records.
