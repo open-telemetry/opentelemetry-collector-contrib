@@ -21,7 +21,7 @@ const COMPONENT_TARGET_PCT = 75;
 /** PRs created by these logins are excluded from the report. */
 const EXCLUDED_PR_AUTHORS = new Set(['otelbot[bot]', 'renovate[bot]']);
 
-// Component labels to include in the report (matches component_labels.txt). Empty = all components.
+// Component labels to include in the report (matches component_labels.txt).
 const FOCUS_COMPONENT_LABELS = new Set([
   'receiver/prometheus',
   'processor/transform',
