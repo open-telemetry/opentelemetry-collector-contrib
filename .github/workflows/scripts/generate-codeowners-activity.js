@@ -50,9 +50,16 @@ function progress(msg) {
   console.error(msg);
 }
 
+/**
+ * Returns { periodStart, periodEnd } in UTC.
+ * - periodStart: midnight UTC at the start of the day that was 35 days ago (inclusive).
+ * - periodEnd: midnight UTC at the start of the day that was 5 days ago (exclusive: we include
+ *   created_at < periodEnd only, so the last full day included is 6 days ago).
+ * filterOnDateRange uses createdAt >= periodStart && createdAt <= periodEnd, so the end date
+ * in the report is exclusive (PRs created on the end date after 00:00:00 are excluded).
+ */
 function genLookbackDates() {
   const now = new Date();
-  // Window: 35 days ago (inclusive) until 5 days ago (exclusive end) = 30 days
   const periodEnd = new Date(
     Date.UTC(
       now.getUTCFullYear(),
@@ -348,10 +355,12 @@ ${content}
 }
 
 function generateReport(prStats, componentPrStats, lookbackData) {
+  const startStr = lookbackData.periodStart.toISOString().slice(0, 10);
+  const endStr = lookbackData.periodEnd.toISOString().slice(0, 10);
   const out = [
     `## Code owner activity report`,
     ``,
-    `Period: ${lookbackData.periodStart.toISOString().slice(0, 10)} – ${lookbackData.periodEnd.toISOString().slice(0, 10)}`,
+    `Period: ${startStr} – ${endStr} (start date inclusive, end date exclusive; PRs are included if created on or after the start date and before the end date).`,
     ``,
     `We target **at least ${COMPONENT_TARGET_PCT}% of each component's PRs** to be reviewed by a code owner, and each code owner to respond to at least **${COMPONENT_TARGET_PCT}% / n** of their requested PRs (n = number of code owners for that component) ([at least 3 code owners for components aiming for stable](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta-to-stable)).`,
     ``,
@@ -365,7 +374,9 @@ function generateReport(prStats, componentPrStats, lookbackData) {
 }
 
 async function createIssue(octokit, context, report, lookbackData) {
-  const title = `Code owner activity: ${lookbackData.periodStart.toISOString().slice(0, 10)} – ${lookbackData.periodEnd.toISOString().slice(0, 10)}`;
+  const startStr = lookbackData.periodStart.toISOString().slice(0, 10);
+  const endStr = lookbackData.periodEnd.toISOString().slice(0, 10);
+  const title = `Code owner activity: ${startStr} – ${endStr} (inclusive start, exclusive end)`;
   return octokit.issues.create({
     owner: context.payload.repository.owner.login,
     repo: REPO_NAME,
