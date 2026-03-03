@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/filelog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: When reading a file with receiver/filelog, if `include_file_mode` is true, it will add the file mode as the attribute `log.file.mode` in 4-digit octal format (e.g., `0755`).
+note: Add `include_file_mode` option
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46504]

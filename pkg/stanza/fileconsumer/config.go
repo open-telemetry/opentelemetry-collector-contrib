@@ -233,7 +233,7 @@ func (c Config) validate() error {
 	}
 
 	if runtime.GOOS == "windows" && c.IncludeFileMode {
-		return errors.New("'include_file_mode' it's not supported on Windows")
+		return errors.New("'include_file_mode' is not supported on Windows")
 	}
 
 	return nil
