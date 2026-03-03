@@ -94,17 +94,8 @@ func TestBasicStart(t *testing.T) {
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
 
-				// Payload verification
-				body, err := io.ReadAll(req.Body)
-    			assert.NoError(t, err)
-
-				var payload struct {
-					CollectorName string `json:"collectorName"`
-				}
-
-				err = json.Unmarshal(body, &payload)
-			    assert.NoError(t, err)
-				assert.Equal(t, "collector_name", payload.CollectorName)
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, "collector_name")
 
 				_, writeErr := w.Write([]byte(`{
 					"collectorCredentialID": "collectorId",
@@ -158,13 +149,16 @@ func TestStoreCredentials(t *testing.T) {
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				// TODO Add payload verification - verify if collectorName is set properly
 				reqNum := atomic.AddInt32(&reqCount, 1)
 
 				switch reqNum {
 				// register
 				case 1:
 					assert.Equal(t, registerURL, req.URL.Path)
+
+					// Verify registration payload
+					verifyRegistrationPayload(t, req, "collector_name")
+
 					_, err := w.Write([]byte(`{
 						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
@@ -479,13 +473,16 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				// TODO Add payload verification - verify if collectorName is set properly
 				reqNum := atomic.AddInt32(&reqCount, 1)
 
 				switch reqNum {
 				// register
 				case 1:
 					assert.Equal(t, registerURL, req.URL.Path)
+
+					// Verify registration payload
+					verifyRegistrationPayload(t, req, "collector_name")
+
 					_, err := w.Write([]byte(`{
 						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
@@ -578,13 +575,15 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 		var reqCount int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -644,13 +643,15 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 		var reqCount int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -674,6 +675,9 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 			// register again because force registration was set
 			case 3:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -731,17 +735,22 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 	t.Parallel()
 
+	hostname, err := getHostname(zap.NewNop())
+	require.NoError(t, err)
+
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		var reqCount int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1099,13 +1108,15 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 		var reqCount int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch {
 			// register
 			case reqNum <= retriesLimit:
 				assert.Equal(t, registerURL, req.URL.Path)
+
+				// Verify registration payload
+				verifyRegistrationPayload(t, req, hostname)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1168,8 +1179,10 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 	require.NoError(t, err)
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			assert.Equal(t, registerURL, req.URL.Path)
+
+			// Verify registration payload
+			verifyRegistrationPayload(t, req, hostname)
 
 			authHeader := req.Header.Get("Authorization")
 			assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1689,4 +1702,22 @@ func Test_cleanupBuildVersion(t *testing.T) {
 			assert.Equalf(t, tt.want, cleanupBuildVersion(tt.args.version), "cleanupBuildVersion(%v)", tt.args.version)
 		})
 	}
+}
+
+// Verify Registration Payload 
+func verifyRegistrationPayload (t *testing.T, req *http.Request, expectedName string) {
+	t.Helper()
+
+	// Read request body
+	body, err := io.ReadAll(req.Body)
+    assert.NoError(t, err)
+
+	// Unmarshal collector name
+	var payload struct {
+        CollectorName string `json:"collectorName"`
+    }
+	err = json.Unmarshal(body, &payload)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedName, payload.CollectorName)
 }
