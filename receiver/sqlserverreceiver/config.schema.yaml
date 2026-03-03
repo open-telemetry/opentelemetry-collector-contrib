@@ -35,6 +35,11 @@ properties:
   port:
     type: integer
     x-customType: uint
+  resource_attributes_override:
+    description: 'ResourceAttributesOverride allows users to override any resource attribute. This is useful for setting service.instance.id, service.name, and service.namespace to uniquely identify database instances across environments. Override priority: resource_attributes_override > auto-generated values'
+    type: object
+    additionalProperties:
+      type: string
   server:
     type: string
   username:
