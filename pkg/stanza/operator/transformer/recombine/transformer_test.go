@@ -1096,7 +1096,6 @@ func TestProcessBatchPreservesBatching(t *testing.T) {
 	fake.ExpectEntry(t, expect3)
 }
 
-
 func TestRecombineQuietModeProcess(t *testing.T) {
 	testCases := []struct {
 		name        string
