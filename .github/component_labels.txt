@@ -349,4 +349,3 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
-receiver/k8slogreceiver receiver/k8slog
