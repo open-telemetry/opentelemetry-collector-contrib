@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.2
 	github.com/aws/aws-sdk-go-v2/config v1.32.10
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.18
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.291.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.293.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.147.0
@@ -33,8 +33,8 @@ require (
 	go.opentelemetry.io/otel v1.40.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
-	k8s.io/apimachinery v0.35.1
-	k8s.io/client-go v0.35.1
+	k8s.io/apimachinery v0.35.2
+	k8s.io/client-go v0.35.2
 )
 
 require (
@@ -88,7 +88,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/ebitengine/purego v0.9.1 // indirect
+	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
@@ -139,7 +139,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
-	github.com/shirou/gopsutil/v4 v4.26.1 // indirect
+	github.com/shirou/gopsutil/v4 v4.26.2 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -196,7 +196,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.35.1 // indirect
+	k8s.io/api v0.35.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect

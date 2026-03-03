@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.53.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.147.0
 	go.uber.org/goleak v1.3.0
-	k8s.io/client-go v0.35.1
+	k8s.io/client-go v0.35.2
 )
 
 require (
@@ -215,12 +215,12 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.64.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0 // indirect
-	go.opentelemetry.io/otel v1.40.0 // indirect
-	go.opentelemetry.io/otel/metric v1.40.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.40.0 // indirect
-	go.opentelemetry.io/otel/trace v1.40.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.66.0 // indirect
+	go.opentelemetry.io/otel v1.41.0 // indirect
+	go.opentelemetry.io/otel/metric v1.41.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.41.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.41.0 // indirect
+	go.opentelemetry.io/otel/trace v1.41.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
@@ -248,8 +248,8 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.35.1 // indirect
-	k8s.io/apimachinery v0.35.1 // indirect
+	k8s.io/api v0.35.2 // indirect
+	k8s.io/apimachinery v0.35.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect

@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.147.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.147.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.147.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding v0.147.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.53.0
 	go.opentelemetry.io/collector/component/componenttest v0.147.0
@@ -63,3 +64,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding => ../../../pkg/xstreamencoding
