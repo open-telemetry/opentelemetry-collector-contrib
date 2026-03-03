@@ -35,14 +35,6 @@ resource_attributes:
     description: A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server.
     enabled: true
     type: string
-  service.name:
-    description: The name of the database service. Can be set via resource_attributes_override to uniquely identify database instances.
-    enabled: false
-    type: string
-  service.namespace:
-    description: Logical grouping for the database service (e.g., team, business unit). Can be set via resource_attributes_override to uniquely identify database instances.
-    enabled: false
-    type: string
   sqlserver.computer.name:
     description: The name of the SQL Server instance being monitored.
     enabled: false

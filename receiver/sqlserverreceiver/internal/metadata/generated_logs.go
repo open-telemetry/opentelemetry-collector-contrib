@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -187,18 +188,6 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
-	}
-	if lbc.ResourceAttributes.ServiceName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsInclude)
-	}
-	if lbc.ResourceAttributes.ServiceName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsExclude)
-	}
-	if lbc.ResourceAttributes.ServiceNamespace.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsInclude)
-	}
-	if lbc.ResourceAttributes.ServiceNamespace.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsExclude)
 	}
 	if lbc.ResourceAttributes.SqlserverComputerName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverComputerName.EventsInclude)

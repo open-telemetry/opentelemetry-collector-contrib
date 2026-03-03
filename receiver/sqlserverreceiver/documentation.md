@@ -644,8 +644,6 @@ top query
 | server.address | Name of the database host. | Any Str | false |
 | server.port | Server port number. | Any Int | false |
 | service.instance.id | A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server. | Any Str | true |
-| service.name | The name of the database service. Can be set via resource_attributes_override to uniquely identify database instances. | Any Str | false |
-| service.namespace | Logical grouping for the database service (e.g., team, business unit). Can be set via resource_attributes_override to uniquely identify database instances. | Any Str | false |
 | sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false |
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true |
 | sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false |

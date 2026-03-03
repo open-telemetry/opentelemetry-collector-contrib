@@ -242,8 +242,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
-			rb.SetServiceName("service.name-val")
-			rb.SetServiceNamespace("service.namespace-val")
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")

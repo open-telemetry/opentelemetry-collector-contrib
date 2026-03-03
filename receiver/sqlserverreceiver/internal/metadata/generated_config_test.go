@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -183,8 +182,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ServerAddress:         ResourceAttributeConfig{Enabled: true},
 					ServerPort:            ResourceAttributeConfig{Enabled: true},
 					ServiceInstanceID:     ResourceAttributeConfig{Enabled: true},
-					ServiceName:           ResourceAttributeConfig{Enabled: true},
-					ServiceNamespace:      ResourceAttributeConfig{Enabled: true},
 					SqlserverComputerName: ResourceAttributeConfig{Enabled: true},
 					SqlserverDatabaseName: ResourceAttributeConfig{Enabled: true},
 					SqlserverInstanceName: ResourceAttributeConfig{Enabled: true},
@@ -351,8 +348,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ServerAddress:         ResourceAttributeConfig{Enabled: false},
 					ServerPort:            ResourceAttributeConfig{Enabled: false},
 					ServiceInstanceID:     ResourceAttributeConfig{Enabled: false},
-					ServiceName:           ResourceAttributeConfig{Enabled: false},
-					ServiceNamespace:      ResourceAttributeConfig{Enabled: false},
 					SqlserverComputerName: ResourceAttributeConfig{Enabled: false},
 					SqlserverDatabaseName: ResourceAttributeConfig{Enabled: false},
 					SqlserverInstanceName: ResourceAttributeConfig{Enabled: false},
@@ -405,8 +400,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ServerAddress:         ResourceAttributeConfig{Enabled: true},
 				ServerPort:            ResourceAttributeConfig{Enabled: true},
 				ServiceInstanceID:     ResourceAttributeConfig{Enabled: true},
-				ServiceName:           ResourceAttributeConfig{Enabled: true},
-				ServiceNamespace:      ResourceAttributeConfig{Enabled: true},
 				SqlserverComputerName: ResourceAttributeConfig{Enabled: true},
 				SqlserverDatabaseName: ResourceAttributeConfig{Enabled: true},
 				SqlserverInstanceName: ResourceAttributeConfig{Enabled: true},
@@ -419,8 +412,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ServerAddress:         ResourceAttributeConfig{Enabled: false},
 				ServerPort:            ResourceAttributeConfig{Enabled: false},
 				ServiceInstanceID:     ResourceAttributeConfig{Enabled: false},
-				ServiceName:           ResourceAttributeConfig{Enabled: false},
-				ServiceNamespace:      ResourceAttributeConfig{Enabled: false},
 				SqlserverComputerName: ResourceAttributeConfig{Enabled: false},
 				SqlserverDatabaseName: ResourceAttributeConfig{Enabled: false},
 				SqlserverInstanceName: ResourceAttributeConfig{Enabled: false},
