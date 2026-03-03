@@ -7,6 +7,21 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.147.0
+
+### 💡 Enhancements 💡
+
+- `extension/oauth2client`: Expose a context-aware Token method from oauth2clientauth extension (#45917)
+  This change exposes a `Token(ctx context.Context) (*oauth2.Token, error)` method that
+  clients can use to obtain a Token. This may be used by components that are not HTTP-based,
+  such as the Kafka components for use with SASL/OAUTHBEARER.
+  
+- `pkg/pdatatest`: Add entity references comparison to CompareResource and IgnoreResourceEntityRefs option (#46345)
+- `pkg/xk8stest`: Display pod events and logs on collector startup timeout for easier diagnosis of e2e failures. (#46305)
+- `receiver/splunkenterprise`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+
+<!-- previous-version -->
+
 ## v0.146.0
 
 ### 🚩 Deprecations 🚩
