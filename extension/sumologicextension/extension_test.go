@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -86,19 +87,31 @@ func TestBasicStart(t *testing.T) {
 		var reqCount int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch reqNum {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
-				_, err := w.Write([]byte(`{
+
+				// Payload verification
+				body, err := io.ReadAll(req.Body)
+    			assert.NoError(t, err)
+
+				var payload struct {
+					CollectorName string `json:"collectorName"`
+				}
+
+				err = json.Unmarshal(body, &payload)
+			    assert.NoError(t, err)
+				assert.Equal(t, "collector_name", payload.CollectorName)
+
+				_, writeErr := w.Write([]byte(`{
 					"collectorCredentialID": "collectorId",
 					"collectorCredentialKey": "collectorKey",
 					"collectorId": "id"
 				}`))
-				if err != nil {
+				if writeErr != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 				}
 
