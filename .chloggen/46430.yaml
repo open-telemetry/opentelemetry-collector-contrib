@@ -10,16 +10,16 @@ component: pkg/azurelogs
 note: Remove semconv v1.28.0 and v1.34.0 dependencies, migrating to v1.38.0 via paired feature gates
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [45033]
+issues: [45033, 45034]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
   Two new alpha feature gates control the migration:
-  `pkg.translator.azurelogs.emitStableLogConventions` emits stable attribute names (`code.function.name`, `code.file.path`, `eventName` per log record).
-  `pkg.translator.azurelogs.dontEmitLegacyLogConventions` suppresses the old names (`code.function`, `code.filepath`, `event.name` on resource).
-  Both gates default to off; enable `emitStableLogConventions` first for a dual-emit migration window.
+  `pkg.translator.azurelogs.EmitV1LogConventions` emits stable attribute names (`code.function.name`, `code.file.path`, `eventName` per log record).
+  `pkg.translator.azurelogs.DontEmitV0LogConventions` suppresses the old names (`code.function`, `code.filepath`, `event.name` on resource).
+  Both gates default to off; enable `EmitV1LogConventions` first for a dual-emit migration window.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
