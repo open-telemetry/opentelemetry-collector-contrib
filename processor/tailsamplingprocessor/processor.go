@@ -63,18 +63,19 @@ type tailSamplingSpanProcessor struct {
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
 
-	deleteTraceQueue   *list.List
-	nextConsumer       consumer.Traces
-	policies           []*policy
-	idToTrace          map[pcommon.TraceID]*traceData
-	tickerFrequency    time.Duration
-	decisionBatcher    idbatcher.Batcher
-	sampledIDCache     cache.Cache
-	nonSampledIDCache  cache.Cache
-	recordPolicy       bool
-	sampleOnFirstMatch bool
-	blockOnOverflow    bool
-	maxTraceSizeBytes  uint64
+	deleteTraceQueue     *list.List
+	nextConsumer         consumer.Traces
+	policies             []*policy
+	idToTrace            map[pcommon.TraceID]*traceData
+	tickerFrequency      time.Duration
+	decisionBatcher      idbatcher.Batcher
+	sampledIDCache       cache.Cache
+	nonSampledIDCache    cache.Cache
+	recordPolicy         bool
+	sampleOnFirstMatch   bool
+	sampleOnRootSpanOnly bool
+	blockOnOverflow      bool
+	maxTraceSizeBytes    uint64
 
 	cfg  Config
 	host component.Host
@@ -112,19 +113,20 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	}
 
 	tsp := &tailSamplingSpanProcessor{
-		ctx:                ctx,
-		cfg:                cfg,
-		set:                set,
-		telemetry:          telemetry,
-		nextConsumer:       nextConsumer,
-		sampledIDCache:     sampledDecisions,
-		nonSampledIDCache:  nonSampledDecisions,
-		logger:             set.Logger,
-		idToTrace:          make(map[pcommon.TraceID]*traceData),
-		deleteTraceQueue:   list.New(),
-		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
-		blockOnOverflow:    cfg.BlockOnOverflow,
-		maxTraceSizeBytes:  cfg.MaximumTraceSizeBytes,
+		ctx:                  ctx,
+		cfg:                  cfg,
+		set:                  set,
+		telemetry:            telemetry,
+		nextConsumer:         nextConsumer,
+		sampledIDCache:       sampledDecisions,
+		nonSampledIDCache:    nonSampledDecisions,
+		logger:               set.Logger,
+		idToTrace:            make(map[pcommon.TraceID]*traceData),
+		deleteTraceQueue:     list.New(),
+		sampleOnFirstMatch:   cfg.SampleOnFirstMatch,
+		sampleOnRootSpanOnly: cfg.SampleOnRootSpanOnly,
+		blockOnOverflow:      cfg.BlockOnOverflow,
+		maxTraceSizeBytes:    cfg.MaximumTraceSizeBytes,
 		// Similar to the id batcher, allow a batch per CPU to be buffered before blocking ConsumeTraces.
 		workChan: make(chan []traceBatch, runtime.NumCPU()),
 		// We need to buffer one new policy command/size update so that external callers can
@@ -764,6 +766,43 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		}
 	} else {
 		actualData.SpanCount += spanCount
+	}
+	if tsp.sampleOnRootSpanOnly && containsRootSpan && actualData.finalDecision == samplingpolicy.Unspecified {
+		appendToTraces(actualData.ReceivedBatches, rss)
+
+		metrics := newPolicyTickMetrics(len(tsp.policies))
+
+		decision, policyName := tsp.makeDecision(id, &actualData.TraceData, metrics)
+
+		actualData.finalDecision = decision
+		actualData.policyName = policyName
+		actualData.decisionTime = time.Now()
+
+		tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
+
+		tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttributes[decision])
+
+		for i, p := range tsp.policies {
+			for d, stats := range metrics.tracesSampledByPolicyDecision[i] {
+				tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(tsp.ctx, int64(stats.tracesSampled), p.attribute, decisionToAttributes[d])
+				if telemetry.IsMetricStatCountSpansSampledEnabled() {
+					tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(tsp.ctx, stats.spansSampled, p.attribute, decisionToAttributes[d])
+				}
+			}
+			tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutionTimeSum.Add(tsp.ctx, metrics.cumulativeExecutionTime[i].executionTime.Microseconds(), p.attribute)
+			tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutionCount.Add(tsp.ctx, metrics.cumulativeExecutionTime[i].executionCount, p.attribute)
+		}
+
+		switch decision {
+		case samplingpolicy.Sampled:
+			tsp.releaseSampledTrace(tsp.ctx, id, actualData.ReceivedBatches, policyName)
+		case samplingpolicy.NotSampled:
+			tsp.releaseNotSampledTrace(id, policyName)
+		default:
+			tsp.releaseNotSampledTrace(id, policyName)
+		}
+		return
 	}
 	if containsRootSpan && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
 		actualData.batchID = tsp.decisionBatcher.MoveToEarlierBatch(id, actualData.batchID, uint64(tsp.cfg.DecisionWaitAfterRootReceived.Seconds()))

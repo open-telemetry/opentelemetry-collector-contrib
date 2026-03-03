@@ -1314,6 +1314,52 @@ func TestRootReceivedBatcher(t *testing.T) {
 	assert.Greater(t, len(allSampledTraces), len(traceIDs)*4/10)
 }
 
+func TestSampleOnRootSpanOnly(t *testing.T) {
+	ctx := t.Context()
+	sink := &consumertest.TracesSink{} // Captures exported traces
+	cfg := Config{
+		DecisionWait:            time.Hour, // Set a huge wait time
+		SampleOnRootSpanOnly:    true,      // Enable the optimization
+		NumTraces:               100,
+		ExpectedNewTracesPerSec: 10,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "always-sample",
+					Type: AlwaysSample, // Simple policy that always says "yes"
+				},
+			},
+		},
+	}
+
+	set := processortest.NewNopSettings(metadata.Type)
+	tsp, err := newTracesProcessor(ctx, set, sink, cfg)
+	require.NoError(t, err)
+	err = tsp.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, tsp.Shutdown(ctx))
+	}()
+
+	// Root spans have an empty ParentSpanID
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	scopeSpans := rs.ScopeSpans().AppendEmpty()
+	span := scopeSpans.Spans().AppendEmpty()
+	span.SetTraceID([16]byte{1, 2, 3, 4})
+	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	// ParentSpanID is empty by default, making this a Root Span
+
+	err = tsp.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+
+	// If the feature fails, this will timeout because it would wait for the 1-hour DecisionWait
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, 1*time.Second, 10*time.Millisecond, "Trace should be exported immediately upon root span arrival")
+}
+
 func TestExtension(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
