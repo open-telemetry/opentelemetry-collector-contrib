@@ -5,6 +5,7 @@ package tailsamplingprocessor
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -866,6 +867,66 @@ func TestSampleOnFirstMatch(t *testing.T) {
 
 	// The final decision SHOULD be Sampled.
 	require.Equal(t, 1, nextConsumer.SpanCount())
+}
+
+func TestSampleOnRootSpanOnly(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	controller := newTestTSPController()
+
+	mpe := &mockPolicyEvaluator{}
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
+	cfg := Config{
+		DecisionWait:                  defaultTestDecisionWait,
+		NumTraces:                     defaultNumTraces,
+		SampleOnRootSpanOnly:          true,
+		DecisionWaitAfterRootReceived: time.Second,
+		Options: []Option{
+			withTestController(controller),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	traceID := uInt64ToTraceID(42)
+	rootSpanID := uInt64ToSpanID(1)
+
+	spanToTraces := func(spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(spanID)
+		if !parentID.IsEmpty() {
+			span.SetParentSpanID(parentID)
+		}
+		return traces
+	}
+
+	mpe.NextDecision = samplingpolicy.Sampled
+
+	// Send a child span first: no decision should be made yet.
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(uInt64ToSpanID(2), rootSpanID)))
+	require.Equal(t, 0, mpe.EvaluationCount)
+	require.Equal(t, 0, nextConsumer.SpanCount())
+
+	// Sending the root span should trigger immediate decision and release.
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(rootSpanID, pcommon.SpanID{})))
+	require.Eventually(t, func() bool {
+		return mpe.EvaluationCount == 1 && nextConsumer.SpanCount() == 2
+	}, time.Second, 10*time.Millisecond)
+
+	// Ticks should not make additional decisions in this mode.
+	controller.waitForTick()
+	controller.waitForTick()
+	require.Equal(t, 1, mpe.EvaluationCount)
 }
 
 func TestRateLimiter(t *testing.T) {
