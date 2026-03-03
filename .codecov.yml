@@ -753,10 +753,6 @@ component_management:
     name: receiver_k8sevents
     paths:
     - receiver/k8seventsreceiver/**
-  - component_id: receiver_k8slog
-    name: receiver_k8slog
-    paths:
-    - receiver/k8slogreceiver/**
   - component_id: receiver_k8sobjects
     name: receiver_k8sobjects
     paths:

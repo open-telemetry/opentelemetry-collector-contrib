@@ -297,7 +297,6 @@ body:
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents
-      - receiver/k8slog
       - receiver/k8sobjects
       - receiver/kafka
       - receiver/kafkametrics
