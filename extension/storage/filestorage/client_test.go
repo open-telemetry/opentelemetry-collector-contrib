@@ -420,7 +420,7 @@ func TestCompactReopenFailureReturnsErrors(t *testing.T) {
 	// but bbolt.Open fails when Compact tries to reopen.
 	// On Windows open files cannot be removed, so the scenario cannot
 	// be triggered — verify that and return early.
-	if err := os.RemoveAll(dbDir); err != nil {
+	if err = os.RemoveAll(dbDir); err != nil {
 		assert.Equal(t, "windows", runtime.GOOS)
 		assert.ErrorContains(t, err, "being used by another process")
 		assert.NoError(t, client.Close(ctx))
