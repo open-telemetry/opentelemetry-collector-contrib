@@ -16,8 +16,8 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.53.0
 	go.opentelemetry.io/collector/pdata v1.53.0
 	go.opentelemetry.io/collector/processor v1.53.0
-	go.opentelemetry.io/otel/metric v1.40.0 // indirect
-	go.opentelemetry.io/otel/trace v1.40.0 // indirect
+	go.opentelemetry.io/otel/metric v1.41.0 // indirect
+	go.opentelemetry.io/otel/trace v1.41.0 // indirect
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
@@ -33,7 +33,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.147.0
 	go.opentelemetry.io/collector/processor/processortest v0.147.0
 	go.opentelemetry.io/collector/processor/xprocessor v0.147.0
-	go.opentelemetry.io/otel v1.40.0
+	go.opentelemetry.io/otel v1.41.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 )
 
