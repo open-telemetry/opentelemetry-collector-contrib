@@ -156,10 +156,12 @@ func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context
 		exportSink: exportSink,
 		walConfig:  walConfig,
 		stopChan:   make(chan struct{}),
-		rNotify:    make(chan struct{}),
-		rWALIndex:  &atomic.Uint64{},
-		wWALIndex:  &atomic.Uint64{},
-		telemetry:  telemetryPRWWal,
+		// Buffered to avoid lost wake-ups when the writer signals before the
+		// reader starts waiting on notifications.
+		rNotify:   make(chan struct{}, 1),
+		rWALIndex: &atomic.Uint64{},
+		wWALIndex: &atomic.Uint64{},
+		telemetry: telemetryPRWWal,
 	}, nil
 }
 
@@ -432,13 +434,17 @@ func (prweWAL *prweWAL) persistToWAL(ctx context.Context, requests []*prompb.Wri
 		batch.Write(wIndex, protoBlob)
 	}
 
+	if err := prweWAL.wal.WriteBatch(batch); err != nil {
+		return err
+	}
+
 	// Notify reader go routine that is possibly waiting for writes.
 	select {
 	case prweWAL.rNotify <- struct{}{}:
 	default:
 	}
 
-	return prweWAL.wal.WriteBatch(batch)
+	return nil
 }
 
 func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq *prompb.WriteRequest, err error) {

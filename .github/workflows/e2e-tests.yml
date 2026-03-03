@@ -58,7 +58,7 @@ jobs:
       - name: Run opampsupervisor e2e tests
         run: |
           cd cmd/opampsupervisor
-          go test -v --tags=e2e
+          make e2e-test
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   docker-build:
@@ -91,7 +91,6 @@ jobs:
       fail-fast: false
       matrix:
         k8s-version:
-          - "v1.32.8"
           - "v1.34.0"
           - "v1.35.0"
         component:
