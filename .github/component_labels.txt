@@ -60,7 +60,6 @@ exporter/prometheusexporter exporter/prometheus
 exporter/prometheusremotewriteexporter exporter/prometheusremotewrite
 exporter/pulsarexporter exporter/pulsar
 exporter/rabbitmqexporter exporter/rabbitmq
-exporter/sapmexporter exporter/sapm
 exporter/sematextexporter exporter/sematext
 exporter/sentryexporter exporter/sentry
 exporter/signalfxexporter exporter/signalfx
