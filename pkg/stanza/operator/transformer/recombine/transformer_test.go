@@ -1406,6 +1406,8 @@ func TestRecombineFlushSource(t *testing.T) {
 			require.Error(t, err, "flushSource errors should always be returned")
 		})
 	}
+}
+
 func TestIfFieldSkipsNonMatchingEntries(t *testing.T) {
 	now := time.Now()
 	t1 := time.Date(2020, time.April, 11, 21, 34, 0o1, 0, time.UTC)
