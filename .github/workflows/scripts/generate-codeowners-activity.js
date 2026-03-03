@@ -52,7 +52,8 @@ function progress(msg) {
 
 function genLookbackDates() {
   const now = new Date();
-  const midnightYesterday = new Date(
+  // Window: 35 days ago (inclusive) until 5 days ago (exclusive end) = 30 days
+  const periodEnd = new Date(
     Date.UTC(
       now.getUTCFullYear(),
       now.getUTCMonth(),
@@ -63,14 +64,15 @@ function genLookbackDates() {
       0
     )
   );
-  const thirtyDaysAgo = new Date(midnightYesterday);
-  thirtyDaysAgo.setDate(midnightYesterday.getDate() - 30);
-  return { thirtyDaysAgo, midnightYesterday };
+  periodEnd.setUTCDate(periodEnd.getUTCDate() - 5);
+  const periodStart = new Date(periodEnd);
+  periodStart.setUTCDate(periodStart.getUTCDate() - 30);
+  return { periodStart, periodEnd };
 }
 
-function filterOnDateRange({ created_at, thirtyDaysAgo, midnightYesterday }) {
+function filterOnDateRange({ created_at, periodStart, periodEnd }) {
   const createdAt = new Date(created_at);
-  return createdAt >= thirtyDaysAgo && createdAt <= midnightYesterday;
+  return createdAt >= periodStart && createdAt <= periodEnd;
 }
 
 /**
@@ -134,9 +136,9 @@ function buildLabelToCodeOwners(pathToOwners, pathToLabel) {
   return labelToOwners;
 }
 
-async function searchIssuesAndPrs(octokit, query, thirtyDaysAgo, midnightYesterday) {
-  const from = thirtyDaysAgo.toISOString().slice(0, 10);
-  const to = midnightYesterday.toISOString().slice(0, 10);
+async function searchIssuesAndPrs(octokit, query, periodStart, periodEnd) {
+  const from = periodStart.toISOString().slice(0, 10);
+  const to = periodEnd.toISOString().slice(0, 10);
   const q = `repo:${REPO_OWNER}/${REPO_NAME} ${query} created:${from}..${to}`;
   const items = [];
   let page = 1;
@@ -217,13 +219,13 @@ function getCodeOwnersByLabel(labelsOnItem, labelToOwners) {
  * Stats aggregated by (code owner, component). Shape: byCodeOwner[login][componentLabel] = { total, responded }.
  * Also returns componentPrStats: per component, how many PRs had at least one code-owner review (for the 75% target).
  */
-async function computePrStats(octokit, prs, labelToOwners, componentLabels, thirtyDaysAgo, midnightYesterday) {
+async function computePrStats(octokit, prs, labelToOwners, componentLabels, periodStart, periodEnd) {
   const byCodeOwnerAndComponent = {};
   const componentPrStats = {}; // { [component]: { prsTotal, prsWithResponse } }
   let processed = 0;
 
   for (const pr of prs) {
-    if (!filterOnDateRange({ created_at: pr.created_at, thirtyDaysAgo, midnightYesterday })) continue;
+    if (!filterOnDateRange({ created_at: pr.created_at, periodStart, periodEnd })) continue;
     const authorLogin = pr.user?.login || null;
     if (authorLogin && EXCLUDED_PR_AUTHORS.has(authorLogin)) continue;
     const labelsOnPr = getComponentLabelsOnItem(pr, componentLabels);
@@ -349,7 +351,7 @@ function generateReport(prStats, componentPrStats, lookbackData) {
   const out = [
     `## Code owner activity report`,
     ``,
-    `Period: ${lookbackData.thirtyDaysAgo.toISOString().slice(0, 10)} – ${lookbackData.midnightYesterday.toISOString().slice(0, 10)}`,
+    `Period: ${lookbackData.periodStart.toISOString().slice(0, 10)} – ${lookbackData.periodEnd.toISOString().slice(0, 10)}`,
     ``,
     `We target **at least ${COMPONENT_TARGET_PCT}% of each component's PRs** to be reviewed by a code owner, and each code owner to respond to at least **${COMPONENT_TARGET_PCT}% / n** of their requested PRs (n = number of code owners for that component) ([at least 3 code owners for components aiming for stable](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta-to-stable)).`,
     ``,
@@ -363,7 +365,7 @@ function generateReport(prStats, componentPrStats, lookbackData) {
 }
 
 async function createIssue(octokit, context, report, lookbackData) {
-  const title = `Code owner activity: ${lookbackData.thirtyDaysAgo.toISOString().slice(0, 10)} – ${lookbackData.midnightYesterday.toISOString().slice(0, 10)}`;
+  const title = `Code owner activity: ${lookbackData.periodStart.toISOString().slice(0, 10)} – ${lookbackData.periodEnd.toISOString().slice(0, 10)}`;
   return octokit.issues.create({
     owner: context.payload.repository.owner.login,
     repo: REPO_NAME,
@@ -390,10 +392,10 @@ async function main({ github, context }) {
   // Only consider PRs/issues that have at least one of the focus component labels
   const componentLabels = new Set([...allLabels].filter(isAllowedLabel));
 
-  const prs30 = await searchIssuesAndPrs(octokit, 'is:pr', lookbackData.thirtyDaysAgo, lookbackData.midnightYesterday);
+  const prs30 = await searchIssuesAndPrs(octokit, 'is:pr', lookbackData.periodStart, lookbackData.periodEnd);
   progress(`Fetched ${prs30.length} PRs (30 days). Processing...`);
 
-  const { byCodeOwnerAndComponent: prStats, componentPrStats } = await computePrStats(octokit, prs30, labelToOwners, componentLabels, lookbackData.thirtyDaysAgo, lookbackData.midnightYesterday);
+  const { byCodeOwnerAndComponent: prStats, componentPrStats } = await computePrStats(octokit, prs30, labelToOwners, componentLabels, lookbackData.periodStart, lookbackData.periodEnd);
 
   const report = generateReport(prStats, componentPrStats, lookbackData);
 
