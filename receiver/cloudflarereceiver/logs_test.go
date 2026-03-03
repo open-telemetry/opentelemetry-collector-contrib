@@ -653,6 +653,68 @@ func gzippedMessage(message string) string {
 	return b.String()
 }
 
+func TestMaxRequestBodySize(t *testing.T) {
+	tests := []struct {
+		name               string
+		maxRequestBodySize int64
+		bodySize           int
+		expectedStatus     int
+	}{
+		{
+			name:               "body_within_limit",
+			maxRequestBodySize: 1024,
+			bodySize:           512,
+			expectedStatus:     http.StatusOK,
+		},
+		{
+			name:               "body_exceeds_limit",
+			maxRequestBodySize: 100,
+			bodySize:           1024,
+			expectedStatus:     http.StatusUnprocessableEntity,
+		},
+		{
+			name:               "body_just_under_limit",
+			maxRequestBodySize: 512,
+			bodySize:           511,
+			expectedStatus:     http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a valid JSON log entry padded to the desired size
+			padding := strings.Repeat("a", tt.bodySize-100) // Leave room for JSON structure
+			logEntry := map[string]any{
+				"ClientIP":           "127.0.0.1",
+				"EdgeStartTimestamp": "2023-03-03T05:29:05Z",
+				"padding":            padding,
+			}
+			body, err := json.Marshal(logEntry)
+			require.NoError(t, err)
+
+			cfg := &Config{
+				Logs: LogsConfig{
+					Endpoint:           "localhost:0",
+					MaxRequestBodySize: tt.maxRequestBodySize,
+					TLS:                &configtls.ServerConfig{},
+					TimestampField:     "EdgeStartTimestamp",
+					Secret:             "abc123",
+				},
+			}
+
+			r := newReceiver(t, cfg, consumertest.NewNop())
+
+			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(body))
+			req.Header.Add(secretHeaderName, "abc123")
+
+			w := httptest.NewRecorder()
+			r.handleRequest(w, req)
+
+			require.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
 func newReceiver(t *testing.T, cfg *Config, nextConsumer consumer.Logs) *logsReceiver {
 	// Default timestamp_format to rfc3339 for tests
 	if cfg.Logs.TimestampFormat == "" {
