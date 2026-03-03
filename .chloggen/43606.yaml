@@ -18,7 +18,7 @@ issues: [43606]
 subtext: |
   When `http.status.include_attributes` is enabled in the healthcheckv2 extension (with `use_v2: true`),
   users will see additional attributes in the status output. The detailed response is configured by
-  `http.status.verbose` (the query parameter is no longer used). These attributes provide more
+  `http.status.verbose`. These attributes provide more
   context about component states, including details like error messages and affected components.
   For example:
   ```json
