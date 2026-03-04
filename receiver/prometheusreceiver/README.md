@@ -86,7 +86,6 @@ receivers:
 The prometheus receiver also supports additional top-level options:
 
 - **trim_metric_suffixes**: [**Experimental**] When set to true, this enables trimming unit and some counter type suffixes from metric names. For example, it would cause `singing_duration_seconds_total` to be trimmed to `singing_duration`. This can be useful when trying to restore the original metric names used in OpenTelemetry instrumentation. Defaults to false.
-- **report_extra_scrape_metrics**: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`. Deprecated; use the feature gate `receiver.prometheusreceiver.EnableReportExtraScrapeMetrics` instead.
 
 Example configuration:
 
@@ -494,10 +493,7 @@ exporters:
 Monitor the Prometheus receiver itself to ensure it's operating correctly:
 
 1. **Enable Extra Scrape Metrics**
-   ```yaml
-   # Use feature gate or deprecated flag
-   # This exposes prometheus_receiver_scrapes_total, prometheus_receiver_scrape_errors_total, etc.
-   ```
+   - In the Prometheus config set `extra_scrape_metrics` to `true` in the `global` section.
 
 2. **Key Metrics to Monitor**:
    - `prometheus_receiver_scrapes_total`: Total number of scrapes
