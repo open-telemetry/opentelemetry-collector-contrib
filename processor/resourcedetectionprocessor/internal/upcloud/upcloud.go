@@ -52,7 +52,7 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	md, err := d.provider.Metadata(ctx)
 	if err != nil {
 		d.logger.Debug("Upcloud metadata unavailable", zap.Error(err))
-		if d.failOnMissingMetadata {
+		if d.failOnMissingMetadata || internal.FailOnMissingMetadataFromContext(ctx) {
 			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil

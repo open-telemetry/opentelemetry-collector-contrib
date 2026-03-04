@@ -66,7 +66,11 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	md, err := d.provider.Metadata(ctx)
 	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed to get consul metadata: %w", err)
+		d.logger.Debug("consul metadata unavailable", zap.Error(err))
+		if internal.FailOnMissingMetadataFromContext(ctx) {
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get consul metadata: %w", err)
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetHostName(md.Hostname)

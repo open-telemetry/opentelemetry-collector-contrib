@@ -47,7 +47,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	meta, err := d.metadataProvider.Metadata(ctx)
 	if err != nil {
 		d.logger.Debug("Alibaba Cloud ECS metadata unavailable", zap.Error(err))
-		if d.failOnMissingMetadata {
+		if d.failOnMissingMetadata || internal.FailOnMissingMetadataFromContext(ctx) {
 			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil

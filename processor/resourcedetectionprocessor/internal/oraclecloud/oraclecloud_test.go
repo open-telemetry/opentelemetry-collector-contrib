@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/oraclecloud"
+	rdpinternal "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	rdpmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
@@ -96,11 +97,31 @@ func TestDetect_ProbeFails_ReturnsEmptyResourceNoError(t *testing.T) {
 	})
 }
 
-// Verifies that if the probe is positive, but metadata fetch fails,
+// Verifies that if the probe is positive, metadata fetch fails, and fail_on_missing_metadata=true,
 // the detector returns an error and no resource attributes.
 func TestDetect_ProbeSucceeds_MetadataFails_ReturnsError(t *testing.T) {
 	withOracleCloudProbe(t, true, func() {
-		// Set up mock provider returning failure
+		md := &mockMetadata{
+			out: nil,
+			err: assert.AnError,
+		}
+		cfg := CreateDefaultConfig()
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		require.NoError(t, err)
+		det.(*Detector).provider = md
+
+		ctx := rdpinternal.ContextWithFailOnMissingMetadata(t.Context(), true)
+		res, schemaURL, err := det.Detect(ctx)
+		require.Error(t, err)
+		assert.Empty(t, res.Attributes().AsRaw())
+		assert.Empty(t, schemaURL)
+	})
+}
+
+// Verifies that if the probe is positive, metadata fetch fails, and fail_on_missing_metadata=false (default),
+// the detector returns an empty resource and no error.
+func TestDetect_ProbeSucceeds_MetadataFails_FlagFalse_ReturnsEmpty(t *testing.T) {
+	withOracleCloudProbe(t, true, func() {
 		md := &mockMetadata{
 			out: nil,
 			err: assert.AnError,
@@ -111,7 +132,7 @@ func TestDetect_ProbeSucceeds_MetadataFails_ReturnsError(t *testing.T) {
 		det.(*Detector).provider = md
 
 		res, schemaURL, err := det.Detect(t.Context())
-		require.Error(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
 		assert.Empty(t, schemaURL)
 	})

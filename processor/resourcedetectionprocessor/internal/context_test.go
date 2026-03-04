@@ -67,6 +67,28 @@ func TestClientFromContext(t *testing.T) {
 	})
 }
 
+func TestContextWithFailOnMissingMetadata(t *testing.T) {
+	t.Run("true flag is stored and retrieved", func(t *testing.T) {
+		ctx := ContextWithFailOnMissingMetadata(t.Context(), true)
+		assert.True(t, FailOnMissingMetadataFromContext(ctx))
+	})
+
+	t.Run("false flag is stored and retrieved", func(t *testing.T) {
+		ctx := ContextWithFailOnMissingMetadata(t.Context(), false)
+		assert.False(t, FailOnMissingMetadataFromContext(ctx))
+	})
+
+	t.Run("default is false when not set", func(t *testing.T) {
+		assert.False(t, FailOnMissingMetadataFromContext(t.Context()))
+	})
+
+	t.Run("overwrite with false after true", func(t *testing.T) {
+		ctx := ContextWithFailOnMissingMetadata(t.Context(), true)
+		ctx = ContextWithFailOnMissingMetadata(ctx, false)
+		assert.False(t, FailOnMissingMetadataFromContext(ctx))
+	})
+}
+
 func TestContextKeyIsolation(t *testing.T) {
 	// Verify that our context key doesn't interfere with other context values
 	client := &http.Client{}

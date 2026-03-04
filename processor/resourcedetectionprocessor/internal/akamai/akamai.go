@@ -5,6 +5,7 @@ package akamai // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	linodemeta "github.com/linode/go-metadata"
@@ -62,6 +63,9 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	inst, err := d.client.GetInstance(ctx)
 	if err != nil {
 		d.logger.Debug("Akamai detector: not running on Akamai or metadata unavailable", zap.Error(err))
+		if internal.FailOnMissingMetadataFromContext(ctx) {
+			return pcommon.NewResource(), "", fmt.Errorf("akamai metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

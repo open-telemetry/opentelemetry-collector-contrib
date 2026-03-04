@@ -77,6 +77,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", nil
 	}
 
+	failOnMissingMetadata := internal.FailOnMissingMetadataFromContext(ctx)
+
 	d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
 	errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.ProjectID)
 
@@ -185,6 +187,10 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return res, conventions.SchemaURL, errs
 	default:
 		// We don't support this platform yet, so just return with what we have
+	}
+
+	if failOnMissingMetadata && errs != nil {
+		return pcommon.NewResource(), "", errs
 	}
 	return d.rb.Emit(), conventions.SchemaURL, errs
 }

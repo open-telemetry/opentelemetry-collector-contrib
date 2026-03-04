@@ -86,6 +86,9 @@ properties:
     type: array
     items:
       type: string
+  fail_on_missing_metadata:
+    description: 'FailOnMissingMetadata controls whether network-based detectors treat an unreachable metadata service as a hard failure. When true, affected detectors return an error instead of silently returning an empty resource, enabling the processor''s retry mechanism to wait until the metadata service becomes available (e.g., during GKE/AKS node startup races). Supersedes the per-detector fail_on_missing_metadata fields (now deprecated). Default: false (backward compatible).'
+    type: boolean
   override:
     description: Override indicates whether any existing resource attributes should be overridden or preserved. Defaults to true.
     type: boolean

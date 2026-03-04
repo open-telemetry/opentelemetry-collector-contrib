@@ -5,6 +5,7 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -55,7 +56,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	compute, err := d.provider.Metadata(ctx)
 	if err != nil {
 		d.logger.Debug("Azure detector metadata retrieval failed", zap.Error(err))
-		// return an empty Resource and no error
+		if internal.FailOnMissingMetadataFromContext(ctx) {
+			return pcommon.NewResource(), "", fmt.Errorf("azure metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

@@ -5,6 +5,7 @@ package oraclecloud // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -52,8 +53,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	// 2. After positive probe, attempt to fetch metadata
 	compute, err := d.provider.Metadata(ctx)
 	if err != nil {
-		d.logger.Error("Oracle Cloud detected but failed to retrieve metadata!", zap.Error(err))
-		return pcommon.NewResource(), "", err // signal error
+		d.logger.Debug("Oracle Cloud detected but failed to retrieve metadata!", zap.Error(err))
+		if internal.FailOnMissingMetadataFromContext(ctx) {
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get Oracle Cloud metadata: %w", err)
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderOracleCloud.Value.AsString())
