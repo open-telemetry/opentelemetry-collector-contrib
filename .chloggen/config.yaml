@@ -275,7 +275,6 @@ components:
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events
-    - receiver/k8slog
     - receiver/k8sobjects
     - receiver/kafka
     - receiver/kafkametrics
