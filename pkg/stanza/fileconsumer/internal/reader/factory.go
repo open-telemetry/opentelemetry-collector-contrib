@@ -130,9 +130,11 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 				// treated as a compressed-file byte position and corrupt reads.
 				m.Offset = 0
 			} else {
-				// Edge case format transitions (e.g. gzip → plaintext): the old offset
-				// is a compressed file position with no applicable decompressed meaning.
-				// Reset to 0 - NOTE: this may cause potential duplicates.
+				// gzip → plaintext rotation: the old offset is a compressed-byte
+				// position within the previous .gz file. There is no safe way to map
+				// it to a byte offset in the new plaintext file (which is a different,
+				// rotated file). Reset to 0 and re-read from the beginning.
+				// NOTE: this may cause duplicate log entries.
 				m.Offset = 0
 			}
 			m.FileType = newFileType

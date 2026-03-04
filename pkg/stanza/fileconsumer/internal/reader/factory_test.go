@@ -271,8 +271,7 @@ func TestNewReaderFromMetadataForRotationWithCompression(t *testing.T) {
 	assert.Empty(t, r.FileType, "plaintext file should have empty FileType")
 
 	r.ReadToEnd(t.Context())
-	sink.ExpectToken(t, []byte(lines[0]))
-	sink.ExpectToken(t, []byte(lines[1]))
+	sink.ExpectTokens(t, []byte(lines[0]), []byte(lines[1]))
 
 	// Save metadata: Offset > 0, FileType == "" (plaintext).
 	oldMeta := r.Close()
@@ -293,7 +292,7 @@ func TestNewReaderFromMetadataForRotationWithCompression(t *testing.T) {
 	// exactly as the rotation-matching logic does.
 	gzipFileRead, err := os.Open(gzipPath)
 	require.NoError(t, err)
-	defer gzipFileRead.Close()
+	defer func() { require.NoError(t, gzipFileRead.Close()) }()
 
 	newReader, err := f.NewReaderFromMetadata(gzipFileRead, oldMeta)
 	require.NoError(t, err)
@@ -307,6 +306,5 @@ func TestNewReaderFromMetadataForRotationWithCompression(t *testing.T) {
 	// The decompressedBytesToSkip mechanism decompresses from byte 0 and discards the
 	// bytes for lines 1-2 that were already consumed from the plaintext file.
 	newReader.ReadToEnd(t.Context())
-	sink.ExpectToken(t, []byte(lines[2]))
-	sink.ExpectToken(t, []byte(lines[3]))
+	sink.ExpectTokens(t, []byte(lines[2]), []byte(lines[3]))
 }
