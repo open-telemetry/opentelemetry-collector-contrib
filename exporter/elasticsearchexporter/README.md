@@ -674,8 +674,7 @@ This gives the exporter the opportunity to group all related metrics into the sa
 
 ### flush failed (400) illegal_argument_exception
 
-Symptom: `elasticsearchexporter` logs an error with `error.type` set to `illegal_argument_exception`.
-This may appear as a bulk request flush failure (HTTP 400), similar to the following:
+Symptom: bulk indexer logs an error that indicates "bulk indexer flush error" with bulk request returning HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
 
 ```
 error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error
