@@ -2,8 +2,11 @@ display_name: Lookup Processor
 type: lookup
 
 description: |
-  The lookup processor enriches telemetry signals by performing external lookups to retrieve additional data. Currently
-  supports logs, with metrics and traces support planned.
+  The lookup processor enriches telemetry signals by performing external lookups to retrieve additional data. It
+  evaluates an [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) value
+  expression to extract a lookup key, queries a lookup source, and writes the results as new attributes.
+
+  Currently supports logs, with metrics and traces support planned.
 
 status:
   class: processor
@@ -12,3 +15,11 @@ status:
   distributions: []
   codeowners:
     active: [jsvd, dehaansa, VihasMakwana]
+
+tests:
+  config:
+    lookups:
+      - key: log.attributes["test.key"]
+        attributes:
+          - destination: test.result
+            default: "not-found"

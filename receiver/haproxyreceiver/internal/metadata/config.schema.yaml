@@ -1,4 +1,10 @@
 $defs:
+  attribute_config:
+    description: AttributeConfig holds configuration information for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
   attribute_status_code:
     description: AttributeStatusCode specifies the value status_code attribute.
     type: integer
@@ -6,6 +12,12 @@ $defs:
     description: MetricConfig provides common config for a particular metric.
     type: object
     properties:
+      aggregation_strategy:
+        type: string
+      attributes:
+        type: array
+        items:
+          type: string
       enabled:
         type: boolean
   metrics_builder_config:

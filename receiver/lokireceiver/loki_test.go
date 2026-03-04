@@ -34,7 +34,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver/internal/metadata"
 )
@@ -95,7 +94,7 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  testutil.GetAvailableLocalAddress(t),
+					Endpoint:  "localhost:0",
 					Transport: confignet.TransportTypeTCP,
 				},
 			},
@@ -115,19 +114,18 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
 	})
 
-	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(lr.grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	return conn, sink
 }
 
 func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
-	addr := testutil.GetAvailableLocalAddress(t)
 	config := &Config{
 		Protocols: Protocols{
 			HTTP: &confighttp.ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Transport: confignet.TransportTypeTCP,
-					Endpoint:  addr,
+					Endpoint:  "localhost:0",
 				},
 			},
 		},
@@ -146,7 +144,7 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
 	})
 
-	return addr, sink
+	return lr.httpAddr, sink
 }
 
 func TestSendingProtobufPushRequestToHTTPEndpoint(t *testing.T) {
@@ -400,19 +398,18 @@ func TestExpectedStatus(t *testing.T) {
 	}
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			httpAddr := testutil.GetAvailableLocalAddress(t)
 			config := &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
-							Endpoint:  testutil.GetAvailableLocalAddress(t),
+							Endpoint:  "localhost:0",
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					HTTP: &confighttp.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Transport: confignet.TransportTypeTCP,
-							Endpoint:  httpAddr,
+							Endpoint:  "localhost:0",
 						},
 					},
 				},
@@ -429,7 +426,7 @@ func TestExpectedStatus(t *testing.T) {
 			defer func() {
 				require.NoError(t, lr.Shutdown(ctx))
 			}()
-			conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			conn, err := grpc.NewClient(lr.grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
 			defer conn.Close()
 			grpcClient := push.NewPusherClient(conn)
@@ -451,7 +448,7 @@ func TestExpectedStatus(t *testing.T) {
 			_, err = grpcClient.Push(t.Context(), body)
 			require.EqualError(t, err, tt.expectedGrpcError)
 
-			_, port, _ := net.SplitHostPort(httpAddr)
+			_, port, _ := net.SplitHostPort(lr.httpAddr)
 			collectorAddr := fmt.Sprintf("http://localhost:%s/loki/api/v1/push", port)
 			require.EqualError(t, sendToCollector(collectorAddr, "application/json", "", []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ]]}]}`)), tt.expectedHTTPError)
 		})

@@ -21,13 +21,18 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -361,4 +366,146 @@ func assertAggregatedMetrics(t *testing.T, expected, actual pmetric.Metrics) {
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreTimestamp(),
 	))
+}
+
+// TestErrorMode tests error handling behavior with different error modes
+func TestErrorMode(t *testing.T) {
+	tests := []struct {
+		name          string
+		errorMode     ottl.ErrorMode
+		expectError   bool
+		expectLogs    bool
+		expectMetrics bool
+	}{
+		{
+			name:          "propagate error",
+			errorMode:     ottl.PropagateError,
+			expectError:   true,
+			expectLogs:    false,
+			expectMetrics: false,
+		},
+		{
+			name:          "ignore error",
+			errorMode:     ottl.IgnoreError,
+			expectError:   false,
+			expectLogs:    true,
+			expectMetrics: true,
+		},
+		{
+			name:          "silent error",
+			errorMode:     ottl.SilentError,
+			expectError:   false,
+			expectLogs:    false,
+			expectMetrics: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Run("traces", func(t *testing.T) {
+				ctx := t.Context()
+				factory := NewFactory()
+
+				// Setup logger observer to capture logs
+				observedZapCore, observedLogs := observer.New(zap.InfoLevel)
+				settings := connectortest.NewNopSettings(metadata.Type)
+				settings.Logger = zap.New(observedZapCore)
+
+				cfg := &config.Config{
+					ErrorMode: tt.errorMode,
+					Spans: []config.MetricInfo{
+						{
+							Name:        "test.sum",
+							Description: "Test sum",
+							Sum: configoptional.Some(config.Sum{
+								// Will fail on invalid attribute
+								Value: `Int(attributes["invalid_numeric"])`,
+							}),
+						},
+					},
+				}
+
+				next := &consumertest.MetricsSink{}
+				conn, err := factory.CreateTracesToMetrics(ctx, settings, cfg, next)
+				require.NoError(t, err)
+
+				// Create trace with invalid attribute
+				traces := ptrace.NewTraces()
+				span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetName("test-span")
+				span.Attributes().PutStr("invalid_numeric", "not-a-number")
+
+				err = conn.ConsumeTraces(ctx, traces)
+
+				if tt.expectError {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
+
+				if tt.expectLogs {
+					assert.Positive(t, observedLogs.Len(), "expected error to be logged")
+				} else {
+					assert.Empty(t, observedLogs.All(), "expected no logs")
+				}
+
+				if tt.expectMetrics {
+					assert.Len(t, next.AllMetrics(), 1, "expected metrics to be generated")
+				} else {
+					assert.Empty(t, next.AllMetrics(), "expected no metrics")
+				}
+			})
+
+			t.Run("logs", func(t *testing.T) {
+				ctx := t.Context()
+				factory := NewFactory()
+
+				observedZapCore, observedLogs := observer.New(zap.InfoLevel)
+				settings := connectortest.NewNopSettings(metadata.Type)
+				settings.Logger = zap.New(observedZapCore)
+
+				cfg := &config.Config{
+					ErrorMode: tt.errorMode,
+					Logs: []config.MetricInfo{
+						{
+							Name:        "test.sum",
+							Description: "Test sum",
+							Sum: configoptional.Some(config.Sum{
+								Value: `Int(attributes["invalid_numeric"])`,
+							}),
+						},
+					},
+				}
+
+				next := &consumertest.MetricsSink{}
+				conn, err := factory.CreateLogsToMetrics(ctx, settings, cfg, next)
+				require.NoError(t, err)
+
+				logs := plog.NewLogs()
+				logRecord := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+				logRecord.Body().SetStr("test log")
+				logRecord.Attributes().PutStr("invalid_numeric", "not-a-number")
+
+				err = conn.ConsumeLogs(ctx, logs)
+
+				if tt.expectError {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
+
+				if tt.expectLogs {
+					assert.Positive(t, observedLogs.Len())
+				} else {
+					assert.Empty(t, observedLogs.All())
+				}
+
+				if tt.expectMetrics {
+					assert.Len(t, next.AllMetrics(), 1)
+				} else {
+					assert.Empty(t, next.AllMetrics())
+				}
+			})
+		})
+	}
 }

@@ -56,6 +56,7 @@ spec:
             - sh
             - -c
             - |
+              set -e
               apk add --no-cache iptables ip6tables iproute2 curl
               # IPv4 redirect for 169.254.42.42
               iptables -t nat -A OUTPUT -d 169.254.42.42 -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:80

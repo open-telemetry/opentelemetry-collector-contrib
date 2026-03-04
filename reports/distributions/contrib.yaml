@@ -52,7 +52,6 @@ components:
         - prometheusremotewrite
         - pulsar
         - rabbitmq
-        - sapm
         - sentry
         - signalfx
         - splunk_hec
@@ -144,7 +143,6 @@ components:
         - azure_event_hub
         - azureblob
         - azuremonitor
-        - bigip
         - carbon
         - chrony
         - cloudflare

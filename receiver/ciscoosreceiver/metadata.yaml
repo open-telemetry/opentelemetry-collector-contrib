@@ -1,4 +1,10 @@
+display_name: Cisco OS Receiver
 type: ciscoos
+
+description: |
+  The Cisco OS Receiver is a modular receiver that collects metrics from Cisco network devices via SSH connections. It
+  supports multiple scrapers for comprehensive network monitoring and provides native OpenTelemetry OTLP metrics
+  generation.
 
 status:
   class: receiver

@@ -66,7 +66,6 @@ components:
     - exporter/prometheusremotewrite
     - exporter/pulsar
     - exporter/rabbitmq
-    - exporter/sapm
     - exporter/sematext
     - exporter/sentry
     - exporter/signalfx
@@ -207,17 +206,18 @@ components:
     - processor/metricstarttime
     - processor/metricstransform
     - processor/novadetector
+    - processor/oracleclouddetector
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
     - processor/resource
     - processor/resourcedetection
-    - processor/resourcedetectionprocessor/oraclecloud
     - processor/scalewaydetector
     - processor/schema
     - processor/span
     - processor/sumologic
     - processor/tail_sampling
+    - processor/tencentcvmdetector
     - processor/transform
     - processor/unroll
     - processor/upclouddetector
@@ -240,7 +240,6 @@ components:
     - receiver/azure_event_hub
     - receiver/azureblob
     - receiver/azuremonitor
-    - receiver/bigip
     - receiver/carbon
     - receiver/chrony
     - receiver/ciscoos
@@ -276,7 +275,6 @@ components:
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events
-    - receiver/k8slog
     - receiver/k8sobjects
     - receiver/kafka
     - receiver/kafkametrics
