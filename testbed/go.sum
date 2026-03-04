@@ -613,8 +613,6 @@ github.com/onsi/ginkgo/v2 v2.27.2 h1:LzwLj0b89qtIy6SSASkzlNvX6WktqurSHwkk2ipF/Ns
 github.com/onsi/ginkgo/v2 v2.27.2/go.mod h1:ArE1D/XhNXBXCBkKOLkbsb2c81dQHCRcF5zwn/ykDRo=
 github.com/onsi/gomega v1.38.2 h1:eZCjf2xjZAqe+LeWvKb5weQ+NcPwX84kqJ0cZNxok2A=
 github.com/onsi/gomega v1.38.2/go.mod h1:W2MJcYxRGV63b418Ai34Ud0hEdTVXq9NW9+Sx6uXf3k=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.145.0 h1:7rdLY2Ewa1WVnjMfJTEKwQ5uPDHYeA1tqNPNROi957U=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.145.0/go.mod h1:jYlQAaJO4ZyJAW2jcKAbjN+nt5BRCyu49mlZv4Rui7U=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.145.0 h1:12mxn+8YLeAjMZ1kLGulBcvHrdhRNUmxLVIDnaLkJbQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.145.0/go.mod h1:V87HYJpfmvCeQ6Cjy3Q4xylxfCn2wVSS80wvv5ECc0s=
 github.com/open-telemetry/otel-arrow/go v0.46.0 h1:J34xMBfkJqzl8r0u9GnMJUtPd/pLy65OA6sZxGZy1Ug=
