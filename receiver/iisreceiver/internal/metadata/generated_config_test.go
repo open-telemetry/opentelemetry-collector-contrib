@@ -26,20 +26,76 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					IisApplicationPoolState:   MetricConfig{Enabled: true},
-					IisApplicationPoolUptime:  MetricConfig{Enabled: true},
-					IisConnectionActive:       MetricConfig{Enabled: true},
-					IisConnectionAnonymous:    MetricConfig{Enabled: true},
-					IisConnectionAttemptCount: MetricConfig{Enabled: true},
-					IisNetworkBlocked:         MetricConfig{Enabled: true},
-					IisNetworkFileCount:       MetricConfig{Enabled: true},
-					IisNetworkIo:              MetricConfig{Enabled: true},
-					IisRequestCount:           MetricConfig{Enabled: true},
-					IisRequestQueueAgeMax:     MetricConfig{Enabled: true},
-					IisRequestQueueCount:      MetricConfig{Enabled: true},
-					IisRequestRejected:        MetricConfig{Enabled: true},
-					IisThreadActive:           MetricConfig{Enabled: true},
-					IisUptime:                 MetricConfig{Enabled: true},
+					IisApplicationPoolState: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					IisApplicationPoolUptime: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					IisConnectionActive: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisConnectionAnonymous: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisConnectionAttemptCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisNetworkBlocked: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisNetworkFileCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
+					},
+					IisNetworkIo: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
+					},
+					IisRequestCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"request"},
+					},
+					IisRequestQueueAgeMax: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					IisRequestQueueCount: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisRequestRejected: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisThreadActive: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisUptime: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					IisApplicationPool: ResourceAttributeConfig{Enabled: true},
@@ -51,20 +107,76 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					IisApplicationPoolState:   MetricConfig{Enabled: false},
-					IisApplicationPoolUptime:  MetricConfig{Enabled: false},
-					IisConnectionActive:       MetricConfig{Enabled: false},
-					IisConnectionAnonymous:    MetricConfig{Enabled: false},
-					IisConnectionAttemptCount: MetricConfig{Enabled: false},
-					IisNetworkBlocked:         MetricConfig{Enabled: false},
-					IisNetworkFileCount:       MetricConfig{Enabled: false},
-					IisNetworkIo:              MetricConfig{Enabled: false},
-					IisRequestCount:           MetricConfig{Enabled: false},
-					IisRequestQueueAgeMax:     MetricConfig{Enabled: false},
-					IisRequestQueueCount:      MetricConfig{Enabled: false},
-					IisRequestRejected:        MetricConfig{Enabled: false},
-					IisThreadActive:           MetricConfig{Enabled: false},
-					IisUptime:                 MetricConfig{Enabled: false},
+					IisApplicationPoolState: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					IisApplicationPoolUptime: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					IisConnectionActive: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisConnectionAnonymous: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisConnectionAttemptCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisNetworkBlocked: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisNetworkFileCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
+					},
+					IisNetworkIo: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
+					},
+					IisRequestCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"request"},
+					},
+					IisRequestQueueAgeMax: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
+					IisRequestQueueCount: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisRequestRejected: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisThreadActive: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{},
+					},
+					IisUptime: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					IisApplicationPool: ResourceAttributeConfig{Enabled: false},
