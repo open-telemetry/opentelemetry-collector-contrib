@@ -182,12 +182,12 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
-	if r.server != nil {
-		err := r.server.Close()
-		r.shutdownWG.Wait()
-		return err
+	if r.server == nil {
+		return nil
 	}
-	return nil
+	err := r.server.Close()
+	r.shutdownWG.Wait()
+	return err
 }
 
 func (r *splunkReceiver) processSuccessResponseWithAck(resp http.ResponseWriter, channelID string) error {
