@@ -134,26 +134,8 @@ func TestScraperScrape(t *testing.T) {
 			},
 			setupCfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.MetricsBuilderConfig.Metrics = metadata.MetricsConfig{
-					RiakMemoryLimit: metadata.MetricConfig{
-						Enabled: true,
-					},
-					RiakNodeOperationCount: metadata.MetricConfig{
-						Enabled: false,
-					},
-					RiakNodeOperationTimeMean: metadata.MetricConfig{
-						Enabled: false,
-					},
-					RiakNodeReadRepairCount: metadata.MetricConfig{
-						Enabled: false,
-					},
-					RiakVnodeIndexOperationCount: metadata.MetricConfig{
-						Enabled: false,
-					},
-					RiakVnodeOperationCount: metadata.MetricConfig{
-						Enabled: false,
-					},
-				}
+				cfg.MetricsBuilderConfig.Metrics.RiakMemoryLimit.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.RiakNodeOperationCount.Enabled = false
 				return cfg
 			},
 			expectedErr: nil,
