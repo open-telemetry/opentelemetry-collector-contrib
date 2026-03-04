@@ -674,7 +674,8 @@ This gives the exporter the opportunity to group all related metrics into the sa
 
 ### flush failed (400) illegal_argument_exception
 
-Symptom: bulk indexer logs an error that indicates "bulk indexer flush error" with bulk request returning HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
+Symptom: `elasticsearchexporter` logs an error with `error.type` set to `illegal_argument_exception`.
+This may appear as a bulk request flush failure (HTTP 400), similar to the following:
 
 ```
 error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error
@@ -687,8 +688,7 @@ error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flu
 ```
 
 In this scenario, Elasticsearch may reject the bulk request because the `require_data_stream` query parameter is not supported.
-This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) 
-or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
+This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
 
 To resolve this, upgrade Elasticsearch to 8.12+; for OTel mapping mode, 8.16+ is recommended.
 Alternatively, try other mapping modes, but the document structure will be different.
