@@ -34,10 +34,12 @@ extensions:
 
 ## Streaming Support
 
-The table below summarizes offset tracking details for each format.
+The table below summarizes offset tracking details for each format,
 
 | CloudWatch Metrics format | Offset Tracking |
 |---------------------------|-----------------|
+| Opentelemetry             | Bytes processed |
+| JSON                      | Bytes processed |
 
 ## Supported Statistics (JSON format)
 

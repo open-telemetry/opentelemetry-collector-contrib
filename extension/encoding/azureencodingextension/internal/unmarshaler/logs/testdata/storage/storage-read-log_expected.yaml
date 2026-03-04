@@ -72,9 +72,6 @@ resourceLogs:
                                                   - key: id
                                                     value:
                                                       stringValue: 7890abcd-ef12-3456-7890-abcd12345678
-                                    - key: denyAssignmentId
-                                      value:
-                                        stringValue: ""
                                     - key: type
                                       value:
                                         stringValue: RBAC

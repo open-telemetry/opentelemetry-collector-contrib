@@ -7,9 +7,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -20,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 func CreateCollectorObjects(t *testing.T, client *K8sClient, testID, manifestsDir string, templateValues map[string]string, host string) []*unstructured.Unstructured {
@@ -96,7 +99,6 @@ func collectorPodsReady(t *testing.T, client *K8sClient, namespace string, podGV
 	podsNotReady := len(pods.Items)
 	for i := range pods.Items {
 		pod := &pods.Items[i]
-		podReady := false
 		if pod.Status.Phase != v1.PodRunning {
 			t.Logf("pod %v is not running, current phase: %v", pod.Name, pod.Status.Phase)
 			continue
@@ -104,18 +106,6 @@ func collectorPodsReady(t *testing.T, client *K8sClient, namespace string, podGV
 		for _, cond := range pod.Status.Conditions {
 			if cond.Type == v1.PodReady && cond.Status == v1.ConditionTrue {
 				podsNotReady--
-				podReady = true
-			}
-		}
-		// Add some debug logs for crashing pods
-		if !podReady {
-			for i := range pod.Status.ContainerStatuses {
-				cs := &pod.Status.ContainerStatuses[i]
-				restartCount := cs.RestartCount
-				if restartCount > 0 && cs.LastTerminationState.Terminated != nil {
-					t.Logf("restart count = %d for container %s in pod %s, last terminated reason: %s", restartCount, cs.Name, pod.Name, cs.LastTerminationState.Terminated.Reason)
-					t.Logf("termination message: %s", cs.LastTerminationState.Terminated.Message)
-				}
 			}
 		}
 	}
@@ -139,6 +129,8 @@ func logCollectorPodDiagnostics(t *testing.T, client *K8sClient, namespace strin
 		}
 		t.Logf("--- events for pod %s (phase: %s) ---", pod.Name, pod.Status.Phase)
 		logPodEvents(t, client, namespace, pod.Name)
+		logRestartingContainers(t, client, namespace, pod.Name, pod.Status.InitContainerStatuses)
+		logRestartingContainers(t, client, namespace, pod.Name, pod.Status.ContainerStatuses)
 	}
 }
 
@@ -163,27 +155,80 @@ func logPodEvents(t *testing.T, client *K8sClient, namespace, podName string) {
 	list, err := client.DynamicClient.Resource(eventsGVR).Namespace(namespace).List(ctx, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("involvedObject.name=%s,involvedObject.kind=Pod", podName),
 	})
-	if err != nil || len(list.Items) == 0 {
+	if err != nil {
+		t.Logf("  failed to list events: %v", err)
+		return
+	}
+	if len(list.Items) == 0 {
 		t.Logf("  no events found")
 		return
 	}
 	for _, item := range list.Items {
-		fields := item.Object
-		source := ""
-		if s, ok := fields["source"].(map[string]any); ok {
-			source = strField(s, "component")
+		var event v1.Event
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &event); err != nil {
+			continue
 		}
 		t.Logf("  %s  %s  %s  %s",
-			strField(fields, "type"),
-			strField(fields, "reason"),
-			source,
-			strField(fields, "message"))
+			event.Type,
+			event.Reason,
+			event.Source.Component,
+			event.Message)
 	}
 }
 
-func strField(obj map[string]any, key string) string {
-	if v, ok := obj[key].(string); ok {
-		return v
+func logRestartingContainers(t *testing.T, client *K8sClient, namespace, podName string, statuses []v1.ContainerStatus) {
+	t.Helper()
+	for i := range statuses {
+		cs := &statuses[i]
+		if cs.RestartCount == 0 {
+			continue
+		}
+		reason := ""
+		if cs.LastTerminationState.Terminated != nil {
+			reason = cs.LastTerminationState.Terminated.Reason
+		}
+		t.Logf("--- logs for container %s in pod %s (restarts: %d, last exit reason: %s) ---", cs.Name, podName, cs.RestartCount, reason)
+		logContainerLogs(t, client, namespace, podName, cs.Name)
 	}
-	return ""
+}
+
+func logContainerLogs(t *testing.T, client *K8sClient, namespace, podName, containerName string) {
+	t.Helper()
+	coreClient, err := corev1client.NewForConfig(client.restConfig)
+	if err != nil {
+		t.Logf("  failed to create client for logs: %v", err)
+		return
+	}
+
+	tailLines := int64(25)
+	for _, previous := range []bool{false, true} {
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		logStr := fetchContainerLogs(ctx, coreClient, namespace, podName, containerName, previous, &tailLines)
+		cancel()
+		if logStr != "" {
+			for line := range strings.SplitSeq(logStr, "\n") {
+				t.Logf("  %s", line)
+			}
+			return
+		}
+	}
+	t.Logf("  no logs available")
+}
+
+func fetchContainerLogs(ctx context.Context, coreClient corev1client.CoreV1Interface, namespace, podName, containerName string, previous bool, tailLines *int64) string {
+	stream, err := coreClient.Pods(namespace).GetLogs(podName, &v1.PodLogOptions{
+		Container: containerName,
+		Previous:  previous,
+		TailLines: tailLines,
+	}).Stream(ctx)
+	if err != nil {
+		return ""
+	}
+	defer stream.Close()
+
+	logs, err := io.ReadAll(stream)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimRight(string(logs), "\n")
 }
