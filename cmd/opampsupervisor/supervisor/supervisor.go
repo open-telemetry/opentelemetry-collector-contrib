@@ -120,6 +120,10 @@ type Supervisor struct {
 	// Supervisor's own config.
 	config config.Supervisor
 
+	// configWriteMu serializes initial config loading between Start and
+	// OpAMP OnConnect callback to avoid concurrent config mutations.
+	configWriteMu sync.Mutex
+
 	agentDescription    *atomic.Value
 	availableComponents *atomic.Value
 
@@ -359,7 +363,9 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return fmt.Errorf("cannot start OpAMP client: %w", err)
 	}
 
+	s.configWriteMu.Lock()
 	err = s.loadAndWriteInitialMergedConfig()
+	s.configWriteMu.Unlock()
 	if err != nil {
 		return fmt.Errorf("failed loading initial config: %w", err)
 	}
@@ -672,22 +678,29 @@ func (s *Supervisor) startOpAMPClient() error {
 		Callbacks: types.Callbacks{
 			OnConnect: func(context.Context) {
 				opampBackendConnected := s.initialOpampConnSuccess.CompareAndSwap(false, true)
+				if !opampBackendConnected {
+					return
+				}
 				s.telemetrySettings.Logger.Info("Connected to the OpAMP server.")
 
-				if s.config.Agent.FallbackEnabled() && opampBackendConnected {
-					err := s.loadAndWriteInitialMergedConfig()
-					if err != nil {
-						s.telemetrySettings.Logger.Error("failed loading initial config", zap.Error(err))
-						return
-					}
-					if err := s.waitForAgentReady(); err != nil {
-						s.telemetrySettings.Logger.Debug("Agent not ready before config update; skipping signal", zap.Error(err))
-						return
-					}
-					select {
-					case s.hasNewConfig <- struct{}{}:
-					default:
-					}
+				s.configWriteMu.Lock()
+				defer s.configWriteMu.Unlock()
+				fallbackEnabled := s.config.Agent.FallbackEnabled()
+				if !fallbackEnabled {
+					return
+				}
+				err := s.loadAndWriteInitialMergedConfig()
+				if err != nil {
+					s.telemetrySettings.Logger.Error("failed loading initial config", zap.Error(err))
+					return
+				}
+				if err := s.waitForAgentReady(); err != nil {
+					s.telemetrySettings.Logger.Debug("Agent not ready before config update; skipping signal", zap.Error(err))
+					return
+				}
+				select {
+				case s.hasNewConfig <- struct{}{}:
+				default:
 				}
 			},
 			OnConnectFailed: func(_ context.Context, err error) {
