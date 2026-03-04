@@ -287,6 +287,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.147.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.147.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.147.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.147.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.147.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.147.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk v0.147.0 // indirect
@@ -554,3 +555,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otela
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter => ../exporter/otelarrowexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk => ../pkg/translator/splunk
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../pkg/sampling
