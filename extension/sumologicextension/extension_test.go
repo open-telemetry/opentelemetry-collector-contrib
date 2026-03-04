@@ -756,7 +756,7 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
 					"collector didn't send correct Authorization header with registration request")
 
-				_, err := w.Write([]byte(`{
+				_, err = w.Write([]byte(`{
 					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF"
@@ -1704,18 +1704,18 @@ func Test_cleanupBuildVersion(t *testing.T) {
 	}
 }
 
-// Verify Registration Payload 
-func verifyRegistrationPayload (t *testing.T, req *http.Request, expectedName string) {
+// Verify Registration Payload
+func verifyRegistrationPayload(t *testing.T, req *http.Request, expectedName string) {
 	t.Helper()
 
 	// Read request body
 	body, err := io.ReadAll(req.Body)
-    assert.NoError(t, err)
+	assert.NoError(t, err)
 
 	// Unmarshal collector name
 	var payload struct {
-        CollectorName string `json:"collectorName"`
-    }
+		CollectorName string `json:"collectorName"`
+	}
 	err = json.Unmarshal(body, &payload)
 	assert.NoError(t, err)
 
