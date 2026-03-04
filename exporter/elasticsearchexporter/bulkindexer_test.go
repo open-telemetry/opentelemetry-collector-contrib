@@ -234,19 +234,19 @@ func TestGetErrorHint(t *testing.T) {
 			name:      "illegal_argument_exception with .otel- in index (OTel mapping mode)",
 			index:     "logs-generic.otel-default",
 			errorType: "illegal_argument_exception",
-			want:      errorHintOTelMappingMode,
+			want:      errorHintOTelAndECSMappingModes,
 		},
 		{
 			name:      "illegal_argument_exception with .otel- in metrics index",
 			index:     "metrics-generic.otel-default",
 			errorType: "illegal_argument_exception",
-			want:      errorHintOTelMappingMode,
+			want:      errorHintOTelAndECSMappingModes,
 		},
 		{
 			name:      "illegal_argument_exception with .otel- in traces index",
 			index:     "traces-generic.otel-default",
 			errorType: "illegal_argument_exception",
-			want:      errorHintOTelMappingMode,
+			want:      errorHintOTelAndECSMappingModes,
 		},
 		{
 			name:      "illegal_argument_exception without .otel- (not OTel mapping mode)",
@@ -277,6 +277,30 @@ func TestGetErrorHint(t *testing.T) {
 			index:     "",
 			errorType: "",
 			want:      "",
+		},
+		{
+			name:      "illegal_argument_exception with ECS APM data stream index",
+			index:     "metrics.apm.app-default",
+			errorType: "illegal_argument_exception",
+			want:      errorHintOTelAndECSMappingModes,
+		},
+		{
+			name:      "illegal_argument_exception with ECS APM backing index",
+			index:     ".ds-metrics.apm.app-default-2026.03.03-000001",
+			errorType: "illegal_argument_exception",
+			want:      errorHintOTelAndECSMappingModes,
+		},
+		{
+			name:      "illegal_argument_exception with ECS APM logs data stream index",
+			index:     "logs.apm.app-default",
+			errorType: "illegal_argument_exception",
+			want:      errorHintOTelAndECSMappingModes,
+		},
+		{
+			name:      "illegal_argument_exception with ECS APM traces backing index",
+			index:     ".ds-traces.apm.app-default-2026.03.03-000001",
+			errorType: "illegal_argument_exception",
+			want:      errorHintOTelAndECSMappingModes,
 		},
 	}
 

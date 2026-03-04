@@ -63,13 +63,18 @@ const defaultMaxRetries = 2
 const (
 	// errorHintKnownIssues is the hint message for errors that are documented in the Known issues section.
 	errorHintKnownIssues = "check the \"Known issues\" section of Elasticsearch Exporter docs"
-	// errorHintOTelMappingMode is the hint message for illegal_argument_exception when using OTel mapping mode with incompatible Elasticsearch versions.
-	errorHintOTelMappingMode = "OTel mapping mode requires Elasticsearch 8.12+ (see Known issues in README)"
+	// errorHintOTelAndECSMappingModes is the hint message for illegal_argument_exception
+	// related to require_data_stream with incompatible Elasticsearch versions.
+	errorHintOTelAndECSMappingModes = "OTel and ECS mapping modes require Elasticsearch 8.12+ (see Known issues in README)"
 )
 
 // otelDatasetSuffixRegex matches the .otel-{namespace} suffix pattern in OTel mapping mode indices.
 // Pattern: {signal}-{dataset}.otel-{namespace}
 var otelDatasetSuffixRegex = regexp.MustCompile(`^[^-]+?-[^-]+?\.otel-`)
+
+// ecsAPMIndexRegex matches ECS APM data stream names and backing indices for all signals.
+// Pattern: (logs|metrics|traces).apm* or .ds-(logs|metrics|traces).apm*
+var ecsAPMIndexRegex = regexp.MustCompile(`^(?:\.ds-)?(?:logs|metrics|traces)\.apm`)
 
 func newBulkIndexer(
 	client elastictransport.Interface,
@@ -469,10 +474,13 @@ func getErrorHint(index, errorType string) string {
 	if strings.HasPrefix(index, ".ds-metrics-") && errorType == "version_conflict_engine_exception" {
 		return errorHintKnownIssues
 	}
-	// Detect illegal_argument_exception related to require_data_stream when using OTel mapping mode
-	// with Elasticsearch < 8.12. OTel mapping mode indices contain ".otel-" as a dataset suffix.
-	if errorType == "illegal_argument_exception" && otelDatasetSuffixRegex.MatchString(index) {
-		return errorHintOTelMappingMode
+	// Detect illegal_argument_exception related to require_data_stream when using OTel/ECS mapping modes
+	// with Elasticsearch < 8.12 by matching known index patterns:
+	// - OTel: <signal>-<dataset>.otel-<namespace>
+	// - ECS/APM: (logs|metrics|traces).apm* and .ds-(logs|metrics|traces).apm* indices
+	if errorType == "illegal_argument_exception" &&
+		(otelDatasetSuffixRegex.MatchString(index) || ecsAPMIndexRegex.MatchString(index)) {
+		return errorHintOTelAndECSMappingModes
 	}
 	return ""
 }
@@ -524,7 +532,8 @@ func (b *bulkIndexers) start(
 	}
 
 	for _, mode := range allowedMappingModes {
-		bi := newBulkIndexer(esClient, cfg, mode == MappingOTel, b.telemetryBuilder, set.Logger)
+		requireDataStream := mode == MappingOTel || mode == MappingECS
+		bi := newBulkIndexer(esClient, cfg, requireDataStream, b.telemetryBuilder, set.Logger)
 		b.modes[mode] = &wgTrackingBulkIndexer{bulkIndexer: bi, wg: &b.wg}
 	}
 
