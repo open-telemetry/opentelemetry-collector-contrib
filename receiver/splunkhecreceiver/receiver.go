@@ -119,8 +119,8 @@ func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, er
 		return nil, err
 	}
 	r := &splunkReceiver{
-		settings: settings,
-		config:   &config,
+		settings:       settings,
+		config:         &config,
 		obsrecv:        obsrecv,
 		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
 	}
