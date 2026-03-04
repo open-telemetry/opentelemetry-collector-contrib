@@ -393,6 +393,7 @@ func flushBulkIndexer(
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
+			zap.Int("http.response.status_code", resp.Status),
 		)
 
 		if getErrorHintFunc != nil {
