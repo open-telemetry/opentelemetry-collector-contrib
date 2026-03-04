@@ -8,16 +8,20 @@ status:
   codeowners:
     active: [dmitryax, braydonk]
 
+reaggregation_enabled: true
+
 sem_conv_version: 1.9.0
 
 attributes:
   state:
     description: Breakdown of memory usage by type.
     type: string
+    requirement_level: recommended
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
   system.memory.linux.hugepages.state:
     description: Breakdown of hugepages usage by state.
     type: string
+    requirement_level: recommended
     enum: [free, used]
 
 metrics:
