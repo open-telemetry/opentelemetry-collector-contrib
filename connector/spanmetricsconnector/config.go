@@ -99,6 +99,10 @@ type Config struct {
 	// This option enables the old behavior
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103
 	AddResourceAttributes bool `mapstructure:"add_resource_attributes"`
+
+	// EnableMetricsSamplingMethod adds the sampling.method attribute ("extrapolated" or "counted") to metrics.
+	// When false (default), the attribute is not added.
+	EnableMetricsSamplingMethod bool `mapstructure:"enable_metrics_sampling_method"`
 }
 
 type HistogramConfig struct {

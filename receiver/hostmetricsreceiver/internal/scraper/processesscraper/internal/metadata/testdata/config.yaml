@@ -3,11 +3,23 @@ all_set:
   metrics:
     system.processes.count:
       enabled: true
+      attributes: ["status"]
     system.processes.created:
       enabled: true
+      attributes: []
+reaggregate_set:
+  metrics:
+    system.processes.count:
+      enabled: true
+      attributes: []
+    system.processes.created:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     system.processes.count:
       enabled: false
+      attributes: ["status"]
     system.processes.created:
       enabled: false
+      attributes: []
