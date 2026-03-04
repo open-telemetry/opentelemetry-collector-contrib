@@ -169,11 +169,11 @@ func TestLogarithmIndexMin(t *testing.T) {
 		require.Less(t, correctMapped, MinValue)
 
 		correctMappedUpper := roundedBoundary(scale, int32(correctMinIndex+1))
-		require.Equal(t, correctMappedUpper, MinValue)
+		require.Equal(t, MinValue, correctMappedUpper)
 
 		mapped, err := m.LowerBoundary(minIndex + 1)
 		require.NoError(t, err)
-		require.InEpsilon(t, mapped, MinValue, 1e-6)
+		require.InEpsilon(t, MinValue, mapped, 1e-6)
 
 		// Subnormal values map to the min index:
 		require.Equal(t, m.MapToIndex(MinValue/2), int32(correctMinIndex))

@@ -17,7 +17,7 @@ package structure // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"testing"
 
@@ -242,7 +242,7 @@ func testAscendingSequence(t *testing.T, maxSize, offset, initScale int32) {
 		maxVal := centerVal(mapper, offset+step)
 		sum := 0.0
 
-		for i := int32(0); i < maxSize; i++ {
+		for i := range maxSize {
 			value := centerVal(mapper, offset+i)
 			agg.Update(value)
 			sum += value
@@ -281,11 +281,11 @@ func testAscendingSequence(t *testing.T, maxSize, offset, initScale int32) {
 		mapper, err = newMapping(agg.Scale())
 		require.NoError(t, err)
 		idx := mapper.MapToIndex(minVal)
-		require.Equal(t, int32(idx), agg.Positive().Offset())
+		require.Equal(t, idx, agg.Positive().Offset())
 
 		// The maximum range is correct at the computed scale.
 		idx = mapper.MapToIndex(maxVal)
-		require.Equal(t, int32(idx), agg.Positive().Offset()+int32(agg.Positive().Len())-1)
+		require.Equal(t, idx, agg.Positive().Offset()+int32(agg.Positive().Len())-1)
 	}
 }
 
@@ -295,7 +295,7 @@ func TestMergeSimpleEven(t *testing.T) {
 	agg1 := NewFloat64(NewConfig(WithMaxSize(4)))
 	agg2 := NewFloat64(NewConfig(WithMaxSize(4)))
 
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		f1 := float64(int64(2) << i)   // 2, 4, 8, 16
 		f2 := 1 / float64(int64(1)<<i) // 1, 1/2, 1/4, 1/8
 
@@ -330,7 +330,7 @@ func TestMergeSimpleOdd(t *testing.T) {
 	agg1 := NewFloat64(NewConfig(WithMaxSize(4)))
 	agg2 := NewFloat64(NewConfig(WithMaxSize(4)))
 
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		f1 := float64(int64(2) << i)
 		f2 := 2 / float64(int64(1)<<i) // Diff from above test: 1 here vs 2 above.
 
@@ -388,8 +388,7 @@ func TestMergeExhaustive(t *testing.T) {
 		t.Run(fmt.Sprint("mean=", mean), func(t *testing.T) {
 			for _, stddev := range stddevs {
 				t.Run(fmt.Sprint("stddev=", stddev), func(t *testing.T) {
-					src := rand.NewSource(77777677777)
-					rnd := rand.New(src)
+					rnd := rand.New(rand.NewPCG(77777677777, 77777677777))
 
 					values := make([]float64, count)
 					for i := range values {
@@ -454,7 +453,7 @@ func TestOverflowBits(t *testing.T) {
 			cHist := NewFloat64(NewConfig())
 
 			if limit <= 0x10000 {
-				for i := uint64(0); i < limit; i++ {
+				for i := range limit {
 					aHist.Update(plusOne)
 					aHist.Update(minusOne)
 
@@ -528,7 +527,7 @@ func TestIntegerAggregation(t *testing.T) {
 		require.Equal(t, int32((1<<scale)-1), b.Offset())
 		// Bucket 254 has 6 elements, bucket 255 has 5
 		// bucket 253 has 5, ...
-		for i := uint32(0); i < 256; i++ {
+		for i := range uint32(256) {
 			require.LessOrEqual(t, b.At(i), uint64(6*factor))
 		}
 	}
@@ -610,7 +609,7 @@ func TestReset(t *testing.T) {
 			require.Equal(t, int32((1<<scale)-1), pos.Offset())
 			// Bucket 254 has 6 elements, bucket 255 has 5
 			// bucket 253 has 5, ...
-			for i := uint32(0); i < 256; i++ {
+			for i := range uint32(256) {
 				require.LessOrEqual(t, pos.At(i), uint64(6)*incr)
 			}
 		})
@@ -651,7 +650,7 @@ func TestMoveInto(t *testing.T) {
 
 	require.Equal(t, uint32(256-(1<<scale-1)), pos.Len())
 	require.Equal(t, int32((1<<scale)-1), pos.Offset())
-	for i := uint32(0); i < 256; i++ {
+	for i := range uint32(256) {
 		require.LessOrEqual(t, pos.At(i), uint64(6))
 	}
 }
@@ -715,8 +714,8 @@ func TestFullRange(t *testing.T) {
 
 	require.Equal(t, uint32(MinSize), pos.Len())
 	require.Equal(t, int32(-1), pos.Offset())
-	require.Equal(t, pos.At(0), uint64(2))
-	require.Equal(t, pos.At(1), uint64(1))
+	require.Equal(t, uint64(2), pos.At(0))
+	require.Equal(t, uint64(1), pos.At(1))
 }
 
 // TestAggregatorMinMax verifies the min and max values.
@@ -754,8 +753,7 @@ func TestZeroCountByIncr(t *testing.T) {
 
 // Benchmarks the Update() function for values in the range [1,2).
 func BenchmarkLinear(b *testing.B) {
-	src := rand.NewSource(77777677777)
-	rnd := rand.New(src)
+	rnd := rand.New(rand.NewPCG(77777677777, 77777677777))
 	agg := NewFloat64(NewConfig(WithMaxSize(1024)))
 	for i := 0; i < b.N; i++ {
 		x := 2 - rnd.Float64()
@@ -765,8 +763,7 @@ func BenchmarkLinear(b *testing.B) {
 
 // Benchmarks the Update() function for values in the range (0, MaxValue].
 func BenchmarkExponential(b *testing.B) {
-	src := rand.NewSource(77777677777)
-	rnd := rand.New(src)
+	rnd := rand.New(rand.NewPCG(77777677777, 77777677777))
 	agg := NewFloat64(NewConfig(WithMaxSize(1024)))
 	for i := 0; i < b.N; i++ {
 		x := rnd.ExpFloat64()
@@ -776,7 +773,7 @@ func BenchmarkExponential(b *testing.B) {
 
 func benchmarkMapping(b *testing.B, name string, mapper mapping.Mapping) {
 	b.Run(fmt.Sprintf("mapping_%s", name), func(b *testing.B) {
-		src := rand.New(rand.NewSource(54979))
+		src := rand.New(rand.NewPCG(54979, 54979))
 
 		for i := 0; i < b.N; i++ {
 			_ = mapper.MapToIndex(1 + src.Float64())
@@ -786,10 +783,10 @@ func benchmarkMapping(b *testing.B, name string, mapper mapping.Mapping) {
 
 func benchmarkBoundary(b *testing.B, name string, mapper mapping.Mapping) {
 	b.Run(fmt.Sprintf("boundary_%s", name), func(b *testing.B) {
-		src := rand.New(rand.NewSource(54979))
+		src := rand.New(rand.NewPCG(54979, 54979))
 
 		for i := 0; i < b.N; i++ {
-			_, _ = mapper.LowerBoundary(int32(src.Int63()))
+			_, _ = mapper.LowerBoundary(int32(src.Int64()))
 		}
 	})
 }
@@ -831,7 +828,7 @@ func TestBoundaryStatistics(t *testing.T) {
 
 		total := MaxNormalExponent - MinNormalExponent + 1
 		for exp := MinNormalExponent; exp <= MaxNormalExponent; exp++ {
-			value := math.Ldexp(1, int(exp))
+			value := math.Ldexp(1, exp)
 
 			index := m.MapToIndex(value)
 

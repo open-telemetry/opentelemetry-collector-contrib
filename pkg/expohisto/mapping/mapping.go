@@ -14,7 +14,7 @@
 
 package mapping // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/mapping"
 
-import "fmt"
+import "errors"
 
 // Mapping is the interface of an exponential histogram mapper.
 type Mapping interface {
@@ -41,8 +41,8 @@ type Mapping interface {
 var (
 	// ErrUnderflow is returned when computing the lower boundary
 	// of an index that maps into a denormalized floating point value.
-	ErrUnderflow = fmt.Errorf("underflow")
+	ErrUnderflow = errors.New("underflow")
 	// ErrOverflow is returned when computing the lower boundary
 	// of an index that maps into +Inf.
-	ErrOverflow = fmt.Errorf("overflow")
+	ErrOverflow = errors.New("overflow")
 )

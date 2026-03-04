@@ -15,7 +15,7 @@
 package exponent // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/mapping/exponent"
 
 import (
-	"fmt"
+	"errors"
 	"math"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/mapping"
@@ -56,10 +56,10 @@ var prebuiltMappings = [-MinScale + 1]exponentMapping{
 // NewMapping constructs an exponential mapping function, used for scales <= 0.
 func NewMapping(scale int32) (mapping.Mapping, error) {
 	if scale > MaxScale {
-		return nil, fmt.Errorf("exponent mapping requires scale <= 0")
+		return nil, errors.New("exponent mapping requires scale <= 0")
 	}
 	if scale < MinScale {
-		return nil, fmt.Errorf("scale too low")
+		return nil, errors.New("scale too low")
 	}
 	return &prebuiltMappings[scale-MinScale], nil
 }
@@ -70,7 +70,7 @@ func NewMapping(scale int32) (mapping.Mapping, error) {
 // base**(index+1)], including MinValue.  This is the smallest
 // valid index that contains at least one normal value.
 func (e *exponentMapping) minNormalLowerBoundaryIndex() int32 {
-	idx := int32(internal.MinNormalExponent) >> e.shift
+	idx := internal.MinNormalExponent >> e.shift
 	if e.shift < 2 {
 		// For scales -1 and 0 the minimum value 2**-1022 is a
 		// power-of-two multiple, meaning base**index ==
@@ -87,7 +87,7 @@ func (e *exponentMapping) minNormalLowerBoundaryIndex() int32 {
 // boundary cannot be represented.  One greater than this index
 // corresponds with the bucket containing values > 0x1p1024.
 func (e *exponentMapping) maxNormalLowerBoundaryIndex() int32 {
-	return int32(internal.MaxNormalExponent) >> e.shift
+	return internal.MaxNormalExponent >> e.shift
 }
 
 // MapToIndex implements mapping.Mapping.
@@ -111,11 +111,11 @@ func (e *exponentMapping) MapToIndex(value float64) int32 {
 
 // LowerBoundary implements mapping.Mapping.
 func (e *exponentMapping) LowerBoundary(index int32) (float64, error) {
-	if min := e.minNormalLowerBoundaryIndex(); index < min {
+	if minIdx := e.minNormalLowerBoundaryIndex(); index < minIdx {
 		return 0, mapping.ErrUnderflow
 	}
 
-	if max := e.maxNormalLowerBoundaryIndex(); index > max {
+	if maxIdx := e.maxNormalLowerBoundaryIndex(); index > maxIdx {
 		return 0, mapping.ErrOverflow
 	}
 

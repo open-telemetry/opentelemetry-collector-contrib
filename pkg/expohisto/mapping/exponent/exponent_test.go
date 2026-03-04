@@ -268,8 +268,8 @@ func TestExponentIndexMax(t *testing.T) {
 		// Correct max index is one less than the first index
 		// that overflows math.MaxFloat64, i.e., one less than
 		// the index of +Inf.
-		maxIndex := (int32(MaxNormalExponent+1) >> -scale) - 1
-		require.Equal(t, index, int32(maxIndex))
+		maxIndex := ((MaxNormalExponent + 1) >> -scale) - 1
+		require.Equal(t, index, maxIndex)
 
 		// The index maps to a finite boundary.
 		bound, err := m.LowerBoundary(index)

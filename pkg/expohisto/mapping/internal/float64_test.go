@@ -24,7 +24,7 @@ import (
 // math.Frexp.
 func TestGetNormalBase2(t *testing.T) {
 	require.Equal(t, int32(-1022), MinNormalExponent)
-	require.Equal(t, int32(+1023), MaxNormalExponent)
+	require.Equal(t, MaxNormalExponent, int32(+1023))
 
 	require.Equal(t, MaxNormalExponent, GetNormalBase2(0x1p+1023))
 	require.Equal(t, int32(1022), GetNormalBase2(0x1p+1022))

@@ -15,7 +15,7 @@
 package logarithm // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/mapping/logarithm"
 
 import (
-	"fmt"
+	"errors"
 	"math"
 	"sync"
 
@@ -99,7 +99,7 @@ func NewMapping(scale int32) (mapping.Mapping, error) {
 		// scale 20 can represent the entire float64 range
 		// with a 30 bit index, and we don't handle larger
 		// scales to simplify range tests in this package.
-		return nil, fmt.Errorf("scale out of bounds")
+		return nil, errors.New("scale out of bounds")
 	}
 	prebuiltMappingsLock.Lock()
 	defer prebuiltMappingsLock.Unlock()
@@ -121,7 +121,7 @@ func NewMapping(scale int32) (mapping.Mapping, error) {
 // (MinValue, MinValue*base].  One less than this index corresponds
 // with the bucket containing values <= MinValue.
 func (l *logarithmMapping) minNormalLowerBoundaryIndex() int32 {
-	return int32(internal.MinNormalExponent << l.scale)
+	return internal.MinNormalExponent << l.scale
 }
 
 // maxNormalLowerBoundaryIndex is the index such that base**index equals the
@@ -131,7 +131,7 @@ func (l *logarithmMapping) minNormalLowerBoundaryIndex() int32 {
 // boundary cannot be represented.  One greater than this index
 // corresponds with the bucket containing values > 0x1p1024.
 func (l *logarithmMapping) maxNormalLowerBoundaryIndex() int32 {
-	return (int32(internal.MaxNormalExponent+1) << l.scale) - 1
+	return ((internal.MaxNormalExponent + 1) << l.scale) - 1
 }
 
 // MapToIndex implements mapping.Mapping.
@@ -154,32 +154,34 @@ func (l *logarithmMapping) MapToIndex(value float64) int32 {
 	// less code.
 	index := int32(math.Floor(math.Log(value) * l.scaleFactor))
 
-	if max := l.maxNormalLowerBoundaryIndex(); index >= max {
-		return max
+	if maxIdx := l.maxNormalLowerBoundaryIndex(); index >= maxIdx {
+		return maxIdx
 	}
 	return index
 }
 
 // LowerBoundary implements mapping.Mapping.
 func (l *logarithmMapping) LowerBoundary(index int32) (float64, error) {
-	if max := l.maxNormalLowerBoundaryIndex(); index >= max {
-		if index == max {
+	if maxIdx := l.maxNormalLowerBoundaryIndex(); index >= maxIdx {
+		if index == maxIdx {
 			// Note that the equation on the last line of this
 			// function returns +Inf.  Use the alternate equation.
 			return 2 * math.Exp(float64(index-(int32(1)<<l.scale))*l.inverseFactor), nil
 		}
 		return 0, mapping.ErrOverflow
 	}
-	if min := l.minNormalLowerBoundaryIndex(); index <= min {
-		if index == min {
+	if minIdx := l.minNormalLowerBoundaryIndex(); index <= minIdx {
+		switch index {
+		case minIdx:
 			return MinValue, nil
-		} else if index == min-1 {
+		case minIdx - 1:
 			// Similar to the logic above, the math.Exp()
 			// formulation is not accurate for subnormal
 			// values.
 			return math.Exp(float64(index+(int32(1)<<l.scale))*l.inverseFactor) / 2, nil
+		default:
+			return 0, mapping.ErrUnderflow
 		}
-		return 0, mapping.ErrUnderflow
 	}
 	return math.Exp(float64(index) * l.inverseFactor), nil
 }

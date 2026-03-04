@@ -385,7 +385,8 @@ func (h *Histogram[N]) incrementIndexBy(b *Buckets, index int32, incr uint64) (h
 		// increment, means it can be safely skipped.
 		return highLow{}, true
 	}
-	if b.Len() == 0 {
+	switch {
+	case b.Len() == 0:
 		if b.backing == nil {
 			b.backing = &bucketsVarwidth[uint8]{
 				counts: []uint8{0},
@@ -394,7 +395,7 @@ func (h *Histogram[N]) incrementIndexBy(b *Buckets, index int32, incr uint64) (h
 		b.indexStart = index
 		b.indexEnd = b.indexStart
 		b.indexBase = b.indexStart
-	} else if index < b.indexStart {
+	case index < b.indexStart:
 		if span := b.indexEnd - index; span >= h.maxSize {
 			// rescale needed: mapped value to the right
 			return highLow{
@@ -405,7 +406,7 @@ func (h *Histogram[N]) incrementIndexBy(b *Buckets, index int32, incr uint64) (h
 			h.grow(b, span+1)
 		}
 		b.indexStart = index
-	} else if index > b.indexEnd {
+	case index > b.indexEnd:
 		if span := index - b.indexStart; span >= h.maxSize {
 			// rescale needed: mapped value to the left
 			return highLow{
@@ -453,10 +454,7 @@ func (h *Histogram[N]) grow(b *Buckets, needed int32) {
 	size := b.backing.size()
 	bias := b.indexBase - b.indexStart
 	oldPositiveLimit := size - bias
-	newSize := powTwoRoundedUp(needed)
-	if newSize > h.maxSize {
-		newSize = h.maxSize
-	}
+	newSize := min(powTwoRoundedUp(needed), h.maxSize)
 	newPositiveLimit := newSize - bias
 	b.backing.growTo(newSize, oldPositiveLimit, newPositiveLimit)
 }
@@ -670,7 +668,7 @@ func (b *bucketsVarwidth[N]) growTo(newSize, oldPositiveLimit, newPositiveLimit 
 
 func (b *bucketsVarwidth[N]) reverse(from, limit int32) {
 	num := ((from + limit) / 2) - from
-	for i := int32(0); i < num; i++ {
+	for i := range num {
 		b.counts[from+i], b.counts[limit-i-1] = b.counts[limit-i-1], b.counts[from+i]
 	}
 }
@@ -682,7 +680,7 @@ func (b *bucketsVarwidth[N]) emptyBucket(src int32) uint64 {
 }
 
 func (b *bucketsVarwidth[N]) tryIncrement(bucketIndex int32, incr uint64) bool {
-	var limit = uint64(N(0) - 1)
+	limit := uint64(N(0) - 1)
 	if uint64(b.counts[bucketIndex])+incr <= limit {
 		b.counts[bucketIndex] += N(incr)
 		return true
