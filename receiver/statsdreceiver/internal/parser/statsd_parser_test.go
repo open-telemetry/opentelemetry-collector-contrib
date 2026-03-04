@@ -1359,7 +1359,7 @@ func TestStatsDParser_AggregateWithCounterTypeFloat(t *testing.T) {
 	}
 
 	p := &StatsDParser{}
-	assert.NoError(t, p.Initialize(false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}, protocol.CounterTypeFloat))
+	assert.NoError(t, p.Initialize(false, false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}, protocol.CounterTypeFloat))
 	p.lastIntervalTime = time.Unix(611, 0)
 	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 	addrKey := newNetAddr(addr)
@@ -2209,6 +2209,7 @@ func TestStatsDParser_IgnoreHost(t *testing.T) {
 			{StatsdType: "timer", ObserverType: "summary"},
 			{StatsdType: "histogram", ObserverType: "histogram"},
 		},
+		protocol.CounterTypeInt,
 	)
 
 	require.NoError(t, err)
