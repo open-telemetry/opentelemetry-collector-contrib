@@ -31,7 +31,7 @@ type Config struct {
 	CounterType           protocol.CounterType             `mapstructure:"counter_type"`
 	TimerHistogramMapping []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 	// Will only be used when transport set to 'unixgram'.
-	SocketPermissions     os.FileMode `mapstructure:"socket_permissions"`
+	SocketPermissions os.FileMode `mapstructure:"socket_permissions"`
 }
 
 func (c *Config) Validate() error {
