@@ -1,4 +1,8 @@
+display_name: Prometheus Receiver
 type: prometheus
+
+description: |
+  The Prometheus Receiver receives metric data in [Prometheus](https://prometheus.io/) format.
 
 status:
   class: receiver
