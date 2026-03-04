@@ -229,7 +229,7 @@ func TestBulkIndexerLogsStatusCode(t *testing.T) {
 	require.NoError(t, err)
 
 	core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
-	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
 
 	ctx := t.Context()
 	session := bi.StartSession(ctx)
