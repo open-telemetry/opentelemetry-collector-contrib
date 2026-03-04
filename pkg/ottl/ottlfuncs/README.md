@@ -46,6 +46,7 @@ Editors:
 Available Editors:
 
 - [append](#append)
+- [delete_index](#delete_index)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_matching_keys](#keep_matching_keys)
@@ -72,6 +73,22 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], "prod")`
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
+
+### delete_index
+
+`delete_index(target, startIndex, Optional[endIndex])`
+
+The `delete_index` function removes elements from a slice. It deletes elements from `startIndex` up to, but not including, `endIndex`. If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target.
+
+Examples:
+
+- `delete_index(attributes["tags"], 0)` # deletes first
+
+- `delete_index(attributes["tags"], Len(attributes["tags"]) - 1)` # deletes last
+
+- `delete_index(attributes["tags"], 0, 3)` # deletes indices 0, 1, & 2
+
+- `delete_index(attributes["tags"], Index(attributes["tags"], "unparsed"))` # deletes first occurrence of "unparsed"
 
 ### delete_key
 
@@ -453,7 +470,8 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
-- [Base64Decode](#base64decode)
+- [Base64Decode](#base64decode-deprecated)
+- [Base64Encode](#base64encode)
 - [Bool](#bool)
 - [Decode](#decode)
 - [CommunityID](#communityid)
@@ -481,6 +499,7 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsInCIDR](#isincidr)
 - [IsInt](#isint)
 - [IsRootSpan](#isrootspan)
 - [IsMap](#ismap)
@@ -560,6 +579,28 @@ Examples:
 
 
 - `Base64Decode(resource.attributes["encoded field"])`
+
+### Base64Encode
+
+`Base64Encode(value, Optional[variant])`
+
+The `Base64Encode` Converter takes a string and returns a base64 encoded string.
+
+`value` is a string to encode.
+`variant` (optional) is the base64 encoding variant to use. Valid values are `base64` (standard, with padding), `base64-raw` (standard, no padding), `base64-url` (URL-safe, with padding), or `base64-raw-url` (URL-safe, no padding). Defaults to `base64` if not specified.
+
+Examples:
+
+- `Base64Encode("test string")`
+
+
+- `Base64Encode(resource.attributes["field"])`
+
+
+- `Base64Encode(body, "base64-url")`
+
+
+- `Base64Encode(attributes["data"], "base64-raw")`
 
 ### Bool
 
@@ -1248,6 +1289,20 @@ Examples:
 - `IsDouble(log.body)`
 
 - `IsDouble(log.attributes["maybe a double"])`
+
+### IsInCIDR
+
+`IsInCIDR(target, networks[])`
+
+The `IsInCIDR` Converter returns true if the given target IP address falls within any of the specified network ranges.
+
+The `target` is either a path expression to a telemetry field to retrieve, or a literal. The `networks` is a list of CIDR addresses.
+
+Examples:
+
+- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16"])`
+
+- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16", "10.0.0.0/8"])`
 
 ### IsInt
 

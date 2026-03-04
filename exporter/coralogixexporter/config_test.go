@@ -286,6 +286,55 @@ func TestEndpointsAndDomainWithAllExporters(t *testing.T) {
 	assert.NoError(t, le.shutdown(t.Context()))
 }
 
+func TestHTTPProtocolDoesNotAutoPopulateProfilesEndpoint(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "http_protocol").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	oCfg := cfg.(*Config)
+
+	assert.Equal(t, "http", oCfg.Protocol)
+	assert.True(t, isEmpty(oCfg.Profiles.Endpoint), "profiles endpoint should not be auto-populated when using HTTP protocol")
+	assert.False(t, isEmpty(oCfg.Logs.Endpoint), "logs endpoint should be auto-populated")
+	assert.False(t, isEmpty(oCfg.Metrics.Endpoint), "metrics endpoint should be auto-populated")
+	assert.False(t, isEmpty(oCfg.Traces.Endpoint), "traces endpoint should be auto-populated")
+
+	assert.Contains(t, oCfg.Logs.Endpoint, "https://", "logs endpoint should have https:// scheme")
+	assert.Contains(t, oCfg.Metrics.Endpoint, "https://", "metrics endpoint should have https:// scheme")
+	assert.Contains(t, oCfg.Traces.Endpoint, "https://", "traces endpoint should have https:// scheme")
+
+	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Traces.Endpoint)
+	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Metrics.Endpoint)
+	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Logs.Endpoint)
+
+	assert.NoError(t, oCfg.Validate())
+
+	params := exportertest.NewNopSettings(metadata.Type)
+
+	te, err := newTracesExporter(cfg, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(t.Context()))
+
+	me, err := newMetricsExporter(cfg, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, me)
+	assert.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(t.Context()))
+
+	le, err := newLogsExporter(cfg, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, le)
+	assert.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(t.Context()))
+}
+
 func TestGetMetadataFromResource(t *testing.T) {
 	r1 := pcommon.NewResource()
 	r1.Attributes().PutStr("k8s.node.name", "node-test")

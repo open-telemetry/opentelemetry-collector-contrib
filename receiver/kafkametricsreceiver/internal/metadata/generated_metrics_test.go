@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,76 +66,161 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["KafkaBrokerLogRetentionPeriod"] = mb.metricKafkaBrokerLogRetentionPeriod.config.AggregationStrategy
+			aggMap["KafkaBrokers"] = mb.metricKafkaBrokers.config.AggregationStrategy
+			aggMap["KafkaConsumerGroupLag"] = mb.metricKafkaConsumerGroupLag.config.AggregationStrategy
+			aggMap["KafkaConsumerGroupLagSum"] = mb.metricKafkaConsumerGroupLagSum.config.AggregationStrategy
+			aggMap["KafkaConsumerGroupMembers"] = mb.metricKafkaConsumerGroupMembers.config.AggregationStrategy
+			aggMap["KafkaConsumerGroupOffset"] = mb.metricKafkaConsumerGroupOffset.config.AggregationStrategy
+			aggMap["KafkaConsumerGroupOffsetSum"] = mb.metricKafkaConsumerGroupOffsetSum.config.AggregationStrategy
+			aggMap["KafkaPartitionCurrentOffset"] = mb.metricKafkaPartitionCurrentOffset.config.AggregationStrategy
+			aggMap["KafkaPartitionOldestOffset"] = mb.metricKafkaPartitionOldestOffset.config.AggregationStrategy
+			aggMap["KafkaPartitionReplicas"] = mb.metricKafkaPartitionReplicas.config.AggregationStrategy
+			aggMap["KafkaPartitionReplicasInSync"] = mb.metricKafkaPartitionReplicasInSync.config.AggregationStrategy
+			aggMap["KafkaTopicLogRetentionPeriod"] = mb.metricKafkaTopicLogRetentionPeriod.config.AggregationStrategy
+			aggMap["KafkaTopicLogRetentionSize"] = mb.metricKafkaTopicLogRetentionSize.config.AggregationStrategy
+			aggMap["KafkaTopicMinInsyncReplicas"] = mb.metricKafkaTopicMinInsyncReplicas.config.AggregationStrategy
+			aggMap["KafkaTopicPartitions"] = mb.metricKafkaTopicPartitions.config.AggregationStrategy
+			aggMap["KafkaTopicReplicationFactor"] = mb.metricKafkaTopicReplicationFactor.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
 			allMetricsCount++
 			mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(ts, 1, "broker-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(ts, 3, "broker-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaBrokersDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaBrokersDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "group-val", "topic-val", 9)
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaConsumerGroupLagDataPoint(ts, 3, "group-val-2", "topic-val-2", 10)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "group-val", "topic-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 3, "group-val-2", "topic-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "group-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 3, "group-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "group-val", "topic-val", 9)
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 3, "group-val-2", "topic-val-2", 10)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "group-val", "topic-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 3, "group-val-2", "topic-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "topic-val", 9)
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 3, "topic-val-2", 10)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "topic-val", 9)
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 3, "topic-val-2", 10)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "topic-val", 9)
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaPartitionReplicasDataPoint(ts, 3, "topic-val-2", 10)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "topic-val", 9)
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 3, "topic-val-2", 10)
+			}
 
 			allMetricsCount++
 			mb.RecordKafkaTopicLogRetentionPeriodDataPoint(ts, 1, "topic-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaTopicLogRetentionPeriodDataPoint(ts, 3, "topic-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordKafkaTopicLogRetentionSizeDataPoint(ts, 1, "topic-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaTopicLogRetentionSizeDataPoint(ts, 3, "topic-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts, 1, "topic-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts, 3, "topic-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaTopicPartitionsDataPoint(ts, 3, "topic-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordKafkaTopicReplicationFactorDataPoint(ts, 1, "topic-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordKafkaTopicReplicationFactorDataPoint(ts, 3, "topic-val-2")
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetKafkaClusterAlias("kafka.cluster.alias-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricKafkaBrokerLogRetentionPeriod.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaBrokers.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaConsumerGroupLag.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaConsumerGroupLagSum.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaConsumerGroupMembers.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaConsumerGroupOffset.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaConsumerGroupOffsetSum.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaPartitionCurrentOffset.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaPartitionOldestOffset.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaPartitionReplicas.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaPartitionReplicasInSync.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaTopicLogRetentionPeriod.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaTopicLogRetentionSize.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaTopicMinInsyncReplicas.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaTopicPartitions.aggDataPoints)
+				assert.Empty(t, mb.metricKafkaTopicReplicationFactor.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -151,282 +242,710 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "kafka.broker.log_retention_period":
-					assert.False(t, validatedMetrics["kafka.broker.log_retention_period"], "Found a duplicate in the metrics slice: kafka.broker.log_retention_period")
-					validatedMetrics["kafka.broker.log_retention_period"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "log retention time (s) of a broker.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.Equal(t, "broker-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.broker.log_retention_period"], "Found a duplicate in the metrics slice: kafka.broker.log_retention_period")
+						validatedMetrics["kafka.broker.log_retention_period"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "log retention time (s) of a broker.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("broker")
+						assert.True(t, ok)
+						assert.Equal(t, "broker-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["kafka.broker.log_retention_period"], "Found a duplicate in the metrics slice: kafka.broker.log_retention_period")
+						validatedMetrics["kafka.broker.log_retention_period"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "log retention time (s) of a broker.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.broker.log_retention_period"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("broker")
+						assert.False(t, ok)
+					}
 				case "kafka.brokers":
-					assert.False(t, validatedMetrics["kafka.brokers"], "Found a duplicate in the metrics slice: kafka.brokers")
-					validatedMetrics["kafka.brokers"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of brokers in the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{brokers}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.brokers"], "Found a duplicate in the metrics slice: kafka.brokers")
+						validatedMetrics["kafka.brokers"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of brokers in the cluster.", ms.At(i).Description())
+						assert.Equal(t, "{brokers}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["kafka.brokers"], "Found a duplicate in the metrics slice: kafka.brokers")
+						validatedMetrics["kafka.brokers"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of brokers in the cluster.", ms.At(i).Description())
+						assert.Equal(t, "{brokers}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.brokers"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "kafka.consumer_group.lag":
-					assert.False(t, validatedMetrics["kafka.consumer_group.lag"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag")
-					validatedMetrics["kafka.consumer_group.lag"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Current approximate lag of consumer group at partition of topic", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("group")
-					assert.True(t, ok)
-					assert.Equal(t, "group-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("partition")
-					assert.True(t, ok)
-					assert.EqualValues(t, 9, attrVal.Int())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.consumer_group.lag"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag")
+						validatedMetrics["kafka.consumer_group.lag"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Current approximate lag of consumer group at partition of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("group")
+						assert.True(t, ok)
+						assert.Equal(t, "group-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("partition")
+						assert.True(t, ok)
+						assert.EqualValues(t, 9, attrVal.Int())
+					} else {
+						assert.False(t, validatedMetrics["kafka.consumer_group.lag"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag")
+						validatedMetrics["kafka.consumer_group.lag"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Current approximate lag of consumer group at partition of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.consumer_group.lag"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("group")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("topic")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("partition")
+						assert.False(t, ok)
+					}
 				case "kafka.consumer_group.lag_sum":
-					assert.False(t, validatedMetrics["kafka.consumer_group.lag_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag_sum")
-					validatedMetrics["kafka.consumer_group.lag_sum"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Current approximate sum of consumer group lag across all partitions of topic", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("group")
-					assert.True(t, ok)
-					assert.Equal(t, "group-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.consumer_group.lag_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag_sum")
+						validatedMetrics["kafka.consumer_group.lag_sum"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Current approximate sum of consumer group lag across all partitions of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("group")
+						assert.True(t, ok)
+						assert.Equal(t, "group-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["kafka.consumer_group.lag_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag_sum")
+						validatedMetrics["kafka.consumer_group.lag_sum"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Current approximate sum of consumer group lag across all partitions of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.consumer_group.lag_sum"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("group")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("topic")
+						assert.False(t, ok)
+					}
 				case "kafka.consumer_group.members":
-					assert.False(t, validatedMetrics["kafka.consumer_group.members"], "Found a duplicate in the metrics slice: kafka.consumer_group.members")
-					validatedMetrics["kafka.consumer_group.members"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Count of members in the consumer group", ms.At(i).Description())
-					assert.Equal(t, "{members}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("group")
-					assert.True(t, ok)
-					assert.Equal(t, "group-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.consumer_group.members"], "Found a duplicate in the metrics slice: kafka.consumer_group.members")
+						validatedMetrics["kafka.consumer_group.members"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Count of members in the consumer group", ms.At(i).Description())
+						assert.Equal(t, "{members}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("group")
+						assert.True(t, ok)
+						assert.Equal(t, "group-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["kafka.consumer_group.members"], "Found a duplicate in the metrics slice: kafka.consumer_group.members")
+						validatedMetrics["kafka.consumer_group.members"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Count of members in the consumer group", ms.At(i).Description())
+						assert.Equal(t, "{members}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.consumer_group.members"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("group")
+						assert.False(t, ok)
+					}
 				case "kafka.consumer_group.offset":
-					assert.False(t, validatedMetrics["kafka.consumer_group.offset"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset")
-					validatedMetrics["kafka.consumer_group.offset"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Current offset of the consumer group at partition of topic", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("group")
-					assert.True(t, ok)
-					assert.Equal(t, "group-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("partition")
-					assert.True(t, ok)
-					assert.EqualValues(t, 9, attrVal.Int())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.consumer_group.offset"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset")
+						validatedMetrics["kafka.consumer_group.offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Current offset of the consumer group at partition of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("group")
+						assert.True(t, ok)
+						assert.Equal(t, "group-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("partition")
+						assert.True(t, ok)
+						assert.EqualValues(t, 9, attrVal.Int())
+					} else {
+						assert.False(t, validatedMetrics["kafka.consumer_group.offset"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset")
+						validatedMetrics["kafka.consumer_group.offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Current offset of the consumer group at partition of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.consumer_group.offset"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("group")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("topic")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("partition")
+						assert.False(t, ok)
+					}
 				case "kafka.consumer_group.offset_sum":
-					assert.False(t, validatedMetrics["kafka.consumer_group.offset_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset_sum")
-					validatedMetrics["kafka.consumer_group.offset_sum"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Sum of consumer group offset across partitions of topic", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("group")
-					assert.True(t, ok)
-					assert.Equal(t, "group-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.consumer_group.offset_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset_sum")
+						validatedMetrics["kafka.consumer_group.offset_sum"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Sum of consumer group offset across partitions of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("group")
+						assert.True(t, ok)
+						assert.Equal(t, "group-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["kafka.consumer_group.offset_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset_sum")
+						validatedMetrics["kafka.consumer_group.offset_sum"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Sum of consumer group offset across partitions of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.consumer_group.offset_sum"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("group")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("topic")
+						assert.False(t, ok)
+					}
 				case "kafka.partition.current_offset":
-					assert.False(t, validatedMetrics["kafka.partition.current_offset"], "Found a duplicate in the metrics slice: kafka.partition.current_offset")
-					validatedMetrics["kafka.partition.current_offset"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Current offset of partition of topic.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("partition")
-					assert.True(t, ok)
-					assert.EqualValues(t, 9, attrVal.Int())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.partition.current_offset"], "Found a duplicate in the metrics slice: kafka.partition.current_offset")
+						validatedMetrics["kafka.partition.current_offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Current offset of partition of topic.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("partition")
+						assert.True(t, ok)
+						assert.EqualValues(t, 9, attrVal.Int())
+					} else {
+						assert.False(t, validatedMetrics["kafka.partition.current_offset"], "Found a duplicate in the metrics slice: kafka.partition.current_offset")
+						validatedMetrics["kafka.partition.current_offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Current offset of partition of topic.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.partition.current_offset"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("topic")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("partition")
+						assert.False(t, ok)
+					}
 				case "kafka.partition.oldest_offset":
-					assert.False(t, validatedMetrics["kafka.partition.oldest_offset"], "Found a duplicate in the metrics slice: kafka.partition.oldest_offset")
-					validatedMetrics["kafka.partition.oldest_offset"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Oldest offset of partition of topic", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("partition")
-					assert.True(t, ok)
-					assert.EqualValues(t, 9, attrVal.Int())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.partition.oldest_offset"], "Found a duplicate in the metrics slice: kafka.partition.oldest_offset")
+						validatedMetrics["kafka.partition.oldest_offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Oldest offset of partition of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("partition")
+						assert.True(t, ok)
+						assert.EqualValues(t, 9, attrVal.Int())
+					} else {
+						assert.False(t, validatedMetrics["kafka.partition.oldest_offset"], "Found a duplicate in the metrics slice: kafka.partition.oldest_offset")
+						validatedMetrics["kafka.partition.oldest_offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Oldest offset of partition of topic", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.partition.oldest_offset"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("topic")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("partition")
+						assert.False(t, ok)
+					}
 				case "kafka.partition.replicas":
-					assert.False(t, validatedMetrics["kafka.partition.replicas"], "Found a duplicate in the metrics slice: kafka.partition.replicas")
-					validatedMetrics["kafka.partition.replicas"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of replicas for partition of topic", ms.At(i).Description())
-					assert.Equal(t, "{replicas}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("partition")
-					assert.True(t, ok)
-					assert.EqualValues(t, 9, attrVal.Int())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.partition.replicas"], "Found a duplicate in the metrics slice: kafka.partition.replicas")
+						validatedMetrics["kafka.partition.replicas"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of replicas for partition of topic", ms.At(i).Description())
+						assert.Equal(t, "{replicas}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("partition")
+						assert.True(t, ok)
+						assert.EqualValues(t, 9, attrVal.Int())
+					} else {
+						assert.False(t, validatedMetrics["kafka.partition.replicas"], "Found a duplicate in the metrics slice: kafka.partition.replicas")
+						validatedMetrics["kafka.partition.replicas"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of replicas for partition of topic", ms.At(i).Description())
+						assert.Equal(t, "{replicas}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.partition.replicas"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("topic")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("partition")
+						assert.False(t, ok)
+					}
 				case "kafka.partition.replicas_in_sync":
-					assert.False(t, validatedMetrics["kafka.partition.replicas_in_sync"], "Found a duplicate in the metrics slice: kafka.partition.replicas_in_sync")
-					validatedMetrics["kafka.partition.replicas_in_sync"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of synchronized replicas of partition", ms.At(i).Description())
-					assert.Equal(t, "{replicas}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("partition")
-					assert.True(t, ok)
-					assert.EqualValues(t, 9, attrVal.Int())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.partition.replicas_in_sync"], "Found a duplicate in the metrics slice: kafka.partition.replicas_in_sync")
+						validatedMetrics["kafka.partition.replicas_in_sync"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of synchronized replicas of partition", ms.At(i).Description())
+						assert.Equal(t, "{replicas}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("partition")
+						assert.True(t, ok)
+						assert.EqualValues(t, 9, attrVal.Int())
+					} else {
+						assert.False(t, validatedMetrics["kafka.partition.replicas_in_sync"], "Found a duplicate in the metrics slice: kafka.partition.replicas_in_sync")
+						validatedMetrics["kafka.partition.replicas_in_sync"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of synchronized replicas of partition", ms.At(i).Description())
+						assert.Equal(t, "{replicas}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.partition.replicas_in_sync"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("topic")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("partition")
+						assert.False(t, ok)
+					}
 				case "kafka.topic.log_retention_period":
-					assert.False(t, validatedMetrics["kafka.topic.log_retention_period"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_period")
-					validatedMetrics["kafka.topic.log_retention_period"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "log retention period of a topic (s).", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.topic.log_retention_period"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_period")
+						validatedMetrics["kafka.topic.log_retention_period"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "log retention period of a topic (s).", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["kafka.topic.log_retention_period"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_period")
+						validatedMetrics["kafka.topic.log_retention_period"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "log retention period of a topic (s).", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.topic.log_retention_period"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("topic")
+						assert.False(t, ok)
+					}
 				case "kafka.topic.log_retention_size":
-					assert.False(t, validatedMetrics["kafka.topic.log_retention_size"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_size")
-					validatedMetrics["kafka.topic.log_retention_size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "log retention size of a topic in Bytes, The value (-1) indicates infinite size.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.topic.log_retention_size"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_size")
+						validatedMetrics["kafka.topic.log_retention_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "log retention size of a topic in Bytes, The value (-1) indicates infinite size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["kafka.topic.log_retention_size"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_size")
+						validatedMetrics["kafka.topic.log_retention_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "log retention size of a topic in Bytes, The value (-1) indicates infinite size.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.topic.log_retention_size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("topic")
+						assert.False(t, ok)
+					}
 				case "kafka.topic.min_insync_replicas":
-					assert.False(t, validatedMetrics["kafka.topic.min_insync_replicas"], "Found a duplicate in the metrics slice: kafka.topic.min_insync_replicas")
-					validatedMetrics["kafka.topic.min_insync_replicas"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "minimum in-sync replicas of a topic.", ms.At(i).Description())
-					assert.Equal(t, "{replicas}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.topic.min_insync_replicas"], "Found a duplicate in the metrics slice: kafka.topic.min_insync_replicas")
+						validatedMetrics["kafka.topic.min_insync_replicas"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "minimum in-sync replicas of a topic.", ms.At(i).Description())
+						assert.Equal(t, "{replicas}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["kafka.topic.min_insync_replicas"], "Found a duplicate in the metrics slice: kafka.topic.min_insync_replicas")
+						validatedMetrics["kafka.topic.min_insync_replicas"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "minimum in-sync replicas of a topic.", ms.At(i).Description())
+						assert.Equal(t, "{replicas}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.topic.min_insync_replicas"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("topic")
+						assert.False(t, ok)
+					}
 				case "kafka.topic.partitions":
-					assert.False(t, validatedMetrics["kafka.topic.partitions"], "Found a duplicate in the metrics slice: kafka.topic.partitions")
-					validatedMetrics["kafka.topic.partitions"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of partitions in topic.", ms.At(i).Description())
-					assert.Equal(t, "{partitions}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.topic.partitions"], "Found a duplicate in the metrics slice: kafka.topic.partitions")
+						validatedMetrics["kafka.topic.partitions"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of partitions in topic.", ms.At(i).Description())
+						assert.Equal(t, "{partitions}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["kafka.topic.partitions"], "Found a duplicate in the metrics slice: kafka.topic.partitions")
+						validatedMetrics["kafka.topic.partitions"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of partitions in topic.", ms.At(i).Description())
+						assert.Equal(t, "{partitions}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.topic.partitions"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("topic")
+						assert.False(t, ok)
+					}
 				case "kafka.topic.replication_factor":
-					assert.False(t, validatedMetrics["kafka.topic.replication_factor"], "Found a duplicate in the metrics slice: kafka.topic.replication_factor")
-					validatedMetrics["kafka.topic.replication_factor"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "replication factor of a topic.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("topic")
-					assert.True(t, ok)
-					assert.Equal(t, "topic-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["kafka.topic.replication_factor"], "Found a duplicate in the metrics slice: kafka.topic.replication_factor")
+						validatedMetrics["kafka.topic.replication_factor"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "replication factor of a topic.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("topic")
+						assert.True(t, ok)
+						assert.Equal(t, "topic-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["kafka.topic.replication_factor"], "Found a duplicate in the metrics slice: kafka.topic.replication_factor")
+						validatedMetrics["kafka.topic.replication_factor"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "replication factor of a topic.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["kafka.topic.replication_factor"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("topic")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

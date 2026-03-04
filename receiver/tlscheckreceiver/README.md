@@ -21,23 +21,51 @@ By default, the TLS Check Receiver will emit a single metric, `tlscheck.time_lef
 
 ## Example Configuration
 
-Targets are configured as either remote enpoints accessed via TCP, or PEM-encoded certificate files stored locally on disk.
+Targets are configured as a remote endpoint accessed via TCP, a PEM-encoded certificate file stored locally on disk, or a Java-format keystore file (JKS or PKCS#12).
 
 ```yaml
 receivers:
   tlscheck:
     targets:
-      # Monitor a local PEM file
+      # Monitor a local PEM file (default when no file_format is set)
       - file_path: /etc/istio/certs/cert-chain.pem
-      
+
+      # Monitor a JKS keystore — format inferred from .jks extension
+      - file_path: /opt/app/keystore.jks
+        password: changeit
+
+      # Monitor a PKCS#12 keystore — format inferred from .p12 extension
+      - file_path: /opt/app/keystore.p12
+        password: ${env:KEYSTORE_PASSWORD}
+
+      # Explicit format override (e.g. a .ks file that is actually JKS)
+      - file_path: /opt/app/keystore.ks
+        file_format: jks
+        password: changeit
+
       # Monitor a remote endpoint
       - endpoint: example.com:443
-      
+
       # Monitor a local service with a custom timeout
       - endpoint: localhost:10901
-        dialer: 
+        dialer:
           timeout: 15s
 ```
+
+### Configuration Fields
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `file_path` | string | | Path to a certificate file on disk. Mutually exclusive with `endpoint`. |
+| `file_format` | string | `auto` | Format of the certificate file. One of: `auto`, `pem`, `jks`, `pkcs12`. When `auto`, the format is inferred from the file extension (`.jks` → JKS; `.p12` / `.pfx` → PKCS#12; all others → PEM). |
+| `password` | string | | Password for JKS or PKCS#12 keystores. The value is masked in logs and diagnostic output. Optional for unprotected JKS files. |
+
+### JKS Keystores
+
+JKS files may contain multiple aliases. One `tlscheck.time_left` metric is emitted per leaf certificate found:
+
+- **TrustedCertificateEntry** — the single certificate stored in the entry is used.
+- **PrivateKeyEntry** — the first certificate in the chain (the leaf) is used.
 
 ## Certificate Verification
 

@@ -7,6 +7,73 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.147.0
+
+### 💡 Enhancements 💡
+
+- `extension/oauth2client`: Expose a context-aware Token method from oauth2clientauth extension (#45917)
+  This change exposes a `Token(ctx context.Context) (*oauth2.Token, error)` method that
+  clients can use to obtain a Token. This may be used by components that are not HTTP-based,
+  such as the Kafka components for use with SASL/OAUTHBEARER.
+  
+- `pkg/pdatatest`: Add entity references comparison to CompareResource and IgnoreResourceEntityRefs option (#46345)
+- `pkg/xk8stest`: Display pod events and logs on collector startup timeout for easier diagnosis of e2e failures. (#46305)
+- `receiver/splunkenterprise`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+
+<!-- previous-version -->
+
+## v0.146.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonparser" instead (#45006)
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors" instead (#45006)
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/time" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/timeparser" instead (#45006)
+
+### 💡 Enhancements 💡
+
+- `processor/filter`: Introduces inferred context conditions for filtering (#37904)
+  Introduces three new top-level config fields [metric_conditions, log_conditions, trace_conditions].
+  A user can supply OTTL conditions for each without needing to supply context.
+  
+- `receiver/pprof`: Implement the functionality of transforming pprof to OTel Profiles (#45411)
+
+### 🧰 Bug fixes 🧰
+
+- `processor/sumologic`: Export config types to allow programmatic configuration via Go API (#45880)
+- `receiver/filestats`: Ensure that bsd build tags are respected by renaming filestats_darwin.go to filestats_bsd.go (#42645)
+
+<!-- previous-version -->
+
+## v0.145.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/translator/azure`: Updated OpenTelemetry semantic conversion to the latest version 1.38.0 in azure pkg. (#44801)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/ottl`: Use pointer when passing TransformContext around or calling into. (#44944)
+  Change Expr/Parser/Getter/Setter and all ottl related funcs to accept pointers to avoid unnecessary copy of a large
+  TransformContext(96B). Avoid allocating a new pcommon.Map every time a new context is created by using a Borrow/Return
+  pattern and reuse objects between calls. Deprecated funcs are:
+  - `ottlprofile.NewTransformContext` in favor of `ottlprofile.NewTransformContextPtr`;
+  - `ottlprofilesample.NewTransformContext` in favor of `ottlprofilesample.NewTransformContextPtr`;
+  - `filterprocessor.DefaultProfileFunctions` in favor of `filterprocessor.DefaultProfileFunctionsNew`
+  - `filterprocessor.WithProfileFunctions` in favor of `filterprocessor.WithProfileFunctionsNew`
+  - `transformprocessor.DefaultProfileFunctions` in favor of `transformprocessor.DefaultProfileFunctionsNew`
+  - `transformprocessor.WithProfileFunctions` in favor of `transformprocessor.WithProfileFunctionsNew`
+  
+
+### 💡 Enhancements 💡
+
+- `connector/routing`: Update existing util functions to reduce allocs. (#45061)
+- `connector/routing`: Add new util functions to copy data in routing connector. (#45061)
+- `receiver/snowflake`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+- `receiver/windowsservice`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+
+<!-- previous-version -->
+
 ## v0.144.0
 
 ### 🛑 Breaking changes 🛑

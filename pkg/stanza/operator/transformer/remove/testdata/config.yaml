@@ -27,3 +27,7 @@ remove_single_resource:
   field: resource.key
 invalid_empty_field:
   type: remove
+on_error_drop:
+  type: remove
+  field: body.key
+  on_error: drop

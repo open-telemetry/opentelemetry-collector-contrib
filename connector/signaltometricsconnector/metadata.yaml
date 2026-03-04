@@ -1,11 +1,17 @@
-type: signaltometrics
+type: signal_to_metrics
 display_name: Signal to Metrics Connector
 description: Signal to metrics connector produces metrics from all signal types (traces, logs, or metrics).
 
 status:
   class: connector
   stability:
-    alpha: [traces_to_metrics, logs_to_metrics, metrics_to_metrics, profiles_to_metrics]
+    alpha:
+      [
+        traces_to_metrics,
+        logs_to_metrics,
+        metrics_to_metrics,
+        profiles_to_metrics,
+      ]
   distributions: [contrib]
   codeowners:
     active: [ChrsMark, lahsivjar]

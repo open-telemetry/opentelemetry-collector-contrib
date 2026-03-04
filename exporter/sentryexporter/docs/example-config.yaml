@@ -1,0 +1,40 @@
+# Example OpenTelemetry Collector configuration with Sentry Exporter
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  sentry:
+    url: "https://sentry.io"
+    org_slug: "my-organization"
+    auth_token: "${env:SENTRY_AUTH_TOKEN}"
+    auto_create_projects: true # Automatically create projects when they don't exist
+    routing:
+      # Which resource attribute to use for routing to Sentry projects (defaults to service.name)
+      project_from_attribute: "service.name"
+      # Optional: explicit mappings from resource attribute to Sentry project slug
+      # If not specified, the service.name value is used directly as the project slug
+      attribute_to_project_mapping:
+        api-service: "legacy-backend-api"
+        worker: "background-jobs"
+        frontend-app: "web-frontend"
+    # Custom configuration for the http client.
+    http:
+      timeout: 20s
+      tls:
+        insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [sentry]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [sentry]

@@ -92,7 +92,7 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
 	scopeLogs := logs.ResourceLogs().At(0).ScopeLogs().At(0)
 
 	// Check the Scope
-	v, ok := scopeLogs.Scope().Attributes().Get(semconvOtelEntityEventAsScope)
+	v, ok := scopeLogs.Scope().Attributes().Get(SemconvOtelEntityEventAsScope)
 	assert.True(t, ok)
 	assert.True(t, v.Bool())
 

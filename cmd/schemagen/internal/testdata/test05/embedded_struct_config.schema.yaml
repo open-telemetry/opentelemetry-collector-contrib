@@ -1,9 +1,6 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test05
-title: test05 component
 type: object
 $defs:
-  DbConfig:
+  db_config:
     properties:
       host:
         type: string
@@ -15,7 +12,7 @@ $defs:
         type: string
     type: object
 allOf:
-  - $ref: '#/$defs/DbConfig'
+  - $ref: 'db_config'
 properties:
   app_name:
     type: string

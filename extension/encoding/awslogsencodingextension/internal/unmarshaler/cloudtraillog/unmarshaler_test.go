@@ -41,6 +41,18 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 			outputLogsFile: "cloudtrail_log_expected_with_uid_feature.yaml",
 			userIDFeature:  true,
 		},
+		{
+			name:           "Valid CloudWatch subscription filter format",
+			inputLogsFile:  "cloudtrail_log_cw.json",
+			outputLogsFile: "cloudtrail_log_cw_expected.yaml",
+			userIDFeature:  true,
+		},
+		{
+			name:           "Valid CloudWatch subscription filter format with reordered keys",
+			inputLogsFile:  "cloudtrail_log_cw_reordered.json",
+			outputLogsFile: "cloudtrail_log_cw_reordered_expected.yaml",
+			userIDFeature:  true,
+		},
 	}
 
 	for _, test := range tests {
@@ -239,6 +251,59 @@ func TestExtractFirstKey(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.expectedKey, key)
 			}
+		})
+	}
+}
+
+func TestCloudWatchKeyOrdering(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		input     string
+		expectKey string
+	}{
+		{
+			name:      "messageType first",
+			input:     `{"messageType":"DATA_MESSAGE","owner":"123456789010","logGroup":"/aws/cloudtrail/logs"}`,
+			expectKey: "messageType",
+		},
+		{
+			name:      "owner first",
+			input:     `{"owner":"123456789010","messageType":"DATA_MESSAGE","logGroup":"/aws/cloudtrail/logs"}`,
+			expectKey: "owner",
+		},
+		{
+			name:      "logGroup first",
+			input:     `{"logGroup":"/aws/cloudtrail/logs","messageType":"DATA_MESSAGE","owner":"123456789010"}`,
+			expectKey: "logGroup",
+		},
+		{
+			name:      "logStream first",
+			input:     `{"logStream":"stream","messageType":"DATA_MESSAGE","owner":"123456789010"}`,
+			expectKey: "logStream",
+		},
+		{
+			name:      "subscriptionFilters first",
+			input:     `{"subscriptionFilters":[],"messageType":"DATA_MESSAGE","owner":"123456789010"}`,
+			expectKey: "subscriptionFilters",
+		},
+		{
+			name:      "logEvents first",
+			input:     `{"logEvents":[],"messageType":"DATA_MESSAGE","owner":"123456789010"}`,
+			expectKey: "logEvents",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Verify the first key is what we expect
+			firstKey, err := extractFirstKey([]byte(tt.input))
+			require.NoError(t, err)
+			require.Equal(t, tt.expectKey, firstKey)
+
+			// Verify isCloudWatchKey recognizes it
+			require.True(t, isCloudWatchKey(firstKey), "isCloudWatchKey should return true for %s", firstKey)
 		})
 	}
 }

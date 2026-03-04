@@ -12,7 +12,7 @@ components:
         - roundrobin
         - routing
         - servicegraph
-        - signaltometrics
+        - signal_to_metrics
         - spanmetrics
         - sum
     exporter:
@@ -52,7 +52,6 @@ components:
         - prometheusremotewrite
         - pulsar
         - rabbitmq
-        - sapm
         - sentry
         - signalfx
         - splunk_hec
@@ -102,7 +101,6 @@ components:
     processor:
         - attributes
         - cumulativetodelta
-        - datadogsemantics
         - deltatocumulative
         - deltatorate
         - filter
@@ -111,7 +109,7 @@ components:
         - groupbytrace
         - interval
         - isolationforest
-        - k8sattributes
+        - k8s_attributes
         - logdedup
         - metricsgeneration
         - metricstarttime
@@ -145,7 +143,6 @@ components:
         - azure_event_hub
         - azureblob
         - azuremonitor
-        - bigip
         - carbon
         - chrony
         - cloudflare
@@ -186,7 +183,7 @@ components:
         - macosunifiedlogging
         - memcached
         - mongodb
-        - mongodbatlas
+        - mongodb_atlas
         - mysql
         - namedpipe
         - netflow

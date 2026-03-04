@@ -7,8 +7,8 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [ankitpatel96, dineshg13, IbraheemA, jade-guiton-dd,  mx-psi, songy23]
-    emeritus: [jackgopack4]
+    active: [dineshg13, IbraheemA, jade-guiton-dd,  mx-psi, songy23]
+    emeritus: [jackgopack4, ankitpatel96]
 
 tests:
   goleak:

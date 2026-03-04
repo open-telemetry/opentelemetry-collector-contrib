@@ -159,3 +159,56 @@ func TestLogsQueryReceiver_NullValue(t *testing.T) {
 	require.Equal(t, "problems encountered getting log rows", entry.Message)
 	require.Equal(t, sqlquery.ErrNullValueWarning.Error(), entry.ContextMap()["error"])
 }
+
+func TestLogsReceiver_InitialDelay(t *testing.T) {
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{"col1": "42"}},
+			{{"col1": "63"}},
+		},
+	}
+
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		return fakeClient
+	})
+
+	ctx := t.Context()
+	initialDelay := 50 * time.Millisecond
+	collectionInterval := 100 * time.Millisecond
+
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: collectionInterval,
+					InitialDelay:       initialDelay,
+				},
+				Driver:     "postgres",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Logs: []sqlquery.LogsCfg{{
+						BodyColumn: "col1",
+					}},
+				}},
+			},
+		},
+		&consumertest.LogsSink{},
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+	defer func() {
+		_ = receiver.Shutdown(ctx)
+	}()
+
+	time.Sleep(initialDelay / 2)
+	sink := receiver.(*logsReceiver).nextConsumer.(*consumertest.LogsSink)
+	assert.Equal(t, 0, sink.LogRecordCount(), "should not collect before initial delay")
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() >= 1
+	}, initialDelay+50*time.Millisecond, 5*time.Millisecond)
+}

@@ -1,0 +1,29 @@
+$defs:
+  attribute_error_code:
+    description: AttributeErrorCode specifies the value error.code attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for tcpcheck metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for tcpcheck metrics.
+    type: object
+    properties:
+      tcpcheck.duration:
+        $ref: metric_config
+      tcpcheck.error:
+        $ref: metric_config
+      tcpcheck.status:
+        $ref: metric_config
+  tcp_check_error_code:
+    description: TCPCheckErrorCode represents the type of error that occurred during a TCP check
+    type: integer

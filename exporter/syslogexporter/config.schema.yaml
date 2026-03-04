@@ -1,0 +1,27 @@
+description: Config defines configuration for Syslog exporter.
+type: object
+properties:
+  enable_octet_counting:
+    description: Whether or not to enable RFC 6587 Octet Counting.
+    type: boolean
+  endpoint:
+    description: Syslog server address
+    type: string
+  network:
+    description: 'Network for syslog communication options: tcp, udp, unix'
+    type: string
+  port:
+    description: Syslog server port (ignored for Unix sockets)
+    type: integer
+  protocol:
+    description: 'Protocol of syslog messages options: rfc5424, rfc3164'
+    type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  tls:
+    description: TLS struct exposes TLS client configuration.
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

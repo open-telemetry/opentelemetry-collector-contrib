@@ -81,7 +81,7 @@ func (cfg *Config) Validate() error {
 	for _, field := range cfg.Extract.Metadata {
 		switch field {
 		case string(conventions.K8SNamespaceNameKey), string(conventions.K8SPodNameKey), string(conventions.K8SPodUIDKey),
-			specPodHostName, metadataPodStartTime, metadataPodIP,
+			string(conventions.K8SPodHostnameKey), string(conventions.K8SPodStartTimeKey), string(conventions.K8SPodIPKey),
 			string(conventions.K8SDeploymentNameKey), string(conventions.K8SDeploymentUIDKey),
 			string(conventions.K8SReplicaSetNameKey), string(conventions.K8SReplicaSetUIDKey),
 			string(conventions.K8SDaemonSetNameKey), string(conventions.K8SDaemonSetUIDKey),
@@ -175,8 +175,8 @@ type ExtractConfig struct {
 type FieldExtractConfig struct {
 	// TagName represents the name of the resource attribute that will be added to logs, metrics or spans.
 	// When not specified, a default tag name will be used of the format:
-	//   - k8s.pod.annotations.<annotation key>  (or k8s.pod.annotation.<annotation key> when k8sattr.labelsAnnotationsSingular.allow is enabled)
-	//   - k8s.pod.labels.<label key>  (or k8s.pod.label.<label key> when k8sattr.labelsAnnotationsSingular.allow is enabled)
+	//   - k8s.pod.annotations.<annotation key>  (or k8s.pod.annotation.<annotation key> when processor.k8sattributes.EmitV1K8sConventions is enabled)
+	//   - k8s.pod.labels.<label key>  (or k8s.pod.label.<label key> when processor.k8sattributes.EmitV1K8sConventions is enabled)
 	// For example, if tag_name is not specified and the key is git_sha,
 	// then the attribute name will be `k8s.pod.annotations.git_sha` (or `k8s.pod.annotation.git_sha` with the feature gate).
 	// When key_regex is present, tag_name supports back reference to both named capturing and positioned capturing.
@@ -194,6 +194,16 @@ type FieldExtractConfig struct {
 	//       key_regex: kubernetes.io/(.*)
 	//
 	// this will add the `component` and `version` tags to the spans or metrics.
+	// When key_regex is present without tag_name, the default tag name format will be used for each matched key.
+	// For example:
+	//
+	// extract:
+	//   labels:
+	//     - key_regex: environment\.(.*)
+	//       from: pod
+	//
+	// If labels like "environment.prod" and "environment.dev" exist, they will be extracted as
+	// k8s.pod.labels.environment.prod and k8s.pod.labels.environment.dev respectively.
 	TagName string `mapstructure:"tag_name"`
 
 	// Key represents the annotation (or label) name. This must exactly match an annotation (or label) name.

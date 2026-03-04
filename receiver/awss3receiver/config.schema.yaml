@@ -1,0 +1,84 @@
+$defs:
+  encoding:
+    description: Encoding defines the encoding configuration for the file receiver.
+    type: object
+    properties:
+      extension:
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+      suffix:
+        type: string
+  notifications:
+    description: Notifications groups optional notification sources.
+    type: object
+    properties:
+      opampextension:
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+  s_3_downloader_config:
+    description: S3DownloaderConfig contains aws s3 downloader related config to controls things like bucket, prefix, batching, connections, retries, etc.
+    type: object
+    properties:
+      endpoint:
+        type: string
+      endpoint_partition_id:
+        type: string
+      file_prefix:
+        type: string
+      file_prefix_include_telemetry_type:
+        type: boolean
+      region:
+        type: string
+      s3_bucket:
+        type: string
+      s3_force_path_style:
+        type: boolean
+      s3_partition_format:
+        type: string
+      s3_partition_timezone:
+        type: string
+      s3_prefix:
+        type: string
+  sqs_config:
+    description: SQSConfig holds SQS queue configuration for receiving object change notifications.
+    type: object
+    properties:
+      endpoint:
+        description: Endpoint is the optional custom endpoint for SQS (useful for testing).
+        type: string
+      max_number_of_messages:
+        description: 'MaxNumberOfMessages specifies the maximum number of messages to receive in a single poll. Valid values: 1-10. Default is 10.'
+        x-pointer: true
+        type: integer
+        x-customType: int64
+      queue_url:
+        description: QueueURL is the URL of the SQS queue to receive S3 notifications.
+        type: string
+      region:
+        description: Region specifies the AWS region of the SQS queue.
+        type: string
+      wait_time_seconds:
+        description: WaitTimeSeconds specifies the duration (in seconds) for long polling SQS messages. Maximum is 20 seconds. Default is 20 seconds.
+        x-pointer: true
+        type: integer
+        x-customType: int64
+description: Config defines the configuration for the file receiver.
+type: object
+properties:
+  encodings:
+    type: array
+    items:
+      $ref: encoding
+  endtime:
+    type: string
+  notifications:
+    $ref: notifications
+  s3downloader:
+    $ref: s_3_downloader_config
+  sqs:
+    description: SQS configures receiving S3 object change notifications via an SQS queue.
+    x-pointer: true
+    $ref: sqs_config
+  starttime:
+    type: string

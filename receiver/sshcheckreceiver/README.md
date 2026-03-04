@@ -89,7 +89,7 @@ processors:
     send_batch_size: 100
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otel-collector:4317
 
 service:
@@ -97,7 +97,7 @@ service:
     metrics:
       receivers: [sshcheck]
       processors: [batch]
-      exporters: [otlp]
+      exporters: [otlp_grpc]
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).

@@ -25,6 +25,11 @@ all_set:
       enabled: true
     temperature.status.state:
       enabled: true
+  resource_attributes:
+    base_url:
+      enabled: true
+    system.host_name:
+      enabled: true
 none_set:
   metrics:
     chassis.powerstate:
@@ -51,3 +56,28 @@ none_set:
       enabled: false
     temperature.status.state:
       enabled: false
+  resource_attributes:
+    base_url:
+      enabled: false
+    system.host_name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    base_url:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    system.host_name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    base_url:
+      enabled: true
+      metrics_exclude:
+        - strict: "base_url-val"
+    system.host_name:
+      enabled: true
+      metrics_exclude:
+        - strict: "system.host_name-val"

@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   datapoints:
     - name: total.datapoint.sum
       description: Count total number of datapoints

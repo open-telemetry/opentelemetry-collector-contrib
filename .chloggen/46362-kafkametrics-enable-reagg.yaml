@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/kafkametrics
+note: Enable re-aggregation feature for kafkametrics receiver to support dynamic metric attribute configuration at runtime.
+issues: [46362]
+subtext:
+change_logs: [user]

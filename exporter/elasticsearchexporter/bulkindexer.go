@@ -319,38 +319,30 @@ func flushBulkIndexer(
 		var bulkFailedErr docappender.ErrorFlushFailed
 		switch {
 		case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
-			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{attribute.String("outcome", "timeout")}, defaultMetaAttrs...)...,
-			))
+			attrSet := metric.WithAttributeSet(attribute.NewSet(append(
+				defaultMetaAttrs, withOutcome("timeout"),
+			)...))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
 			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		case errors.As(err, &bulkFailedErr):
-			var outcome string
 			code := bulkFailedErr.StatusCode()
-			switch {
-			case code == http.StatusTooManyRequests:
-				outcome = "too_many"
-			case code >= 500:
-				outcome = "failed_server"
-			case code >= 400:
-				outcome = "failed_client"
-			}
+			outcome := statusToOutcome(code)
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
+				append(defaultMetaAttrs,
 					conventions.HTTPResponseStatusCode(code),
-					attribute.String("outcome", outcome),
-				}, defaultMetaAttrs...)...,
+					withOutcome(outcome),
+				)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
 			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		default:
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "internal_server_error"),
+				append(defaultMetaAttrs,
+					withOutcome("internal_server_error"),
 					conventions.HTTPResponseStatusCode(http.StatusInternalServerError),
-				}, defaultMetaAttrs...)...,
+				)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
@@ -359,10 +351,10 @@ func flushBulkIndexer(
 	} else {
 		// Record a successful completed bulk request
 		successAttrSet := metric.WithAttributeSet(attribute.NewSet(
-			append([]attribute.KeyValue{
-				attribute.String("outcome", "success"),
+			append(defaultMetaAttrs,
+				withOutcome("success"),
 				conventions.HTTPResponseStatusCode(http.StatusOK),
-			}, defaultMetaAttrs...)...,
+			)...,
 		))
 
 		tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), successAttrSet)
@@ -371,25 +363,15 @@ func flushBulkIndexer(
 
 	for _, resp := range stat.FailedDocs {
 		// Collect telemetry
-		var outcome string
-		switch {
-		case resp.Status == http.StatusTooManyRequests:
-			outcome = "too_many"
-		case resp.Status >= 500:
-			outcome = "failed_server"
-		case resp.Status >= 400:
-			outcome = "failed_client"
-		}
-
+		outcome := statusToOutcome(resp.Status)
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			int64(1),
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", outcome),
-					attribute.String("error.type", resp.Error.Type),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome(outcome),
+				conventions.HTTPResponseStatusCode(resp.Status),
+				attribute.String("error.type", resp.Error.Type),
+			)...)),
 		)
 
 		if resp.Error.Type == "version_conflict_engine_exception" &&
@@ -422,51 +404,52 @@ func flushBulkIndexer(
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.Indexed,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "success"),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome("success"),
+				conventions.HTTPResponseStatusCode(http.StatusOK),
+			)...)),
 		)
 	}
 	if stat.FailureStoreDocs.Used > 0 {
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.Used,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failure_store"),
-					attribute.String("failure_store", string(docappender.FailureStoreStatusUsed)),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome("failure_store"),
+				attribute.String("failure_store",
+					string(docappender.FailureStoreStatusUsed),
+				),
+			)...)),
 		)
 	}
 	if stat.FailureStoreDocs.Failed > 0 {
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.Failed,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failure_store"),
-					attribute.String("failure_store", string(docappender.FailureStoreStatusFailed)),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome("failure_store"),
+				attribute.String("failure_store", string(
+					docappender.FailureStoreStatusFailed,
+				)),
+			)...)),
 		)
 	}
 	if stat.FailureStoreDocs.NotEnabled > 0 {
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.NotEnabled,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failure_store"),
-					attribute.String("failure_store", string(docappender.FailureStoreStatusNotEnabled)),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome("failure_store"),
+				attribute.String("failure_store", string(
+					docappender.FailureStoreStatusNotEnabled,
+				)),
+			)...)),
 		)
 	}
 	if stat.RetriedDocs > 0 {
-		tb.ElasticsearchDocsRetried.Add(ctx, stat.RetriedDocs, metric.WithAttributeSet(defaultAttrsSet))
+		tb.ElasticsearchDocsRetried.Add(ctx, stat.RetriedDocs,
+			metric.WithAttributeSet(defaultAttrsSet),
+		)
 	}
 	return err
 }
@@ -635,4 +618,25 @@ func (errBulkIndexerSession) End() {}
 
 func (s errBulkIndexerSession) Flush(context.Context) error {
 	return fmt.Errorf("creating bulk indexer session failed, cannot flush: %w", s.err)
+}
+
+func withOutcome(outcome string) attribute.KeyValue {
+	return attribute.String("outcome", outcome)
+}
+
+func statusToOutcome(statusCode int) string {
+	switch statusCode {
+	case http.StatusTooManyRequests:
+		return "too_many"
+	case http.StatusOK:
+		return "success"
+	}
+	switch {
+	case statusCode >= 500:
+		return "failed_server"
+	case statusCode >= 400:
+		return "failed_client"
+	default:
+		return "unknown"
+	}
 }

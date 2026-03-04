@@ -7,8 +7,8 @@ status:
     beta: [traces_to_metrics, traces_to_traces]
   distributions: [contrib]
   codeowners:
-    active: [mx-psi, dineshg13, ankitpatel96, jade-guiton-dd, IbraheemA]
-    emeritus: [gbbr]
+    active: [mx-psi, dineshg13, jade-guiton-dd, IbraheemA]
+    emeritus: [gbbr, ankitpatel96]
 
 tests:
   goleak:

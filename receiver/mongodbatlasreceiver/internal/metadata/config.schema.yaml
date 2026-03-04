@@ -1,0 +1,264 @@
+$defs:
+  attribute_assert_type:
+    description: AttributeAssertType specifies the value assert_type attribute.
+    type: integer
+  attribute_btree_counter_type:
+    description: AttributeBtreeCounterType specifies the value btree_counter_type attribute.
+    type: integer
+  attribute_cache_direction:
+    description: AttributeCacheDirection specifies the value cache_direction attribute.
+    type: integer
+  attribute_cache_ratio_type:
+    description: AttributeCacheRatioType specifies the value cache_ratio_type attribute.
+    type: integer
+  attribute_cache_status:
+    description: AttributeCacheStatus specifies the value cache_status attribute.
+    type: integer
+  attribute_cluster_role:
+    description: AttributeClusterRole specifies the value cluster_role attribute.
+    type: integer
+  attribute_cpu_state:
+    description: AttributeCPUState specifies the value cpu_state attribute.
+    type: integer
+  attribute_cursor_state:
+    description: AttributeCursorState specifies the value cursor_state attribute.
+    type: integer
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_disk_direction:
+    description: AttributeDiskDirection specifies the value disk_direction attribute.
+    type: integer
+  attribute_disk_status:
+    description: AttributeDiskStatus specifies the value disk_status attribute.
+    type: integer
+  attribute_document_status:
+    description: AttributeDocumentStatus specifies the value document_status attribute.
+    type: integer
+  attribute_execution_type:
+    description: AttributeExecutionType specifies the value execution_type attribute.
+    type: integer
+  attribute_global_lock_state:
+    description: AttributeGlobalLockState specifies the value global_lock_state attribute.
+    type: integer
+  attribute_memory_issue_type:
+    description: AttributeMemoryIssueType specifies the value memory_issue_type attribute.
+    type: integer
+  attribute_memory_state:
+    description: AttributeMemoryState specifies the value memory_state attribute.
+    type: integer
+  attribute_memory_status:
+    description: AttributeMemoryStatus specifies the value memory_status attribute.
+    type: integer
+  attribute_object_type:
+    description: AttributeObjectType specifies the value object_type attribute.
+    type: integer
+  attribute_operation:
+    description: AttributeOperation specifies the value operation attribute.
+    type: integer
+  attribute_oplog_type:
+    description: AttributeOplogType specifies the value oplog_type attribute.
+    type: integer
+  attribute_scanned_type:
+    description: AttributeScannedType specifies the value scanned_type attribute.
+    type: integer
+  attribute_storage_status:
+    description: AttributeStorageStatus specifies the value storage_status attribute.
+    type: integer
+  attribute_ticket_type:
+    description: AttributeTicketType specifies the value ticket_type attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for mongodb_atlas metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for mongodb_atlas metrics.
+    type: object
+    properties:
+      mongodbatlas.db.counts:
+        $ref: metric_config
+      mongodbatlas.db.size:
+        $ref: metric_config
+      mongodbatlas.disk.partition.iops.average:
+        $ref: metric_config
+      mongodbatlas.disk.partition.iops.max:
+        $ref: metric_config
+      mongodbatlas.disk.partition.latency.average:
+        $ref: metric_config
+      mongodbatlas.disk.partition.latency.max:
+        $ref: metric_config
+      mongodbatlas.disk.partition.queue.depth:
+        $ref: metric_config
+      mongodbatlas.disk.partition.space.average:
+        $ref: metric_config
+      mongodbatlas.disk.partition.space.max:
+        $ref: metric_config
+      mongodbatlas.disk.partition.throughput:
+        $ref: metric_config
+      mongodbatlas.disk.partition.usage.average:
+        $ref: metric_config
+      mongodbatlas.disk.partition.usage.max:
+        $ref: metric_config
+      mongodbatlas.disk.partition.utilization.average:
+        $ref: metric_config
+      mongodbatlas.disk.partition.utilization.max:
+        $ref: metric_config
+      mongodbatlas.process.asserts:
+        $ref: metric_config
+      mongodbatlas.process.background_flush:
+        $ref: metric_config
+      mongodbatlas.process.cache.io:
+        $ref: metric_config
+      mongodbatlas.process.cache.ratio:
+        $ref: metric_config
+      mongodbatlas.process.cache.size:
+        $ref: metric_config
+      mongodbatlas.process.connections:
+        $ref: metric_config
+      mongodbatlas.process.cpu.children.normalized.usage.average:
+        $ref: metric_config
+      mongodbatlas.process.cpu.children.normalized.usage.max:
+        $ref: metric_config
+      mongodbatlas.process.cpu.children.usage.average:
+        $ref: metric_config
+      mongodbatlas.process.cpu.children.usage.max:
+        $ref: metric_config
+      mongodbatlas.process.cpu.normalized.usage.average:
+        $ref: metric_config
+      mongodbatlas.process.cpu.normalized.usage.max:
+        $ref: metric_config
+      mongodbatlas.process.cpu.usage.average:
+        $ref: metric_config
+      mongodbatlas.process.cpu.usage.max:
+        $ref: metric_config
+      mongodbatlas.process.cursors:
+        $ref: metric_config
+      mongodbatlas.process.db.document.rate:
+        $ref: metric_config
+      mongodbatlas.process.db.operations.rate:
+        $ref: metric_config
+      mongodbatlas.process.db.operations.time:
+        $ref: metric_config
+      mongodbatlas.process.db.query_executor.scanned:
+        $ref: metric_config
+      mongodbatlas.process.db.query_targeting.scanned_per_returned:
+        $ref: metric_config
+      mongodbatlas.process.db.storage:
+        $ref: metric_config
+      mongodbatlas.process.global_lock:
+        $ref: metric_config
+      mongodbatlas.process.index.btree_miss_ratio:
+        $ref: metric_config
+      mongodbatlas.process.index.counters:
+        $ref: metric_config
+      mongodbatlas.process.journaling.commits:
+        $ref: metric_config
+      mongodbatlas.process.journaling.data_files:
+        $ref: metric_config
+      mongodbatlas.process.journaling.written:
+        $ref: metric_config
+      mongodbatlas.process.memory.usage:
+        $ref: metric_config
+      mongodbatlas.process.network.io:
+        $ref: metric_config
+      mongodbatlas.process.network.requests:
+        $ref: metric_config
+      mongodbatlas.process.oplog.rate:
+        $ref: metric_config
+      mongodbatlas.process.oplog.time:
+        $ref: metric_config
+      mongodbatlas.process.page_faults:
+        $ref: metric_config
+      mongodbatlas.process.restarts:
+        $ref: metric_config
+      mongodbatlas.process.tickets:
+        $ref: metric_config
+      mongodbatlas.system.cpu.normalized.usage.average:
+        $ref: metric_config
+      mongodbatlas.system.cpu.normalized.usage.max:
+        $ref: metric_config
+      mongodbatlas.system.cpu.usage.average:
+        $ref: metric_config
+      mongodbatlas.system.cpu.usage.max:
+        $ref: metric_config
+      mongodbatlas.system.fts.cpu.normalized.usage:
+        $ref: metric_config
+      mongodbatlas.system.fts.cpu.usage:
+        $ref: metric_config
+      mongodbatlas.system.fts.disk.used:
+        $ref: metric_config
+      mongodbatlas.system.fts.memory.usage:
+        $ref: metric_config
+      mongodbatlas.system.memory.usage.average:
+        $ref: metric_config
+      mongodbatlas.system.memory.usage.max:
+        $ref: metric_config
+      mongodbatlas.system.network.io.average:
+        $ref: metric_config
+      mongodbatlas.system.network.io.max:
+        $ref: metric_config
+      mongodbatlas.system.paging.io.average:
+        $ref: metric_config
+      mongodbatlas.system.paging.io.max:
+        $ref: metric_config
+      mongodbatlas.system.paging.usage.average:
+        $ref: metric_config
+      mongodbatlas.system.paging.usage.max:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for mongodb_atlas resource attributes.
+    type: object
+    properties:
+      mongodb_atlas.cluster.name:
+        $ref: resource_attribute_config
+      mongodb_atlas.db.name:
+        $ref: resource_attribute_config
+      mongodb_atlas.disk.partition:
+        $ref: resource_attribute_config
+      mongodb_atlas.host.name:
+        $ref: resource_attribute_config
+      mongodb_atlas.org_name:
+        $ref: resource_attribute_config
+      mongodb_atlas.process.id:
+        $ref: resource_attribute_config
+      mongodb_atlas.process.port:
+        $ref: resource_attribute_config
+      mongodb_atlas.process.type_name:
+        $ref: resource_attribute_config
+      mongodb_atlas.project.id:
+        $ref: resource_attribute_config
+      mongodb_atlas.project.name:
+        $ref: resource_attribute_config
+      mongodb_atlas.provider.name:
+        $ref: resource_attribute_config
+      mongodb_atlas.region.name:
+        $ref: resource_attribute_config
+      mongodb_atlas.user.alias:
+        $ref: resource_attribute_config

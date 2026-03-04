@@ -1,0 +1,44 @@
+description: Config defines configuration for simple prometheus receiver.
+type: object
+properties:
+  collection_interval:
+    description: CollectionInterval is the interval at which metrics should be collected
+    type: string
+    format: duration
+  job_name:
+    description: JobName allows users to customize the job name optionally.
+    type: string
+  labels:
+    description: Labels static labels
+    type: object
+    additionalProperties:
+      type: string
+  metrics_path:
+    description: MetricsPath the path to the metrics endpoint.
+    type: string
+  params:
+    description: Params the parameters to the metrics endpoint.
+    x-customType: net/url.values
+  tls_config:
+    type: object
+    properties:
+      ca_file:
+        description: Path to the CA cert that has signed the TLS cert.
+        type: string
+      cert_file:
+        description: Path to the client TLS cert to use for TLS required connections.
+        type: string
+      insecure_skip_verify:
+        description: Whether or not to verify the exporter's TLS cert.
+        type: boolean
+      key_file:
+        description: Path to the client TLS key to use for TLS required connections.
+        type: string
+  tls_enabled:
+    description: Whether not TLS is enabled
+    type: boolean
+  use_service_account:
+    description: Whether or not to use pod service account to authenticate.
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
