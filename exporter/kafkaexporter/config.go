@@ -4,7 +4,10 @@
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -14,10 +17,12 @@ import (
 
 var _ component.Config = (*Config)(nil)
 
+var errLogsPartitionExclusive = errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
+
 // Config defines configuration for Kafka exporter.
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueBatchConfig          exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueBatchConfig          configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	configkafka.ClientConfig  `mapstructure:",squash"`
 	Producer                  configkafka.ProducerConfig `mapstructure:"producer"`
@@ -71,6 +76,21 @@ type Config struct {
 	// If this is true, then the message key will be set to a hash of the resource's identifying
 	// attributes.
 	PartitionLogsByResourceAttributes bool `mapstructure:"partition_logs_by_resource_attributes"`
+
+	// PartitionLogsByTraceID controls partitioning of log messages by trace ID only.
+	// When enabled, the exporter splits incoming logs per TraceID (using SplitLogs)
+	// and sets the Kafka message key to the 16-byte hex string of that TraceID.
+	// If a LogRecord has an empty TraceID, the key may be empty and partition
+	// selection falls back to the Kafka client’s default strategy. Resource
+	// attributes are not used for the key when this option is enabled.
+	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
+}
+
+func (c *Config) Validate() (err error) {
+	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
+		return errLogsPartitionExclusive
+	}
+	return err
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

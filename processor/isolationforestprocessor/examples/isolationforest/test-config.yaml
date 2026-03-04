@@ -18,10 +18,14 @@ processors:
     training_interval: 1m
     add_anomaly_score: true
     drop_anomalous_metrics: false
-
-  batch:
-    timeout: 1s
-    send_batch_size: 1024
+    adaptive_window:
+      enabled: true
+      min_window_size: 200
+      max_window_size: 2000
+      memory_limit_mb: 64
+      adaptation_rate: 0.15
+      velocity_threshold: 10.0
+      stability_check_interval: 2m
 
 exporters:
   debug:
@@ -29,12 +33,14 @@ exporters:
 
   file:
     path: ./metrics_output.json
+    sending_queue:
+      batch:
 
 service:
   pipelines:
     metrics:
       receivers: [hostmetrics]
-      processors: [isolationforest, batch]
+      processors: [isolationforest]
       exporters: [debug, file]
 
   telemetry:

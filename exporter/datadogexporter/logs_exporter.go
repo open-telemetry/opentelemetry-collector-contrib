@@ -13,8 +13,8 @@ import (
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter"
 	logscompressionimpl "github.com/DataDog/datadog-agent/comp/serializer/logscompression/impl"
 	"github.com/DataDog/datadog-agent/pkg/logs/sources"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"go.opentelemetry.io/collector/exporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
@@ -46,11 +46,18 @@ func newLogsAgentExporter(
 		agentcomponents.WithLogsDefaults(),
 		agentcomponents.WithProxy(cfg),
 	)
+	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgentConfig := &logsagentexporter.Config{
 		OtelSource:    otelSource,
 		LogSourceName: logSourceName,
+		OrchestratorConfig: logsagentexporter.OrchestratorConfig{
+			Hostname: hostnameComponent,
+			Key:      string(cfg.API.Key),
+			Site:     cfg.API.Site,
+			Endpoint: cfg.OrchestratorExplorer.Endpoint,
+			Enabled:  cfg.OrchestratorExplorer.Enabled,
+		},
 	}
-	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
 		Log:          logComponent,
 		Config:       cfgComponent,

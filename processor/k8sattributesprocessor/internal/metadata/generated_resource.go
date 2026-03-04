@@ -49,6 +49,13 @@ func (rb *ResourceBuilder) SetContainerImageTag(val string) {
 	}
 }
 
+// SetContainerImageTags sets provided value as "container.image.tags" attribute.
+func (rb *ResourceBuilder) SetContainerImageTags(val []any) {
+	if rb.config.ContainerImageTags.Enabled {
+		rb.res.Attributes().PutEmptySlice("container.image.tags").FromRaw(val)
+	}
+}
+
 // SetK8sClusterUID sets provided value as "k8s.cluster.uid" attribute.
 func (rb *ResourceBuilder) SetK8sClusterUID(val string) {
 	if rb.config.K8sClusterUID.Enabled {
@@ -67,6 +74,13 @@ func (rb *ResourceBuilder) SetK8sContainerName(val string) {
 func (rb *ResourceBuilder) SetK8sCronjobName(val string) {
 	if rb.config.K8sCronjobName.Enabled {
 		rb.res.Attributes().PutStr("k8s.cronjob.name", val)
+	}
+}
+
+// SetK8sCronjobUID sets provided value as "k8s.cronjob.uid" attribute.
+func (rb *ResourceBuilder) SetK8sCronjobUID(val string) {
+	if rb.config.K8sCronjobUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.cronjob.uid", val)
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.uber.org/multierr"
@@ -33,8 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 	encoding := component.MustNewIDWithName("foo", "bar")
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -68,12 +68,12 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.QueueBatchConfig{
-		Enabled:      true,
-		NumConsumers: 23,
-		QueueSize:    42,
-		Sizer:        exporterhelper.RequestSizerTypeRequests,
-	}
+	queueCfg := configoptional.Some(func() exporterhelper.QueueBatchConfig {
+		queue := exporterhelper.NewDefaultQueueConfig()
+		queue.NumConsumers = 23
+		queue.QueueSize = 42
+		return queue
+	}())
 
 	timeoutCfg := exporterhelper.TimeoutConfig{
 		Timeout: 8,
@@ -85,15 +85,16 @@ func TestConfig(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:            "us-east-1",
-			S3Bucket:          "foo",
-			S3Prefix:          "bar",
-			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-			Endpoint:          "http://endpoint.com",
-			StorageClass:      "STANDARD",
-			RetryMode:         DefaultRetryMode,
-			RetryMaxAttempts:  DefaultRetryMaxAttempts,
-			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+			Region:              "us-east-1",
+			S3Bucket:            "foo",
+			S3Prefix:            "bar",
+			S3PartitionFormat:   "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			S3PartitionTimezone: "Europe/London",
+			Endpoint:            "http://endpoint.com",
+			StorageClass:        "STANDARD",
+			RetryMode:           DefaultRetryMode,
+			RetryMaxAttempts:    DefaultRetryMaxAttempts,
+			RetryMaxBackoff:     DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -114,8 +115,7 @@ func TestConfigS3StorageClass(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -151,8 +151,7 @@ func TestConfigS3ACL(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -189,8 +188,7 @@ func TestConfigS3ACLDefined(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -225,8 +223,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -345,8 +342,7 @@ func TestMarshallerName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -398,8 +394,7 @@ func TestCompressionName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -439,6 +434,25 @@ func TestCompressionName(t *testing.T) {
 		MarshalerName: "otlp_proto",
 	}, e,
 	)
+
+	e = cfg.Exporters[component.MustNewIDWithName("awss3", "zstd")].(*Config)
+
+	assert.Equal(t, &Config{
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Compression:       "zstd",
+			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+		},
+		MarshalerName: "otlp_json",
+	}, e,
+	)
 }
 
 func TestResourceAttrsToS3(t *testing.T) {
@@ -453,8 +467,7 @@ func TestResourceAttrsToS3(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -494,8 +507,7 @@ func TestRetry(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -533,8 +545,7 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -553,6 +564,85 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		MarshalerName:   "otlp_json",
+	}, e,
+	)
+}
+
+func TestConfigS3BasePrefix(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-s3_base_prefix.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	queueCfg := configoptional.None[exporterhelper.QueueBatchConfig]()
+	timeoutCfg := exporterhelper.TimeoutConfig{
+		Timeout: 5 * time.Second,
+	}
+
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3BasePrefix:      "base/prefix",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+		},
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		MarshalerName:   "otlp_json",
+	}, e,
+	)
+}
+
+func TestConfigS3BasePrefixWithResourceAttrs(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-s3_base_prefix_with_resource_attrs.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	queueCfg := configoptional.None[exporterhelper.QueueBatchConfig]()
+	timeoutCfg := exporterhelper.TimeoutConfig{
+		Timeout: 5 * time.Second,
+	}
+
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "default-metric",
+			S3BasePrefix:      "environment/prod",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+		},
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		MarshalerName:   "otlp_json",
+		ResourceAttrsToS3: ResourceAttrsToS3{
+			S3Prefix: "com.awss3.prefix",
+		},
 	}, e,
 	)
 }

@@ -4,7 +4,11 @@
 package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 
 import (
+	"encoding/json"
+	"strings"
 	"time"
+
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 // EcsVersionString is the value for the `ecs.version` metrics field.
@@ -26,6 +30,8 @@ type StackPayload struct {
 	StackTrace      StackTrace
 	StackFrames     []StackFrame
 	Executables     []ExeMetadata
+
+	HostMetadata HostResourceData
 
 	UnsymbolizedLeafFrames  []UnsymbolizedLeafFrame
 	UnsymbolizedExecutables []UnsymbolizedExecutable
@@ -50,6 +56,8 @@ type StackTraceEvent struct {
 	ServiceName      string `json:"service.name,omitempty"`
 	Frequency        int64  `json:"Stacktrace.sampling_frequency"`
 	Count            uint16 `json:"Stacktrace.count"`
+	ProjectID        uint32 `json:"profiling.project.id,omitempty"`
+	HostName         string `json:"host.name,omitempty"`
 }
 
 // StackTrace represents a stacktrace serializable into the stacktraces index.
@@ -73,6 +81,37 @@ type StackFrame struct {
 	FunctionName   []string `json:"Stackframe.function.name,omitempty"`
 	LineNumber     []int32  `json:"Stackframe.line.number,omitempty"`
 	FunctionOffset []int32  `json:"Stackframe.function.offset,omitempty"`
+}
+
+// HostResourceData represents the resources metadata related to a host for the
+// profiling-hosts index.
+type HostResourceData struct {
+	EcsVersion
+	HostID string `json:"host.id"`
+	Data   map[string]string
+}
+
+// MarshalJSON customizes the JSON marshaling for HostResourceData.
+func (h HostResourceData) MarshalJSON() ([]byte, error) {
+	// Create a temporary map to hold the combined data
+	combinedData := make(map[string]any)
+
+	combinedData[string(conventions.HostIDKey)] = h.HostID
+	combinedData["ecs.version"] = h.V
+	// The ES index profiling-hosts expects a second-precise timestamp
+	combinedData["@timestamp"] = time.Now().UTC().Unix()
+
+	// Iterate over the Data map and add the key-value pairs with lowercase keys and values
+	for key, value := range h.Data {
+		if value == "" {
+			// Do not populate keys without value
+			continue
+		}
+		combinedData[strings.ToLower(key)] = strings.ToLower(value)
+	}
+
+	// Marshal the combined map into JSON
+	return json.MarshalIndent(combinedData, "", "  ")
 }
 
 // Script written in Painless that will both create a new document (if DocID does not exist),
@@ -103,7 +142,7 @@ type ExeMetadataParams struct {
 	LastSeen   uint32 `json:"timestamp"`
 	BuildID    string `json:"buildid"`
 	FileName   string `json:"filename"`
-	EcsVersion string `json:"ecsversion"`
+	EcsVersion string `json:"ecs.version"`
 }
 
 // ExeMetadata represents executable metadata serializable into the executables index.

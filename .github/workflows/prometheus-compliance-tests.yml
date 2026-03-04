@@ -29,10 +29,11 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           path: opentelemetry-collector-contrib
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+      - run: opentelemetry-collector-contrib/.github/workflows/scripts/free-disk-space.sh
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -41,19 +42,16 @@ jobs:
         if: steps.go-setup.outputs.cache-hit != 'true'
         working-directory: opentelemetry-collector-contrib
         run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        working-directory: opentelemetry-collector-contrib
-        run: make install-tools
       - run: make genotelcontribcol
         working-directory: opentelemetry-collector-contrib
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: prometheus/compliance
           path: compliance
+          ref: adfa690dd4df11f9c1bc1b130db5843fdca219f1 # Pin to commit using Go 1.23.0
       - name: Copy binary to compliance directory
         # The required name of the downloaded artifact is `otelcol_0.42.0_linux_amd64`, so we place the collector contrib artifact under the same name in the bin folder to run.
         # Source: https://github.com/prometheus/compliance/blob/12cbdf92abf7737531871ab7620a2de965fc5382/remote_write_sender/targets/otel.go#L8
@@ -64,5 +62,7 @@ jobs:
       - name: Run compliance tests
         run: |
           set -o pipefail && \
-          go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" ./ |& tee ./test-report.txt
+          # Skipping Staleness test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved
+          go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" -skip "TestRemoteWrite/otelcollector/Staleness" ./ |& tee ./test-report.txt
         working-directory: compliance/remotewrite/sender
+      - run: opentelemetry-collector-contrib/.github/workflows/scripts/check-disk-space.sh

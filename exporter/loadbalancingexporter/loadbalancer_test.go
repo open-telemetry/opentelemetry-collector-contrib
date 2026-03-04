@@ -330,27 +330,6 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	assert.Contains(t, p.exporters, "endpoint-1:4317")
 }
 
-func TestEndpointFound(t *testing.T) {
-	for _, tt := range []struct {
-		endpoint  string
-		endpoints []string
-		expected  bool
-	}{
-		{
-			"endpoint-1",
-			[]string{"endpoint-1", "endpoint-2"},
-			true,
-		},
-		{
-			"endpoint-3",
-			[]string{"endpoint-1", "endpoint-2"},
-			false,
-		},
-	} {
-		assert.Equal(t, tt.expected, endpointFound(tt.endpoint, tt.endpoints))
-	}
-}
-
 func TestEndpointWithPort(t *testing.T) {
 	for _, tt := range []struct {
 		input, expected string

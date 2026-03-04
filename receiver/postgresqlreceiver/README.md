@@ -8,7 +8,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fpostgresql%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fpostgresql) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fpostgresql%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fpostgresql) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_postgresql)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_postgresql&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@Caleb-Hurshman](https://www.github.com/Caleb-Hurshman) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -23,6 +23,32 @@ This receiver queries the PostgreSQL [statistics collector](https://www.postgres
 See PostgreSQL documentation for [supported versions](https://www.postgresql.org/support/versioning).
 
 The monitoring user must be granted `SELECT` on `pg_stat_database`.
+
+> [!NOTE]
+> The feature gate `receiver.postgresql.separateSchemaAttr` addresses an inconsistency in how schema names
+> are reported across different metric types. When enabled, schema names are consistently reported in a
+> dedicated `postgresql.schema.name` resource attribute.
+>
+> **Status:** Alpha (disabled by default)
+>
+> **When disabled (default behavior):**
+> - Table metrics: `postgresql.table.name = "schema_name.table_name"` (schema included)
+> - Index metrics: `postgresql.table.name = "table_name"` (schema **missing**)
+> - Function metrics: Schema reported separately in some cases
+>
+> **When enabled (recommended for consistency):**
+> - All metrics consistently use:
+>   - `postgresql.schema.name = "schema_name"`
+>   - `postgresql.table.name = "table_name"`
+>
+> This ensures reliable correlation of metrics when tables with identical names exist across different schemas.
+> To enable:
+>
+> ```bash
+> otelcol-contrib --feature-gates=receiver.postgresql.separateSchemaAttr
+> ```
+>
+> See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559 for more details.
 
 ## Configuration
 
@@ -94,14 +120,14 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_statements`.
-- `top_n_query`: (optional, default=1000) The maximum number of active queries to report (to the next consumer) in a single run.
+- `top_n_query`: (optional, default=200) The maximum number of active queries to report (to the next consumer) in a single run.
 - `max_explain_each_interval`: (optional, default=1000). The maximum number of explain query to be sent in each scrape interval. The top query 
 collection would not get the query plan directly. Instead, we need to mimic the query in the database and get the query plan from database 
 separately. This could lead some resources usage and limit this will reduce the impact on your database.
 - `query_plan_cache_size`: (optional, default=1000). The query plan cache size. Once we got explain for one query, we will store it in the cache.
 This defines the cache's size for query plan.
 - `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
-
+- `collection_interval`: (optional, default=60s). This receiver can collect top_query metrics on an interval. If not provided then the global collection_interval takes effect. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 ### Example Configuration
 
 ```yaml
@@ -125,9 +151,12 @@ receivers:
         enabled: true
       db.server.top_query:
         enabled: true
-      max_rows_per_query: 100 
+    query_sample_collection:
+      max_rows_per_query: 100
     top_query_collection:
+      max_rows_per_query: 100
       top_n_query: 100
+      collection_interval: 60s
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).

@@ -1,0 +1,31 @@
+description: Config represent a configuration for the CloudWatch logs exporter.
+type: object
+properties:
+  endpoint:
+    description: Endpoint is the CloudWatch Logs service endpoint which the requests are forwarded to. https://docs.aws.amazon.com/general/latest/gr/cwl_region.html e.g. logs.us-east-1.amazonaws.com Optional.
+    type: string
+  log_group_name:
+    description: LogGroupName is the name of CloudWatch log group which defines group of log streams that share the same retention, monitoring, and access control settings.
+    type: string
+  log_retention:
+    description: LogRetention is the option to set the log retention policy for the CloudWatch Log Group. Defaults to Never Expire if not specified or set to 0 Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
+    type: integer
+    x-customType: int32
+  log_stream_name:
+    description: LogStreamName is the name of CloudWatch log stream which is a sequence of log events that share the same source.
+    type: string
+  raw_log:
+    description: Export raw log string instead of log wrapper Required for emf logs
+    type: boolean
+  sending_queue:
+    description: Queue settings frm the exporterhelper
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  tags:
+    description: 'Tags is the option to set tags for the CloudWatch Log Group.  If specified, please add at least 1 and at most 50 tags.  Input is a string to string map like so: { ''key'': ''value'' } Keys must be between 1-128 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$ Values must be between 1-256 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    type: object
+    additionalProperties:
+      type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil.aws_session_settings

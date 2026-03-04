@@ -20,11 +20,11 @@ type extractCountMetricArguments struct {
 	Suffix    ottl.Optional[string]
 }
 
-func newExtractCountMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
+func newExtractCountMetricFactory() ottl.Factory[*ottlmetric.TransformContext] {
 	return ottl.NewFactory(sumCountName, &extractCountMetricArguments{}, createExtractCountMetricFunction)
 }
 
-func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*extractCountMetricArguments)
 
 	if !ok {
@@ -34,12 +34,12 @@ func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 	return extractCountMetric(args.Monotonic, args.Suffix)
 }
 
-func extractCountMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func extractCountMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	metricNameSuffix := "_count"
 	if !suffix.IsEmpty() {
 		metricNameSuffix = suffix.Get()
 	}
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
 		aggTemp := getAggregationTemporality(metric)

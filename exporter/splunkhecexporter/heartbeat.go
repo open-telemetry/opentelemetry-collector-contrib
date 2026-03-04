@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 const (
@@ -97,7 +97,7 @@ func (h *heartbeater) shutdown() {
 }
 
 func (*heartbeater) sendHeartbeat(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error) error {
-	return pushLogFn(context.Background(), generateHeartbeatLog(config.HecToOtelAttrs, buildInfo))
+	return pushLogFn(context.Background(), generateHeartbeatLog(config.OtelAttrsToHec, buildInfo))
 }
 
 // there is only use case for open census metrics recording for now. Extend to use open telemetry in the future.
@@ -109,7 +109,7 @@ func observe(heartbeatsSent, heartbeatsFailed metric.Int64Counter, attrs attribu
 	}
 }
 
-func generateHeartbeatLog(hecToOtelAttrs splunk.HecToOtelAttrs, buildInfo component.BuildInfo) plog.Logs {
+func generateHeartbeatLog(hecToOtelAttrs translator.HecToOtelAttrs, buildInfo component.BuildInfo) plog.Logs {
 	host, err := os.Hostname()
 	if err != nil {
 		host = "unknownhost"

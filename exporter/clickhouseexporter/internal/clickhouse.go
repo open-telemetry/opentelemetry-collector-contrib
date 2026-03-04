@@ -24,13 +24,8 @@ func DatabaseFromDSN(dsn string) (string, error) {
 	return opt.Auth.Database, nil
 }
 
-// NewClickhouseClient creates a new ClickHouse client from a DSN URL string.
-func NewClickhouseClient(dsn string) (driver.Conn, error) {
-	opt, err := clickhouse.ParseDSN(dsn)
-	if err != nil {
-		return nil, err
-	}
-
+// NewClickhouseClientFromOptions creates a new ClickHouse client from a clickhouse.Options struct.
+func NewClickhouseClientFromOptions(opt *clickhouse.Options) (driver.Conn, error) {
 	// Always connect to default database since configured database may not exist yet.
 	// TODO: only do this if createSchema is true
 	opt.Auth.Database = DefaultDatabase
@@ -67,7 +62,7 @@ func CreateDatabase(ctx context.Context, db driver.Conn, database, clusterStr st
 		return nil
 	}
 
-	ddl := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", database, clusterStr)
+	ddl := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %q %s", database, clusterStr)
 
 	err := db.Exec(ctx, ddl)
 	if err != nil {
@@ -75,4 +70,31 @@ func CreateDatabase(ctx context.Context, db driver.Conn, database, clusterStr st
 	}
 
 	return nil
+}
+
+// GetTableColumns returns the column names on a table for schema detection
+func GetTableColumns(ctx context.Context, db driver.Conn, database, table string) ([]string, error) {
+	descTable := fmt.Sprintf("DESC TABLE %q.%q", database, table)
+	rows, err := db.Query(ctx, descTable)
+	if err != nil {
+		return nil, fmt.Errorf("get table columns: %w", err)
+	}
+
+	var columnNames []string
+	for rows.Next() {
+		var columnName, skip string
+		scanErr := rows.Scan(&columnName, &skip, &skip, &skip, &skip, &skip, &skip)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan table column: %w", scanErr)
+		}
+
+		columnNames = append(columnNames, columnName)
+	}
+
+	err = rows.Close()
+	if err != nil {
+		return nil, fmt.Errorf("get table columns rows close: %w", err)
+	}
+
+	return columnNames, nil
 }

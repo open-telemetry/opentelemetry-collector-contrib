@@ -1,12 +1,13 @@
 type: awscloudwatchlogs
+display_name: AWS CloudWatch Logs Exporter
 
 status:
   class: exporter
   stability:
-    unmaintained: [logs]
+    alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: []
+    active: [yaten2302]
     emeritus: [bryan-aguilar, boostchicken, rapphil]
     seeking_new: true
 

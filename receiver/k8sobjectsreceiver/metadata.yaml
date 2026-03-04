@@ -1,4 +1,8 @@
+display_name: Kubernetes Objects Receiver
 type: k8sobjects
+
+description: The Kubernetes Objects Receiver collects (pull/watch) objects from the Kubernetes API server.
+
 
 status:
   class: receiver
@@ -6,7 +10,7 @@ status:
     beta: [logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, hvaghani221, TylerHelmuth, ChrsMark]
+    active: [dmitryax, hvaghani221, TylerHelmuth, ChrsMark, krisztianfekete]
 
 tests:
   config:

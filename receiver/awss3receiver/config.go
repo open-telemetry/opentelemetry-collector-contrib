@@ -16,14 +16,16 @@ import (
 // S3DownloaderConfig contains aws s3 downloader related config to controls things
 // like bucket, prefix, batching, connections, retries, etc.
 type S3DownloaderConfig struct {
-	Region              string `mapstructure:"region"`
-	S3Bucket            string `mapstructure:"s3_bucket"`
-	S3Prefix            string `mapstructure:"s3_prefix"`
-	S3Partition         string `mapstructure:"s3_partition"`
-	FilePrefix          string `mapstructure:"file_prefix"`
-	Endpoint            string `mapstructure:"endpoint"`
-	EndpointPartitionID string `mapstructure:"endpoint_partition_id"`
-	S3ForcePathStyle    bool   `mapstructure:"s3_force_path_style"`
+	Region                         string `mapstructure:"region"`
+	S3Bucket                       string `mapstructure:"s3_bucket"`
+	S3Prefix                       string `mapstructure:"s3_prefix"`
+	S3PartitionFormat              string `mapstructure:"s3_partition_format"`
+	S3PartitionTimezone            string `mapstructure:"s3_partition_timezone"`
+	FilePrefix                     string `mapstructure:"file_prefix"`
+	FilePrefixIncludeTelemetryType bool   `mapstructure:"file_prefix_include_telemetry_type"`
+	Endpoint                       string `mapstructure:"endpoint"`
+	EndpointPartitionID            string `mapstructure:"endpoint_partition_id"`
+	S3ForcePathStyle               bool   `mapstructure:"s3_force_path_style"`
 }
 
 // SQSConfig holds SQS queue configuration for receiving object change notifications.
@@ -36,10 +38,10 @@ type SQSConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// WaitTimeSeconds specifies the duration (in seconds) for long polling SQS messages.
 	// Maximum is 20 seconds. Default is 20 seconds.
-	WaitTimeSeconds int64 `mapstructure:"wait_time_seconds"`
+	WaitTimeSeconds *int64 `mapstructure:"wait_time_seconds"`
 	// MaxNumberOfMessages specifies the maximum number of messages to receive in a single poll.
 	// Valid values: 1-10. Default is 10.
-	MaxNumberOfMessages int64 `mapstructure:"max_number_of_messages"`
+	MaxNumberOfMessages *int64 `mapstructure:"max_number_of_messages"`
 }
 
 // Notifications groups optional notification sources.
@@ -71,16 +73,16 @@ type Config struct {
 }
 
 const (
-	S3PartitionMinute = "minute"
-	S3PartitionHour   = "hour"
+	s3PartitionFormatDefault = "year=%Y/month=%m/day=%d/hour=%H/minute=%M"
 )
 
 func createDefaultConfig() component.Config {
 	return &Config{
 		S3Downloader: S3DownloaderConfig{
-			Region:              "us-east-1",
-			S3Partition:         S3PartitionMinute,
-			EndpointPartitionID: "aws",
+			Region:                         "us-east-1",
+			S3PartitionFormat:              s3PartitionFormatDefault,
+			FilePrefixIncludeTelemetryType: true,
+			EndpointPartitionID:            "aws",
 		},
 	}
 }
@@ -89,9 +91,6 @@ func (c Config) Validate() error {
 	var errs error
 	if c.S3Downloader.S3Bucket == "" {
 		errs = multierr.Append(errs, errors.New("bucket is required"))
-	}
-	if c.S3Downloader.S3Partition != S3PartitionHour && c.S3Downloader.S3Partition != S3PartitionMinute {
-		errs = multierr.Append(errs, errors.New("s3_partition must be either 'hour' or 'minute'"))
 	}
 
 	// Check for valid time-based configuration
@@ -138,11 +137,11 @@ func (c Config) Validate() error {
 			errs = multierr.Append(errs, errors.New("sqs.region is required"))
 		}
 		// Validate wait time seconds
-		if c.SQS.WaitTimeSeconds < 0 || c.SQS.WaitTimeSeconds > 20 {
+		if c.SQS.WaitTimeSeconds != nil && (*c.SQS.WaitTimeSeconds < 0 || *c.SQS.WaitTimeSeconds > 20) {
 			errs = multierr.Append(errs, errors.New("sqs.wait_time_seconds must be between 0 and 20"))
 		}
 		// Validate max number of messages
-		if c.SQS.MaxNumberOfMessages < 0 || c.SQS.MaxNumberOfMessages > 10 {
+		if c.SQS.MaxNumberOfMessages != nil && (*c.SQS.MaxNumberOfMessages < 1 || *c.SQS.MaxNumberOfMessages > 10) {
 			errs = multierr.Append(errs, errors.New("sqs.max_number_of_messages must be between 1 and 10"))
 		}
 	}

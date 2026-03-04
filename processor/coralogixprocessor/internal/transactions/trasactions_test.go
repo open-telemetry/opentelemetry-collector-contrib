@@ -200,7 +200,7 @@ func createTestTraces(numSpans int, kind ptrace.SpanKind) ptrace.Traces {
 	// Create spans
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
-	for i := 0; i < numSpans; i++ {
+	for i := range numSpans {
 		span := sspans.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, byte(i)}))

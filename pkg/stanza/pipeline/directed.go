@@ -14,15 +14,15 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
-	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 var _ Pipeline = (*DirectedPipeline)(nil)
 
 var (
-	alreadyStarted = stanzaerrors.NewError("pipeline already started", "")
-	alreadyStopped = stanzaerrors.NewError("pipeline already stopped", "")
+	errAlreadyStarted = errors.New("pipeline already started")
+	errAlreadyStopped = errors.New("pipeline already stopped")
 )
 
 // DirectedPipeline is a pipeline backed by a directed graph
@@ -34,7 +34,7 @@ type DirectedPipeline struct {
 
 // Start will start the operators in a pipeline in reverse topological order
 func (p *DirectedPipeline) Start(persister operator.Persister) error {
-	var err error = alreadyStarted
+	err := errAlreadyStarted
 	p.startOnce.Do(func() {
 		err = p.start(persister)
 	})
@@ -43,7 +43,7 @@ func (p *DirectedPipeline) Start(persister operator.Persister) error {
 
 // Stop will stop the operators in a pipeline in topological order
 func (p *DirectedPipeline) Stop() error {
-	var err error = alreadyStopped
+	err := errAlreadyStopped
 	p.stopOnce.Do(func() {
 		err = p.stop()
 	})

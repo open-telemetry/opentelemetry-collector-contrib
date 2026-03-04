@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
@@ -25,9 +26,11 @@ type Config struct {
 	EnableMetricType        bool                             `mapstructure:"enable_metric_type"`
 	EnableSimpleTags        bool                             `mapstructure:"enable_simple_tags"`
 	IsMonotonicCounter      bool                             `mapstructure:"is_monotonic_counter"`
-	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
-	// Will only be used when transport set to 'unixgram'.
-	SocketPermissions os.FileMode `mapstructure:"socket_permissions"`
+  // CounterType specifies how counter values are represented in exported metrics.
+	// Valid values: "int" (default), "float", "stochastic_int".
+	CounterType           protocol.CounterType               `mapstructure:"counter_type"`
+	TimerHistogramMapping []protocol.TimerHistogramMapping   `mapstructure:"timer_histogram_mapping"`
+	SocketPermissions     os.FileMode                        `mapstructure:"socket_permissions"`
 }
 
 func (c *Config) Validate() error {
@@ -35,6 +38,13 @@ func (c *Config) Validate() error {
 
 	if c.AggregationInterval <= 0 {
 		errs = multierr.Append(errs, errors.New("aggregation_interval must be a positive duration"))
+	}
+
+	switch c.CounterType {
+	case "", protocol.CounterTypeInt, protocol.CounterTypeFloat, protocol.CounterTypeStochasticInt:
+		// valid
+	default:
+		errs = multierr.Append(errs, fmt.Errorf("invalid counter_type: %s, must be one of: int, float, stochastic_int", c.CounterType))
 	}
 
 	var TimerHistogramMappingMissingObjectName bool
@@ -67,10 +77,15 @@ func (c *Config) Validate() error {
 			if eachMap.Histogram.MaxSize != 0 && (eachMap.Histogram.MaxSize < structure.MinSize || eachMap.Histogram.MaxSize > structure.MaximumMaxSize) {
 				errs = multierr.Append(errs, fmt.Errorf("histogram max_size out of range: %v", eachMap.Histogram.MaxSize))
 			}
-		} else {
+
+			if eachMap.Histogram.ExplicitBuckets != nil {
+				if err := c.validateExplicitBuckets(eachMap.Histogram.ExplicitBuckets); err != nil {
+					errs = multierr.Append(errs, err)
+				}
+			}
+		} else if eachMap.ObserverType != protocol.HistogramObserver {
 			// Non-histogram observer w/ histogram config
-			var empty protocol.HistogramConfig
-			if eachMap.Histogram != empty {
+			if eachMap.Histogram.MaxSize != 0 || eachMap.Histogram.ExplicitBuckets != nil {
 				errs = multierr.Append(errs, errors.New("histogram configuration requires observer_type: histogram"))
 			}
 		}
@@ -90,5 +105,27 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("must specify object id for all TimerHistogramMappings"))
 	}
 
+	return errs
+}
+
+func (*Config) validateExplicitBuckets(explicitBuckets []protocol.ExplicitBucket) error {
+	var errs error
+	for i, eb := range explicitBuckets {
+		if eb.MatcherPattern == "" {
+			errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern must not be empty", i))
+		}
+		if _, err := regexp.Compile(eb.MatcherPattern); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] matcher_pattern is not a valid regular expression: %w", i, err))
+		}
+		if len(eb.Buckets) == 0 {
+			return multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets must not be empty", i))
+		}
+		for j := 0; j < len(eb.Buckets)-1; j++ {
+			if eb.Buckets[j] > eb.Buckets[j+1] {
+				errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets are not unique or not ascendingly sorted %+v", i, eb.Buckets))
+				break
+			}
+		}
+	}
 	return errs
 }

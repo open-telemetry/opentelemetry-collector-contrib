@@ -16,9 +16,9 @@ metrics:
 
 Minimum percentage of contiguous disk space free to the namespace across all devices
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Int | Development |
 
 ### aerospike.namespace.geojson.region_query_cells
 
@@ -26,9 +26,9 @@ Number of cell coverings for query region queried
 
 Number of cell coverings for query region queried. Aerospike metric geo_region_query_cells.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {cells} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {cells} | Sum | Int | Cumulative | true | Development |
 
 ### aerospike.namespace.geojson.region_query_false_positive
 
@@ -36,9 +36,9 @@ Number of points outside the region.
 
 Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_region_query_falsepos.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {points} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {points} | Sum | Int | Cumulative | true | Development |
 
 ### aerospike.namespace.geojson.region_query_points
 
@@ -46,9 +46,9 @@ Number of points within the region.
 
 Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_region_query_points.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {points} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {points} | Sum | Int | Cumulative | true | Development |
 
 ### aerospike.namespace.geojson.region_query_requests
 
@@ -56,9 +56,9 @@ Number of geojson queries on the system since the uptime of the node.
 
 Number of geojson queries on the system since the uptime of the node. Aerospike metric geo_region_query_reqs.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {queries} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {queries} | Sum | Int | Cumulative | true | Development |
 
 ### aerospike.namespace.memory.free
 
@@ -66,9 +66,9 @@ Percentage of the namespace's memory which is still free
 
 Aerospike metric memory_free_pct
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Int | Development |
 
 ### aerospike.namespace.memory.usage
 
@@ -76,15 +76,15 @@ Memory currently used by each component of the namespace
 
 Aggregate of Aerospike Metrics memory_used_data_bytes, memory_used_index_bytes, memory_used_set_index_bytes, memory_used_sindex_bytes
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| component | Individual component of a namespace | Str: ``data``, ``index``, ``set_index``, ``secondary_index`` | false |
+| component | Individual component of a namespace | Str: ``data``, ``index``, ``set_index``, ``secondary_index`` | Recommended |
 
 ### aerospike.namespace.query.count
 
@@ -92,17 +92,17 @@ Number of query operations performed on the namespace
 
 Aggregate of Aerospike Metrics query_aggr_abort, query_aggr_complete, query_aggr_error, query_basic_abort, query_basic_complete, query_basic_error, query_ops_bg_abort, query_ops_bg_complete, query_ops_bg_error, query_udf_bg_abort, query_udf_bg_complete, query_udf_bg_error, pi_query_aggr_abort, pi_query_aggr_complete, pi_query_aggr_error, pi_query_long_basic_abort, pi_query_long_basic_complete, pi_query_long_basic_error, pi_query_ops_bg_abort, pi_query_ops_bg_basic_complete, pi_query_ops_bg_basic_error, pi_query_short_basic_timeout, pi_query_short_basic_complete, pi_query_short_basic_error, pi_query_udf_bg_abort, pi_query_udf_bg_complete, pi_query_udf_bg_error, si_query_aggr_abort, si_query_aggr_complete, si_query_aggr_error, si_query_long_basic_abort, si_query_long_basic_complete, si_query_long_basic_error, si_query_ops_bg_abort, si_query_ops_bg_basic_complete, si_query_ops_bg_basic_error, si_query_short_basic_timeout, si_query_short_basic_complete, si_query_short_basic_error, si_query_udf_bg_abort, si_query_udf_bg_complete, si_query_udf_bg_error
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {queries} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {queries} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | Type of query operation performed on a namespace | Str: ``aggregation``, ``basic``, ``short``, ``long_basic``, ``short_basic``, ``ops_background``, ``udf_background`` | false |
-| index | Type of index the operation was performed on | Str: ``primary``, ``secondary`` | false |
-| result | Result of a query operation performed on a namespace | Str: ``abort``, ``complete``, ``error``, ``timeout`` | false |
+| type | Type of query operation performed on a namespace | Str: ``aggregation``, ``basic``, ``short``, ``long_basic``, ``short_basic``, ``ops_background``, ``udf_background`` | Recommended |
+| index | Type of index the operation was performed on | Str: ``primary``, ``secondary`` | Recommended |
+| result | Result of a query operation performed on a namespace | Str: ``abort``, ``complete``, ``error``, ``timeout`` | Recommended |
 
 ### aerospike.namespace.scan.count
 
@@ -110,16 +110,16 @@ Number of scan operations performed on the namespace
 
 Aggregate of Aerospike Metrics scan_aggr_abort, scan_aggr_complete, scan_aggr_error, scan_basic_abort, scan_basic_complete, scan_basic_error, scan_ops_bg_abort, scan_ops_bg_complete, scan_ops_bg_error, scan_udf_bg_abort, scan_udf_bg_complete, scan_udf_bg_error
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {scans} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {scans} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | Type of scan operation performed on a namespace | Str: ``aggregation``, ``basic``, ``ops_background``, ``udf_background`` | false |
-| result | Result of a scan operation performed on a namespace | Str: ``abort``, ``complete``, ``error`` | false |
+| type | Type of scan operation performed on a namespace | Str: ``aggregation``, ``basic``, ``ops_background``, ``udf_background`` | Recommended |
+| result | Result of a scan operation performed on a namespace | Str: ``abort``, ``complete``, ``error`` | Recommended |
 
 ### aerospike.namespace.transaction.count
 
@@ -127,16 +127,16 @@ Number of transactions performed on the namespace
 
 Aggregate of Aerospike Metrics client_delete_error, client_delete_filtered_out, client_delete_not_found, client_delete_success, client_delete_timeout, client_read_error, client_read_filtered_out, client_read_not_found, client_read_success, client_read_timeout, client_udf_error, client_udf_filtered_out, client_udf_not_found, client_udf_success, client_udf_timeout, client_write_error, client_write_filtered_out, client_write_not_found, client_write_success, client_write_timeout
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {transactions} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {transactions} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | Type of transaction performed on a namespace | Str: ``delete``, ``read``, ``udf``, ``write`` | false |
-| result | Result of a transaction performed on a namespace | Str: ``error``, ``filtered_out``, ``not_found``, ``success``, ``timeout`` | false |
+| type | Type of transaction performed on a namespace | Str: ``delete``, ``read``, ``udf``, ``write`` | Recommended |
+| result | Result of a transaction performed on a namespace | Str: ``error``, ``filtered_out``, ``not_found``, ``success``, ``timeout`` | Recommended |
 
 ### aerospike.node.connection.count
 
@@ -144,16 +144,16 @@ Number of connections opened and closed to the node
 
 Aggregate of Aerospike Metrics client_connections_closed, client_connections_opened, fabric_connections_closed, fabric_connections_opened, heartbeat_connections_closed, heartbeat_connections_opened
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connections} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | Type of connection to an Aerospike node | Str: ``client``, ``fabric``, ``heartbeat`` | false |
-| operation | Operation performed with a connection (open or close) | Str: ``close``, ``open`` | false |
+| type | Type of connection to an Aerospike node | Str: ``client``, ``fabric``, ``heartbeat`` | Recommended |
+| operation | Operation performed with a connection (open or close) | Str: ``close``, ``open`` | Recommended |
 
 ### aerospike.node.connection.open
 
@@ -161,15 +161,15 @@ Current number of open connections to the node
 
 Aggregate of Aerospike Metrics client_connections, fabric_connections, heartbeat_connections
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connections} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | Type of connection to an Aerospike node | Str: ``client``, ``fabric``, ``heartbeat`` | false |
+| type | Type of connection to an Aerospike node | Str: ``client``, ``fabric``, ``heartbeat`` | Recommended |
 
 ### aerospike.node.memory.free
 
@@ -177,9 +177,9 @@ Percentage of the node's memory which is still free
 
 Aerospike Metric system_free_mem_pct
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Int | Development |
 
 ### aerospike.node.query.tracked
 
@@ -187,9 +187,9 @@ Number of queries tracked by the system.
 
 Number of queries which ran more than query untracked_time (default 1 sec), Aerospike metric query_tracked
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {queries} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {queries} | Sum | Int | Cumulative | true | Development |
 
 ## Resource Attributes
 

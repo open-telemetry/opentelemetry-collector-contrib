@@ -63,7 +63,7 @@ func TestOnAddForMetrics(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "'' has invalid keys: endpoint",
+			expectedError:          "'receivercreator.nopWithoutEndpointConfig' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -226,7 +226,7 @@ func TestOnAddForLogs(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "'' has invalid keys: endpoint",
+			expectedError:          "'receivercreator.nopWithoutEndpointConfig' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -398,7 +398,7 @@ func TestOnAddForTraces(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "'' has invalid keys: endpoint",
+			expectedError:          "'receivercreator.nopWithoutEndpointConfig' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

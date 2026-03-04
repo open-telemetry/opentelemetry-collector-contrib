@@ -40,7 +40,7 @@ func createELBAccessLogContent(b *testing.B, filename string, nLogs int) []byte 
 
 	size := len(data) + 1 // + "\n"
 	buf := bytes.NewBuffer(make([]byte, 0, nLogs*size))
-	for i := 0; i < nLogs; i++ {
+	for i := range nLogs {
 		buf.Write(data)
 		if i != nLogs-1 {
 			buf.WriteString("\n")
@@ -59,7 +59,7 @@ func BenchmarkUnmarshalAWSLogs(b *testing.B) {
 		data := createELBAccessLogContent(b, bc.filename, bc.nLogs)
 		b.Run(bc.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
 				require.NoError(b, err)
 			}

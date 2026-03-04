@@ -56,9 +56,8 @@ func createDefaultConfig() component.Config {
 			MaxRowsPerQuery: 100,
 		},
 		TopQueryCollection: TopQueryCollection{
-			LookbackTime:        uint(2 * cfg.CollectionInterval / time.Second),
 			MaxQuerySampleCount: 1000,
-			TopQueryCount:       200,
+			TopQueryCount:       250,
 			CollectionInterval:  time.Minute,
 		},
 	}
@@ -212,7 +211,7 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Contr
 			return nil, err
 		}
 
-		opt := scraperhelper.AddScraper(metadata.Type, s)
+		opt := scraperhelper.AddMetricsScraper(metadata.Type, s)
 		opts = append(opts, opt)
 	}
 

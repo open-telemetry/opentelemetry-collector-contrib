@@ -76,7 +76,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	}
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.DisableKeepAlives = true
-	extension.client, err = httpClientConfig.ToClient(ctx, host, extension.telemetrySettings)
+	extension.client, err = httpClientConfig.ToClient(ctx, host.GetExtensions(), extension.telemetrySettings)
 	if err != nil {
 		return err
 	}

@@ -103,7 +103,7 @@ func TestStoreExpire(t *testing.T) {
 	const testSize = 100
 
 	keys := map[Key]struct{}{}
-	for i := 0; i < testSize; i++ {
+	for i := range testSize {
 		keys[NewKey(pcommon.TraceID([16]byte{byte(i)}), pcommon.SpanID([8]byte{1, 2, 3}))] = struct{}{}
 	}
 

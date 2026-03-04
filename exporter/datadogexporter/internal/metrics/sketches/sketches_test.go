@@ -11,14 +11,14 @@ import (
 	"testing"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
+	"github.com/DataDog/datadog-agent/pkg/util/quantile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func makesketch(n int) *quantile.Sketch {
 	s, c := &quantile.Sketch{}, quantile.Default()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		s.Insert(c, float64(i))
 	}
 	return s

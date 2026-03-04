@@ -18,9 +18,15 @@ import (
 
 // Config holds configuration of the metric start time processor.
 type Config struct {
-	Strategy   string        `mapstructure:"strategy"`
+	Strategy string `mapstructure:"strategy"`
+
+	// GCInterval specifies how long to wait before removing a metric from the
+	// cache.
 	GCInterval time.Duration `mapstructure:"gc_interval"`
-	// StartTimeMetricRegex only applies then the start_time_metric strategy is used
+
+	// StartTimeMetricRegex allows specifying alternate metrics to determine
+	// start time using a regular expression. It only applies when the
+	// `start_time_metric strategy` is used.
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 }
 

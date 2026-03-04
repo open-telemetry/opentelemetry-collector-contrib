@@ -555,7 +555,8 @@ func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanP
 	}
 
 	// Parse all metrics
-	for _, vSANValue := range vSANResult.Value {
+	for i := range vSANResult.Value {
+		vSANValue := vSANResult.Value[i]
 		metricDetails, err := vc.convertVSANValueToMetricDetails(vSANValue, timestamps)
 		if err != nil {
 			return &metricResults, err
@@ -604,9 +605,9 @@ func (vc *vcenterClient) convertVSANValueToMetricDetails(
 
 // uuidFromEntityRefID returns the UUID portion of the EntityRefId
 func (*vcenterClient) uuidFromEntityRefID(id string) (string, error) {
-	colonIndex := strings.Index(id, ":")
-	if colonIndex != -1 {
-		uuid := id[colonIndex+1:]
+	_, after, ok := strings.Cut(id, ":")
+	if ok {
+		uuid := after
 		return uuid, nil
 	}
 

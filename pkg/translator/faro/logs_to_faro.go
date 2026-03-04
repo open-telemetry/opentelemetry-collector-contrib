@@ -20,7 +20,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 )
 
@@ -359,7 +360,7 @@ func parseIntegrationsFromString(integrationsString string) []faroTypes.SDKInteg
 		return sdkIntegrations
 	}
 
-	for _, integrationString := range strings.Split(integrationsString, ",") {
+	for integrationString := range strings.SplitSeq(integrationsString, ",") {
 		integrationNameVersion := strings.Split(integrationString, ":")
 		sdkIntegrations = append(sdkIntegrations, faroTypes.SDKIntegration{
 			Name:    integrationNameVersion[0],
@@ -373,16 +374,16 @@ func parseIntegrationsFromString(integrationsString string) []faroTypes.SDKInteg
 func extractAppFromKeyVal(kv map[string]string, rl pcommon.Resource) faroTypes.App {
 	var app faroTypes.App
 	rl.Attributes().Range(func(key string, val pcommon.Value) bool {
-		if key == string(semconv.ServiceNameKey) {
+		if key == string(conventions.ServiceNameKey) {
 			app.Name = val.Str()
 		}
-		if key == string(semconv.ServiceNamespaceKey) {
+		if key == string(conventions.ServiceNamespaceKey) {
 			app.Namespace = val.Str()
 		}
-		if key == string(semconv.ServiceVersionKey) {
+		if key == string(conventions.ServiceVersionKey) {
 			app.Version = val.Str()
 		}
-		if key == string(semconv.DeploymentEnvironmentKey) {
+		if key == string(conventionsv126.DeploymentEnvironmentKey) {
 			app.Environment = val.Str()
 		}
 		// force the app name stored in resource attribute service.name
@@ -743,8 +744,8 @@ func parseStacktraceFromString(stacktraceStr, exceptionType, exceptionValue stri
 	var stacktrace faroTypes.Stacktrace
 	frames := make([]faroTypes.Frame, 0)
 	framesAsString, _ := strings.CutPrefix(stacktraceStr, fmt.Sprintf("%s: %s", exceptionType, exceptionValue))
-	framesAsArrayOfStrings := strings.Split(framesAsString, "\n  at ")
-	for _, frameStr := range framesAsArrayOfStrings {
+	framesAsArrayOfStrings := strings.SplitSeq(framesAsString, "\n  at ")
+	for frameStr := range framesAsArrayOfStrings {
 		frame, err := parseFrameFromString(frameStr)
 		if err != nil {
 			return nil, err

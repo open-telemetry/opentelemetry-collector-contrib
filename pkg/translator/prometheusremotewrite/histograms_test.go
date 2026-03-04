@@ -386,7 +386,7 @@ func BenchmarkConvertBucketLayout(b *testing.B) {
 	for _, scenario := range scenarios {
 		buckets := pmetric.NewExponentialHistogramDataPointBuckets()
 		buckets.SetOffset(0)
-		for i := 0; i < 1000; i++ {
+		for i := range 1000 {
 			if i%(scenario.gap+1) == 0 {
 				buckets.BucketCounts().Append(10)
 			} else {
@@ -394,7 +394,7 @@ func BenchmarkConvertBucketLayout(b *testing.B) {
 			}
 		}
 		b.Run(fmt.Sprintf("gap %d", scenario.gap), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				convertBucketsLayout(buckets, 0)
 			}
 		})
@@ -433,6 +433,41 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Sum:            10.1,
 					Schema:         1,
 					ZeroThreshold:  defaultZeroThreshold,
+					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
+					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
+					NegativeDeltas: []int64{1, 0},
+					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
+					PositiveDeltas: []int64{1, 0},
+					Timestamp:      500,
+				}
+			},
+		},
+		{
+			name: "convert exp. to native histogram with specific zero_threshold",
+			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
+				pt := pmetric.NewExponentialHistogramDataPoint()
+				pt.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(4)
+				pt.SetSum(10.1)
+				pt.SetScale(1)
+				pt.SetZeroCount(1)
+				pt.SetZeroThreshold(0.02)
+
+				pt.Positive().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Positive().SetOffset(1)
+
+				pt.Negative().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Negative().SetOffset(1)
+
+				return pt
+			},
+			wantNativeHist: func() prompb.Histogram {
+				return prompb.Histogram{
+					Count:          &prompb.Histogram_CountInt{CountInt: 4},
+					Sum:            10.1,
+					Schema:         1,
+					ZeroThreshold:  0.02,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
 					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
 					NegativeDeltas: []int64{1, 0},
@@ -740,11 +775,14 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 
 			converter := newPrometheusConverter(Settings{})
 			metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: true}
+			metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+			require.NoError(t, err)
 			require.NoError(t, converter.addExponentialHistogramDataPoints(
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
-				metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric)),
+				metricName,
 			))
 
 			assert.Equal(t, tt.wantSeries(), converter.unique)

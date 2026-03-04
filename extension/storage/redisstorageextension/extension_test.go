@@ -54,28 +54,28 @@ func TestExtensionIntegrity(t *testing.T) {
 		myBytes := []byte(n.Name())
 
 		// Set my values
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			err := c.Set(ctx, keys[i], myBytes)
 			require.NoError(t, err)
 		}
 
 		// Repeatedly thrash client
-		for j := 0; j < 100; j++ {
+		for range 100 {
 			// Make sure my values are still mine
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				v, err := c.Get(ctx, keys[i])
 				require.NoError(t, err)
 				require.Equal(t, myBytes, v)
 			}
 
 			// Delete my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Delete(ctx, keys[i])
 				require.NoError(t, err)
 			}
 
 			// Reset my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Set(ctx, keys[i], myBytes)
 				require.NoError(t, err)
 			}

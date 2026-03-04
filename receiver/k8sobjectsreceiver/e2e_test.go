@@ -165,7 +165,8 @@ func TestE2E(t *testing.T) {
 				plogtest.IgnoreObservedTimestamp(),
 				plogtest.IgnoreResourceLogsOrder(),
 				plogtest.IgnoreScopeLogsOrder(),
-				plogtest.IgnoreLogRecordsOrder()),
+				plogtest.IgnoreLogRecordsOrder(),
+				plogtest.IgnoreScopeLogsVersion()),
 				"Received logs did not match log records in file %s", expectedFile,
 			)
 		})

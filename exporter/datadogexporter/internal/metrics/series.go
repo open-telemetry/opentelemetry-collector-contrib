@@ -6,9 +6,9 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -34,28 +34,29 @@ func newMetricSeries(name string, ts uint64, value float64, tags []string) datad
 
 // NewMetric creates a new DatadogV2 metric given a name, a type, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewMetric(name string, dt datadogV2.MetricIntakeType, ts uint64, value float64, tags []string) datadogV2.MetricSeries {
+func NewMetric(name string, dt datadogV2.MetricIntakeType, ts uint64, interval int64, value float64, tags []string) datadogV2.MetricSeries {
 	metric := newMetricSeries(name, ts, value, tags)
 	metric.SetType(dt)
+	metric.SetInterval(interval)
 	return metric
 }
 
 // NewGauge creates a new DatadogV2 Gauge metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewGauge(name string, ts uint64, value float64, tags []string) datadogV2.MetricSeries {
-	return NewMetric(name, datadogV2.METRICINTAKETYPE_GAUGE, ts, value, tags)
+func NewGauge(name string, ts uint64, interval int64, value float64, tags []string) datadogV2.MetricSeries {
+	return NewMetric(name, datadogV2.METRICINTAKETYPE_GAUGE, ts, interval, value, tags)
 }
 
 // NewCount creates a new DatadogV2 count metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewCount(name string, ts uint64, value float64, tags []string) datadogV2.MetricSeries {
-	return NewMetric(name, datadogV2.METRICINTAKETYPE_COUNT, ts, value, tags)
+func NewCount(name string, ts uint64, interval int64, value float64, tags []string) datadogV2.MetricSeries {
+	return NewMetric(name, datadogV2.METRICINTAKETYPE_COUNT, ts, interval, value, tags)
 }
 
 // DefaultMetrics creates built-in metrics to report that an exporter is running
 func DefaultMetrics(exporterType, hostname string, timestamp uint64, tags []string) []datadogV2.MetricSeries {
 	metrics := []datadogV2.MetricSeries{
-		NewGauge(fmt.Sprintf("otel.datadog_exporter.%s.running", exporterType), timestamp, 1.0, tags),
+		NewGauge(fmt.Sprintf("otel.datadog_exporter.%s.running", exporterType), timestamp, 0, 1.0, tags),
 	}
 	for i := range metrics {
 		metrics[i].SetResources([]datadogV2.MetricResource{
@@ -70,7 +71,7 @@ func DefaultMetrics(exporterType, hostname string, timestamp uint64, tags []stri
 
 // GatewayUsageGauge creates a gauge metric to report if there is a gateway
 func GatewayUsageGauge(timestamp uint64, hostname string, tags []string, gatewayUsage *attributes.GatewayUsage) datadogV2.MetricSeries {
-	series := NewGauge("datadog.otel.gateway", timestamp, gatewayUsage.Gauge(), tags)
+	series := NewGauge("datadog.otel.gateway", timestamp, 0, gatewayUsage.Gauge(), tags)
 	series.SetResources([]datadogV2.MetricResource{
 		{
 			Name: datadog.PtrString(hostname),

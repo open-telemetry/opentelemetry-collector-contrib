@@ -9,8 +9,7 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
@@ -18,10 +17,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
@@ -249,12 +250,16 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 // EventsConfig provides config for mysql events.
 type EventsConfig struct {
 	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
 		DbServerQuerySample: EventConfig{
 			Enabled: true,
+		},
+		DbServerTopQuery: EventConfig{
+			Enabled: false,
 		},
 	}
 }

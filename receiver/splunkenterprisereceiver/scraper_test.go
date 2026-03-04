@@ -7,7 +7,9 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,13 +66,23 @@ func mockIndexerClusterMangerStatus(w http.ResponseWriter, _ *http.Request) {
 `))
 }
 
+// first call to jobs api which gets the jobid
 func mockJobsSearch(w http.ResponseWriter, r *http.Request) {
-	status := http.StatusOK
+	status := http.StatusCreated
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(status)
 	_, _ = w.Write(getJobsSearchResponse(r))
 }
 
+// second call to jobs api which includes a jobid
+func mockJobsSearchGetResponse(w http.ResponseWriter, r *http.Request) {
+	status := http.StatusOK
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(status)
+	_, _ = w.Write(lookupSearchJobReturn(r))
+}
+
+// this returns a jobid associated with the specific body
 func getJobsSearchResponse(r *http.Request) []byte {
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -80,11 +92,42 @@ func getJobsSearchResponse(r *http.Request) []byte {
 
 	switch string(bodyBytes) {
 	case searchDict[`SplunkIndexerCpuSeconds`]:
-		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="service_cpu_seconds"><value><text>69.20</text></value></field></result></response>`)
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>1</sid></response>`)
 	case searchDict[`SplunkIoAvgIops`]:
-		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="iops"><value><text>200400</text></value></field></result></response>`)
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>2</sid></response>`)
 	case searchDict[`SplunkSchedulerAvgRunTime`]:
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>3</sid></response>`)
+	case searchDict[`SplunkLicenseIndexUsageSearch`]:
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>4</sid></response>`)
+	default:
+		return []byte(`error`)
+	}
+}
+
+// this is for when you send in a jobid and wish to read the actual search
+// response
+func lookupSearchJobReturn(r *http.Request) []byte {
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		return []byte(`error`)
+	}
+	vals, err := url.ParseQuery(string(bodyBytes))
+	if err != nil {
+		return []byte(`error`)
+	}
+
+	switch r.URL.String() {
+	case "/services/search/v2/jobs/1/results":
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="service_cpu_seconds"><value><text>69.20</text></value></field></result></response>`)
+	case "/services/search/v2/jobs/2/results":
+		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="iops"><value><text>200400</text></value></field></result></response>`)
+	case "/services/search/v2/jobs/3/results":
 		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="run_time_avg"><value><text>200.40</text></value></field></result></response>`)
+	case "/services/search/v2/jobs/4/results": // this is the case in which we test pagination
+		if vals.Get("offset") == "0" {
+			return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='0'><field k='indexname'><value><text>some_val1</text></value></field><field k='By'><value><text>104</text></value></field></result><result offset='1'><field k='indexname'><value><text>some_val5</text></value></field><field k='By'><value><text>105</text></value></field></result></results>`)
+		}
+		return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='101'><field k='indexname'><value><text>some_val2</text></value></field><field k='By'><value><text>93</text></value></field></result></results>`)
 	default:
 		return []byte(`error`)
 	}
@@ -93,19 +136,22 @@ func getJobsSearchResponse(r *http.Request) []byte {
 // mock server create
 func createMockServer() *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.String() {
-		case "/services/server/introspection/indexer?output_mode=json":
+		url := r.URL.String()
+		switch {
+		case strings.EqualFold(url, "/services/server/introspection/indexer?output_mode=json"):
 			mockIndexerThroughput(w, r)
-		case "/services/data/indexes-extended?output_mode=json&count=-1":
+		case strings.EqualFold(url, "/services/data/indexes-extended?output_mode=json&count=-1"):
 			mockIndexesExtended(w, r)
-		case "/services/server/introspection/queues?output_mode=json&count=-1":
+		case strings.EqualFold(url, "/services/server/introspection/queues?output_mode=json&count=-1"):
 			mockIntrospectionQueues(w, r)
-		case "/services/server/status/dispatch-artifacts?output_mode=json&count=-1":
+		case strings.EqualFold(url, "/services/server/status/dispatch-artifacts?output_mode=json&count=-1"):
 			mockDispatchArtifacts(w, r)
-		case "/services/cluster/manager/status?output_mode=json":
+		case strings.EqualFold(url, "/services/cluster/manager/status?output_mode=json"):
 			mockIndexerClusterMangerStatus(w, r)
-		case "/services/search/jobs/":
+		case strings.EqualFold(url, "/services/search/v2/jobs/"):
 			mockJobsSearch(w, r)
+		case strings.Contains(url, "results"):
+			mockJobsSearchGetResponse(w, r)
 		default:
 			http.NotFoundHandler().ServeHTTP(w, r)
 		}
@@ -120,23 +166,25 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	} else {
 		endpoint = ts.URL
 	}
-	metricsettings := metadata.MetricsBuilderConfig{}
+	metricsCfg := metadata.DefaultMetricsBuilderConfig()
 	// in the future add more metrics
-	metricsettings.Metrics.SplunkIndexerThroughput.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedEventCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedRawSize.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
-	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
-	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
-	metricsettings.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
-	metricsettings.Metrics.SplunkIndexerCPUTime.Enabled = true
-	metricsettings.Metrics.SplunkIoAvgIops.Enabled = true
-	metricsettings.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
-	metricsettings.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
+	metricsCfg.Metrics.SplunkHealth.Enabled = false
+	metricsCfg.Metrics.SplunkIndexerThroughput.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedEventCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedRawSize.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
+	metricsCfg.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
+	metricsCfg.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
+	metricsCfg.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
+	metricsCfg.Metrics.SplunkIndexerCPUTime.Enabled = true
+	metricsCfg.Metrics.SplunkIoAvgIops.Enabled = true
+	metricsCfg.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
+	metricsCfg.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
+	metricsCfg.Metrics.SplunkLicenseIndexUsage.Enabled = true
 	return &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
@@ -155,7 +203,7 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
 		},
-		MetricsBuilderConfig: metricsettings,
+		MetricsBuilderConfig: metricsCfg,
 		VersionInfo:          false,
 	}
 }

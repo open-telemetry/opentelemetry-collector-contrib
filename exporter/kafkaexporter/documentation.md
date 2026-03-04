@@ -12,15 +12,16 @@ The total number of connections closed.
 
 Only produced when franz-go is enabled.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 
 ### otelcol_kafka_broker_connects
 
@@ -28,32 +29,34 @@ The total number of connections opened.
 
 Only produced when franz-go is enabled.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
 
 ### otelcol_kafka_broker_throttling_duration
 
-The throttling duration in ms imposed by the broker when exporting messages. [deprecated]
+The throttling duration in ms imposed by the broker when exporting messages.
 
 Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_throttling_latency.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Deprecated |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 
 ### otelcol_kafka_broker_throttling_latency
 
@@ -61,15 +64,16 @@ The throttling latency in seconds imposed by the broker when exporting records.
 
 Only produced when franz-go is enabled.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | Development |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 
 ### otelcol_kafka_exporter_bytes
 
@@ -77,15 +81,16 @@ The size in bytes of exported records seen by the broker.
 
 Only produced when franz-go is enabled.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
@@ -94,53 +99,56 @@ Only produced when franz-go is enabled.
 
 The uncompressed size in bytes of exported messages seen by the client.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
 
 ### otelcol_kafka_exporter_latency
 
-The time it took in ms to export a batch of messages. [deprecated]
+The time it took in ms to export a batch of messages.
 
 Deprecated in favor of kafka_exporter_write_latency.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Deprecated |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
 
 ### otelcol_kafka_exporter_messages
 
-The number of exported messages. [deprecated]
+The number of exported messages.
 
 Deprecated in favor of kafka_exporter_records.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Deprecated |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
@@ -149,15 +157,16 @@ Deprecated in favor of kafka_exporter_records.
 
 The number of exported records.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |
@@ -166,15 +175,16 @@ The number of exported records.
 
 The time it took in seconds to export a batch of records.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | Development |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | node_id | The Kafka node ID. | Any Int |
+| server.address | The Kafka node address. | Any Str |
 | topic | The Kafka topic. | Any Str |
 | partition | The Kafka topic partition. | Any Int |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` |

@@ -43,7 +43,7 @@ func TestIPResolver100Hits(t *testing.T) {
 		expireTime: time.Now().Add(time.Hour),
 	}
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		require.Equal(t, "definitely invalid hostname", resolver.GetHostFromIP("127.0.0.1"))
 	}
 	resolver.Stop()

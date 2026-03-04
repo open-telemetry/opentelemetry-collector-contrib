@@ -1,3 +1,4 @@
+display_name: AWS S3 Receiver
 type: awss3
 
 status:
@@ -11,3 +12,5 @@ tests:
   config:
     starttime: "2024-01-31"
     endtime: "2024-02-03"
+    s3downloader:
+      s3_bucket: "my-bucket"

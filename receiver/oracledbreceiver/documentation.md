@@ -16,220 +16,220 @@ metrics:
 
 Cumulative CPU time, in seconds
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Double | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### oracledb.dml_locks.limit
 
 Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {locks} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {locks} | Gauge | Int | Development |
 
 ### oracledb.dml_locks.usage
 
 Current count of active DML (Data Manipulation Language) locks.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {locks} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {locks} | Gauge | Int | Development |
 
 ### oracledb.enqueue_deadlocks
 
 Total number of deadlocks between table or row locks in different sessions.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {deadlocks} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {deadlocks} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.enqueue_locks.limit
 
 Maximum limit of active enqueue locks, -1 if unlimited.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {locks} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {locks} | Gauge | Int | Development |
 
 ### oracledb.enqueue_locks.usage
 
 Current count of active enqueue locks.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {locks} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {locks} | Gauge | Int | Development |
 
 ### oracledb.enqueue_resources.limit
 
 Maximum limit of active enqueue resources, -1 if unlimited.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {resources} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {resources} | Gauge | Int | Development |
 
 ### oracledb.enqueue_resources.usage
 
 Current count of active enqueue resources.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {resources} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {resources} | Gauge | Int | Development |
 
 ### oracledb.exchange_deadlocks
 
 Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {deadlocks} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {deadlocks} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.executions
 
 Total number of calls (user and recursive) that executed SQL statements
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {executions} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {executions} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.hard_parses
 
 Number of hard parses
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {parses} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {parses} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.logical_reads
 
 Number of logical reads
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {reads} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {reads} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parse_calls
 
 Total number of parse calls.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {parses} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {parses} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.pga_memory
 
 Session PGA (Program Global Area) memory
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.physical_reads
 
 Number of physical reads
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {reads} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {reads} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.processes.limit
 
 Maximum limit of active processes, -1 if unlimited.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {processes} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {processes} | Gauge | Int | Development |
 
 ### oracledb.processes.usage
 
 Current count of active processes.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {processes} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {processes} | Gauge | Int | Development |
 
 ### oracledb.sessions.limit
 
 Maximum limit of active sessions, -1 if unlimited.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {sessions} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {sessions} | Gauge | Int | Development |
 
 ### oracledb.sessions.usage
 
 Count of active sessions.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {sessions} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {sessions} | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| session_type | Session type | Any Str | false |
-| session_status | Session status | Any Str | false |
+| session_type | Session type | Any Str | Recommended |
+| session_status | Session status | Any Str | Recommended |
 
 ### oracledb.tablespace_size.limit
 
 Maximum size of tablespace in bytes, -1 if unlimited.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| tablespace_name | Tablespace name | Any Str | false |
+| tablespace_name | Tablespace name | Any Str | Recommended |
 
 ### oracledb.tablespace_size.usage
 
 Used tablespace in bytes.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| tablespace_name | Tablespace name | Any Str | false |
+| tablespace_name | Tablespace name | Any Str | Recommended |
 
 ### oracledb.transactions.limit
 
 Maximum limit of active transactions, -1 if unlimited.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {transactions} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transactions} | Gauge | Int | Development |
 
 ### oracledb.transactions.usage
 
 Current count of active transactions.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {transactions} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transactions} | Gauge | Int | Development |
 
 ### oracledb.user_commits
 
 Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {commits} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {commits} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.user_rollbacks
 
 Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
 
 ## Optional Metrics
 
@@ -245,137 +245,137 @@ metrics:
 
 Number of times a consistent read was requested for a block from the buffer cache.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {gets} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {gets} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.db_block_gets
 
 Number of times a current block was requested from the buffer cache.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {gets} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {gets} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.ddl_statements_parallelized
 
 Number of DDL statements that were executed in parallel
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {statements} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {statements} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.dml_statements_parallelized
 
 Number of DML statements that were executed in parallel
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {statements} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {statements} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.logons
 
 Number of logon operations
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operation} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parallel_operations_downgraded_1_to_25_pct
 
 Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {executions} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {executions} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parallel_operations_downgraded_25_to_50_pct
 
 Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {executions} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {executions} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parallel_operations_downgraded_50_to_75_pct
 
 Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {executions} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {executions} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parallel_operations_downgraded_75_to_99_pct
 
 Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {executions} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {executions} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parallel_operations_downgraded_to_serial
 
 Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {executions} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {executions} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.parallel_operations_not_downgraded
 
 Number of times parallel execution was executed at the requested degree of parallelism
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {executions} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {executions} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.physical_read_io_requests
 
 Number of read requests for application activity
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {requests} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.physical_reads_direct
 
 Number of reads directly from disk, bypassing the buffer cache
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {reads} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {reads} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.physical_write_io_requests
 
 Number of write requests for application activity
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {requests} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.physical_writes
 
 Number of physical writes
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {writes} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {writes} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.physical_writes_direct
 
 Number of writes directly to disk, bypassing the buffer cache
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {writes} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {writes} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.queries_parallelized
 
 Number of SELECT statements executed in parallel
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {queries} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {queries} | Sum | Int | Cumulative | true | Development |
 
 ## Default Events
 
@@ -427,8 +427,9 @@ sample query
 | oracledb.state | Current state of the query or the session executing it. | Any Str |
 | oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str |
 | oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str |
-| oracledb.object_name | Name of the database object that a query is accessing. | Any Str |
-| oracledb.object_type | Type of the database object that a query is accessing. | Any Str |
+| oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int |
+| oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str |
+| oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str |
 | oracledb.osuser | Name of the operating system user that initiated or is running the Oracle database session. | Any Str |
 | oracledb.duration_sec | Total time taken by a database query to execute. | Any Double |
 
@@ -463,6 +464,9 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.physical_write_requests | The number of times a query requested to write data to disk (reporting delta). | Any Int |
 | oracledb.rows_processed | The total number of rows that a query has read, returned, or affected during its execution (reporting delta). | Any Int |
 | oracledb.user_io_wait_time | The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta). | Any Double |
+| oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int |
+| oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str |
+| oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str |
 
 ## Resource Attributes
 
@@ -470,3 +474,4 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | ---- | ----------- | ------ | ------- |
 | host.name | The host name of Oracle Server | Any Str | true |
 | oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true |
+| service.instance.id | A unique identifier of the Oracle DB instance in the format host:port/serviceName. (defaults to 'unknown:1521', in case of error in generating this value) | Any Str | true |

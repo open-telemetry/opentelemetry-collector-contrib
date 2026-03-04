@@ -10,6 +10,9 @@ resourceMetrics:
         - key: server.port
           value:
             intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
         - key: sqlserver.instance.name
           value:
             stringValue: ad8fb2b53dce

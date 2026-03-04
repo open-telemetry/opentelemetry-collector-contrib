@@ -1,0 +1,11 @@
+$defs:
+  client_config:
+    description: ClientConfig for a kubelet client for talking to a kubelet HTTP endpoint.
+    type: object
+    properties:
+      insecure_skip_verify:
+        description: InsecureSkipVerify controls whether the client verifies the server's certificate chain and host name.
+        type: boolean
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig.api_config
+      - $ref: go.opentelemetry.io/collector/config/configtls.config

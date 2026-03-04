@@ -13,7 +13,7 @@ import (
 
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
-	"github.com/splunk/stef/go/otel/oteltef"
+	"github.com/splunk/stef/go/otel/otelstef"
 	"github.com/splunk/stef/go/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,7 +66,7 @@ func (m *mockMetricDestServer) start() {
 
 	m.grpcServer = grpcServer
 
-	schema, err := oteltef.MetricsWireSchema()
+	schema, err := otelstef.MetricsWireSchema()
 	if err != nil {
 		m.logger.Fatal("Failed to load schema", zap.Error(err))
 	}
@@ -96,7 +96,7 @@ func (m *mockMetricDestServer) stop() {
 func (m *mockMetricDestServer) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.STEFStream) error {
 	m.logger.Info("Incoming TEF/gRPC connection.")
 
-	reader, err := oteltef.NewMetricsReader(grpcReader)
+	reader, err := otelstef.NewMetricsReader(grpcReader)
 	if err != nil {
 		m.logger.Error("Error creating metrics reader from connection", zap.Error(err))
 		return err
@@ -187,7 +187,7 @@ func TestExport(t *testing.T) {
 						// the case where exporter begins to forcedly flush
 						// encoded data.
 						pointCount := int64(0)
-						for i := 0; i < 2*cfg.QueueConfig.NumConsumers; i++ {
+						for i := 0; i < 2*cfg.QueueConfig.Get().NumConsumers; i++ {
 							md := testdata.GenerateMetrics(1)
 							pointCount += int64(md.DataPointCount())
 							err := exp.ConsumeMetrics(t.Context(), md)
@@ -395,7 +395,7 @@ func TestCancelBlockedExport(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 
 	// Do some attempts send with cancellation to help trigger races if there is any.
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		// Trying sending with server down. The connection attempt will block
 		// because listener does not accept connections. However exportMetrics()
 		// will return almost immediately because connection attempt
@@ -446,7 +446,7 @@ func TestCancelAfterExport(t *testing.T) {
 	require.NoError(t, exp.Start(ctx, host))
 
 	var pointCount int64
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		md := testdata.GenerateMetrics(1)
 		pointCount += int64(md.DataPointCount())
 		ctx, cancel = context.WithCancel(t.Context())

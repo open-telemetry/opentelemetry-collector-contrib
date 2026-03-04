@@ -11,12 +11,14 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -91,85 +93,6 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
-}
-
-func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
-	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
-	defer server.Close()
-
-	require.NoError(t, enableZorkianMetricExport())
-	defer require.NoError(t, enableMetricExportSerializer())
-
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
-
-	// Use the mock server for API key validation
-	c := cfg.(*datadogconfig.Config)
-	c.Metrics.Endpoint = server.URL
-	c.HostMetadata.Enabled = false
-
-	t.Run("true", func(t *testing.T) {
-		c.API.FailOnInvalidKey = true
-		ctx := t.Context()
-		// metrics exporter
-		mexp, err := factory.CreateMetrics(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, mexp)
-
-		texp, err := factory.CreateTraces(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, texp)
-
-		lexp, err := factory.CreateLogs(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		// logs agent exporter does not fail on  invalid api key
-		assert.NoError(t, err)
-		assert.NotNil(t, lexp)
-	})
-	t.Run("false", func(t *testing.T) {
-		c.API.FailOnInvalidKey = false
-		ctx := t.Context()
-		exp, err := factory.CreateMetrics(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.NoError(t, err)
-		assert.NotNil(t, exp)
-
-		texp, err := factory.CreateTraces(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.NoError(t, err)
-		assert.NotNil(t, texp)
-
-		lexp, err := factory.CreateLogs(
-			ctx,
-			exportertest.NewNopSettings(metadata.Type),
-			cfg,
-		)
-		assert.NoError(t, err)
-		assert.NotNil(t, lexp)
-	})
 }
 
 func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
@@ -285,7 +208,7 @@ func TestOnlyMetadata(t *testing.T) {
 	cfg := &datadogconfig.Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 
 		API:          datadogconfig.APIConfig{Key: "aaaaaaa"},
 		Metrics:      datadogconfig.MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
@@ -315,7 +238,7 @@ func TestOnlyMetadata(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
 
-	err = expTraces.Start(ctx, nil)
+	err = expTraces.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 	defer func() {
 		assert.NoError(t, expTraces.Shutdown(ctx))
@@ -363,9 +286,9 @@ func TestStopExporters(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
 
-	err = expTraces.Start(ctx, nil)
+	err = expTraces.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
-	err = expMetrics.Start(ctx, nil)
+	err = expMetrics.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	finishShutdown := make(chan bool)
@@ -385,7 +308,30 @@ func TestStopExporters(t *testing.T) {
 	}
 }
 
-func resetZorkianWarningsForTesting() {
-	onceZorkianMetricsWarning = sync.Once{}
-	onceZorkianTracesWarning = sync.Once{}
+func TestCheckAndCastConfigError(t *testing.T) {
+	factory := NewFactory()
+	ctx := t.Context()
+	settings := exportertest.NewNopSettings(metadata.Type)
+
+	// Create a mock config of wrong type (using a simple struct instead of *datadogconfig.Config)
+	type wrongConfig struct{}
+	invalidCfg := &wrongConfig{}
+
+	// Test that CreateMetrics returns an error when given wrong config type
+	_, err := factory.CreateMetrics(ctx, settings, invalidCfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected config of type *datadog.Config")
+	assert.Contains(t, err.Error(), "got *datadogexporter.wrongConfig")
+
+	// Test that CreateTraces returns an error when given wrong config type
+	_, err = factory.CreateTraces(ctx, settings, invalidCfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected config of type *datadog.Config")
+	assert.Contains(t, err.Error(), "got *datadogexporter.wrongConfig")
+
+	// Test that CreateLogs returns an error when given wrong config type
+	_, err = factory.CreateLogs(ctx, settings, invalidCfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected config of type *datadog.Config")
+	assert.Contains(t, err.Error(), "got *datadogexporter.wrongConfig")
 }

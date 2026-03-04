@@ -1,0 +1,195 @@
+$defs:
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for docker_stats metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for docker_stats metrics.
+    type: object
+    properties:
+      container.blockio.io_merged_recursive:
+        $ref: metric_config
+      container.blockio.io_queued_recursive:
+        $ref: metric_config
+      container.blockio.io_service_bytes_recursive:
+        $ref: metric_config
+      container.blockio.io_service_time_recursive:
+        $ref: metric_config
+      container.blockio.io_serviced_recursive:
+        $ref: metric_config
+      container.blockio.io_time_recursive:
+        $ref: metric_config
+      container.blockio.io_wait_time_recursive:
+        $ref: metric_config
+      container.blockio.sectors_recursive:
+        $ref: metric_config
+      container.cpu.limit:
+        $ref: metric_config
+      container.cpu.logical.count:
+        $ref: metric_config
+      container.cpu.shares:
+        $ref: metric_config
+      container.cpu.throttling_data.periods:
+        $ref: metric_config
+      container.cpu.throttling_data.throttled_periods:
+        $ref: metric_config
+      container.cpu.throttling_data.throttled_time:
+        $ref: metric_config
+      container.cpu.usage.kernelmode:
+        $ref: metric_config
+      container.cpu.usage.percpu:
+        $ref: metric_config
+      container.cpu.usage.system:
+        $ref: metric_config
+      container.cpu.usage.total:
+        $ref: metric_config
+      container.cpu.usage.usermode:
+        $ref: metric_config
+      container.cpu.utilization:
+        $ref: metric_config
+      container.memory.active_anon:
+        $ref: metric_config
+      container.memory.active_file:
+        $ref: metric_config
+      container.memory.anon:
+        $ref: metric_config
+      container.memory.cache:
+        $ref: metric_config
+      container.memory.dirty:
+        $ref: metric_config
+      container.memory.fails:
+        $ref: metric_config
+      container.memory.file:
+        $ref: metric_config
+      container.memory.hierarchical_memory_limit:
+        $ref: metric_config
+      container.memory.hierarchical_memsw_limit:
+        $ref: metric_config
+      container.memory.inactive_anon:
+        $ref: metric_config
+      container.memory.inactive_file:
+        $ref: metric_config
+      container.memory.mapped_file:
+        $ref: metric_config
+      container.memory.percent:
+        $ref: metric_config
+      container.memory.pgfault:
+        $ref: metric_config
+      container.memory.pgmajfault:
+        $ref: metric_config
+      container.memory.pgpgin:
+        $ref: metric_config
+      container.memory.pgpgout:
+        $ref: metric_config
+      container.memory.rss:
+        $ref: metric_config
+      container.memory.rss_huge:
+        $ref: metric_config
+      container.memory.total_active_anon:
+        $ref: metric_config
+      container.memory.total_active_file:
+        $ref: metric_config
+      container.memory.total_cache:
+        $ref: metric_config
+      container.memory.total_dirty:
+        $ref: metric_config
+      container.memory.total_inactive_anon:
+        $ref: metric_config
+      container.memory.total_inactive_file:
+        $ref: metric_config
+      container.memory.total_mapped_file:
+        $ref: metric_config
+      container.memory.total_pgfault:
+        $ref: metric_config
+      container.memory.total_pgmajfault:
+        $ref: metric_config
+      container.memory.total_pgpgin:
+        $ref: metric_config
+      container.memory.total_pgpgout:
+        $ref: metric_config
+      container.memory.total_rss:
+        $ref: metric_config
+      container.memory.total_rss_huge:
+        $ref: metric_config
+      container.memory.total_unevictable:
+        $ref: metric_config
+      container.memory.total_writeback:
+        $ref: metric_config
+      container.memory.unevictable:
+        $ref: metric_config
+      container.memory.usage.limit:
+        $ref: metric_config
+      container.memory.usage.max:
+        $ref: metric_config
+      container.memory.usage.total:
+        $ref: metric_config
+      container.memory.writeback:
+        $ref: metric_config
+      container.network.io.usage.rx_bytes:
+        $ref: metric_config
+      container.network.io.usage.rx_dropped:
+        $ref: metric_config
+      container.network.io.usage.rx_errors:
+        $ref: metric_config
+      container.network.io.usage.rx_packets:
+        $ref: metric_config
+      container.network.io.usage.tx_bytes:
+        $ref: metric_config
+      container.network.io.usage.tx_dropped:
+        $ref: metric_config
+      container.network.io.usage.tx_errors:
+        $ref: metric_config
+      container.network.io.usage.tx_packets:
+        $ref: metric_config
+      container.pids.count:
+        $ref: metric_config
+      container.pids.limit:
+        $ref: metric_config
+      container.restarts:
+        $ref: metric_config
+      container.uptime:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for docker_stats resource attributes.
+    type: object
+    properties:
+      container.command_line:
+        $ref: resource_attribute_config
+      container.hostname:
+        $ref: resource_attribute_config
+      container.id:
+        $ref: resource_attribute_config
+      container.image.id:
+        $ref: resource_attribute_config
+      container.image.name:
+        $ref: resource_attribute_config
+      container.name:
+        $ref: resource_attribute_config
+      container.runtime:
+        $ref: resource_attribute_config

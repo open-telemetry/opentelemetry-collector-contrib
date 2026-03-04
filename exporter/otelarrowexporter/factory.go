@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -62,9 +61,8 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   queueCfg,
+		QueueSettings:   configoptional.Some(queueCfg),
 		ClientConfig: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
 			// Default to zstd compression
 			Compression: configcompression.TypeZstd,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -88,13 +86,13 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func helperOptions(e exp, qbs exporterhelper.QueueBatchSettings) []exporterhelper.Option {
+func helperOptions(e exp) []exporterhelper.Option {
 	cfg := e.getConfig().(*Config)
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithRetry(cfg.RetryConfig),
-		exporterhelper.WithQueueBatch(cfg.QueueSettings, qbs),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(e.start),
 		exporterhelper.WithShutdown(e.shutdown),
 	}
@@ -125,7 +123,7 @@ func createTracesExporter(
 	}
 	return exporterhelper.NewTraces(ctx, e.getSettings(), e.getConfig(),
 		e.pushTraces,
-		helperOptions(e, exporterhelper.NewTracesQueueBatchSettings())...,
+		helperOptions(e)...,
 	)
 }
 
@@ -144,7 +142,7 @@ func createMetricsExporter(
 	}
 	return exporterhelper.NewMetrics(ctx, e.getSettings(), e.getConfig(),
 		e.pushMetrics,
-		helperOptions(e, exporterhelper.NewMetricsQueueBatchSettings())...,
+		helperOptions(e)...,
 	)
 }
 
@@ -163,6 +161,6 @@ func createLogsExporter(
 	}
 	return exporterhelper.NewLogs(ctx, e.getSettings(), e.getConfig(),
 		e.pushLogs,
-		helperOptions(e, exporterhelper.NewLogsQueueBatchSettings())...,
+		helperOptions(e)...,
 	)
 }

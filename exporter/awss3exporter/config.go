@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 )
@@ -25,10 +26,14 @@ type S3UploaderConfig struct {
 	Region string `mapstructure:"region"`
 	// S3Bucket is the bucket name to be uploaded to.
 	S3Bucket string `mapstructure:"s3_bucket"`
-	// S3Prefix is the key (directory) prefix to written to inside the bucket
+	// S3BasePrefix is the root key (directory) prefix used to write the file.
+	S3BasePrefix string `mapstructure:"s3_base_prefix"`
+	// S3Prefix is the key (directory) prefix to write to inside the bucket. Appended to S3BasePrefix if provided.
 	S3Prefix string `mapstructure:"s3_prefix"`
 	// S3PartitionFormat is used to provide the rollup on how data is written. Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
 	S3PartitionFormat string `mapstructure:"s3_partition_format"`
+	// S3PartitionTimezone is used to provide timezone for partition time. Defaults to Local timezone.
+	S3PartitionTimezone string `mapstructure:"s3_partition_timezone"`
 	// FilePrefix is the filename prefix used for the file to avoid any potential collisions.
 	FilePrefix string `mapstructure:"file_prefix"`
 	// Endpoint is the URL used for communicated with S3.
@@ -45,7 +50,7 @@ type S3UploaderConfig struct {
 	StorageClass string `mapstructure:"storage_class"`
 	// Compression sets the algorithm used to process the payload
 	// before uploading to S3.
-	// Valid values are: `gzip` or no value set.
+	// Valid values are: `gzip`, `zstd`, or no value set.
 	Compression configcompression.Type `mapstructure:"compression"`
 
 	// RetryMode specifies the retry mode for S3 client, default is "standard".
@@ -86,10 +91,10 @@ type ResourceAttrsToS3 struct {
 
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
-	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	S3Uploader      S3UploaderConfig                `mapstructure:"s3uploader"`
-	MarshalerName   MarshalerType                   `mapstructure:"marshaler"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	S3Uploader      S3UploaderConfig                                         `mapstructure:"s3uploader"`
+	MarshalerName   MarshalerType                                            `mapstructure:"marshaler"`
 
 	// Encoding to apply. If present, overrides the marshaler configuration option.
 	Encoding              *component.ID     `mapstructure:"encoding"`
@@ -139,12 +144,8 @@ func (c *Config) Validate() error {
 
 	compression := c.S3Uploader.Compression
 	if compression.IsCompressed() {
-		if compression != configcompression.TypeGzip {
+		if compression != configcompression.TypeGzip && compression != configcompression.TypeZstd {
 			errs = multierr.Append(errs, errors.New("unknown compression type"))
-		}
-
-		if c.MarshalerName == SumoIC {
-			errs = multierr.Append(errs, errors.New("marshaler does not support compression"))
 		}
 	}
 

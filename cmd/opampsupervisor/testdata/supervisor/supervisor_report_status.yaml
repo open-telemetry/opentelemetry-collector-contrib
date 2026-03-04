@@ -22,3 +22,20 @@ agent:
   {{- if .use_hup_config_reload }}
   use_hup_config_reload: {{ .use_hup_config_reload }}
   {{- end }}
+
+telemetry:
+  traces:
+    processors:
+      - simple:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://{{.telemetryUrl}}
+  logs:
+    level: debug
+    processors:
+      - simple:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://{{.telemetryUrl}}

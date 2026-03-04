@@ -10,11 +10,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
-
-var downloadManager *manager.Downloader //nolint:golint,unused
 
 type ListObjectsV2Pager interface {
 	HasMorePages() bool
@@ -40,7 +37,7 @@ func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, G
 	}
 	awsCfg, err := config.LoadDefaultConfig(ctx, optionsFuncs...)
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		log.Printf("unable to load SDK config: %v", err)
 		return nil, nil, err
 	}
 	s3OptionFuncs := make([]func(options *s3.Options), 0)

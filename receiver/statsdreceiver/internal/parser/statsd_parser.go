@@ -6,7 +6,9 @@ package parser // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
@@ -42,9 +44,10 @@ const (
 )
 
 type ObserverCategory struct {
-	method             protocol.ObserverType
-	histogramConfig    structure.Config
-	summaryPercentiles []float64
+	method                protocol.ObserverType
+	histogramConfig       structure.Config
+	explicitBucketConfigs []explicitBucketConfig
+	summaryPercentiles    []float64
 }
 
 var defaultObserverCategory = ObserverCategory{
@@ -59,6 +62,7 @@ type StatsDParser struct {
 	isMonotonicCounter      bool
 	enableIPOnlyAggregation bool
 	ignoreHost              bool
+	counterType             protocol.CounterType
 	timerEvents             ObserverCategory
 	histogramEvents         ObserverCategory
 	lastIntervalTime        time.Time
@@ -97,8 +101,70 @@ type summaryMetric struct {
 
 type histogramStructure = structure.Histogram[float64]
 
+type explicitBucketConfig struct {
+	re      *regexp.Regexp
+	buckets []float64
+}
+
+type explicitBucket struct {
+	_         struct{}
+	bucketMap map[float64]int
+	buckets   []float64
+	count     uint64
+	infCount  uint64
+	sum       float64
+	min       float64
+	max       float64
+}
+
+// Init retrieves ascendingly sorted unique buckets
+func (e *explicitBucket) Init(buckets []float64) {
+	e.count = 0
+	e.sum = 0
+	e.min = math.Inf(-1)
+	e.max = math.Inf(+1)
+	e.bucketMap = make(map[float64]int, len(buckets))
+	for _, bucket := range buckets {
+		e.bucketMap[bucket] = 0
+	}
+
+	e.buckets = buckets
+}
+
+func (e *explicitBucket) UpdateByIncr(value float64, count uint64) {
+	if count == 0 {
+		return
+	}
+	e.sum += value * float64(count)
+	e.count += count
+
+	if e.count == count {
+		e.min = value
+		e.max = value
+	} else {
+		if value < e.min {
+			e.min = value
+		}
+		if value > e.max {
+			e.max = value
+		}
+	}
+	isBucketFound := false
+	for _, bucket := range e.buckets {
+		if value <= bucket {
+			e.bucketMap[bucket] += int(count)
+			isBucketFound = true
+			break
+		}
+	}
+	if !isBucketFound {
+		e.infCount += count
+	}
+}
+
 type histogramMetric struct {
-	agg *histogramStructure
+	agg            *histogramStructure
+	explicitBucket *explicitBucket
 }
 
 type statsDMetric struct {
@@ -137,7 +203,7 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation, ignoreHost bool, sendTimerHistogram []protocol.TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation, ignoreHost bool, sendTimerHistogram []protocol.TimerHistogramMapping, counterType protocol.CounterType) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
@@ -147,22 +213,40 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 	p.isMonotonicCounter = isMonotonicCounter
 	p.enableIPOnlyAggregation = enableIPOnlyAggregation
 	p.ignoreHost = ignoreHost
+	p.counterType = counterType
 
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
 		switch eachMap.StatsdType {
 		case protocol.HistogramTypeName, protocol.DistributionTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
-			p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
+			if eachMap.Histogram.ExplicitBuckets != nil {
+				p.histogramEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
+			}
+			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.histogramEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case protocol.TimingTypeName, protocol.TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
+			if eachMap.Histogram.ExplicitBuckets != nil {
+				p.histogramEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
+			}
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case protocol.CounterTypeName, protocol.GaugeTypeName:
 		}
 	}
 	return nil
+}
+
+func explicitBucketInitializeRegex(opts protocol.HistogramConfig) []explicitBucketConfig {
+	ebc := make([]explicitBucketConfig, len(opts.ExplicitBuckets))
+	for i := range opts.ExplicitBuckets {
+		ebc[i] = explicitBucketConfig{
+			re:      regexp.MustCompile(opts.ExplicitBuckets[i].MatcherPattern),
+			buckets: opts.ExplicitBuckets[i].Buckets,
+		}
+	}
+	return ebc
 }
 
 func expoHistogramConfig(opts protocol.HistogramConfig) structure.Config {
@@ -265,6 +349,15 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		return err
 	}
 
+	// Discard NaN and infinite values for all metric types
+	if math.IsNaN(parsedMetric.asFloat) || math.IsInf(parsedMetric.asFloat, 0) {
+		reason := "NaN"
+		if math.IsInf(parsedMetric.asFloat, 0) {
+			reason = "infinite"
+		}
+		return fmt.Errorf("discarding metric %q: invalid %s value", parsedMetric.description.name, reason)
+	}
+
 	addrKey := newNetAddr(addr)
 	if p.ignoreHost {
 		addrKey = netAddr{}
@@ -295,10 +388,10 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	case CounterType:
 		_, ok := instrument.counters[parsedMetric.description]
 		if !ok {
-			instrument.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter)
+			instrument.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, p.counterType)
 		} else {
 			point := instrument.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
-			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())
+			aggregateCounterValue(point, parsedMetric.counterValue(), p.counterType)
 		}
 
 	case TimingType, HistogramType, DistributionType:
@@ -324,21 +417,47 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		case protocol.HistogramObserver:
 			raw := parsedMetric.sampleValue()
 			var agg *histogramStructure
+			var eb *explicitBucket
+
 			if existing, ok := instrument.histograms[parsedMetric.description]; ok {
-				agg = existing.agg
-			} else {
-				agg = new(histogramStructure)
-				agg.Init(category.histogramConfig)
-
-				instrument.histograms[parsedMetric.description] = histogramMetric{
-					agg: agg,
+				if existing.explicitBucket != nil {
+					eb = existing.explicitBucket
+				} else {
+					agg = existing.agg
 				}
-			}
-			agg.UpdateByIncr(
-				raw.value,
-				uint64(raw.count), // Note! Rounding float64 to uint64 here.
-			)
+			} else {
+				var matchedConfig *explicitBucketConfig
+				if category.explicitBucketConfigs != nil {
+					for _, config := range category.explicitBucketConfigs {
+						if config.re.MatchString(parsedMetric.description.name) {
+							matchedConfig = &config
+							break
+						}
+					}
+				}
 
+				hm := histogramMetric{}
+				if matchedConfig != nil {
+					eb = new(explicitBucket)
+					eb.Init(matchedConfig.buckets)
+					hm.explicitBucket = eb
+				} else {
+					agg = new(histogramStructure)
+					agg.Init(category.histogramConfig)
+					hm.agg = agg
+				}
+
+				instrument.histograms[parsedMetric.description] = hm
+			}
+
+			if eb != nil {
+				eb.UpdateByIncr(raw.value, uint64(raw.count))
+			} else {
+				agg.UpdateByIncr(
+					raw.value,
+					uint64(raw.count), // Note! Rounding float64 to uint64 here.
+				)
+			}
 		case protocol.DisableObserver:
 			// No action.
 		}
@@ -426,7 +545,7 @@ func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) 
 			containerID := strings.TrimPrefix(part, "c:")
 
 			if containerID != "" {
-				kvs = append(kvs, attribute.String(string(semconv.ContainerIDKey), containerID))
+				kvs = append(kvs, attribute.String(string(conventions.ContainerIDKey), containerID))
 			}
 		case strings.HasPrefix(part, "T"):
 			// As per DogStatD protocol v1.3:

@@ -154,9 +154,7 @@ func (a *alertsReceiver) startPolling(ctx context.Context, storageClient storage
 	}
 
 	t := time.NewTicker(a.pollInterval)
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
+	a.wg.Go(func() {
 		for {
 			select {
 			case <-t.C:
@@ -169,7 +167,7 @@ func (a *alertsReceiver) startPolling(ctx context.Context, storageClient storage
 				return
 			}
 		}
-	}()
+	})
 
 	return nil
 }
@@ -228,11 +226,8 @@ func (a *alertsReceiver) startListening(ctx context.Context, host component.Host
 		return err
 	}
 
-	a.wg.Add(1)
 	if a.tlsSettings != nil {
-		go func() {
-			defer a.wg.Done()
-
+		a.wg.Go(func() {
 			a.telemetrySettings.Logger.Debug("Starting ServeTLS",
 				zap.String("address", a.addr),
 				zap.String("certfile", a.tlsSettings.CertFile),
@@ -246,11 +241,9 @@ func (a *alertsReceiver) startListening(ctx context.Context, host component.Host
 				a.telemetrySettings.Logger.Error("ServeTLS failed", zap.Error(err))
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-		}()
+		})
 	} else {
-		go func() {
-			defer a.wg.Done()
-
+		a.wg.Go(func() {
 			a.telemetrySettings.Logger.Debug("Starting Serve", zap.String("address", a.addr))
 
 			err := a.server.Serve(l)
@@ -260,7 +253,7 @@ func (a *alertsReceiver) startListening(ctx context.Context, host component.Host
 			if err != http.ErrServerClosed {
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-		}()
+		})
 	}
 	return nil
 }
@@ -344,7 +337,7 @@ func (a *alertsReceiver) shutdownPoller(ctx context.Context) error {
 	return a.writeCheckpoint(ctx)
 }
 
-func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert, project *mongodbatlas.Project) (plog.Logs, error) {
+func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []*mongodbatlas.Alert, project *mongodbatlas.Project) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	var errs error
 	for i := range alerts {
@@ -553,8 +546,8 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 	return a.storageClient.Set(ctx, alertCacheKey, marshalBytes)
 }
 
-func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatlas.Alert) []mongodbatlas.Alert {
-	filtered := []mongodbatlas.Alert{}
+func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatlas.Alert) []*mongodbatlas.Alert {
+	filtered := []*mongodbatlas.Alert{}
 
 	lastRecordedTime := pcommon.Timestamp(0).AsTime()
 	if a.record.LastRecordedTime != nil {
@@ -563,7 +556,8 @@ func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatla
 	// we need to maintain two timestamps in order to not conflict while iterating
 	latestInPayload := pcommon.Timestamp(0).AsTime()
 
-	for _, alert := range alerts {
+	for i := range alerts {
+		alert := &alerts[i]
 		updatedTime, err := time.Parse(time.RFC3339, alert.Updated)
 		if err != nil {
 			a.telemetrySettings.Logger.Warn("unable to interpret updated time for alert, expecting a RFC3339 timestamp", zap.String("timestamp", alert.Updated))

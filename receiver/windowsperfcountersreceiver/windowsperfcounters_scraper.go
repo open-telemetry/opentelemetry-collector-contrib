@@ -7,6 +7,7 @@ package windowsperfcountersreceiver // import "github.com/open-telemetry/opentel
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -207,10 +208,8 @@ func instancesFromConfig(oc ObjectConfig) []string {
 		return []string{""}
 	}
 
-	for _, instance := range oc.Instances {
-		if instance == "*" {
-			return []string{"*"}
-		}
+	if slices.Contains(oc.Instances, "*") {
+		return []string{"*"}
 	}
 
 	return oc.Instances

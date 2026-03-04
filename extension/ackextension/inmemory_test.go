@@ -55,7 +55,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 
 	// send events through different partitions
 	go func() {
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			// each partition has 3 events
 			map1[ext.ProcessEvent(partitionName)] = struct{}{}
 		}
@@ -63,7 +63,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 	}()
 
 	go func() {
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			// each partition has 3 events
 			map2[ext.ProcessEvent(partitionName)] = struct{}{}
 		}
@@ -71,7 +71,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 	}()
 
 	go func() {
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			// each partition has 3 events
 			map3[ext.ProcessEvent(partitionName)] = struct{}{}
 		}
@@ -94,15 +94,15 @@ func TestExtensionAck_ProcessEvents_EventsUnAcked(t *testing.T) {
 	ext := newInMemoryAckExtension(&conf)
 
 	// send events through different partitions
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		// each partition has 3 events
-		for j := 0; j < 3; j++ {
+		for range 3 {
 			ext.ProcessEvent(fmt.Sprintf("part-%d", i))
 		}
 	}
 
 	// non-acked events should be return false
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{0, 1, 2})
 		require.Len(t, result, 3)
 		require.False(t, result[0])
@@ -119,15 +119,15 @@ func TestExtensionAck_ProcessEvents_EventsAcked(t *testing.T) {
 	ext := newInMemoryAckExtension(&conf)
 
 	// send events through different partitions
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		// each partition has 3 events
-		for j := 0; j < 3; j++ {
+		for range 3 {
 			ext.ProcessEvent(fmt.Sprintf("part-%d", i))
 		}
 	}
 
 	// ack the second event of all even partitions and first and third events of all odd partitions
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		if i%2 == 0 {
 			ext.Ack(fmt.Sprintf("part-%d", i), 2)
 		} else {
@@ -137,7 +137,7 @@ func TestExtensionAck_ProcessEvents_EventsAcked(t *testing.T) {
 	}
 
 	// second event of even partitions should be acked, and first and third events of odd partitions should be acked
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		if i%2 == 0 {
 			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
 			require.Len(t, result, 3)
@@ -162,15 +162,15 @@ func TestExtensionAck_QueryAcks_Unidempotent(t *testing.T) {
 	ext := newInMemoryAckExtension(&conf)
 
 	// send events through different partitions
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		// each partition has 3 events
-		for j := 0; j < 3; j++ {
+		for range 3 {
 			ext.ProcessEvent(fmt.Sprintf("part-%d", i))
 		}
 	}
 
 	// ack the second event of all even partitions and first and third events of all odd partitions
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		if i%2 == 0 {
 			ext.Ack(fmt.Sprintf("part-%d", i), 2)
 		} else {
@@ -180,7 +180,7 @@ func TestExtensionAck_QueryAcks_Unidempotent(t *testing.T) {
 	}
 
 	// second event of even partitions should be acked, and first and third events of odd partitions should be acked
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		if i%2 == 0 {
 			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
 			require.Len(t, result, 3)
@@ -197,7 +197,7 @@ func TestExtensionAck_QueryAcks_Unidempotent(t *testing.T) {
 	}
 
 	// querying the same acked events should result in false
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
 		require.Len(t, result, 3)
 		require.False(t, result[1])
@@ -217,10 +217,10 @@ func TestExtensionAckAsync(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(partitionCount)
 	// send events through different partitions
-	for i := 0; i < partitionCount; i++ {
+	for i := range partitionCount {
 		go func() {
 			// each partition has 3 events
-			for j := 0; j < 3; j++ {
+			for range 3 {
 				ext.ProcessEvent(fmt.Sprintf("part-%d", i))
 			}
 			wg.Done()
@@ -230,7 +230,7 @@ func TestExtensionAckAsync(t *testing.T) {
 	wg.Wait()
 
 	// non-acked events should be return false
-	for i := 0; i < partitionCount; i++ {
+	for i := range partitionCount {
 		result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
 		require.Len(t, result, 3)
 		require.False(t, result[1])
@@ -240,7 +240,7 @@ func TestExtensionAckAsync(t *testing.T) {
 
 	wg.Add(partitionCount)
 	// ack the second event of all even partitions and first and third events of all odd partitions
-	for i := 0; i < partitionCount; i++ {
+	for i := range partitionCount {
 		go func() {
 			if i%2 == 0 {
 				ext.Ack(fmt.Sprintf("part-%d", i), 2)
@@ -254,7 +254,7 @@ func TestExtensionAckAsync(t *testing.T) {
 
 	wg.Wait()
 	// second event of even partitions should be acked, and first and third events of odd partitions should be acked
-	for i := 0; i < partitionCount; i++ {
+	for i := range partitionCount {
 		if i%2 == 0 {
 			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
 			require.Len(t, result, 3)
@@ -272,7 +272,7 @@ func TestExtensionAckAsync(t *testing.T) {
 	wg.Add(100)
 	resultChan := make(chan map[uint64]bool, partitionCount)
 	// querying the same acked events should result in false
-	for i := 0; i < partitionCount; i++ {
+	for i := range partitionCount {
 		go func() {
 			resultChan <- ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
 			wg.Done()
@@ -280,7 +280,7 @@ func TestExtensionAckAsync(t *testing.T) {
 	}
 	wg.Wait()
 
-	for i := 0; i < partitionCount; i++ {
+	for range partitionCount {
 		result := <-resultChan
 		require.Len(t, result, 3)
 		require.False(t, result[1])

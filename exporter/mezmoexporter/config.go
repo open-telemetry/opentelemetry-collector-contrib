@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -33,8 +34,8 @@ const (
 
 // Config defines configuration for Mezmo exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`        // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	confighttp.ClientConfig   `mapstructure:",squash"`                                 // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// IngestURL is the URL to send telemetry to.

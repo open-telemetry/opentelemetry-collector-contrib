@@ -1,0 +1,32 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: systemd.unit.name
+          value:
+            stringValue: nginx.service
+    scopeMetrics:
+      - metrics:
+          - description: Total CPU time spent by this service.
+            name: systemd.service.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "123"
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "456"
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: us
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+          version: latest

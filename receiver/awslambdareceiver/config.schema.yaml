@@ -1,0 +1,19 @@
+type: object
+properties:
+  cloudwatch:
+    description: CloudWatch defines configuration options for CloudWatch Lambda trigger.
+    type: object
+    properties:
+      encoding:
+        description: Encoding defines the encoding to decode incoming Lambda invocation data. This extension is expected to further process content of the events that are extracted from Lambda trigger. If receiving data is in different formats(ex:- a mix of VPC flow logs, CloudTrail logs), receiver is recommended to have separate Lambda functions with specific extension configurations.
+        type: string
+  failure_bucket_arn:
+    description: FailureBucketARN is the ARN of receiver deployment Lambda's error destination.
+    type: string
+  s3:
+    description: S3 defines configuration options for S3 Lambda trigger.
+    type: object
+    properties:
+      encoding:
+        description: Encoding defines the encoding to decode incoming Lambda invocation data. This extension is expected to further process content of the events that are extracted from Lambda trigger. If receiving data is in different formats(ex:- a mix of VPC flow logs, CloudTrail logs), receiver is recommended to have separate Lambda functions with specific extension configurations.
+        type: string

@@ -1,0 +1,34 @@
+$defs:
+  attribute_config:
+    description: AttributeConfig holds configuration information for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  attribute_startup_mode:
+    description: AttributeStartupMode specifies the value startup_mode attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      aggregation_strategy:
+        type: string
+      attributes:
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for windowsservice metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for windowsservice metrics.
+    type: object
+    properties:
+      windows.service.status:
+        $ref: metric_config

@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
@@ -140,7 +140,7 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 	// Then, try "environment" attribute (SignalFx schema).
 	// Otherwise, use the same fallback value as set on the backend.
 	var environment string
-	if env, ok := attrs.Get(string(conventions.DeploymentEnvironmentKey)); ok {
+	if env, ok := attrs.Get("deployment.environment"); ok {
 		environment = env.Str()
 	} else if env, ok = attrs.Get("environment"); ok {
 		environment = env.Str()

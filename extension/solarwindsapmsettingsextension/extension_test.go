@@ -65,7 +65,7 @@ func newNopSettings() extension.Settings {
 func createAnExtension(t *testing.T, c *Config) extension.Extension {
 	ex, err := newSolarwindsApmSettingsExtension(c, newNopSettings())
 	require.NoError(t, err)
-	require.NoError(t, ex.Start(t.Context(), nil))
+	require.NoError(t, ex.Start(t.Context(), componenttest.NewNopHost()))
 	return ex
 }
 

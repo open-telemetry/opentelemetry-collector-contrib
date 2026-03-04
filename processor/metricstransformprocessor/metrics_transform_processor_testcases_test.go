@@ -109,7 +109,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:   updateLabel,
 							Label:    "label1",
 							NewLabel: "new/label1",
@@ -135,7 +135,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: updateLabel,
 							Label:  "label1",
 						},
@@ -165,7 +165,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:   updateLabel,
 							Label:    "label1",
 							NewLabel: "new/label1",
@@ -192,7 +192,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: updateLabel,
 							Label:  "label1",
 						},
@@ -222,7 +222,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        []string{"label1"},
@@ -250,7 +250,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Mean,
 							LabelSet:        []string{"label1"},
@@ -278,7 +278,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Max,
 							LabelSet:        []string{"label1"},
@@ -307,7 +307,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Count,
 							LabelSet:        []string{"label1"},
@@ -336,7 +336,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Median,
 							LabelSet:        []string{"label1"},
@@ -365,7 +365,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Min,
 							LabelSet:        []string{"label1"},
@@ -394,7 +394,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        []string{"label1"},
@@ -422,7 +422,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Mean,
 							LabelSet:        []string{"label1"},
@@ -450,7 +450,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Max,
 							LabelSet:        []string{"label1"},
@@ -478,7 +478,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Count,
 							LabelSet:        []string{"label1"},
@@ -506,7 +506,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Median,
 							LabelSet:        []string{"label1"},
@@ -534,7 +534,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Min,
 							LabelSet:        []string{"label1"},
@@ -570,7 +570,7 @@ var standardTests = []metricsTransformTest{
 				NewName: "new/metric1",
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        []string{"label1", "label2"},
@@ -605,7 +605,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabelValues,
 							NewValue:        "new/label2-value",
 							AggregationType: aggregateutil.Sum,
@@ -641,7 +641,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        []string{"label1"},
@@ -676,7 +676,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        []string{},
@@ -708,7 +708,7 @@ var standardTests = []metricsTransformTest{
 				Action: Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        []string{"label1"},
@@ -739,7 +739,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Mean,
 							LabelSet:        []string{"label1"},
@@ -1064,7 +1064,7 @@ var standardTests = []metricsTransformTest{
 				NewName:             "new/metric1",
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:   updateLabel,
 							Label:    "label1",
 							NewLabel: "new/label1",
@@ -1093,7 +1093,7 @@ var standardTests = []metricsTransformTest{
 				NewName:             "new/metric1",
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: updateLabel,
 							Label:  "label1",
 						},
@@ -1124,7 +1124,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Insert,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        []string{"label1"},
@@ -1155,7 +1155,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Insert,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabelValues,
 							NewValue:        "new/label2-value",
 							AggregationType: aggregateutil.Sum,
@@ -1187,7 +1187,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Insert,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        []string{"label1"},
@@ -1307,14 +1307,14 @@ var standardTests = []metricsTransformTest{
 				NewName:             "new",
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:   addLabel,
 							NewLabel: "new_label",
 							NewValue: "new_label_value",
 						},
 					},
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        []string{"$1", "new_label"},
@@ -1449,7 +1449,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: toggleScalarDataType,
 						},
 					},
@@ -1460,7 +1460,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: toggleScalarDataType,
 						},
 					},
@@ -1484,7 +1484,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: toggleScalarDataType,
 						},
 					},
@@ -1495,7 +1495,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: toggleScalarDataType,
 						},
 					},
@@ -1519,7 +1519,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: toggleScalarDataType,
 						},
 					},
@@ -1544,7 +1544,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  100,
 						},
@@ -1556,7 +1556,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  10,
 						},
@@ -1581,7 +1581,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  100,
 						},
@@ -1593,7 +1593,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  .1,
 						},
@@ -1618,7 +1618,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  100,
 						},
@@ -1630,7 +1630,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  .1,
 						},
@@ -1659,7 +1659,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  100,
 						},
@@ -1671,7 +1671,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  .1,
 						},
@@ -1700,7 +1700,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  1000,
 						},
@@ -1712,7 +1712,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  .1,
 						},
@@ -1724,7 +1724,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  100000,
 						},
@@ -1736,7 +1736,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  42.123,
 						},
@@ -1848,7 +1848,7 @@ var standardTests = []metricsTransformTest{
 				Action: Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  100,
 						},
@@ -1863,7 +1863,7 @@ var standardTests = []metricsTransformTest{
 				Action: Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  10,
 						},
@@ -1878,7 +1878,7 @@ var standardTests = []metricsTransformTest{
 				Action: Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action: scaleValue,
 							Scale:  0.1,
 						},
@@ -1918,7 +1918,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:   addLabel,
 							NewLabel: "foo",
 							NewValue: "bar",
@@ -1942,7 +1942,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:   addLabel,
 							NewLabel: "foo",
 							NewValue: "bar",
@@ -1968,7 +1968,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:   addLabel,
 							NewLabel: "label1",
 							NewValue: "value3",
@@ -1994,7 +1994,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:   addLabel,
 							NewLabel: "foo",
 							NewValue: "bar",
@@ -2021,7 +2021,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:     deleteLabelValue,
 							Label:      "label1",
 							LabelValue: "label1value1",
@@ -2048,7 +2048,7 @@ var standardTests = []metricsTransformTest{
 				Action:              Update,
 				Operations: []internalOperation{
 					{
-						configOperation: operation{
+						configOperation: &operation{
 							Action:     deleteLabelValue,
 							Label:      "label1",
 							LabelValue: "label1value1",

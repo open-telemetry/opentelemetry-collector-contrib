@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -146,7 +146,8 @@ func addValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.Conta
 	logStreamArns := make([]any, 0, len(containers))
 	containerFound := false
 
-	for _, container := range containers {
+	for i := range containers {
+		container := &containers[i]
 		logData := container.LogOptions
 		if container.Type == "NORMAL" &&
 			container.KnownStatus == "RUNNING" &&

@@ -1,0 +1,110 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-logstash
+        - key: cloud.resource_id
+          value:
+            stringValue: compute.googleapis.com%2Fvpc_flows
+        - key: gcp.resource_type
+          value:
+            stringValue: gce_subnetwork
+        - key: gcp.label.subnetwork_id
+          value:
+            stringValue: "3489268495624148348"
+        - key: gcp.label.subnetwork_name
+          value:
+            stringValue: andrewvc-flowfixtures-subnet
+        - key: gcp.label.location
+          value:
+            stringValue: us-central1
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-logstash
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: abriadf35gp7q
+              - key: network.transport
+                value:
+                  stringValue: tcp
+              - key: source.address
+                value:
+                  stringValue: 45.78.219.169
+              - key: destination.address
+                value:
+                  stringValue: 10.10.0.2
+              - key: source.port
+                value:
+                  intValue: "39552"
+              - key: destination.port
+                value:
+                  intValue: "22"
+              - key: gcp.vpc.flow.reporter
+                value:
+                  stringValue: DEST
+              - key: gcp.vpc.flow.bytes_sent
+                value:
+                  intValue: "0"
+              - key: gcp.vpc.flow.packets_sent
+                value:
+                  intValue: "8"
+              - key: gcp.vpc.flow.start_time
+                value:
+                  stringValue: "2025-11-07T21:18:58.489621532Z"
+              - key: gcp.vpc.flow.end_time
+                value:
+                  stringValue: "2025-11-07T21:18:58.489621532Z"
+              - key: gcp.vpc.flow.destination.instance.project.id
+                value:
+                  stringValue: elastic-logstash
+              - key: gcp.vpc.flow.destination.instance.vm.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.destination.instance.vm.name
+                value:
+                  stringValue: andrewvc-flowfixtures-vm-zh8x
+              - key: gcp.vpc.flow.destination.instance.vm.zone
+                value:
+                  stringValue: us-central1-c
+              - key: gcp.vpc.flow.destination.instance.managed_instance_group.name
+                value:
+                  stringValue: andrewvc-flowfixtures-mig
+              - key: gcp.vpc.flow.destination.instance.managed_instance_group.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.source.asn
+                value:
+                  intValue: "150436"
+              - key: gcp.vpc.flow.source.geo.city
+                value:
+                  stringValue: Singapore
+              - key: gcp.vpc.flow.source.geo.continent
+                value:
+                  stringValue: Asia
+              - key: gcp.vpc.flow.source.geo.country.iso_code.alpha3
+                value:
+                  stringValue: sgp
+              - key: gcp.vpc.flow.destination.project.id
+                value:
+                  stringValue: elastic-logstash
+              - key: gcp.vpc.flow.destination.subnet.name
+                value:
+                  stringValue: andrewvc-flowfixtures-subnet
+              - key: gcp.vpc.flow.destination.subnet.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.destination.vpc.name
+                value:
+                  stringValue: andrewvc-flowfixtures-network
+            body: {}
+            observedTimeUnixNano: "1762550581376765230"
+            timeUnixNano: "1762550581376765230"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.vpcflow

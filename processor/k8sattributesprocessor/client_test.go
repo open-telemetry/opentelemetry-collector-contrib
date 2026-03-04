@@ -4,6 +4,7 @@
 package k8sattributesprocessor
 
 import (
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,7 +31,12 @@ type fakeClient struct {
 	Nodes              map[string]*kube.Node
 	Deployments        map[string]*kube.Deployment
 	StatefulSets       map[string]*kube.StatefulSet
+	DaemonSets         map[string]*kube.DaemonSet
+	ReplicaSets        map[string]*kube.ReplicaSet
+	Jobs               map[string]*kube.Job
 	StopCh             chan struct{}
+	stopOnce           sync.Once
+	stopWg             sync.WaitGroup
 }
 
 func selectors() (labels.Selector, fields.Selector) {
@@ -40,7 +46,7 @@ func selectors() (labels.Selector, fields.Selector) {
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
 func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _ time.Duration) (kube.Client, error) {
-	cs := fake.NewSimpleClientset()
+	cs := fake.NewClientset()
 
 	ls, fs := selectors()
 	return &fakeClient{
@@ -83,15 +89,45 @@ func (f *fakeClient) GetStatefulSet(statefulsetUID string) (*kube.StatefulSet, b
 	return s, ok
 }
 
+func (f *fakeClient) GetDaemonSet(daemonsetUID string) (*kube.DaemonSet, bool) {
+	s, ok := f.DaemonSets[daemonsetUID]
+	return s, ok
+}
+
+func (f *fakeClient) GetReplicaSet(replicaSetUID string) (*kube.ReplicaSet, bool) {
+	rs, ok := f.ReplicaSets[replicaSetUID]
+	return rs, ok
+}
+
+func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
+	j, ok := f.Jobs[jobUID]
+	return j, ok
+}
+
 // Start is a noop for FakeClient.
 func (f *fakeClient) Start() error {
-	if f.Informer != nil {
-		go f.Informer.Run(f.StopCh)
+	startInformer := func(informer cache.SharedInformer) {
+		if informer != nil {
+			f.stopWg.Go(func() {
+				informer.Run(f.StopCh)
+			})
+		}
 	}
+
+	startInformer(f.Informer)
+	startInformer(f.NamespaceInformer)
+	startInformer(f.NodeInformer)
+	startInformer(f.ReplicaSetInformer)
+
 	return nil
 }
 
 // Stop is a noop for FakeClient.
 func (f *fakeClient) Stop() {
-	close(f.StopCh)
+	f.stopOnce.Do(func() {
+		if f.StopCh != nil {
+			close(f.StopCh)
+			f.stopWg.Wait()
+		}
+	})
 }

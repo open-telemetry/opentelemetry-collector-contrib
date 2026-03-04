@@ -1,4 +1,8 @@
+display_name: NTP Receiver
 type: ntp
+
+description: |
+  This receiver periodically retrieves the clock offset from a NTP server.
 
 status:
   class: receiver
@@ -6,7 +10,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [atoulme]
+    active: [atoulme, paulojmdias]
     seeking_new: true
 
 resource_attributes:
@@ -19,6 +23,7 @@ metrics:
   ntp.offset:
     description: Time difference between local and NTP server clocks
     enabled: true
+    stability: development
     gauge:
       value_type: int
     unit: "ns"

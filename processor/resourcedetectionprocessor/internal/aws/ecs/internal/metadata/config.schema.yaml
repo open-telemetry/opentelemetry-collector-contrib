@@ -1,0 +1,41 @@
+$defs:
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for resourcedetectionprocessor/ecs resource attributes.
+    type: object
+    properties:
+      aws.ecs.cluster.arn:
+        $ref: resource_attribute_config
+      aws.ecs.launchtype:
+        $ref: resource_attribute_config
+      aws.ecs.task.arn:
+        $ref: resource_attribute_config
+      aws.ecs.task.family:
+        $ref: resource_attribute_config
+      aws.ecs.task.id:
+        $ref: resource_attribute_config
+      aws.ecs.task.revision:
+        $ref: resource_attribute_config
+      aws.log.group.arns:
+        $ref: resource_attribute_config
+      aws.log.group.names:
+        $ref: resource_attribute_config
+      aws.log.stream.arns:
+        $ref: resource_attribute_config
+      aws.log.stream.names:
+        $ref: resource_attribute_config
+      cloud.account.id:
+        $ref: resource_attribute_config
+      cloud.availability_zone:
+        $ref: resource_attribute_config
+      cloud.platform:
+        $ref: resource_attribute_config
+      cloud.provider:
+        $ref: resource_attribute_config
+      cloud.region:
+        $ref: resource_attribute_config

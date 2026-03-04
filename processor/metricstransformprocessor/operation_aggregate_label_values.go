@@ -11,7 +11,7 @@ import (
 )
 
 // aggregateLabelValuesOp aggregates points that have the label values specified in aggregated_values
-func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp internalOperation) {
+func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp *internalOperation) {
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		val, ok := attrs.Get(mtpOp.configOperation.Label)
 		if !ok {

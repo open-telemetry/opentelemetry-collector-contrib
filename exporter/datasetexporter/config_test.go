@@ -22,7 +22,7 @@ func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 	})
 	err := configMap.Unmarshal(config)
 
-	assert.ErrorContains(t, err, "has invalid keys: unknown_attribute")
+	assert.ErrorContains(t, err, "'datasetexporter.Config' has invalid keys: unknown_attribute")
 }
 
 func TestConfigUseDefaults(t *testing.T) {

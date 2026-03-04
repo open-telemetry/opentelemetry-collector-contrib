@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"strconv"
 	"time"
@@ -14,8 +15,9 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
-	conventions161 "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -90,10 +92,10 @@ func extractScopeTags(il pcommon.InstrumentationScope, zTags map[string]string) 
 	}
 
 	if ilName := il.Name(); ilName != "" {
-		zTags[string(conventions.OtelLibraryNameKey)] = ilName
+		zTags[string(conventionsv125.OTelLibraryNameKey)] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		zTags[string(conventions.OtelLibraryVersionKey)] = ilVer
+		zTags[string(conventionsv125.OTelLibraryVersionKey)] = ilVer
 	}
 }
 
@@ -182,22 +184,18 @@ func populateStatus(status ptrace.Status, zs *zipkinmodel.SpanModel, tags map[st
 		return
 	}
 
-	tags[string(conventions.OtelStatusCodeKey)] = traceutil.StatusCodeStr(status.Code())
+	tags[string(conventions.OTelStatusCodeKey)] = traceutil.StatusCodeStr(status.Code())
 	if status.Message() != "" {
-		tags[string(conventions.OtelStatusDescriptionKey)] = status.Message()
+		tags[string(conventions.OTelStatusDescriptionKey)] = status.Message()
 		zs.Err = fmt.Errorf("%s", status.Message())
 	}
 }
 
 func aggregateSpanTags(span ptrace.Span, zTags map[string]string) map[string]string {
 	tags := make(map[string]string)
-	for key, val := range zTags {
-		tags[key] = val
-	}
+	maps.Copy(tags, zTags)
 	spanTags := attributeMapToStringMap(span.Attributes())
-	for key, val := range spanTags {
-		tags[key] = val
-	}
+	maps.Copy(tags, spanTags)
 	return tags
 }
 
@@ -327,9 +325,9 @@ func zipkinEndpointFromTags(
 
 	var ipKey, portKey string
 	if remoteEndpoint {
-		ipKey, portKey = string(conventions161.NetPeerIPKey), string(conventions.NetPeerPortKey)
+		ipKey, portKey = string(conventionsv112.NetPeerIPKey), string(conventionsv125.NetPeerPortKey)
 	} else {
-		ipKey, portKey = string(conventions161.NetHostIPKey), string(conventions.NetHostPortKey)
+		ipKey, portKey = string(conventionsv112.NetHostIPKey), string(conventionsv125.NetHostPortKey)
 	}
 
 	var ip net.IP

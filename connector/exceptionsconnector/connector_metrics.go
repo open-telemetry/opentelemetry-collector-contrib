@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -203,7 +203,7 @@ func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optional
 	concatDimensionValue(dest, traceutil.StatusCodeStr(span.Status().Code()), true)
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
+		if v, ok := pdatautil.GetDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
 			concatDimensionValue(dest, v.AsString(), true)
 		}
 	}

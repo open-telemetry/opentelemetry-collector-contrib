@@ -63,3 +63,9 @@ k8sobjects/invalid_mode:
   objects:
     - name: pods
       mode: invalid_mode
+k8sobjects/exclude_namespaces:
+  objects:
+    - name: pods
+      mode: watch
+      exclude_namespaces:
+        - regexp: default_ignore

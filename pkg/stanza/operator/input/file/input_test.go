@@ -128,7 +128,7 @@ func TestReadExistingLogsFileRecordOffsetWithMultipleBatches(t *testing.T) {
 	})
 
 	var sb strings.Builder
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		sb.WriteString("X\n")
 	}
 	sb.WriteString("X\n")
@@ -143,7 +143,7 @@ func TestReadExistingLogsFileRecordOffsetWithMultipleBatches(t *testing.T) {
 	}()
 
 	var e *entry.Entry
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		e = waitForOne(t, logReceived)
 		require.Equal(t, int64(i*2), e.Attributes[attrs.LogFileRecordOffset])
 	}

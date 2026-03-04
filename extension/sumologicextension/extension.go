@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
@@ -29,11 +30,10 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/credentials"
 )
 
 type SumologicExtension struct {
@@ -61,10 +61,11 @@ type SumologicExtension struct {
 	stickySessionCookieLock sync.RWMutex
 	stickySessionCookie     string
 
-	closeChan chan struct{}
-	closeOnce sync.Once
-	backOff   *backoff.ExponentialBackOff
-	id        component.ID
+	closeChan            chan struct{}
+	closeOnce            sync.Once
+	backOff              *backoff.ExponentialBackOff
+	id                   component.ID
+	collectorCredentials credentials.CollectorCredentials
 }
 
 const (
@@ -85,22 +86,8 @@ const (
 )
 
 const (
-	updateCollectorMetadataID    = "extension.sumologic.updateCollectorMetadata"
-	updateCollectorMetadataStage = featuregate.StageAlpha
-
 	DefaultHeartbeatInterval = 15 * time.Second
 )
-
-var updateCollectorMetadataFeatureGate *featuregate.Gate
-
-func init() {
-	updateCollectorMetadataFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		updateCollectorMetadataID,
-		updateCollectorMetadataStage,
-		featuregate.WithRegisterDescription("When enabled, the collector will update its Sumo Logic metadata on startup."),
-		featuregate.WithRegisterReferenceURL("https://github.com/SumoLogic/sumologic-otel-collector/pull/858"),
-	)
-}
 
 // SumologicExtension implements extensionauth.HTTPClient
 var (
@@ -129,7 +116,16 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 	var (
 		collectorName string
 		hashKey       = createHashKey(conf)
+		hashKeyV2     = createHashKeyV2(conf)
 	)
+
+	_, err = credentialsStore.Get(hashKeyV2)
+	if err != nil {
+		logger.Info("credentials not found, trying legacy credentials", zap.Error(err))
+	} else {
+		logger.Debug("v2 credentials found")
+		hashKey = hashKeyV2
+	}
 	if conf.CollectorName == "" {
 		// If collector name is not set by the user, check if the collector was restarted
 		// and that we can reuse collector name save in credentials store.
@@ -163,7 +159,7 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 		logger:            logger,
 		hashKey:           hashKey,
 		credentialsStore:  credentialsStore,
-		updateMetadata:    updateCollectorMetadataFeatureGate.IsEnabled(),
+		updateMetadata:    conf.UpdateMetadata,
 		closeChan:         make(chan struct{}),
 		backOff:           backOff,
 		id:                id,
@@ -173,6 +169,13 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 func createHashKey(conf *Config) string {
 	return fmt.Sprintf("%s%s%s",
 		conf.CollectorName,
+		conf.Credentials.InstallationToken,
+		strings.TrimSuffix(conf.APIBaseURL, "/"),
+	)
+}
+
+func createHashKeyV2(conf *Config) string {
+	return fmt.Sprintf("%s%s",
 		conf.Credentials.InstallationToken,
 		strings.TrimSuffix(conf.APIBaseURL, "/"),
 	)
@@ -191,6 +194,7 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	}
 
 	colCreds, err := se.getCredentials(ctx)
+	se.collectorCredentials = colCreds
 	if err != nil {
 		return err
 	}
@@ -218,9 +222,20 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
-// Shutdown is invoked during service shutdown.
 func (se *SumologicExtension) Shutdown(ctx context.Context) error {
 	se.closeOnce.Do(func() { close(se.closeChan) })
+
+	hashKeyV2 := createHashKeyV2(se.conf)
+	_, err := se.credentialsStore.Get(hashKeyV2)
+	se.logger.Debug("Shutting down Sumo Logic extension migrating to hashkeyV2 ")
+	if err != nil {
+		se.logger.Warn("Failed to get collector v2 credentials on shutdown, migrating to v2", zap.Error(err))
+		err := se.credentialsStore.Store(hashKeyV2, se.collectorCredentials)
+		if err != nil {
+			se.logger.Warn("Failed to migrate collector credentials to v2 on shutdown", zap.Error(err))
+		}
+	}
+
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -304,7 +319,7 @@ func (se *SumologicExtension) getHTTPClient(
 ) (*http.Client, error) {
 	httpClient, err := httpClientSettings.ToClient(
 		ctx,
-		se.host,
+		se.host.GetExtensions(),
 		componenttest.NewNopTelemetrySettings(),
 	)
 	if err != nil {
@@ -836,9 +851,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 		}
 	}
 
-	for k, v := range se.conf.CollectorFields {
-		td[k] = v
-	}
+	maps.Copy(td, se.conf.CollectorFields)
 
 	var buff bytes.Buffer
 	err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{

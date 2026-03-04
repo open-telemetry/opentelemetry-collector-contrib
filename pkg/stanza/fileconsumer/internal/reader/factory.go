@@ -7,8 +7,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/compression"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
@@ -53,7 +54,7 @@ type Factory struct {
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
-	return fingerprint.NewFromFile(file, f.FingerprintSize, f.Compression != "")
+	return fingerprint.NewFromFile(file, f.FingerprintSize, f.Compression != "", f.Logger)
 }
 
 func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
@@ -62,7 +63,8 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 		return nil, err
 	}
 	var filetype string
-	if filepath.Ext(file.Name()) == gzipExtension {
+
+	if f.Compression != "" && compression.IsGzipFile(file, f.Logger) {
 		filetype = gzipExtension
 	}
 
@@ -99,7 +101,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 
 	if r.Fingerprint.Len() > r.fingerprintSize {
 		// User has reconfigured fingerprint_size
-		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize, r.compression != "")
+		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize, r.compression != "", r.set.Logger)
 		if rereadErr != nil {
 			return nil, fmt.Errorf("reread fingerprint: %w", rereadErr)
 		}
@@ -133,10 +135,12 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	if err != nil {
 		return nil, err
 	}
-	// Copy attributes into existing map to avoid overwriting header attributes
-	for k, v := range attributes {
-		r.FileAttributes[k] = v
-	}
+	// Merge header attributes with file attributes by creating a new map
+	// to avoid data race when the original map is accessed concurrently
+	mergedAttributes := make(map[string]any, len(r.FileAttributes)+len(attributes))
+	maps.Copy(mergedAttributes, r.FileAttributes)
+	maps.Copy(mergedAttributes, attributes)
+	r.FileAttributes = mergedAttributes
 
 	return r, nil
 }

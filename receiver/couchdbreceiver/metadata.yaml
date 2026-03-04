@@ -1,4 +1,9 @@
+display_name: CouchDB Receiver
 type: couchdb
+
+description: |
+  This receiver fetches stats from a couchdb server using the `/_node/{node-name}/_stats/couchdb`
+  [endpoint](https://docs.couchdb.org/en/latest/api/server/common.html#node-node-name-stats).
 
 status:
   class: receiver
@@ -20,29 +25,59 @@ attributes:
   http.method:
     description: An HTTP request method.
     type: string
-    enum: [ COPY, DELETE, GET, HEAD, OPTIONS, POST, PUT ]
+    enum: [COPY, DELETE, GET, HEAD, OPTIONS, POST, PUT]
   http.status_code:
     description: An HTTP status code.
     type: string
-  view:
-    description: The view type.
-    type: string
-    enum: [ temporary_view_reads, view_reads ]
   operation:
     description: The operation type.
     type: string
-    enum: [ writes, reads ]
+    enum: [writes, reads]
+  view:
+    description: The view type.
+    type: string
+    enum: [temporary_view_reads, view_reads]
 
 metrics:
   couchdb.average_request_time:
     enabled: true
     description: The average duration of a served request.
+    stability: development
     unit: ms
     gauge:
       value_type: double
+  couchdb.database.open:
+    enabled: true
+    description: The number of open databases.
+    stability: development
+    unit: "{databases}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+  couchdb.database.operations:
+    enabled: true
+    description: The number of database operations.
+    stability: development
+    unit: "{operations}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [operation]
+  couchdb.file_descriptor.open:
+    enabled: true
+    description: The number of open file descriptors.
+    stability: development
+    unit: "{files}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
   couchdb.httpd.bulk_requests:
     enabled: true
     description: The number of bulk requests.
+    stability: development
     unit: "{requests}"
     sum:
       value_type: int
@@ -51,52 +86,30 @@ metrics:
   couchdb.httpd.requests:
     enabled: true
     description: The number of HTTP requests by method.
+    stability: development
     unit: "{requests}"
     sum:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [ http.method ]
+    attributes: [http.method]
   couchdb.httpd.responses:
     enabled: true
     description: The number of each HTTP status code.
+    stability: development
     unit: "{responses}"
     sum:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [ http.status_code ]
+    attributes: [http.status_code]
   couchdb.httpd.views:
     enabled: true
     description: The number of views read.
+    stability: development
     unit: "{views}"
     sum:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [ view ]
-  couchdb.database.open:
-    enabled: true
-    description: The number of open databases.
-    unit: "{databases}"
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-  couchdb.file_descriptor.open:
-    enabled: true
-    description: The number of open file descriptors.
-    unit: "{files}"
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-  couchdb.database.operations:
-    enabled: true
-    description: The number of database operations.
-    unit: "{operations}"
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [ operation ]
+    attributes: [view]

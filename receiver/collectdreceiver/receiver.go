@@ -58,7 +58,7 @@ func newCollectdReceiver(
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	cdr.server, err = cdr.config.ToServer(ctx, host, cdr.createSettings.TelemetrySettings, cdr)
+	cdr.server, err = cdr.config.ToServer(ctx, host.GetExtensions(), cdr.createSettings.TelemetrySettings, cdr)
 	if err != nil {
 		return err
 	}
@@ -76,13 +76,11 @@ func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) err
 	if err != nil {
 		return err
 	}
-	cdr.shutdownWG.Add(1)
-	go func() {
-		defer cdr.shutdownWG.Done()
+	cdr.shutdownWG.Go(func() {
 		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	}()
+	})
 	return nil
 }
 
@@ -125,7 +123,8 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	for _, record := range records {
+	for i := range records {
+		record := &records[i]
 		err = record.appendToMetrics(cdr.logger, scopeMetrics, defaultAttrs)
 		if err != nil {
 			cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(records), err)

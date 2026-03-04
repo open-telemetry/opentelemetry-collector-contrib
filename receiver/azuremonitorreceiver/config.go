@@ -337,5 +337,5 @@ func (c Config) Validate() (err error) {
 		err = multierr.Append(err, errInvalidMaxResPerBatch)
 	}
 
-	return
+	return err
 }

@@ -55,6 +55,9 @@ func TestScrape(t *testing.T) {
 						SystemMemoryPageSize: metadata.MetricConfig{
 							Enabled: true,
 						},
+						SystemMemoryLinuxShared: metadata.MetricConfig{
+							Enabled: true,
+						},
 						SystemLinuxMemoryAvailable: metadata.MetricConfig{
 							Enabled: true,
 						},
@@ -66,7 +69,7 @@ func TestScrape(t *testing.T) {
 			},
 			expectedMetricCount: func() int {
 				if runtime.GOOS == "linux" {
-					return 5
+					return 6
 				}
 				return 3
 			}(),
@@ -127,15 +130,22 @@ func TestScrape(t *testing.T) {
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			memUsageIdx := -1
+			memSharedIdx := -1
 			for i := 0; i < md.MetricCount(); i++ {
 				if metrics.At(i).Name() == "system.memory.usage" {
 					memUsageIdx = i
 				}
+				if metrics.At(i).Name() == "system.memory.linux.shared" {
+					memSharedIdx = i
+				}
 			}
-			assert.NotEqual(t, memUsageIdx, -1)
+			assert.NotEqual(t, -1, memUsageIdx)
 			assertMemoryUsageMetricValid(t, metrics.At(memUsageIdx), "system.memory.usage")
 
 			if runtime.GOOS == "linux" {
+				if memSharedIdx != -1 {
+					assertMemorySharedMetricValid(t, metrics.At(memSharedIdx), "system.memory.linux.shared")
+				}
 				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(memUsageIdx))
 			} else if runtime.GOOS != "windows" {
 				internal.AssertSumMetricHasAttributeValue(t, metrics.At(memUsageIdx), 2, "state",
@@ -202,13 +212,29 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 	}
 }
 
+func assertMemorySharedMetricValid(t *testing.T, metric pmetric.Metric, expectedName string) {
+	assert.Equal(t, expectedName, metric.Name())
+	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+	assert.Equal(t, "By", metric.Unit())
+	assert.Equal(t, "Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.", metric.Description())
+	assert.False(t, metric.Sum().IsMonotonic(), "shared memory is not monotonic")
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+	dataPoints := metric.Sum().DataPoints()
+	assert.Equal(t, 1, dataPoints.Len(), "should have exactly one data point (no state attribute)")
+	assert.GreaterOrEqual(t, dataPoints.At(0).IntValue(), int64(0), "shared memory should be non-negative")
+	_, hasState := dataPoints.At(0).Attributes().Get("state")
+	assert.False(t, hasState, "system.memory.shared should not have a state attribute")
+}
+
 func assertMemoryUsageMetricValid(t *testing.T, metric pmetric.Metric, expectedName string) {
 	assert.Equal(t, expectedName, metric.Name())
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
+	assert.Positive(t, metric.Sum().DataPoints().At(0).IntValue())
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
 		pcommon.NewValueStr(metadata.AttributeStateFree.String()))
+	assert.Positive(t, metric.Sum().DataPoints().At(1).IntValue())
 }
 
 func assertMemoryUtilizationMetricValid(t *testing.T, metric pmetric.Metric, expectedName string) {
@@ -216,8 +242,10 @@ func assertMemoryUtilizationMetricValid(t *testing.T, metric pmetric.Metric, exp
 	assert.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 2)
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
+	assert.Positive(t, metric.Gauge().DataPoints().At(0).DoubleValue())
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state",
 		pcommon.NewValueStr(metadata.AttributeStateFree.String()))
+	assert.Positive(t, metric.Gauge().DataPoints().At(1).DoubleValue())
 }
 
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {

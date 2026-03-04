@@ -19,24 +19,11 @@ tests:
 
 telemetry:
   metrics:
-    solacereceiver_failed_reconnections:
+    solacereceiver_dropped_egress_spans:
       enabled: true
       unit: "1"
-      description: Number of failed broker reconnections
-      sum:
-        value_type: int
-        monotonic: true
-    solacereceiver_recoverable_unmarshalling_errors:
-      enabled: true
-      unit: "1"
-      description: Number of recoverable message unmarshalling errors
-      sum:
-        value_type: int
-        monotonic: true
-    solacereceiver_fatal_unmarshalling_errors:
-      enabled: true
-      unit: "1"
-      description: Number of fatal message unmarshalling errors
+      description: Number of dropped egress spans
+      stability: development
       sum:
         value_type: int
         monotonic: true
@@ -44,51 +31,60 @@ telemetry:
       enabled: true
       unit: "1"
       description: Number of dropped span messages
+      stability: development
       sum:
         value_type: int
         monotonic: true
-    solacereceiver_received_span_messages:
+    solacereceiver_failed_reconnections:
       enabled: true
       unit: "1"
-      description: Number of received span messages
+      description: Number of failed broker reconnections
+      stability: development
       sum:
         value_type: int
         monotonic: true
-    solacereceiver_reported_spans:
+    solacereceiver_fatal_unmarshalling_errors:
       enabled: true
       unit: "1"
-      description: Number of reported spans
+      description: Number of fatal message unmarshalling errors
+      stability: development
       sum:
         value_type: int
         monotonic: true
-    solacereceiver_receiver_status:
-      enabled: true
-      unit: "1"
-      description: Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated
-      gauge:
-        value_type: int
     solacereceiver_need_upgrade:
       enabled: true
       unit: "1"
       description: Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker
+      stability: development
+      gauge:
+        value_type: int
+    solacereceiver_received_span_messages:
+      enabled: true
+      unit: "1"
+      description: Number of received span messages
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+    solacereceiver_receiver_flow_control_recent_retries:
+      enabled: true
+      unit: "1"
+      description: Most recent/current retry count when flow controlled
+      stability: development
       gauge:
         value_type: int
     solacereceiver_receiver_flow_control_status:
       enabled: true
       unit: "1"
       description: Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled
-      gauge:
-        value_type: int
-    solacereceiver_receiver_flow_control_recent_retries:
-      enabled: true
-      unit: "1"
-      description: Most recent/current retry count when flow controlled
+      stability: development
       gauge:
         value_type: int
     solacereceiver_receiver_flow_control_total:
       enabled: true
       unit: "1"
       description: Number of times the receiver instance became flow controlled
+      stability: development
       sum:
         value_type: int
         monotonic: true
@@ -96,13 +92,30 @@ telemetry:
       enabled: true
       unit: "1"
       description: Number of times the receiver instance became flow controlled and resolved situations after the first retry
+      stability: development
       sum:
         value_type: int
         monotonic: true
-    solacereceiver_dropped_egress_spans:
+    solacereceiver_receiver_status:
       enabled: true
       unit: "1"
-      description: Number of dropped egress spans
+      description: Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated
+      stability: development
+      gauge:
+        value_type: int
+    solacereceiver_recoverable_unmarshalling_errors:
+      enabled: true
+      unit: "1"
+      description: Number of recoverable message unmarshalling errors
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+    solacereceiver_reported_spans:
+      enabled: true
+      unit: "1"
+      description: Number of reported spans
+      stability: development
       sum:
         value_type: int
         monotonic: true

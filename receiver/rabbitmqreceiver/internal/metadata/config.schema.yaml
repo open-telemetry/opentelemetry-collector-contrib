@@ -1,0 +1,208 @@
+$defs:
+  attribute_message_state:
+    description: AttributeMessageState specifies the value message.state attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for rabbitmq metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for rabbitmq metrics.
+    type: object
+    properties:
+      rabbitmq.consumer.count:
+        $ref: metric_config
+      rabbitmq.message.acknowledged:
+        $ref: metric_config
+      rabbitmq.message.current:
+        $ref: metric_config
+      rabbitmq.message.delivered:
+        $ref: metric_config
+      rabbitmq.message.dropped:
+        $ref: metric_config
+      rabbitmq.message.published:
+        $ref: metric_config
+      rabbitmq.node.channel_closed:
+        $ref: metric_config
+      rabbitmq.node.channel_closed_details.rate:
+        $ref: metric_config
+      rabbitmq.node.channel_created:
+        $ref: metric_config
+      rabbitmq.node.channel_created_details.rate:
+        $ref: metric_config
+      rabbitmq.node.connection_closed:
+        $ref: metric_config
+      rabbitmq.node.connection_closed_details.rate:
+        $ref: metric_config
+      rabbitmq.node.connection_created:
+        $ref: metric_config
+      rabbitmq.node.connection_created_details.rate:
+        $ref: metric_config
+      rabbitmq.node.context_switches:
+        $ref: metric_config
+      rabbitmq.node.context_switches_details.rate:
+        $ref: metric_config
+      rabbitmq.node.disk_free:
+        $ref: metric_config
+      rabbitmq.node.disk_free_alarm:
+        $ref: metric_config
+      rabbitmq.node.disk_free_details.rate:
+        $ref: metric_config
+      rabbitmq.node.disk_free_limit:
+        $ref: metric_config
+      rabbitmq.node.fd_total:
+        $ref: metric_config
+      rabbitmq.node.fd_used:
+        $ref: metric_config
+      rabbitmq.node.fd_used_details.rate:
+        $ref: metric_config
+      rabbitmq.node.gc_bytes_reclaimed:
+        $ref: metric_config
+      rabbitmq.node.gc_bytes_reclaimed_details.rate:
+        $ref: metric_config
+      rabbitmq.node.gc_num:
+        $ref: metric_config
+      rabbitmq.node.gc_num_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_read_avg_time:
+        $ref: metric_config
+      rabbitmq.node.io_read_avg_time_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_read_bytes:
+        $ref: metric_config
+      rabbitmq.node.io_read_bytes_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_read_count:
+        $ref: metric_config
+      rabbitmq.node.io_read_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_reopen_count:
+        $ref: metric_config
+      rabbitmq.node.io_reopen_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_seek_avg_time:
+        $ref: metric_config
+      rabbitmq.node.io_seek_avg_time_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_seek_count:
+        $ref: metric_config
+      rabbitmq.node.io_seek_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_sync_avg_time:
+        $ref: metric_config
+      rabbitmq.node.io_sync_avg_time_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_sync_count:
+        $ref: metric_config
+      rabbitmq.node.io_sync_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_write_avg_time:
+        $ref: metric_config
+      rabbitmq.node.io_write_avg_time_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_write_bytes:
+        $ref: metric_config
+      rabbitmq.node.io_write_bytes_details.rate:
+        $ref: metric_config
+      rabbitmq.node.io_write_count:
+        $ref: metric_config
+      rabbitmq.node.io_write_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.mem_alarm:
+        $ref: metric_config
+      rabbitmq.node.mem_limit:
+        $ref: metric_config
+      rabbitmq.node.mem_used:
+        $ref: metric_config
+      rabbitmq.node.mem_used_details.rate:
+        $ref: metric_config
+      rabbitmq.node.mnesia_disk_tx_count:
+        $ref: metric_config
+      rabbitmq.node.mnesia_disk_tx_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.mnesia_ram_tx_count:
+        $ref: metric_config
+      rabbitmq.node.mnesia_ram_tx_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.msg_store_read_count:
+        $ref: metric_config
+      rabbitmq.node.msg_store_read_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.msg_store_write_count:
+        $ref: metric_config
+      rabbitmq.node.msg_store_write_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.proc_total:
+        $ref: metric_config
+      rabbitmq.node.proc_used:
+        $ref: metric_config
+      rabbitmq.node.proc_used_details.rate:
+        $ref: metric_config
+      rabbitmq.node.processors:
+        $ref: metric_config
+      rabbitmq.node.queue_created:
+        $ref: metric_config
+      rabbitmq.node.queue_created_details.rate:
+        $ref: metric_config
+      rabbitmq.node.queue_declared:
+        $ref: metric_config
+      rabbitmq.node.queue_declared_details.rate:
+        $ref: metric_config
+      rabbitmq.node.queue_deleted:
+        $ref: metric_config
+      rabbitmq.node.queue_deleted_details.rate:
+        $ref: metric_config
+      rabbitmq.node.queue_index_read_count:
+        $ref: metric_config
+      rabbitmq.node.queue_index_read_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.queue_index_write_count:
+        $ref: metric_config
+      rabbitmq.node.queue_index_write_count_details.rate:
+        $ref: metric_config
+      rabbitmq.node.run_queue:
+        $ref: metric_config
+      rabbitmq.node.sockets_total:
+        $ref: metric_config
+      rabbitmq.node.sockets_used:
+        $ref: metric_config
+      rabbitmq.node.sockets_used_details.rate:
+        $ref: metric_config
+      rabbitmq.node.uptime:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for rabbitmq resource attributes.
+    type: object
+    properties:
+      rabbitmq.node.name:
+        $ref: resource_attribute_config
+      rabbitmq.queue.name:
+        $ref: resource_attribute_config
+      rabbitmq.vhost.name:
+        $ref: resource_attribute_config

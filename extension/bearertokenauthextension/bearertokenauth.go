@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 
@@ -106,7 +107,10 @@ func (b *bearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
 	// start file watcher
 	go b.startWatcher(ctx, watcher)
 
-	return watcher.Add(b.filename)
+	// Watch the parent directory instead of the file directly to handle atomic replacements
+	// This eliminates race conditions with fsnotify when files are atomically replaced
+	watchDir := filepath.Dir(b.filename)
+	return watcher.Add(watchDir)
 }
 
 func (b *bearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Watcher) {
@@ -122,22 +126,20 @@ func (b *bearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Wa
 			if !ok {
 				continue
 			}
-			// NOTE: k8s configmaps uses symlinks, we need this workaround.
-			// original configmap file is removed.
-			// SEE: https://martensson.io/go-fsnotify-and-kubernetes-configmaps/
-			if event.Op == fsnotify.Remove || event.Op == fsnotify.Chmod {
-				// remove the watcher since the file is removed
-				if err := watcher.Remove(event.Name); err != nil {
-					b.logger.Error(err.Error())
-				}
-				// add a new watcher pointing to the new symlink/file
-				if err := watcher.Add(b.filename); err != nil {
-					b.logger.Error(err.Error())
-				}
-				b.refreshToken()
+
+			// Only process events for our target file by filtering events
+			// Since we're watching the parent directory, we get events for all files in it
+			if event.Name != b.filename {
+				continue
 			}
-			// also allow normal files to be modified and reloaded.
-			if event.Op == fsnotify.Write {
+
+			// Handle file events for our target file
+			// Since we're watching the directory, we don't need to manage watch add/remove
+			// The directory watch persists even when files are atomically replaced
+			if event.Op&fsnotify.Write == fsnotify.Write ||
+				event.Op&fsnotify.Create == fsnotify.Create ||
+				event.Op&fsnotify.Remove == fsnotify.Remove ||
+				event.Op&fsnotify.Chmod == fsnotify.Chmod {
 				b.refreshToken()
 			}
 		}

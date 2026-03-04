@@ -6,7 +6,9 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"fmt"
+	"os"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
@@ -18,6 +20,9 @@ type Provider interface {
 
 	// OSType returns the host operating system
 	OSType(context.Context) (string, error)
+
+	// ContainerInfo returns the current container information
+	ContainerInfo(context.Context) (container.InspectResponse, error)
 }
 
 type dockerProviderImpl struct {
@@ -47,4 +52,16 @@ func (d *dockerProviderImpl) OSType(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to fetch Docker OS type: %w", err)
 	}
 	return internal.GOOSToOSType(info.OSType), nil
+}
+
+func (d *dockerProviderImpl) ContainerInfo(ctx context.Context) (container.InspectResponse, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return container.InspectResponse{}, err
+	}
+	info, err := d.dockerClient.ContainerInspect(ctx, hostname)
+	if err != nil {
+		return container.InspectResponse{}, fmt.Errorf("failed to fetch container information: %w", err)
+	}
+	return info, err
 }

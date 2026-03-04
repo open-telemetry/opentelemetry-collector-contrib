@@ -50,6 +50,18 @@ type Config struct {
 	Datapoints []MetricInfo `mapstructure:"datapoints"`
 	Logs       []MetricInfo `mapstructure:"logs"`
 	Profiles   []MetricInfo `mapstructure:"profiles"`
+	// ErrorMode determines how the connector reacts to errors that occur while processing an OTTL
+	// condition or statement during runtime data consumption. This setting does NOT affect errors
+	// during OTTL statement parsing at configuration time - those will always cause startup failures.
+	// Valid values are `propagate`, `ignore`, and `silent`.
+	// `propagate` means the connector returns the error up the pipeline. This will result in the
+	// payload being dropped from the collector.
+	// `ignore` means the connector ignores errors returned by conditions and continues processing.
+	// If an error occurs, the record is skipped and the error is logged.
+	// `silent` means the connector ignores errors returned by conditions and continues processing.
+	// If an error occurs, the record is skipped and the error is not logged.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -67,7 +79,8 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL spans: %w", err)
 		}
-		for _, span := range c.Spans {
+		for i := range c.Spans {
+			span := &c.Spans[i]
 			if err := validateMetricInfo(span, parser); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate spans configuration: %w", err))
 			}
@@ -81,7 +94,8 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL datapoints: %w", err)
 		}
-		for _, dp := range c.Datapoints {
+		for i := range c.Datapoints {
+			dp := &c.Datapoints[i]
 			if err := validateMetricInfo(dp, parser); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate datapoints configuration: %w", err))
 			}
@@ -95,7 +109,8 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL logs: %w", err)
 		}
-		for _, log := range c.Logs {
+		for i := range c.Logs {
+			log := &c.Logs[i]
 			if err := validateMetricInfo(log, parser); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate logs configuration: %w", err))
 			}
@@ -109,7 +124,8 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL profiles: %w", err)
 		}
-		for _, profile := range c.Profiles {
+		for i := range c.Profiles {
+			profile := &c.Profiles[i]
 			if err := validateMetricInfo(profile, parser); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate profiles configuration: %w", err))
 			}
@@ -128,19 +144,23 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 	if err := collectorCfg.Unmarshal(c); err != nil {
 		return err
 	}
-	for i, info := range c.Spans {
+	for i := range c.Spans {
+		info := c.Spans[i]
 		info.ensureDefaults()
 		c.Spans[i] = info
 	}
-	for i, info := range c.Datapoints {
+	for i := range c.Datapoints {
+		info := c.Datapoints[i]
 		info.ensureDefaults()
 		c.Datapoints[i] = info
 	}
-	for i, info := range c.Logs {
+	for i := range c.Logs {
+		info := c.Logs[i]
 		info.ensureDefaults()
 		c.Logs[i] = info
 	}
-	for i, info := range c.Profiles {
+	for i := range c.Profiles {
+		info := c.Profiles[i]
 		info.ensureDefaults()
 		c.Profiles[i] = info
 	}
@@ -151,26 +171,36 @@ type Attribute struct {
 	Key          string `mapstructure:"key"`
 	Optional     bool   `mapstructure:"optional"`
 	DefaultValue any    `mapstructure:"default_value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Histogram struct {
 	Buckets []float64 `mapstructure:"buckets"`
 	Count   string    `mapstructure:"count"`
 	Value   string    `mapstructure:"value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ExponentialHistogram struct {
 	MaxSize int32  `mapstructure:"max_size"`
 	Count   string `mapstructure:"count"`
 	Value   string `mapstructure:"value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Sum struct {
 	Value string `mapstructure:"value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Gauge struct {
 	Value string `mapstructure:"value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // MetricInfo defines the structure of the metric produced by the connector.
@@ -275,7 +305,7 @@ func (mi *MetricInfo) validateGauge() error {
 
 // validateMetricInfo is an utility method validate all supported metric
 // types defined for the metric info including any ottl expressions.
-func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
+func validateMetricInfo[K any](mi *MetricInfo, parser ottl.Parser[K]) error {
 	if mi.Name == "" {
 		return errors.New("missing required metric name configuration")
 	}

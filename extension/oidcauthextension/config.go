@@ -4,8 +4,18 @@
 package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
+	"encoding/json"
 	"fmt"
+	"maps"
+	"os"
+	"path/filepath"
+	"slices"
 
+	"github.com/go-jose/go-jose/v4"
 	"go.uber.org/multierr"
 )
 
@@ -117,6 +127,12 @@ type ProviderCfg struct {
 	// The claim that holds the subject's group membership information.
 	// Optional.
 	GroupsClaim string `mapstructure:"groups_claim"`
+
+	// Path to a local JWKS file containing public keys for token verification.
+	// When provided, only keys from this file will be used - no remote key discovery will happen.
+	// The file is watched for changes and keys are automatically reloaded on updates.
+	// Optional.
+	PublicKeysFile string `mapstructure:"public_keys_file"`
 }
 
 func (p *ProviderCfg) Validate() error {
@@ -126,5 +142,102 @@ func (p *ProviderCfg) Validate() error {
 	if p.IssuerURL == "" {
 		return errNoIssuerURL
 	}
+
+	if p.PublicKeysFile != "" {
+		if _, err := parseJWKSFile(p.PublicKeysFile); err != nil {
+			return fmt.Errorf("invalid public_keys_file %q: %w", p.PublicKeysFile, err)
+		}
+	}
+
 	return nil
+}
+
+var (
+	supportedAlgorithms = map[string][]jose.SignatureAlgorithm{
+		"rsa": {
+			jose.RS256,
+			jose.RS384,
+			jose.RS512,
+			jose.PS256,
+			jose.PS384,
+			jose.PS512,
+		},
+		"ecdsa": {
+			jose.ES256,
+			jose.ES384,
+			jose.ES512,
+		},
+		"ed25519": {
+			jose.EdDSA,
+		},
+	}
+
+	allSupportedAlgorithms = slices.Concat(slices.Collect(maps.Values(supportedAlgorithms))...)
+)
+
+// staticPublicKey is a convenience struct used in the return value of
+// parseJWKSFile. We cannot use ED25519 public keys as a map key (they
+// are byte slices and thus unhashable), so this wrapper struct makes things
+// a tiny bit more ergonomic.
+type staticPublicKey struct {
+	publicKey           crypto.PublicKey
+	supportedAlgorithms []jose.SignatureAlgorithm
+}
+
+// parseJWKSFile reads and parses a JWKS file, returning a list of
+// public keys and the signatures supported for each (based on the key's
+// `alg` field if present, or the full list of algorithms possible for
+// the key type if the field is not present). At the moment, only RSA,
+// ECDSA, and ED25519 keys are supported, which is what go-oidc supports.
+func parseJWKSFile(path string) ([]staticPublicKey, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path for %q: %w", path, err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not read file: %w", err)
+	}
+
+	var jwks jose.JSONWebKeySet
+	if err := json.Unmarshal(data, &jwks); err != nil {
+		return nil, fmt.Errorf("failed to parse JWKS: %w", err)
+	}
+
+	publicKeys := []staticPublicKey{}
+	for idx := range jwks.Keys {
+		jwk := jwks.Keys[idx]
+
+		alg := jose.SignatureAlgorithm(jwk.Algorithm)
+		pk := staticPublicKey{
+			publicKey: jwk.Public().Key,
+		}
+
+		var ktyp string
+		switch pk.publicKey.(type) {
+		case *rsa.PublicKey:
+			ktyp = "rsa"
+		case *ecdsa.PublicKey:
+			ktyp = "ecdsa"
+		case ed25519.PublicKey:
+			ktyp = "ed25519"
+		default:
+			continue
+		}
+
+		if slices.Contains(supportedAlgorithms[ktyp], alg) {
+			pk.supportedAlgorithms = append(pk.supportedAlgorithms, alg)
+		} else {
+			pk.supportedAlgorithms = supportedAlgorithms[ktyp]
+		}
+
+		publicKeys = append(publicKeys, pk)
+	}
+
+	if len(publicKeys) == 0 {
+		return nil, errNoSupportedKeys
+	}
+
+	return publicKeys, nil
 }

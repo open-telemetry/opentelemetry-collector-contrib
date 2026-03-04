@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -202,14 +203,21 @@ func TestBasicAuth_ServerInvalid(t *testing.T) {
 }
 
 func TestPerRPCAuth(t *testing.T) {
-	metadata := map[string]string{
-		"authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg=",
+	t.Parallel()
+	client := &basicAuthClient{
+		clientAuth: &ClientAuthSettings{
+			Username: "username",
+			Password: "passwordxxx",
+		},
 	}
+	require.NoError(t, client.Start(t.Context(), componenttest.NewNopHost()))
 
-	rpcAuth := &perRPCAuth{metadata: metadata}
+	rpcAuth := &perRPCAuth{client: client}
 	md, err := rpcAuth.GetRequestMetadata(t.Context())
 	assert.NoError(t, err)
-	assert.Equal(t, md, metadata)
+	assert.Equal(t, map[string]string{
+		"authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg=",
+	}, md)
 
 	ok := rpcAuth.RequireTransportSecurity()
 	assert.True(t, ok)
@@ -219,9 +227,7 @@ type mockRoundTripper struct{}
 
 func (*mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
-	for k, v := range req.Header {
-		resp.Header[k] = v
-	}
+	maps.Copy(resp.Header, req.Header)
 	return resp, nil
 }
 

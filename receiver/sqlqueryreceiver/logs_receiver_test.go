@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
@@ -116,4 +118,97 @@ func TestLogsQueryReceiver_BothDatasourceFields(t *testing.T) {
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.NoError(t, receiver.Shutdown(ctx))
+}
+
+func TestLogsQueryReceiver_NullValue(t *testing.T) {
+	col1 := "col1"
+	col1Value := "42"
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{col1: col1Value}},
+		},
+		// fakeClient.QueryRows will return ErrNullValueWarning on top of the StringMaps
+		ErrNullValueWarning: true,
+	}
+
+	core, recorded := observer.New(zap.InfoLevel)
+	logger := zap.New(core)
+
+	queryReceiver := logsQueryReceiver{
+		client: fakeClient,
+		query: sqlquery.Query{
+			Logs: []sqlquery.LogsCfg{
+				{
+					BodyColumn:       col1,
+					AttributeColumns: []string{col1},
+				},
+			},
+		},
+		logger: logger,
+	}
+	// ensure that the logs are collected successfully
+	logs, err := queryReceiver.collect(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, logs.LogRecordCount())
+	assert.Equal(t, col1Value, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+
+	// ensure that the warning is logged
+	all := recorded.All()
+	require.Len(t, all, 1)
+	entry := all[0]
+	require.Equal(t, "problems encountered getting log rows", entry.Message)
+	require.Equal(t, sqlquery.ErrNullValueWarning.Error(), entry.ContextMap()["error"])
+}
+
+func TestLogsReceiver_InitialDelay(t *testing.T) {
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{"col1": "42"}},
+			{{"col1": "63"}},
+		},
+	}
+
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		return fakeClient
+	})
+
+	ctx := t.Context()
+	initialDelay := 50 * time.Millisecond
+	collectionInterval := 100 * time.Millisecond
+
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: collectionInterval,
+					InitialDelay:       initialDelay,
+				},
+				Driver:     "postgres",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Logs: []sqlquery.LogsCfg{{
+						BodyColumn: "col1",
+					}},
+				}},
+			},
+		},
+		&consumertest.LogsSink{},
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+	defer func() {
+		_ = receiver.Shutdown(ctx)
+	}()
+
+	time.Sleep(initialDelay / 2)
+	sink := receiver.(*logsReceiver).nextConsumer.(*consumertest.LogsSink)
+	assert.Equal(t, 0, sink.LogRecordCount(), "should not collect before initial delay")
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() >= 1
+	}, initialDelay+50*time.Millisecond, 5*time.Millisecond)
 }

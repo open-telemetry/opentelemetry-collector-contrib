@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/metadata"
 )
@@ -111,12 +110,12 @@ func testLogsExporter(t *testing.T, ld plog.Logs, cfg *Config) error {
 // Traces
 func newTestTracesWithAttributes() ptrace.Traces {
 	td := ptrace.NewTraces()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		s.SetName(fmt.Sprintf("%s-%d", testOperation, i))
 		s.SetTraceID(pcommon.TraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 		s.SetSpanID(pcommon.SpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
-		for j := 0; j < 5; j++ {
+		for j := range 5 {
 			s.Attributes().PutStr(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
 		}
 		s.SetKind(ptrace.SpanKindServer)
@@ -211,15 +210,15 @@ func gUnzipData(data []byte) (resData []byte, err error) {
 	var r io.Reader
 	r, err = gzip.NewReader(b)
 	if err != nil {
-		return
+		return resData, err
 	}
 	var resB bytes.Buffer
 	_, err = resB.ReadFrom(r)
 	if err != nil {
-		return
+		return resData, err
 	}
 	resData = resB.Bytes()
-	return
+	return resData, err
 }
 
 func TestPushTraceData(tester *testing.T) {
@@ -239,8 +238,8 @@ func TestPushTraceData(tester *testing.T) {
 	defer server.Close()
 	td := newTestTraces()
 	res := td.ResourceSpans().At(0).Resource()
-	res.Attributes().PutStr(string(conventions.ServiceNameKey), testService)
-	res.Attributes().PutStr(string(conventions.HostNameKey), testHost)
+	res.Attributes().PutStr("service.name", testService)
+	res.Attributes().PutStr("host.name", testHost)
 	err := testTracesExporter(tester, td, &cfg)
 	require.NoError(tester, err)
 	requests := ptraceotlp.NewExportRequest()
@@ -270,8 +269,8 @@ func TestPushLogsData(tester *testing.T) {
 	defer server.Close()
 	ld := generateLogsOneEmptyTimestamp()
 	res := ld.ResourceLogs().At(0).Resource()
-	res.Attributes().PutStr(string(conventions.ServiceNameKey), testService)
-	res.Attributes().PutStr(string(conventions.HostNameKey), testHost)
+	res.Attributes().PutStr("service.name", testService)
+	res.Attributes().PutStr("host.name", testHost)
 	err := testLogsExporter(tester, ld, &cfg)
 	require.NoError(tester, err)
 	requests := plogotlp.NewExportRequest()

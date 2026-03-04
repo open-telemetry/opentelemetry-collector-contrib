@@ -173,10 +173,10 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			comp := comparisonHelper(tt.l, tt.r, tt.op)
-			evaluator, err := p.newComparisonEvaluator(comp)
-			assert.NoError(t, err)
+			evaluator, err := p.newComparisonExpr(comp)
+			require.NoError(t, err)
 			result, err := evaluator.Eval(t.Context(), tt.item)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
 	}
@@ -209,7 +209,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.newComparisonEvaluator(tt.comparison)
+			_, err := p.newComparisonExpr(tt.comparison)
 			assert.Error(t, err)
 		})
 	}
@@ -619,9 +619,9 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator, err := p.newBoolExpr(tt.expr)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := evaluator.Eval(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
 	}
@@ -659,7 +659,7 @@ func Test_newBooleanExpressionEvaluator_invalid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator, err := p.newBoolExpr(tt.expr)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = evaluator.Eval(t.Context(), nil)
 			assert.Error(t, err)
 		})

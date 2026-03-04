@@ -4,6 +4,7 @@ kafka/full:
   resolve_canonical_bootstrap_servers_only: true
   client_id: vip
   protocol_version: 1.2.3
+  rack_id: rack1
   tls:
     ca_file: ca.pem
     cert_file: cert.pem
@@ -18,6 +19,7 @@ kafka/full:
     retry:
       max: 10
       backoff: 5s
+  conn_idle_timeout: 5m
 kafka/sasl_aws_msk_iam_oauthbearer:
   auth:
     sasl:
@@ -94,3 +96,9 @@ kafka/foo:
     retry:
       max: 10
       backoff: 5s
+
+kafka/not_use_leader_epoch:
+  use_leader_epoch: false
+
+kafka/conn_idle_timeout:
+  conn_idle_timeout: 5m

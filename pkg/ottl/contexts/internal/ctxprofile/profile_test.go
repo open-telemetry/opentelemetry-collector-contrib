@@ -29,20 +29,19 @@ func TestPathGetSetter(t *testing.T) {
 	}{
 		{
 			path: "sample_type",
-			val:  createValueTypeSlice(),
+			val:  createValueType(),
+		},
+		{
+			path: "sample_type type",
+			val:  "cpu",
+		},
+		{
+			path: "sample_type unit",
+			val:  "cycles",
 		},
 		{
 			path: "sample",
 			val:  createSampleSlice(),
-		},
-		{
-			path: "location_indices",
-			val:  []int64{5},
-		},
-		{
-			path:     "location_indices error",
-			val:      []string{"x"},
-			setFails: true,
 		},
 		{
 			path: "time_unix_nano",
@@ -58,23 +57,23 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "duration",
-			val:  time.Now().UTC(),
+			val:  int64(0),
 		},
 		{
 			path: "period_type",
 			val:  createValueType(),
 		},
 		{
+			path: "period_type type",
+			val:  "heap",
+		},
+		{
+			path: "period_type unit",
+			val:  "bytes",
+		},
+		{
 			path: "period",
 			val:  int64(234),
-		},
-		{
-			path: "comment_string_indices",
-			val:  []int64{345},
-		},
-		{
-			path: "default_sample_type_index",
-			val:  int64(456),
 		},
 		{
 			path: "profile_id",
@@ -205,20 +204,19 @@ func (p *profileContext) GetProfile() pprofile.Profile {
 	return p.profile
 }
 
-func newProfileContext(profile pprofile.Profile, dictionary pprofile.ProfilesDictionary) *profileContext {
-	return &profileContext{profile: profile, dictionary: dictionary}
+func (p *profileContext) AttributeIndices() pcommon.Int32Slice {
+	return p.profile.AttributeIndices()
 }
 
-func createValueTypeSlice() pprofile.ValueTypeSlice {
-	sl := pprofile.NewValueTypeSlice()
-	vt := sl.AppendEmpty()
-	vt.CopyTo(createValueType())
-	return sl
+func newProfileContext(profile pprofile.Profile, dictionary pprofile.ProfilesDictionary) *profileContext {
+	return &profileContext{
+		profile:    profile,
+		dictionary: dictionary,
+	}
 }
 
 func createValueType() pprofile.ValueType {
 	vt := pprofile.NewValueType()
-	vt.SetAggregationTemporality(pprofile.AggregationTemporalityDelta)
 	vt.SetTypeStrindex(2)
 	vt.SetUnitStrindex(3)
 	return vt
@@ -238,9 +236,7 @@ func createProfileID() pprofile.ProfileID {
 func createSample() pprofile.Sample {
 	sample := pprofile.NewSample()
 	sample.AttributeIndices().Append(1)
-	sample.SetLocationsLength(2)
-	sample.SetLocationsStartIndex(3)
 	sample.TimestampsUnixNano().Append(4)
-	sample.Value().Append(5)
+	sample.Values().Append(5)
 	return sample
 }

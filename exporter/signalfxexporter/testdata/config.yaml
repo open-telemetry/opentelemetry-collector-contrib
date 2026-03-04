@@ -20,6 +20,9 @@ signalfx/allsettings:
     added-entry: "added value"
     dot.test: test
   access_token_passthrough: false
+  default_properties:
+    foo: bar
+    _index: baz
   exclude_metrics:
     - metric_name: metric1
     - metric_names: [metric2, metric3]

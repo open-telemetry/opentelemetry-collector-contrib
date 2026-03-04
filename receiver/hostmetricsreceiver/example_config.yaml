@@ -12,9 +12,10 @@ receivers:
       disk:
       filesystem:
       network:
+      nfs:
       paging:
       processes:
-      uptime:
+      system:
 
 exporters:
   debug:

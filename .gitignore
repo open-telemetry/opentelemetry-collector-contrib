@@ -1,6 +1,9 @@
 local/
 vendor/
 
+# Dev Container
+/.devcontainer/
+
 # GoLand IDEA
 /.idea/
 *.iml
@@ -8,6 +11,9 @@ vendor/
 # VS Code
 .vscode
 *.code-workspace
+
+# Cursor
+.cursor
 
 # Project IDX
 .idx/

@@ -102,7 +102,7 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return nil
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
 
 	httpMux := http.NewServeMux()
 	httpMux.HandleFunc(faroPath, func(resp http.ResponseWriter, req *http.Request) {
@@ -111,7 +111,7 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	var err error
 	if r.serverHTTP, err = r.cfg.ToServer(
 		ctx,
-		host,
+		host.GetExtensions(),
 		r.settings.TelemetrySettings,
 		httpMux,
 		confighttp.WithErrorHandler(r.errorHandler),
@@ -126,14 +126,12 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return err
 	}
 
-	r.shutdownWg.Add(1)
-	go func() {
-		defer r.shutdownWg.Done()
+	r.shutdownWg.Go(func() {
 		if err := r.serverHTTP.Serve(listener); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			r.settings.Logger.Error("Failed to start HTTP server", zap.Error(err))
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	}()
+	})
 
 	r.settings.Logger.Info("HTTP server started", zap.String("address", r.serverHTTP.Addr))
 	return nil
@@ -213,7 +211,7 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	resp.WriteHeader(http.StatusOK)
+	resp.WriteHeader(http.StatusAccepted)
 }
 
 type errorResponse struct {

@@ -14,13 +14,17 @@ import (
 	krb5client "github.com/jcmturner/gokrb5/v8/client"
 	krb5config "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/kversion"
 	"github.com/twmb/franz-go/pkg/sasl"
 	"github.com/twmb/franz-go/pkg/sasl/kerberos"
 	"github.com/twmb/franz-go/pkg/sasl/oauth"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"github.com/twmb/franz-go/plugin/kzap"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
 
@@ -35,7 +39,10 @@ const (
 )
 
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
-func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfig,
+func NewFranzSyncProducer(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	cfg configkafka.ProducerConfig,
 	timeout time.Duration,
 	logger *zap.Logger,
@@ -47,7 +54,7 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 	default:
 		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
 	}
-	opts, err := commonOpts(ctx, clientCfg, logger, append(
+	opts, err := commonOpts(ctx, host, clientCfg, logger, append(
 		opts,
 		kgo.ProduceRequestTimeout(timeout),
 		kgo.ProducerBatchCompression(codec),
@@ -55,6 +62,9 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		// the legacy compatibility sarama hashing to avoid hashing to different
 		// partitions in case partitioning is enabled.
 		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
+		kgo.ProducerLinger(cfg.Linger),
+		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
+		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
 	)...)
 	if err != nil {
 		return nil, err
@@ -71,65 +81,54 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.LeaderAck()))
 	}
 
-	// Configure max message size
-	if cfg.MaxMessageBytes > 0 {
-		opts = append(opts, kgo.ProducerBatchMaxBytes(
-			int32(cfg.MaxMessageBytes),
-		))
-	}
-	// Configure batch size
-	if cfg.FlushMaxMessages > 0 {
-		opts = append(opts, kgo.MaxBufferedRecords(cfg.FlushMaxMessages))
+	// Configure auto topic creation
+	if cfg.AllowAutoTopicCreation {
+		opts = append(opts, kgo.AllowAutoTopicCreation())
 	}
 
 	return kgo.NewClient(opts...)
 }
 
 // NewFranzConsumerGroup creates a new Kafka consumer client using the franz-go library.
-func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConfig,
+func NewFranzConsumerGroup(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	consumerCfg configkafka.ConsumerConfig,
 	topics []string,
+	excludeTopics []string,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
+	opts, err := commonOpts(ctx, host, clientCfg, logger, append([]kgo.Opt{
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumerGroup(consumerCfg.GroupID),
+		kgo.SessionTimeout(consumerCfg.SessionTimeout),
+		kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval),
+		kgo.FetchMinBytes(consumerCfg.MinFetchSize),
+		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
+		kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize),
+		kgo.FetchMaxWait(consumerCfg.MaxFetchWait),
 	}, opts...)...)
 	if err != nil {
 		return nil, err
 	}
 
+	// Check if any topic uses regex pattern
+	isRegex := false
 	for _, t := range topics {
 		// Similar to librdkafka, if the topic starts with `^`, it is a regex topic:
 		// https://github.com/confluentinc/librdkafka/blob/b871fdabab84b2ea1be3866a2ded4def7e31b006/src/rdkafka.h#L3899-L3938
 		if strings.HasPrefix(t, "^") {
+			isRegex = true
 			opts = append(opts, kgo.ConsumeRegex())
 			break
 		}
 	}
 
-	// Configure session timeout
-	if consumerCfg.SessionTimeout > 0 {
-		opts = append(opts, kgo.SessionTimeout(consumerCfg.SessionTimeout))
-	}
-
-	// Configure heartbeat interval
-	if consumerCfg.HeartbeatInterval > 0 {
-		opts = append(opts, kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval))
-	}
-
-	// Configure fetch sizes
-	if consumerCfg.MinFetchSize > 0 {
-		opts = append(opts, kgo.FetchMinBytes(consumerCfg.MinFetchSize))
-	}
-	if consumerCfg.DefaultFetchSize > 0 {
-		opts = append(opts, kgo.FetchMaxBytes(consumerCfg.DefaultFetchSize))
-	}
-
-	// Configure max fetch wait
-	if consumerCfg.MaxFetchWait > 0 {
-		opts = append(opts, kgo.FetchMaxWait(consumerCfg.MaxFetchWait))
+	// Add exclude topics only when regex consumption is enabled
+	if len(excludeTopics) > 0 && isRegex {
+		opts = append(opts, kgo.ConsumeExcludeTopics(excludeTopics...))
 	}
 
 	interval := consumerCfg.AutoCommit.Interval
@@ -160,30 +159,70 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 
 	// Configure rebalance strategy
 	switch consumerCfg.GroupRebalanceStrategy {
-	case "range": // Sarama default.
+	case "range":
 		opts = append(opts, kgo.Balancers(kgo.RangeBalancer()))
 	case "roundrobin":
 		opts = append(opts, kgo.Balancers(kgo.RoundRobinBalancer()))
 	case "sticky":
 		opts = append(opts, kgo.Balancers(kgo.StickyBalancer()))
-	// NOTE(marclop): This is a new type of balancer, document accordingly.
 	case "cooperative-sticky":
 		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
 	}
 	return kgo.NewClient(opts...)
 }
 
-func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
+// NewFranzClient creates a franz-go client using the same commonOpts used for producer/consumer.
+func NewFranzClient(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
+	logger *zap.Logger,
+	opts ...kgo.Opt,
+) (*kgo.Client, error) {
+	opts, err := commonOpts(ctx, host, clientCfg, logger, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return kgo.NewClient(opts...)
+}
+
+// NewFranzClusterAdminClient creates a kadm admin client from a freshly created franz client.
+func NewFranzClusterAdminClient(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
+	logger *zap.Logger,
+	opts ...kgo.Opt,
+) (*kadm.Client, *kgo.Client, error) {
+	cl, err := NewFranzClient(ctx, host, clientCfg, logger, opts...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return kadm.NewClient(cl), cl, nil
+}
+
+func commonOpts(
+	ctx context.Context,
+	_ component.Host,
+	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) ([]kgo.Opt, error) {
 	opts = append(opts,
 		kgo.WithLogger(kzap.New(logger.Named("franz"))),
 		kgo.SeedBrokers(clientCfg.Brokers...),
+		// Disable client metrics, since some brokers may falsely indicate
+		// that they support them when they don't, causing errors to be
+		// logged. We may want to make this configurable in the future.
+		kgo.DisableClientMetrics(),
 	)
+	tlsConfig := clientCfg.TLS
+	if tlsConfig == nil {
+		tlsConfig = clientCfg.Authentication.TLS
+	}
 	// Configure TLS if needed
-	if clientCfg.TLS != nil {
-		tlsCfg, err := clientCfg.TLS.LoadTLSConfig(ctx)
+	if tlsConfig != nil {
+		tlsCfg, err := tlsConfig.LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)
 		}
@@ -217,9 +256,32 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	if clientCfg.ClientID != "" {
 		opts = append(opts, kgo.ClientID(clientCfg.ClientID))
 	}
+	// Configure client rack if provided
+	if clientCfg.RackID != "" {
+		opts = append(opts, kgo.Rack(clientCfg.RackID))
+	}
 	// Reuse existing metadata refresh interval for franz-go metadataMaxAge
 	if clientCfg.Metadata.RefreshInterval > 0 {
 		opts = append(opts, kgo.MetadataMaxAge(clientCfg.Metadata.RefreshInterval))
+	}
+	// Configure connection idle timeout
+	if clientCfg.ConnIdleTimeout > 0 {
+		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnIdleTimeout))
+	}
+	// Configure the min/max protocol version if provided
+	if clientCfg.ProtocolVersion != "" {
+		keyVersions := make(map[string]any)
+		versions := kversion.FromString(clientCfg.ProtocolVersion)
+		versions.EachMaxKeyVersion(func(k, v int16) {
+			name := kmsg.NameForKey(k)
+			keyVersions[name] = v
+		})
+		logger.Info(
+			"setting kafka protocol version",
+			zap.String("version", clientCfg.ProtocolVersion),
+			zap.Any("key_versions", keyVersions),
+		)
+		opts = append(opts, kgo.MinVersions(versions), kgo.MaxVersions(versions))
 	}
 	return opts, nil
 }

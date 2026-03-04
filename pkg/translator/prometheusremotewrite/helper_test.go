@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -172,7 +171,7 @@ func TestPrometheusConverter_addSample(t *testing.T) {
 // Test_timeSeriesSignature checks that timeSeriesSignature returns consistent and unique signatures for a distinct label set.
 func Test_timeSeriesSignature(t *testing.T) {
 	var oneKBLabels []prompb.Label
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		const name = "12345"
 		const value = "12345"
 		oneKBLabels = append(oneKBLabels, prompb.Label{Name: name, Value: value})
@@ -244,132 +243,161 @@ func Test_timeSeriesSignature(t *testing.T) {
 // collision happens. It does not check whether labels are not sorted
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
-		name           string
-		resource       pcommon.Resource
-		orig           pcommon.Map
-		externalLabels map[string]string
-		extras         []string
-		want           []prompb.Label
+		name                        string
+		resource                    pcommon.Resource
+		orig                        pcommon.Map
+		externalLabels              map[string]string
+		extras                      []string
+		want                        []prompb.Label
+		expectErr                   bool
+		underscoreLabelSanitization bool
 	}{
 		{
-			"labels_clean",
-			pcommon.NewResource(),
-			lbs1,
-			map[string]string{},
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+			name:           "labels_clean",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
 		{
-			"labels_with_resource",
-			func() pcommon.Resource {
+			name: "labels_with_resource",
+			resource: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				res.Attributes().PutStr("service.name", "prometheus")
 				res.Attributes().PutStr("service.instance.id", "127.0.0.1:8080")
 				return res
 			}(),
-			lbs1,
-			map[string]string{},
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "prometheus", "instance", "127.0.0.1:8080"),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "prometheus", "instance", "127.0.0.1:8080"),
 		},
 		{
-			"labels_with_nonstring_resource",
-			func() pcommon.Resource {
+			name: "labels_with_nonstring_resource",
+			resource: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				res.Attributes().PutInt("service.name", 12345)
 				res.Attributes().PutBool("service.instance.id", true)
 				return res
 			}(),
-			lbs1,
-			map[string]string{},
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "12345", "instance", "true"),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "12345", "instance", "true"),
 		},
 		{
-			"labels_duplicate_in_extras",
-			pcommon.NewResource(),
-			lbs1,
-			map[string]string{},
-			[]string{label11, value31},
-			getPromLabels(label11, value31, label12, value12),
+			name:           "labels_duplicate_in_extras",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label11, value31},
+			want:           getPromLabels(label11, value31, label12, value12),
 		},
 		{
-			"labels_dirty",
-			pcommon.NewResource(),
-			lbs1Dirty,
-			map[string]string{},
-			[]string{label31 + dirty1, value31, label32, value32},
-			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
+			name:           "labels_dirty",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1Dirty,
+			externalLabels: map[string]string{},
+			extras:         []string{label31 + dirty1, value31, label32, value32},
+			want:           getPromLabels(label11+"_", value11, "_"+label12, value12, label31+"_", value31, label32, value32),
 		},
 		{
-			"no_original_case",
-			pcommon.NewResource(),
-			pcommon.NewMap(),
-			nil,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label31, value31, label32, value32),
+			name:                        "labels_dirty_with_sanitization",
+			resource:                    pcommon.NewResource(),
+			orig:                        lbs1Dirty,
+			externalLabels:              map[string]string{},
+			extras:                      []string{label31 + dirty1, value31, label32, value32},
+			want:                        getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
+			underscoreLabelSanitization: true,
 		},
 		{
-			"empty_extra_case",
-			pcommon.NewResource(),
-			lbs1,
-			map[string]string{},
-			[]string{"", ""},
-			getPromLabels(label11, value11, label12, value12, "", ""),
+			name:           "no_original_case",
+			resource:       pcommon.NewResource(),
+			orig:           pcommon.NewMap(),
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label31, value31, label32, value32),
 		},
 		{
-			"single_left_over_case",
-			pcommon.NewResource(),
-			lbs1,
-			map[string]string{},
-			[]string{label31, value31, label32},
-			getPromLabels(label11, value11, label12, value12, label31, value31),
+			name:           "empty_extra_case",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{"", ""},
+			want:           getPromLabels(label11, value11, label12, value12, "", ""),
+			expectErr:      true,
 		},
 		{
-			"valid_external_labels",
-			pcommon.NewResource(),
-			lbs1,
-			exlbs1,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label41, value41, label31, value31, label32, value32),
+			name:           "single_left_over_case",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31, label32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31),
 		},
 		{
-			"overwritten_external_labels",
-			pcommon.NewResource(),
-			lbs1,
-			exlbs2,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+			name:           "valid_external_labels",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: exlbs1,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label41, value41, label31, value31, label32, value32),
 		},
 		{
-			"colliding attributes",
-			pcommon.NewResource(),
-			lbsColliding,
-			nil,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
+			name:           "overwritten_external_labels",
+			resource:       pcommon.NewResource(),
+			orig:           lbs1,
+			externalLabels: exlbs2,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
 		{
-			"existing_attribute_value_is_the_same_as_the_new_label_value",
-			pcommon.NewResource(),
-			lbsCollidingSameValue,
-			nil,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(collidingSanitized, value11, label31, value31, label32, value32),
+			name:           "colliding attributes",
+			resource:       pcommon.NewResource(),
+			orig:           lbsColliding,
+			externalLabels: nil,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
 		},
 		{
-			"sanitize_labels_starts_with_underscore",
-			pcommon.NewResource(),
-			lbs3,
-			exlbs1,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
+			name:           "existing_attribute_value_is_the_same_as_the_new_label_value",
+			resource:       pcommon.NewResource(),
+			orig:           lbsCollidingSameValue,
+			externalLabels: nil,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(collidingSanitized, value11, label31, value31, label32, value32),
+		},
+		{
+			name:           "sanitize_labels_starts_with_underscore",
+			resource:       pcommon.NewResource(),
+			orig:           lbs3,
+			externalLabels: exlbs1,
+			extras:         []string{label31, value31, label32, value32},
+			want:           getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
+		},
+		{
+			name:                        "sanitize_labels_starts_with_underscore_with_sanitization",
+			resource:                    pcommon.NewResource(),
+			orig:                        lbs3,
+			externalLabels:              exlbs1,
+			extras:                      []string{label31, value31, label32, value32},
+			want:                        getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
+			underscoreLabelSanitization: true,
 		},
 	}
-	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, otlptranslator.LabelNamer{}, tt.extras...))
+			labelNamer := otlptranslator.LabelNamer{
+				UnderscoreLabelSanitization: tt.underscoreLabelSanitization,
+			}
+			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, false, tt.extras...)
+			if tt.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 }
@@ -385,9 +413,10 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	m.PutBool("test-bool-key", true)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		createAttributes(r, m, ext, nil, true, otlptranslator.LabelNamer{})
+
+	for b.Loop() {
+		//nolint:errcheck
+		createAttributes(r, m, pcommon.NewInstrumentationScope(), ext, nil, true, otlptranslator.LabelNamer{}, false)
 	}
 }
 
@@ -587,9 +616,9 @@ func Test_getPromExemplarsV2(t *testing.T) {
 
 func TestAddResourceTargetInfo(t *testing.T) {
 	resourceAttrMap := map[string]any{
-		string(conventions.ServiceNameKey):       "service-name",
-		string(conventions.ServiceNamespaceKey):  "service-namespace",
-		string(conventions.ServiceInstanceIDKey): "service-instance-id",
+		"service.name":        "service-name",
+		"service.namespace":   "service-namespace",
+		"service.instance.id": "service-instance-id",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
 	require.NoError(t, resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap))
@@ -598,11 +627,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	require.NoError(t, resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap))
 	// service.name is an identifying resource attribute.
 	resourceWithOnlyServiceName := pcommon.NewResource()
-	resourceWithOnlyServiceName.Attributes().PutStr(string(conventions.ServiceNameKey), "service-name")
+	resourceWithOnlyServiceName.Attributes().PutStr("service.name", "service-name")
 	resourceWithOnlyServiceName.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	// service.instance.id is an identifying resource attribute.
 	resourceWithOnlyServiceID := pcommon.NewResource()
-	resourceWithOnlyServiceID.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), "service-instance-id")
+	resourceWithOnlyServiceID.Attributes().PutStr("service.instance.id", "service-instance-id")
 	resourceWithOnlyServiceID.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	for _, tc := range []struct {
 		desc       string
@@ -682,7 +711,8 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverter(tc.settings)
 
-			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+			err := addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+			require.NoError(t, err)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
 				assert.Empty(t, converter.timeSeries())
@@ -818,12 +848,14 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverter(Settings{})
 
-			converter.addSummaryDataPoints(
+			err := converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 			)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
@@ -917,12 +949,14 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverter(Settings{})
 
-			converter.addHistogramDataPoints(
+			err := converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 			)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
@@ -1091,4 +1125,92 @@ func TestCreateLabels(t *testing.T) {
 			assert.Equal(t, tc.expected, lbls)
 		})
 	}
+}
+
+func TestScopeAttributesExported(t *testing.T) {
+	// Create a metric with scope attributes
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	// Set resource attributes just to be sure
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	scope := sm.Scope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("scope.attr", "scope-value")
+
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge()
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp.SetIntValue(1)
+
+	// Convert to Prometheus Remote Write format
+	tsMap, err := FromMetrics(md, Settings{})
+	require.NoError(t, err)
+	require.NotEmpty(t, tsMap)
+
+	// Verify labels
+	// We expect one time series
+	require.Len(t, tsMap, 1)
+
+	// Get the first time series (key is "0")
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
+
+	labels := make(map[string]string)
+	for _, l := range ts.Labels {
+		labels[l.Name] = l.Value
+	}
+
+	// Check for scope attributes
+	assert.Equal(t, "test-scope", labels["otel_scope_name"], "otel_scope_name should be present")
+	assert.Equal(t, "1.0.0", labels["otel_scope_version"], "otel_scope_version should be present")
+	assert.Equal(t, "scope-value", labels["otel_scope_scope_attr"], "scope attribute should be present with prefix")
+}
+
+func TestDisableScopeInfo(t *testing.T) {
+	// Create a metric with scope attributes
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	// Set resource attributes just to be sure
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	scope := sm.Scope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("scope.attr", "scope-value")
+
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge()
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp.SetIntValue(1)
+
+	// Convert to Prometheus Remote Write format with DisableScopeInfo = true
+	tsMap, err := FromMetrics(md, Settings{DisableScopeInfo: true})
+	require.NoError(t, err)
+	require.NotEmpty(t, tsMap)
+
+	// Verify labels
+	// We expect one time series
+	require.Len(t, tsMap, 1)
+
+	// Get the first time series (key is "0")
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
+
+	labels := make(map[string]string)
+	for _, l := range ts.Labels {
+		labels[l.Name] = l.Value
+	}
+
+	// Check that scope attributes are NOT present
+	assert.NotContains(t, labels, "otel_scope_name")
+	assert.NotContains(t, labels, "otel_scope_version")
+	assert.NotContains(t, labels, "otel_scope_scope_attr")
 }

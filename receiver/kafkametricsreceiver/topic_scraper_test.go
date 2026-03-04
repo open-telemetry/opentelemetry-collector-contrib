@@ -83,7 +83,7 @@ func TestTopicScraper_startScraperCreatesClient(t *testing.T) {
 	ms, err := createTopicsScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
-	err = ms.Start(t.Context(), nil)
+	err = ms.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 }
 
@@ -109,6 +109,7 @@ func TestTopicScraper_scrapes(t *testing.T) {
 		config:       *config,
 		topicFilter:  match,
 	}
+	client.Mock.On("Closed").Return(false)
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 	md, err := scraper.scrape(t.Context())
 	assert.NoError(t, err)
@@ -153,6 +154,7 @@ func TestTopicScraper_scrape_handlesTopicError(t *testing.T) {
 		settings:    receivertest.NewNopSettings(metadata.Type),
 		topicFilter: match,
 	}
+	client.Mock.On("Closed").Return(false)
 	_, err := scraper.scrape(t.Context())
 	assert.Error(t, err)
 }
@@ -168,6 +170,7 @@ func TestTopicScraper_scrape_handlesPartitionError(t *testing.T) {
 		settings:     receivertest.NewNopSettings(metadata.Type),
 		topicFilter:  match,
 	}
+	client.Mock.On("Closed").Return(false)
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 	_, err := scraper.scrape(t.Context())
 	assert.Error(t, err)
@@ -187,6 +190,7 @@ func TestTopicScraper_scrape_handlesPartialScrapeErrors(t *testing.T) {
 		settings:     receivertest.NewNopSettings(metadata.Type),
 		topicFilter:  match,
 	}
+	client.Mock.On("Closed").Return(false)
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 	_, err := scraper.scrape(t.Context())
 	assert.Error(t, err)

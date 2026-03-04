@@ -95,6 +95,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	require.NotNil(t, logExp)
 
 	assert.NoError(t, exp.Shutdown(t.Context()))
+	assert.NoError(t, logExp.Shutdown(t.Context()))
 }
 
 func TestCreateMetrics_CustomConfig(t *testing.T) {
@@ -103,9 +104,9 @@ func TestCreateMetrics_CustomConfig(t *testing.T) {
 		Realm:       "us1",
 		ClientConfig: confighttp.ClientConfig{
 			Timeout: 2 * time.Second,
-			Headers: map[string]configopaque.String{
-				"added-entry": "added value",
-				"dot.test":    "test",
+			Headers: configopaque.MapList{
+				{Name: "added-entry", Value: "added value"},
+				{Name: "dot.test", Value: "test"},
 			},
 		},
 	}
@@ -195,6 +196,53 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 1)
 	require.Len(t, dps[0].Dimensions, 3)
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
+}
+
+func TestDefaultTranslationRules_MemoryTotalIncludesInactive(t *testing.T) {
+	rules := defaultTranslationRules
+	require.NotNil(t, rules, "rules are nil")
+	tr, err := translation.NewMetricTranslator(rules, 1, make(chan struct{}))
+	require.NoError(t, err)
+
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false, true)
+	require.NoError(t, err)
+
+	md := pmetric.NewMetrics()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("system.memory.usage")
+	m.SetDescription("Bytes of memory in use")
+	m.SetUnit("bytes")
+	g := m.SetEmptyGauge().DataPoints()
+
+	add := func(state string, value int64) {
+		dp := g.AppendEmpty()
+		dp.Attributes().PutStr("state", state)
+		dp.Attributes().PutStr("host", "host0")
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
+		dp.SetIntValue(value)
+	}
+
+	add("used", 6)
+	add("free", 2)
+	add("inactive", 2)
+
+	translated := c.MetricsToSignalFxV2(md)
+	require.NotNil(t, translated)
+
+	metrics := make(map[string][]*sfxpb.DataPoint)
+	for _, pt := range translated {
+		metrics[pt.Metric] = append(metrics[pt.Metric], pt)
+	}
+
+	total, ok := metrics["memory.total"]
+	require.True(t, ok, "memory.total metric not found")
+	require.Len(t, total, 1)
+	require.EqualValues(t, 10, *total[0].Value.IntValue)
+
+	util, ok := metrics["memory.utilization"]
+	require.True(t, ok, "memory.utilization metric not found")
+	require.Len(t, util, 1)
+	require.Equal(t, 60.0, *util[0].Value.DoubleValue)
 }
 
 func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
@@ -621,7 +669,7 @@ func BenchmarkMetricConversion(b *testing.B) {
 	metrics, err := unmarshaller.UnmarshalMetrics(bytes)
 	require.NoError(b, err)
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		translated := c.MetricsToSignalFxV2(metrics)
 		require.NotNil(b, translated)
 	}
@@ -655,30 +703,4 @@ func testReadJSON(f string, v any) error {
 		return err
 	}
 	return json.Unmarshal(bytes, &v)
-}
-
-func buildHistogramDP(dp pmetric.HistogramDataPoint, timestamp pcommon.Timestamp) {
-	dp.SetStartTimestamp(timestamp)
-	dp.SetTimestamp(timestamp)
-	dp.SetMin(1.0)
-	dp.SetMax(2)
-	dp.SetCount(5)
-	dp.SetSum(7.0)
-	dp.BucketCounts().FromRaw([]uint64{3, 2})
-	dp.ExplicitBounds().FromRaw([]float64{1, 2})
-	dp.Attributes().PutStr("k1", "v1")
-}
-
-func buildHistogram(im pmetric.Metric, name string, timestamp pcommon.Timestamp, dpCount int) {
-	im.SetName(name)
-	im.SetDescription("Histogram")
-	im.SetUnit("1")
-	im.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-	idps := im.Histogram().DataPoints()
-	idps.EnsureCapacity(dpCount)
-
-	for i := 0; i < dpCount; i++ {
-		dp := idps.AppendEmpty()
-		buildHistogramDP(dp, timestamp)
-	}
 }

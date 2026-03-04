@@ -17,9 +17,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
@@ -329,7 +329,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		rmetric := defaultSink.AllMetrics()[0].ResourceMetrics().At(0)
 		attr, ok := rmetric.Resource().Attributes().Get("value")
 		assert.True(t, ok, "routing attribute must exist")
-		assert.Equal(t, attr.Double(), float64(-1.0))
+		assert.Equal(t, float64(-1.0), attr.Double())
 	})
 
 	t.Run("metric matched by one expression, multiple pipelines", func(t *testing.T) {
@@ -453,9 +453,9 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isResourceString := `IsString(attributes["resourceName"]) == true`
-	require.Contains(t, common.StandardFunctions[ottlresource.TransformContext](), "IsString")
+	require.Contains(t, standardFunctions[*ottlresource.TransformContext](), "IsString")
 	isAttributesMap := `IsMap(attributes) == true`
-	require.Contains(t, common.StandardFunctions[ottlresource.TransformContext](), "IsMap")
+	require.Contains(t, standardFunctions[*ottlresource.TransformContext](), "IsMap")
 
 	isMetricE := `name == "metricE"`
 	isMetricF := `name == "metricF"`
@@ -1150,4 +1150,178 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
 		})
 	}
+}
+
+func TestMetricsForPropagateError(t *testing.T) {
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.PropagateError,
+		DefaultPipelines: []pipeline.ID{metricsDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{metrics0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.MetricsSink
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+			metricsDefault: &defaultSink,
+			metrics0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.Error(t, conn.ConsumeMetrics(t.Context(), pmetricutiltest.NewGauges("1", "2", "3", "4")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllMetrics(), 0)
+	assert.Empty(t, defaultSink.AllMetrics(), 0)
+}
+
+func TestMetricsForIgnoreError(t *testing.T) {
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.IgnoreError,
+		DefaultPipelines: []pipeline.ID{metricsDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{metrics0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.MetricsSink
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+			metricsDefault: &defaultSink,
+			metrics0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, conn.ConsumeMetrics(t.Context(), pmetricutiltest.NewGauges("1", "2", "3", "4")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllMetrics(), 0)
+	assert.Len(t, defaultSink.AllMetrics(), 1)
+	assert.Equal(t, pmetricutiltest.NewGauges("1", "2", "3", "4"), defaultSink.AllMetrics()[0])
+}
+
+func TestMetricsCopyAndMoveConfig(t *testing.T) {
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+	metrics1 := pipeline.NewIDWithName(pipeline.SignalMetrics, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{metricsDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `attributes["value"] > 2.5`,
+				Pipelines: []pipeline.ID{metrics0},
+				Action:    Copy,
+			},
+			{
+				Statement: `route() where attributes["value"] > 3.0`,
+				Pipelines: []pipeline.ID{metrics1},
+				Action:    Move,
+			},
+			{
+				Statement: `route() where attributes["value"] == 1.0`,
+				Pipelines: []pipeline.ID{metricsDefault, metrics0},
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.MetricsSink
+
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+		metricsDefault: &defaultSink,
+		metrics0:       &sink0,
+		metrics1:       &sink1,
+	})
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	factory := NewFactory()
+	conn, err := factory.CreateMetricsToMetrics(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Metrics),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, conn.Shutdown(t.Context()))
+	}()
+
+	t.Run("Metrics copied correctly", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 2.6)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, conn.ConsumeMetrics(t.Context(), m))
+
+		assert.Len(t, defaultSink.AllMetrics(), 1)
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Empty(t, sink1.AllMetrics())
+	})
+
+	t.Run("Metrics moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, conn.ConsumeMetrics(t.Context(), m))
+
+		assert.Len(t, defaultSink.AllMetrics(), 1)
+		assert.Empty(t, sink0.AllMetrics())
+		assert.Empty(t, sink1.AllMetrics())
+	})
+
+	t.Run("Metrics copied & moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 4)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, conn.ConsumeMetrics(t.Context(), m))
+
+		assert.Empty(t, defaultSink.AllMetrics())
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Len(t, sink1.AllMetrics(), 1)
+	})
 }

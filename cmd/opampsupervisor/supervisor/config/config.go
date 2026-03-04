@@ -20,6 +20,8 @@ import (
 
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -97,6 +99,8 @@ func (s Supervisor) Validate() error {
 type Storage struct {
 	// Directory is the directory where the Supervisor will store its data.
 	Directory string `mapstructure:"directory"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Capabilities is the set of capabilities that the Supervisor supports.
@@ -111,6 +115,7 @@ type Capabilities struct {
 	ReportsHealth                  bool `mapstructure:"reports_health"`
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
+	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -155,6 +160,9 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 	if c.ReportsAvailableComponents {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
 	}
+	if c.ReportsHeartbeat {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
+	}
 
 	return supportedCapabilities
 }
@@ -163,6 +171,21 @@ type OpAMPServer struct {
 	Endpoint string                 `mapstructure:"endpoint"`
 	Headers  http.Header            `mapstructure:"headers"`
 	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+func (o OpAMPServer) OpaqueHeaders() map[string][]configopaque.String {
+	opaque := make(map[string][]configopaque.String, len(o.Headers))
+
+	for key, values := range o.Headers {
+		opaque[key] = make([]configopaque.String, len(values))
+		for i, val := range values {
+			opaque[key][i] = configopaque.String(val)
+		}
+	}
+
+	return opaque
 }
 
 func (o OpAMPServer) Validate() error {
@@ -262,6 +285,8 @@ var SpecialConfigFiles = []SpecialConfigFile{
 type AgentDescription struct {
 	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Telemetry struct {
@@ -272,14 +297,18 @@ type Telemetry struct {
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
 	Resource map[string]*string `mapstructure:"resource"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (h HealthCheck) Port() int64 {
-	_, port, err := net.SplitHostPort(h.Endpoint)
+	_, port, err := net.SplitHostPort(h.NetAddr.Endpoint)
 	if err != nil {
 		return 0
 	}
@@ -310,6 +339,8 @@ type Logs struct {
 type Metrics struct {
 	Level   configtelemetry.Level `mapstructure:"level"`
 	Readers []config.MetricReader `mapstructure:"readers"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // DefaultSupervisor returns the default supervisor config
@@ -339,6 +370,7 @@ func DefaultSupervisor() Supervisor {
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
 			ReportsAvailableComponents:     false,
+			ReportsHeartbeat:               true,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -354,6 +386,13 @@ func DefaultSupervisor() Supervisor {
 				Level:            zapcore.InfoLevel,
 				OutputPaths:      []string{"stdout"},
 				ErrorOutputPaths: []string{"stderr"},
+			},
+		},
+		HealthCheck: HealthCheck{
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+				},
 			},
 		},
 	}

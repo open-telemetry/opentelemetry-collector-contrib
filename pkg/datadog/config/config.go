@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -28,8 +29,6 @@ var (
 	ErrNoMetadata = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 	// ErrInvalidHostname is returned when the hostname is invalid.
 	ErrEmptyEndpoint = errors.New("endpoint cannot be empty")
-	// ErrAPIKeyFormat is returned if API key contains invalid characters
-	ErrAPIKeyFormat = errors.New("api::key contains invalid characters")
 	// NonHexRegex is a regex of characters that are always invalid in a Datadog API key
 	NonHexRegex = regexp.MustCompile(NonHexChars)
 )
@@ -54,6 +53,8 @@ type APIConfig struct {
 	// FailOnInvalidKey states whether to exit at startup on invalid API key.
 	// The default value is false.
 	FailOnInvalidKey bool `mapstructure:"fail_on_invalid_key"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // TagsConfig defines the tag-related configuration
@@ -66,12 +67,14 @@ type TagsConfig struct {
 	// Prefer using the `datadog.host.name` resource attribute over using this setting.
 	// See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#general-hostname-semantic-conventions for details.
 	Hostname string `mapstructure:"hostname"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`        // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	confighttp.ClientConfig   `mapstructure:",squash"`                                 // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
@@ -108,6 +111,8 @@ type Config struct {
 	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 
+	OrchestratorExplorer OrchestratorExplorerConfig `mapstructure:"orchestrator_explorer"`
+
 	// Non-fatal warnings found during configuration loading.
 	warnings []error
 }
@@ -117,6 +122,27 @@ func (c *Config) LogWarnings(logger *zap.Logger) {
 	for _, err := range c.warnings {
 		logger.Warn(fmt.Sprintf("%v", err))
 	}
+}
+
+// AddWarning adds a warning message to the configuration.
+// This allows external modules to add warnings that will be logged later.
+func (c *Config) AddWarning(warning error) {
+	c.warnings = append(c.warnings, warning)
+}
+
+// AddWarningf adds a formatted warning message to the configuration.
+// This allows external modules to add formatted warnings that will be logged later.
+func (c *Config) AddWarningf(format string, args ...any) {
+	c.warnings = append(c.warnings, fmt.Errorf(format, args...))
+}
+
+// GetWarnings returns a copy of all warnings stored in the configuration.
+// This allows external modules to retrieve and process warnings as needed.
+func (c *Config) GetWarnings() []error {
+	// Return a copy to prevent external modification of the internal slice
+	warnings := make([]error, len(c.warnings))
+	copy(warnings, c.warnings)
+	return warnings
 }
 
 var _ component.Config = (*Config)(nil)
@@ -135,8 +161,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 
-	if err := StaticAPIKeyCheck(string(c.API.Key)); err != nil {
-		return err
+	if c.API.Key == "" {
+		return ErrUnsetAPIKey
 	}
 
 	if err := c.Traces.Validate(); err != nil {
@@ -157,14 +183,13 @@ func (c *Config) Validate() error {
 
 // StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
 // It does not validate online; this is handled on startup.
+//
+// Deprecated: [v0.136.0] Do not use, will be removed on the next minor version
 func StaticAPIKeyCheck(key string) error {
 	if key == "" {
 		return ErrUnsetAPIKey
 	}
-	invalidAPIKeyChars := NonHexRegex.FindAllString(key, -1)
-	if len(invalidAPIKeyChars) > 0 {
-		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
-	}
+
 	return nil
 }
 
@@ -298,6 +323,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("logs::endpoint") {
 		c.Logs.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
+	if !configMap.IsSet("orchestrator_explorer::endpoint") {
+		c.OrchestratorExplorer.Endpoint = fmt.Sprintf("https://orchestrator.%s/api/v2/orchmanif", c.API.Site)
+	}
 
 	// Return an error if an endpoint is explicitly set to ""
 	if c.Metrics.Endpoint == "" || c.Traces.Endpoint == "" || c.Logs.Endpoint == "" {
@@ -327,7 +355,7 @@ func CreateDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -382,6 +410,22 @@ func CreateDefaultConfig() component.Config {
 			ReporterPeriod: 30 * time.Minute,
 		},
 
+		OrchestratorExplorer: OrchestratorExplorerConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://orchestrator.datadoghq.com/api/v2/orchmanif",
+			},
+			Enabled: false,
+		},
+
 		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373
 	}
+}
+
+// CheckAndCastConfig checks a component.Config type and casts it to the Datadog Config struct.
+func CheckAndCastConfig(c component.Config) (*Config, error) {
+	cfg, ok := c.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("expected config of type *datadog.Config, got %T", c)
+	}
+	return cfg, nil
 }

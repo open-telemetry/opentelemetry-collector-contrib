@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -305,7 +304,7 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-service")
+	resourceSpans.Resource().Attributes().PutStr("service.name", "some-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
@@ -346,7 +345,7 @@ func incompleteClientTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-client-service")
+	resourceSpans.Resource().Attributes().PutStr("service.name", "some-client-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
@@ -358,7 +357,7 @@ func incompleteClientTraces() ptrace.Traces {
 	clientSpanNoServerSpan.SetKind(ptrace.SpanKindClient)
 	clientSpanNoServerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpanNoServerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpanNoServerSpan.Attributes().PutStr(string(semconv.PeerServiceKey), "AuthTokenCache") // Attribute selected as dimension for metrics
+	clientSpanNoServerSpan.Attributes().PutStr("peer.service", "AuthTokenCache") // Attribute selected as dimension for metrics
 
 	return traces
 }
@@ -370,7 +369,7 @@ func incompleteServerTraces(withParentSpan bool) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-server-service")
+	resourceSpans.Resource().Attributes().PutStr("service.name", "some-server-service")
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	serverSpanNoClientSpan := scopeSpans.Spans().AppendEmpty()
@@ -473,33 +472,66 @@ func TestStaleSeriesCleanup(t *testing.T) {
 			TTL:      time.Second,
 		},
 	}
-
-	mockMetricsExporter := newMockMetricsExporter()
-
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p, err := newConnector(set, cfg, mockMetricsExporter)
-	require.NoError(t, err)
-	assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	mockMetricsExporter := newMockMetricsExporter()
 
-	// ConsumeTraces
-	td := buildSampleTrace(t, "first")
-	assert.NoError(t, p.ConsumeTraces(t.Context(), td))
-
-	// Make series stale and force a cache cleanup
-	for key, metric := range p.keyToMetric {
-		metric.lastUpdated = 0
-		p.keyToMetric[key] = metric
+	verifyCacheEmpty := func(t *testing.T, p *serviceGraphConnector) {
+		assert.Empty(t, p.keyToMetric)
+		assert.Empty(t, p.reqTotal)
+		assert.Empty(t, p.reqFailedTotal)
+		assert.Empty(t, p.reqClientDurationSecondsCount)
+		assert.Empty(t, p.reqClientDurationSecondsSum)
+		assert.Empty(t, p.reqClientDurationSecondsBucketCounts)
+		assert.Empty(t, p.reqServerDurationSecondsCount)
+		assert.Empty(t, p.reqServerDurationSecondsBucketCounts)
+		assert.Empty(t, p.reqServerDurationSecondsSum)
+		assert.Empty(t, p.reqServerDurationExpHistogram)
+		assert.Empty(t, p.reqClientDurationExpHistogram)
 	}
-	p.cleanCache()
-	assert.Empty(t, p.keyToMetric)
 
-	// ConsumeTraces with a trace with different attribute value
-	td = buildSampleTrace(t, "second")
-	assert.NoError(t, p.ConsumeTraces(t.Context(), td))
+	t.Run("use explicit histogram", func(t *testing.T) {
+		p, err := newConnector(set, cfg, mockMetricsExporter)
+		require.NoError(t, err)
+		assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
-	// Shutdown the connector
-	assert.NoError(t, p.Shutdown(t.Context()))
+		// ConsumeTraces
+		td := buildSampleTrace(t, "first")
+		assert.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+		// Make series stale and force a cache cleanup
+		for key, metric := range p.keyToMetric {
+			metric.lastUpdated = 0
+			p.keyToMetric[key] = metric
+		}
+		p.cleanCache()
+		verifyCacheEmpty(t, p)
+
+		// Shutdown the connector
+		assert.NoError(t, p.Shutdown(t.Context()))
+	})
+	t.Run("use exponential histogram", func(t *testing.T) {
+		cfg2 := cfg
+		cfg.ExponentialHistogramMaxSize = 160
+		p, err := newConnector(set, cfg2, mockMetricsExporter)
+		require.NoError(t, err)
+		assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+
+		// ConsumeTraces
+		td := buildSampleTrace(t, "first")
+		assert.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+		// Make series stale and force a cache cleanup
+		for key, metric := range p.keyToMetric {
+			metric.lastUpdated = 0
+			p.keyToMetric[key] = metric
+		}
+		p.cleanCache()
+		verifyCacheEmpty(t, p)
+
+		// Shutdown the connector
+		assert.NoError(t, p.Shutdown(t.Context()))
+	})
 }
 
 func TestMapsAreConsistentDuringCleanup(t *testing.T) {

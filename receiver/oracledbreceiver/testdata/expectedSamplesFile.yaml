@@ -3,10 +3,13 @@ resourceLogs:
       attributes:
         - key: oracledb.instance.name
           value:
-            stringValue: ""
+            stringValue: oraclehost:1521/ORCL
         - key: host.name
           value:
             stringValue: ""
+        - key: service.instance.id
+          value:
+            stringValue: oraclehost:1521/ORCL
     scopeLogs:
       - logRecords:
           - attributes:
@@ -45,7 +48,7 @@ resourceLogs:
                   stringValue: "0"
               - key: oracledb.child_address
                 value:
-                  stringValue: "SDF3SDF1234D"
+                  stringValue: SDF3SDF1234D
               - key: oracledb.sid
                 value:
                   stringValue: "675"
@@ -76,12 +79,15 @@ resourceLogs:
               - key: oracledb.event
                 value:
                   stringValue: ""
-              - key: oracledb.object_name
+              - key: oracledb.procedure_id
+                value:
+                  intValue: "12345"
+              - key: oracledb.procedure_name
                 value:
                   stringValue: BLAH
-              - key: oracledb.object_type
+              - key: oracledb.procedure_type
                 value:
-                  stringValue: OBJECT_TYPE-A
+                  stringValue: PROCEDURE_TYPE-A
               - key: oracledb.osuser
                 value:
                   stringValue: test-user
@@ -91,7 +97,7 @@ resourceLogs:
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6b7169203331
-            timeUnixNano: "1754828794690056000"
+            timeUnixNano: "1759142300369458000"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver

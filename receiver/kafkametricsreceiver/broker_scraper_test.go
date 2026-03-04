@@ -60,7 +60,7 @@ func TestBrokerScraperStart(t *testing.T) {
 	bs, err := createBrokerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
-	assert.NoError(t, bs.Start(t.Context(), nil))
+	assert.NoError(t, bs.Start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
@@ -88,6 +88,7 @@ func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 	client := newMockClient()
 	client.Mock.On("Brokers").Return(testBrokers)
+	client.Mock.On("Closed").Return(false)
 	bs := brokerScraper{
 		client:   client,
 		settings: receivertest.NewNopSettings(metadata.Type),
@@ -108,6 +109,7 @@ func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 func TestBrokerScraper_scrape(t *testing.T) {
 	client := newMockClient()
 	client.Mock.On("Brokers").Return(testBrokers)
+	client.Mock.On("Closed").Return(false)
 	bs := brokerScraper{
 		client:   client,
 		settings: receivertest.NewNopSettings(metadata.Type),

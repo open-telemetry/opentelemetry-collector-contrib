@@ -4,6 +4,7 @@
 package tinybirdexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter"
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -26,6 +28,7 @@ func TestNewExporter(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *Config
+		opts   []option
 	}{
 		{
 			name: "build exporter",
@@ -44,12 +47,13 @@ func TestNewExporter(t *testing.T) {
 				Logs:   SignalConfig{Datasource: "logs_test"},
 				Wait:   true,
 			},
+			opts: []option{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exp := newExporter(tt.config, exportertest.NewNopSettings(metadata.Type))
+			exp := newExporter(tt.config, exportertest.NewNopSettings(metadata.Type), tt.opts...)
 			assert.NotNil(t, exp)
 		})
 	}
@@ -57,14 +61,18 @@ func TestNewExporter(t *testing.T) {
 
 func TestExportTraces(t *testing.T) {
 	type args struct {
-		traces ptrace.Traces
 		config Config
+		opts   []option
+		traces ptrace.Traces
 	}
-	type want struct {
+	type wantRequest struct {
 		requestQuery   string
 		requestBody    string
 		responseStatus int
-		err            error
+	}
+	type want struct {
+		requests []wantRequest
+		err      error
 	}
 	tests := []struct {
 		name string
@@ -88,15 +96,26 @@ func TestExportTraces(t *testing.T) {
 				},
 			},
 			want: want{
-				requestQuery:   "name=traces_test",
-				requestBody:    "",
-				responseStatus: http.StatusOK,
-				err:            nil,
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=traces_test",
+						requestBody:    "",
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
 			},
 		},
 		{
 			name: "export with full trace",
 			args: args{
+				opts: []option{},
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Traces:       SignalConfig{Datasource: "traces_test"},
+					Wait:         false,
+				},
 				traces: func() ptrace.Traces {
 					traces := ptrace.NewTraces()
 					rs := traces.ResourceSpans().AppendEmpty()
@@ -142,46 +161,47 @@ func TestExportTraces(t *testing.T) {
 
 					return traces
 				}(),
-				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
-					Token:        "test-token",
-					Traces:       SignalConfig{Datasource: "traces_test"},
-					Wait:         false,
-				},
 			},
 			want: want{
-				requestQuery:   "name=traces_test",
-				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_name":"test-scope","scope_version":"1.0.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","parent_span_id":"090a0b0c0d0e0f10","trace_state":"","trace_flags":0,"span_name":"test-span","span_kind":"Server","span_attributes":{"http.method":"GET","http.url":"/api/users","user.id":"12345"},"start_time":"2024-06-23T16:00:00Z","end_time":"2024-06-23T16:00:01Z","duration":1000000000,"status_code":"Ok","status_message":"success","events_timestamp":["2024-06-23T16:00:00.5Z"],"events_name":["exception"],"events_attributes":[{"exception.type":"RuntimeException","exception.message":"Something went wrong"}],"links_trace_id":["1112131415161718191a1b1c1d1e1f20"],"links_span_id":["1112131415161718"],"links_trace_state":["sampled=true"],"links_attributes":[{"link.type":"child"}]}`,
-				responseStatus: http.StatusOK,
-				err:            nil,
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=traces_test",
+						requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_name":"test-scope","scope_version":"1.0.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","parent_span_id":"090a0b0c0d0e0f10","trace_state":"","trace_flags":0,"span_name":"test-span","span_kind":"Server","span_attributes":{"http.method":"GET","http.url":"/api/users","user.id":"12345"},"start_time":"2024-06-23T16:00:00Z","end_time":"2024-06-23T16:00:01Z","duration":1000000000,"status_code":"Ok","status_message":"success","events_timestamp":["2024-06-23T16:00:00.5Z"],"events_name":["exception"],"events_attributes":[{"exception.type":"RuntimeException","exception.message":"Something went wrong"}],"links_trace_id":["1112131415161718191a1b1c1d1e1f20"],"links_span_id":["1112131415161718"],"links_trace_state":["sampled=true"],"links_attributes":[{"link.type":"child"}]}`,
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Equal(t, "/v0/events", r.URL.Path)
-				assert.Equal(t, tt.want.requestQuery, r.URL.RawQuery)
+				assert.Equal(t, tt.want.requests[requestCount].requestQuery, r.URL.RawQuery)
 				assert.Equal(t, "application/x-ndjson", r.Header.Get("Content-Type"))
 				assert.Equal(t, "Bearer "+string(tt.args.config.Token), r.Header.Get("Authorization"))
 				gotBody, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
-				assert.JSONEq(t, tt.want.requestBody, string(gotBody))
+				assert.JSONEq(t, tt.want.requests[requestCount].requestBody, string(gotBody))
 
-				w.WriteHeader(tt.want.responseStatus)
+				w.WriteHeader(tt.want.requests[requestCount].responseStatus)
+				requestCount++
 			}))
 			defer server.Close()
 
 			tt.args.config.ClientConfig.Endpoint = server.URL
 
-			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
+			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type), tt.args.opts...)
 			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
 			err := exp.pushTraces(t.Context(), tt.args.traces)
 			if tt.want.err != nil {
 				assert.Error(t, err)
+				assert.Equal(t, len(tt.want.requests), requestCount)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -191,14 +211,18 @@ func TestExportTraces(t *testing.T) {
 
 func TestExportMetrics(t *testing.T) {
 	type args struct {
-		metrics pmetric.Metrics
 		config  Config
+		opts    []option
+		metrics pmetric.Metrics
 	}
-	type want struct {
+	type wantRequest struct {
 		requestQuery   string
 		requestBody    string
 		responseStatus int
-		err            error
+	}
+	type want struct {
+		requests []wantRequest
+		err      error
 	}
 	tests := []struct {
 		name string
@@ -208,12 +232,6 @@ func TestExportMetrics(t *testing.T) {
 		{
 			name: "export without metrics",
 			args: args{
-				metrics: func() pmetric.Metrics {
-					metrics := pmetric.NewMetrics()
-					rm := metrics.ResourceMetrics().AppendEmpty()
-					rm.ScopeMetrics().AppendEmpty()
-					return metrics
-				}(),
 				config: Config{
 					ClientConfig: confighttp.ClientConfig{},
 					Token:        "test-token",
@@ -223,12 +241,23 @@ func TestExportMetrics(t *testing.T) {
 					},
 					Wait: false,
 				},
+				opts: []option{},
+				metrics: func() pmetric.Metrics {
+					metrics := pmetric.NewMetrics()
+					rm := metrics.ResourceMetrics().AppendEmpty()
+					rm.ScopeMetrics().AppendEmpty()
+					return metrics
+				}(),
 			},
 			want: want{
-				requestQuery:   "name=metrics_gauge",
-				requestBody:    "",
-				responseStatus: http.StatusOK,
-				err:            nil,
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=metrics_gauge",
+						requestBody:    "",
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
 			},
 		},
 		{
@@ -282,15 +311,29 @@ func TestExportMetrics(t *testing.T) {
 				},
 			},
 			want: want{
-				requestQuery:   "name=metrics_gauge",
-				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.gauge","metric_description":"Test gauge metric","metric_unit":"bytes","metric_attributes":{"host":"server-1","region":"us-west"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[{"exemplar.type":"outlier"}],"exemplars_timestamp":["2024-06-23T16:00:00.5Z"],"exemplars_value":[1500],"exemplars_span_id":["0102030405060708"],"exemplars_trace_id":["0102030405060708090a0b0c0d0e0f10"],"value":1024.5}`,
-				responseStatus: http.StatusOK,
-				err:            nil,
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=metrics_gauge",
+						requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.gauge","metric_description":"Test gauge metric","metric_unit":"bytes","metric_attributes":{"host":"server-1","region":"us-west"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[{"exemplar.type":"outlier"}],"exemplars_timestamp":["2024-06-23T16:00:00.5Z"],"exemplars_value":[1500],"exemplars_span_id":["0102030405060708"],"exemplars_trace_id":["0102030405060708090a0b0c0d0e0f10"],"value":1024.5}`,
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
 			},
 		},
 		{
 			name: "export with sum metric",
 			args: args{
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Metrics: metricSignalConfigs{
+						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
+						MetricsSum:   SignalConfig{Datasource: "metrics_sum"},
+					},
+					Wait: false,
+				},
+				opts: []option{},
 				metrics: func() pmetric.Metrics {
 					metrics := pmetric.NewMetrics()
 					rm := metrics.ResourceMetrics().AppendEmpty()
@@ -322,26 +365,30 @@ func TestExportMetrics(t *testing.T) {
 
 					return metrics
 				}(),
-				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
-					Token:        "test-token",
-					Metrics: metricSignalConfigs{
-						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
-						MetricsSum:   SignalConfig{Datasource: "metrics_sum"},
-					},
-					Wait: false,
-				},
 			},
 			want: want{
-				requestQuery:   "name=metrics_sum",
-				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.sum","metric_description":"Test sum metric","metric_unit":"requests","metric_attributes":{"endpoint":"/api/users","method":"GET"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[],"exemplars_timestamp":[],"exemplars_value":[],"exemplars_span_id":[],"exemplars_trace_id":[],"value":150,"aggregation_temporality":1,"is_monotonic":true}`,
-				responseStatus: http.StatusOK,
-				err:            nil,
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=metrics_sum",
+						requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.sum","metric_description":"Test sum metric","metric_unit":"requests","metric_attributes":{"endpoint":"/api/users","method":"GET"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[],"exemplars_timestamp":[],"exemplars_value":[],"exemplars_span_id":[],"exemplars_trace_id":[],"value":150,"aggregation_temporality":1,"is_monotonic":true}`,
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
 			},
 		},
 		{
 			name: "export with histogram metric",
 			args: args{
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Metrics: metricSignalConfigs{
+						MetricsHistogram: SignalConfig{Datasource: "metrics_histogram"},
+					},
+					Wait: false,
+				},
+				opts: []option{},
 				metrics: func() pmetric.Metrics {
 					metrics := pmetric.NewMetrics()
 					rm := metrics.ResourceMetrics().AppendEmpty()
@@ -377,25 +424,30 @@ func TestExportMetrics(t *testing.T) {
 
 					return metrics
 				}(),
-				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
-					Token:        "test-token",
-					Metrics: metricSignalConfigs{
-						MetricsHistogram: SignalConfig{Datasource: "metrics_histogram"},
-					},
-					Wait: false,
-				},
 			},
 			want: want{
-				requestQuery:   "name=metrics_histogram",
-				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.histogram","metric_description":"Test histogram metric","metric_unit":"seconds","metric_attributes":{"operation":"database_query","table":"users"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[],"exemplars_timestamp":[],"exemplars_value":[],"exemplars_span_id":[],"exemplars_trace_id":[],"count":100,"sum":50.5,"bucket_counts":[10,20,30,40],"explicit_bounds":[0.5,1,1.5],"min":0.1,"max":2,"aggregation_temporality":1}`,
-				responseStatus: http.StatusOK,
-				err:            nil,
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=metrics_histogram",
+						requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.histogram","metric_description":"Test histogram metric","metric_unit":"seconds","metric_attributes":{"operation":"database_query","table":"users"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[],"exemplars_timestamp":[],"exemplars_value":[],"exemplars_span_id":[],"exemplars_trace_id":[],"count":100,"sum":50.5,"bucket_counts":[10,20,30,40],"explicit_bounds":[0.5,1,1.5],"min":0.1,"max":2,"aggregation_temporality":1}`,
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
 			},
 		},
 		{
 			name: "export with exponential histogram metric",
 			args: args{
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Metrics: metricSignalConfigs{
+						MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
+					},
+					Wait: false,
+				},
+				opts: []option{},
 				metrics: func() pmetric.Metrics {
 					metrics := pmetric.NewMetrics()
 					rm := metrics.ResourceMetrics().AppendEmpty()
@@ -435,48 +487,47 @@ func TestExportMetrics(t *testing.T) {
 
 					return metrics
 				}(),
-				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
-					Token:        "test-token",
-					Metrics: metricSignalConfigs{
-						MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
-					},
-					Wait: false,
-				},
 			},
 			want: want{
-				requestQuery:   "name=metrics_exponential_histogram",
-				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.exponential_histogram","metric_description":"Test exponential histogram metric","metric_unit":"seconds","metric_attributes":{"operation":"api_request","endpoint":"/api/data"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[],"exemplars_timestamp":[],"exemplars_value":[],"exemplars_span_id":[],"exemplars_trace_id":[],"count":200,"sum":75.25,"scale":2,"zero_count":15,"positive_offset":1,"positive_bucket_counts":[5,10,15,20,25],"negative_offset":-2,"negative_bucket_counts":[3,7,12,18],"min":0.05,"max":5,"aggregation_temporality":1}`,
-				responseStatus: http.StatusOK,
-				err:            nil,
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=metrics_exponential_histogram",
+						requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"metric_name":"test.exponential_histogram","metric_description":"Test exponential histogram metric","metric_unit":"seconds","metric_attributes":{"operation":"api_request","endpoint":"/api/data"},"start_timestamp":"2024-06-23T16:00:00Z","timestamp":"2024-06-23T16:00:01Z","flags":0,"exemplars_filtered_attributes":[],"exemplars_timestamp":[],"exemplars_value":[],"exemplars_span_id":[],"exemplars_trace_id":[],"count":200,"sum":75.25,"scale":2,"zero_count":15,"positive_offset":1,"positive_bucket_counts":[5,10,15,20,25],"negative_offset":-2,"negative_bucket_counts":[3,7,12,18],"min":0.05,"max":5,"aggregation_temporality":1}`,
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Equal(t, "/v0/events", r.URL.Path)
-				assert.Equal(t, tt.want.requestQuery, r.URL.RawQuery)
+				assert.Equal(t, tt.want.requests[requestCount].requestQuery, r.URL.RawQuery)
 				assert.Equal(t, "application/x-ndjson", r.Header.Get("Content-Type"))
 				assert.Equal(t, "Bearer "+string(tt.args.config.Token), r.Header.Get("Authorization"))
 				gotBody, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
-				assert.JSONEq(t, tt.want.requestBody, string(gotBody))
+				assert.JSONEq(t, tt.want.requests[requestCount].requestBody, string(gotBody))
 
-				w.WriteHeader(tt.want.responseStatus)
+				w.WriteHeader(tt.want.requests[requestCount].responseStatus)
+				requestCount++
 			}))
 			defer server.Close()
 
 			tt.args.config.ClientConfig.Endpoint = server.URL
 
-			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
+			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type), tt.args.opts...)
 			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
 			err := exp.pushMetrics(t.Context(), tt.args.metrics)
 			if tt.want.err != nil {
 				assert.Error(t, err)
+				assert.Equal(t, len(tt.want.requests), requestCount)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -486,14 +537,18 @@ func TestExportMetrics(t *testing.T) {
 
 func TestExportLogs(t *testing.T) {
 	type args struct {
-		logs   plog.Logs
 		config Config
+		opts   []option
+		logs   plog.Logs
 	}
-	type want struct {
+	type wantRequest struct {
 		requestQuery   string
 		requestBody    string
 		responseStatus int
-		err            error
+	}
+	type want struct {
+		requests []wantRequest
+		err      error
 	}
 	tests := []struct {
 		name string
@@ -503,29 +558,41 @@ func TestExportLogs(t *testing.T) {
 		{
 			name: "export without logs",
 			args: args{
-				logs: func() plog.Logs {
-					logs := plog.NewLogs()
-					rl := logs.ResourceLogs().AppendEmpty()
-					rl.ScopeLogs().AppendEmpty()
-					return logs
-				}(),
 				config: Config{
 					ClientConfig: confighttp.ClientConfig{},
 					Token:        "test-token",
 					Logs:         SignalConfig{Datasource: "logs_test"},
 					Wait:         false,
 				},
+				opts: []option{},
+				logs: func() plog.Logs {
+					logs := plog.NewLogs()
+					rl := logs.ResourceLogs().AppendEmpty()
+					rl.ScopeLogs().AppendEmpty()
+					return logs
+				}(),
 			},
 			want: want{
-				requestQuery:   "name=logs_test",
-				requestBody:    "",
-				responseStatus: http.StatusOK,
-				err:            nil,
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=logs_test",
+						requestBody:    "",
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
 			},
 		},
 		{
 			name: "export with full log",
 			args: args{
+				config: Config{
+					ClientConfig: confighttp.ClientConfig{},
+					Token:        "test-token",
+					Logs:         SignalConfig{Datasource: "logs_test"},
+					Wait:         false,
+				},
+				opts: []option{},
 				logs: func() plog.Logs {
 					logs := plog.NewLogs()
 					rl := logs.ResourceLogs().AppendEmpty()
@@ -554,46 +621,115 @@ func TestExportLogs(t *testing.T) {
 					log.SetFlags(plog.LogRecordFlags(1))
 					return logs
 				}(),
+			},
+			want: want{
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=logs_test",
+						requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"body":"User login attempt","log_attributes":{"http.method":"POST","http.url":"/api/login","user.id":"12345"},"timestamp":"2024-06-23T16:00:01Z","severity_text":"INFO","severity_number":9,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","flags":1}`,
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
+			},
+		},
+		{
+			name: "export with multiple requests",
+			args: args{
 				config: Config{
 					ClientConfig: confighttp.ClientConfig{},
 					Token:        "test-token",
 					Logs:         SignalConfig{Datasource: "logs_test"},
 					Wait:         false,
 				},
+				opts: []option{withMaxRequestBodySize(1000)},
+				logs: func() plog.Logs {
+					logs := plog.NewLogs()
+					rl := logs.ResourceLogs().AppendEmpty()
+					rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					resource := rl.Resource()
+					resource.Attributes().PutStr("service.name", "test-service")
+					resource.Attributes().PutStr("environment", "production")
+
+					sl := rl.ScopeLogs().AppendEmpty()
+					sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.20.0")
+					scope := sl.Scope()
+					scope.SetName("test-scope")
+					scope.SetVersion("1.0.0")
+					scope.Attributes().PutStr("telemetry.sdk.name", "opentelemetry")
+
+					log := sl.LogRecords().AppendEmpty()
+					log.Body().SetStr("User login attempt")
+					log.Attributes().PutStr("http.method", "POST")
+					log.Attributes().PutStr("http.url", "/api/login")
+					log.Attributes().PutStr("user.id", "12345")
+					log.SetTimestamp(pcommon.Timestamp(1719158401000000000)) // 2024-06-23T16:00:01Z
+					log.SetSeverityText("INFO")
+					log.SetSeverityNumber(plog.SeverityNumberInfo)
+					log.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+					log.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+					log.SetFlags(plog.LogRecordFlags(1))
+
+					log2 := sl.LogRecords().AppendEmpty()
+					log2.Body().SetStr("User login attempt 2")
+					log2.Attributes().PutStr("http.method", "POST")
+					log2.Attributes().PutStr("http.url", "/api/login")
+					log2.Attributes().PutStr("user.id", "12345")
+					log2.SetTimestamp(pcommon.Timestamp(1719158402000000000)) // 2024-06-23T16:00:02Z
+					log2.SetSeverityText("INFO")
+					log2.SetSeverityNumber(plog.SeverityNumberInfo)
+					log2.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+					log2.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+					log2.SetFlags(plog.LogRecordFlags(1))
+
+					return logs
+				}(),
 			},
 			want: want{
-				requestQuery:   "name=logs_test",
-				requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"body":"User login attempt","log_attributes":{"http.method":"POST","http.url":"/api/login","user.id":"12345"},"timestamp":"2024-06-23T16:00:01Z","severity_text":"INFO","severity_number":9,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","flags":1}`,
-				responseStatus: http.StatusOK,
-				err:            nil,
+				requests: []wantRequest{
+					{
+						requestQuery:   "name=logs_test",
+						requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"body":"User login attempt","log_attributes":{"http.method":"POST","http.url":"/api/login","user.id":"12345"},"timestamp":"2024-06-23T16:00:01Z","severity_text":"INFO","severity_number":9,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","flags":1}`,
+						responseStatus: http.StatusOK,
+					},
+					{
+						requestQuery:   "name=logs_test",
+						requestBody:    `{"resource_schema_url":"https://opentelemetry.io/schemas/1.20.0","resource_attributes":{"service.name":"test-service","environment":"production"},"service_name":"test-service","scope_name":"test-scope","scope_version":"1.0.0","scope_schema_url":"https://opentelemetry.io/schemas/1.20.0","scope_attributes":{"telemetry.sdk.name":"opentelemetry"},"body":"User login attempt 2","log_attributes":{"http.method":"POST","http.url":"/api/login","user.id":"12345"},"timestamp":"2024-06-23T16:00:02Z","severity_text":"INFO","severity_number":9,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","flags":1}`,
+						responseStatus: http.StatusOK,
+					},
+				},
+				err: nil,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "POST", r.Method)
 				assert.Equal(t, "/v0/events", r.URL.Path)
-				assert.Equal(t, tt.want.requestQuery, r.URL.RawQuery)
+				assert.Equal(t, tt.want.requests[requestCount].requestQuery, r.URL.RawQuery)
 				assert.Equal(t, "application/x-ndjson", r.Header.Get("Content-Type"))
 				assert.Equal(t, "Bearer "+string(tt.args.config.Token), r.Header.Get("Authorization"))
 				gotBody, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
-				assert.JSONEq(t, tt.want.requestBody, string(gotBody))
+				assert.JSONEq(t, tt.want.requests[requestCount].requestBody, string(gotBody))
 
-				w.WriteHeader(tt.want.responseStatus)
+				w.WriteHeader(tt.want.requests[requestCount].responseStatus)
+				requestCount++
 			}))
 			defer server.Close()
 
 			tt.args.config.ClientConfig.Endpoint = server.URL
 
-			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type))
+			exp := newExporter(&tt.args.config, exportertest.NewNopSettings(metadata.Type), tt.args.opts...)
 			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
 			err := exp.pushLogs(t.Context(), tt.args.logs)
 			if tt.want.err != nil {
 				assert.Error(t, err)
+				assert.Equal(t, len(tt.want.requests), requestCount)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -676,6 +812,120 @@ func TestExportErrorHandling(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestExportBuffers(t *testing.T) {
+	type args struct {
+		buffers  []*bytes.Buffer
+		statuses []int
+	}
+	type want struct {
+		err            bool
+		permanentErr   bool
+		numberRequests int
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "successful export",
+			args: args{
+				buffers: []*bytes.Buffer{
+					bytes.NewBufferString("data1"),
+					bytes.NewBufferString("data2"),
+				},
+				statuses: []int{http.StatusOK, http.StatusOK},
+			},
+			want: want{
+				err:            false,
+				permanentErr:   false,
+				numberRequests: 2,
+			},
+		},
+		{
+			name: "first buffer fails",
+			args: args{
+				buffers: []*bytes.Buffer{
+					bytes.NewBufferString("data1"),
+					bytes.NewBufferString("data2"),
+				},
+				statuses: []int{http.StatusInternalServerError},
+			},
+			want: want{
+				err:            true,
+				permanentErr:   false,
+				numberRequests: 1,
+			},
+		},
+		{
+			name: "second buffer fails with a retryable error after success",
+			args: args{
+				buffers: []*bytes.Buffer{
+					bytes.NewBufferString("data1"),
+					bytes.NewBufferString("data2"),
+				},
+				statuses: []int{http.StatusOK, http.StatusInternalServerError},
+			},
+			want: want{
+				err:            true,
+				permanentErr:   true,
+				numberRequests: 2,
+			},
+		},
+		{
+			name: "empty buffers",
+			args: args{
+				buffers:  []*bytes.Buffer{},
+				statuses: []int{},
+			},
+			want: want{
+				err:            false,
+				permanentErr:   false,
+				numberRequests: 0,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestCount := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if requestCount == len(tt.args.statuses) {
+					t.Fatalf("There are more requests than provided statuses")
+				}
+				w.WriteHeader(tt.args.statuses[requestCount])
+				requestCount++
+			}))
+			defer server.Close()
+
+			// Create exporter with test server
+			config := &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: server.URL,
+				},
+				Token: "test-token",
+				Wait:  false,
+			}
+			exp := newExporter(config, exportertest.NewNopSettings(metadata.Type))
+			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
+
+			// Test exportBuffers
+			err := exp.exportBuffers(t.Context(), "test_datasource", tt.args.buffers)
+
+			// Verify results
+			if tt.want.err {
+				assert.Error(t, err, tt.name)
+				assert.Equal(t, tt.want.permanentErr, consumererror.IsPermanent(err), tt.name)
+			} else {
+				assert.NoError(t, err, tt.name)
+			}
+
+			// Verify that the correct number of requests were made
+			assert.Equal(t, tt.want.numberRequests, requestCount, tt.name)
 		})
 	}
 }

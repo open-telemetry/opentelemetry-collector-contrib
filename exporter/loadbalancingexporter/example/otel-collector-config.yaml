@@ -3,9 +3,6 @@ receivers:
     protocols:
       grpc:
 
-processors:
-  batch:
-
 exporters:
   debug:
     verbosity: detailed
@@ -20,5 +17,4 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug]

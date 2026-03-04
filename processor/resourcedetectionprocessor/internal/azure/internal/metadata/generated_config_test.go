@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -30,6 +29,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				AzureVMScalesetName:    ResourceAttributeConfig{Enabled: true},
 				AzureVMSize:            ResourceAttributeConfig{Enabled: true},
 				CloudAccountID:         ResourceAttributeConfig{Enabled: true},
+				CloudAvailabilityZone:  ResourceAttributeConfig{Enabled: true},
 				CloudPlatform:          ResourceAttributeConfig{Enabled: true},
 				CloudProvider:          ResourceAttributeConfig{Enabled: true},
 				CloudRegion:            ResourceAttributeConfig{Enabled: true},
@@ -45,6 +45,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				AzureVMScalesetName:    ResourceAttributeConfig{Enabled: false},
 				AzureVMSize:            ResourceAttributeConfig{Enabled: false},
 				CloudAccountID:         ResourceAttributeConfig{Enabled: false},
+				CloudAvailabilityZone:  ResourceAttributeConfig{Enabled: false},
 				CloudPlatform:          ResourceAttributeConfig{Enabled: false},
 				CloudProvider:          ResourceAttributeConfig{Enabled: false},
 				CloudRegion:            ResourceAttributeConfig{Enabled: false},

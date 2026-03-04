@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
@@ -20,14 +21,14 @@ func newCounter[K any](metricDefs map[string]metricDef[K]) *counter[K] {
 	return &counter[K]{
 		metricDefs: metricDefs,
 		counts:     make(map[string]map[[16]byte]*attrCounter, len(metricDefs)),
-		timestamp:  time.Now(),
 	}
 }
 
 type counter[K any] struct {
 	metricDefs map[string]metricDef[K]
 	counts     map[string]map[[16]byte]*attrCounter
-	timestamp  time.Time
+	startTime  pcommon.Timestamp
+	endTime    pcommon.Timestamp
 }
 
 type attrCounter struct {
@@ -35,35 +36,28 @@ type attrCounter struct {
 	count uint64
 }
 
-func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) error {
+func (c *counter[K]) update(ctx context.Context, attrs, scopeAttrs, resourceAttrs pcommon.Map, tCtx K) error {
 	var multiError error
 	for name, md := range c.metricDefs {
 		countAttrs := pcommon.NewMap()
 		for _, attr := range md.attrs {
-			if attrVal, ok := attrs.Get(attr.Key); ok {
-				switch typeAttr := attrVal.Type(); typeAttr {
-				case pcommon.ValueTypeInt:
-					countAttrs.PutInt(attr.Key, attrVal.Int())
-				case pcommon.ValueTypeDouble:
-					countAttrs.PutDouble(attr.Key, attrVal.Double())
-				default:
-					countAttrs.PutStr(attr.Key, attrVal.Str())
-				}
-			} else if attr.DefaultValue != nil {
-				switch v := attr.DefaultValue.(type) {
-				case string:
-					if v != "" {
-						countAttrs.PutStr(attr.Key, v)
+			dimension := utilattri.Dimension{
+				Name: attr.Key,
+				Value: func() *pcommon.Value {
+					if attr.DefaultValue != nil {
+						val := pcommon.NewValueEmpty()
+						if err := val.FromRaw(attr.DefaultValue); err == nil {
+							return &val
+						}
 					}
-				case int:
-					if v != 0 {
-						countAttrs.PutInt(attr.Key, int64(v))
-					}
-				case float64:
-					if v != 0 {
-						countAttrs.PutDouble(attr.Key, float64(v))
-					}
-				}
+
+					return nil
+				}(),
+			}
+			value, ok := utilattri.GetDimensionValue(dimension, attrs, scopeAttrs, resourceAttrs)
+			if ok {
+				countValue, _ := countAttrs.GetOrPutEmpty(attr.Key)
+				value.CopyTo(countValue)
 			}
 		}
 
@@ -85,6 +79,32 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 		}
 	}
 	return multiError
+}
+
+// updateTimestamp updates the start and end timestamps based on the provided timestamp
+func (c *counter[K]) updateTimestamp(timestamp pcommon.Timestamp) {
+	if timestamp != 0 {
+		if c.startTime == 0 {
+			c.endTime = timestamp
+			c.startTime = timestamp
+		} else {
+			if timestamp < c.startTime {
+				c.startTime = timestamp
+			}
+			if timestamp > c.endTime {
+				c.endTime = timestamp
+			}
+		}
+	}
+}
+
+// getTimestamps either gets the valid start and end timestamps or returns the current time
+func (c *counter[K]) getTimestamps() (pcommon.Timestamp, pcommon.Timestamp) {
+	if c.startTime != 0 {
+		return c.startTime, c.endTime
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	return now, now
 }
 
 func (c *counter[K]) increment(metricName string, attrs pcommon.Map) error {
@@ -121,8 +141,9 @@ func (c *counter[K]) appendMetricsTo(metricSlice pmetric.MetricSlice) {
 			dp := sum.DataPoints().AppendEmpty()
 			dpCount.attrs.CopyTo(dp.Attributes())
 			dp.SetIntValue(int64(dpCount.count))
-			// TODO determine appropriate start time
-			dp.SetTimestamp(pcommon.NewTimestampFromTime(c.timestamp))
+			startTime, endTime := c.getTimestamps()
+			dp.SetStartTimestamp(startTime)
+			dp.SetTimestamp(endTime)
 		}
 	}
 }

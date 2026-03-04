@@ -16,6 +16,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
+func encodingFromReceiver(tb testing.TB, r any, section string) string {
+	tb.Helper()
+
+	if rc, ok := r.(*franzConsumer); ok {
+		switch section {
+		case "Traces":
+			return rc.config.Traces.Encoding
+		case "Metrics":
+			return rc.config.Metrics.Encoding
+		case "Logs":
+			return rc.config.Logs.Encoding
+		case "Profiles":
+			return rc.config.Profiles.Encoding
+		}
+	}
+
+	tb.Fatalf("unsupported receiver type %T or section %q", r, section)
+	return ""
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.NotNil(t, cfg, "failed to create default config")
@@ -26,7 +46,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
+	cfg.Brokers = []string{"localhost:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createTracesReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
@@ -41,26 +61,23 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Traces.Encoding = "custom"
 		receiver, err := f.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		tracesConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, "custom", tracesConsumer.config.Traces.Encoding)
 		require.NoError(t, err)
 		require.NotNil(t, receiver)
+		assert.Equal(t, "custom", encodingFromReceiver(t, receiver, "Traces"))
 	})
+
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg := createDefaultConfig()
 		receiver, err := f.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		tracesConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, defaultTracesEncoding, tracesConsumer.config.Traces.Encoding)
 		require.NoError(t, err)
-		assert.NotNil(t, receiver)
+		require.NotNil(t, receiver)
+		assert.Equal(t, defaultTracesEncoding, encodingFromReceiver(t, receiver, "Traces"))
 	})
 }
 
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
+	cfg.Brokers = []string{"localhost:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createMetricsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
@@ -75,26 +92,23 @@ func TestWithMetricsUnmarshalers(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Metrics.Encoding = "custom"
 		receiver, err := f.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		metricsConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, "custom", metricsConsumer.config.Metrics.Encoding)
 		require.NoError(t, err)
 		require.NotNil(t, receiver)
+		assert.Equal(t, "custom", encodingFromReceiver(t, receiver, "Metrics"))
 	})
+
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg := createDefaultConfig()
 		receiver, err := f.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		metricsConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, defaultMetricsEncoding, metricsConsumer.config.Metrics.Encoding)
 		require.NoError(t, err)
-		assert.NotNil(t, receiver)
+		require.NotNil(t, receiver)
+		assert.Equal(t, defaultMetricsEncoding, encodingFromReceiver(t, receiver, "Metrics"))
 	})
 }
 
 func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
+	cfg.Brokers = []string{"localhost:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
@@ -109,26 +123,23 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Logs.Encoding = "custom"
 		receiver, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		logsConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, "custom", logsConsumer.config.Logs.Encoding)
 		require.NoError(t, err)
 		require.NotNil(t, receiver)
+		assert.Equal(t, "custom", encodingFromReceiver(t, receiver, "Logs"))
 	})
+
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg := createDefaultConfig()
 		receiver, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		logsConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, defaultLogsEncoding, logsConsumer.config.Logs.Encoding)
 		require.NoError(t, err)
-		assert.NotNil(t, receiver)
+		require.NotNil(t, receiver)
+		assert.Equal(t, defaultLogsEncoding, encodingFromReceiver(t, receiver, "Logs"))
 	})
 }
 
 func TestCreateProfiles(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
+	cfg.Brokers = []string{"localhost:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	r, err := createProfilesReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
@@ -143,19 +154,16 @@ func TestWithProfilesUnmarshalers(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Profiles.Encoding = "custom"
 		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		profilesConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, "custom", profilesConsumer.config.Profiles.Encoding)
 		require.NoError(t, err)
 		require.NotNil(t, receiver)
+		assert.Equal(t, "custom", encodingFromReceiver(t, receiver, "Profiles"))
 	})
+
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg := createDefaultConfig()
 		receiver, err := f.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
-		profilesConsumer, ok := receiver.(*saramaConsumer)
-		require.True(t, ok)
-		require.Equal(t, defaultProfilesEncoding, profilesConsumer.config.Profiles.Encoding)
 		require.NoError(t, err)
-		assert.NotNil(t, receiver)
+		require.NotNil(t, receiver)
+		assert.Equal(t, defaultProfilesEncoding, encodingFromReceiver(t, receiver, "Profiles"))
 	})
 }

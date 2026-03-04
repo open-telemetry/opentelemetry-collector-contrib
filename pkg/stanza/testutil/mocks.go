@@ -14,8 +14,8 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // NewMockOperator will return a basic operator mock
@@ -96,7 +96,7 @@ func (f *FakeOutput) ProcessBatch(ctx context.Context, entries []*entry.Entry) e
 func (f *FakeOutput) Process(_ context.Context, entry *entry.Entry) error {
 	f.Received <- entry
 	if f.processWithError {
-		return errors.NewError("Operator can not process logs.", "")
+		return stanzaerrors.NewError("Operator can not process logs.", "")
 	}
 	return nil
 }
@@ -126,7 +126,7 @@ func (f *FakeOutput) ExpectEntry(tb testing.TB, expected *entry.Entry) {
 // ExpectEntries expects that the given entries will be received in any order
 func (f *FakeOutput) ExpectEntries(tb testing.TB, expected []*entry.Entry) {
 	entries := make([]*entry.Entry, 0, len(expected))
-	for i := 0; i < len(expected); i++ {
+	for range expected {
 		select {
 		case e := <-f.Received:
 			entries = append(entries, e)

@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -67,7 +68,7 @@ type esDataReceiver struct {
 	receiver          receiver.Logs
 	endpoint          string
 	decodeBulkRequest bool
-	batcherEnabled    *bool
+	enableBatching    bool
 	t                 testing.TB
 }
 
@@ -92,9 +93,9 @@ func withDecodeBulkRequest(decode bool) dataReceiverOption {
 	}
 }
 
-func withBatcherEnabled(enabled bool) dataReceiverOption {
+func withBatching(enabled bool) dataReceiverOption {
 	return func(r *esDataReceiver) {
-		r.batcherEnabled = &enabled
+		r.enableBatching = enabled
 	}
 }
 
@@ -111,7 +112,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc cons
 		return fmt.Errorf("invalid ES URL specified %s: %w", es.endpoint, err)
 	}
 	cfg := factory.CreateDefaultConfig().(*config)
-	cfg.Endpoint = esURL.Host
+	cfg.NetAddr.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -153,9 +154,6 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
     logs_index: %s
     metrics_index: %s
     traces_index: %s
-    sending_queue:
-      enabled: true
-      block_on_overflow: true
     mapping:
       mode: otel
     retry:
@@ -169,17 +167,24 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
 		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex,
 	)
 
-	if es.batcherEnabled == nil {
+	if es.enableBatching {
 		cfgFormat += `
-    flush:
-      interval: 1s`
+    sending_queue:
+      enabled: true
+      block_on_overflow: true
+      batch:
+        flush_timeout: 1s
+        sizer: bytes`
 	} else {
-		cfgFormat += fmt.Sprintf(`
-    batcher:
-      flush_timeout: 1s
-      enabled: %v`,
-			*es.batcherEnabled,
-		)
+		// Batching is disabled using `min_size` as we are setting batching
+		// as a default behavior.
+		cfgFormat += `
+    sending_queue:
+      enabled: true
+      block_on_overflow: true
+      batch:
+        min_size: 0
+        sizer: bytes`
 	}
 	return cfgFormat + "\n"
 }
@@ -200,10 +205,11 @@ type config struct {
 }
 
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = "127.0.0.1:9200"
 	return &config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "127.0.0.1:9200",
-		},
+		ServerConfig:       confighttp.ServerConfig{NetAddr: netAddr},
 		DecodeBulkRequests: true,
 	}
 }
@@ -272,7 +278,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 
 	ln, err := es.config.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", es.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", es.config.NetAddr.Endpoint, err)
 	}
 
 	r := mux.NewRouter()
@@ -294,7 +300,8 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		var itemCount int
 		_, response := docappendertest.DecodeBulkRequest(r)
 		for _, itemMap := range response.Items {
-			for _, item := range itemMap {
+			for k := range itemMap {
+				item := itemMap[k]
 				if index == "" {
 					index = item.Index
 				} else if item.Index != index {
@@ -349,7 +356,8 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			}
 			response.HasErrors = true
 			for _, itemMap := range response.Items {
-				for k, item := range itemMap {
+				for k := range itemMap {
+					item := itemMap[k]
 					item.Status = errES.httpDocStatus
 					item.Error.Type = "simulated_es_error"
 					item.Error.Reason = consumeErr.Error()
@@ -362,7 +370,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		}
 	})
 
-	es.server, err = es.config.ToServer(ctx, host, es.params.TelemetrySettings, r)
+	es.server, err = es.config.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, r)
 	if err != nil {
 		return fmt.Errorf("failed to create mock ES server: %w", err)
 	}

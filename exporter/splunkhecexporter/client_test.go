@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -32,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
@@ -77,11 +77,11 @@ func createMetricsData(resourcesNum, dataPointsNum int) pmetric.Metrics {
 	doubleVal := 1234.5678
 	metrics := pmetric.NewMetrics()
 
-	for i := 0; i < resourcesNum; i++ {
+	for i := range resourcesNum {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("k0", fmt.Sprintf("v%d", i))
 		rm.Resource().Attributes().PutStr("k1", "v1")
-		for j := 0; j < dataPointsNum; j++ {
+		for j := range dataPointsNum {
 			count := i*dataPointsNum + j
 			tsUnix := time.Unix(int64(count), int64(count)*time.Millisecond.Nanoseconds())
 			ilm := rm.ScopeMetrics().AppendEmpty()
@@ -104,11 +104,11 @@ func createTraceData(resourcesNum, spansNum int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 
-	for i := 0; i < resourcesNum; i++ {
+	for i := range resourcesNum {
 		rs.Resource().Attributes().PutStr("resource", fmt.Sprintf("R%d", i))
 		ils := rs.ScopeSpans().AppendEmpty()
 		ils.Spans().EnsureCapacity(spansNum)
-		for j := 0; j < spansNum; j++ {
+		for j := range spansNum {
 			span := ils.Spans().AppendEmpty()
 			span.SetName("root")
 			count := i*spansNum + j
@@ -155,10 +155,10 @@ func repeatableString(length int) string {
 func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		rl := logs.ResourceLogs().AppendEmpty()
 		rl.ScopeLogs().EnsureCapacity(len(libraries))
-		for j := 0; j < len(libraries); j++ {
+		for j := range libraries {
 			sl := rl.ScopeLogs().AppendEmpty()
 			sl.Scope().SetName(libraries[j])
 			sl.LogRecords().EnsureCapacity(numRecords[j])
@@ -170,7 +170,7 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 				logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, "myapp")
 				logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, "myapp-type")
 				logRecord.Attributes().PutStr(splunk.DefaultIndexLabel, "myindex")
-				logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
+				logRecord.Attributes().PutStr("host.name", "myhost")
 				logRecord.Attributes().PutStr("custom", "custom")
 				logRecord.SetTimestamp(ts)
 			}
@@ -1294,7 +1294,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1346,7 +1346,7 @@ func TestErrorReceivedForbidden(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1400,7 +1400,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.Endpoint = "ftp://example.com:134"
@@ -1439,7 +1439,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1480,7 +1480,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1515,7 +1515,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1696,7 +1696,6 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	err := c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
 
 	// Only the record that was not successfully sent should be returned
 	var logsErr consumererror.Logs
@@ -1821,9 +1820,8 @@ func benchPushLogData(b *testing.B, numResources, numRecords int, bufSize uint, 
 	logs := createLogData(numResources, 1, numRecords)
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := exp.ConsumeLogs(b.Context(), logs)
 		require.NoError(b, err)
 	}
@@ -1963,9 +1961,8 @@ func benchPushMetricData(b *testing.B, numResources, numRecords int, bufSize uin
 	metrics := createMetricsData(numResources, numRecords)
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := exp.ConsumeMetrics(b.Context(), metrics)
 		require.NoError(b, err)
 	}
@@ -1984,9 +1981,8 @@ func BenchmarkConsumeLogsRejected(b *testing.B) {
 	logs := createLogData(10, 1, 100)
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := exp.ConsumeLogs(b.Context(), logs)
 		require.Error(b, err)
 	}

@@ -220,7 +220,7 @@ func Test_index_native_slices(t *testing.T) {
 
 			indexFn := index(ottl.NewValueComparator(), sourceExpr, valueExpr)
 			result, err := indexFn(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -305,9 +305,9 @@ func Test_index_error_cases(t *testing.T) {
 
 			if tt.expectedErr != "" {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedErr)
+				assert.ErrorContains(t, err, tt.expectedErr)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, result)
 			}
 		})
@@ -345,7 +345,7 @@ func Test_IndexFactory(t *testing.T) {
 		}
 
 		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, fn)
 	})
 
@@ -353,6 +353,6 @@ func Test_IndexFactory(t *testing.T) {
 		// This tests the error case in createIndexFunction
 		_, err := createIndexFunction[any](ottl.FunctionContext{}, "invalid args")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "IndexFactory args must be of type *IndexArguments[K]")
+		assert.ErrorContains(t, err, "IndexFactory args must be of type *IndexArguments[K]")
 	})
 }

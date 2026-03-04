@@ -62,7 +62,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -99,6 +98,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sContainerRestartsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerStatusReasonDataPoint(ts, 1, AttributeK8sContainerStatusReasonContainerCreating)
 
 			allMetricsCount++
 			mb.RecordK8sContainerStatusStateDataPoint(ts, 1, AttributeK8sContainerStatusStateTerminated)
@@ -213,6 +215,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "resource-val")
 
+			allMetricsCount++
+			mb.RecordK8sServiceEndpointCountDataPoint(ts, 1, AttributeK8sServiceEndpointAddressTypeIPv4, AttributeK8sServiceEndpointConditionReady, "k8s.service.endpoint.zone-val")
+
+			allMetricsCount++
+			mb.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
@@ -280,6 +288,11 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
 			rb.SetK8sResourcequotaName("k8s.resourcequota.name-val")
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
+			rb.SetK8sServiceName("k8s.service.name-val")
+			rb.SetK8sServicePublishNotReadyAddresses(false)
+			rb.SetK8sServiceTrafficDistribution("k8s.service.traffic_distribution-val")
+			rb.SetK8sServiceType("k8s.service.type-val")
+			rb.SetK8sServiceUID("k8s.service.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
@@ -404,6 +417,23 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.status.reason":
+					assert.False(t, validatedMetrics["k8s.container.status.reason"], "Found a duplicate in the metrics slice: k8s.container.status.reason")
+					validatedMetrics["k8s.container.status.reason"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.", ms.At(i).Description())
+					assert.Equal(t, "{container}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("k8s.container.status.reason")
+					assert.True(t, ok)
+					assert.Equal(t, "ContainerCreating", attrVal.Str())
 				case "k8s.container.status.state":
 					assert.False(t, validatedMetrics["k8s.container.status.state"], "Found a duplicate in the metrics slice: k8s.container.status.state")
 					validatedMetrics["k8s.container.status.state"] = true
@@ -766,6 +796,39 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
 					assert.Equal(t, "resource-val", attrVal.Str())
+				case "k8s.service.endpoint.count":
+					assert.False(t, validatedMetrics["k8s.service.endpoint.count"], "Found a duplicate in the metrics slice: k8s.service.endpoint.count")
+					validatedMetrics["k8s.service.endpoint.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of endpoints for a service, broken down by condition, address type, and zone.", ms.At(i).Description())
+					assert.Equal(t, "{endpoint}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("k8s.service.endpoint.address_type")
+					assert.True(t, ok)
+					assert.Equal(t, "IPv4", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("k8s.service.endpoint.condition")
+					assert.True(t, ok)
+					assert.Equal(t, "ready", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("k8s.service.endpoint.zone")
+					assert.True(t, ok)
+					assert.Equal(t, "k8s.service.endpoint.zone-val", attrVal.Str())
+				case "k8s.service.load_balancer.ingress.count":
+					assert.False(t, validatedMetrics["k8s.service.load_balancer.ingress.count"], "Found a duplicate in the metrics slice: k8s.service.load_balancer.ingress.count")
+					validatedMetrics["k8s.service.load_balancer.ingress.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of load balancer ingress points (external IPs/hostnames) assigned to the service.", ms.At(i).Description())
+					assert.Equal(t, "{ingress}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.statefulset.current_pods":
 					assert.False(t, validatedMetrics["k8s.statefulset.current_pods"], "Found a duplicate in the metrics slice: k8s.statefulset.current_pods")
 					validatedMetrics["k8s.statefulset.current_pods"] = true

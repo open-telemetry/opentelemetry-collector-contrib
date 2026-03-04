@@ -18,7 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 )
 
@@ -77,7 +78,8 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 	defer span.End()
 	var kvList []*kvTime
 
-	for _, logItem := range payload.Logs {
+	for i := range payload.Logs {
+		logItem := &payload.Logs[i]
 		kvList = append(kvList, &kvTime{
 			kv:    logToKeyVal(logItem),
 			ts:    logItem.Timestamp,
@@ -85,7 +87,8 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 			trace: logItem.Trace,
 		})
 	}
-	for _, exception := range payload.Exceptions {
+	for i := range payload.Exceptions {
+		exception := &payload.Exceptions[i]
 		kvList = append(kvList, &kvTime{
 			kv:    exceptionToKeyVal(exception),
 			ts:    exception.Timestamp,
@@ -94,7 +97,8 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 			trace: exception.Trace,
 		})
 	}
-	for _, measurement := range payload.Measurements {
+	for i := range payload.Measurements {
+		measurement := &payload.Measurements[i]
 		kvList = append(kvList, &kvTime{
 			kv:    measurementToKeyVal(measurement),
 			ts:    measurement.Timestamp,
@@ -102,7 +106,8 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 			trace: measurement.Trace,
 		})
 	}
-	for _, event := range payload.Events {
+	for i := range payload.Events {
+		event := &payload.Events[i]
 		kvList = append(kvList, &kvTime{
 			kv:    eventToKeyVal(event),
 			ts:    event.Timestamp,
@@ -117,11 +122,11 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 
 	meta := metaToKeyVal(payload.Meta)
 	rls := logs.ResourceLogs().AppendEmpty()
-	rls.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), payload.Meta.App.Name)
-	rls.Resource().Attributes().PutStr(string(semconv.ServiceVersionKey), payload.Meta.App.Version)
-	rls.Resource().Attributes().PutStr(string(semconv.DeploymentEnvironmentKey), payload.Meta.App.Environment)
+	rls.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), payload.Meta.App.Name)
+	rls.Resource().Attributes().PutStr(string(conventions.ServiceVersionKey), payload.Meta.App.Version)
+	rls.Resource().Attributes().PutStr(string(conventionsv126.DeploymentEnvironmentKey), payload.Meta.App.Environment)
 	if payload.Meta.App.Namespace != "" {
-		rls.Resource().Attributes().PutStr(string(semconv.ServiceNamespaceKey), payload.Meta.App.Namespace)
+		rls.Resource().Attributes().PutStr(string(conventions.ServiceNamespaceKey), payload.Meta.App.Namespace)
 	}
 	if payload.Meta.App.BundleID != "" {
 		rls.Resource().Attributes().PutStr(faroAppBundleID, payload.Meta.App.BundleID)
@@ -145,9 +150,6 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 		}
 		observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
 		logRecord.SetObservedTimestamp(observedTimestamp)
-		if !i.ts.IsZero() {
-			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(i.ts))
-		}
 
 		spanID := i.trace.SpanID
 		if spanID != "" {

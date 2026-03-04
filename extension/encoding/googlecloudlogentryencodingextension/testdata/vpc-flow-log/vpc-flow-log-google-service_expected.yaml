@@ -1,0 +1,107 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-logstash
+        - key: cloud.resource_id
+          value:
+            stringValue: compute.googleapis.com%2Fvpc_flows
+        - key: gcp.resource_type
+          value:
+            stringValue: gce_subnetwork
+        - key: gcp.label.location
+          value:
+            stringValue: us-central1
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-logstash
+        - key: gcp.label.subnetwork_id
+          value:
+            stringValue: "3489268495624148348"
+        - key: gcp.label.subnetwork_name
+          value:
+            stringValue: andrewvc-flowfixtures-subnet
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: wsf51kf6u9po3
+              - key: network.transport
+                value:
+                  stringValue: tcp
+              - key: source.address
+                value:
+                  stringValue: 10.10.0.3
+              - key: destination.address
+                value:
+                  stringValue: 142.251.183.95
+              - key: source.port
+                value:
+                  intValue: "57046"
+              - key: destination.port
+                value:
+                  intValue: "443"
+              - key: gcp.vpc.flow.reporter
+                value:
+                  stringValue: SRC
+              - key: gcp.vpc.flow.bytes_sent
+                value:
+                  intValue: "38144"
+              - key: gcp.vpc.flow.packets_sent
+                value:
+                  intValue: "72"
+              - key: gcp.vpc.flow.start_time
+                value:
+                  stringValue: "2025-11-07T21:17:47.862783471Z"
+              - key: gcp.vpc.flow.end_time
+                value:
+                  stringValue: "2025-11-07T21:18:47.883105401Z"
+              - key: gcp.vpc.flow.source.instance.project.id
+                value:
+                  stringValue: elastic-logstash
+              - key: gcp.vpc.flow.source.instance.vm.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.source.instance.vm.name
+                value:
+                  stringValue: andrewvc-flowfixtures-vm-2qhb
+              - key: gcp.vpc.flow.source.instance.vm.zone
+                value:
+                  stringValue: us-central1-f
+              - key: gcp.vpc.flow.source.instance.managed_instance_group.name
+                value:
+                  stringValue: andrewvc-flowfixtures-mig
+              - key: gcp.vpc.flow.source.instance.managed_instance_group.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.source.project.id
+                value:
+                  stringValue: elastic-logstash
+              - key: gcp.vpc.flow.source.subnet.name
+                value:
+                  stringValue: andrewvc-flowfixtures-subnet
+              - key: gcp.vpc.flow.source.subnet.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.source.vpc.name
+                value:
+                  stringValue: andrewvc-flowfixtures-network
+              - key: gcp.vpc.flow.destination.google_service.type
+                value:
+                  stringValue: GOOGLE_API
+              - key: gcp.vpc.flow.destination.google_service.name
+                value:
+                  stringValue: logging.googleapis.com
+              - key: gcp.vpc.flow.destination.google_service.connectivity
+                value:
+                  stringValue: PUBLIC_IP
+            body: {}
+            observedTimeUnixNano: "1762550580527307732"
+            timeUnixNano: "1762550580527307732"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.vpcflow

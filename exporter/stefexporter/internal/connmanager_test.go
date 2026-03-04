@@ -193,16 +193,14 @@ func TestConnManagerAcquireReleaseConcurrent(t *testing.T) {
 		t, testDef{
 			test: func(cm *ConnManager) {
 				var wg sync.WaitGroup
-				for i := 0; i < 100; i++ {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
+				for range 100 {
+					wg.Go(func() {
 						conn, err := cm.Acquire(t.Context())
 						if err != nil {
 							return
 						}
 						cm.Release(t.Context(), conn)
-					}()
+					})
 				}
 				wg.Wait()
 			},
@@ -227,16 +225,14 @@ func TestConnManagerAcquireDiscardConcurrent(t *testing.T) {
 		t, testDef{
 			test: func(cm *ConnManager) {
 				var wg sync.WaitGroup
-				for i := 0; i < 100; i++ {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
+				for range 100 {
+					wg.Go(func() {
 						conn, err := cm.Acquire(t.Context())
 						if err != nil {
 							return
 						}
 						cm.DiscardAndClose(conn)
-					}()
+					})
 				}
 				wg.Wait()
 			},
@@ -290,16 +286,11 @@ func TestConnManagerFlush(t *testing.T) {
 				// Release the connection first.
 				cm.Release(t.Context(), conn)
 
-				// Advance the clock so that the connection is flush in the background.
-				// We advance the clock twice the reconnect period to guarantee that
-				// all connections are flushed (all connections are expected to be flushed
-				// in one reconnect period, but that's on the edge, we want a guarantee,
-				// that's why double).
-				cm.clock.(*clockwork.FakeClock).Advance(reconnectPeriod * 2)
-
 				// Make sure the flush is done.
 				assert.Eventually(
 					t, func() bool {
+						// Advance the clock so that the connection is flush in the background.
+						cm.clock.(*clockwork.FakeClock).Advance(flushPeriod)
 						return conn.conn.(*mockConn).Flushed()
 					},
 					5*time.Second,

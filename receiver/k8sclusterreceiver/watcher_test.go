@@ -4,6 +4,7 @@
 package k8sclusterreceiver
 
 import (
+	maps0 "maps"
 	"testing"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -137,12 +137,16 @@ func TestIsKindSupported(t *testing.T) {
 
 func TestPrepareSharedInformerFactory(t *testing.T) {
 	tests := []struct {
-		name   string
-		client *fake.Clientset
+		name                  string
+		client                *fake.Clientset
+		config                *Config
+		wantInformerFactories int
 	}{
 		{
-			name:   "new_server_version",
-			client: newFakeClientWithAllResources(),
+			name:                  "new_server_version",
+			client:                newFakeClientWithAllResources(),
+			config:                &Config{},
+			wantInformerFactories: 1,
 		},
 		{
 			name: "old_server_version", // With no batch/v1.CronJob support.
@@ -184,6 +188,16 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 				}
 				return client
 			}(),
+			config:                &Config{},
+			wantInformerFactories: 1,
+		},
+		{
+			name:   "with namespaced informers",
+			client: newFakeClientWithAllResources(),
+			config: &Config{
+				Namespaces: []string{"namespace1", "namespace2"},
+			},
+			wantInformerFactories: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -194,11 +208,12 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 				client:        newFakeClientWithAllResources(),
 				logger:        obsLogger,
 				metadataStore: metadata.NewStore(),
-				config:        &Config{},
+				config:        tt.config,
 			}
 
 			assert.NoError(t, rw.prepareSharedInformerFactory())
 
+			assert.Len(t, rw.informerFactories, tt.wantInformerFactories)
 			// Make sure no warning or error logs are raised
 			assert.Equal(t, 0, logs.Len())
 		})
@@ -214,7 +229,9 @@ func TestSetupInformerForKind(t *testing.T) {
 	}
 
 	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, 0)
-	rw.setupInformerForKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "WrongKind"}, factory)
+	rw.setupInformerForKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "WrongKind"}, map[string]informers.SharedInformerFactory{
+		"<cluster-wide-informer-key>": factory,
+	})
 
 	assert.Equal(t, 1, logs.Len())
 	assert.Equal(t, "Could not setup an informer for provided group version kind", logs.All()[0].Message)
@@ -226,7 +243,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	logsConsumer := new(consumertest.LogsSink)
 
 	// Setup k8s resources.
-	pods := createPods(t, client, 1)
+	pods := createPods(t, client, 1, false)
 
 	origPod := pods[0]
 	updatedPod := getUpdatedPod(origPod)
@@ -271,7 +288,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 		"otel.entity.interval":   int64(7200000), // 2h in milliseconds
 		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
-		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", string(conventions.K8SNodeNameKey): "test-node"},
+		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", "k8s.node.name": "test-node"},
 	}
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
@@ -326,7 +343,7 @@ func TestObjMetadata(t *testing.T) {
 					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
-					Metadata:      allPodMetadata(map[string]string{"k8s.pod.phase": "Succeeded", "k8s.pod.name": "test-pod-0", "k8s.namespace.name": "test-namespace", string(conventions.K8SNodeNameKey): "test-node"}),
+					Metadata:      allPodMetadata(map[string]string{"k8s.pod.phase": "Succeeded", "k8s.pod.name": "test-pod-0", "k8s.namespace.name": "test-namespace", "k8s.node.name": "test-node"}),
 				},
 				experimentalmetricmetadata.ResourceID("container-id"): {
 					EntityType:    "container",
@@ -362,15 +379,15 @@ func TestObjMetadata(t *testing.T) {
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
-						"k8s.workload.kind":                "StatefulSet",
-						"k8s.workload.name":                "test-statefulset-0",
-						"k8s.statefulset.name":             "test-statefulset-0",
-						"k8s.statefulset.uid":              "test-statefulset-0-uid",
-						"k8s.pod.phase":                    "Failed",
-						"k8s.pod.status_reason":            "Evicted",
-						"k8s.pod.name":                     "test-pod-0",
-						"k8s.namespace.name":               "test-namespace",
-						string(conventions.K8SNodeNameKey): "test-node",
+						"k8s.workload.kind":     "StatefulSet",
+						"k8s.workload.name":     "test-statefulset-0",
+						"k8s.statefulset.name":  "test-statefulset-0",
+						"k8s.statefulset.uid":   "test-statefulset-0-uid",
+						"k8s.pod.phase":         "Failed",
+						"k8s.pod.status_reason": "Evicted",
+						"k8s.pod.name":          "test-pod-0",
+						"k8s.namespace.name":    "test-namespace",
+						"k8s.node.name":         "test-node",
 					}),
 				},
 			},
@@ -379,7 +396,7 @@ func TestObjMetadata(t *testing.T) {
 			name: "Pod with Service metadata",
 			metadataStore: func() *metadata.Store {
 				ms := metadata.NewStore()
-				ms.Setup(gvk.Service, &testutils.MockStore{
+				ms.Setup(gvk.Service, metadata.ClusterWideInformerKey, &testutils.MockStore{
 					Cache: map[string]any{
 						"test-namespace/test-service": &corev1.Service{
 							ObjectMeta: metav1.ObjectMeta{
@@ -407,12 +424,12 @@ func TestObjMetadata(t *testing.T) {
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
-						"k8s.service.test-service":         "",
-						"k8s-app":                          "my-app",
-						"k8s.pod.phase":                    "Running",
-						"k8s.namespace.name":               "test-namespace",
-						"k8s.pod.name":                     "test-pod-0",
-						string(conventions.K8SNodeNameKey): "test-node",
+						"k8s.service.test-service": "",
+						"k8s-app":                  "my-app",
+						"k8s.pod.phase":            "Running",
+						"k8s.namespace.name":       "test-namespace",
+						"k8s.pod.name":             "test-pod-0",
+						"k8s.node.name":            "test-node",
 					}),
 				},
 			},
@@ -617,9 +634,7 @@ func podWithAdditionalLabels(labels map[string]string, pod *corev1.Pod) any {
 		pod.Labels = make(map[string]string, len(labels))
 	}
 
-	for k, v := range labels {
-		pod.Labels[k] = v
-	}
+	maps0.Copy(pod.Labels, labels)
 
 	return pod
 }

@@ -6,8 +6,7 @@ package metrics
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -124,14 +123,16 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualMetric := pmetric.NewMetricSlice()
-			tt.input.CopyTo(actualMetric.AppendEmpty())
+			sMetrics := pmetric.NewScopeMetrics()
+			tt.input.CopyTo(sMetrics.Metrics().AppendEmpty())
 
 			evaluate, err := convertSummaryQuantileValToGauge(tt.key, tt.suffix)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetric, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
-			assert.NoError(t, err)
+			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0))
+			defer tCtx.Close()
+			_, err = evaluate(t.Context(), tCtx)
+			require.NoError(t, err)
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
@@ -141,10 +142,9 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			expected.CopyTo(sl)
 
 			actualMetrics := pmetric.NewMetrics()
-			sl2 := actualMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-			actualMetric.CopyTo(sl2)
+			sMetrics.MoveTo(actualMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty())
 
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
 	}
 }

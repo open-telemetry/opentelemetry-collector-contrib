@@ -1,3 +1,4 @@
+display_name: Google Cloud Spanner Receiver
 type: googlecloudspanner
 
 status:

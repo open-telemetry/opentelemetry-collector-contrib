@@ -12,9 +12,9 @@ The total number of connections closed.
 
 Only produced when franz-go is enabled.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -28,9 +28,9 @@ The total number of connections opened.
 
 Only produced when franz-go is enabled.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -41,13 +41,13 @@ Only produced when franz-go is enabled.
 
 ### otelcol_kafka_broker_throttling_duration
 
-The throttling duration in ms imposed by the broker when receiving messages. [deprecated]
+The throttling duration in ms imposed by the broker when receiving messages.
 
 Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_throttling_latency.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Deprecated |
 
 #### Attributes
 
@@ -61,9 +61,9 @@ The throttling latency in seconds imposed by the broker when receiving records.
 
 Only produced when franz-go is enabled.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | Development |
 
 #### Attributes
 
@@ -77,9 +77,9 @@ The size in bytes of received records seen by the broker.
 
 Only produced when franz-go is enabled.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -94,9 +94,9 @@ Only produced when franz-go is enabled.
 
 The uncompressed size in bytes of received records seen by the client.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -111,9 +111,9 @@ The uncompressed size in bytes of received records seen by the client.
 
 Current message offset
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -124,13 +124,13 @@ Current message offset
 
 ### otelcol_kafka_receiver_latency
 
-The time it took in ms to receive a batch of messages. [deprecated]
+The time it took in ms to receive a batch of messages.
 
 Only produced when franz-go is enabled. Deprecated in favor of kafka_receiver_read_latency.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Deprecated |
 
 #### Attributes
 
@@ -143,13 +143,13 @@ Only produced when franz-go is enabled. Deprecated in favor of kafka_receiver_re
 
 ### otelcol_kafka_receiver_messages
 
-The number of received messages. [deprecated]
+The number of received messages.
 
 Deprecated in favor of kafka_receiver_records.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Deprecated |
 
 #### Attributes
 
@@ -164,9 +164,9 @@ Deprecated in favor of kafka_receiver_records.
 
 Current offset lag
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
@@ -179,17 +179,17 @@ Current offset lag
 
 Number of finished partitions
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_kafka_receiver_partition_start
 
 Number of started partitions
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_kafka_receiver_read_latency
 
@@ -197,9 +197,9 @@ The time it took in seconds to receive a batch of records.
 
 Only produced when franz-go is enabled.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | Development |
 
 #### Attributes
 
@@ -214,9 +214,9 @@ Only produced when franz-go is enabled.
 
 The number of received records.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -237,9 +237,9 @@ Only produced when franz-go is enabled.
 This metric is reported with an assumption that the exporter and the receiver clocks are synchronized.
 
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | Development |
 
 #### Attributes
 
@@ -252,9 +252,9 @@ This metric is reported with an assumption that the exporter and the receiver cl
 
 Number of log records failed to be unmarshaled
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -267,9 +267,9 @@ Number of log records failed to be unmarshaled
 
 Number of metric points failed to be unmarshaled
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -282,9 +282,9 @@ Number of metric points failed to be unmarshaled
 
 Number of profiles failed to be unmarshaled
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -297,9 +297,9 @@ Number of profiles failed to be unmarshaled
 
 Number of spans failed to be unmarshaled
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 #### Attributes
 

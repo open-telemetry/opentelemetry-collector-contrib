@@ -762,6 +762,7 @@ func (m *metricSaphanaAlertCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaAlertCount(cfg MetricConfig) metricSaphanaAlertCount {
 	m := metricSaphanaAlertCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -811,6 +812,7 @@ func (m *metricSaphanaBackupLatest) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaBackupLatest(cfg MetricConfig) metricSaphanaBackupLatest {
 	m := metricSaphanaBackupLatest{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -865,6 +867,7 @@ func (m *metricSaphanaColumnMemoryUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaColumnMemoryUsed(cfg MetricConfig) metricSaphanaColumnMemoryUsed {
 	m := metricSaphanaColumnMemoryUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -918,6 +921,7 @@ func (m *metricSaphanaComponentMemoryUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaComponentMemoryUsed(cfg MetricConfig) metricSaphanaComponentMemoryUsed {
 	m := metricSaphanaComponentMemoryUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -971,6 +975,7 @@ func (m *metricSaphanaConnectionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaConnectionCount(cfg MetricConfig) metricSaphanaConnectionCount {
 	m := metricSaphanaConnectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1024,6 +1029,7 @@ func (m *metricSaphanaCPUUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaCPUUsed(cfg MetricConfig) metricSaphanaCPUUsed {
 	m := metricSaphanaCPUUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1079,6 +1085,7 @@ func (m *metricSaphanaDiskSizeCurrent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaDiskSizeCurrent(cfg MetricConfig) metricSaphanaDiskSizeCurrent {
 	m := metricSaphanaDiskSizeCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1132,6 +1139,7 @@ func (m *metricSaphanaHostMemoryCurrent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaHostMemoryCurrent(cfg MetricConfig) metricSaphanaHostMemoryCurrent {
 	m := metricSaphanaHostMemoryCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1185,6 +1193,7 @@ func (m *metricSaphanaHostSwapCurrent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaHostSwapCurrent(cfg MetricConfig) metricSaphanaHostSwapCurrent {
 	m := metricSaphanaHostSwapCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1236,6 +1245,7 @@ func (m *metricSaphanaInstanceCodeSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaInstanceCodeSize(cfg MetricConfig) metricSaphanaInstanceCodeSize {
 	m := metricSaphanaInstanceCodeSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1289,6 +1299,7 @@ func (m *metricSaphanaInstanceMemoryCurrent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaInstanceMemoryCurrent(cfg MetricConfig) metricSaphanaInstanceMemoryCurrent {
 	m := metricSaphanaInstanceMemoryCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1340,6 +1351,7 @@ func (m *metricSaphanaInstanceMemorySharedAllocated) emit(metrics pmetric.Metric
 
 func newMetricSaphanaInstanceMemorySharedAllocated(cfg MetricConfig) metricSaphanaInstanceMemorySharedAllocated {
 	m := metricSaphanaInstanceMemorySharedAllocated{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1391,6 +1403,7 @@ func (m *metricSaphanaInstanceMemoryUsedPeak) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSaphanaInstanceMemoryUsedPeak(cfg MetricConfig) metricSaphanaInstanceMemoryUsedPeak {
 	m := metricSaphanaInstanceMemoryUsedPeak{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1443,6 +1456,7 @@ func (m *metricSaphanaLicenseExpirationTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaLicenseExpirationTime(cfg MetricConfig) metricSaphanaLicenseExpirationTime {
 	m := metricSaphanaLicenseExpirationTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1497,6 +1511,7 @@ func (m *metricSaphanaLicenseLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaLicenseLimit(cfg MetricConfig) metricSaphanaLicenseLimit {
 	m := metricSaphanaLicenseLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1551,6 +1566,7 @@ func (m *metricSaphanaLicensePeak) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaLicensePeak(cfg MetricConfig) metricSaphanaLicensePeak {
 	m := metricSaphanaLicensePeak{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1600,6 +1616,7 @@ func (m *metricSaphanaNetworkRequestAverageTime) emit(metrics pmetric.MetricSlic
 
 func newMetricSaphanaNetworkRequestAverageTime(cfg MetricConfig) metricSaphanaNetworkRequestAverageTime {
 	m := metricSaphanaNetworkRequestAverageTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1653,6 +1670,7 @@ func (m *metricSaphanaNetworkRequestCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaNetworkRequestCount(cfg MetricConfig) metricSaphanaNetworkRequestCount {
 	m := metricSaphanaNetworkRequestCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1706,6 +1724,7 @@ func (m *metricSaphanaNetworkRequestFinishedCount) emit(metrics pmetric.MetricSl
 
 func newMetricSaphanaNetworkRequestFinishedCount(cfg MetricConfig) metricSaphanaNetworkRequestFinishedCount {
 	m := metricSaphanaNetworkRequestFinishedCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1760,6 +1779,7 @@ func (m *metricSaphanaReplicationAverageTime) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSaphanaReplicationAverageTime(cfg MetricConfig) metricSaphanaReplicationAverageTime {
 	m := metricSaphanaReplicationAverageTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1816,6 +1836,7 @@ func (m *metricSaphanaReplicationBacklogSize) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSaphanaReplicationBacklogSize(cfg MetricConfig) metricSaphanaReplicationBacklogSize {
 	m := metricSaphanaReplicationBacklogSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1872,6 +1893,7 @@ func (m *metricSaphanaReplicationBacklogTime) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSaphanaReplicationBacklogTime(cfg MetricConfig) metricSaphanaReplicationBacklogTime {
 	m := metricSaphanaReplicationBacklogTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1925,6 +1947,7 @@ func (m *metricSaphanaRowStoreMemoryUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaRowStoreMemoryUsed(cfg MetricConfig) metricSaphanaRowStoreMemoryUsed {
 	m := metricSaphanaRowStoreMemoryUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1979,6 +2002,7 @@ func (m *metricSaphanaSchemaMemoryUsedCurrent) emit(metrics pmetric.MetricSlice)
 
 func newMetricSaphanaSchemaMemoryUsedCurrent(cfg MetricConfig) metricSaphanaSchemaMemoryUsedCurrent {
 	m := metricSaphanaSchemaMemoryUsedCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2032,6 +2056,7 @@ func (m *metricSaphanaSchemaMemoryUsedMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaSchemaMemoryUsedMax(cfg MetricConfig) metricSaphanaSchemaMemoryUsedMax {
 	m := metricSaphanaSchemaMemoryUsedMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2086,6 +2111,7 @@ func (m *metricSaphanaSchemaOperationCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaSchemaOperationCount(cfg MetricConfig) metricSaphanaSchemaOperationCount {
 	m := metricSaphanaSchemaOperationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2139,6 +2165,7 @@ func (m *metricSaphanaSchemaRecordCompressedCount) emit(metrics pmetric.MetricSl
 
 func newMetricSaphanaSchemaRecordCompressedCount(cfg MetricConfig) metricSaphanaSchemaRecordCompressedCount {
 	m := metricSaphanaSchemaRecordCompressedCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2193,6 +2220,7 @@ func (m *metricSaphanaSchemaRecordCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaSchemaRecordCount(cfg MetricConfig) metricSaphanaSchemaRecordCount {
 	m := metricSaphanaSchemaRecordCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2246,6 +2274,7 @@ func (m *metricSaphanaServiceCodeSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaServiceCodeSize(cfg MetricConfig) metricSaphanaServiceCodeSize {
 	m := metricSaphanaServiceCodeSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2299,6 +2328,7 @@ func (m *metricSaphanaServiceCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaServiceCount(cfg MetricConfig) metricSaphanaServiceCount {
 	m := metricSaphanaServiceCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2352,6 +2382,7 @@ func (m *metricSaphanaServiceMemoryCompactorsAllocated) emit(metrics pmetric.Met
 
 func newMetricSaphanaServiceMemoryCompactorsAllocated(cfg MetricConfig) metricSaphanaServiceMemoryCompactorsAllocated {
 	m := metricSaphanaServiceMemoryCompactorsAllocated{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2405,6 +2436,7 @@ func (m *metricSaphanaServiceMemoryCompactorsFreeable) emit(metrics pmetric.Metr
 
 func newMetricSaphanaServiceMemoryCompactorsFreeable(cfg MetricConfig) metricSaphanaServiceMemoryCompactorsFreeable {
 	m := metricSaphanaServiceMemoryCompactorsFreeable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2458,6 +2490,7 @@ func (m *metricSaphanaServiceMemoryEffectiveLimit) emit(metrics pmetric.MetricSl
 
 func newMetricSaphanaServiceMemoryEffectiveLimit(cfg MetricConfig) metricSaphanaServiceMemoryEffectiveLimit {
 	m := metricSaphanaServiceMemoryEffectiveLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2512,6 +2545,7 @@ func (m *metricSaphanaServiceMemoryHeapCurrent) emit(metrics pmetric.MetricSlice
 
 func newMetricSaphanaServiceMemoryHeapCurrent(cfg MetricConfig) metricSaphanaServiceMemoryHeapCurrent {
 	m := metricSaphanaServiceMemoryHeapCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2565,6 +2599,7 @@ func (m *metricSaphanaServiceMemoryLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaServiceMemoryLimit(cfg MetricConfig) metricSaphanaServiceMemoryLimit {
 	m := metricSaphanaServiceMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2619,6 +2654,7 @@ func (m *metricSaphanaServiceMemorySharedCurrent) emit(metrics pmetric.MetricSli
 
 func newMetricSaphanaServiceMemorySharedCurrent(cfg MetricConfig) metricSaphanaServiceMemorySharedCurrent {
 	m := metricSaphanaServiceMemorySharedCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2673,6 +2709,7 @@ func (m *metricSaphanaServiceMemoryUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaServiceMemoryUsed(cfg MetricConfig) metricSaphanaServiceMemoryUsed {
 	m := metricSaphanaServiceMemoryUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2726,6 +2763,7 @@ func (m *metricSaphanaServiceStackSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaServiceStackSize(cfg MetricConfig) metricSaphanaServiceStackSize {
 	m := metricSaphanaServiceStackSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2779,6 +2817,7 @@ func (m *metricSaphanaServiceThreadCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaServiceThreadCount(cfg MetricConfig) metricSaphanaServiceThreadCount {
 	m := metricSaphanaServiceThreadCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2830,6 +2869,7 @@ func (m *metricSaphanaTransactionBlocked) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaTransactionBlocked(cfg MetricConfig) metricSaphanaTransactionBlocked {
 	m := metricSaphanaTransactionBlocked{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2883,6 +2923,7 @@ func (m *metricSaphanaTransactionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaTransactionCount(cfg MetricConfig) metricSaphanaTransactionCount {
 	m := metricSaphanaTransactionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2937,6 +2978,7 @@ func (m *metricSaphanaUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaUptime(cfg MetricConfig) metricSaphanaUptime {
 	m := metricSaphanaUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2992,6 +3034,7 @@ func (m *metricSaphanaVolumeOperationCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaVolumeOperationCount(cfg MetricConfig) metricSaphanaVolumeOperationCount {
 	m := metricSaphanaVolumeOperationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3047,6 +3090,7 @@ func (m *metricSaphanaVolumeOperationSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaVolumeOperationSize(cfg MetricConfig) metricSaphanaVolumeOperationSize {
 	m := metricSaphanaVolumeOperationSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3102,6 +3146,7 @@ func (m *metricSaphanaVolumeOperationTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSaphanaVolumeOperationTime(cfg MetricConfig) metricSaphanaVolumeOperationTime {
 	m := metricSaphanaVolumeOperationTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

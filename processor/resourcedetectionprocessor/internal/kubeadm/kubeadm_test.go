@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/kubeadm"
@@ -48,12 +47,12 @@ func TestDetect(t *testing.T) {
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		string(conventions.K8SClusterNameKey): "cluster-1",
-		"k8s.cluster.uid":                     "uid-1",
+		"k8s.cluster.name": "cluster-1",
+		"k8s.cluster.uid":  "uid-1",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -74,7 +73,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 
 	expected := map[string]any{}

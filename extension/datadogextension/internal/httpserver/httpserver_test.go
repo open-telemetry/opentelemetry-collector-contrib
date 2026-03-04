@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -46,7 +47,10 @@ func TestServerStart(t *testing.T) {
 					&mockSerializer{},
 					&Config{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: DefaultServerEndpoint,
+							NetAddr: confignet.AddrConfig{
+								Transport: "tcp",
+								Endpoint:  DefaultServerEndpoint,
+							},
 						},
 						Path: "/metadata",
 					},
@@ -168,7 +172,10 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 				serializer,
 				&Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: DefaultServerEndpoint,
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  DefaultServerEndpoint,
+						},
 					},
 					Path: "/metadata",
 				},
@@ -217,7 +224,10 @@ const successfulInstanceResponse = `{
       "version": ""
     },
     "full_configuration": "",
-    "health_status": ""
+    "health_status": "",
+    "collector_resource_attributes": {},
+    "collector_deployment_type": "unknown",
+    "ttl": 900000000000
   },
   "uuid": "test-uuid"
 }`
@@ -291,8 +301,11 @@ func TestHandleMetadata(t *testing.T) {
 					Hostname: "test-hostname",
 					UUID:     "test-uuid",
 					Metadata: payload.OtelCollector{
-						FullComponents:   []payload.CollectorModule{},
-						ActiveComponents: []payload.ServiceComponent{},
+						FullComponents:              []payload.CollectorModule{},
+						ActiveComponents:            []payload.ServiceComponent{},
+						CollectorResourceAttributes: map[string]string{},
+						CollectorDeploymentType:     "unknown", // Default value set by config validation
+						TTL:                         int64(5 * time.Minute * 3),
 					},
 				},
 			}
@@ -365,7 +378,7 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 	var wg sync.WaitGroup
 	responses := make([]*httptest.ResponseRecorder, numRequests)
 
-	for i := 0; i < numRequests; i++ {
+	for i := range numRequests {
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
@@ -449,43 +462,6 @@ func TestServerStop(t *testing.T) {
 			},
 			expectedLogs:  []string{},
 			expectTimeout: false,
-		},
-		{
-			name: "Context cancelled before shutdown completes",
-			setupServer: func() (*Server, *observer.ObservedLogs) {
-				core, logs := observer.New(zapcore.InfoLevel)
-				logger := zap.New(core)
-
-				// Create a test server with a blocking handler
-				mux := http.NewServeMux()
-				blockCh = make(chan struct{})
-				mux.HandleFunc("/block", func(w http.ResponseWriter, _ *http.Request) {
-					<-blockCh // block until closed
-					w.WriteHeader(http.StatusOK)
-				})
-				mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
-					w.WriteHeader(http.StatusOK)
-				})
-
-				server := &http.Server{
-					Addr:              "127.0.0.1:0",
-					Handler:           mux,
-					ReadHeaderTimeout: 10 * time.Millisecond,
-				}
-
-				srv := &Server{
-					logger: logger,
-					server: server,
-				}
-
-				return srv, logs
-			},
-			contextSetup: func() (context.Context, context.CancelFunc) {
-				return context.WithCancel(t.Context())
-			},
-			expectedLogs:     []string{"Context cancelled while waiting for server shutdown"},
-			expectTimeout:    true,
-			simulateSlowStop: true,
 		},
 	}
 
@@ -633,7 +609,7 @@ func TestServerStopConcurrency(t *testing.T) {
 	const numStops = 5
 	var wg sync.WaitGroup
 
-	for i := 0; i < numStops; i++ {
+	for i := range numStops {
 		wg.Add(1)
 		go func(_ int) {
 			defer wg.Done()
@@ -676,7 +652,10 @@ func TestServer_SendPayload(t *testing.T) {
 	logger := zap.NewNop()
 	config := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:0",
+			},
 		},
 		Path: "/test",
 	}
@@ -704,7 +683,10 @@ func TestServer_SendPayload_ForwarderNotStarted(t *testing.T) {
 	logger := zap.NewNop()
 	config := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:0",
+			},
 		},
 		Path: "/test",
 	}
@@ -768,7 +750,10 @@ func TestNewServerErrorPaths(t *testing.T) {
 			&mockSerializer{},
 			&Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0", // Valid endpoint
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:0", // Valid endpoint
+					},
 				},
 				Path: "/metadata",
 			},

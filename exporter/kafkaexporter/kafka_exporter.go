@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -31,20 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-const franzGoClientFeatureGateName = "exporter.kafkaexporter.UseFranzGo"
-
-// franzGoClientFeatureGate is a feature gate that controls whether the Kafka exporter
-// uses the franz-go client or the Sarama client. When enabled, the Kafka exporter
-// will use the franz-go client, which is more performant and has better support for
-// modern Kafka features.
-var franzGoClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	franzGoClientFeatureGateName, featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the Kafka exporter will use the franz-go client to produce messages to Kafka."),
-	featuregate.WithRegisterFromVersion("v0.128.0"),
-)
-
 // producer is an interface that abstracts the Kafka producer operations
-// to allow for different implementations (e.g., Sarama, franz-go)
 type producer interface {
 	// ExportData sends a batch of messages to Kafka
 	ExportData(ctx context.Context, messages kafkaclient.Messages) error
@@ -99,32 +85,19 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		return err
 	}
 
-	if franzGoClientFeatureGate.IsEnabled() {
-		producer, ferr := kafka.NewFranzSyncProducer(
-			ctx,
-			e.cfg.ClientConfig,
-			e.cfg.Producer,
-			e.cfg.TimeoutSettings.Timeout,
-			e.logger,
-			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
-		)
-		if ferr != nil {
-			return err
-		}
-		e.producer = kafkaclient.NewFranzSyncProducer(producer,
-			e.cfg.IncludeMetadataKeys,
-		)
-		return nil
-	}
-	producer, err := kafka.NewSaramaSyncProducer(ctx, e.cfg.ClientConfig,
-		e.cfg.Producer, e.cfg.TimeoutSettings.Timeout,
+	producer, err := kafka.NewFranzSyncProducer(
+		ctx,
+		host,
+		e.cfg.ClientConfig,
+		e.cfg.Producer,
+		e.cfg.TimeoutSettings.Timeout,
+		e.logger,
+		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
 	)
 	if err != nil {
 		return err
 	}
-	e.producer = kafkaclient.NewSaramaSyncProducer(
-		producer,
-		kafkaclient.NewSaramaProducerMetrics(tb),
+	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
 	)
 	return nil
@@ -149,7 +122,7 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		topic := e.messenger.getTopic(ctx, data)
 		partitionMessages, err := e.messenger.marshalData(data)
 		if err != nil {
-			err = fmt.Errorf("issue exporting from topic %q: %w", topic, err)
+			err = fmt.Errorf("error exporting to topic %q: %w", topic, err)
 			e.logger.Error("kafka records marshal data failed",
 				zap.String("topic", topic),
 				zap.Error(err),
@@ -220,7 +193,7 @@ func (e *kafkaTracesMessenger) marshalData(td ptrace.Traces) ([]marshaler.Messag
 }
 
 func (e *kafkaTracesMessenger) getTopic(ctx context.Context, td ptrace.Traces) string {
-	return getTopic(ctx, e.config.Traces, e.config.TopicFromAttribute, td.ResourceSpans())
+	return getTopic[ptrace.ResourceSpans](ctx, e.config.Traces, e.config.TopicFromAttribute, td.ResourceSpans())
 }
 
 func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
@@ -265,23 +238,36 @@ func (e *kafkaLogsMessenger) marshalData(ld plog.Logs) ([]marshaler.Message, err
 }
 
 func (e *kafkaLogsMessenger) getTopic(ctx context.Context, ld plog.Logs) string {
-	return getTopic(ctx, e.config.Logs, e.config.TopicFromAttribute, ld.ResourceLogs())
+	return getTopic[plog.ResourceLogs](ctx, e.config.Logs, e.config.TopicFromAttribute, ld.ResourceLogs())
 }
 
 func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
 	return func(yield func([]byte, plog.Logs) bool) {
-		if !e.config.PartitionLogsByResourceAttributes {
-			yield(nil, ld)
+		if e.config.PartitionLogsByResourceAttributes {
+			for _, resourceLogs := range ld.ResourceLogs().All() {
+				hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
+				newLogs := plog.NewLogs()
+				resourceLogs.CopyTo(newLogs.ResourceLogs().AppendEmpty())
+				if !yield(hash[:], newLogs) {
+					return
+				}
+			}
 			return
 		}
-		for _, resourceLogs := range ld.ResourceLogs().All() {
-			hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
-			newLogs := plog.NewLogs()
-			resourceLogs.CopyTo(newLogs.ResourceLogs().AppendEmpty())
-			if !yield(hash[:], newLogs) {
-				return
+		if e.config.PartitionLogsByTraceID {
+			for _, l := range batchpersignal.SplitLogs(ld) {
+				var key []byte
+				traceID := l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID()
+				if !traceID.IsEmpty() {
+					key = []byte(traceutil.TraceIDToHexOrEmptyString(traceID))
+				}
+				if !yield(key, l) {
+					return
+				}
 			}
+			return
 		}
+		yield(nil, ld)
 	}
 }
 
@@ -308,7 +294,7 @@ func (e *kafkaMetricsMessenger) marshalData(md pmetric.Metrics) ([]marshaler.Mes
 }
 
 func (e *kafkaMetricsMessenger) getTopic(ctx context.Context, md pmetric.Metrics) string {
-	return getTopic(ctx, e.config.Metrics, e.config.TopicFromAttribute, md.ResourceMetrics())
+	return getTopic[pmetric.ResourceMetrics](ctx, e.config.Metrics, e.config.TopicFromAttribute, md.ResourceMetrics())
 }
 
 func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
@@ -351,7 +337,7 @@ func (e *kafkaProfilesMessenger) marshalData(ld pprofile.Profiles) ([]marshaler.
 }
 
 func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profiles) string {
-	return getTopic(ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
+	return getTopic[pprofile.ResourceProfiles](ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
 }
 
 func (*kafkaProfilesMessenger) partitionData(ld pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {

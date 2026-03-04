@@ -16,6 +16,8 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap/zapcore"
 )
@@ -466,7 +468,10 @@ func TestValidate(t *testing.T) {
 				},
 				HealthCheck: HealthCheck{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:-1",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:-1",
+						},
 					},
 				},
 			},
@@ -502,6 +507,56 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestOpAMPServer_OpaqueHeaders(t *testing.T) {
+	testCases := []struct {
+		name     string
+		headers  http.Header
+		expected map[string][]configopaque.String
+	}{
+		{
+			name: "Single-value header",
+			headers: http.Header{
+				"key1": []string{"value1"},
+				"key2": []string{"value2"},
+			},
+			expected: map[string][]configopaque.String{
+				"key1": {configopaque.String("value1")},
+				"key2": {configopaque.String("value2")},
+			},
+		},
+		{
+			name: "Multi-value header",
+			headers: http.Header{
+				"key1": []string{"value1"},
+				"key2": []string{"value2a", "value2b"},
+			},
+			expected: map[string][]configopaque.String{
+				"key1": {configopaque.String("value1")},
+				"key2": {configopaque.String("value2a"), configopaque.String("value2b")},
+			},
+		},
+		{
+			name:     "Empty header",
+			headers:  http.Header{},
+			expected: map[string][]configopaque.String{},
+		},
+		{
+			name:     "Nil header",
+			headers:  nil,
+			expected: map[string][]configopaque.String{},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			serverCfg := OpAMPServer{
+				Headers: tc.headers,
+			}
+			actual := serverCfg.OpaqueHeaders()
+			require.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
 func TestCapabilities_SupportedCapabilities(t *testing.T) {
 	testCases := []struct {
 		name                      string
@@ -514,7 +569,8 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
-				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
 		},
 		{
 			name:                      "Empty capabilities",
@@ -534,6 +590,7 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsHealth:                  true,
 				ReportsRemoteConfig:            true,
 				ReportsAvailableComponents:     true,
+				ReportsHeartbeat:               true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
@@ -545,7 +602,8 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings |
-				protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents,
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
 		},
 	}
 
@@ -596,7 +654,8 @@ agent:
 						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
 					},
-					Telemetry: DefaultSupervisor().Telemetry,
+					Telemetry:   DefaultSupervisor().Telemetry,
+					HealthCheck: DefaultSupervisor().HealthCheck,
 				}
 
 				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
@@ -620,6 +679,7 @@ capabilities:
   reports_remote_config: true
   accepts_restart_command: true
   accepts_opamp_connection_settings: true
+  reports_heartbeat: true
 
 storage:
   directory: %s
@@ -662,6 +722,7 @@ telemetry:
 						ReportsRemoteConfig:            true,
 						AcceptsRestartCommand:          true,
 						AcceptsOpAMPConnectionSettings: true,
+						ReportsHeartbeat:               true,
 					},
 					Storage: Storage{
 						Directory: filepath.Join(tmpDir, "storage"),
@@ -689,6 +750,7 @@ telemetry:
 							ErrorOutputPaths: []string{"stderr"},
 						},
 					},
+					HealthCheck: DefaultSupervisor().HealthCheck,
 				}
 
 				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
@@ -717,7 +779,8 @@ agent:
 						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
 					},
-					Telemetry: DefaultSupervisor().Telemetry,
+					Telemetry:   DefaultSupervisor().Telemetry,
+					HealthCheck: DefaultSupervisor().HealthCheck,
 				}
 
 				t.Setenv("TEST_ENDPOINT", "ws://localhost/v1/opamp")

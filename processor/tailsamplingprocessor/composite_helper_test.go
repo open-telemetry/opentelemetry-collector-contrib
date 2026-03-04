@@ -45,7 +45,7 @@ func TestCompositeHelper(t *testing.T) {
 					Percent: 0, // will be populated with default
 				},
 			},
-		})
+		}, nil)
 		require.NoError(t, err)
 
 		expected := sampling.NewComposite(zap.NewNop(), 1000, []sampling.SubPolicyEvalParams{
@@ -73,7 +73,7 @@ func TestCompositeHelper(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, nil)
 		require.EqualError(t, err, "unknown sampling policy type composite")
 	})
 }

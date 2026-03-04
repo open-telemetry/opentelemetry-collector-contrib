@@ -63,7 +63,7 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewMetricsController(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
+	return scraperhelper.NewMetricsController(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
@@ -106,7 +106,8 @@ func (r *metricsReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(containers))
-	for _, c := range containers {
+	for i := range containers {
+		c := containers[i]
 		go func(c container) {
 			defer wg.Done()
 			stats, err := r.scraper.fetchContainerStats(ctx, c)

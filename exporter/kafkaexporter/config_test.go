@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -43,12 +44,12 @@ func TestLoadConfig(t *testing.T) {
 					config.MaxElapsedTime = 10 * time.Minute
 					return config
 				}(),
-				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 2,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return queue
+				}()),
 				ClientConfig: func() configkafka.ClientConfig {
 					config := configkafka.NewDefaultClientConfig()
 					config.Brokers = []string{"foo:123", "bar:456"}
@@ -80,6 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
+				PartitionLogsByTraceID:               false,
 			},
 		},
 		{
@@ -87,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-				QueueBatchConfig: exporterhelper.NewDefaultQueueConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				ClientConfig:     configkafka.NewDefaultClientConfig(),
 				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
@@ -115,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-				QueueBatchConfig: exporterhelper.NewDefaultQueueConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				ClientConfig:     configkafka.NewDefaultClientConfig(),
 				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
@@ -149,6 +151,37 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestLoadConfigFailed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		id            component.ID
+		expectedError error
+		configFile    string
+	}{
+		{
+			id:            component.NewIDWithName(metadata.Type, ""),
+			expectedError: errLogsPartitionExclusive,
+			configFile:    "config-partitioning-failed.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configFile))
+			require.NoError(t, err)
+
+			cfg := createDefaultConfig().(*Config)
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedError)
 		})
 	}
 }

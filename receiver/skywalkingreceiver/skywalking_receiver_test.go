@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
@@ -70,7 +71,10 @@ func TestStartAndShutdown(t *testing.T) {
 	config := &configuration{
 		CollectorHTTPPort: port,
 		CollectorHTTPSettings: confighttp.ServerConfig{
-			Endpoint: fmt.Sprintf(":%d", port),
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  fmt.Sprintf(":%d", port),
+			},
 		},
 	}
 	sink := new(consumertest.TracesSink)
@@ -81,7 +85,7 @@ func TestStartAndShutdown(t *testing.T) {
 	err := sr.registerTraceConsumer(sink)
 	require.NoError(t, err)
 	require.NoError(t, sr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, sr.Shutdown(t.Context())) })
+	require.NoError(t, sr.Shutdown(t.Context()))
 }
 
 func TestGRPCReception(t *testing.T) {
@@ -97,8 +101,9 @@ func TestGRPCReception(t *testing.T) {
 	err := mockSwReceiver.registerTraceConsumer(sink)
 	require.NoError(t, err)
 	require.NoError(t, mockSwReceiver.Start(t.Context(), componenttest.NewNopHost()))
-
-	t.Cleanup(func() { require.NoError(t, mockSwReceiver.Shutdown(t.Context())) })
+	defer func() {
+		require.NoError(t, mockSwReceiver.Shutdown(t.Context()))
+	}()
 	conn, err := grpc.NewClient(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
@@ -124,7 +129,10 @@ func TestHttpReception(t *testing.T) {
 	config := &configuration{
 		CollectorHTTPPort: 12800,
 		CollectorHTTPSettings: confighttp.ServerConfig{
-			Endpoint: fmt.Sprintf(":%d", 12800),
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  fmt.Sprintf(":%d", 12800),
+			},
 		},
 	}
 
@@ -136,7 +144,9 @@ func TestHttpReception(t *testing.T) {
 	err := mockSwReceiver.registerTraceConsumer(sink)
 	require.NoError(t, err)
 	require.NoError(t, mockSwReceiver.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, mockSwReceiver.Shutdown(t.Context())) })
+	defer func() {
+		require.NoError(t, mockSwReceiver.Shutdown(t.Context()))
+	}()
 	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:12800/v3/segments", bytes.NewBuffer(traceJSON))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")

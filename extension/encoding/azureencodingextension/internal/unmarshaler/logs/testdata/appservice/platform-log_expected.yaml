@@ -1,0 +1,32 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/DA2DD5CC-E7BC-4DB6-94D9-0AFB3BD30577/RESOURCEGROUPS/FRETBADGER/PROVIDERS/MICROSOFT.WEB/SITES/FBEHTESTAPP
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.operation.name
+                value:
+                  stringValue: ContainerLogs
+              - key: azure.category
+                value:
+                  stringValue: AppServicePlatformLogs
+              - key: container.id
+                value:
+                  stringValue: CONTAINER_ID
+            body:
+              stringValue: Initiating warmup request to container fbehtestapp_1_b8a27b37 for site fbehtestapp
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1713960235630000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

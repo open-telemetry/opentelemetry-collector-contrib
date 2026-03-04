@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -174,7 +173,7 @@ func loadMetricsMap(t *testing.T, path string) map[string]pmetric.Metrics {
 
 	expectedOutput := map[string]pmetric.Metrics{}
 	for key, data := range expectedOutputRaw {
-		b, err = jsoniter.Marshal(data)
+		b, err = json.Marshal(data)
 		require.NoError(t, err)
 
 		unmarshaller := &pmetric.JSONUnmarshaler{}
@@ -237,8 +236,8 @@ func TestSplitMetricsByResourceServiceName(t *testing.T) {
 
 			expectedOutput := loadMetricsMap(t, filepath.Join(dir, "output.yaml"))
 
-			output, err := splitMetricsByResourceServiceName(input)
-			require.NoError(t, err)
+			output, errs := splitMetricsByResourceServiceName(input)
+			require.Nil(t, errs)
 			compareMetricsMaps(t, expectedOutput, output)
 		})
 	}
@@ -250,8 +249,8 @@ func TestSplitMetricsByResourceServiceNameFailsIfMissingServiceNameAttribute(t *
 	input, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "split_metrics", "missing_service_name", "input.yaml"))
 	require.NoError(t, err)
 
-	_, err = splitMetricsByResourceServiceName(input)
-	require.Error(t, err)
+	_, errs := splitMetricsByResourceServiceName(input)
+	require.NotNil(t, errs)
 }
 
 func TestSplitMetrics(t *testing.T) {
@@ -285,6 +284,30 @@ func TestSplitMetrics(t *testing.T) {
 			name:      "duplicate_stream_id",
 			splitFunc: splitMetricsByStreamID,
 		},
+		{
+			name: "basic_attributes",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"resource_key", "scope_key", "aaa"})
+			},
+		},
+		{
+			name: "attributes_resource_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"resource_key"})
+			},
+		},
+		{
+			name: "attributes_scope_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"scope_key"})
+			},
+		},
+		{
+			name: "attributes_datapoint_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"aaa"})
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -310,8 +333,9 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name       string
-		routingKey string
+		name              string
+		routingKey        string
+		routingAttributes []string
 	}{
 		{
 			name:       "resource_service_name",
@@ -329,6 +353,11 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			name:       "stream_id",
 			routingKey: streamIDRoutingStr,
 		},
+		{
+			name:              "attributes",
+			routingKey:        attrRoutingStr,
+			routingAttributes: []string{"resource_key", "scope_key", "aaa"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -340,9 +369,9 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 				Resolver: ResolverSettings{
 					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 				},
-				RoutingKey: tc.routingKey,
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttributes,
 			}
-
 			p, err := newMetricsExporter(createSettings, config)
 			require.NoError(t, err)
 			require.NotNil(t, p)
@@ -405,6 +434,77 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 	}
 }
 
+func TestConsumeMetrics_SingleEndpointNoServiceName(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	createSettings := ts
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
+		},
+		RoutingKey: svcRoutingStr,
+	}
+
+	p, err := newMetricsExporter(createSettings, config)
+	require.NoError(t, err)
+	require.NotNil(t, p)
+
+	// newMetricsExporter will internally create a loadBalancer instance which is
+	// hardcoded to use OTLP exporters
+	// We manually override that to use our testing sink
+	sink := consumertest.MetricsSink{}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockMetricsExporter(sink.ConsumeMetrics), nil
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, config, componentFactory, tb)
+	require.NoError(t, err)
+	require.NotNil(t, lb)
+
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	// Start everything up
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Test
+	dir := filepath.Join("testdata", "metrics", "consume_metrics", "single_endpoint", "resource_no_service_name")
+
+	input, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
+	require.NoError(t, err)
+
+	err = p.ConsumeMetrics(t.Context(), input)
+	require.NoError(t, err)
+
+	expectedOutput, err := golden.ReadMetrics(filepath.Join(dir, "output.yaml"))
+	require.NoError(t, err)
+
+	allOutputs := sink.AllMetrics()
+	require.Len(t, allOutputs, 1)
+
+	actualOutput := allOutputs[0]
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expectedOutput, actualOutput,
+		// We have to ignore ordering, because we do MergeMetrics() inside a map
+		// iteration. And golang map iteration order is random. This means the
+		// order of the merges is random
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
+}
+
 func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	// I'm not fully satisfied with the design of this test.
@@ -416,8 +516,9 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name       string
-		routingKey string
+		name              string
+		routingKey        string
+		routingAttributes []string
 	}{
 		{
 			name:       "resource_service_name",
@@ -435,6 +536,11 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			name:       "stream_id",
 			routingKey: streamIDRoutingStr,
 		},
+		{
+			name:              "attributes",
+			routingKey:        attrRoutingStr,
+			routingAttributes: []string{"resource_key", "scope_key", "aaa"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -446,7 +552,8 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 				Resolver: ResolverSettings{
 					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}}),
 				},
-				RoutingKey: tc.routingKey,
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttributes,
 			}
 
 			p, err := newMetricsExporter(createSettings, config)
@@ -839,14 +946,14 @@ func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pm
 	timeStamp := pcommon.Timestamp(rand.IntN(256))
 	value := rand.Int64N(256)
 
-	for i := 0; i < rmCount; i++ {
+	for range rmCount {
 		rm := md.ResourceMetrics().AppendEmpty()
 		err := rm.Resource().Attributes().FromRaw(map[string]any{
-			string(conventions.ServiceNameKey): fmt.Sprintf("service-%d", rand.IntN(512)),
+			"service.name": fmt.Sprintf("service-%d", rand.IntN(512)),
 		})
 		require.NoError(t, err)
 
-		for j := 0; j < smCount; j++ {
+		for range smCount {
 			sm := rm.ScopeMetrics().AppendEmpty()
 			scope := sm.Scope()
 			scope.SetName("MyTestInstrument")
@@ -856,7 +963,7 @@ func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pm
 			})
 			require.NoError(t, err)
 
-			for k := 0; k < mCount; k++ {
+			for range mCount {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName(fmt.Sprintf("metric.%d.test", rand.IntN(512)))
 
@@ -864,7 +971,7 @@ func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pm
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				sum.SetIsMonotonic(true)
 
-				for l := 0; l < dpCount; l++ {
+				for range dpCount {
 					dp := sum.DataPoints().AppendEmpty()
 
 					dp.SetTimestamp(timeStamp)
@@ -894,7 +1001,7 @@ func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount, rmCoun
 	}
 
 	endpoints := []string{}
-	for i := 0; i < endpointsCount; i++ {
+	for i := range endpointsCount {
 		endpoints = append(endpoints, fmt.Sprintf("endpoint-%d", i))
 	}
 
@@ -920,9 +1027,7 @@ func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount, rmCoun
 
 	md := randomMetrics(b, rmCount, smCount, mCount, dpCount)
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err = p.ConsumeMetrics(b.Context(), md)
 		require.NoError(b, err)
 	}
@@ -1001,7 +1106,7 @@ func simpleMetricsWithServiceName() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName1)
+	rmetrics.Resource().Attributes().PutStr("service.name", serviceName1)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
 	return metrics
 }
@@ -1010,7 +1115,7 @@ func simpleMetricsWithResource() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName1)
+	rmetrics.Resource().Attributes().PutStr("service.name", serviceName1)
 	rmetrics.Resource().Attributes().PutStr(keyAttr1, valueAttr1)
 	rmetrics.Resource().Attributes().PutInt(keyAttr2, valueAttr2)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
@@ -1021,10 +1126,10 @@ func twoServicesWithSameMetricName() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(2)
 	rs1 := metrics.ResourceMetrics().AppendEmpty()
-	rs1.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName1)
+	rs1.Resource().Attributes().PutStr("service.name", serviceName1)
 	appendSimpleMetricWithID(rs1, signal1Name)
 	rs2 := metrics.ResourceMetrics().AppendEmpty()
-	rs2.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName2)
+	rs2.Resource().Attributes().PutStr("service.name", serviceName2)
 	appendSimpleMetricWithID(rs2, signal1Name)
 	return metrics
 }

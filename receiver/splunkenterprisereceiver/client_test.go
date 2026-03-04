@@ -96,11 +96,13 @@ func TestClientCreateRequest(t *testing.T) {
 			desc: "First req, no jobid",
 			sr: &searchResponse{
 				search: "example search",
+				count:  100,
+				offset: 0,
 			},
 			client: client,
 			expected: func() *http.Request {
 				method := http.MethodPost
-				path := "/services/search/jobs/"
+				path := "/services/search/v2/jobs/"
 				testEndpoint, _ := url.Parse("https://localhost:8089")
 				url, _ := url.JoinPath(testEndpoint.String(), path)
 				data := strings.NewReader("example search")
@@ -113,14 +115,21 @@ func TestClientCreateRequest(t *testing.T) {
 			sr: &searchResponse{
 				search: "example search",
 				Jobid:  &testJobID,
+				count:  100,
+				offset: 0,
 			},
 			client: client,
 			expected: func() *http.Request {
-				method := http.MethodGet
-				path := fmt.Sprintf("/services/search/jobs/%s/results", testJobID)
+				method := http.MethodPost
+				path := fmt.Sprintf("/services/search/v2/jobs/%s/results", testJobID)
 				testEndpoint, _ := url.Parse("https://localhost:8089")
+				data := url.Values{}
+				data.Add("add_summary_to_metadata", "true")
+				data.Add("count", fmt.Sprintf("%v", 100))
+				data.Add("offset", fmt.Sprintf("%v", 0))
 				url, _ := url.JoinPath(testEndpoint.String(), path)
-				req, _ := http.NewRequest(method, url, http.NoBody)
+				req, _ := http.NewRequest(method, url, strings.NewReader(data.Encode()))
+				req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 				return req
 			}(),
 		},

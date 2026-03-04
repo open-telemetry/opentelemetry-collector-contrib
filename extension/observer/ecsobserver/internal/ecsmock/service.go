@@ -248,7 +248,8 @@ func (c *Cluster) DescribeServices(_ context.Context, input *ecs.DescribeService
 // SetTasks update both list and map.
 func (c *Cluster) SetTasks(tasks []ecstypes.Task) {
 	m := make(map[string]ecstypes.Task, len(tasks))
-	for _, t := range tasks {
+	for i := range tasks {
+		t := tasks[i]
 		m[*t.TaskArn] = t
 	}
 	c.taskMap = m
@@ -268,8 +269,9 @@ func (c *Cluster) SetTaskDefinitions(defs []*ecstypes.TaskDefinition) {
 // SetContainerInstances updates the list and map.
 func (c *Cluster) SetContainerInstances(instances []ecstypes.ContainerInstance) {
 	m := make(map[string]ecstypes.ContainerInstance, len(instances))
-	for _, ci := range instances {
-		m[*ci.ContainerInstanceArn] = ci
+	for i := range instances {
+		instance := instances[i]
+		m[*instance.ContainerInstanceArn] = instance
 	}
 	c.containerInstanceMap = m
 	c.containerInstanceList = instances
@@ -278,8 +280,9 @@ func (c *Cluster) SetContainerInstances(instances []ecstypes.ContainerInstance) 
 // SetEc2Instances updates the list and map.
 func (c *Cluster) SetEc2Instances(instances []ec2types.Instance) {
 	m := make(map[string]ec2types.Instance, len(instances))
-	for _, i := range instances {
-		m[*i.InstanceId] = i
+	for i := range instances {
+		instance := instances[i]
+		m[*instance.InstanceId] = instance
 	}
 	c.ec2Map = m
 	c.ec2List = instances
@@ -288,7 +291,8 @@ func (c *Cluster) SetEc2Instances(instances []ec2types.Instance) {
 // SetServices updates the list and map.
 func (c *Cluster) SetServices(services []ecstypes.Service) {
 	m := make(map[string]ecstypes.Service, len(services))
-	for _, s := range services {
+	for i := range services {
+		s := services[i]
 		m[*s.ServiceArn] = s
 	}
 	c.serviceMap = m
@@ -302,7 +306,7 @@ func (c *Cluster) SetServices(services []ecstypes.Service) {
 // GenTasks returns tasks with TaskArn set to arnPrefix+offset, where offset is [0, count).
 func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecstypes.Task)) []ecstypes.Task {
 	var tasks []ecstypes.Task
-	for i := 0; i < count; i++ {
+	for i := range count {
 		t := ecstypes.Task{
 			Group:   aws.String(""),
 			TaskArn: aws.String(arnPrefix + strconv.Itoa(i)),
@@ -319,7 +323,7 @@ func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecstypes.T
 // e.g. foo0:1, foo1:1 the `:` is following the task family version syntax.
 func GenTaskDefinitions(arnPrefix string, count, version int, modifier func(i int, def *ecstypes.TaskDefinition)) []*ecstypes.TaskDefinition {
 	var defs []*ecstypes.TaskDefinition
-	for i := 0; i < count; i++ {
+	for i := range count {
 		d := &ecstypes.TaskDefinition{
 			TaskDefinitionArn: aws.String(fmt.Sprintf("%s%d:%d", arnPrefix, i, version)),
 			Family:            aws.String(""),
@@ -334,7 +338,7 @@ func GenTaskDefinitions(arnPrefix string, count, version int, modifier func(i in
 
 func GenContainerInstances(arnPrefix string, count int, modifier func(i int, ci *ecstypes.ContainerInstance)) []ecstypes.ContainerInstance {
 	var instances []ecstypes.ContainerInstance
-	for i := 0; i < count; i++ {
+	for i := range count {
 		ci := ecstypes.ContainerInstance{
 			ContainerInstanceArn: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 		}
@@ -348,7 +352,7 @@ func GenContainerInstances(arnPrefix string, count int, modifier func(i int, ci 
 
 func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2types.Instance)) []ec2types.Instance {
 	var instances []ec2types.Instance
-	for i := 0; i < count; i++ {
+	for i := range count {
 		ins := ec2types.Instance{
 			InstanceId: aws.String(fmt.Sprintf("%s%d", idPrefix, i)),
 		}
@@ -362,7 +366,7 @@ func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2ty
 
 func GenServices(arnPrefix string, count int, modifier func(i int, s *ecstypes.Service)) []ecstypes.Service {
 	var services []ecstypes.Service
-	for i := 0; i < count; i++ {
+	for i := range count {
 		svc := ecstypes.Service{
 			ServiceArn:  aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 			ServiceName: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),

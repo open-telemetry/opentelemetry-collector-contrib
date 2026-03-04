@@ -9,7 +9,7 @@ import (
 )
 
 // updateLabelOp updates labels and label values in metric based on given operation
-func updateLabelOp(metric pmetric.Metric, mtpOp internalOperation, f internalFilter) {
+func updateLabelOp(metric pmetric.Metric, mtpOp *internalOperation, f internalFilter) {
 	op := mtpOp.configOperation
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		if !f.matchAttrs(attrs) {

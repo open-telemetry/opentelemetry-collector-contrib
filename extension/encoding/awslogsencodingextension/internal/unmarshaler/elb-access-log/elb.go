@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -30,7 +31,9 @@ type CLBAccessLogRecord struct {
 	ELB                    string  // The name of the load balancer
 	ClientIP               string  // Client IP
 	ClientPort             int64   // Client  port
-	BackendIPPort          string  // The IP address and port of the registered instance that processed this request, or -
+	BackendIPPort          string  // Backend IP:Port or -
+	BackendIP              string  // Backend IP split from BackendIPPort
+	BackendPort            int64   // Backend port split from BackendIPPort
 	RequestProcessingTime  float64 // Time taken to process the request in seconds (HTTP/TCP)
 	BackendProcessingTime  float64 // Time taken for the registered instance to respond
 	ResponseProcessingTime float64 // Time taken to send the response to the client
@@ -59,7 +62,7 @@ func convertTextToCLBAccessLogRecord(fields []string) (CLBAccessLogRecord, error
 	record := CLBAccessLogRecord{
 		Time:              fields[0],  // Timestamp
 		ELB:               fields[1],  // Load balancer name
-		BackendIPPort:     fields[3],  // Backend IP:Port
+		BackendIPPort:     fields[3],  // Backend IP:Port or -
 		ELBStatusCode:     0,          // Placeholder for ELB status code
 		BackendStatusCode: 0,          // Placeholder for Backend status code
 		UserAgent:         fields[12], // User-Agent
@@ -68,10 +71,25 @@ func convertTextToCLBAccessLogRecord(fields []string) (CLBAccessLogRecord, error
 	}
 
 	// Process the fields for numerical values (convenient to parse from string)
-	record.ClientIP = strings.Split(fields[2], ":")[0]
-	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[2], ":")[1]); err != nil {
+	var clientPort string
+	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[2]); err != nil {
+		return record, fmt.Errorf("could not parse client IP:Port %s: %w", fields[2], err)
+	}
+	if record.ClientPort, err = safeConvertStrToInt(clientPort); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
 	}
+
+	// Parse BackendIPPort into BackendIP and BackendPort
+	if record.BackendIPPort != unknownField {
+		var backendPort string
+		if record.BackendIP, backendPort, err = net.SplitHostPort(record.BackendIPPort); err != nil {
+			return record, fmt.Errorf("could not parse backend IP:Port %s: %w", record.BackendIPPort, err)
+		}
+		if record.BackendPort, err = safeConvertStrToInt(backendPort); err != nil {
+			return record, fmt.Errorf("could not convert backend port to integer: %w", err)
+		}
+	}
+
 	if record.RequestProcessingTime, err = safeConvertStrToFloat(fields[4]); err != nil {
 		return record, fmt.Errorf("could not convert request processing time to float: %w", err)
 	}
@@ -121,7 +139,8 @@ type NLBAccessLogRecord struct {
 	Listener                  string // Resource ID of the TLS listener for the connection
 	ClientIP                  string // Client IP
 	ClientPort                int64  // Client  port
-	DestinationIPPort         string // The destination IP and port of the target
+	DestinationIP             string // Destination IP
+	DestinationPort           int64  // Destination port
 	ConnectionTime            int64  // Total time for the connection to complete, in milliseconds
 	TLSHandshakeTime          int64  // Time for the TLS handshake to complete, in milliseconds, or -
 	ReceivedBytes             int64  // Count of bytes received by the load balancer from the client, after decryption
@@ -156,7 +175,6 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 		Time:                      fields[2],  // Timestamp
 		ELB:                       fields[3],  // Load balancer resource ID
 		Listener:                  fields[4],  // Listener ID
-		DestinationIPPort:         fields[6],  // Destination IP and port
 		TLSHandshakeTime:          0,          // TLSHandshakeTime placeholder value
 		IncomingTLSAlert:          fields[11], // Incoming TLS alert
 		ChosenCertARN:             fields[12], // Chosen certificate ARN
@@ -172,9 +190,20 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 	}
 
 	// Processing additional fields if applicable
-	record.ClientIP = strings.Split(fields[5], ":")[0]
-	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[5], ":")[1]); err != nil {
+	var clientPort string
+	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[5]); err != nil {
+		return record, fmt.Errorf("could not parse client IP:Port %s: %w", fields[5], err)
+	}
+	if record.ClientPort, err = safeConvertStrToInt(clientPort); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
+	}
+
+	var destinationPort string
+	if record.DestinationIP, destinationPort, err = net.SplitHostPort(fields[6]); err != nil {
+		return record, fmt.Errorf("could not parse destination IP:Port %s: %w", fields[6], err)
+	}
+	if record.DestinationPort, err = safeConvertStrToInt(destinationPort); err != nil {
+		return record, fmt.Errorf("could not convert destination port to integer: %w", err)
 	}
 
 	if record.ConnectionTime, err = safeConvertStrToInt(fields[7]); err != nil {
@@ -205,10 +234,12 @@ type ALBAccessLogRecord struct {
 	ELB                    string // Load balancer resource ID
 	ClientIP               string // Client IP
 	ClientPort             int64  // Client  port
-	TargetIPPort           string // Target IP and port
-	RequestProcessingTime  string // Time taken to process the request in seconds
-	TargetProcessingTime   string // Time taken for the target to process the request in seconds
-	ResponseProcessingTime string // Time taken to send the response to the client in seconds
+	TargetIPPort           string // Target IP:Port or -
+	TargetIP               string // Target IP
+	TargetPort             int64  // Target port
+	RequestProcessingTime  string // Time taken to process the request in milliseconds
+	TargetProcessingTime   string // Time taken for the target to process the request in milliseconds
+	ResponseProcessingTime string // Time taken to send the response to the client in milliseconds
 	ELBStatusCode          int64  // Status code from the load balancer
 	TargetStatusCode       string // Status code from the target
 	ReceivedBytes          int64  // Size of the request in bytes
@@ -233,6 +264,10 @@ type ALBAccessLogRecord struct {
 	TargetStatusCodeList   string // List of status codes from targets
 	Classification         string // Classification of the request
 	ClassificationReason   string // Reason for classification
+	ConnectionTraceID      string // The connection traceability ID
+	TransformedHost        string // The transformed host header
+	TransformedURI         string // The URI after it is modified by a URL rewrite transform
+	RequestTransformStatus string // The status of the rewrite transform
 }
 
 // convertTextToALBAccessLogRecord converts a slice of strings into a ALBAccessLogRecord
@@ -268,11 +303,38 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 		TargetStatusCodeList:   fields[26],
 		Classification:         fields[27],
 		ClassificationReason:   fields[28],
+		ConnectionTraceID:      unknownField,
+		TransformedHost:        unknownField,
+		TransformedURI:         unknownField,
+		RequestTransformStatus: unknownField,
 	}
-	record.ClientIP = strings.Split(fields[3], ":")[0]
-	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[3], ":")[1]); err != nil {
+	if len(fields) >= 30 {
+		record.ConnectionTraceID = fields[29]
+	}
+	if len(fields) >= 33 {
+		record.TransformedHost = fields[30]
+		record.TransformedURI = fields[31]
+		record.RequestTransformStatus = fields[32]
+	}
+	var clientPort string
+	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[3]); err != nil {
+		return record, fmt.Errorf("could not parse client IP:Port %s: %w", fields[3], err)
+	}
+	if record.ClientPort, err = safeConvertStrToInt(clientPort); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
 	}
+
+	// Parse TargetIPPort into TargetIP and TargetPort
+	if record.TargetIPPort != unknownField {
+		var targetPort string
+		if record.TargetIP, targetPort, err = net.SplitHostPort(record.TargetIPPort); err != nil {
+			return record, fmt.Errorf("could not parse target IP:Port %s: %w", record.TargetIPPort, err)
+		}
+		if record.TargetPort, err = safeConvertStrToInt(targetPort); err != nil {
+			return record, fmt.Errorf("could not convert target port to integer: %w", err)
+		}
+	}
+
 	if record.ELBStatusCode, err = safeConvertStrToInt(fields[8]); err != nil {
 		return record, fmt.Errorf("could not convert elb status code to integer: %w", err)
 	}
@@ -357,12 +419,11 @@ func convertToUnixEpoch(isoTimestamp string) (int64, error) {
 	return t.UnixNano(), nil
 }
 
-// scanField gets the next value in the log line by moving
-// one space. If the value starts with a quote, it moves
-// forward until it finds the ending quote, and considers
-// that just 1 value. Otherwise, it returns the value as
-// it is.
-func scanField(logLine string) (string, string, error) {
+// scanField gets the next value in the log line by moving through space delimiters.
+// If the value starts with a quote, it moves forward until it finds the ending quote.
+// Note that quotes are not preserved. For example "a","b" becomes a,b.
+// Otherwise, it returns the value as it is.
+func scanField(logLine string) (value, remainder string, err error) {
 	if logLine == "" {
 		return "", "", io.EOF
 	}
@@ -372,19 +433,35 @@ func scanField(logLine string) (string, string, error) {
 		return value, remaining, nil
 	}
 
-	// if there is a quote, we need to get the rest of the value
-	logLine = logLine[1:] // remove first quote
-	value, remaining, found := strings.Cut(logLine, `"`)
-	if !found {
-		return "", "", fmt.Errorf("value %q has no end quote", logLine)
+	// preserve values without quotes, terminate at space after the closing quote or at line end
+	var quoteStack []rune
+	var unquotedValue []rune
+	for i, char := range logLine {
+		if char == ' ' && len(quoteStack) == 0 {
+			// terminating space found, return the value
+			return string(unquotedValue), logLine[i+1:], nil
+		}
+
+		if char != '"' {
+			unquotedValue = append(unquotedValue, char)
+		}
+
+		if char == '"' {
+			if len(quoteStack) > 0 && quoteStack[len(quoteStack)-1] == '"' {
+				quoteStack = quoteStack[:len(quoteStack)-1]
+			} else {
+				quoteStack = append(quoteStack, char)
+			}
+		}
 	}
 
-	// Remove space after closing quote if present
-	if remaining != "" && remaining[0] == ' ' {
-		remaining = remaining[1:]
+	if len(quoteStack) == 0 {
+		// No quotes means we are at the end of log line
+		return string(unquotedValue), "", nil
 	}
 
-	return value, remaining, nil
+	// Invalid log line - must not happen in well-formed logs
+	return "", "", fmt.Errorf("log line has no end quote: %v", logLine)
 }
 
 func extractFields(logLine string) ([]string, error) {
@@ -411,32 +488,40 @@ func extractFields(logLine string) ([]string, error) {
 func parseRequestField(raw string) (method, uri, protoName, protoVersion string, err error) {
 	method, remaining, _ := strings.Cut(raw, " ")
 	if method == "" {
-		err = fmt.Errorf("unexpected: request field %q has no method", raw)
-		return
+		err = fmt.Errorf("unexpected: field %q has no method section", raw)
+		return method, uri, protoName, protoVersion, err
 	}
 
-	uri, remaining, _ = strings.Cut(remaining, " ")
-	if uri == "" {
-		err = fmt.Errorf("unexpected: request field %q has no URI", raw)
-		return
-	}
+	var protocol string
 
-	protocol, leftover, _ := strings.Cut(remaining, " ")
-	if protocol == "" || leftover != "" {
-		err = fmt.Errorf(`request field %q does not match expected format "<method> <uri> <protocol>"`, raw)
-		return
+	index := strings.LastIndex(remaining, " ")
+	switch {
+	case index == -1:
+		err = fmt.Errorf("unexpected: field %q has no protocol/version section", raw)
+		return method, uri, protoName, protoVersion, err
+	case index == len(remaining)-1:
+		uri = strings.TrimSpace(remaining)
+		protocol = unknownField
+	default:
+		uri = remaining[:index]
+		protocol = remaining[index+1:]
 	}
 
 	protoName, protoVersion, err = netProtocol(protocol)
 	if err != nil {
 		err = fmt.Errorf("invalid protocol in request field: %w", err)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
-	return
+
+	return method, uri, protoName, protoVersion, nil
 }
 
 // netProtocol returns protocol name and version based on proto value
 func netProtocol(proto string) (string, string, error) {
+	if proto == unknownField {
+		return unknownField, unknownField, nil
+	}
+
 	name, version, found := strings.Cut(proto, "/")
 	if !found || name == "" || version == "" {
 		return "", "", errors.New(`request uri protocol does not follow expected scheme "<name>/<version>"`)

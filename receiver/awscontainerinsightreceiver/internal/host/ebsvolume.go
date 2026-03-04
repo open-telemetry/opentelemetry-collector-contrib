@@ -102,7 +102,8 @@ func (e *ebsVolume) refresh(ctx context.Context) {
 			e.logger.Warn("Fail to call ec2 DescribeVolumes", zap.Error(err))
 			break
 		}
-		for _, volume := range result.Volumes {
+		for i := range result.Volumes {
+			volume := result.Volumes[i]
 			for _, attachment := range volume.Attachments {
 				devPath := e.addEBSVolumeMapping(volume.AvailabilityZone, attachment)
 				devPathSet[devPath] = true

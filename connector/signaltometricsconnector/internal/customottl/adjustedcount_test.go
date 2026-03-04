@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
@@ -33,13 +32,9 @@ func Test_AdjustedCount(t *testing.T) {
 			require.NoError(t, err)
 			span := ptrace.NewSpan()
 			span.TraceState().FromRaw(tc.tracestate)
-			result, err := exprFunc(nil, ottlspan.NewTransformContext(
-				span,
-				pcommon.NewInstrumentationScope(),
-				pcommon.NewResource(),
-				ptrace.NewScopeSpans(),
-				ptrace.NewResourceSpans(),
-			))
+			tCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), span)
+			defer tCtx.Close()
+			result, err := exprFunc(nil, tCtx)
 			if tc.errMsg != "" {
 				require.ErrorContains(t, err, tc.errMsg)
 				return

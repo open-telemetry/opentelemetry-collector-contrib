@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/telemetry"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -112,8 +113,6 @@ receivers:
           static_configs:
             - targets: [%q]
 
-processors:
-  batch:
 exporters:
   prometheusremotewrite:
     endpoint: %q
@@ -124,7 +123,6 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
@@ -144,6 +142,9 @@ service:
 		Receivers:  receivers,
 		Exporters:  exporters,
 		Processors: processors,
+		Telemetry: telemetry.NewFactory(
+			func() component.Config { return struct{}{} },
+		),
 	}
 
 	appSettings := otelcol.CollectorSettings{
@@ -176,19 +177,14 @@ service:
 	defer app.Shutdown()
 
 	// Wait until the collector has actually started.
-	for notYetStarted := true; notYetStarted; {
+	require.Eventually(t, func() bool {
 		state := app.GetState()
-		switch state {
-		case otelcol.StateRunning, otelcol.StateClosed, otelcol.StateClosing:
-			notYetStarted = false
-		case otelcol.StateStarting:
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
+		return state == otelcol.StateRunning || state == otelcol.StateClosed || state == otelcol.StateClosing
+	}, 30*time.Second, 10*time.Millisecond, "collector did not start")
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wReqL = append(wReqL, <-prweUploads)
 	}
 	defer cancel()

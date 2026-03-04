@@ -26,21 +26,16 @@ receivers:
       network:
       processes:
 
-processors:
-  batch:
-    send_batch_max_size: 1000
-    send_batch_size: 100
-    timeout: 10s
-
 exporters:
   datadog:
     api:
       site: ${env:DD_SITE}
       key: ${env:DD_API_KEY}
+    sending_queue:
+      batch:
 
 service:
   pipelines:
     metrics:
       receivers: [hostmetrics]
-      processors: [batch]
       exporters: [datadog]

@@ -1,0 +1,26 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /RESOURCE_ID
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.operation.name
+                value:
+                  stringValue: SecretGet
+              - key: azure.category
+                value:
+                  stringValue: AuditEvent
+            body: {}
+            timeUnixNano: "1668142107676714500"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
