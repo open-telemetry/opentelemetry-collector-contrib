@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/stanzatime"
+	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
 )
 
 type excludeOlderThanOption struct {
@@ -27,7 +27,7 @@ func (eot excludeOlderThanOption) apply(items []*item) ([]*item, error) {
 
 		// Keep (include) the file if its age (since last modification)
 		// is the same or less than the configured age.
-		fileAge := stanzatime.Since(fi.ModTime())
+		fileAge := internaltime.Since(fi.ModTime())
 		if fileAge <= eot.age {
 			filteredItems = append(filteredItems, item)
 		}

@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -148,12 +148,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		resource := resourceSpan.Resource()
 		resourceAttributes := resource.Attributes()
 		serviceName := ""
-		v, ok := resourceAttributes.Get(string(conventions.ServiceNameKey))
+		v, ok := resourceAttributes.Get(string(semconv.ServiceNameKey))
 		if ok {
 			serviceName = v.AsString()
 		}
 		serviceInstance := ""
-		v, ok = resourceAttributes.Get(string(conventions.ServiceInstanceIDKey))
+		v, ok = resourceAttributes.Get(string(semconv.ServiceInstanceIDKey))
 		if ok {
 			serviceInstance = v.AsString()
 		}

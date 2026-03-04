@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -58,7 +57,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 	}
 	p.st = st
 	ctx := t.Context()
-	assert.NoError(t, p.Start(ctx, componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
@@ -103,7 +102,7 @@ func TestInternalCacheLimit(t *testing.T) {
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
 	ctx := t.Context()
-	assert.NoError(t, p.Start(ctx, componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
@@ -203,7 +202,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	batch := simpleTracesWithID(traceID)
 
 	ctx := t.Context()
-	assert.NoError(t, p.Start(ctx, componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
@@ -241,7 +240,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	batch := simpleTracesWithID(traceID)
 
 	ctx := t.Context()
-	assert.NoError(t, p.Start(ctx, componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
@@ -319,7 +318,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 	p.st = st
 
 	ctx := t.Context()
-	assert.NoError(t, p.Start(ctx, componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
@@ -465,7 +464,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
 	ctx := t.Context()
-	assert.NoError(t, p.Start(ctx, componenttest.NewNopHost()))
+	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(t, p.Shutdown(ctx))
 	}()
@@ -572,7 +571,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	st := newMemoryStorage(p.telemetryBuilder)
 	p.st = st
 	ctx := b.Context()
-	require.NoError(b, p.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(b, p.Start(ctx, nil))
 	defer func() {
 		assert.NoError(b, p.Shutdown(ctx))
 	}()

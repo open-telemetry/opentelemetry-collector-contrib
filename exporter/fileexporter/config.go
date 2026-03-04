@@ -36,7 +36,8 @@ type Config struct {
 	// - true:  appends to the file.
 	Append bool `mapstructure:"append"`
 
-	// Rotation defines an option about rotation of telemetry files.
+	// Rotation defines an option about rotation of telemetry files. Ignored
+	// when GroupByAttribute is used.
 	Rotation *Rotation `mapstructure:"rotation"`
 
 	// FormatType define the data format of encoded telemetry data
@@ -92,7 +93,7 @@ type Rotation struct {
 }
 
 type GroupBy struct {
-	// Enables group_by. Default is false.
+	// Enables group_by. When group_by is enabled, rotation setting is ignored.  Default is false.
 	Enabled bool `mapstructure:"enabled"`
 
 	// ResourceAttribute specifies the name of the resource attribute that

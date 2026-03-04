@@ -69,21 +69,18 @@ func TestBooleanTagFilterInverted(t *testing.T) {
 		DisableInvertDecision bool
 	}{
 		{
-			Desc:  "non-matching span attribute",
-			Trace: newTraceBoolAttrs(empty, "non_matching", true),
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Desc:     "non-matching span attribute",
+			Trace:    newTraceBoolAttrs(empty, "non_matching", true),
 			Decision: samplingpolicy.InvertSampled,
 		},
 		{
-			Desc:  "span attribute with non matching boolean value",
-			Trace: newTraceBoolAttrs(empty, "example", false),
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Desc:     "span attribute with non matching boolean value",
+			Trace:    newTraceBoolAttrs(empty, "example", false),
 			Decision: samplingpolicy.InvertSampled,
 		},
 		{
-			Desc:  "span attribute with matching boolean value",
-			Trace: newTraceBoolAttrs(empty, "example", true),
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+			Desc:     "span attribute with matching boolean value",
+			Trace:    newTraceBoolAttrs(empty, "example", true),
 			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
@@ -102,11 +99,11 @@ func TestBooleanTagFilterInverted(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			if !c.DisableInvertDecision {
-				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", false)
+			if c.DisableInvertDecision {
+				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", true)
 				assert.NoError(t, err)
 				defer func() {
-					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", true)
+					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", false)
 					assert.NoError(t, err)
 				}()
 			}

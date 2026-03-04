@@ -6,7 +6,7 @@ metadata:
 data:
   relay: |
     exporters:
-      otlp_grpc:
+      otlp:
         endpoint: {{ .HostEndpoint }}:4317
         tls:
           insecure: true
@@ -16,16 +16,7 @@ data:
     processors:
     receivers:
       k8s_cluster:
-        metrics:
-          k8s.service.endpoint.count:
-            enabled: true
-          k8s.service.load_balancer.ingress.count:
-            enabled: true
-        resource_attributes:
-          k8s.service.traffic_distribution:
-            enabled: true
-          k8s.service.publish_not_ready_addresses:
-            enabled: true
+        
     service:
       telemetry:
         logs:
@@ -35,6 +26,6 @@ data:
       pipelines:
         metrics:
           exporters:
-          - otlp_grpc
+          - otlp
           receivers:
           - k8s_cluster

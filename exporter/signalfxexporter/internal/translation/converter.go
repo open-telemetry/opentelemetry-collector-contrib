@@ -5,13 +5,14 @@ package translation // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
@@ -119,6 +120,17 @@ func (c *MetricsConverter) translateAndFilter(dps []*sfxpb.DataPoint) []*sfxpb.D
 	return dps
 }
 
+func filterKeyChars(str, nonAlphanumericDimChars string) string {
+	filterMap := func(r rune) rune {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune(nonAlphanumericDimChars, r) {
+			return r
+		}
+		return '_'
+	}
+
+	return strings.Map(filterMap, str)
+}
+
 // resourceToDimensions will return a set of dimension from the
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
@@ -145,6 +157,14 @@ func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 	}
 
 	return dims
+}
+
+func (c *MetricsConverter) ConvertDimension(dim string) string {
+	res := dim
+	if c.metricTranslator != nil {
+		res = c.metricTranslator.translateDimension(dim)
+	}
+	return filterKeyChars(res, c.datapointValidator.nonAlphanumericDimChars)
 }
 
 func (c *MetricsConverter) Shutdown() {
@@ -203,20 +223,20 @@ func (dpv *datapointValidator) sanitizeDataPoints(dps []*sfxpb.DataPoint) []*sfx
 // sanitizeDimensions replaces all characters unsupported by SignalFx backend
 // in metric label keys and with "_" and drops dimensions when the key is greater
 // than 128 characters or when value is greater than 256 characters in length.
-func (dpv *datapointValidator) sanitizeDimensions(dims []*sfxpb.Dimension) []*sfxpb.Dimension {
+func (dpv *datapointValidator) sanitizeDimensions(dimensions []*sfxpb.Dimension) []*sfxpb.Dimension {
 	resultDimensionsLen := 0
-	for dimensionIndex, d := range dims {
+	for dimensionIndex, d := range dimensions {
 		if dpv.isValidDimension(d) {
-			d.Key = dimensions.FilterKeyChars(d.Key, dpv.nonAlphanumericDimChars)
+			d.Key = filterKeyChars(d.Key, dpv.nonAlphanumericDimChars)
 			if resultDimensionsLen < dimensionIndex {
-				dims[resultDimensionsLen] = d
+				dimensions[resultDimensionsLen] = d
 			}
 			resultDimensionsLen++
 		}
 	}
 
 	// Trim dimensions slice to account for any removed dimensions.
-	return dims[:resultDimensionsLen]
+	return dimensions[:resultDimensionsLen]
 }
 
 func (dpv *datapointValidator) isValidMetricName(name string) bool {

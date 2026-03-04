@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -109,7 +109,7 @@ func observe(heartbeatsSent, heartbeatsFailed metric.Int64Counter, attrs attribu
 	}
 }
 
-func generateHeartbeatLog(hecToOtelAttrs translator.HecToOtelAttrs, buildInfo component.BuildInfo) plog.Logs {
+func generateHeartbeatLog(hecToOtelAttrs splunk.HecToOtelAttrs, buildInfo component.BuildInfo) plog.Logs {
 	host, err := os.Hostname()
 	if err != nil {
 		host = "unknownhost"

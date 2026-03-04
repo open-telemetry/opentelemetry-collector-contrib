@@ -8,10 +8,9 @@ import (
 	"errors"
 	"time"
 
-	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
+	"github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -71,23 +70,18 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	if enableMultipleWorkersFeatureGate.IsEnabled() {
 		numConsumers = prwCfg.RemoteWriteQueue.NumConsumers
 	}
-
-	qCfg := configoptional.Default(exporterhelper.QueueBatchConfig{
-		NumConsumers: numConsumers,
-		QueueSize:    int64(prwCfg.RemoteWriteQueue.QueueSize),
-		Sizer:        exporterhelper.RequestSizerTypeRequests,
-	})
-	if prwCfg.RemoteWriteQueue.Enabled {
-		qCfg.GetOrInsertDefault()
-	}
-
 	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(qCfg),
+		exporterhelper.WithQueue(exporterhelper.QueueBatchConfig{
+			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
+			NumConsumers: numConsumers,
+			QueueSize:    int64(prwCfg.RemoteWriteQueue.QueueSize),
+			Sizer:        exporterhelper.RequestSizerTypeRequests,
+		}),
 		exporterhelper.WithStart(prwe.Start),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
@@ -121,7 +115,7 @@ func createDefaultConfig() component.Config {
 		BackOffConfig:       retrySettings,
 		AddMetricSuffixes:   true,
 		SendMetadata:        false,
-		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 		ClientConfig:        clientConfig,
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{

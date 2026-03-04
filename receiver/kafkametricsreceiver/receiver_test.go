@@ -22,10 +22,10 @@ import (
 )
 
 func setFranzGo(tb testing.TB, value bool) {
-	currentFranzState := metadata.ReceiverKafkametricsreceiverUseFranzGoFeatureGate.IsEnabled()
-	require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.ReceiverKafkametricsreceiverUseFranzGoFeatureGate.ID(), value))
+	currentFranzState := franzGoFeatureGate.IsEnabled()
+	require.NoError(tb, featuregate.GlobalRegistry().Set(franzGoFeatureGate.ID(), value))
 	tb.Cleanup(func() {
-		require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.ReceiverKafkametricsreceiverUseFranzGoFeatureGate.ID(), currentFranzState))
+		require.NoError(tb, featuregate.GlobalRegistry().Set(franzGoFeatureGate.ID(), currentFranzState))
 	})
 }
 
@@ -70,7 +70,6 @@ func TestNewReceiver(t *testing.T) {
 }
 
 func TestNewReceiver_handles_scraper_error(t *testing.T) {
-	setFranzGo(t, false)
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
 	mockScraper := func(context.Context, Config, receiver.Settings) (scraper.Metrics, error) {

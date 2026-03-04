@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -75,9 +76,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbWtcacheBytesRead:       MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ServerAddress:     ResourceAttributeConfig{Enabled: true},
-					ServerPort:        ResourceAttributeConfig{Enabled: true},
-					ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+					Database:      ResourceAttributeConfig{Enabled: true},
+					ServerAddress: ResourceAttributeConfig{Enabled: true},
+					ServerPort:    ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -134,9 +135,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbWtcacheBytesRead:       MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ServerAddress:     ResourceAttributeConfig{Enabled: false},
-					ServerPort:        ResourceAttributeConfig{Enabled: false},
-					ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
+					Database:      ResourceAttributeConfig{Enabled: false},
+					ServerAddress: ResourceAttributeConfig{Enabled: false},
+					ServerPort:    ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -172,17 +173,17 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				ServerAddress:     ResourceAttributeConfig{Enabled: true},
-				ServerPort:        ResourceAttributeConfig{Enabled: true},
-				ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+				Database:      ResourceAttributeConfig{Enabled: true},
+				ServerAddress: ResourceAttributeConfig{Enabled: true},
+				ServerPort:    ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				ServerAddress:     ResourceAttributeConfig{Enabled: false},
-				ServerPort:        ResourceAttributeConfig{Enabled: false},
-				ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
+				Database:      ResourceAttributeConfig{Enabled: false},
+				ServerAddress: ResourceAttributeConfig{Enabled: false},
+				ServerPort:    ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

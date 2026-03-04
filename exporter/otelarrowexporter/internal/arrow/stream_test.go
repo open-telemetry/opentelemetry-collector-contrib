@@ -77,9 +77,12 @@ func newStreamTestCase(t *testing.T, pname PrioritizerName) *streamTestCase {
 func (tc *streamTestCase) start(channel testChannel) {
 	tc.traceCall.Times(1).DoAndReturn(tc.connectTestStream(channel))
 
-	tc.wait.Go(func() {
+	tc.wait.Add(1)
+
+	go func() {
+		defer tc.wait.Done()
 		tc.stream.run(tc.bgctx, tc.doneCancel, tc.traceClient, nil)
-	})
+	}()
 }
 
 // cancelAndWait cancels the context and waits for the runner to return.

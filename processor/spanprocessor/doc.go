@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 // Package spanprocessor contains logic to modify top level settings of a span, such
 // as its name.

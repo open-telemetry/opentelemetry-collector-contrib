@@ -79,15 +79,12 @@ resourceLogs:
               - key: oracledb.event
                 value:
                   stringValue: ""
-              - key: oracledb.procedure_id
-                value:
-                  intValue: "12345"
-              - key: oracledb.procedure_name
+              - key: oracledb.object_name
                 value:
                   stringValue: BLAH
-              - key: oracledb.procedure_type
+              - key: oracledb.object_type
                 value:
-                  stringValue: PROCEDURE_TYPE-A
+                  stringValue: OBJECT_TYPE-A
               - key: oracledb.osuser
                 value:
                   stringValue: test-user

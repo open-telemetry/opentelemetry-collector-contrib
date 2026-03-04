@@ -215,11 +215,11 @@ resourceMetrics:
           - description: Gauge tracking the indexed license usage per index
             gauge:
               dataPoints:
-                - asInt: "104"
+                - asInt: "101"
                   attributes:
                     - key: splunk.index.name
                       value:
-                        stringValue: some_val1
+                        stringValue: ""
                     - key: splunk.splunkd.build
                       value:
                         stringValue: ""
@@ -228,11 +228,11 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "105"
+                - asInt: "101"
                   attributes:
                     - key: splunk.index.name
                       value:
-                        stringValue: some_val5
+                        stringValue: some_val2
                     - key: splunk.splunkd.build
                       value:
                         stringValue: ""
@@ -241,7 +241,46 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "93"
+                - asInt: "100"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: some_val2
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "101"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: some_val2
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "100"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: some_val2
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "100"
                   attributes:
                     - key: splunk.index.name
                       value:

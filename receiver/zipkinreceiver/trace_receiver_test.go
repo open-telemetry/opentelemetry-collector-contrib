@@ -23,12 +23,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
 
 	zipkin2 "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinthriftconverter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver/internal/metadata"
@@ -61,10 +61,7 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  tt.args.address,
-					},
+					Endpoint: tt.args.address,
 				},
 			}
 			got, err := newReceiver(cfg, tt.args.nextConsumer, receivertest.NewNopSettings(metadata.Type))
@@ -86,10 +83,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:" + portStr,
-			},
+			Endpoint: "localhost:" + portStr,
 		},
 	}
 	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings(metadata.Type))
@@ -109,7 +103,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
 	req := reqs.ResourceSpans().At(0)
-	sn, _ := req.Resource().Attributes().Get("service.name")
+	sn, _ := req.Resource().Attributes().Get(string(conventions.ServiceNameKey))
 	assert.Equal(t, "frontend", sn.Str())
 
 	// Expecting 9 non-nil spans
@@ -137,10 +131,7 @@ func TestStartTraceReception(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:0",
-					},
+					Endpoint: "localhost:0",
 				},
 			}
 			zr, err := newReceiver(cfg, sink, receivertest.NewNopSettings(metadata.Type))
@@ -231,10 +222,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "",
-					},
+					Endpoint: "",
 				},
 			}
 			zr, err := newReceiver(cfg, next, receivertest.NewNopSettings(metadata.Type))
@@ -261,10 +249,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "",
-			},
+			Endpoint: "",
 		},
 	}
 	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings(metadata.Type))
@@ -286,10 +271,7 @@ func TestReceiverConsumerError(t *testing.T) {
 
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:9411",
-			},
+			Endpoint: "localhost:9411",
 		},
 	}
 	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), receivertest.NewNopSettings(metadata.Type))
@@ -311,10 +293,7 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:9411",
-			},
+			Endpoint: "localhost:9411",
 		},
 	}
 	zr, err := newReceiver(cfg, consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer error"))), receivertest.NewNopSettings(metadata.Type))
@@ -440,10 +419,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	next := new(consumertest.TracesSink)
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "",
-			},
+			Endpoint: "",
 		},
 		ParseStringTags: true,
 	}
@@ -484,10 +460,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "",
-			},
+			Endpoint: "",
 		},
 		ParseStringTags: true,
 	}

@@ -1,5 +1,5 @@
 exporters:
-  otlp_grpc:
+  otlp:
     endpoint: localhost:1111
 receivers:
   otlp:
@@ -20,8 +20,8 @@ service:
     traces:
       receivers: [otlp]
       processors: []
-      exporters: [otlp_grpc]
+      exporters: [otlp]
     metrics:
       receivers: [otlp]
       processors: [transform]
-      exporters: [otlp_grpc]
+      exporters: [otlp]

@@ -59,6 +59,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
+
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

@@ -1,4 +1,4 @@
-signal_to_metrics:
+signaltometrics:
   logs:
     - name: total.logrecords.histogram
       description: Logrecords as histogram with log.duration from attributes

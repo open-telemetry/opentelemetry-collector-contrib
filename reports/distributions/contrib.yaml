@@ -12,7 +12,7 @@ components:
         - roundrobin
         - routing
         - servicegraph
-        - signal_to_metrics
+        - signaltometrics
         - spanmetrics
         - sum
     exporter:
@@ -26,6 +26,7 @@ components:
         - azuredataexplorer
         - azuremonitor
         - bmchelix
+        - carbon
         - cassandra
         - clickhouse
         - coralogix
@@ -52,6 +53,7 @@ components:
         - prometheusremotewrite
         - pulsar
         - rabbitmq
+        - sapm
         - sentry
         - signalfx
         - splunk_hec
@@ -101,6 +103,7 @@ components:
     processor:
         - attributes
         - cumulativetodelta
+        - datadogsemantics
         - deltatocumulative
         - deltatorate
         - filter
@@ -109,7 +112,7 @@ components:
         - groupbytrace
         - interval
         - isolationforest
-        - k8s_attributes
+        - k8sattributes
         - logdedup
         - metricsgeneration
         - metricstarttime
@@ -140,9 +143,10 @@ components:
         - awsfirehose
         - awss3
         - awsxray
-        - azure_event_hub
         - azureblob
+        - azureeventhub
         - azuremonitor
+        - bigip
         - carbon
         - chrony
         - cloudflare
@@ -180,10 +184,9 @@ components:
         - kubeletstats
         - libhoney
         - loki
-        - macosunifiedlogging
         - memcached
         - mongodb
-        - mongodb_atlas
+        - mongodbatlas
         - mysql
         - namedpipe
         - netflow
@@ -219,7 +222,6 @@ components:
         - statsd
         - stef
         - syslog
-        - systemd
         - tcpcheck
         - tcplog
         - tlscheck

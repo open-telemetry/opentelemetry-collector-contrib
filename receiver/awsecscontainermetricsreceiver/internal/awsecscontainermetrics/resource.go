@@ -7,8 +7,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventionsv121 "go.opentelemetry.io/otel/semconv/v1.21.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -28,7 +27,7 @@ func containerResource(cm *ecsutil.ContainerMetadata, logger *zap.Logger) pcommo
 	resource.Attributes().PutStr(attributeECSDockerName, cm.DockerName)
 	resource.Attributes().PutStr(string(conventions.ContainerImageNameKey), image.Repository)
 	resource.Attributes().PutStr(attributeContainerImageID, cm.ImageID)
-	resource.Attributes().PutStr(string(conventionsv121.ContainerImageTagKey), image.Tag)
+	resource.Attributes().PutStr(string(conventions.ContainerImageTagKey), image.Tag)
 	resource.Attributes().PutStr(attributeContainerCreatedAt, cm.CreatedAt)
 	resource.Attributes().PutStr(attributeContainerStartedAt, cm.StartedAt)
 	if cm.FinishedAt != "" {

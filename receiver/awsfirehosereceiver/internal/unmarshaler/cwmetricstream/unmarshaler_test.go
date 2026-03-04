@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
@@ -109,9 +110,9 @@ func TestUnmarshal_SingleRecord(t *testing.T) {
 	// Check one resource attribute to check things are wired up.
 	// Remaining resource attributes are checked in TestSetResourceAttributes.
 	res := rm.Resource()
-	cloudProvider, ok := res.Attributes().Get("cloud.provider")
+	cloudProvider, ok := res.Attributes().Get(string(conventions.CloudProviderKey))
 	require.True(t, ok)
-	assert.Equal(t, "aws", cloudProvider.Str())
+	assert.Equal(t, conventions.CloudProviderAWS.Value.AsString(), cloudProvider.Str())
 	require.Equal(t, 1, rm.ScopeMetrics().Len())
 	sm := rm.ScopeMetrics().At(0)
 	assert.Equal(t, metadata.ScopeName, sm.Scope().Name())
@@ -155,8 +156,8 @@ func TestSetDataPointAttributes(t *testing.T) {
 		},
 	}
 	want := map[string]any{
-		"service.instance.id": testInstanceID,
-		"CustomDimension":     "whatever",
+		string(conventions.ServiceInstanceIDKey): testInstanceID,
+		"CustomDimension":                        "whatever",
 	}
 
 	dp := pmetric.NewSummaryDataPoint()
@@ -172,22 +173,22 @@ func TestSetResourceAttributes(t *testing.T) {
 		"WithAWSNamespace": {
 			namespace: "AWS/EC2",
 			want: map[string]any{
-				attributeAWSCloudWatchMetricStreamName: testStreamName,
-				"cloud.account.id":                     testAccountID,
-				"cloud.region":                         testRegion,
-				"cloud.provider":                       "aws",
-				"service.name":                         "EC2",
-				"service.namespace":                    "AWS",
+				attributeAWSCloudWatchMetricStreamName:  testStreamName,
+				string(conventions.CloudAccountIDKey):   testAccountID,
+				string(conventions.CloudRegionKey):      testRegion,
+				string(conventions.CloudProviderKey):    conventions.CloudProviderAWS.Value.AsString(),
+				string(conventions.ServiceNameKey):      "EC2",
+				string(conventions.ServiceNamespaceKey): "AWS",
 			},
 		},
 		"WithCustomNamespace": {
 			namespace: "CustomNamespace",
 			want: map[string]any{
 				attributeAWSCloudWatchMetricStreamName: testStreamName,
-				"cloud.account.id":                     testAccountID,
-				"cloud.region":                         testRegion,
-				"cloud.provider":                       "aws",
-				"service.name":                         "CustomNamespace",
+				string(conventions.CloudAccountIDKey):  testAccountID,
+				string(conventions.CloudRegionKey):     testRegion,
+				string(conventions.CloudProviderKey):   conventions.CloudProviderAWS.Value.AsString(),
+				string(conventions.ServiceNameKey):     "CustomNamespace",
 			},
 		},
 	}

@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
@@ -138,12 +137,11 @@ func TestAzureScraperScrape(t *testing.T) {
 			)
 
 			s := &azureScraper{
-				cfg:                          tt.fields.cfg,
-				mb:                           metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
-				mutex:                        &sync.Mutex{},
-				time:                         getTimeMock(),
-				clientOptionsResolver:        optionsResolver,
-				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.fields.cfg.Services),
+				cfg:                   tt.fields.cfg,
+				mb:                    metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
+				mutex:                 &sync.Mutex{},
+				time:                  getTimeMock(),
+				clientOptionsResolver: optionsResolver,
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
@@ -258,12 +256,11 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 
 		settings := receivertest.NewNopSettings(metadata.Type)
 		s := &azureScraper{
-			cfg:                          cfgLimitedMertics,
-			mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-			mutex:                        &sync.Mutex{},
-			time:                         getTimeMock(),
-			clientOptionsResolver:        optionsResolver,
-			storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfgLimitedMertics.Services),
+			cfg:                   cfgLimitedMertics,
+			mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+			mutex:                 &sync.Mutex{},
+			time:                  getTimeMock(),
+			clientOptionsResolver: optionsResolver,
 
 			// From there, initialize everything that is normally initialized in start() func
 			subscriptions: map[string]*azureSubscription{},
@@ -313,16 +310,14 @@ func getNominalTestScraper() *azureScraper {
 	)
 
 	settings := receivertest.NewNopSettings(metadata.Type)
-	cfg := createDefaultTestConfig()
 
 	return &azureScraper{
-		cfg:                          cfg,
-		settings:                     settings.TelemetrySettings,
-		mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-		mutex:                        &sync.Mutex{},
-		time:                         getTimeMock(),
-		clientOptionsResolver:        optionsResolver,
-		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		cfg:                   createDefaultTestConfig(),
+		settings:              settings.TelemetrySettings,
+		mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mutex:                 &sync.Mutex{},
+		time:                  getTimeMock(),
+		clientOptionsResolver: optionsResolver,
 
 		// From there, initialize everything that is normally initialized in start() func
 		subscriptions: map[string]*azureSubscription{},
@@ -356,151 +351,6 @@ func TestAzureScraperGetResources(t *testing.T) {
 	s.getResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Empty(t, s.resources["subscriptionId1"])
-}
-
-func TestAzureScraperProcessResources(t *testing.T) {
-	cfgWithSubTypes := createDefaultTestConfig()
-	cfgWithoutSubTypes := createDefaultTestConfig()
-	cfgWithoutSubTypes.Services = []string{}
-
-	tests := []struct {
-		name         string
-		cfg          *Config
-		resourcesArg []*armresources.GenericResourceExpanded
-		expected     []*armresources.GenericResourceExpanded
-	}{
-		{
-			name: "user selected sub types (blobServices etc)",
-			cfg:  cfgWithSubTypes,
-			resourcesArg: []*armresources.GenericResourceExpanded{
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
-					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
-					},
-				},
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
-					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
-					Tags: map[string]*string{
-						"tagB": to.Ptr("tagB value"),
-					},
-				},
-			},
-			expected: []*armresources.GenericResourceExpanded{
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
-					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
-					},
-				},
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/blobServices/default"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts/blobServices"),
-					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
-					},
-				},
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/fileServices/default"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts/fileServices"),
-					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
-					},
-				},
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/queueServices/default"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts/queueServices"),
-					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
-					},
-				},
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/tableServices/default"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts/tableServices"),
-					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
-					},
-				},
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
-					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
-					Tags: map[string]*string{
-						"tagB": to.Ptr("tagB value"),
-					},
-				},
-			},
-		},
-		{
-			name: "user didn't select sub type (blobServices etc)",
-			cfg:  cfgWithoutSubTypes,
-			resourcesArg: []*armresources.GenericResourceExpanded{
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
-					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
-					},
-				},
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
-					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
-					Tags: map[string]*string{
-						"tagB": to.Ptr("tagB value"),
-					},
-				},
-			},
-			expected: []*armresources.GenericResourceExpanded{
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
-					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
-					},
-				},
-				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
-					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
-					Tags: map[string]*string{
-						"tagB": to.Ptr("tagB value"),
-					},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			optionsResolver := newMockClientOptionsResolver(
-				getSubscriptionByIDMockData(),
-				getSubscriptionsMockData(),
-				getResourcesMockData(),
-				getMetricsDefinitionsMockData(),
-				getMetricsValuesMockData(),
-				nil,
-			)
-
-			settings := receivertest.NewNopSettings(metadata.Type)
-
-			s := &azureScraper{
-				cfg:                          tt.cfg,
-				settings:                     settings.TelemetrySettings,
-				mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-				mutex:                        &sync.Mutex{},
-				time:                         getTimeMock(),
-				clientOptionsResolver:        optionsResolver,
-				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.cfg.Services),
-
-				// From there, initialize everything that is normally initialized in start() func
-				subscriptions: map[string]*azureSubscription{},
-				resources:     map[string]map[string]*azureResource{},
-			}
-
-			assert.Equal(t, tt.expected, s.processResources(tt.resourcesArg))
-		})
-	}
 }
 
 func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
@@ -733,24 +583,21 @@ func TestGetMetricAggregations(t *testing.T) {
 	testNamespaceName := "Microsoft.AAD/DomainServices"
 	testMetricName := "MetricName"
 	tests := []struct {
-		name                  string
-		filters               NestedListAlias
-		supportedAggregations []string
-		want                  []string
+		name    string
+		filters NestedListAlias
+		want    []string
 	}{
 		{
-			name:                  "should return supported aggregations when metrics filter empty",
-			filters:               NestedListAlias{},
-			supportedAggregations: []string{aggregations[0]},
-			want:                  []string{aggregations[0]},
+			name:    "should return all aggregations when metrics filter empty",
+			filters: NestedListAlias{},
+			want:    aggregations,
 		},
 		{
 			name: "should return all aggregations when namespace not in filters",
 			filters: NestedListAlias{
 				"another.namespace": nil,
 			},
-			supportedAggregations: []string{aggregations[0]},
-			want:                  []string{aggregations[0]},
+			want: aggregations,
 		},
 		{
 			name: "should return all aggregations when metric in filters",
@@ -759,8 +606,7 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {},
 				},
 			},
-			supportedAggregations: []string{aggregations[0]},
-			want:                  []string{aggregations[0]},
+			want: aggregations,
 		},
 		{
 			name: "should return all aggregations ignoring metric name case",
@@ -769,8 +615,7 @@ func TestGetMetricAggregations(t *testing.T) {
 					strings.ToLower(testMetricName): {},
 				},
 			},
-			supportedAggregations: []string{aggregations[0]},
-			want:                  []string{aggregations[0]},
+			want: aggregations,
 		},
 		{
 			name: "should return all aggregations when asterisk in filters",
@@ -779,8 +624,7 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {filterAllAggregations},
 				},
 			},
-			supportedAggregations: []string{aggregations[0]},
-			want:                  []string{aggregations[0]},
+			want: aggregations,
 		},
 		{
 			name: "should be empty when metric not in filters",
@@ -789,8 +633,7 @@ func TestGetMetricAggregations(t *testing.T) {
 					"not_this_metric": {},
 				},
 			},
-			supportedAggregations: []string{aggregations[0]},
-			want:                  []string{},
+			want: []string{},
 		},
 		{
 			name: "should return one aggregations",
@@ -799,8 +642,7 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {aggregations[0]},
 				},
 			},
-			supportedAggregations: []string{aggregations[0]},
-			want:                  []string{aggregations[0]},
+			want: []string{aggregations[0]},
 		},
 		{
 			name: "should return one aggregations ignoring aggregation case",
@@ -809,18 +651,7 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {strings.ToLower(aggregations[0])},
 				},
 			},
-			supportedAggregations: []string{aggregations[0]},
-			want:                  []string{aggregations[0]},
-		},
-		{
-			name: "should return one aggregations even if not supported",
-			filters: NestedListAlias{
-				testNamespaceName: {
-					testMetricName: {aggregations[0]},
-				},
-			},
-			supportedAggregations: []string{aggregations[2]},
-			want:                  []string{aggregations[0]},
+			want: []string{aggregations[0]},
 		},
 		{
 			name: "should return many aggregations",
@@ -829,14 +660,13 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {aggregations[0], aggregations[2]},
 				},
 			},
-			supportedAggregations: []string{aggregations[0]},
-			want:                  []string{aggregations[0], aggregations[2]},
+			want: []string{aggregations[0], aggregations[2]},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getMetricAggregations(testNamespaceName, testMetricName, tt.filters, tt.supportedAggregations)
+			got := getMetricAggregations(testNamespaceName, testMetricName, tt.filters)
 			require.Equal(t, tt.want, got)
 		})
 	}
@@ -879,29 +709,4 @@ func TestMapFindInsensitive(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestBuildSubTypeResource_PointersAreDistinct(t *testing.T) {
-	orig := armresources.GenericResourceExpanded{
-		ID:       to.Ptr("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource"),
-		Type:     to.Ptr("Microsoft.Storage/storageAccounts"),
-		Name:     to.Ptr("myResource"),
-		Location: to.Ptr("westeurope"),
-		Tags: map[string]*string{
-			"env": to.Ptr("prod"),
-		},
-	}
-
-	newType := "Microsoft.Storage/storageAccounts/blobServices"
-	newID := "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource/blobServices/default"
-	cloned := buildSubTypeResource(orig, newType, newID)
-
-	require.NotNil(t, cloned)
-	require.NotEqual(t, orig.ID, cloned.ID)
-	require.NotEqual(t, orig.Type, cloned.Type)
-	require.Equal(t, newID, *cloned.ID)
-	require.Equal(t, newType, *cloned.Type)
-	require.Equal(t, *orig.Name, *cloned.Name)
-	require.Equal(t, *orig.Location, *cloned.Location)
-	require.NotSame(t, orig.Location, cloned.Location)
 }

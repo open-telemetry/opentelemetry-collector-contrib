@@ -57,7 +57,7 @@ func (c *CommaSeparatedSet) UnmarshalText(text []byte) error {
 func setupCLI() (Args, error) {
 	cli := Args{}
 	flag.StringVar(&cli.BasePrefix, "base-prefix", "", "The base prefix of your Go modules (e.g., github.com/yourorg)")
-	flag.StringVar(&cli.Dir, "dir", ".", "The directory to scan for go.mod files, and where .codecov.yml is located")
+	flag.StringVar(&cli.Dir, "dir", ".", "The directory to scan for go.mod files")
 	flag.TextVar(&cli.SkippedModules, "skipped-modules", CommaSeparatedSet{}, "Comma-separated list of Go modules to skip using glob expressions (e.g., rel/path/from/base-prefix/*/example)")
 	flag.Parse()
 
@@ -92,7 +92,7 @@ func main() {
 	}
 
 	// Add component list to the config
-	err = addComponentList(config, args)
+	err = addComponentList(config)
 	if err != nil {
 		fmt.Println("Error adding component list:", err)
 	}
@@ -231,7 +231,7 @@ const (
 
 var matchComponentSection = regexp.MustCompile("(?s)" + startComponentList + ".*" + endComponentList)
 
-func addComponentList(config *codecovConfig, cli Args) error {
+func addComponentList(config *codecovConfig) error {
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
@@ -243,21 +243,20 @@ func addComponentList(config *codecovConfig, cli Args) error {
 	}
 
 	replacement := []byte(startComponentList + "\n" + buf.String() + endComponentList)
-	configPath := filepath.Join(cli.Dir, codecovFileName)
-	codecovCfg, err := os.ReadFile(configPath)
+	codecovCfg, err := os.ReadFile(codecovFileName)
 	if err != nil {
-		return fmt.Errorf("failed to read %q: %w", configPath, err)
+		return fmt.Errorf("failed to read %q: %w", codecovFileName, err)
 	}
 
 	oldContent := matchComponentSection.FindSubmatch(codecovCfg)
 	if len(oldContent) == 0 {
-		return fmt.Errorf("failed to find start and end markers in %q", configPath)
+		return fmt.Errorf("failed to find start and end markers in %q", codecovFileName)
 	}
 
 	codecovCfg = bytes.ReplaceAll(codecovCfg, oldContent[0], replacement)
-	err = os.WriteFile(configPath, codecovCfg, 0o600)
+	err = os.WriteFile(codecovFileName, codecovCfg, 0o600)
 	if err != nil {
-		return fmt.Errorf("failed to write to %q: %w", configPath, err)
+		return fmt.Errorf("failed to write to %q: %w", codecovFileName, err)
 	}
 	return nil
 }

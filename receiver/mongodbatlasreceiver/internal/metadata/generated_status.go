@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("mongodb_atlas")
+	Type      = component.MustNewType("mongodbatlas")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 )
 

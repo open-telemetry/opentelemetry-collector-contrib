@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	defaultDockerAPIVersion         = docker.MustNewAPIVersion("1.44")
-	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion("1.25")
+	defaultDockerAPIVersion         = "1.25"
+	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion(defaultDockerAPIVersion)
 )
 
 type resultV2 struct {

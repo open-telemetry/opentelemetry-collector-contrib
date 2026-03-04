@@ -57,9 +57,11 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			mr.wgMetricsProcessed.Add(1)
 
 			wgListenAndServe := sync.WaitGroup{}
-			wgListenAndServe.Go(func() {
+			wgListenAndServe.Add(1)
+			go func() {
+				defer wgListenAndServe.Done()
 				assert.Error(t, svr.ListenAndServe(p, mc, mr))
-			})
+			}()
 
 			runtime.Gosched()
 

@@ -1,5 +1,4 @@
 type: exceptions
-display_name: Exceptions Connector
 
 status:
   class: connector

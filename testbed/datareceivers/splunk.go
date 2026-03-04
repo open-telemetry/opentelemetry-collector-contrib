@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -37,10 +36,7 @@ func NewSplunkHECDataReceiver(port int) *SplunkHECDataReceiver {
 func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc consumer.Logs) error {
 	config := splunkhecreceiver.Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  fmt.Sprintf("127.0.0.1:%d", sr.Port),
-			},
+			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
 	}
 	var err error

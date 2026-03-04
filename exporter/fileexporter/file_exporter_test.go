@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DeRuina/timberjack"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -595,7 +595,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 		},
 		writer: &fileWriter{
 			path: path,
-			file: &timberjack.Logger{
+			file: &lumberjack.Logger{
 				Filename: path,
 				MaxSize:  1,
 			},

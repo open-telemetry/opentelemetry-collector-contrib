@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
@@ -28,8 +27,6 @@ type server struct {
 	outCh            chan<- event
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
-	conns            map[net.Conn]struct{}
-	mu               sync.Mutex
 }
 
 func newServer(outCh chan<- event, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
@@ -37,7 +34,6 @@ func newServer(outCh chan<- event, logger *zap.Logger, telemetryBuilder *metadat
 		outCh:            outCh,
 		logger:           logger,
 		telemetryBuilder: telemetryBuilder,
-		conns:            make(map[net.Conn]struct{}),
 	}
 }
 
@@ -73,11 +69,9 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 		s.telemetryBuilder.FluentOpenedConnections.Add(ctx, 1)
 
 		s.logger.Debug("Got connection", zap.String("remoteAddr", conn.RemoteAddr().String()))
-		s.addConn(conn)
 
 		go func() {
 			defer s.telemetryBuilder.FluentClosedConnections.Add(ctx, 1)
-			defer s.removeConn(conn)
 
 			err := s.handleConn(ctx, conn)
 			if err != nil {
@@ -208,24 +202,4 @@ func determineNextEventMode(peeker peeker) (eventMode, error) {
 	default:
 		return unknownMode, fmt.Errorf("unable to determine next event mode for type %v", secondElmType)
 	}
-}
-
-func (s *server) addConn(c net.Conn) {
-	s.mu.Lock()
-	s.conns[c] = struct{}{}
-	s.mu.Unlock()
-}
-
-func (s *server) removeConn(c net.Conn) {
-	s.mu.Lock()
-	delete(s.conns, c)
-	s.mu.Unlock()
-}
-
-func (s *server) closeAllConns() {
-	s.mu.Lock()
-	for c := range s.conns {
-		_ = c.Close() // Ignore errors
-	}
-	s.mu.Unlock()
 }

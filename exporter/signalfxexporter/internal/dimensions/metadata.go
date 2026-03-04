@@ -6,10 +6,10 @@ package dimensions // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"fmt"
 	"strings"
-	"unicode"
 
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
@@ -19,15 +19,13 @@ type MetadataUpdateClient interface {
 }
 
 func getDimensionUpdateFromMetadata(
-	defaults map[string]string,
 	metadata metadata.MetadataUpdate,
-	nonAlphanumericDimChars string,
+	metricsConverter translation.MetricsConverter,
 ) *DimensionUpdate {
-	skipSanitization := metadata.ResourceIDKey == "k8s.service.uid"
-	properties, tags := getPropertiesAndTags(defaults, metadata, skipSanitization)
+	properties, tags := getPropertiesAndTags(metadata)
 
 	return &DimensionUpdate{
-		Name:       FilterKeyChars(metadata.ResourceIDKey, nonAlphanumericDimChars),
+		Name:       metricsConverter.ConvertDimension(metadata.ResourceIDKey),
 		Value:      string(metadata.ResourceID),
 		Properties: properties,
 		Tags:       tags,
@@ -46,19 +44,12 @@ func sanitizeProperty(property string) string {
 	return property
 }
 
-func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdate, skipSanitization bool) (map[string]*string, map[string]bool) {
+func getPropertiesAndTags(kmu metadata.MetadataUpdate) (map[string]*string, map[string]bool) {
 	properties := map[string]*string{}
 	tags := map[string]bool{}
 
-	for k, v := range defaults {
-		properties[k] = &v
-	}
-
 	for label, val := range kmu.MetadataToAdd {
-		key := label
-		if !skipSanitization {
-			key = sanitizeProperty(label)
-		}
+		key := sanitizeProperty(label)
 		if key == "" {
 			continue
 		}
@@ -72,10 +63,7 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 	}
 
 	for label, val := range kmu.MetadataToRemove {
-		key := label
-		if !skipSanitization {
-			key = sanitizeProperty(label)
-		}
+		key := sanitizeProperty(label)
 		if key == "" {
 			continue
 		}
@@ -88,10 +76,7 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 	}
 
 	for label, val := range kmu.MetadataToUpdate {
-		key := label
-		if !skipSanitization {
-			key = sanitizeProperty(label)
-		}
+		key := sanitizeProperty(label)
 		if key == "" {
 			continue
 		}
@@ -112,27 +97,14 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) error {
 	var errs error
 	for _, m := range metadata {
-		dimensionUpdate := getDimensionUpdateFromMetadata(dc.DefaultProperties, *m, dc.nonAlphanumericDimChars)
+		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricsConverter)
 
 		if dimensionUpdate.Name == "" || dimensionUpdate.Value == "" {
 			return fmt.Errorf("dimensionUpdate %v is missing Name or value, cannot send", dimensionUpdate)
 		}
 
-		errs = multierr.Append(errs, dc.AcceptDimension(dimensionUpdate))
+		errs = multierr.Append(errs, dc.acceptDimension(dimensionUpdate))
 	}
 
 	return errs
-}
-
-// FilterKeyChars filters dimension key characters, replacing non-alphanumeric characters
-// (except those in nonAlphanumericDimChars) with underscores.
-func FilterKeyChars(str, nonAlphanumericDimChars string) string {
-	filterMap := func(r rune) rune {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune(nonAlphanumericDimChars, r) {
-			return r
-		}
-		return '_'
-	}
-
-	return strings.Map(filterMap, str)
 }

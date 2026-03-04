@@ -182,7 +182,6 @@ func (m *metricZookeeperConnectionActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperConnectionActive(cfg MetricConfig) metricZookeeperConnectionActive {
 	m := metricZookeeperConnectionActive{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -234,7 +233,6 @@ func (m *metricZookeeperDataTreeEphemeralNodeCount) emit(metrics pmetric.MetricS
 
 func newMetricZookeeperDataTreeEphemeralNodeCount(cfg MetricConfig) metricZookeeperDataTreeEphemeralNodeCount {
 	m := metricZookeeperDataTreeEphemeralNodeCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -286,7 +284,6 @@ func (m *metricZookeeperDataTreeSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperDataTreeSize(cfg MetricConfig) metricZookeeperDataTreeSize {
 	m := metricZookeeperDataTreeSize{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -336,7 +333,6 @@ func (m *metricZookeeperFileDescriptorLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperFileDescriptorLimit(cfg MetricConfig) metricZookeeperFileDescriptorLimit {
 	m := metricZookeeperFileDescriptorLimit{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -388,7 +384,6 @@ func (m *metricZookeeperFileDescriptorOpen) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperFileDescriptorOpen(cfg MetricConfig) metricZookeeperFileDescriptorOpen {
 	m := metricZookeeperFileDescriptorOpen{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -442,7 +437,6 @@ func (m *metricZookeeperFollowerCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperFollowerCount(cfg MetricConfig) metricZookeeperFollowerCount {
 	m := metricZookeeperFollowerCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -494,7 +488,6 @@ func (m *metricZookeeperFsyncExceededThresholdCount) emit(metrics pmetric.Metric
 
 func newMetricZookeeperFsyncExceededThresholdCount(cfg MetricConfig) metricZookeeperFsyncExceededThresholdCount {
 	m := metricZookeeperFsyncExceededThresholdCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -544,7 +537,6 @@ func (m *metricZookeeperLatencyAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperLatencyAvg(cfg MetricConfig) metricZookeeperLatencyAvg {
 	m := metricZookeeperLatencyAvg{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -594,7 +586,6 @@ func (m *metricZookeeperLatencyMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperLatencyMax(cfg MetricConfig) metricZookeeperLatencyMax {
 	m := metricZookeeperLatencyMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -644,7 +635,6 @@ func (m *metricZookeeperLatencyMin) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperLatencyMin(cfg MetricConfig) metricZookeeperLatencyMin {
 	m := metricZookeeperLatencyMin{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -698,7 +688,6 @@ func (m *metricZookeeperPacketCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperPacketCount(cfg MetricConfig) metricZookeeperPacketCount {
 	m := metricZookeeperPacketCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -750,7 +739,6 @@ func (m *metricZookeeperRequestActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperRequestActive(cfg MetricConfig) metricZookeeperRequestActive {
 	m := metricZookeeperRequestActive{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -800,7 +788,6 @@ func (m *metricZookeeperRuok) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperRuok(cfg MetricConfig) metricZookeeperRuok {
 	m := metricZookeeperRuok{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -852,7 +839,6 @@ func (m *metricZookeeperSyncPending) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperSyncPending(cfg MetricConfig) metricZookeeperSyncPending {
 	m := metricZookeeperSyncPending{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -904,7 +890,6 @@ func (m *metricZookeeperWatchCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperWatchCount(cfg MetricConfig) metricZookeeperWatchCount {
 	m := metricZookeeperWatchCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -956,7 +941,6 @@ func (m *metricZookeeperZnodeCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricZookeeperZnodeCount(cfg MetricConfig) metricZookeeperZnodeCount {
 	m := metricZookeeperZnodeCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

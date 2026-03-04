@@ -28,7 +28,6 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for hetznerdetector resource attributes.
 type ResourceAttributesConfig struct {
 	CloudAvailabilityZone ResourceAttributeConfig `mapstructure:"cloud.availability_zone"`
-	CloudPlatform         ResourceAttributeConfig `mapstructure:"cloud.platform"`
 	CloudProvider         ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	CloudRegion           ResourceAttributeConfig `mapstructure:"cloud.region"`
 	HostID                ResourceAttributeConfig `mapstructure:"host.id"`
@@ -39,9 +38,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		CloudAvailabilityZone: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		CloudPlatform: ResourceAttributeConfig{
-			Enabled: false,
 		},
 		CloudProvider: ResourceAttributeConfig{
 			Enabled: true,

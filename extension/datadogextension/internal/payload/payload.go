@@ -36,8 +36,6 @@ type OtelCollector struct {
 	FullConfiguration           string             `json:"full_configuration"` // JSON passed as string
 	HealthStatus                string             `json:"health_status"`      // JSON passed as string
 	CollectorResourceAttributes map[string]string  `json:"collector_resource_attributes"`
-	CollectorDeploymentType     string             `json:"collector_deployment_type"` // deployment type: gateway, daemonset, or unknown
-	TTL                         int64              `json:"ttl"`
 }
 
 type CollectorModule struct {
@@ -89,22 +87,18 @@ func PrepareOtelCollectorMetadata(
 	extensionUUID,
 	version,
 	site,
-	fullConfig,
-	deploymentType string,
+	fullConfig string,
 	buildInfo CustomBuildInfo,
-	ttl int64,
 ) OtelCollector {
 	return OtelCollector{
-		HostKey:                 "",
-		Hostname:                hostname,
-		HostnameSource:          hostnameSource,
-		CollectorID:             hostname + "-" + extensionUUID,
-		CollectorVersion:        version,
-		ConfigSite:              site,
-		APIKeyUUID:              "",
-		BuildInfo:               buildInfo,
-		FullConfiguration:       fullConfig,
-		CollectorDeploymentType: deploymentType,
-		TTL:                     ttl,
+		HostKey:           "",
+		Hostname:          hostname,
+		HostnameSource:    hostnameSource,
+		CollectorID:       hostname + "-" + extensionUUID,
+		CollectorVersion:  version,
+		ConfigSite:        site,
+		APIKeyUUID:        "",
+		BuildInfo:         buildInfo,
+		FullConfiguration: fullConfig,
 	}
 }

@@ -811,6 +811,9 @@ func TestNewForwarderComponent_ForwarderInterface(t *testing.T) {
 	err = forwarder.SubmitV1Series(nil, nil)
 	require.NoError(t, err)
 
+	err = forwarder.SubmitSeries(nil, nil)
+	require.NoError(t, err)
+
 	// Clean up
 	forwarder.Stop()
 }

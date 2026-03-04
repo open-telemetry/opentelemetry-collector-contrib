@@ -52,6 +52,6 @@ func newMetricsReceiver(
 		&cfg.ControllerConfig,
 		set,
 		consumer,
-		scraperhelper.AddMetricsScraper(metadata.Type, sc),
+		scraperhelper.AddScraper(metadata.Type, sc),
 	)
 }

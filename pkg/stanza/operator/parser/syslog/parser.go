@@ -38,66 +38,7 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	processedEntries := make([]*entry.Entry, 0, len(entries))
-	write := func(_ context.Context, ent *entry.Entry) error {
-		processedEntries = append(processedEntries, ent)
-		return nil
-	}
-	var errs []error
-	for _, ent := range entries {
-		skip, err := p.Skip(ctx, ent)
-		if err != nil {
-			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-				if !p.isQuietMode() {
-					errs = append(errs, handleErr)
-				}
-			}
-			continue
-		}
-		if skip {
-			_ = write(ctx, ent)
-			continue
-		}
-
-		// Determine which callback to use based on entry data
-		callback := postprocess
-		if !p.enableOctetCounting && p.allowSkipPriHeader {
-			var bytes []byte
-			bytes, err = toBytes(ent.Body)
-			if err != nil {
-				if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-					if !p.isQuietMode() {
-						errs = append(errs, handleErr)
-					}
-				}
-				continue
-			}
-			if p.shouldSkipPriorityValues(bytes) {
-				callback = postprocessWithoutPriHeader
-			}
-		}
-
-		if err = p.ParseWith(ctx, ent, p.parse, write); err != nil {
-			if !p.isQuietMode() {
-				errs = append(errs, err)
-			}
-			continue
-		}
-
-		if err = callback(ent); err != nil {
-			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-				if !p.isQuietMode() {
-					errs = append(errs, handleErr)
-				}
-			}
-			continue
-		}
-
-		_ = write(ctx, ent)
-	}
-
-	errs = append(errs, p.WriteBatch(ctx, processedEntries))
-	return errors.Join(errs...)
+	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
 }
 
 // Process will parse an entry field as syslog.
@@ -106,11 +47,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
 		bytes, err := toBytes(entry.Body)
 		if err != nil {
-			handleErr := p.HandleEntryError(ctx, entry, err)
-			if p.isQuietMode() {
-				return nil
-			}
-			return handleErr
+			return err
 		}
 
 		if p.shouldSkipPriorityValues(bytes) {
@@ -210,7 +147,6 @@ func (p *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage, skipPriHeade
 		value["priority"] = syslogMessage.Priority
 		value["severity"] = syslogMessage.Severity
 		value["facility"] = syslogMessage.Facility
-		value["facility_text"] = syslogMessage.FacilityLevel()
 	}
 
 	return p.toSafeMap(value)
@@ -233,7 +169,6 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 		value["priority"] = syslogMessage.Priority
 		value["severity"] = syslogMessage.Severity
 		value["facility"] = syslogMessage.Facility
-		value["facility_text"] = syslogMessage.FacilityLevel()
 	}
 
 	return p.toSafeMap(value)
@@ -395,9 +330,4 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 		parser.Parse(reader)
 		return message, err
 	}
-}
-
-// isQuietMode returns true if the operator is configured to use quiet mode
-func (p *Parser) isQuietMode() bool {
-	return p.OnError == helper.DropOnErrorQuiet || p.OnError == helper.SendOnErrorQuiet
 }

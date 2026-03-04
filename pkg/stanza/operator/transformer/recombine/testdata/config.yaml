@@ -24,7 +24,3 @@ custom_max_unmatched_batch_size:
   max_unmatched_batch_size: 50
 default:
   type: recombine
-on_error_drop:
-  type: recombine
-  combine_with: \t
-  on_error: drop

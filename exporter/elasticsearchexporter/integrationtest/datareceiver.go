@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -112,7 +111,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc cons
 		return fmt.Errorf("invalid ES URL specified %s: %w", es.endpoint, err)
 	}
 	cfg := factory.CreateDefaultConfig().(*config)
-	cfg.NetAddr.Endpoint = esURL.Host
+	cfg.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -205,11 +204,10 @@ type config struct {
 }
 
 func createDefaultConfig() component.Config {
-	netAddr := confignet.NewDefaultAddrConfig()
-	netAddr.Transport = confignet.TransportTypeTCP
-	netAddr.Endpoint = "127.0.0.1:9200"
 	return &config{
-		ServerConfig:       confighttp.ServerConfig{NetAddr: netAddr},
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "127.0.0.1:9200",
+		},
 		DecodeBulkRequests: true,
 	}
 }
@@ -278,7 +276,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 
 	ln, err := es.config.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", es.config.NetAddr.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", es.config.Endpoint, err)
 	}
 
 	r := mux.NewRouter()
@@ -370,7 +368,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		}
 	})
 
-	es.server, err = es.config.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, r)
+	es.server, err = es.config.ToServer(ctx, host, es.params.TelemetrySettings, r)
 	if err != nil {
 		return fmt.Errorf("failed to create mock ES server: %w", err)
 	}

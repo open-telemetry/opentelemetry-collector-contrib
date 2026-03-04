@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
@@ -54,7 +54,7 @@ func createDefaultConfig() component.Config {
 	httpClientConfig.CompressionParams.Level = gzip.BestSpeed
 
 	return &Config{
-		QueueBatchConfig: configoptional.Some(qs),
+		QueueBatchConfig: qs,
 		ClientConfig:     httpClientConfig,
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,

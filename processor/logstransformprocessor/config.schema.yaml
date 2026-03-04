@@ -1,4 +1,0 @@
-description: Config defines configuration for Resource processor.
-type: object
-allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.base_config

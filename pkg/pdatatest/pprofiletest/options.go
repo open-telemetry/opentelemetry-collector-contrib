@@ -49,23 +49,7 @@ func (opt ignoreResourceAttributeValue) maskProfilesResourceAttributeValue(profi
 	}
 }
 
-// IgnoreResourceEntityRefs is a CompareProfilesOption that clears entity references
-// on all resources.
-func IgnoreResourceEntityRefs() CompareProfilesOption {
-	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
-		maskProfilesResourceEntityRefs(expected)
-		maskProfilesResourceEntityRefs(actual)
-	})
-}
-
-func maskProfilesResourceEntityRefs(profiles pprofile.Profiles) {
-	rps := profiles.ResourceProfiles()
-	for i := 0; i < rps.Len(); i++ {
-		internal.MaskResourceEntityRefs(rps.At(i).Resource())
-	}
-}
-
-// IgnoreScopeAttributeValue is a CompareProfilesOption that removes a scope attribute
+// IgnoreResourceAttributeValue is a CompareProfilesOption that removes a resource attribute
 // from all resources.
 func IgnoreScopeAttributeValue(attributeName string) CompareProfilesOption {
 	return ignoreScopeAttributeValue{
@@ -145,7 +129,7 @@ func (ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile
 			for k := 0; k < lrs.Len(); k++ {
 				lr := lrs.At(k)
 				lr.SetTime(pcommon.NewTimestampFromTime(time.Time{}))
-				lr.SetDurationNano(1)
+				lr.SetDuration(pcommon.NewTimestampFromTime(time.Time{}))
 			}
 		}
 	}
@@ -207,8 +191,8 @@ func sortProfileSlices(ls pprofile.Profiles) {
 				if a.Time() != b.Time() {
 					return a.Time() < b.Time()
 				}
-				if a.DurationNano() != b.DurationNano() {
-					return a.DurationNano() < b.DurationNano()
+				if a.Duration() != b.Duration() {
+					return a.Duration() < b.Duration()
 				}
 				as := a.ProfileID()
 				bs := b.ProfileID()

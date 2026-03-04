@@ -5,12 +5,11 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 // NewInputConfig creates a new input config with default values.
@@ -33,17 +32,17 @@ type InputConfig struct {
 func (c InputConfig) Build(set component.TelemetrySettings) (InputOperator, error) {
 	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
-		return InputOperator{}, stanzaerrors.WithDetails(err, "operator_id", c.ID())
+		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}
 
 	attributer, err := c.AttributerConfig.Build()
 	if err != nil {
-		return InputOperator{}, stanzaerrors.WithDetails(err, "operator_id", c.ID())
+		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}
 
 	identifier, err := c.IdentifierConfig.Build()
 	if err != nil {
-		return InputOperator{}, stanzaerrors.WithDetails(err, "operator_id", c.ID())
+		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}
 
 	inputOperator := InputOperator{
@@ -68,11 +67,11 @@ func (i *InputOperator) NewEntry(value any) (*entry.Entry, error) {
 	entry.Body = value
 
 	if err := i.Attribute(entry); err != nil {
-		return nil, fmt.Errorf("add attributes to entry: %w", err)
+		return nil, errors.Wrap(err, "add attributes to entry")
 	}
 
 	if err := i.Identify(entry); err != nil {
-		return nil, fmt.Errorf("add resource keys to entry: %w", err)
+		return nil, errors.Wrap(err, "add resource keys to entry")
 	}
 
 	return entry, nil
@@ -86,7 +85,7 @@ func (*InputOperator) CanProcess() bool {
 // ProcessBatch will always return an error if called.
 func (i *InputOperator) ProcessBatch(_ context.Context, _ []*entry.Entry) error {
 	i.Logger().Error("Operator received a batch of entries, but can not process")
-	return stanzaerrors.NewError(
+	return errors.NewError(
 		"Operator can not process logs.",
 		"Ensure that operator is not configured to receive logs from other operators",
 	)
@@ -95,7 +94,7 @@ func (i *InputOperator) ProcessBatch(_ context.Context, _ []*entry.Entry) error 
 // Process will always return an error if called.
 func (i *InputOperator) Process(_ context.Context, _ *entry.Entry) error {
 	i.Logger().Error("Operator received an entry, but can not process")
-	return stanzaerrors.NewError(
+	return errors.NewError(
 		"Operator can not process logs.",
 		"Ensure that operator is not configured to receive logs from other operators",
 	)

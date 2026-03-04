@@ -16,7 +16,6 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -33,7 +32,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -1804,7 +1802,7 @@ service:
 		require.NoError(t, s.createTemplates())
 		require.NoError(t, s.loadAndWriteInitialMergedConfig())
 
-		assert.Equal(t, remoteCfg.String(), s.remoteConfig.Load().String())
+		assert.Equal(t, remoteCfg.String(), s.remoteConfig.String())
 
 		gotMergedConfig := s.cfgState.Load().(*configState).mergedConfig
 		gotMergedConfig = strings.ReplaceAll(gotMergedConfig, "\r\n", "\n")
@@ -2115,10 +2113,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		s.config = config.Supervisor{
 			HealthCheck: config.HealthCheck{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:23233",
-					},
+					Endpoint: "localhost:23233",
 				},
 			},
 		}
@@ -2202,10 +2197,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 			config: config.Supervisor{
 				HealthCheck: config.HealthCheck{
 					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  "localhost:23233",
-						},
+						Endpoint: "localhost:23233",
 					},
 				},
 			},
@@ -2226,61 +2218,4 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		_, err = sendHealthCheckRequest()
 		assert.Error(t, err)
 	})
-}
-
-func TestRemoteConfigConcurrentAccess(t *testing.T) {
-	cfg := setupSupervisorConfig(t, configTemplate)
-	s, err := NewSupervisor(t.Context(), nil, cfg)
-	require.NoError(t, err)
-
-	config1 := &protobufs.AgentRemoteConfig{
-		Config: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"test.yaml": {
-					Body: []byte("receivers:\n  nop:\nprocessors:\n  nop:\nexporters:\n  nop:\nservice:\n  pipelines:\n    logs:\n      receivers: [nop]\n      processors: [nop]\n      exporters: [nop]"),
-				},
-			},
-		},
-		ConfigHash: []byte("confighash1"),
-	}
-
-	config2 := &protobufs.AgentRemoteConfig{
-		Config: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"test.yaml": {
-					Body: []byte("receivers:\n  nop:\nprocessors:\n  batch:\nexporters:\n  nop:\nservice:\n  pipelines:\n    logs:\n      receivers: [nop]\n      processors: [batch]\n      exporters: [nop]"),
-				},
-			},
-		},
-		ConfigHash: []byte("confighash2"),
-	}
-
-	s.remoteConfig.Store(config1)
-
-	startSignal := make(chan struct{})
-	var wg sync.WaitGroup
-
-	wg.Go(func() {
-		<-startSignal
-		for i := range 1000 {
-			if i%2 == 0 {
-				s.remoteConfig.Store(config1)
-			} else {
-				s.remoteConfig.Store(config2)
-			}
-		}
-	})
-
-	wg.Go(func() {
-		<-startSignal
-		for range 1000 {
-			cfg := s.remoteConfig.Load()
-			if cfg != nil {
-				_ = cfg.GetConfigHash()
-			}
-		}
-	})
-
-	close(startSignal)
-	wg.Wait()
 }

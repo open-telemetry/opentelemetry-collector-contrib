@@ -4,76 +4,75 @@
 package tencentcloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 
 import (
-	"github.com/pierrec/lz4"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
-	tchttp "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/http"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
+	clssdk "github.com/tencentcloud/tencentcloud-cls-sdk-go"
 	"go.uber.org/zap"
-	pb "google.golang.org/protobuf/proto"
-
-	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/internal/proto"
 )
 
 // logServiceClient log Service's client wrapper
 type logServiceClient interface {
 	// sendLogs send message to LogService
-	sendLogs(logs []*cls.Log) error
+	sendLogs(logs []*clssdk.Log) error
 }
 
 type logServiceClientImpl struct {
-	clientInstance *common.Client
+	clientInstance *clssdk.AsyncProducerClient
 	logset         string
 	topic          string
-	hashkey        string
 	logger         *zap.Logger
 }
 
 // newLogServiceClient Create Log Service client
-func newLogServiceClient(config *Config, logger *zap.Logger) logServiceClient {
-	credential := common.NewCredential(config.SecretID, string(config.SecretKey))
+func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, error) {
+	producerConfig := clssdk.GetDefaultAsyncProducerClientConfig()
+	if config.Endpoint != "" {
+		producerConfig.Endpoint = config.Endpoint
+	} else {
+		networkType := clssdk.Extranet
+		if config.IsIntranet {
+			networkType = clssdk.Intranet
+		}
+		producerConfig.SetEndpointByRegionAndNetworkType(clssdk.Region(config.Region), networkType)
+	}
+
+	producerConfig.AccessKeyID = config.SecretID
+	producerConfig.AccessKeySecret = string(config.SecretKey)
+	producerConfig.AccessToken = ""
+	producerConfig.Retries = 10
+	producerInstance, err := clssdk.NewAsyncProducerClient(producerConfig)
+	if err != nil {
+		return nil, err
+	}
+	producerInstance.Start()
 
 	c := &logServiceClientImpl{
-		clientInstance: common.NewCommonClient(credential, config.Region, profile.NewClientProfile()),
+		clientInstance: producerInstance,
 		logset:         config.LogSet,
 		topic:          config.Topic,
 		logger:         logger,
 	}
-
-	logger.Info("Create LogService client success", zap.String("logset", config.LogSet), zap.String("topic", config.Topic))
-	return c
+	logger.Info("Create CLS LogService client success", zap.String("logset", config.LogSet), zap.String("topic", config.Topic))
+	return c, nil
 }
 
 // sendLogs send message to LogService
-func (c *logServiceClientImpl) sendLogs(logs []*cls.Log) error {
-	headers := map[string]string{
-		"X-CLS-TopicId": c.topic,
-		"X-CLS-HashKey": c.hashkey,
-	}
-	commpresstype := ""
+func (c *logServiceClientImpl) sendLogs(logs []*clssdk.Log) error {
+	return c.clientInstance.SendLogList(c.topic, logs, c)
+}
 
-	logGroup := cls.LogGroup{
-		Logs: logs,
-	}
-	logGroupList := cls.LogGroupList{
-		LogGroupList: []*cls.LogGroup{
-			&logGroup,
-		},
-	}
-	data, _ := pb.Marshal(&logGroupList)
+// Success log service send log success
+func (c *logServiceClientImpl) Success(result *clssdk.Result) {
+	c.logger.Debug("Send to CLS LogService success",
+		zap.String("topic", c.topic),
+		zap.String("logset", c.logset),
+		zap.String("request_id", result.GetRequestId()))
+}
 
-	length := lz4.CompressBlockBound(len(data)) + 1
-	compressbody := make([]byte, length)
-	n, err := lz4.CompressBlock(data, compressbody, nil)
-	if err == nil && n > 0 {
-		commpresstype = "lz4"
-		data = compressbody[0:n]
-	}
-	headers["X-CLS-CompressType"] = commpresstype
-
-	request := tchttp.NewCommonRequest("cls", "2020-10-16", "UploadLog")
-	request.SetOctetStreamParameters(headers, data)
-
-	response := tchttp.NewCommonResponse()
-
-	return c.clientInstance.SendOctetStream(request, response)
+// Fail log service send log failed
+func (c *logServiceClientImpl) Fail(result *clssdk.Result) {
+	c.logger.Warn("Send to CLS LogService failed",
+		zap.String("topic", c.topic),
+		zap.String("logset", c.logset),
+		zap.String("code", result.GetErrorCode()),
+		zap.String("error_message", result.GetErrorMessage()),
+		zap.String("request_id", result.GetRequestId()))
 }

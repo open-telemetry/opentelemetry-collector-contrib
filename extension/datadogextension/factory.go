@@ -12,7 +12,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
@@ -46,9 +45,6 @@ func NewFactory() extension.Factory {
 }
 
 func (*factory) createDefaultConfig() component.Config {
-	netAddr := confignet.NewDefaultAddrConfig()
-	netAddr.Transport = confignet.TransportTypeTCP
-	netAddr.Endpoint = httpserver.DefaultServerEndpoint
 	return &Config{
 		ClientConfig: confighttp.NewDefaultClientConfig(),
 		API: datadogconfig.APIConfig{
@@ -56,8 +52,10 @@ func (*factory) createDefaultConfig() component.Config {
 			FailOnInvalidKey: true,
 		},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{NetAddr: netAddr},
-			Path:         "/metadata",
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint: httpserver.DefaultServerEndpoint,
+			},
+			Path: "/metadata",
 		},
 	}
 }

@@ -84,13 +84,10 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 				ID:     endpointID,
 				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
 				Details: &observer.Port{
-					Pod:            podDetails,
-					Name:           port.Name,
-					Port:           uint16(port.ContainerPort),
-					Transport:      getTransport(port.Protocol),
-					ContainerName:  container.Name,
-					ContainerID:    rc.ID,
-					ContainerImage: container.Image,
+					Pod:       podDetails,
+					Name:      port.Name,
+					Port:      uint16(port.ContainerPort),
+					Transport: getTransport(port.Protocol),
 				},
 			})
 		}

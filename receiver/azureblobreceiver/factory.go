@@ -98,8 +98,8 @@ func (f *blobReceiverFactory) getReceiver(
 			return nil
 		}
 
-		var beh eventHandler
-		beh, err = f.getEventHandler(receiverConfig, set.Logger)
+		var beh blobEventHandler
+		beh, err = f.getBlobEventHandler(receiverConfig, set.Logger)
 		if err != nil {
 			return nil
 		}
@@ -116,7 +116,7 @@ func (f *blobReceiverFactory) getReceiver(
 	return r.Unwrap(), err
 }
 
-func (*blobReceiverFactory) getEventHandler(cfg *Config, logger *zap.Logger) (eventHandler, error) {
+func (*blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (blobEventHandler, error) {
 	var bc blobClient
 	var err error
 
@@ -148,10 +148,6 @@ func (*blobReceiverFactory) getEventHandler(cfg *Config, logger *zap.Logger) (ev
 		return nil, fmt.Errorf("unknown authentication %v", cfg.Authentication)
 	}
 
-	// If Event Hub is not configured, use the Blob Event Handler
-	if cfg.EventHub.EndPoint == "" {
-		return newBlobEventHandler(cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger), nil
-	}
-	return newEventHubEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
+	return newBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
 		nil
 }

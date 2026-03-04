@@ -15,9 +15,8 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
-	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
+	conventions161 "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -92,10 +91,10 @@ func extractScopeTags(il pcommon.InstrumentationScope, zTags map[string]string) 
 	}
 
 	if ilName := il.Name(); ilName != "" {
-		zTags[string(conventionsv125.OTelLibraryNameKey)] = ilName
+		zTags[string(conventions.OtelLibraryNameKey)] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		zTags[string(conventionsv125.OTelLibraryVersionKey)] = ilVer
+		zTags[string(conventions.OtelLibraryVersionKey)] = ilVer
 	}
 }
 
@@ -184,9 +183,9 @@ func populateStatus(status ptrace.Status, zs *zipkinmodel.SpanModel, tags map[st
 		return
 	}
 
-	tags[string(conventions.OTelStatusCodeKey)] = traceutil.StatusCodeStr(status.Code())
+	tags[string(conventions.OtelStatusCodeKey)] = traceutil.StatusCodeStr(status.Code())
 	if status.Message() != "" {
-		tags[string(conventions.OTelStatusDescriptionKey)] = status.Message()
+		tags[string(conventions.OtelStatusDescriptionKey)] = status.Message()
 		zs.Err = fmt.Errorf("%s", status.Message())
 	}
 }
@@ -325,9 +324,9 @@ func zipkinEndpointFromTags(
 
 	var ipKey, portKey string
 	if remoteEndpoint {
-		ipKey, portKey = string(conventionsv112.NetPeerIPKey), string(conventionsv125.NetPeerPortKey)
+		ipKey, portKey = string(conventions161.NetPeerIPKey), string(conventions.NetPeerPortKey)
 	} else {
-		ipKey, portKey = string(conventionsv112.NetHostIPKey), string(conventionsv125.NetHostPortKey)
+		ipKey, portKey = string(conventions161.NetHostIPKey), string(conventions.NetHostPortKey)
 	}
 
 	var ip net.IP

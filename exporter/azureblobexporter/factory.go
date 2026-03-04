@@ -51,7 +51,6 @@ func createDefaultConfig() component.Config {
 			Params:            map[string]string{},
 			TemplateEnabled:   false,
 			TimeParserEnabled: true,
-			TimeParserRanges:  nil,
 		},
 		FormatType: formatTypeJSON,
 		AppendBlob: AppendBlob{

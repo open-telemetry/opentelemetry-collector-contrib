@@ -1,4 +1,3 @@
-display_name: DNS Lookup Processor
 type: dnslookup
 
 status:

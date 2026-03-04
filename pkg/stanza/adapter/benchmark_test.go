@@ -181,7 +181,9 @@ func (b *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	b.cancel = cancel
 
-	b.wg.Go(func() {
+	b.wg.Add(1)
+	go func() {
+		defer b.wg.Done()
 		for n := 0; n < len(b.entries); n++ {
 			select {
 			case <-ctx.Done():
@@ -193,7 +195,7 @@ func (b *Input) Start(_ operator.Persister) error {
 				b.Logger().Error("failed to write entry", zap.Error(err))
 			}
 		}
-	})
+	}()
 	return nil
 }
 

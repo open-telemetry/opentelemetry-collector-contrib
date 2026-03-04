@@ -55,11 +55,6 @@ func TestNewHTTPLogsExporter(t *testing.T) {
 			name: "with domain",
 			config: &Config{
 				Domain: "example.com",
-				Logs: TransportConfig{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: "https://ingress.example.com:443",
-					},
-				},
 			},
 			expected: "https://ingress.example.com:443",
 		},
@@ -97,11 +92,6 @@ func TestNewHTTPMetricsExporter(t *testing.T) {
 			name: "with domain",
 			config: &Config{
 				Domain: "example.com",
-				Metrics: TransportConfig{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: "https://ingress.example.com:443",
-					},
-				},
 			},
 			expected: "https://ingress.example.com:443",
 		},
@@ -139,11 +129,6 @@ func TestNewHTTPTracesExporter(t *testing.T) {
 			name: "with domain",
 			config: &Config{
 				Domain: "example.com",
-				Traces: TransportConfig{
-					ClientConfig: configgrpc.ClientConfig{
-						Endpoint: "https://ingress.example.com:443",
-					},
-				},
 			},
 			expected: "https://ingress.example.com:443",
 		},

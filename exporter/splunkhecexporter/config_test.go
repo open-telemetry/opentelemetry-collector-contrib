@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
-	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -88,7 +88,8 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
+					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    1000,
 					Sizer:        exporterhelper.RequestSizerTypeItems,
@@ -98,14 +99,14 @@ func TestLoadConfig(t *testing.T) {
 						MaxSize:      100,
 						Sizer:        exporterhelper.RequestSizerTypeItems,
 					}),
-				}),
-				OtelAttrsToHec: translator.HecToOtelAttrs{
+				},
+				OtelAttrsToHec: splunk.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Host:       "myhost",
 				},
-				HecFields: translator.OtelToHecFields{
+				HecFields: OtelToHecFields{
 					SeverityText:   "myseverityfield",
 					SeverityNumber: "myseveritynumfield",
 				},
@@ -222,7 +223,8 @@ func TestConfig_Validate(t *testing.T) {
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.Endpoint = "http://foo_bar.com"
-				cfg.QueueSettings.Get().QueueSize = -5
+				cfg.QueueSettings.Enabled = true
+				cfg.QueueSettings.QueueSize = -5
 				cfg.Token = "foo"
 				return cfg
 			}(),

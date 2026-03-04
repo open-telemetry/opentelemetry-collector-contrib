@@ -113,7 +113,9 @@ func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 
 func (er *eventsReceiver) startPolling(ctx context.Context) error {
 	t := time.NewTicker(er.pollInterval)
-	er.wg.Go(func() {
+	er.wg.Add(1)
+	go func() {
+		defer er.wg.Done()
 		for {
 			select {
 			case <-t.C:
@@ -124,7 +126,7 @@ func (er *eventsReceiver) startPolling(ctx context.Context) error {
 				return
 			}
 		}
-	})
+	}()
 
 	return nil
 }

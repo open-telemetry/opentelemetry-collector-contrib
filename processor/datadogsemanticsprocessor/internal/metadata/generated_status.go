@@ -12,5 +12,5 @@ var (
 )
 
 const (
-	TracesStability = component.StabilityLevelDeprecated
+	TracesStability = component.StabilityLevelDevelopment
 )

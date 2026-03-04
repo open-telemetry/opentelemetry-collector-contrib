@@ -31,7 +31,9 @@ func (i *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	i.cancel = cancel
 
-	i.wg.Go(func() {
+	i.wg.Add(1)
+	go func() {
+		defer i.wg.Done()
 		n := 0
 		for {
 			select {
@@ -55,7 +57,7 @@ func (i *Input) Start(_ operator.Persister) error {
 				return
 			}
 		}
-	})
+	}()
 
 	return nil
 }

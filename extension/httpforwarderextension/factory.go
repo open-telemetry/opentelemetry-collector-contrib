@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension/internal/metadata"
@@ -34,10 +33,7 @@ func createDefaultConfig() component.Config {
 	httpClientSettings.Timeout = 10 * time.Second
 	return &Config{
 		Ingress: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  defaultEndpoint,
-			},
+			Endpoint: defaultEndpoint,
 		},
 		Egress: httpClientSettings,
 	}

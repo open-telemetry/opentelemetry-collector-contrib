@@ -114,7 +114,6 @@ func (m *metricSystemFilesystemInodesUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemFilesystemInodesUsage(cfg MetricConfig) metricSystemFilesystemInodesUsage {
 	m := metricSystemFilesystemInodesUsage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -172,7 +171,6 @@ func (m *metricSystemFilesystemUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemFilesystemUsage(cfg MetricConfig) metricSystemFilesystemUsage {
 	m := metricSystemFilesystemUsage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -227,7 +225,6 @@ func (m *metricSystemFilesystemUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemFilesystemUtilization(cfg MetricConfig) metricSystemFilesystemUtilization {
 	m := metricSystemFilesystemUtilization{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

@@ -49,7 +49,6 @@ func invertHasResourceOrSpanWithCondition(
 			if isd {
 				return samplingpolicy.NotSampled
 			}
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			return samplingpolicy.InvertNotSampled
 		}
 
@@ -57,7 +56,6 @@ func invertHasResourceOrSpanWithCondition(
 			if isd {
 				return samplingpolicy.NotSampled
 			}
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			return samplingpolicy.InvertNotSampled
 		}
 	}
@@ -65,7 +63,6 @@ func invertHasResourceOrSpanWithCondition(
 	if isd {
 		return samplingpolicy.Sampled
 	}
-	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	return samplingpolicy.InvertSampled
 }
 
@@ -96,8 +93,8 @@ func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, che
 	return invert
 }
 
-func SetAttrOnScopeSpans(data ptrace.Traces, attrName, attrKey string) {
-	rs := data.ResourceSpans()
+func SetAttrOnScopeSpans(data *samplingpolicy.TraceData, attrName, attrKey string) {
+	rs := data.ReceivedBatches.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		rss := rs.At(i)
 		for j := 0; j < rss.ScopeSpans().Len(); j++ {

@@ -1,10 +1,4 @@
-display_name: Podman Stats Receiver
 type: podman_stats
-
-description: |
-  The Podman Stats Receiver queries the Podman service API to fetch stats for all running containers 
-  on a configured interval.  These stats are for container resource usage of cpu, memory, network, and
-  the [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
 status:
   class: receiver
@@ -44,7 +38,8 @@ metrics:
     enabled: true
     description: "Number of bytes transferred from the disk by the container"
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
-    stability: development
+    stability:
+      level: development
     unit: "{operations}"
     sum:
       value_type: int
@@ -54,7 +49,8 @@ metrics:
     enabled: true
     description: "Number of bytes transferred to the disk by the container"
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
-    stability: development
+    stability:
+      level: development
     unit: "{operations}"
     sum:
       value_type: int
@@ -65,14 +61,16 @@ metrics:
   container.cpu.percent:
     enabled: true
     description: "Percent of CPU used by the container."
-    stability: development
+    stability:
+      level: development
     unit: "1"
     gauge:
       value_type: double
   container.cpu.usage.percpu:
     enabled: true
     description: "Total CPU time consumed per CPU-core."
-    stability: development
+    stability:
+      level: development
     unit: s
     sum:
       value_type: int
@@ -83,7 +81,8 @@ metrics:
   container.cpu.usage.system:
     enabled: true
     description: "System CPU usage."
-    stability: development
+    stability:
+      level: development
     unit: s
     sum:
       value_type: int
@@ -92,7 +91,8 @@ metrics:
   container.cpu.usage.total:
     enabled: true
     description: "Total CPU time consumed."
-    stability: development
+    stability:
+      level: development
     unit: s
     sum:
       value_type: int
@@ -102,14 +102,16 @@ metrics:
   container.memory.percent:
     enabled: true
     description: "Percentage of memory used."
-    stability: development
+    stability:
+      level: development
     unit: "1"
     gauge:
       value_type: double
   container.memory.usage.limit:
     enabled: true
     description: "Memory limit of the container."
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       value_type: int
@@ -118,7 +120,8 @@ metrics:
   container.memory.usage.total:
     enabled: true
     description: "Memory usage of the container."
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       value_type: int
@@ -128,7 +131,8 @@ metrics:
   container.network.io.usage.rx_bytes:
     enabled: true
     description: "Bytes received by the container."
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       value_type: int
@@ -137,7 +141,8 @@ metrics:
   container.network.io.usage.tx_bytes:
     enabled: true
     description: "Bytes sent by the container."
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       value_type: int

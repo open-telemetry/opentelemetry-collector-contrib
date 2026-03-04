@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"time"
 
+	clssdk "github.com/tencentcloud/tencentcloud-cls-sdk-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"google.golang.org/protobuf/proto"
 
-	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/internal/proto"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
@@ -35,8 +35,8 @@ const (
 	clsLogInstrumentationVersion = "otlp.version"
 )
 
-func convertLogs(ld plog.Logs) []*cls.Log {
-	clsLogs := make([]*cls.Log, 0, ld.LogRecordCount())
+func convertLogs(ld plog.Logs) []*clssdk.Log {
+	clsLogs := make([]*clssdk.Log, 0, ld.LogRecordCount())
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -60,7 +60,7 @@ func convertLogs(ld plog.Logs) []*cls.Log {
 	return clsLogs
 }
 
-func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
+func resourceToLogContents(resource pcommon.Resource) []*clssdk.Log_Content {
 	attrs := resource.Attributes()
 
 	var hostname, serviceName string
@@ -84,7 +84,7 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 		return nil
 	}
 
-	return []*cls.Log_Content{
+	return []*clssdk.Log_Content{
 		{
 			Key:   proto.String(clsLogHost),
 			Value: proto.String(hostname),
@@ -100,8 +100,8 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 	}
 }
 
-func instrumentationLibraryToLogContents(scope pcommon.InstrumentationScope) []*cls.Log_Content {
-	return []*cls.Log_Content{
+func instrumentationLibraryToLogContents(scope pcommon.InstrumentationScope) []*clssdk.Log_Content {
+	return []*clssdk.Log_Content{
 		{
 			Key:   proto.String(clsLogInstrumentationName),
 			Value: proto.String(scope.Name()),
@@ -115,16 +115,16 @@ func instrumentationLibraryToLogContents(scope pcommon.InstrumentationScope) []*
 
 func mapLogRecordToLogService(lr plog.LogRecord,
 	resourceContents,
-	instrumentationLibraryContents []*cls.Log_Content,
-) *cls.Log {
+	instrumentationLibraryContents []*clssdk.Log_Content,
+) *clssdk.Log {
 	if lr.Body().Type() == pcommon.ValueTypeEmpty {
 		return nil
 	}
-	var clsLog cls.Log
+	var clsLog clssdk.Log
 
 	// pre alloc, refine if logContent's len > 16
 	preAllocCount := 16
-	clsLog.Contents = make([]*cls.Log_Content, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
+	clsLog.Contents = make([]*clssdk.Log_Content, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
 
 	fields := map[string]any{}
 	for k, v := range lr.Attributes().All() {
@@ -135,7 +135,7 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 		return nil
 	}
 
-	contentsBuffer := []*cls.Log_Content{
+	contentsBuffer := []*clssdk.Log_Content{
 		{
 			Key:   proto.String(clsLogTimeUnixNano),
 			Value: proto.String(strconv.FormatUint(uint64(lr.Timestamp()), 10)),
@@ -176,7 +176,7 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 
 	if lr.Timestamp() > 0 {
 		// convert time nano to time seconds
-		clsLog.Time = proto.Int64(int64(lr.Timestamp() / 1000000000))
+		clsLog.Time = proto.Int64(int64(lr.Timestamp() / 1000 / 1000))
 	} else {
 		clsLog.Time = proto.Int64(time.Now().Unix())
 	}

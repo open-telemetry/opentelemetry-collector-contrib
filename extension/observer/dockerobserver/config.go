@@ -40,10 +40,8 @@ type Config struct {
 }
 
 func (config Config) Validate() error {
-	if config.DockerAPIVersion != "" {
-		if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
-			return err
-		}
+	if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
+		return err
 	}
 	if config.Timeout == 0 {
 		return errors.New("timeout must be specified")

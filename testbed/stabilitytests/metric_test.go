@@ -30,6 +30,23 @@ func TestStabilityMetricsOTLP(t *testing.T) {
 	)
 }
 
+func TestStabilityMetricsCarbon(t *testing.T) {
+	scenarios.Scenario10kItemsPerSecond(
+		t,
+		datasenders.NewCarbonDataSender(testutil.GetAvailablePort(t)),
+		datareceivers.NewCarbonDataReceiver(testutil.GetAvailablePort(t)),
+		testbed.ResourceSpec{
+			ExpectedMaxCPU:      237,
+			ExpectedMaxRAM:      120,
+			ResourceCheckPeriod: resourceCheckPeriod,
+		},
+		contribPerfResultsSummary,
+		nil,
+		nil,
+		nil,
+	)
+}
+
 func TestStabilityMetricsSignalFx(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,8 +22,10 @@ import (
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	promTG "github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -62,7 +65,8 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	config := &Config{
-		PrometheusConfig: (*PromConfig)(pCfg),
+		PrometheusConfig:     (*PromConfig)(pCfg),
+		StartTimeMetricRegex: "",
 		TargetAllocator: configoptional.Some(targetallocator.Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: tas.srv.URL,
@@ -71,33 +75,43 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 			HTTPSDConfig: (*targetallocator.PromHTTPSDConfig)(promSDConfig),
 			Interval:     60 * time.Second,
 		}),
-		skipOffsetting: true,
 	}
 
+	cms := new(consumertest.MetricsSink)
 	settings := receivertest.NewNopSettings(metadata.Type)
-	warnCh := make(chan struct{}, 1)
+	logsOverWarn := atomic.Int64{}
 	settings.Logger, err = zap.NewDevelopment(zap.Hooks(func(logentry zapcore.Entry) error {
 		if logentry.Level >= zapcore.WarnLevel {
-			select {
-			case warnCh <- struct{}{}:
-			default:
-			}
+			logsOverWarn.Add(1)
 		}
 		return nil
 	}))
 	require.NoError(t, err)
+	receiver, err := newPrometheusReceiver(settings, config, cms)
+	require.NoError(t, err, "Failed to create Prometheus receiver")
+	receiver.skipOffsetting = true
 
-	cms := newSignalingSink(1)
-	receiver := newTestReceiverSettingsConsumer(t, config, settings, cms)
+	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()), "Failed to start Prometheus receiver")
+	t.Cleanup(func() {
+		require.NoError(t, receiver.Shutdown(t.Context()))
+	})
 
-	select {
-	case <-cms.done:
-		// Success - at least one scrape was consumed.
-	case <-warnCh:
-		t.Fatal("Unexpected log message at WARN level or above, see logs")
-	case <-time.After(30 * time.Second):
-		t.Fatal("Timed out waiting for metrics from target allocator")
-	}
+	metricsCount := 0
+	require.Eventually(t, func() bool {
+		metrics := cms.AllMetrics()
+		// Scrape was a success and we got metrics.
+		if len(metrics) > 0 {
+			metricsCount = len(metrics)
+			return true
+		}
+		// There was a log line above WARN level.
+		if logsOverWarn.Load() > 0 {
+			return true
+		}
+		return false
+	}, 30*time.Second, 100*time.Millisecond, "Failed to scrape the metrics via target allocator")
+
+	require.Zero(t, logsOverWarn.Load(), "There are log messages over the WARN level, see logs")
 
 	require.NoError(t, promTestUtil.GatherAndCompare(receiver.registry, bytes.NewBufferString(fmt.Sprintf(`
 		# TYPE prometheus_target_scrape_pools_failed_total counter
@@ -105,7 +119,7 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 		prometheus_target_scrape_pools_failed_total{receiver="%s"} 0
 `, receiver.settings.ID)), "prometheus_target_scrape_pools_failed_total"), "Prometheus scrape manager reports failed scrape pools")
 
-	require.NotEmpty(t, cms.AllMetrics(), "No metrics were scraped even though successful")
+	require.Positive(t, metricsCount, "No metrics were scraped even though successful")
 }
 
 type mockTargetAllocator struct {

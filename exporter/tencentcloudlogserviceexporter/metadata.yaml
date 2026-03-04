@@ -1,10 +1,9 @@
 type: tencentcloud_logservice
-display_name: TencentCloud LogService Exporter
 
 status:
   class: exporter
   stability:
-    beta: [logs]
+    beta: [logs, traces]
   distributions: [contrib]
   codeowners:
     active: [wgliang]

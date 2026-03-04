@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/multierr"
@@ -39,10 +38,7 @@ func TestValidateConfig(t *testing.T) {
 			expect: errMissingEndpointFromConfig,
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "",
-					},
+					Endpoint: "",
 				},
 			},
 		},
@@ -51,10 +47,7 @@ func TestValidateConfig(t *testing.T) {
 			expect: errReadTimeoutExceedsMaxValue,
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
+					Endpoint: "localhost:0",
 				},
 				ReadTimeout: "14s",
 			},
@@ -64,10 +57,7 @@ func TestValidateConfig(t *testing.T) {
 			expect: errWriteTimeoutExceedsMaxValue,
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
+					Endpoint: "localhost:0",
 				},
 				WriteTimeout: "14s",
 			},
@@ -77,10 +67,7 @@ func TestValidateConfig(t *testing.T) {
 			expect: errRequiredHeader,
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "",
-					},
+					Endpoint: "",
 				},
 				RequiredHeader: RequiredHeader{
 					Key:   "key-present",
@@ -93,10 +80,7 @@ func TestValidateConfig(t *testing.T) {
 			expect: errRequiredHeader,
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "",
-					},
+					Endpoint: "",
 				},
 				RequiredHeader: RequiredHeader{
 					Key:   "",
@@ -109,10 +93,7 @@ func TestValidateConfig(t *testing.T) {
 			expect: errs,
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "",
-					},
+					Endpoint: "",
 				},
 				WriteTimeout: "14s",
 				ReadTimeout:  "15s",
@@ -148,10 +129,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 			desc: "MaxRequestBodySize is 0, should be set to default 20MB",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
+					Endpoint:           "localhost:0",
 					MaxRequestBodySize: 0,
 				},
 			},
@@ -161,10 +139,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 			desc: "MaxRequestBodySize is set to small value, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
+					Endpoint:           "localhost:0",
 					MaxRequestBodySize: 10,
 				},
 			},
@@ -174,10 +149,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 			desc: "MaxRequestBodySize is exactly 64KB, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
+					Endpoint:           "localhost:0",
 					MaxRequestBodySize: int64(bufio.MaxScanTokenSize),
 				},
 			},
@@ -187,10 +159,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 			desc: "MaxRequestBodySize is greater than 64KB, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
+					Endpoint:           "localhost:0",
 					MaxRequestBodySize: 65538,
 				},
 			},
@@ -200,10 +169,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 			desc: "MaxRequestBodySize is way greater than 64KB, should remain unchanged",
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
+					Endpoint:           "localhost:0",
 					MaxRequestBodySize: 100 * 1024 * 1024, // 100MB
 				},
 			},
@@ -233,10 +199,7 @@ func TestLoadConfig(t *testing.T) {
 
 	expect := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  "localhost:8080",
-			},
+			Endpoint: "localhost:8080",
 		},
 		ReadTimeout:  "500ms",
 		WriteTimeout: "500ms",

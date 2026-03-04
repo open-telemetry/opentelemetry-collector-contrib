@@ -84,11 +84,6 @@ type Config struct {
 	// StickySessionEnabled defines if sticky session support is enable.
 	// By default this is false.
 	StickySessionEnabled bool `mapstructure:"sticky_session_enabled"`
-
-	// UpdateMetadata defines whether the collector will update its metadata
-	// on startup. This includes host details, collector details, network details,
-	// and optionally discovered tags. By default this is true.
-	UpdateMetadata bool `mapstructure:"update_metadata"`
 }
 
 type accessCredentials struct {

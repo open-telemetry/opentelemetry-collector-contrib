@@ -180,7 +180,14 @@ func TestGlPipelineJobSetSpanData(t *testing.T) {
 					CreatedAt:  "2022-01-01 12:00:00 UTC",
 					StartedAt:  "2022-01-01 12:01:00 UTC",
 					FinishedAt: "2022-01-01 12:10:00 UTC",
-					Runner: gitlab.PipelineEventBuildRunner{
+					Runner: struct {
+						ID          int      `json:"id"`
+						Description string   `json:"description"`
+						Active      bool     `json:"active"`
+						IsShared    bool     `json:"is_shared"`
+						RunnerType  string   `json:"runner_type"`
+						Tags        []string `json:"tags"`
+					}{
 						ID:          1,
 						Description: "test-runner",
 					},
@@ -198,7 +205,14 @@ func TestGlPipelineJobSetSpanData(t *testing.T) {
 					Name:      "test-job",
 					Status:    "success",
 					CreatedAt: "2022-01-01 12:00:00 UTC",
-					Runner: gitlab.PipelineEventBuildRunner{
+					Runner: struct {
+						ID          int      `json:"id"`
+						Description string   `json:"description"`
+						Active      bool     `json:"active"`
+						IsShared    bool     `json:"is_shared"`
+						RunnerType  string   `json:"runner_type"`
+						Tags        []string `json:"tags"`
+					}{
 						ID:          1,
 						Description: "test-runner",
 					},

@@ -6,10 +6,8 @@ package main // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -58,7 +56,7 @@ func run(args []string) error {
 		if insertErr := insertDefault(&receiverConfig.HTTP); insertErr != nil {
 			return insertErr
 		}
-		receiverConfig.HTTP.Get().ServerConfig.NetAddr.Endpoint = cfg.OTLPHTTPEndoint
+		receiverConfig.HTTP.Get().ServerConfig.Endpoint = cfg.OTLPHTTPEndoint
 	}
 
 	if cfg.OTLPEndpoint != "" {
@@ -105,13 +103,8 @@ func run(args []string) error {
 	case <-sink.DoneChan:
 	}
 
-	if len(sink.Errors) > 0 {
-		var errMsg strings.Builder
-		errMsg.WriteString(fmt.Sprintf("comparison failed with %d error(s):\n", len(sink.Errors)))
-		for _, attemptErr := range sink.Errors {
-			errMsg.WriteString(fmt.Sprintf("  Attempt %d: %v\n", attemptErr.AttemptNumber, attemptErr.Error))
-		}
-		return errors.New(errMsg.String())
+	if sink.Error != nil {
+		return sink.Error
 	}
 	if timeout {
 		return errors.New("timeout waiting for data")

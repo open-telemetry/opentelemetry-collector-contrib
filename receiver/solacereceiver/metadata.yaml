@@ -23,7 +23,8 @@ telemetry:
       enabled: true
       unit: "1"
       description: Number of dropped egress spans
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -31,7 +32,8 @@ telemetry:
       enabled: true
       unit: "1"
       description: Number of dropped span messages
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -39,7 +41,8 @@ telemetry:
       enabled: true
       unit: "1"
       description: Number of failed broker reconnections
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -47,7 +50,8 @@ telemetry:
       enabled: true
       unit: "1"
       description: Number of fatal message unmarshalling errors
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -55,14 +59,16 @@ telemetry:
       enabled: true
       unit: "1"
       description: Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker
-      stability: development
+      stability:
+        level: development
       gauge:
         value_type: int
     solacereceiver_received_span_messages:
       enabled: true
       unit: "1"
       description: Number of received span messages
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -70,21 +76,24 @@ telemetry:
       enabled: true
       unit: "1"
       description: Most recent/current retry count when flow controlled
-      stability: development
+      stability:
+        level: development
       gauge:
         value_type: int
     solacereceiver_receiver_flow_control_status:
       enabled: true
       unit: "1"
       description: Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled
-      stability: development
+      stability:
+        level: development
       gauge:
         value_type: int
     solacereceiver_receiver_flow_control_total:
       enabled: true
       unit: "1"
       description: Number of times the receiver instance became flow controlled
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -92,7 +101,8 @@ telemetry:
       enabled: true
       unit: "1"
       description: Number of times the receiver instance became flow controlled and resolved situations after the first retry
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -100,14 +110,16 @@ telemetry:
       enabled: true
       unit: "1"
       description: Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated
-      stability: development
+      stability:
+        level: development
       gauge:
         value_type: int
     solacereceiver_recoverable_unmarshalling_errors:
       enabled: true
       unit: "1"
       description: Number of recoverable message unmarshalling errors
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -115,7 +127,8 @@ telemetry:
       enabled: true
       unit: "1"
       description: Number of reported spans
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true

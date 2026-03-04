@@ -86,21 +86,24 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 	}
 
 	var err error
-	if r.server, err = httpCfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, httpMux); err != nil {
+	if r.server, err = httpCfg.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux); err != nil {
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpCfg.NetAddr.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpCfg.Endpoint))
 	var hln net.Listener
 	if hln, err = httpCfg.ToListener(ctx); err != nil {
 		return err
 	}
 
-	r.shutdownWG.Go(func() {
+	r.shutdownWG.Add(1)
+	go func() {
+		defer r.shutdownWG.Done()
+
 		if err := r.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	})
+	}()
 	return nil
 }
 

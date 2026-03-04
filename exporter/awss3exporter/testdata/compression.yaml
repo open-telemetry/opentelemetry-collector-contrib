@@ -14,12 +14,6 @@ exporters:
       compression: "none"
     marshaler: otlp_proto
 
-  awss3/zstd:
-    s3uploader:
-      s3_bucket: "bar"
-      compression: "zstd"
-    marshaler: otlp_json
-
 
 processors:
   nop:

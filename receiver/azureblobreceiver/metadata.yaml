@@ -1,4 +1,3 @@
-display_name: Azure Blob Receiver
 type: azureblob
 
 status:
@@ -7,7 +6,7 @@ status:
     alpha: [logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [eedorenko, mx-psi, dyl10s]
+    active: [eedorenko, mx-psi]
 
 # TODO: Update the exporter to pass the tests
 tests:

@@ -1,8 +1,4 @@
-display_name: HTTP Check Receiver
 type: httpcheck
-
-description: |
-  The HTTP Check Receiver can be used for synthetic checks against HTTP endpoints. 
 
 status:
   class: receiver
@@ -11,9 +7,7 @@ status:
   distributions: [contrib, k8s]
   warnings: []
   codeowners:
-    active: [VenuEmmadi]
-    emeritus: [codeboten]
-    seeking_new: true
+    active: [codeboten, VenuEmmadi]
 
 resource_attributes:
 
@@ -53,7 +47,8 @@ metrics:
   httpcheck.client.connection.duration:
     description: Time spent establishing TCP connection to the endpoint.
     enabled: false
-    stability: development
+    stability:
+      level: development
     gauge:
       value_type: int
     unit: ms
@@ -61,7 +56,8 @@ metrics:
   httpcheck.client.request.duration:
     description: Time spent sending the HTTP request to the endpoint.
     enabled: false
-    stability: development
+    stability:
+      level: development
     gauge:
       value_type: int
     unit: ms
@@ -69,7 +65,8 @@ metrics:
   httpcheck.dns.lookup.duration:
     description: Time spent performing DNS lookup for the endpoint.
     enabled: false
-    stability: development
+    stability:
+      level: development
     gauge:
       value_type: int
     unit: ms
@@ -77,7 +74,8 @@ metrics:
   httpcheck.duration:
     description: Measures the duration of the HTTP check.
     enabled: true
-    stability: development
+    stability:
+      level: development
     gauge:
       value_type: int
     unit: ms
@@ -85,7 +83,8 @@ metrics:
   httpcheck.error:
     description: Records errors occurring during HTTP check.
     enabled: true
-    stability: development
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -95,7 +94,8 @@ metrics:
   httpcheck.response.duration:
     description: Time spent receiving the HTTP response from the endpoint.
     enabled: false
-    stability: development
+    stability:
+      level: development
     gauge:
       value_type: int
     unit: ms
@@ -103,7 +103,8 @@ metrics:
   httpcheck.response.size:
     description: Size of response body in bytes.
     enabled: false
-    stability: development
+    stability:
+      level: development
     gauge:
       value_type: int
     unit: "By"
@@ -111,7 +112,8 @@ metrics:
   httpcheck.status:
     description: 1 if the check resulted in status_code matching the status_class, otherwise 0.
     enabled: true
-    stability: development
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -121,7 +123,8 @@ metrics:
   httpcheck.tls.cert_remaining:
     description: Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
     enabled: false
-    stability: development
+    stability:
+      level: development
     gauge:
       value_type: int
     unit: "s"
@@ -129,7 +132,8 @@ metrics:
   httpcheck.tls.handshake.duration:
     description: Time spent performing TLS handshake with the endpoint.
     enabled: false
-    stability: development
+    stability:
+      level: development
     gauge:
       value_type: int
     unit: ms
@@ -137,7 +141,8 @@ metrics:
   httpcheck.validation.failed:
     description: Number of response validations that failed.
     enabled: false
-    stability: development
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -147,7 +152,8 @@ metrics:
   httpcheck.validation.passed:
     description: Number of response validations that passed.
     enabled: false
-    stability: development
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative

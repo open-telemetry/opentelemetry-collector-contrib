@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 )
 
@@ -31,7 +32,7 @@ func TestPushTraceData(t *testing.T) {
 
 	ctx := t.Context()
 
-	client, err := createDorisHTTPClient(ctx, config, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	client, err := createDorisHTTPClient(ctx, config, nil, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client)
 
@@ -90,7 +91,7 @@ func simpleTraces(count int) ptrace.Traces {
 		s.SetKind(ptrace.SpanKindInternal)
 		s.SetStartTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		s.SetEndTimestamp(pcommon.NewTimestampFromTime(timestamp.Add(time.Minute)))
-		s.Attributes().PutStr("service.name", "v")
+		s.Attributes().PutStr(string(semconv.ServiceNameKey), "v")
 		s.Status().SetMessage("error")
 		s.Status().SetCode(ptrace.StatusCodeError)
 		event := s.Events().AppendEmpty()

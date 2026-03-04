@@ -1,8 +1,4 @@
-display_name: File Log Receiver
 type: filelog
-
-description: |
-  This receiver tails and parses logs from files.
 
 status:
   class: receiver

@@ -223,14 +223,13 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 			)
 
 			s := &azureBatchScraper{
-				cfg:                          tt.fields.cfg,
-				mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
-				mutex:                        &sync.Mutex{},
-				time:                         getTimeMock(),
-				clientOptionsResolver:        optionsResolver,
-				receiverSettings:             settings,
-				settings:                     settings.TelemetrySettings,
-				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.fields.cfg.Services),
+				cfg:                   tt.fields.cfg,
+				mbs:                   newConcurrentMapImpl[*metadata.MetricsBuilder](),
+				mutex:                 &sync.Mutex{},
+				time:                  getTimeMock(),
+				clientOptionsResolver: optionsResolver,
+				receiverSettings:      settings,
+				settings:              settings.TelemetrySettings,
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},

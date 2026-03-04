@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 // Package transformprocessor contains the logic to execute telemetry transform based
 // on the OpenTelemetry Transformation Language.

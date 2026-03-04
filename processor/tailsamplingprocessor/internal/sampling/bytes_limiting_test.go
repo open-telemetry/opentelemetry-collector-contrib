@@ -155,7 +155,7 @@ func TestBytesLimitingConcurrency(t *testing.T) {
 	// Test concurrent access doesn't cause race conditions
 	results := make(chan samplingpolicy.Decision, 10)
 
-	for i := range 10 {
+	for i := 0; i < 10; i++ {
 		go func(id int) {
 			decision, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{byte(id)}), trace)
 			assert.NoError(t, err)
@@ -165,7 +165,7 @@ func TestBytesLimitingConcurrency(t *testing.T) {
 
 	// Collect results
 	var sampled, notSampled int
-	for range 10 {
+	for i := 0; i < 10; i++ {
 		decision := <-results
 		if decision == samplingpolicy.Sampled {
 			sampled++

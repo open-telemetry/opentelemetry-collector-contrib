@@ -221,9 +221,11 @@ func newSender(client awsxray.XRayClient, opts ...Option) *telemetrySender {
 // Start starts the loop to send the records.
 func (ts *telemetrySender) Start(ctx context.Context) {
 	ts.startOnce.Do(func() {
-		ts.stopWait.Go(func() {
+		ts.stopWait.Add(1)
+		go func() {
+			defer ts.stopWait.Done()
 			ts.run(ctx)
-		})
+		}()
 	})
 }
 

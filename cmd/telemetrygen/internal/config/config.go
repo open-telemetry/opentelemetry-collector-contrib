@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
@@ -169,10 +169,6 @@ type Config struct {
 
 	// Load testing configuration
 	LoadSize int
-
-	// Batching configuration
-	Batch     bool
-	BatchSize int
 }
 
 type ClientAuth struct {
@@ -197,7 +193,7 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 	var attributes []attribute.KeyValue
 
 	// may be overridden by `--otlp-attributes service.name="foo"`
-	attributes = append(attributes, conventions.ServiceNameKey.String(c.ServiceName))
+	attributes = append(attributes, semconv.ServiceNameKey.String(c.ServiceName))
 	if len(c.ResourceAttributes) > 0 {
 		for k, t := range c.ResourceAttributes {
 			switch v := t.(type) {
@@ -299,10 +295,6 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 
 	// Load testing configuration
 	fs.IntVar(&c.LoadSize, "size", c.LoadSize, "Desired minimum size in MB of string data for each generated telemetry record")
-
-	// Batching configuration
-	fs.BoolVar(&c.Batch, "batch", c.Batch, "Whether to batch telemetry records before sending")
-	fs.IntVar(&c.BatchSize, "batch-size", c.BatchSize, "Number of telemetry records to batch before sending")
 }
 
 // SetDefaults is here to mirror the defaults for flags above,
@@ -328,8 +320,6 @@ func (c *Config) SetDefaults() {
 	c.ClientAuth.ClientKeyFile = ""
 	c.AllowExportFailures = false
 	c.LoadSize = 0
-	c.Batch = true
-	c.BatchSize = 100
 }
 
 // CharactersPerMB is the number of characters needed to create a 1MB string attribute

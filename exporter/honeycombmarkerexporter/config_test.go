@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -49,11 +48,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all_fields"),
 			expected: &Config{
-				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
+					Enabled:      true,
 					NumConsumers: 10,
 					QueueSize:    1000,
 					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				}),
+				},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				APIKey:        "test-apikey",
 				APIURL:        "https://api.testhost.io",

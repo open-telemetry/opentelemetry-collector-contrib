@@ -49,13 +49,10 @@ var portEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",
 	Details: &observer.Port{
-		Name:           "http",
-		Pod:            pod,
-		Port:           1234,
-		Transport:      observer.ProtocolTCP,
-		ContainerName:  "container-1",
-		ContainerID:    "container-id-1",
-		ContainerImage: "redis:latest",
+		Name:      "http",
+		Pod:       pod,
+		Port:      1234,
+		Transport: observer.ProtocolTCP,
 	},
 }
 
@@ -77,10 +74,7 @@ var portEndpointWithHints = observer.Endpoint{
 				otelMetricsHints + "/config":  config,
 			},
 		},
-		Port:           6379,
-		ContainerName:  "redis",
-		ContainerID:    "container-id-redis",
-		ContainerImage: "redis:6.0",
+		Port: 6379,
 	},
 }
 

@@ -26,7 +26,8 @@ metrics:
   cisco.device.up:
     enabled: true
     description: Device availability (1 = up, 0 = down)
-    stability: development
+    stability:
+      level: development
     unit: "1"
     gauge:
       value_type: int
@@ -34,7 +35,8 @@ metrics:
   system.cpu.utilization:
     enabled: true
     description: Percentage of CPU time in use.
-    stability: development
+    stability:
+      level: development
     unit: "1"
     gauge:
       value_type: double
@@ -42,7 +44,8 @@ metrics:
   system.memory.utilization:
     enabled: true
     description: Percentage of memory bytes in use.
-    stability: development
+    stability:
+      level: development
     unit: "1"
     gauge:
       value_type: double

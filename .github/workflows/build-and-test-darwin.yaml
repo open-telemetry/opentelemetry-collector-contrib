@@ -31,11 +31,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: ./.github/actions/setup-go-tools
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        id: go-setup
         with:
           go-version: oldstable
-      - run: ./.github/workflows/scripts/check-disk-space.sh
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
   darwin-build-unittest-binary:
     needs: [setup-environment]
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
@@ -46,23 +53,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: ./.github/actions/setup-go-tools
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        id: go-setup
         with:
           go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Build test binaries
         env:
           GOTESTARCH: amd64
         run: make gobuildtest GROUP=cgo
       - name: Zip test binaries
         run: zip -r testbinaries.zip  . --include \*builtunitetest.test
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         if: ${{ matrix.os == 'macos-14' }}
         with:
           name: testbinaries
           path: ./testbinaries.zip
           retention-days: 1
-      - run: ./.github/workflows/scripts/check-disk-space.sh
   darwin-unittest-matrix:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     needs: [darwin-build-unittest-binary]
@@ -73,18 +81,19 @@ jobs:
     timeout-minutes: 30
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: ./.github/actions/setup-go-tools
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        id: go-setup
         with:
           go-version: oldstable
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+          cache-dependency-path: "**/*.sum"
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           name: testbinaries
       - name: Unzip binaries to each module
         run: unzip testbinaries.zip
       - name: Run Unit Tests
         run: make -j2 gorunbuilttest GROUP=cgo
-      - run: ./.github/workflows/scripts/check-disk-space.sh
   darwin-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: macos-latest

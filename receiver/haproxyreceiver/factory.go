@@ -47,6 +47,6 @@ func newReceiver(
 		&haProxyCfg.ControllerConfig,
 		settings,
 		consumer,
-		scraperhelper.AddMetricsScraper(metadata.Type, s),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

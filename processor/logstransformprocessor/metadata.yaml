@@ -1,4 +1,3 @@
-display_name: Logs Transform Processor
 type: logstransform
 
 status:

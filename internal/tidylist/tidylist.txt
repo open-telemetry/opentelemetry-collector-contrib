@@ -8,6 +8,9 @@ pkg/ottl
 connector/routingconnector
 internal/pdatautil
 connector/spanmetricsconnector
+internal/common
+pkg/resourcetotelemetry
+exporter/carbonexporter
 internal/grpcutil
 internal/sharedcomponent
 receiver/otelarrowreceiver
@@ -17,8 +20,6 @@ receiver/otelarrowreceiver
 internal/otelarrow
 exporter/otelarrowexporter
 receiver/otelarrowreceiver
-internal/common
-pkg/resourcetotelemetry
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
@@ -50,7 +51,6 @@ pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
 receiver/signalfxreceiver
-pkg/translator/splunk
 exporter/splunkhecexporter
 extension/ackextension
 receiver/splunkhecreceiver
@@ -59,7 +59,6 @@ receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
 cmd/opampsupervisor
-cmd/schemagen
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
 confmap/provider/aesprovider
@@ -74,7 +73,6 @@ connector/datadogconnector
 connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector
-connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
@@ -132,6 +130,7 @@ exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
+exporter/sapmexporter
 exporter/sematextexporter
 exporter/sentryexporter
 extension/sumologicextension
@@ -142,16 +141,13 @@ extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
 extension/azureauthextension
-extension/internal/credentialsfile
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/datadogextension
 extension/encoding/avrologencodingextension
-pkg/xstreamencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/awslogsencodingextension
-extension/encoding/azureencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -161,9 +157,9 @@ extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
 extension/headerssetterextension
+extension/healthcheckextension
 pkg/status
 internal/healthcheck
-extension/healthcheckextension
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
@@ -200,14 +196,13 @@ processor/transformprocessor
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
 internal/datadog/e2e
-internal/k8sinventory
-internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
+pkg/translator/opencensus
 pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
@@ -223,7 +218,6 @@ processor/intervalprocessor
 processor/isolationforestprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
-processor/lookupprocessor
 processor/metricsgenerationprocessor
 processor/metricstarttimeprocessor
 processor/metricstransformprocessor
@@ -248,6 +242,7 @@ receiver/awsxrayreceiver
 receiver/azureblobreceiver
 receiver/azureeventhubreceiver
 receiver/azuremonitorreceiver
+receiver/bigipreceiver
 receiver/chronyreceiver
 receiver/ciscoosreceiver
 receiver/cloudflarereceiver
@@ -277,6 +272,7 @@ receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
+receiver/k8slogreceiver
 receiver/k8sobjectsreceiver
 receiver/kafkametricsreceiver
 receiver/kafkareceiver
@@ -326,7 +322,6 @@ receiver/tcplogreceiver
 receiver/tlscheckreceiver
 receiver/udplogreceiver
 receiver/vcenterreceiver
-receiver/vcrreceiver
 receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver

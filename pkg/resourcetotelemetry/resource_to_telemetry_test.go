@@ -20,8 +20,7 @@ func TestConvertResourceToAttributes(t *testing.T) {
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
-	wme := &wrapperMetricsExporter{excludeServiceAttributes: false}
-	md = wme.convertToMetricsAttributes(md)
+	md = convertToMetricsAttributes(md)
 
 	// After converting resource to labels
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
@@ -42,8 +41,7 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(5).Summary().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).ExponentialHistogram().DataPoints().At(0).Attributes().Len())
 
-	wme := &wrapperMetricsExporter{excludeServiceAttributes: false}
-	md = wme.convertToMetricsAttributes(md)
+	md = convertToMetricsAttributes(md)
 
 	// After converting resource to labels
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
@@ -54,37 +52,6 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(5).Summary().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).ExponentialHistogram().DataPoints().At(0).Attributes().Len())
-}
-
-func TestConvertResourceToAttributesWithExcludeServiceAttributes(t *testing.T) {
-	md := testdata.GenerateMetricsOneMetric()
-	assert.NotNil(t, md)
-
-	// Add service.name and service.instance.id to resource attributes
-	resource := md.ResourceMetrics().At(0).Resource()
-	resource.Attributes().PutStr("service.name", "test-service")
-	resource.Attributes().PutStr("service.instance.id", "test-instance-id")
-	resource.Attributes().PutStr("service.namespace", "test-namespace")
-
-	// Before converting: 3 resource attrs (original + 2 service attrs), 1 datapoint attr
-	assert.Equal(t, 4, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
-
-	wme := &wrapperMetricsExporter{excludeServiceAttributes: true}
-	md = wme.convertToMetricsAttributes(md)
-
-	// After converting: service.name, service.instance.id and service.namespace should NOT be added to datapoint attrs
-	// Original resource attrs remain unchanged
-	assert.Equal(t, 4, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-	// Datapoint should have: 1 original + 1 (resource-name from testdata) = 2
-	dpAttrs := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes()
-	assert.Equal(t, 2, dpAttrs.Len())
-	_, hasServiceName := dpAttrs.Get("service.name")
-	_, hasServiceInstanceID := dpAttrs.Get("service.instance.id")
-	_, hasServiceNamespace := dpAttrs.Get("service.namespace")
-	assert.False(t, hasServiceName)
-	assert.False(t, hasServiceInstanceID)
-	assert.False(t, hasServiceNamespace)
 }
 
 func BenchmarkJoinAttributes(b *testing.B) {

@@ -26,16 +26,14 @@ func TestConfig_Validate_Valid(t *testing.T) {
 	t.Run("with time range", func(t *testing.T) {
 		cfg := Config{
 			S3Downloader: S3DownloaderConfig{
-				Region:                         "",
-				S3Bucket:                       "abucket",
-				S3Prefix:                       "",
-				S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-				S3PartitionTimezone:            "UTC",
-				FilePrefix:                     "",
-				FilePrefixIncludeTelemetryType: true,
-				Endpoint:                       "",
-				EndpointPartitionID:            "aws",
-				S3ForcePathStyle:               false,
+				Region:              "",
+				S3Bucket:            "abucket",
+				S3Prefix:            "",
+				S3Partition:         "minute",
+				FilePrefix:          "",
+				Endpoint:            "",
+				EndpointPartitionID: "aws",
+				S3ForcePathStyle:    false,
 			},
 			StartTime: "2024-01-01",
 			EndTime:   "2024-01-01",
@@ -47,16 +45,14 @@ func TestConfig_Validate_Valid(t *testing.T) {
 	t.Run("with sqs", func(t *testing.T) {
 		cfg := Config{
 			S3Downloader: S3DownloaderConfig{
-				Region:                         "",
-				S3Bucket:                       "abucket",
-				S3Prefix:                       "",
-				S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-				S3PartitionTimezone:            "UTC",
-				FilePrefix:                     "",
-				FilePrefixIncludeTelemetryType: true,
-				Endpoint:                       "",
-				EndpointPartitionID:            "aws",
-				S3ForcePathStyle:               false,
+				Region:              "",
+				S3Bucket:            "abucket",
+				S3Prefix:            "",
+				S3Partition:         "minute",
+				FilePrefix:          "",
+				Endpoint:            "",
+				EndpointPartitionID: "aws",
+				S3ForcePathStyle:    false,
 			},
 			SQS: &SQSConfig{
 				QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
@@ -82,17 +78,16 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "1"),
-			errorMessage: "unable to parse starttime (a date), accepted formats: 2006-01-02T15:04:05Z07:00, 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02T15:04:05Z07:00, 2006-01-02 15:04, 2006-01-02",
+			errorMessage: "s3_partition must be either 'hour' or 'minute'; unable to parse starttime (a date), accepted formats: 2006-01-02T15:04:05Z07:00, 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02T15:04:05Z07:00, 2006-01-02 15:04, 2006-01-02",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				S3Downloader: S3DownloaderConfig{
-					Region:                         "us-east-1",
-					S3Bucket:                       "abucket",
-					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-					FilePrefixIncludeTelemetryType: true,
-					EndpointPartitionID:            "aws",
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
 				},
 				StartTime: "2024-01-31 15:00",
 				EndTime:   "2024-02-03",
@@ -102,13 +97,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "3"),
 			expected: &Config{
 				S3Downloader: S3DownloaderConfig{
-					Region:                         "us-east-1",
-					S3Bucket:                       "abucket",
-					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H",
-					S3PartitionTimezone:            "Asia/Tokyo",
-					FilePrefix:                     "otel",
-					FilePrefixIncludeTelemetryType: false,
-					EndpointPartitionID:            "aws",
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
 				},
 				StartTime: "2024-01-31 15:00",
 				EndTime:   "2024-02-03",
@@ -131,11 +123,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "4"),
 			expected: &Config{
 				S3Downloader: S3DownloaderConfig{
-					Region:                         "us-east-1",
-					S3Bucket:                       "abucket",
-					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-					FilePrefixIncludeTelemetryType: true,
-					EndpointPartitionID:            "aws",
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
 				},
 				StartTime: "2024-01-31T15:00:00Z",
 				EndTime:   "2024-02-03T00:00:00Z",
@@ -145,11 +136,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "5"),
 			expected: &Config{
 				S3Downloader: S3DownloaderConfig{
-					Region:                         "us-east-1",
-					S3Bucket:                       "abucket",
-					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-					FilePrefixIncludeTelemetryType: true,
-					EndpointPartitionID:            "aws",
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
 				},
 				SQS: &SQSConfig{
 					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",

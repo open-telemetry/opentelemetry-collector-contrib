@@ -1,4 +1,3 @@
-display_name: Transform Processor
 type: transform
 
 status:
@@ -9,8 +8,8 @@ status:
   distributions: [contrib, k8s]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
   codeowners:
-    active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
-    emeritus: [anuraaga, kentquirk]
+    active: [TylerHelmuth, evan-bradley, edmocosta]
+    emeritus: [anuraaga, kentquirk, bogdandrutu]
     seeking_new: true
 
 tests:

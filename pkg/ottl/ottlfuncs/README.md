@@ -46,7 +46,6 @@ Editors:
 Available Editors:
 
 - [append](#append)
-- [delete_index](#delete_index)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_matching_keys](#keep_matching_keys)
@@ -73,22 +72,6 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], "prod")`
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
-
-### delete_index
-
-`delete_index(target, startIndex, Optional[endIndex])`
-
-The `delete_index` function removes elements from a slice. It deletes elements from `startIndex` up to, but not including, `endIndex`. If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target.
-
-Examples:
-
-- `delete_index(attributes["tags"], 0)` # deletes first
-
-- `delete_index(attributes["tags"], Len(attributes["tags"]) - 1)` # deletes last
-
-- `delete_index(attributes["tags"], 0, 3)` # deletes indices 0, 1, & 2
-
-- `delete_index(attributes["tags"], Index(attributes["tags"], "unparsed"))` # deletes first occurrence of "unparsed"
 
 ### delete_key
 
@@ -470,11 +453,8 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
-- [Base64Decode](#base64decode-deprecated)
-- [Base64Encode](#base64encode)
-- [Bool](#bool)
+- [Base64Decode](#base64decode)
 - [Decode](#decode)
-- [CommunityID](#communityid)
 - [Concat](#concat)
 - [ContainsValue](#containsvalue)
 - [ConvertCase](#convertcase)
@@ -499,7 +479,6 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
-- [IsInCIDR](#isincidr)
 - [IsInt](#isint)
 - [IsRootSpan](#isrootspan)
 - [IsMap](#ismap)
@@ -525,7 +504,6 @@ Available Converters:
 - [ParseInt](#parseint)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
-- [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [ProfileID](#profileid)
@@ -580,58 +558,6 @@ Examples:
 
 - `Base64Decode(resource.attributes["encoded field"])`
 
-### Base64Encode
-
-`Base64Encode(value, Optional[variant])`
-
-The `Base64Encode` Converter takes a string and returns a base64 encoded string.
-
-`value` is a string to encode.
-`variant` (optional) is the base64 encoding variant to use. Valid values are `base64` (standard, with padding), `base64-raw` (standard, no padding), `base64-url` (URL-safe, with padding), or `base64-raw-url` (URL-safe, no padding). Defaults to `base64` if not specified.
-
-Examples:
-
-- `Base64Encode("test string")`
-
-
-- `Base64Encode(resource.attributes["field"])`
-
-
-- `Base64Encode(body, "base64-url")`
-
-
-- `Base64Encode(attributes["data"], "base64-raw")`
-
-### Bool
-
-`Bool(value)`
-
-The `Bool` Converter converts the `value` to a bool type.
-
-The returned type is `bool`.
-
-The accepted input `value` types are:
-
-- `bool`: Returns the value without changes.
-- `float64`: Returns `true` if non-zero, otherwise `false`.
-- `int64`: Returns `true` if non-zero, otherwise `false`.
-- `string`: Tries to parse a boolean from the string. It returns `true` for "1", "t", "T", "true", "TRUE", or "True"; returns `false` for "0", "f", "F", "false", "FALSE" or "False".
-- `nil`: Returns `nil`.
-
-If `value` is another type or parsing failed, `nil` is always returned.
-
-The `value` is either a path expression to a telemetry field to retrieve or a literal.
-
-Examples:
-
-- `Bool(log.attributes["truthy_attribute"])`
-
-
-- `Bool("true")`
-
-
-- `Bool("0")`
-
 ### Decode
 
 `Decode(value, encoding)`
@@ -647,28 +573,6 @@ Examples:
 
 
 - `Decode(resource.attributes["encoded field"], "us-ascii")`
-
-### CommunityID
-
-`CommunityID(sourceIP, sourcePort, destinationIP, destinationPort, Optional[protocol], Optional[seed])`
-
-The `CommunityID` converter generates a network hash flow. Community ID is a standardized flow hashing algorithm that produces consistent hash values for network connections, useful when correlating network traffic across different monitoring systems.
-The output format is base64 encoding string of <2-byte-seed><source-IP-bytes><destination-IP-bytes><1-byte-protocol><2-byte-source-port><2-byte-destination-port>.
-
-`sourceIP` is a source IP address (IPv4 or IPv6).
-`sourcePort` is a source port (must be between 0 and 65535).
-`destinationIP` is a destination IP address (IPv4 or IPv6).
-`destinationPort` is a destination port (must be between 0 and 65535).
-`protocol` (optional) is a protocol, one of `ICMP`, `TCP`, `UDP`, `RSVP`, `ICMP6` or `SCTP`. Defaults to `TCP` if not specified.
-`seed` (optional) is seed value (must be between 0 and 65535). Defaults to `0` if not specified.
-
-Examples:
-
-- `CommunityID(attributes["source.ip"], attributes["source.port"], attributes["destination.ip"], attributes["destination.port"], "TCP", 1)`
-
-
-- `CommunityID("192.168.1.1", 54321, "10.0.0.1", 90, "UDP", 2)`
-
 
 ### Concat
 
@@ -1290,20 +1194,6 @@ Examples:
 
 - `IsDouble(log.attributes["maybe a double"])`
 
-### IsInCIDR
-
-`IsInCIDR(target, networks[])`
-
-The `IsInCIDR` Converter returns true if the given target IP address falls within any of the specified network ranges.
-
-The `target` is either a path expression to a telemetry field to retrieve, or a literal. The `networks` is a list of CIDR addresses.
-
-Examples:
-
-- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16"])`
-
-- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16", "10.0.0.0/8"])`
-
 ### IsInt
 
 `IsInt(value)`
@@ -1756,34 +1646,6 @@ Examples:
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(log.attributes["pairs"])`
 
-### ParseSeverity
-
-`ParseSeverity(target, severityMapping)`
-
-The `ParseSeverity` converter returns a `string` that represents one of the log levels defined by `severityMapping`.
-
-`target` is a Getter that returns a string or an integer.
-`severityMapping` is a map containing the log levels, and a list of values they are mapped from. These values can be either
-strings, or map items containing a numeric range, defined by a `min` and `max` key (inclusive bounds), for the given log level.
-A value will be mapped to the given log level if any of these conditions are true. 
-For example, the following mapping will map to the `info` level, if the `target` is either a string with the value `inf`,
-or an integer in the range `[200,299]`:
-
-`{"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}]}`
-
-There is also support for expressing certain status code ranges via a placeholder string. The supported placeholders are the following:
-
-- `"2xx"`: This string matches integer values between `[200,299]`
-- `"3xx"`: This string matches integer values between `[300,399]`
-- `"4xx"`: This string matches integer values between `[400,499]`
-- `"5xx"`: This string matches integer values between `[500,599]`
-
-Examples:
-
-- `ParseSeverity(attributes["log-level"] {"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}]})`
-- `ParseSeverity(attributes["log-level"] {"info":[{"range":"2xx""}]})`
-- `ParseSeverity(severity_number {"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}], "error":[{"range":{"min":400, "max":499}}]})`
-
 ### ParseSimplifiedXML
 
 `ParseSimplifiedXML(target)`
@@ -1983,17 +1845,15 @@ Examples:
 
 ### ProfileID
 
-`ProfileID(bytes|string)`
+`ProfileID(bytes)`
 
-The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice OR hex string.
+The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice.
 
-`bytes`  byte slice of exactly 16 bytes.
-`string` is a string of exactly 32 hex characters solely composed of valid hexadecimal chars.
+`bytes` is a byte slice of exactly 16 bytes.
 
 Examples:
 
 - `ProfileID(0x00112233445566778899aabbccddeeff)`
-- `ProfileID("a389023abaa839283293ed323892389d")`
 
 ### RemoveXML
 
@@ -2251,17 +2111,15 @@ Examples:
 
 ### SpanID
 
-`SpanID(bytes|string)`
+`SpanID(bytes)`
 
-The `SpanID` Converter returns a `pdata.SpanID` struct from the given byte slice OR hex string.
+The `SpanID` Converter returns a `pdata.SpanID` struct from the given byte slice.
 
-`bytes`  byte slice of exactly 8 bytes.
-`string` is a string of exactly 16 hex characters solely composed of valid hexadecimal chars.
+`bytes` is a byte slice of exactly 8 bytes.
 
 Examples:
 
 - `SpanID(0x0000000000000000)`
-- `SpanID("0102030405060708")`
 
 ### Split
 
@@ -2538,18 +2396,15 @@ Examples:
 
 ### TraceID
 
-`TraceID(bytes|string)`
+`TraceID(bytes)`
 
-The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice OR hex string.
+The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice.
 
-`bytes`  byte slice of exactly 16 bytes.
-`string` is a string of exactly 16 bytes solely composed of valid hexadecimal chars.
+`bytes` is a byte slice of exactly 16 bytes.
 
 Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
-- `TraceID("a389023abaa839283293ed323892389d")`
-
 
 ### TruncateTime
 

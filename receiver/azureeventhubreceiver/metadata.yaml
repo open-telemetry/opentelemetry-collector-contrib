@@ -1,10 +1,9 @@
-display_name: Azure Event Hub Receiver
-type: azure_event_hub
+type: azureeventhub
 
 status:
   class: receiver
   stability:
-    beta: [metrics, logs, traces]
+    alpha: [metrics, logs, traces]
   distributions: [contrib]
   codeowners:
     active: [atoulme, cparkins, dyl10s]

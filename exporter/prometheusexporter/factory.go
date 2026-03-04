@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -27,10 +25,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	netAddr := confignet.NewDefaultAddrConfig()
-	netAddr.Transport = confignet.TransportTypeTCP
 	return &Config{
-		ServerConfig:      confighttp.ServerConfig{NetAddr: netAddr},
 		ConstLabels:       map[string]string{},
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,

@@ -1,5 +1,0 @@
-$defs:
-  metadata_label:
-    type: string
-  metric_group:
-    type: string

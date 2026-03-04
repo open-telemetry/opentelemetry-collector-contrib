@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 package googlecloudpubsubexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 
@@ -45,18 +45,15 @@ func ensureExporter(params exporter.Settings, pCfg *Config) *pubsubExporter {
 		return exp
 	}
 	exp = &pubsubExporter{
-		logger:            params.Logger,
-		userAgent:         strings.ReplaceAll(pCfg.UserAgent, "{{version}}", params.BuildInfo.Version),
-		ceSource:          fmt.Sprintf("/opentelemetry/collector/%s/%s", metadata.Type.String(), params.BuildInfo.Version),
-		config:            pCfg,
-		tracesMarshaler:   &ptrace.ProtoMarshaler{},
-		tracesAttributes:  map[string]string{},
-		metricsMarshaler:  &pmetric.ProtoMarshaler{},
-		metricsAttributes: map[string]string{},
-		logsMarshaler:     &plog.ProtoMarshaler{},
-		logsAttributes:    map[string]string{},
-		makeUUID:          uuid.NewRandom,
-		makeClient:        newPublisherClient,
+		logger:           params.Logger,
+		userAgent:        strings.ReplaceAll(pCfg.UserAgent, "{{version}}", params.BuildInfo.Version),
+		ceSource:         fmt.Sprintf("/opentelemetry/collector/%s/%s", metadata.Type.String(), params.BuildInfo.Version),
+		config:           pCfg,
+		tracesMarshaler:  &ptrace.ProtoMarshaler{},
+		metricsMarshaler: &pmetric.ProtoMarshaler{},
+		logsMarshaler:    &plog.ProtoMarshaler{},
+		makeUUID:         uuid.NewRandom,
+		makeClient:       newPublisherClient,
 	}
 	// we ignore the error here as the config is already validated with the same method
 	exp.ceCompression, _ = pCfg.parseCompression()

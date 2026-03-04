@@ -34,11 +34,6 @@ type ActionKeyValue struct {
 	// The type of the value is inferred from the configuration.
 	Value any `mapstructure:"value"`
 
-	// DefaultValue specifies the value to use if Value/FromAttribute/FromContext
-	// doesn't provide a value (e.g., environment variable not set, attribute doesn't exist).
-	// Only used with INSERT, UPDATE, and UPSERT actions.
-	DefaultValue any `mapstructure:"default_value"`
-
 	// A regex pattern must be specified for the action EXTRACT.
 	// It uses the attribute specified by `key' to extract values from
 	// The target keys are inferred based on the names of the matcher groups
@@ -149,7 +144,6 @@ type attributeAction struct {
 	FromAttribute string
 	FromContext   string
 	ConvertedType string
-	DefaultValue  *pcommon.Value
 	// Compiled regex if provided
 	Regex *regexp.Regexp
 	// Attribute names extracted from the regexp's subexpressions.
@@ -174,8 +168,7 @@ type AttrProc struct {
 // An error is returned if there are any invalid inputs.
 func NewAttrProc(settings *Settings) (*AttrProc, error) {
 	attributeActions := make([]attributeAction, 0, len(settings.Actions))
-	for i := range settings.Actions {
-		a := &settings.Actions[i]
+	for i, a := range settings.Actions {
 		// Convert `action` to lowercase for comparison.
 		a.Action = Action(strings.ToLower(string(a.Action)))
 
@@ -201,8 +194,8 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 
 		switch a.Action {
 		case INSERT, UPDATE, UPSERT:
-			if valueSourceCount == 0 && a.DefaultValue == nil {
-				return nil, fmt.Errorf("error with key %q (%d-th action): error creating AttrProc. Either field \"value\", \"from_attribute\", \"from_context\", or \"default_value\" must be specified", a.Key, i)
+			if valueSourceCount == 0 {
+				return nil, fmt.Errorf("error with key %q (%d-th action): error creating AttrProc. Either field \"value\", \"from_attribute\" or \"from_context\" setting must be specified", a.Key, i)
 			}
 
 			if valueSourceCount > 1 {
@@ -225,16 +218,6 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			} else {
 				action.FromAttribute = a.FromAttribute
 				action.FromContext = a.FromContext
-			}
-
-			// Handle default_value
-			if a.DefaultValue != nil {
-				val := pcommon.NewValueEmpty()
-				err := val.FromRaw(a.DefaultValue)
-				if err != nil {
-					return nil, fmt.Errorf("error with key %q (%d-th action): error creating AttrProc due to invalid default value: %w", a.Key, i, err)
-				}
-				action.DefaultValue = &val
 			}
 		case HASH, DELETE:
 			if a.Value != nil || a.FromAttribute != "" {
@@ -302,8 +285,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 
 // Process applies the AttrProc to an attribute map.
 func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcommon.Map) {
-	for i := range ap.actions {
-		action := &ap.actions[i]
+	for _, action := range ap.actions {
 		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
 		// The reason is attributes processor will most likely be commonly used
@@ -318,7 +300,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 				})
 			}
 		case INSERT:
-			av, found := getSourceAttributeValue(ctx, *action, attrs)
+			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
@@ -327,7 +309,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			}
 			av.CopyTo(attrs.PutEmpty(action.Key))
 		case UPDATE:
-			av, found := getSourceAttributeValue(ctx, *action, attrs)
+			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
@@ -337,7 +319,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			}
 			av.CopyTo(val)
 		case UPSERT:
-			av, found := getSourceAttributeValue(ctx, *action, attrs)
+			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
@@ -360,9 +342,9 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 				}
 			}
 		case EXTRACT:
-			extractAttributes(*action, attrs)
+			extractAttributes(action, attrs)
 		case CONVERT:
-			convertAttribute(logger, *action, attrs)
+			convertAttribute(logger, action, attrs)
 		}
 	}
 }
@@ -419,25 +401,10 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 	}
 
 	if action.FromContext != "" {
-		if val, ok := getAttributeValueFromContext(ctx, action.FromContext); ok {
-			return val, true
-		}
-		// If FromContext didn't find the value, fall through to try FromAttribute and DefaultValue
+		return getAttributeValueFromContext(ctx, action.FromContext)
 	}
 
-	if action.FromAttribute != "" {
-		if val, ok := attrs.Get(action.FromAttribute); ok {
-			return val, true
-		}
-		// If FromAttribute didn't find the value, fall through to DefaultValue
-	}
-
-	// Use default value if no other source provided a value
-	if action.DefaultValue != nil {
-		return *action.DefaultValue, true
-	}
-
-	return pcommon.Value{}, false
+	return attrs.Get(action.FromAttribute)
 }
 
 func convertAttribute(logger *zap.Logger, action attributeAction, attrs pcommon.Map) {

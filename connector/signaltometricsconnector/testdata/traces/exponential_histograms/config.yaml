@@ -1,4 +1,4 @@
-signal_to_metrics:
+signaltometrics:
   spans:
     - name: with_resource_filter # with resource.foo filter
       description: Spans with resource attribute including resource.foo as a exponential histogram metric
@@ -59,3 +59,4 @@ signal_to_metrics:
       exponential_histogram:
         count: "Int(AdjustedCount())"
         value: Milliseconds(end_time - start_time)
+

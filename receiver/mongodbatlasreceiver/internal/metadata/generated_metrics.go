@@ -1076,7 +1076,6 @@ func (m *metricMongodbatlasDbCounts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasDbCounts(cfg MetricConfig) metricMongodbatlasDbCounts {
 	m := metricMongodbatlasDbCounts{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1128,7 +1127,6 @@ func (m *metricMongodbatlasDbSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasDbSize(cfg MetricConfig) metricMongodbatlasDbSize {
 	m := metricMongodbatlasDbSize{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1180,7 +1178,6 @@ func (m *metricMongodbatlasDiskPartitionIopsAverage) emit(metrics pmetric.Metric
 
 func newMetricMongodbatlasDiskPartitionIopsAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionIopsAverage {
 	m := metricMongodbatlasDiskPartitionIopsAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1232,7 +1229,6 @@ func (m *metricMongodbatlasDiskPartitionIopsMax) emit(metrics pmetric.MetricSlic
 
 func newMetricMongodbatlasDiskPartitionIopsMax(cfg MetricConfig) metricMongodbatlasDiskPartitionIopsMax {
 	m := metricMongodbatlasDiskPartitionIopsMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1284,7 +1280,6 @@ func (m *metricMongodbatlasDiskPartitionLatencyAverage) emit(metrics pmetric.Met
 
 func newMetricMongodbatlasDiskPartitionLatencyAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionLatencyAverage {
 	m := metricMongodbatlasDiskPartitionLatencyAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1336,7 +1331,6 @@ func (m *metricMongodbatlasDiskPartitionLatencyMax) emit(metrics pmetric.MetricS
 
 func newMetricMongodbatlasDiskPartitionLatencyMax(cfg MetricConfig) metricMongodbatlasDiskPartitionLatencyMax {
 	m := metricMongodbatlasDiskPartitionLatencyMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1386,7 +1380,6 @@ func (m *metricMongodbatlasDiskPartitionQueueDepth) emit(metrics pmetric.MetricS
 
 func newMetricMongodbatlasDiskPartitionQueueDepth(cfg MetricConfig) metricMongodbatlasDiskPartitionQueueDepth {
 	m := metricMongodbatlasDiskPartitionQueueDepth{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1438,7 +1431,6 @@ func (m *metricMongodbatlasDiskPartitionSpaceAverage) emit(metrics pmetric.Metri
 
 func newMetricMongodbatlasDiskPartitionSpaceAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionSpaceAverage {
 	m := metricMongodbatlasDiskPartitionSpaceAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1490,7 +1482,6 @@ func (m *metricMongodbatlasDiskPartitionSpaceMax) emit(metrics pmetric.MetricSli
 
 func newMetricMongodbatlasDiskPartitionSpaceMax(cfg MetricConfig) metricMongodbatlasDiskPartitionSpaceMax {
 	m := metricMongodbatlasDiskPartitionSpaceMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1542,7 +1533,6 @@ func (m *metricMongodbatlasDiskPartitionThroughput) emit(metrics pmetric.MetricS
 
 func newMetricMongodbatlasDiskPartitionThroughput(cfg MetricConfig) metricMongodbatlasDiskPartitionThroughput {
 	m := metricMongodbatlasDiskPartitionThroughput{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1594,7 +1584,6 @@ func (m *metricMongodbatlasDiskPartitionUsageAverage) emit(metrics pmetric.Metri
 
 func newMetricMongodbatlasDiskPartitionUsageAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionUsageAverage {
 	m := metricMongodbatlasDiskPartitionUsageAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1646,7 +1635,6 @@ func (m *metricMongodbatlasDiskPartitionUsageMax) emit(metrics pmetric.MetricSli
 
 func newMetricMongodbatlasDiskPartitionUsageMax(cfg MetricConfig) metricMongodbatlasDiskPartitionUsageMax {
 	m := metricMongodbatlasDiskPartitionUsageMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1696,7 +1684,6 @@ func (m *metricMongodbatlasDiskPartitionUtilizationAverage) emit(metrics pmetric
 
 func newMetricMongodbatlasDiskPartitionUtilizationAverage(cfg MetricConfig) metricMongodbatlasDiskPartitionUtilizationAverage {
 	m := metricMongodbatlasDiskPartitionUtilizationAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1746,7 +1733,6 @@ func (m *metricMongodbatlasDiskPartitionUtilizationMax) emit(metrics pmetric.Met
 
 func newMetricMongodbatlasDiskPartitionUtilizationMax(cfg MetricConfig) metricMongodbatlasDiskPartitionUtilizationMax {
 	m := metricMongodbatlasDiskPartitionUtilizationMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1798,7 +1784,6 @@ func (m *metricMongodbatlasProcessAsserts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessAsserts(cfg MetricConfig) metricMongodbatlasProcessAsserts {
 	m := metricMongodbatlasProcessAsserts{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1848,7 +1833,6 @@ func (m *metricMongodbatlasProcessBackgroundFlush) emit(metrics pmetric.MetricSl
 
 func newMetricMongodbatlasProcessBackgroundFlush(cfg MetricConfig) metricMongodbatlasProcessBackgroundFlush {
 	m := metricMongodbatlasProcessBackgroundFlush{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1900,7 +1884,6 @@ func (m *metricMongodbatlasProcessCacheIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessCacheIo(cfg MetricConfig) metricMongodbatlasProcessCacheIo {
 	m := metricMongodbatlasProcessCacheIo{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1952,7 +1935,6 @@ func (m *metricMongodbatlasProcessCacheRatio) emit(metrics pmetric.MetricSlice) 
 
 func newMetricMongodbatlasProcessCacheRatio(cfg MetricConfig) metricMongodbatlasProcessCacheRatio {
 	m := metricMongodbatlasProcessCacheRatio{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2006,7 +1988,6 @@ func (m *metricMongodbatlasProcessCacheSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessCacheSize(cfg MetricConfig) metricMongodbatlasProcessCacheSize {
 	m := metricMongodbatlasProcessCacheSize{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2058,7 +2039,6 @@ func (m *metricMongodbatlasProcessConnections) emit(metrics pmetric.MetricSlice)
 
 func newMetricMongodbatlasProcessConnections(cfg MetricConfig) metricMongodbatlasProcessConnections {
 	m := metricMongodbatlasProcessConnections{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2110,7 +2090,6 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage) emit(metric
 
 func newMetricMongodbatlasProcessCPUChildrenNormalizedUsageAverage(cfg MetricConfig) metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage {
 	m := metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2162,7 +2141,6 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageMax) emit(metrics pm
 
 func newMetricMongodbatlasProcessCPUChildrenNormalizedUsageMax(cfg MetricConfig) metricMongodbatlasProcessCPUChildrenNormalizedUsageMax {
 	m := metricMongodbatlasProcessCPUChildrenNormalizedUsageMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2214,7 +2192,6 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageAverage) emit(metrics pmetric.
 
 func newMetricMongodbatlasProcessCPUChildrenUsageAverage(cfg MetricConfig) metricMongodbatlasProcessCPUChildrenUsageAverage {
 	m := metricMongodbatlasProcessCPUChildrenUsageAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2266,7 +2243,6 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageMax) emit(metrics pmetric.Metr
 
 func newMetricMongodbatlasProcessCPUChildrenUsageMax(cfg MetricConfig) metricMongodbatlasProcessCPUChildrenUsageMax {
 	m := metricMongodbatlasProcessCPUChildrenUsageMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2318,7 +2294,6 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageAverage) emit(metrics pmetri
 
 func newMetricMongodbatlasProcessCPUNormalizedUsageAverage(cfg MetricConfig) metricMongodbatlasProcessCPUNormalizedUsageAverage {
 	m := metricMongodbatlasProcessCPUNormalizedUsageAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2370,7 +2345,6 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageMax) emit(metrics pmetric.Me
 
 func newMetricMongodbatlasProcessCPUNormalizedUsageMax(cfg MetricConfig) metricMongodbatlasProcessCPUNormalizedUsageMax {
 	m := metricMongodbatlasProcessCPUNormalizedUsageMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2422,7 +2396,6 @@ func (m *metricMongodbatlasProcessCPUUsageAverage) emit(metrics pmetric.MetricSl
 
 func newMetricMongodbatlasProcessCPUUsageAverage(cfg MetricConfig) metricMongodbatlasProcessCPUUsageAverage {
 	m := metricMongodbatlasProcessCPUUsageAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2474,7 +2447,6 @@ func (m *metricMongodbatlasProcessCPUUsageMax) emit(metrics pmetric.MetricSlice)
 
 func newMetricMongodbatlasProcessCPUUsageMax(cfg MetricConfig) metricMongodbatlasProcessCPUUsageMax {
 	m := metricMongodbatlasProcessCPUUsageMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2526,7 +2498,6 @@ func (m *metricMongodbatlasProcessCursors) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessCursors(cfg MetricConfig) metricMongodbatlasProcessCursors {
 	m := metricMongodbatlasProcessCursors{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2578,7 +2549,6 @@ func (m *metricMongodbatlasProcessDbDocumentRate) emit(metrics pmetric.MetricSli
 
 func newMetricMongodbatlasProcessDbDocumentRate(cfg MetricConfig) metricMongodbatlasProcessDbDocumentRate {
 	m := metricMongodbatlasProcessDbDocumentRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2631,7 +2601,6 @@ func (m *metricMongodbatlasProcessDbOperationsRate) emit(metrics pmetric.MetricS
 
 func newMetricMongodbatlasProcessDbOperationsRate(cfg MetricConfig) metricMongodbatlasProcessDbOperationsRate {
 	m := metricMongodbatlasProcessDbOperationsRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2685,7 +2654,6 @@ func (m *metricMongodbatlasProcessDbOperationsTime) emit(metrics pmetric.MetricS
 
 func newMetricMongodbatlasProcessDbOperationsTime(cfg MetricConfig) metricMongodbatlasProcessDbOperationsTime {
 	m := metricMongodbatlasProcessDbOperationsTime{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2737,7 +2705,6 @@ func (m *metricMongodbatlasProcessDbQueryExecutorScanned) emit(metrics pmetric.M
 
 func newMetricMongodbatlasProcessDbQueryExecutorScanned(cfg MetricConfig) metricMongodbatlasProcessDbQueryExecutorScanned {
 	m := metricMongodbatlasProcessDbQueryExecutorScanned{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2789,7 +2756,6 @@ func (m *metricMongodbatlasProcessDbQueryTargetingScannedPerReturned) emit(metri
 
 func newMetricMongodbatlasProcessDbQueryTargetingScannedPerReturned(cfg MetricConfig) metricMongodbatlasProcessDbQueryTargetingScannedPerReturned {
 	m := metricMongodbatlasProcessDbQueryTargetingScannedPerReturned{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2841,7 +2807,6 @@ func (m *metricMongodbatlasProcessDbStorage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessDbStorage(cfg MetricConfig) metricMongodbatlasProcessDbStorage {
 	m := metricMongodbatlasProcessDbStorage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2893,7 +2858,6 @@ func (m *metricMongodbatlasProcessGlobalLock) emit(metrics pmetric.MetricSlice) 
 
 func newMetricMongodbatlasProcessGlobalLock(cfg MetricConfig) metricMongodbatlasProcessGlobalLock {
 	m := metricMongodbatlasProcessGlobalLock{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2943,7 +2907,6 @@ func (m *metricMongodbatlasProcessIndexBtreeMissRatio) emit(metrics pmetric.Metr
 
 func newMetricMongodbatlasProcessIndexBtreeMissRatio(cfg MetricConfig) metricMongodbatlasProcessIndexBtreeMissRatio {
 	m := metricMongodbatlasProcessIndexBtreeMissRatio{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2995,7 +2958,6 @@ func (m *metricMongodbatlasProcessIndexCounters) emit(metrics pmetric.MetricSlic
 
 func newMetricMongodbatlasProcessIndexCounters(cfg MetricConfig) metricMongodbatlasProcessIndexCounters {
 	m := metricMongodbatlasProcessIndexCounters{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3045,7 +3007,6 @@ func (m *metricMongodbatlasProcessJournalingCommits) emit(metrics pmetric.Metric
 
 func newMetricMongodbatlasProcessJournalingCommits(cfg MetricConfig) metricMongodbatlasProcessJournalingCommits {
 	m := metricMongodbatlasProcessJournalingCommits{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3095,7 +3056,6 @@ func (m *metricMongodbatlasProcessJournalingDataFiles) emit(metrics pmetric.Metr
 
 func newMetricMongodbatlasProcessJournalingDataFiles(cfg MetricConfig) metricMongodbatlasProcessJournalingDataFiles {
 	m := metricMongodbatlasProcessJournalingDataFiles{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3145,7 +3105,6 @@ func (m *metricMongodbatlasProcessJournalingWritten) emit(metrics pmetric.Metric
 
 func newMetricMongodbatlasProcessJournalingWritten(cfg MetricConfig) metricMongodbatlasProcessJournalingWritten {
 	m := metricMongodbatlasProcessJournalingWritten{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3197,7 +3156,6 @@ func (m *metricMongodbatlasProcessMemoryUsage) emit(metrics pmetric.MetricSlice)
 
 func newMetricMongodbatlasProcessMemoryUsage(cfg MetricConfig) metricMongodbatlasProcessMemoryUsage {
 	m := metricMongodbatlasProcessMemoryUsage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3249,7 +3207,6 @@ func (m *metricMongodbatlasProcessNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessNetworkIo(cfg MetricConfig) metricMongodbatlasProcessNetworkIo {
 	m := metricMongodbatlasProcessNetworkIo{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3301,7 +3258,6 @@ func (m *metricMongodbatlasProcessNetworkRequests) emit(metrics pmetric.MetricSl
 
 func newMetricMongodbatlasProcessNetworkRequests(cfg MetricConfig) metricMongodbatlasProcessNetworkRequests {
 	m := metricMongodbatlasProcessNetworkRequests{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3351,7 +3307,6 @@ func (m *metricMongodbatlasProcessOplogRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessOplogRate(cfg MetricConfig) metricMongodbatlasProcessOplogRate {
 	m := metricMongodbatlasProcessOplogRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3403,7 +3358,6 @@ func (m *metricMongodbatlasProcessOplogTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessOplogTime(cfg MetricConfig) metricMongodbatlasProcessOplogTime {
 	m := metricMongodbatlasProcessOplogTime{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3455,7 +3409,6 @@ func (m *metricMongodbatlasProcessPageFaults) emit(metrics pmetric.MetricSlice) 
 
 func newMetricMongodbatlasProcessPageFaults(cfg MetricConfig) metricMongodbatlasProcessPageFaults {
 	m := metricMongodbatlasProcessPageFaults{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3505,7 +3458,6 @@ func (m *metricMongodbatlasProcessRestarts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessRestarts(cfg MetricConfig) metricMongodbatlasProcessRestarts {
 	m := metricMongodbatlasProcessRestarts{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3557,7 +3509,6 @@ func (m *metricMongodbatlasProcessTickets) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbatlasProcessTickets(cfg MetricConfig) metricMongodbatlasProcessTickets {
 	m := metricMongodbatlasProcessTickets{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3609,7 +3560,6 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageAverage) emit(metrics pmetric
 
 func newMetricMongodbatlasSystemCPUNormalizedUsageAverage(cfg MetricConfig) metricMongodbatlasSystemCPUNormalizedUsageAverage {
 	m := metricMongodbatlasSystemCPUNormalizedUsageAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3661,7 +3611,6 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageMax) emit(metrics pmetric.Met
 
 func newMetricMongodbatlasSystemCPUNormalizedUsageMax(cfg MetricConfig) metricMongodbatlasSystemCPUNormalizedUsageMax {
 	m := metricMongodbatlasSystemCPUNormalizedUsageMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3713,7 +3662,6 @@ func (m *metricMongodbatlasSystemCPUUsageAverage) emit(metrics pmetric.MetricSli
 
 func newMetricMongodbatlasSystemCPUUsageAverage(cfg MetricConfig) metricMongodbatlasSystemCPUUsageAverage {
 	m := metricMongodbatlasSystemCPUUsageAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3765,7 +3713,6 @@ func (m *metricMongodbatlasSystemCPUUsageMax) emit(metrics pmetric.MetricSlice) 
 
 func newMetricMongodbatlasSystemCPUUsageMax(cfg MetricConfig) metricMongodbatlasSystemCPUUsageMax {
 	m := metricMongodbatlasSystemCPUUsageMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3817,7 +3764,6 @@ func (m *metricMongodbatlasSystemFtsCPUNormalizedUsage) emit(metrics pmetric.Met
 
 func newMetricMongodbatlasSystemFtsCPUNormalizedUsage(cfg MetricConfig) metricMongodbatlasSystemFtsCPUNormalizedUsage {
 	m := metricMongodbatlasSystemFtsCPUNormalizedUsage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3869,7 +3815,6 @@ func (m *metricMongodbatlasSystemFtsCPUUsage) emit(metrics pmetric.MetricSlice) 
 
 func newMetricMongodbatlasSystemFtsCPUUsage(cfg MetricConfig) metricMongodbatlasSystemFtsCPUUsage {
 	m := metricMongodbatlasSystemFtsCPUUsage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3919,7 +3864,6 @@ func (m *metricMongodbatlasSystemFtsDiskUsed) emit(metrics pmetric.MetricSlice) 
 
 func newMetricMongodbatlasSystemFtsDiskUsed(cfg MetricConfig) metricMongodbatlasSystemFtsDiskUsed {
 	m := metricMongodbatlasSystemFtsDiskUsed{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3973,7 +3917,6 @@ func (m *metricMongodbatlasSystemFtsMemoryUsage) emit(metrics pmetric.MetricSlic
 
 func newMetricMongodbatlasSystemFtsMemoryUsage(cfg MetricConfig) metricMongodbatlasSystemFtsMemoryUsage {
 	m := metricMongodbatlasSystemFtsMemoryUsage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4025,7 +3968,6 @@ func (m *metricMongodbatlasSystemMemoryUsageAverage) emit(metrics pmetric.Metric
 
 func newMetricMongodbatlasSystemMemoryUsageAverage(cfg MetricConfig) metricMongodbatlasSystemMemoryUsageAverage {
 	m := metricMongodbatlasSystemMemoryUsageAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4077,7 +4019,6 @@ func (m *metricMongodbatlasSystemMemoryUsageMax) emit(metrics pmetric.MetricSlic
 
 func newMetricMongodbatlasSystemMemoryUsageMax(cfg MetricConfig) metricMongodbatlasSystemMemoryUsageMax {
 	m := metricMongodbatlasSystemMemoryUsageMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4129,7 +4070,6 @@ func (m *metricMongodbatlasSystemNetworkIoAverage) emit(metrics pmetric.MetricSl
 
 func newMetricMongodbatlasSystemNetworkIoAverage(cfg MetricConfig) metricMongodbatlasSystemNetworkIoAverage {
 	m := metricMongodbatlasSystemNetworkIoAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4181,7 +4121,6 @@ func (m *metricMongodbatlasSystemNetworkIoMax) emit(metrics pmetric.MetricSlice)
 
 func newMetricMongodbatlasSystemNetworkIoMax(cfg MetricConfig) metricMongodbatlasSystemNetworkIoMax {
 	m := metricMongodbatlasSystemNetworkIoMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4233,7 +4172,6 @@ func (m *metricMongodbatlasSystemPagingIoAverage) emit(metrics pmetric.MetricSli
 
 func newMetricMongodbatlasSystemPagingIoAverage(cfg MetricConfig) metricMongodbatlasSystemPagingIoAverage {
 	m := metricMongodbatlasSystemPagingIoAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4285,7 +4223,6 @@ func (m *metricMongodbatlasSystemPagingIoMax) emit(metrics pmetric.MetricSlice) 
 
 func newMetricMongodbatlasSystemPagingIoMax(cfg MetricConfig) metricMongodbatlasSystemPagingIoMax {
 	m := metricMongodbatlasSystemPagingIoMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4337,7 +4274,6 @@ func (m *metricMongodbatlasSystemPagingUsageAverage) emit(metrics pmetric.Metric
 
 func newMetricMongodbatlasSystemPagingUsageAverage(cfg MetricConfig) metricMongodbatlasSystemPagingUsageAverage {
 	m := metricMongodbatlasSystemPagingUsageAverage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4389,7 +4325,6 @@ func (m *metricMongodbatlasSystemPagingUsageMax) emit(metrics pmetric.MetricSlic
 
 func newMetricMongodbatlasSystemPagingUsageMax(cfg MetricConfig) metricMongodbatlasSystemPagingUsageMax {
 	m := metricMongodbatlasSystemPagingUsageMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

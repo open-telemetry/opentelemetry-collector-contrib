@@ -202,7 +202,6 @@ func (m *metricNsxtNodeCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNsxtNodeCPUUtilization(cfg MetricConfig) metricNsxtNodeCPUUtilization {
 	m := metricNsxtNodeCPUUtilization{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -256,7 +255,6 @@ func (m *metricNsxtNodeFilesystemUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNsxtNodeFilesystemUsage(cfg MetricConfig) metricNsxtNodeFilesystemUsage {
 	m := metricNsxtNodeFilesystemUsage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -306,7 +304,6 @@ func (m *metricNsxtNodeFilesystemUtilization) emit(metrics pmetric.MetricSlice) 
 
 func newMetricNsxtNodeFilesystemUtilization(cfg MetricConfig) metricNsxtNodeFilesystemUtilization {
 	m := metricNsxtNodeFilesystemUtilization{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -358,7 +355,6 @@ func (m *metricNsxtNodeMemoryCacheUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNsxtNodeMemoryCacheUsage(cfg MetricConfig) metricNsxtNodeMemoryCacheUsage {
 	m := metricNsxtNodeMemoryCacheUsage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -410,7 +406,6 @@ func (m *metricNsxtNodeMemoryUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNsxtNodeMemoryUsage(cfg MetricConfig) metricNsxtNodeMemoryUsage {
 	m := metricNsxtNodeMemoryUsage{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -464,7 +459,6 @@ func (m *metricNsxtNodeNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNsxtNodeNetworkIo(cfg MetricConfig) metricNsxtNodeNetworkIo {
 	m := metricNsxtNodeNetworkIo{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -519,7 +513,6 @@ func (m *metricNsxtNodeNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNsxtNodeNetworkPacketCount(cfg MetricConfig) metricNsxtNodeNetworkPacketCount {
 	m := metricNsxtNodeNetworkPacketCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

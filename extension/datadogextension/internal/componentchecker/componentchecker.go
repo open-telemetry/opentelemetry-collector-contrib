@@ -6,6 +6,7 @@ package componentchecker // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 )
@@ -93,7 +93,7 @@ func PopulateFullComponentsJSON(moduleInfo service.ModuleInfos, c *confmap.Conf)
 
 // PopulateActiveComponents gets a list of active components in the collector service
 // configuration and returns a list of ServiceComponent structs for inclusion in a fleet payload
-func PopulateActiveComponents(logger *zap.Logger, c *confmap.Conf, moduleInfoJSON *payload.ModuleInfoJSON) (*[]payload.ServiceComponent, error) {
+func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInfoJSON) (*[]payload.ServiceComponent, error) {
 	oc := otelcol.Config{}
 	var serviceComponents []payload.ServiceComponent
 	if err := c.Unmarshal(&oc); err != nil {
@@ -112,8 +112,7 @@ func PopulateActiveComponents(logger *zap.Logger, c *confmap.Conf, moduleInfoJSO
 			extension.Gomod = module.Gomod
 			extension.Version = module.Version
 		} else {
-			// This extension may be a custom component from the datadog-agent repository (i.e. ddflareextension)
-			logger.Warn("extension not found in Module Info, something has gone wrong with status parsing for extension ID", zap.String("extensionID", extensionID.String()))
+			return nil, fmt.Errorf("extension not found in Module Info, something has gone wrong with status parsing for extension ID: %s", extensionID.String())
 		}
 		// TODO: Add component status parsing, potentially via pkg/status
 		serviceComponents = append(serviceComponents, extension)
@@ -172,6 +171,9 @@ func PopulateActiveComponents(logger *zap.Logger, c *confmap.Conf, moduleInfoJSO
 				if module, ok := moduleInfoJSON.GetComponent(component.Type, component.Kind); ok {
 					component.Gomod = module.Gomod
 					component.Version = module.Version
+				} else {
+					// This component exists but is the wrong type (e.g. a connector in the exporters pipeline)
+					continue
 				}
 				// TODO: Add component status parsing, potentially via pkg/status
 				serviceComponents = append(serviceComponents, component)

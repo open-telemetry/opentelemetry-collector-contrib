@@ -1,4 +1,3 @@
-display_name: AWS Lambda Receiver
 type: awslambda
 
 status:
@@ -13,5 +12,4 @@ tests:
   # TODO Fix this
   skip_lifecycle: true
   config:
-    s3:
-      encoding: awslogs
+    s3_encoding: awslogs

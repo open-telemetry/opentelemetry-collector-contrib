@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 // Package sigv4authextension implements the `extensionauth.HTTPClient` interface.
 // This extension provides the Sigv4 process of adding authentication information to AWS API requests sent by HTTP.

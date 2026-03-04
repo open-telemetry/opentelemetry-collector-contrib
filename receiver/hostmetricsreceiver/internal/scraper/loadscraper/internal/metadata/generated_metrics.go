@@ -76,7 +76,6 @@ func (m *metricSystemCPULoadAverage15m) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPULoadAverage15m(cfg MetricConfig) metricSystemCPULoadAverage15m {
 	m := metricSystemCPULoadAverage15m{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -126,7 +125,6 @@ func (m *metricSystemCPULoadAverage1m) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPULoadAverage1m(cfg MetricConfig) metricSystemCPULoadAverage1m {
 	m := metricSystemCPULoadAverage1m{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -176,7 +174,6 @@ func (m *metricSystemCPULoadAverage5m) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPULoadAverage5m(cfg MetricConfig) metricSystemCPULoadAverage5m {
 	m := metricSystemCPULoadAverage5m{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

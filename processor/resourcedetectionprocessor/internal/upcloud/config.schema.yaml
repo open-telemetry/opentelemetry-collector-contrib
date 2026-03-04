@@ -1,6 +1,0 @@
-type: object
-properties:
-  fail_on_missing_metadata:
-    type: boolean
-  resource_attributes:
-    $ref: ./internal/metadata.resource_attributes_config

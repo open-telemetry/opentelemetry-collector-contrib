@@ -38,10 +38,6 @@ func (*mockSerializer) SendServiceChecks(servicecheck.ServiceChecks) error {
 	return nil
 }
 
-func (*mockSerializer) SendSeriesWithMetadata(metrics.Series) error {
-	return nil
-}
-
 func (*mockSerializer) SendIterableSeries(metrics.SerieSource) error {
 	return nil
 }

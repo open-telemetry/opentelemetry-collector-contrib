@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -51,7 +52,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		for i, namespace := range namespaces {
 			rl := resourceLogs.At(i)
 			resourceAttributes := rl.Resource().Attributes()
-			ns, _ := resourceAttributes.Get("k8s.namespace.name")
+			ns, _ := resourceAttributes.Get(string(semconv.K8SNamespaceNameKey))
 			assert.Equal(t, ns.AsString(), namespace)
 			assert.Equal(t, 1, rl.ScopeLogs().Len())
 			assert.Equal(t, 2, rl.ScopeLogs().At(0).LogRecords().Len())
@@ -87,7 +88,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		rl := resourceLogs.At(0)
 		resourceAttributes := rl.Resource().Attributes()
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
-		_, ok := resourceAttributes.Get("k8s.namespace.name")
+		_, ok := resourceAttributes.Get(string(semconv.K8SNamespaceNameKey))
 		assert.False(t, ok)
 		assert.Equal(t, 1, rl.ScopeLogs().Len())
 		assert.Equal(t, 3, logRecords.Len())
@@ -175,7 +176,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		// verify the event.type, event.domain and k8s.resource.name attributes have been added
 
 		watchEventResourceAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).Resource().Attributes()
-		k8sNamespace, ok := watchEventResourceAttrs.Get("k8s.namespace.name")
+		k8sNamespace, ok := watchEventResourceAttrs.Get(string(semconv.K8SNamespaceNameKey))
 		assert.True(t, ok)
 		assert.Equal(t,
 			"my-namespace",
@@ -211,7 +212,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.NotNil(t, logEntryFromPulledEvent)
 
 		pullEventResourceAttrs := logEntryFromPulledEvent.ResourceLogs().At(0).Resource().Attributes()
-		k8sNamespace, ok = pullEventResourceAttrs.Get("k8s.namespace.name")
+		k8sNamespace, ok = pullEventResourceAttrs.Get(string(semconv.K8SNamespaceNameKey))
 		assert.True(t, ok)
 		assert.Equal(
 			t,

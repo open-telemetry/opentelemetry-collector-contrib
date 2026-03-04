@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
@@ -62,14 +61,11 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // Create the default config based on the const(s) defined above.
 func createDefaultConfig() component.Config {
-	netAddr := confignet.NewDefaultAddrConfig()
-	netAddr.Transport = confignet.TransportTypeTCP
-	netAddr.Endpoint = defaultEndpoint
 	return &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
-				NetAddr:      netAddr,
+				Endpoint:     defaultEndpoint,
 				ReadTimeout:  defaultReadTimeout,
 				WriteTimeout: defaultWriteTimeout,
 			},
@@ -147,7 +143,7 @@ func createAddScraperOpts(
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}
 
-		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddMetricsScraper(metadata.Type, githubScraper))
+		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(metadata.Type, githubScraper))
 	}
 
 	return scraperControllerOptions, nil

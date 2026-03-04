@@ -40,19 +40,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "jwt-bearer-grant-type"),
-			expected: &Config{
-				ClientCertificateKey: "secret_key",
-				ClientID:             "someclientid",
-				GrantType:            "urn:ietf:params:oauth:grant-type:jwt-bearer",
-				EndpointParams:       url.Values{"audience": []string{"someaudience"}},
-				Scopes:               []string{"api.metrics"},
-				TokenURL:             "https://example.com/oauth2/default/v1/token",
-				Timeout:              time.Second,
-				ExpiryBuffer:         5 * time.Minute,
-			},
-		},
-		{
 			id: component.NewIDWithName(metadata.Type, "withtls"),
 			expected: &Config{
 				ClientSecret: "someclientsecret2",
@@ -84,10 +71,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:          component.NewIDWithName(metadata.Type, "missingsecret"),
 			expectedErr: errNoClientSecretProvided,
-		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "missingcertificate"),
-			expectedErr: errNoClientCertificateProvided,
 		},
 	}
 	for _, tt := range tests {

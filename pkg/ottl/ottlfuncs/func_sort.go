@@ -226,11 +226,7 @@ type convertedValue[T targetType] struct {
 
 func makeConvertedCopy[T targetType](slice pcommon.Slice, converter func(idx int) T) []convertedValue[T] {
 	length := slice.Len()
-	if length == 0 {
-		return nil
-	}
-
-	out := make([]convertedValue[T], 0, length)
+	var out []convertedValue[T]
 	for i := range length {
 		cv := convertedValue[T]{
 			value:         converter(i),
@@ -249,7 +245,7 @@ func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) []a
 		return cmp.Compare(a.value, b.value)
 	})
 
-	out := make([]any, 0, len(cvs))
+	var out []any
 	for _, cv := range cvs {
 		out = append(out, cv.originalValue)
 	}

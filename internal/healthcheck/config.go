@@ -5,7 +5,6 @@ package healthcheck // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -14,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/http"
@@ -27,7 +27,6 @@ type (
 	GRPCConfig                   = grpc.Config
 	ComponentHealthConfig        = common.ComponentHealthConfig
 	CheckCollectorPipelineConfig = http.CheckCollectorPipelineConfig
-	ResponseBodyConfig           = http.ResponseBodyConfig
 )
 
 const (
@@ -43,11 +42,6 @@ var (
 	ErrHTTPEndpointRequired = errors.New("http endpoint required")
 	ErrInvalidPath          = errors.New("path must start with /")
 )
-
-// endpointForPort returns a localhost endpoint for the given port.
-func endpointForPort(port int) string {
-	return fmt.Sprintf("localhost:%d", port)
-}
 
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
@@ -70,7 +64,7 @@ var _ component.Config = (*Config)(nil)
 // Validate checks if the extension configuration is valid
 func (c *Config) Validate() error {
 	if !c.UseV2 {
-		if c.NetAddr.Endpoint == "" {
+		if c.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if !strings.HasPrefix(c.Path, "/") {
@@ -84,7 +78,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPConfig != nil {
-		if c.HTTPConfig.NetAddr.Endpoint == "" {
+		if c.HTTPConfig.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if c.HTTPConfig.Status.Enabled && !strings.HasPrefix(c.HTTPConfig.Status.Path, "/") {
@@ -104,46 +98,11 @@ func (c *Config) Validate() error {
 
 // Unmarshal a confmap.Conf into the config struct.
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
-	// Initialize with default values to enable unmarshaling into nested structs.
-	// For healthcheckextension: the feature gate determines behavior, not these fields.
-	// For healthcheckv2extension: these fields control which protocols are enabled.
-	// We conditionally initialize and then clear to preserve "user specified" vs "not specified".
-	if conf.IsSet(httpConfigKey) {
-		c.HTTPConfig = &http.Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  endpointForPort(DefaultHTTPPort),
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
-			Status: http.PathConfig{
-				Enabled: true,
-				Path:    "/status",
-			},
-			Config: http.PathConfig{
-				Enabled: false,
-				Path:    "/config",
-			},
-		}
-	}
-	if conf.IsSet(grpcConfigKey) {
-		c.GRPCConfig = &grpc.Config{
-			ServerConfig: configgrpc.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  endpointForPort(DefaultGRPCPort),
-					Transport: confignet.TransportTypeTCP,
-				},
-			},
-		}
-	}
-
 	err := conf.Unmarshal(c)
 	if err != nil {
 		return err
 	}
 
-	// Clear configs that weren't actually set in the confmap.
-	// This preserves the distinction between "user didn't specify" vs "user specified with defaults".
 	if !conf.IsSet(httpConfigKey) {
 		c.HTTPConfig = nil
 	}
@@ -159,19 +118,13 @@ func NewDefaultConfig() component.Config {
 	return &Config{
 		LegacyConfig: http.LegacyConfig{
 			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  endpointForPort(DefaultHTTPPort),
-					Transport: "tcp",
-				},
+				Endpoint: testutil.EndpointForPort(DefaultHTTPPort),
 			},
 			Path: "/",
 		},
 		HTTPConfig: &http.Config{
 			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  endpointForPort(DefaultHTTPPort),
-					Transport: "tcp",
-				},
+				Endpoint: testutil.EndpointForPort(DefaultHTTPPort),
 			},
 			Status: http.PathConfig{
 				Enabled: true,
@@ -185,7 +138,7 @@ func NewDefaultConfig() component.Config {
 		GRPCConfig: &grpc.Config{
 			ServerConfig: configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  endpointForPort(DefaultGRPCPort),
+					Endpoint:  testutil.EndpointForPort(DefaultGRPCPort),
 					Transport: "tcp",
 				},
 			},

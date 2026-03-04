@@ -1,50 +1,44 @@
-type: oracleclouddetector
+type: resourcedetectionprocessor/oraclecloud
+
+parent: resourcedetection
 
 status:
   class: processor
   stability:
     alpha: [traces, metrics, logs, profiles]
   codeowners:
-    active: [dashpole, geekdave]
+    active: [dashpole]
 
 resource_attributes:
   cloud.availability_zone:
-    description: The [availability domain](https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm) in which this Oracle Cloud instance is running (e.g., "PHX-AD-1").
+    description: The cloud.availability_zone
     type: string
     enabled: true
   cloud.platform:
-    description: Value is `oracle_cloud_infrastructure` for resources detected on Oracle Cloud Infrastructure (OCI).
+    description: The cloud.platform
     type: string
     enabled: true
   cloud.provider:
-    description: Always set to `oraclecloud` to identify resources provided by Oracle Cloud Infrastructure
+    description: The cloud.provider
     type: string
     enabled: true
   cloud.region:
-    description: The Oracle Cloud region identifier for this instance (e.g., "us-phoenix-1").
+    description: The cloud.region
     type: string
     enabled: true
   host.id:
-    description: The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance).
+    description: The host.id
     type: string
     enabled: true
   host.name:
-    description: The system hostname as reported by the OCI metadata service.
+    description: The hostname
     type: string
     enabled: true
   host.type:
-    description: The compute shape (instance type) of the host, such as "VM.Standard.E4.Flex".
+    description: The instance type (shape)
     enabled: true
     type: string
   k8s.cluster.name:
-    description: The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise.
+    description: k8s.cluster.name
     enabled: true
     type: string
-  oracle_cloud.realm:
-    description: The Oracle Cloud realm
-    enabled: true
-    type: string    
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

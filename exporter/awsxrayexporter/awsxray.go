@@ -53,7 +53,12 @@ func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, 
 			documents := extractResourceSpans(cfg, logger, td)
 
 			for offset := 0; offset < len(documents); offset += maxSegmentsPerPut {
-				nextOffset := min(offset+maxSegmentsPerPut, len(documents))
+				var nextOffset int
+				if offset+maxSegmentsPerPut > len(documents) {
+					nextOffset = len(documents)
+				} else {
+					nextOffset = offset + maxSegmentsPerPut
+				}
 				input := &xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents[offset:nextOffset]}
 				logger.Debug("request: " + fmt.Sprintf("%+v", input))
 				output, localErr := xrayClient.PutTraceSegments(ctx, input)

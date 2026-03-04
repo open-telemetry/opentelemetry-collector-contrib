@@ -1,0 +1,14 @@
+type: carbon
+
+status:
+  class: exporter
+  stability:
+    unmaintained: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: []
+    emeritus: [aboguszewski-sumo]
+    seeking_new: true
+
+tests:
+  expect_consumer_error: true

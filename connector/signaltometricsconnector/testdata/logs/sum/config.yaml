@@ -1,4 +1,4 @@
-signal_to_metrics:
+signaltometrics:
   logs:
     - name: total.logrecords.sum
       description: Count total number of log records

@@ -65,7 +65,9 @@ func newMongoDBAtlasLogsReceiver(settings rcvr.Settings, cfg *Config, consumer c
 
 // Log receiver logic
 func (s *logsReceiver) Start(ctx context.Context, _ component.Host) error {
-	s.wg.Go(func() {
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
 		s.start = time.Now().Add(-collectionInterval)
 		s.end = time.Now()
 		for {
@@ -81,7 +83,7 @@ func (s *logsReceiver) Start(ctx context.Context, _ component.Host) error {
 				s.end = time.Now()
 			}
 		}
-	})
+	}()
 	return nil
 }
 

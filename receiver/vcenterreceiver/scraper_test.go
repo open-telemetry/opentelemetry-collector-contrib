@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -152,7 +151,7 @@ func TestStartFailures_Metrics(t *testing.T) {
 	ctx := t.Context()
 	for _, tc := range cases {
 		scraper := newVmwareVcenterScraper(zap.NewNop(), tc.cfg, receivertest.NewNopSettings(metadata.Type))
-		err := scraper.Start(ctx, componenttest.NewNopHost())
+		err := scraper.Start(ctx, nil)
 		if tc.err != nil {
 			require.ErrorContains(t, err, tc.err.Error())
 		} else {

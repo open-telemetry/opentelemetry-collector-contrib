@@ -234,10 +234,9 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(dps pmetric.H
 		point := tracking.ValuePoint{
 			ObservedTimestamp: dp.Timestamp(),
 			HistogramValue: &tracking.HistogramPoint{
-				Count:        dp.Count(),
-				Sum:          dp.Sum(),
-				BucketBounds: dp.ExplicitBounds().AsRaw(),
-				BucketCounts: dp.BucketCounts().AsRaw(),
+				Count:   dp.Count(),
+				Sum:     dp.Sum(),
+				Buckets: dp.BucketCounts().AsRaw(),
 			},
 		}
 
@@ -253,8 +252,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(dps pmetric.H
 			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
 				dp.SetSum(delta.HistogramValue.Sum)
 			}
-			dp.ExplicitBounds().FromRaw(delta.HistogramValue.BucketBounds)
-			dp.BucketCounts().FromRaw(delta.HistogramValue.BucketCounts)
+			dp.BucketCounts().FromRaw(delta.HistogramValue.Buckets)
 			dp.RemoveMin()
 			dp.RemoveMax()
 			return false

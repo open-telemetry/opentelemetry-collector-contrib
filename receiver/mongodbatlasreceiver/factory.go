@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
@@ -28,13 +27,11 @@ const (
 
 // NewFactory creates a factory for MongoDB Atlas receiver
 func NewFactory() receiver.Factory {
-	return xreceiver.NewFactory(
+	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		xreceiver.WithLogs(createCombinedLogReceiver, metadata.LogsStability),
-		xreceiver.WithDeprecatedTypeAlias(component.MustNewType("mongodbatlas")),
-	)
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
 }
 
 func createMetricsReceiver(
@@ -53,7 +50,7 @@ func createMetricsReceiver(
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scraper instance: %w", err)
 	}
 
-	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, ms))
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, ms))
 }
 
 func createCombinedLogReceiver(

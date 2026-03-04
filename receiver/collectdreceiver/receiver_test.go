@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -48,10 +47,7 @@ func TestNewReceiver(t *testing.T) {
 			args: args{
 				config: &Config{
 					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  ":0",
-						},
+						Endpoint: ":0",
 					},
 				},
 				attrsPrefix:  "default_attr_",
@@ -81,10 +77,7 @@ func TestCollectDServer(t *testing.T) {
 
 	config := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:8081",
-			},
+			Endpoint: "localhost:8081",
 		},
 	}
 	defaultAttrsPrefix := "dap_"
@@ -172,7 +165,7 @@ func TestCollectDServer(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
 				tt.HTTPMethod,
-				"http://"+config.NetAddr.Endpoint+"?"+tt.QueryParams,
+				"http://"+config.Endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)

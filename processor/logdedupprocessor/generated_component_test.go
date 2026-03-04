@@ -18,12 +18,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
-var typ = component.MustNewType("logdedup")
-
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, typ, NewFactory().Type())
+	require.Equal(t, "logdedup", NewFactory().Type().String())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -34,8 +34,8 @@ func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		createFn func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error)
 		name     string
+		createFn func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error)
 	}{
 
 		{
@@ -53,21 +53,21 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 
-	for _, tt := range tests {
-		t.Run(tt.name+"-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
+	for _, test := range tests {
+		t.Run(test.name+"-shutdown", func(t *testing.T) {
+			c, err := test.createFn(context.Background(), processortest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
-		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
+		t.Run(test.name+"-lifecycle", func(t *testing.T) {
+			c, err := test.createFn(context.Background(), processortest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
-			host := newMdatagenNopHost()
+			host := componenttest.NewNopHost()
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
-				switch tt.name {
+				switch test.name {
 				case "logs":
 					e, ok := c.(processor.Logs)
 					require.True(t, ok)
@@ -134,20 +134,4 @@ func generateLifecycleTestTraces() ptrace.Traces {
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return traces
-}
-
-var _ component.Host = (*mdatagenNopHost)(nil)
-
-type mdatagenNopHost struct{}
-
-func newMdatagenNopHost() component.Host {
-	return &mdatagenNopHost{}
-}
-
-func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	return nil
 }

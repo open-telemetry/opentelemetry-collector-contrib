@@ -405,7 +405,7 @@ func Test_newGetter(t *testing.T) {
 				},
 			},
 			want:        []any{},
-			wantLiteral: true,
+			wantLiteral: false,
 		},
 		{
 			name: "string list",
@@ -573,16 +573,6 @@ func Test_newGetter(t *testing.T) {
 				},
 			},
 			want:        []any{"test0", int64(1)},
-			wantLiteral: true,
-		},
-		{
-			name: "empty map",
-			val: value{
-				Map: &mapValue{
-					Values: []mapItem{},
-				},
-			},
-			want:        pcommon.NewMap(),
 			wantLiteral: true,
 		},
 		{

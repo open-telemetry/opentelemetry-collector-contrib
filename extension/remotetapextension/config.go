@@ -6,7 +6,6 @@ package remotetapextension // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 )
 
 type Config struct {
@@ -16,10 +15,7 @@ type Config struct {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  "127.0.0.1:11000",
-			},
+			Endpoint: "127.0.0.1:11000",
 		},
 	}
 }

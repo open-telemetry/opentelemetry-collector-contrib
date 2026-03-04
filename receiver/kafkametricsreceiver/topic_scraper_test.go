@@ -83,7 +83,7 @@ func TestTopicScraper_startScraperCreatesClient(t *testing.T) {
 	ms, err := createTopicsScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
-	err = ms.Start(t.Context(), componenttest.NewNopHost())
+	err = ms.Start(t.Context(), nil)
 	assert.NoError(t, err)
 }
 

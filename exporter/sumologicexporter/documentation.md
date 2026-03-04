@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_exporter_requests_bytes
 
-Total size of requests (in bytes)
+Total size of requests (in bytes) [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Total size of requests (in bytes)
 
 ### otelcol_exporter_requests_duration
 
-Duration of HTTP requests (in milliseconds)
+Duration of HTTP requests (in milliseconds) [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -24,7 +24,7 @@ Duration of HTTP requests (in milliseconds)
 
 ### otelcol_exporter_requests_records
 
-Total size of requests (in number of records)
+Total size of requests (in number of records) [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -32,7 +32,7 @@ Total size of requests (in number of records)
 
 ### otelcol_exporter_requests_sent
 
-Number of requests
+Number of requests [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

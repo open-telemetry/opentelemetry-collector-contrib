@@ -1,4 +1,4 @@
-mongodb_atlas:
+mongodbatlas:
   public_key: "my-public-key"
   private_key: "my-private-key"
   alerts:

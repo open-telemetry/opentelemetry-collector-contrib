@@ -13,22 +13,18 @@ import (
 )
 
 func TestSinglePut(t *testing.T) {
-	c, err := NewLRUDecisionCache(2)
+	c, err := NewLRUDecisionCache[int](2)
 	require.NoError(t, err)
 	id, err := traceIDFromHex("12341234123412341234123412341234")
 	require.NoError(t, err)
-	c.Put(id, DecisionMetadata{
-		PolicyName: "mock-policy",
-	})
+	c.Put(id, 123)
 	v, ok := c.Get(id)
-	assert.Equal(t, DecisionMetadata{
-		PolicyName: "mock-policy",
-	}, v)
+	assert.Equal(t, 123, v)
 	assert.True(t, ok)
 }
 
 func TestExceedsSizeLimit(t *testing.T) {
-	c, err := NewLRUDecisionCache(2)
+	c, err := NewLRUDecisionCache[bool](2)
 	require.NoError(t, err)
 	id1, err := traceIDFromHex("12341234123412341234123412341231")
 	require.NoError(t, err)
@@ -37,32 +33,23 @@ func TestExceedsSizeLimit(t *testing.T) {
 	id3, err := traceIDFromHex("12341234123412341234123412341233")
 	require.NoError(t, err)
 
-	c.Put(id1, DecisionMetadata{
-		PolicyName: "mock-policy1",
-	})
-	c.Put(id2, DecisionMetadata{
-		PolicyName: "mock-policy2",
-	})
-	c.Put(id3, DecisionMetadata{
-		PolicyName: "mock-policy3",
-	})
+	c.Put(id1, true)
+	c.Put(id2, true)
+	c.Put(id3, true)
 
-	_, ok := c.Get(id1)
+	v, ok := c.Get(id1)
+	assert.False(t, v)  // evicted
 	assert.False(t, ok) // evicted
-	v, ok := c.Get(id2)
-	assert.Equal(t, DecisionMetadata{
-		PolicyName: "mock-policy2",
-	}, v)
+	v, ok = c.Get(id2)
+	assert.True(t, v)
 	assert.True(t, ok)
 	v, ok = c.Get(id3)
-	assert.Equal(t, DecisionMetadata{
-		PolicyName: "mock-policy3",
-	}, v)
+	assert.True(t, v)
 	assert.True(t, ok)
 }
 
 func TestLeastRecentlyUsedIsEvicted(t *testing.T) {
-	c, err := NewLRUDecisionCache(2)
+	c, err := NewLRUDecisionCache[bool](2)
 	require.NoError(t, err)
 	id1, err := traceIDFromHex("12341234123412341234123412341231")
 	require.NoError(t, err)
@@ -71,32 +58,21 @@ func TestLeastRecentlyUsedIsEvicted(t *testing.T) {
 	id3, err := traceIDFromHex("12341234123412341234123412341233")
 	require.NoError(t, err)
 
-	c.Put(id1, DecisionMetadata{
-		PolicyName: "mock-policy1",
-	})
-	c.Put(id2, DecisionMetadata{
-		PolicyName: "mock-policy2",
-	})
+	c.Put(id1, true)
+	c.Put(id2, true)
 	v, ok := c.Get(id1) // use id1
-	assert.Equal(t, DecisionMetadata{
-		PolicyName: "mock-policy1",
-	}, v)
+	assert.True(t, v)
 	assert.True(t, ok)
-	c.Put(id3, DecisionMetadata{
-		PolicyName: "mock-policy3",
-	})
+	c.Put(id3, true)
 
 	v, ok = c.Get(id1)
-	assert.Equal(t, DecisionMetadata{
-		PolicyName: "mock-policy1",
-	}, v)
+	assert.True(t, v)
 	assert.True(t, ok)
-	_, ok = c.Get(id2)
+	v, ok = c.Get(id2)
+	assert.False(t, v)  // evicted, returns zero-value
 	assert.False(t, ok) // evicted, not OK
 	v, ok = c.Get(id3)
-	assert.Equal(t, DecisionMetadata{
-		PolicyName: "mock-policy3",
-	}, v)
+	assert.True(t, v)
 	assert.True(t, ok)
 }
 

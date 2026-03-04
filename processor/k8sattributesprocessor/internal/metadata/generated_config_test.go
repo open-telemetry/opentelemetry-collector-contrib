@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -28,7 +29,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ContainerImageName:        ResourceAttributeConfig{Enabled: true},
 				ContainerImageRepoDigests: ResourceAttributeConfig{Enabled: true},
 				ContainerImageTag:         ResourceAttributeConfig{Enabled: true},
-				ContainerImageTags:        ResourceAttributeConfig{Enabled: true},
 				K8sClusterUID:             ResourceAttributeConfig{Enabled: true},
 				K8sContainerName:          ResourceAttributeConfig{Enabled: true},
 				K8sCronjobName:            ResourceAttributeConfig{Enabled: true},
@@ -64,7 +64,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ContainerImageName:        ResourceAttributeConfig{Enabled: false},
 				ContainerImageRepoDigests: ResourceAttributeConfig{Enabled: false},
 				ContainerImageTag:         ResourceAttributeConfig{Enabled: false},
-				ContainerImageTags:        ResourceAttributeConfig{Enabled: false},
 				K8sClusterUID:             ResourceAttributeConfig{Enabled: false},
 				K8sContainerName:          ResourceAttributeConfig{Enabled: false},
 				K8sCronjobName:            ResourceAttributeConfig{Enabled: false},

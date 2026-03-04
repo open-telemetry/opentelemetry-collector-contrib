@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 )
 
 func TestNew(t *testing.T) {
@@ -855,10 +853,10 @@ func TestMatcher(t *testing.T) {
 }
 
 func enableSortByMTimeFeature(t *testing.T) {
-	if !metadata.FilelogMtimeSortTypeFeatureGate.IsEnabled() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogMtimeSortTypeFeatureGate.ID(), true))
+	if !mtimeSortTypeFeatureGate.IsEnabled() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(mtimeSortTypeFeatureGate.ID(), true))
 		t.Cleanup(func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogMtimeSortTypeFeatureGate.ID(), false))
+			require.NoError(t, featuregate.GlobalRegistry().Set(mtimeSortTypeFeatureGate.ID(), false))
 		})
 	}
 }

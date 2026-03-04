@@ -20,13 +20,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver/internal/metadata"
 )
 
 const (
@@ -40,15 +36,12 @@ const (
 	subscriptionMetadataKey    = "subscription"
 	messageIDMetadataKey       = "message_id"
 	deliveryAttemptMetadataKey = "delivery_attempt"
-
-	bucketNameAttr = "gcp.gcs.bucket.name"
 )
 
 type pubSubPushReceiver struct {
-	cfg              *Config
-	settings         receiver.Settings
-	storageClient    *storage.Client
-	telemetryBuilder *metadata.TelemetryBuilder
+	cfg           *Config
+	settings      receiver.Settings
+	storageClient *storage.Client
 
 	server     *http.Server
 	shutdownWG sync.WaitGroup
@@ -62,22 +55,15 @@ func newPubSubPushReceiver(
 	cfg *Config,
 	set receiver.Settings,
 	nextLogs consumer.Logs,
-) (*pubSubPushReceiver, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
-	}
-
+) *pubSubPushReceiver {
 	return &pubSubPushReceiver{
-		cfg:              cfg,
-		settings:         set,
-		nextLogs:         nextLogs,
-		telemetryBuilder: telemetryBuilder,
-	}, nil
+		cfg:      cfg,
+		settings: set,
+		nextLogs: nextLogs,
+	}
 }
 
 func addHandlerFunc[T any](
-	tb *metadata.TelemetryBuilder,
 	mux *http.ServeMux,
 	endpoint string,
 	unmarshal func([]byte) (T, error),
@@ -87,28 +73,15 @@ func addHandlerFunc[T any](
 	logger *zap.Logger,
 ) {
 	mux.HandleFunc(endpoint, func(resp http.ResponseWriter, req *http.Request) {
-		start := time.Now()
 		handlerCtx := req.Context()
-		code := http.StatusInternalServerError
-		tb.HTTPServerRequestActiveCount.Add(handlerCtx, 1)
-		defer func() {
-			tb.HTTPServerRequestActiveCount.Add(handlerCtx, -1)
-			elapsed := time.Since(start)
-			tb.HTTPServerRequestDuration.Record(handlerCtx, elapsed.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code))),
-			)
-		}()
-
-		err := handlePubSubPushRequest(
+		if err := handlePubSubPushRequest(
 			handlerCtx,
 			req.Body,
 			unmarshal,
 			consume,
 			storageClient,
 			includeMetadata,
-			tb,
-		)
-		if err != nil {
+		); err != nil {
 			// Pub/Sub retries everything that is not a valid response. A valid response
 			// has the following HTTP codes: [102, 200, 201, 202, 204].
 			// You can verify this in the official documentation. For this, refer to
@@ -124,12 +97,11 @@ func addHandlerFunc[T any](
 			// 2. Or return 2xx for permanent errors. Since this is not semantically correct,
 			// we are holding on this option.
 			logger.Error("failed to handle Pub/Sub push request", zap.Error(err))
+			code := http.StatusInternalServerError
 			if consumererror.IsPermanent(err) {
 				code = http.StatusBadRequest
 			}
 			http.Error(resp, err.Error(), code)
-		} else {
-			code = http.StatusOK
 		}
 	})
 }
@@ -149,7 +121,6 @@ func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) err
 
 	mux := http.NewServeMux()
 	addHandlerFunc(
-		p.telemetryBuilder,
 		mux,
 		"/",
 		logsUnmarshaler.UnmarshalLogs,
@@ -159,23 +130,25 @@ func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) err
 		p.settings.Logger,
 	)
 
-	server, err := p.cfg.ToServer(ctx, host.GetExtensions(), p.settings.TelemetrySettings, mux)
+	server, err := p.cfg.ToServer(ctx, host, p.settings.TelemetrySettings, mux)
 	if err != nil {
 		return err
 	}
 	p.server = server
 
-	p.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", p.cfg.NetAddr.Endpoint))
+	p.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", p.cfg.Endpoint))
 	lis, err := p.cfg.ToListener(ctx)
 	if err != nil {
 		return err
 	}
 
-	p.shutdownWG.Go(func() {
+	p.shutdownWG.Add(1)
+	go func() {
+		defer p.shutdownWG.Done()
 		if errHTTP := p.server.Serve(lis); errHTTP != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	})
+	}()
 
 	return nil
 }
@@ -272,7 +245,6 @@ func handlePubSubPushRequest[T any](
 	consume func(context.Context, T) error,
 	storageClient *storage.Client,
 	includeMetadata bool,
-	tb *metadata.TelemetryBuilder,
 ) error {
 	var request pubSubPushRequest
 	if err := gojson.NewDecoder(r).Decode(&request); err != nil {
@@ -299,17 +271,6 @@ func handlePubSubPushRequest[T any](
 		unmarshalData = request.Message.Data
 	}
 
-	if tb != nil {
-		incomingSize := len(unmarshalData)
-		metricAttr := attribute.NewSet()
-		if bucketName := request.Message.Attributes[bucketIDKey]; bucketName != "" {
-			// this field is empty if the log is sent directly to Pub/Sub
-			metricAttr = attribute.NewSet(attribute.String(bucketNameAttr, bucketName))
-		}
-		tb.GcpPubsubInputUncompressedSize.Record(ctx, float64(incomingSize), metric.WithAttributeSet(
-			metricAttr),
-		)
-	}
 	unmarshalled, err := unmarshal(unmarshalData)
 	if err != nil {
 		return consumererror.NewPermanent(

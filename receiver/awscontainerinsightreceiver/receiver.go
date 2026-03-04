@@ -94,7 +94,10 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		}
 	}
 
-	acir.cancelWg.Go(func() {
+	acir.cancelWg.Add(1)
+	go func() {
+		defer acir.cancelWg.Done()
+
 		// cadvisor collects data at dynamical intervals (from 1 to 15 seconds). If the ticker happens
 		// at beginning of a minute, it might read the data collected at end of last minute. To avoid this,
 		// we want to wait until at least two cadvisor collection intervals happens before collecting the metrics
@@ -113,7 +116,7 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 				return
 			}
 		}
-	})
+	}()
 
 	return nil
 }

@@ -1,5 +1,4 @@
 type: pulsar
-display_name: Pulsar Exporter
 
 status:
   class: exporter

@@ -257,22 +257,17 @@ func (em *eventMachine) shutdown() {
 
 	// we never return an error here
 	ok, _ := doWithTimeout(em.shutdownTimeout, func() error {
-		ticker := time.NewTicker(100 * time.Millisecond)
-		defer ticker.Stop()
-
-		// Check immediately first
-		if em.numEvents() == 0 {
-			return nil
-		}
-
 		for {
+			if em.numEvents() == 0 {
+				return nil
+			}
+			time.Sleep(100 * time.Millisecond)
+
+			// Do not leak goroutine
 			select {
 			case <-done:
 				return nil
-			case <-ticker.C:
-				if em.numEvents() == 0 {
-					return nil
-				}
+			default:
 			}
 		}
 	})
@@ -319,14 +314,6 @@ type eventMachineWorker struct {
 
 func (w *eventMachineWorker) start() {
 	for {
-		// Prioritize shutdown: check if we should stop before processing next event
-		select {
-		case <-w.machine.close:
-			return
-		default:
-		}
-
-		// Process events or handle shutdown
 		select {
 		case e := <-w.events:
 			w.machine.handleEvent(e, w)

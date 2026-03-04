@@ -1,6 +1,5 @@
 type: doris
 scope_name: otelcol/doris
-display_name: Apache Doris Exporter
 
 status:
   class: exporter

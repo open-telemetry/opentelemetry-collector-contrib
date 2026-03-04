@@ -605,9 +605,9 @@ func (vc *vcenterClient) convertVSANValueToMetricDetails(
 
 // uuidFromEntityRefID returns the UUID portion of the EntityRefId
 func (*vcenterClient) uuidFromEntityRefID(id string) (string, error) {
-	_, after, ok := strings.Cut(id, ":")
-	if ok {
-		uuid := after
+	colonIndex := strings.Index(id, ":")
+	if colonIndex != -1 {
+		uuid := id[colonIndex+1:]
 		return uuid, nil
 	}
 

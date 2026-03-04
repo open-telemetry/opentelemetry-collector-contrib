@@ -23,7 +23,7 @@ type aggregation struct {
 	prefixes  []string
 }
 
-func newAggregateAttributesProcessor(config []AggregationPair) *aggregateAttributesProcessor {
+func newAggregateAttributesProcessor(config []aggregationPair) *aggregateAttributesProcessor {
 	aggregations := []*aggregation{}
 
 	for i := range config {

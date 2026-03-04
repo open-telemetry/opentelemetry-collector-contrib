@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 )
@@ -495,65 +494,12 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			expectedError: "",
 		},
-		{
-			name: "Extension not found in module info",
-			collectorConfigStringMap: map[string]any{
-				"extensions": map[string]any{
-					"missing_extension": map[string]any{},
-				},
-				"service": map[string]any{
-					"extensions": []any{"missing_extension"},
-				},
-			},
-			moduleInfoJSON: payload.NewModuleInfoJSON(),
-			expectedComponents: []payload.ServiceComponent{
-				{
-					ID:      "missing_extension",
-					Name:    "",
-					Type:    "missing_extension",
-					Kind:    "extension",
-					Gomod:   "",
-					Version: "",
-				},
-			},
-			expectedError: "",
-		},
-		{
-			name: "Exporter not found in module info",
-			collectorConfigStringMap: map[string]any{
-				"exporters": map[string]any{
-					"missing_exporter": map[string]any{},
-				},
-				"service": map[string]any{
-					"pipelines": map[string]any{
-						"traces": map[string]any{
-							"exporters": []any{
-								"missing_exporter",
-							},
-						},
-					},
-				},
-			},
-			moduleInfoJSON: payload.NewModuleInfoJSON(),
-			expectedComponents: []payload.ServiceComponent{
-				{
-					ID:       "missing_exporter",
-					Name:     "",
-					Type:     "missing_exporter",
-					Kind:     "exporter",
-					Pipeline: "traces",
-					Gomod:    "",
-					Version:  "",
-				},
-			},
-			expectedError: "",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			confMap := confmap.NewFromStringMap(tt.collectorConfigStringMap)
-			activeComponents, err := PopulateActiveComponents(zap.NewNop(), confMap, tt.moduleInfoJSON)
+			activeComponents, err := PopulateActiveComponents(confMap, tt.moduleInfoJSON)
 			if tt.expectedError != "" {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tt.expectedError)
@@ -686,7 +632,7 @@ func TestPopulateActiveComponentsAdditionalErrorPaths(t *testing.T) {
 
 		// This should panic when trying to call GetComponent on nil moduleInfoJSON
 		assert.Panics(t, func() {
-			_, err := PopulateActiveComponents(zap.NewNop(), confMap, nil)
+			_, err := PopulateActiveComponents(confMap, nil)
 			require.Error(t, err)
 		})
 	})
@@ -697,8 +643,26 @@ func TestPopulateActiveComponentsAdditionalErrorPaths(t *testing.T) {
 		})
 
 		moduleInfoJSON := payload.NewModuleInfoJSON()
-		_, err := PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
+		_, err := PopulateActiveComponents(confMap, moduleInfoJSON)
 		require.Error(t, err) // Should error on unmarshal
+	})
+
+	t.Run("extension not found in module info", func(t *testing.T) {
+		confMap := confmap.NewFromStringMap(map[string]any{
+			"extensions": map[string]any{
+				"missing_extension": map[string]any{},
+			},
+			"service": map[string]any{
+				"extensions": []any{"missing_extension"},
+			},
+		})
+
+		moduleInfoJSON := payload.NewModuleInfoJSON()
+		// Don't add the extension to moduleInfoJSON
+
+		_, err := PopulateActiveComponents(confMap, moduleInfoJSON)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "extension not found in Module Info")
 	})
 }
 

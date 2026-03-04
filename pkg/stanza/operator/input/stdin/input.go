@@ -42,7 +42,9 @@ func (i *Input) Start(_ operator.Persister) error {
 
 	scanner := bufio.NewScanner(i.stdin)
 
-	i.wg.Go(func() {
+	i.wg.Add(1)
+	go func() {
+		defer i.wg.Done()
 		for {
 			select {
 			case <-ctx.Done():
@@ -66,7 +68,7 @@ func (i *Input) Start(_ operator.Persister) error {
 				return
 			}
 		}
-	})
+	}()
 
 	return nil
 }

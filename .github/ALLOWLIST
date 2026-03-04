@@ -29,6 +29,8 @@ internal/common
 
 # Start unmaintained components list
 
-exporter/alibabacloudlogserviceexporter
+exporter/carbonexporter
+receiver/bigipreceiver
+receiver/carbonreceiver
 
 # End unmaintained components list

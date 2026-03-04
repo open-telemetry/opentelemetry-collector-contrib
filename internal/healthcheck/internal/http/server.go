@@ -34,8 +34,6 @@ type Server struct {
 	aggregator     *status.Aggregator
 	startTimestamp time.Time
 	doneWg         sync.WaitGroup
-	doneCh         chan struct{}
-	doneOnce       sync.Once
 }
 
 var (
@@ -55,7 +53,6 @@ func NewServer(
 		telemetry:  telemetry,
 		mux:        http.NewServeMux(),
 		aggregator: aggregator,
-		doneCh:     make(chan struct{}),
 	}
 
 	if legacyConfig.UseV2 {
@@ -89,41 +86,36 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 	var err error
 	s.startTimestamp = time.Now()
 
-	s.httpServer, err = s.httpConfig.ToServer(ctx, host.GetExtensions(), s.telemetry, s.mux)
+	s.httpServer, err = s.httpConfig.ToServer(ctx, host, s.telemetry, s.mux)
 	if err != nil {
 		return err
 	}
 
 	ln, err := s.httpConfig.ToListener(ctx)
 	if err != nil {
-		// Server never started, ensure doneCh is closed so shutdown doesn't block
-		s.doneOnce.Do(func() { close(s.doneCh) })
-		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.NetAddr.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.Endpoint, err)
 	}
 
-	s.doneWg.Go(func() {
-		defer s.doneOnce.Do(func() { close(s.doneCh) })
+	s.doneWg.Add(1)
+	go func() {
+		defer s.doneWg.Done()
 
 		if err = s.httpServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
 		}
-	})
+	}()
 
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *Server) Shutdown(context.Context) error {
 	if s.httpServer == nil {
 		return nil
 	}
 	s.httpServer.Close()
-	select {
-	case <-s.doneCh:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+	s.doneWg.Wait()
+	return nil
 }
 
 // NotifyConfig implements the extension.ConfigWatcher interface.

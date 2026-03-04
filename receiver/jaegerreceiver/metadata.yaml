@@ -1,8 +1,4 @@
-display_name: Jaeger Receiver
 type: jaeger
-
-description: |
-  The Jaeger Receiver receives trace data in the [Jaeger](https://www.jaegertracing.io/) format.
 
 status:
   class: receiver

@@ -47,11 +47,13 @@ func TestConsumeMetrics(t *testing.T) {
 			idx := processor.cs.add(ch)
 			receiveNum := 0
 			wg := &sync.WaitGroup{}
-			wg.Go(func() {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				for range ch {
 					receiveNum++
 				}
-			})
+			}()
 
 			for i := 0; i < c.limit*2; i++ {
 				// send metric to chan c.limit*2 per sec.
@@ -96,11 +98,13 @@ func TestConsumeLogs(t *testing.T) {
 			idx := processor.cs.add(ch)
 			receiveNum := 0
 			wg := &sync.WaitGroup{}
-			wg.Go(func() {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				for range ch {
 					receiveNum++
 				}
-			})
+			}()
 
 			// send log to chan c.limit*2 per sec.
 			for i := 0; i < c.limit*2; i++ {
@@ -147,11 +151,13 @@ func TestConsumeTraces(t *testing.T) {
 			idx := processor.cs.add(ch)
 			receiveNum := 0
 			wg := &sync.WaitGroup{}
-			wg.Go(func() {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				for range ch {
 					receiveNum++
 				}
-			})
+			}()
 
 			for i := 0; i < c.limit*2; i++ {
 				// send trace to chan c.limit*2 per sec.

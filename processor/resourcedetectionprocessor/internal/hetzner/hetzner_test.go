@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -44,21 +45,19 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 	withFakeMetaServer(t, mux)
 
 	cfg := CreateDefaultConfig()
-	cfg.ResourceAttributes.CloudPlatform.Enabled = true
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	require.Equal(t, conventions.SchemaURL, schemaURL)
 
 	want := map[string]any{
-		"cloud.provider":          TypeStr,
-		"cloud.platform":          TypeStr + ".cloud_server",
-		"host.id":                 "987654321",
-		"host.name":               "srv-123",
-		"cloud.region":            "nbg1",
-		"cloud.availability_zone": "nbg1-dc3",
+		string(conventions.CloudProviderKey):         TypeStr,
+		string(conventions.HostIDKey):                "987654321",
+		string(conventions.HostNameKey):              "srv-123",
+		string(conventions.CloudRegionKey):           "nbg1",
+		string(conventions.CloudAvailabilityZoneKey): "nbg1-dc3",
 	}
 	assert.Equal(t, want, res.Attributes().AsRaw())
 }

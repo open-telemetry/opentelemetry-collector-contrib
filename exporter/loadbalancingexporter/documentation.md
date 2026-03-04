@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_loadbalancer_backend_latency
 
-Response latency in ms for the backends.
+Response latency in ms for the backends. [Development]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -22,7 +22,7 @@ Response latency in ms for the backends.
 
 ### otelcol_loadbalancer_backend_outcome
 
-Number of successes and failures for each endpoint.
+Number of successes and failures for each endpoint. [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -36,7 +36,7 @@ Number of successes and failures for each endpoint.
 
 ### otelcol_loadbalancer_num_backend_updates
 
-Number of times the list of backends was updated.
+Number of times the list of backends was updated. [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -50,7 +50,7 @@ Number of times the list of backends was updated.
 
 ### otelcol_loadbalancer_num_backends
 
-Current number of backends in use.
+Current number of backends in use. [Development]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -64,7 +64,7 @@ Current number of backends in use.
 
 ### otelcol_loadbalancer_num_resolutions
 
-Number of times the resolver has triggered new resolutions.
+Number of times the resolver has triggered new resolutions. [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

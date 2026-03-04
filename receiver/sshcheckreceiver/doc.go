@@ -3,4 +3,4 @@
 
 package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml

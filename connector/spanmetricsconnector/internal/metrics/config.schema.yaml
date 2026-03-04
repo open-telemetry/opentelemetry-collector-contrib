@@ -1,6 +1,0 @@
-$defs:
-  key:
-    type: string
-  unit:
-    type: integer
-    x-customType: int8

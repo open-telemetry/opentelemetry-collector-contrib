@@ -1,5 +1,4 @@
 type: failover
-display_name: Failover Connector
 
 status:
   class: connector

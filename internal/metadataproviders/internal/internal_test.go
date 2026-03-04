@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 func TestGOOSToOsType(t *testing.T) {
@@ -23,13 +24,13 @@ func TestGOARCHToHostArch(t *testing.T) {
 		hostArch string
 	}{
 		// well-known values that are supported by Go
-		{goarch: "386", hostArch: "x86"},
-		{goarch: "amd64", hostArch: "amd64"},
-		{goarch: "arm", hostArch: "arm32"},
-		{goarch: "arm64", hostArch: "arm64"},
-		{goarch: "ppc64", hostArch: "ppc64"},
-		{goarch: "ppc64le", hostArch: "ppc64"},
-		{goarch: "s390x", hostArch: "s390x"},
+		{goarch: "386", hostArch: conventions.HostArchX86.Value.AsString()},
+		{goarch: "amd64", hostArch: conventions.HostArchAMD64.Value.AsString()},
+		{goarch: "arm", hostArch: conventions.HostArchARM32.Value.AsString()},
+		{goarch: "arm64", hostArch: conventions.HostArchARM64.Value.AsString()},
+		{goarch: "ppc64", hostArch: conventions.HostArchPPC64.Value.AsString()},
+		{goarch: "ppc64le", hostArch: conventions.HostArchPPC64.Value.AsString()},
+		{goarch: "s390x", hostArch: conventions.HostArchS390x.Value.AsString()},
 
 		// not well-known values
 		{goarch: "mips", hostArch: "mips"},

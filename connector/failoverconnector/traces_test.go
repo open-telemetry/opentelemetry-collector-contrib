@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
@@ -33,7 +32,7 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    25 * time.Millisecond,
-		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -73,7 +72,7 @@ func TestTracesWithValidFailover(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    50 * time.Millisecond,
-		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -145,7 +144,7 @@ func TestTracesWithQueue(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    50 * time.Millisecond,
-		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{

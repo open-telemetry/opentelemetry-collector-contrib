@@ -40,10 +40,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					HTTP: &confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:3500",
-						},
+						Endpoint: "localhost:3500",
 					},
 				},
 			},
@@ -59,10 +56,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					HTTP: &confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:4500",
-						},
+						Endpoint: "localhost:4500",
 					},
 				},
 				KeepTimestamp: true,
@@ -124,7 +118,7 @@ func TestConfigWithUnknownKeysConfig(t *testing.T) {
 	}{
 		{
 			id:  component.NewIDWithName(metadata.Type, "extra_keys"),
-			err: "'lokireceiver.Config' has invalid keys: foo",
+			err: "'' has invalid keys: foo",
 		},
 	}
 

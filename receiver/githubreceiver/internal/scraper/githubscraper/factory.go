@@ -18,10 +18,8 @@ import (
 // This file implements factory for the GitHub Scraper as part of the GitHub Receiver
 
 const (
-	TypeStr                     = "scraper"
-	defaultConcurrencyLimit     = 50
-	defaultHTTPTimeout          = 15 * time.Second
-	defaultMergedPRLookbackDays = 30
+	TypeStr            = "scraper"
+	defaultHTTPTimeout = 15 * time.Second
 )
 
 type Factory struct{}
@@ -30,10 +28,8 @@ func (*Factory) CreateDefaultConfig() internal.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultHTTPTimeout
 	return &Config{
-		ClientConfig:         clientConfig,
-		ConcurrencyLimit:     defaultConcurrencyLimit, // Default to 50 concurrent goroutines
-		MergedPRLookbackDays: defaultMergedPRLookbackDays,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ClientConfig:         clientConfig,
 	}
 }
 

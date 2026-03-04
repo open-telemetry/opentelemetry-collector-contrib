@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
@@ -208,7 +207,9 @@ func (h *headersPerRPC) GetRequestMetadata(
 			return nil, err
 		}
 		// Copy base metadata
-		maps.Copy(metadata, baseMetadata)
+		for k, v := range baseMetadata {
+			metadata[k] = v
+		}
 	}
 
 	// Now apply our headers on top

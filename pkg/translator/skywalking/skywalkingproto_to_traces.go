@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.8.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -311,9 +311,7 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 	}
 
 	for i := range 4 {
-		if i < len(uid) {
-			uid[i] ^= byte(extra)
-		}
+		uid[i] ^= byte(extra)
 		extra >>= 8
 	}
 
@@ -354,9 +352,7 @@ func uuidTo8Bytes(uuid [16]byte) [8]byte {
 	// high bit XOR low bit
 	var dst [8]byte
 	for i := range 8 {
-		if i < len(dst) && i+8 < len(uuid) {
-			dst[i] = uuid[i] ^ uuid[i+8]
-		}
+		dst[i] = uuid[i] ^ uuid[i+8]
 	}
 	return dst
 }

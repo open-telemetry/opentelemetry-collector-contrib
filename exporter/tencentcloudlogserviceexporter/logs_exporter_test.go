@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/internal/metadata"
 )
@@ -27,9 +28,9 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("mylog")
-		logRecord.Attributes().PutStr("service.name", "myapp")
+		logRecord.Attributes().PutStr(string(conventions.ServiceNameKey), "myapp")
 		logRecord.Attributes().PutStr("my-label", "myapp-type")
-		logRecord.Attributes().PutStr("host.name", "myhost")
+		logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
 		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
@@ -40,9 +41,11 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 
 func TestNewLogsExporter(t *testing.T) {
 	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{
-		Region: "ap-beijing",
-		LogSet: "demo-logset",
-		Topic:  "demo-topic",
+		Region:    "ap-beijing",
+		LogSet:    "demo-logset",
+		Topic:     "demo-topic",
+		SecretID:  "access-id",
+		SecretKey: "secret-key",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
@@ -53,7 +56,13 @@ func TestNewLogsExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{})
+	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{
+		Region:    "ap-beijing",
+		LogSet:    "demo-logset",
+		Topic:     "demo-topic",
+		SecretID:  "access-id",
+		SecretKey: "secret-key",
+	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 }

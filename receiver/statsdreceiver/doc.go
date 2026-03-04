@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 // Package statsdreceiver implements a collector receiver that listens
 // on UDP port 8125 by default for incoming StatsD messages and parses

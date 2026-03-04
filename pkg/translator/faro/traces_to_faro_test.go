@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
@@ -79,13 +80,13 @@ func Test_extractMetaFromResourceAttributes(t *testing.T) {
 			name: "Resource attributes contain all the attributes for meta",
 			resourceAttributes: func() pcommon.Map {
 				attrs := pcommon.NewMap()
-				attrs.PutStr("service.name", "testapp")
-				attrs.PutStr("service.namespace", "testnamespace")
-				attrs.PutStr("service.version", "1.0.0")
-				attrs.PutStr("deployment.environment", "production")
+				attrs.PutStr(string(semconv.ServiceNameKey), "testapp")
+				attrs.PutStr(string(semconv.ServiceNamespaceKey), "testnamespace")
+				attrs.PutStr(string(semconv.ServiceVersionKey), "1.0.0")
+				attrs.PutStr(string(semconv.DeploymentEnvironmentKey), "production")
 				attrs.PutStr(faroAppBundleID, "123")
-				attrs.PutStr("telemetry.sdk.name", "telemetry sdk")
-				attrs.PutStr("telemetry.sdk.version", "1.0.0")
+				attrs.PutStr(string(semconv.TelemetrySDKNameKey), "telemetry sdk")
+				attrs.PutStr(string(semconv.TelemetrySDKVersionKey), "1.0.0")
 
 				return attrs
 			}(),

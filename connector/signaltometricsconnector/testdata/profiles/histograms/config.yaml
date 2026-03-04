@@ -1,4 +1,4 @@
-signal_to_metrics:
+signaltometrics:
   profiles:
     - name: total.profiles.histogram
       description: Profiles as histogram with duration

@@ -13,7 +13,6 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -29,7 +28,7 @@ type Config struct {
 
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
@@ -111,7 +110,7 @@ func createDefaultConfig() component.Config {
 		collectorVersion: "unknown",
 
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,

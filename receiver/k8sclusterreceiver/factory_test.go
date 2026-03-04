@@ -90,10 +90,10 @@ func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
 	rcvr, ok := r.(*kubernetesReceiver)
 	require.True(t, ok)
 	rcvr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-		return fake.NewClientset(), nil
+		return fake.NewSimpleClientset(), nil
 	}
 	rcvr.resourceWatcher.makeOpenShiftQuotaClient = func(_ k8sconfig.APIConfig) (quotaclientset.Interface, error) {
-		return fakeQuota.NewClientset(), nil
+		return fakeQuota.NewSimpleClientset(), nil
 	}
 	return rcvr
 }

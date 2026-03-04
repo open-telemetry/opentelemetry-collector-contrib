@@ -345,11 +345,13 @@ func TestEventConsumeConsistency(t *testing.T) {
 			realTraceID := workerIndexForTraceID(pcommon.TraceID(tt.traceID), 100)
 			var wg sync.WaitGroup
 			for range 50 {
-				wg.Go(func() {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
 					for range 30 {
 						assert.Equal(t, realTraceID, workerIndexForTraceID(pcommon.TraceID(tt.traceID), 100))
 					}
-				})
+				}()
 			}
 			wg.Wait()
 		})
@@ -394,94 +396,38 @@ func TestEventShutdown(t *testing.T) {
 		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
 	})
 
-	// wait for events to process - we should have one pending event in the queue, the second traceRemoved event
-	assert.Eventually(t, func() bool {
-		return em.numEvents() == 1
-	}, 1*time.Second, 10*time.Millisecond)
-	assert.Equal(t, 1, em.numEvents())
+	time.Sleep(10 * time.Millisecond)  // give it a bit of time to process the items
+	assert.Equal(t, 1, em.numEvents()) // we should have one pending event in the queue, the second traceRemoved event
 
 	shutdownWg := sync.WaitGroup{}
-	shutdownWg.Go(func() {
+	shutdownWg.Add(1)
+	go func() {
 		em.shutdown()
-	})
+		shutdownWg.Done()
+	}()
 
-	wg.Done() // the pending event should be processed
-	// wait for shutdown to process remaining events
-	assert.Eventually(t, func() bool {
-		return em.numEvents() == 0
-	}, 1*time.Second, 10*time.Millisecond)
+	wg.Done()                          // the pending event should be processed
+	time.Sleep(100 * time.Millisecond) // give it a bit of time to process the items
+
 	assert.Equal(t, 0, em.numEvents())
 
-	// verify
-	assert.Equal(t, int64(1), traceReceivedFired.Load())
-
-	// wait until the shutdown has returned
-	shutdownWg.Wait()
-
-	// new events should *not* be processed after shutdown
+	// new events should *not* be processed
 	em.workers[0].fire(event{
 		typ:     traceExpired,
 		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
 	})
 
+	// verify
+	assert.Equal(t, int64(1), traceReceivedFired.Load())
+
 	// If the code is wrong, there's a chance that the test will still pass
 	// in case the event is processed after the assertion.
-	// Verify that the expired event is not processed (should remain 0)
-	assert.Eventually(t, func() bool {
-		return traceExpiredFired.Load() == 0
-	}, 100*time.Millisecond, 5*time.Millisecond)
+	// for this reason, we add a small delay here
+	time.Sleep(10 * time.Millisecond)
 	assert.Equal(t, int64(0), traceExpiredFired.Load())
-}
 
-func TestEventShutdownMultipleWorkers(t *testing.T) {
-	set := processortest.NewNopSettings(metadata.Type)
-	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-
-	const numWorkers = 10
-	traceReceivedCount := &atomic.Int64{}
-	traceExpiredCount := &atomic.Int64{}
-
-	em := newEventMachine(zap.NewNop(), 50, numWorkers, 1_000, tel)
-	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
-		traceReceivedCount.Add(1)
-		return nil
-	}
-	em.onTraceExpired = func(pcommon.TraceID, *eventMachineWorker) error {
-		traceExpiredCount.Add(1)
-		return nil
-	}
-	em.startInBackground()
-
-	for i := range numWorkers {
-		em.workers[i].fire(event{
-			typ:     traceReceived,
-			payload: tracesWithID{id: pcommon.NewTraceIDEmpty(), td: ptrace.NewTraces()},
-		})
-	}
-
-	assert.Eventually(t, func() bool {
-		return traceReceivedCount.Load() == numWorkers
-	}, 1*time.Second, 10*time.Millisecond)
-
-	shutdownWg := sync.WaitGroup{}
-	shutdownWg.Go(func() {
-		em.shutdown()
-	})
-
+	// wait until the shutdown has returned
 	shutdownWg.Wait()
-
-	// Fire events to all workers after shutdown - none should be processed
-	for i := range numWorkers {
-		em.workers[i].fire(event{
-			typ:     traceExpired,
-			payload: pcommon.TraceID([16]byte{byte(i)}),
-		})
-	}
-
-	assert.Eventually(t, func() bool {
-		return traceExpiredCount.Load() == 0
-	}, 100*time.Millisecond, 5*time.Millisecond)
-	assert.Equal(t, int64(0), traceExpiredCount.Load(), "no traceExpired events should be processed after shutdown")
 }
 
 func TestPeriodicMetrics(t *testing.T) {
@@ -521,13 +467,11 @@ func TestPeriodicMetrics(t *testing.T) {
 	em.workers[0].fire(event{typ: traceReceived}) // the first is consumed right away, the second is in the queue
 	go em.periodicMetrics()
 
+	// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42515
+	time.Sleep(10 * time.Millisecond)
 	// ensure our gauge is showing 1 item in the queue
 	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		val := getGaugeValue(t.Context(), tt, "otelcol_processor_groupbytrace_num_events_in_queue", s)
-		if val == -1 {
-			tt.Errorf("gauge not yet created or has no data points")
-			return
-		}
 		assert.Equal(tt, int64(1), val)
 	}, 1*time.Second, 10*time.Millisecond)
 
@@ -536,10 +480,6 @@ func TestPeriodicMetrics(t *testing.T) {
 	// ensure our gauge is now showing no items in the queue
 	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		val := getGaugeValue(t.Context(), tt, "otelcol_processor_groupbytrace_num_events_in_queue", s)
-		if val == -1 {
-			tt.Errorf("gauge not yet created or has no data points")
-			return
-		}
 		assert.Equal(tt, int64(0), val)
 	}, 1*time.Second, 10*time.Millisecond)
 
@@ -547,12 +487,7 @@ func TestPeriodicMetrics(t *testing.T) {
 	em.shutdownLock.Lock()
 	em.closed = true
 	em.shutdownLock.Unlock()
-	// Wait for periodicMetrics to detect the closed flag and return
-	assert.Eventually(t, func() bool {
-		em.shutdownLock.RLock()
-		defer em.shutdownLock.RUnlock()
-		return em.closed
-	}, 100*time.Millisecond, 5*time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 }
 
 func TestForceShutdown(t *testing.T) {
@@ -572,12 +507,8 @@ func TestForceShutdown(t *testing.T) {
 	// verify
 	assert.Greater(t, duration, 20*time.Millisecond)
 
-	// Verify shutdown completed - the machine should be closed
-	assert.Eventually(t, func() bool {
-		em.shutdownLock.RLock()
-		defer em.shutdownLock.RUnlock()
-		return em.closed
-	}, 100*time.Millisecond, 5*time.Millisecond)
+	// wait for shutdown goroutine to end
+	time.Sleep(100 * time.Millisecond)
 }
 
 func TestDoWithTimeout_NoTimeout(t *testing.T) {
@@ -594,12 +525,10 @@ func TestDoWithTimeout_NoTimeout(t *testing.T) {
 func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	// prepare
 	start := time.Now()
-	blockCh := make(chan struct{})
-	defer close(blockCh) // cleanup: unblock the goroutine to prevent leak
 
 	// test
 	succeed, err := doWithTimeout(20*time.Millisecond, func() error {
-		<-blockCh // block until timeout or channel closed
+		time.Sleep(1 * time.Second)
 		return nil
 	})
 	assert.False(t, succeed)
@@ -612,18 +541,13 @@ func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 func getGaugeValue(ctx context.Context, t *assert.CollectT, name string, tt testTelemetry) int64 {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.reader.Collect(ctx, &md))
-	metric := tt.getMetric(name, md)
-	if metric == (metricdata.Metrics{}) {
-		return -1 // return sentinel value to indicate metric doesn't exist yet
-	}
-	m := metric.Data
+	m := tt.getMetric(name, md).Data
 	var g metricdata.Gauge[int64]
 	var ok bool
 	if g, ok = m.(metricdata.Gauge[int64]); !ok {
-		return -1 // return sentinel value to indicate gauge data is missing
-	}
-	if len(g.DataPoints) == 0 {
-		return -1 // return sentinel value to indicate no data points yet
+		assert.Fail(t, "missing gauge data")
+	} else {
+		assert.Len(t, g.DataPoints, 1, "expected exactly one data point")
 	}
 	return g.DataPoints[0].Value
 }

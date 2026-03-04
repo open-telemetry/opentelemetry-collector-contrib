@@ -114,7 +114,6 @@ func (m *metricHttpcheckClientConnectionDuration) emit(metrics pmetric.MetricSli
 
 func newMetricHttpcheckClientConnectionDuration(cfg MetricConfig) metricHttpcheckClientConnectionDuration {
 	m := metricHttpcheckClientConnectionDuration{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -166,7 +165,6 @@ func (m *metricHttpcheckClientRequestDuration) emit(metrics pmetric.MetricSlice)
 
 func newMetricHttpcheckClientRequestDuration(cfg MetricConfig) metricHttpcheckClientRequestDuration {
 	m := metricHttpcheckClientRequestDuration{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -218,7 +216,6 @@ func (m *metricHttpcheckDNSLookupDuration) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHttpcheckDNSLookupDuration(cfg MetricConfig) metricHttpcheckDNSLookupDuration {
 	m := metricHttpcheckDNSLookupDuration{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -270,7 +267,6 @@ func (m *metricHttpcheckDuration) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHttpcheckDuration(cfg MetricConfig) metricHttpcheckDuration {
 	m := metricHttpcheckDuration{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -325,7 +321,6 @@ func (m *metricHttpcheckError) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHttpcheckError(cfg MetricConfig) metricHttpcheckError {
 	m := metricHttpcheckError{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -377,7 +372,6 @@ func (m *metricHttpcheckResponseDuration) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHttpcheckResponseDuration(cfg MetricConfig) metricHttpcheckResponseDuration {
 	m := metricHttpcheckResponseDuration{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -429,7 +423,6 @@ func (m *metricHttpcheckResponseSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHttpcheckResponseSize(cfg MetricConfig) metricHttpcheckResponseSize {
 	m := metricHttpcheckResponseSize{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -486,7 +479,6 @@ func (m *metricHttpcheckStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHttpcheckStatus(cfg MetricConfig) metricHttpcheckStatus {
 	m := metricHttpcheckStatus{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -541,7 +533,6 @@ func (m *metricHttpcheckTLSCertRemaining) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHttpcheckTLSCertRemaining(cfg MetricConfig) metricHttpcheckTLSCertRemaining {
 	m := metricHttpcheckTLSCertRemaining{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -593,7 +584,6 @@ func (m *metricHttpcheckTLSHandshakeDuration) emit(metrics pmetric.MetricSlice) 
 
 func newMetricHttpcheckTLSHandshakeDuration(cfg MetricConfig) metricHttpcheckTLSHandshakeDuration {
 	m := metricHttpcheckTLSHandshakeDuration{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -648,7 +638,6 @@ func (m *metricHttpcheckValidationFailed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHttpcheckValidationFailed(cfg MetricConfig) metricHttpcheckValidationFailed {
 	m := metricHttpcheckValidationFailed{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -703,7 +692,6 @@ func (m *metricHttpcheckValidationPassed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHttpcheckValidationPassed(cfg MetricConfig) metricHttpcheckValidationPassed {
 	m := metricHttpcheckValidationPassed{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

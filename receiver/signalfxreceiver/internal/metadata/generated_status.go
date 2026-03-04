@@ -12,6 +12,6 @@ var (
 )
 
 const (
-	MetricsStability = component.StabilityLevelDeprecated
-	LogsStability    = component.StabilityLevelDeprecated
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

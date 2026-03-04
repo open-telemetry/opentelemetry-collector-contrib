@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
@@ -39,18 +38,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all"),
 			expected: &Config{
-				JARPath:      "testdata/fake_jmx.jar",
-				Endpoint:     "myendpoint:12345",
-				TargetSystem: "jvm",
-				TargetSource: "",
-				JmxConfigs:   "",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 15 * time.Second,
-					InitialDelay:       time.Second,
-				},
-				Username: "myusername",
-				Password: "mypassword",
-				LogLevel: "trace",
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:12345",
+				TargetSystem:       "jvm",
+				TargetSource:       "",
+				JmxConfigs:         "",
+				CollectionInterval: 15 * time.Second,
+				Username:           "myusername",
+				Password:           "mypassword",
+				LogLevel:           "trace",
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
 					Headers: map[string]string{
@@ -79,13 +75,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "validscraperjmxconfigs"),
 			expected: &Config{
-				JARPath:  "testdata/fake_jmx_scraper.jar",
-				Endpoint: "myendpoint:55555",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
-				JmxConfigs: "testdata/rules.yaml",
+				JARPath:            "testdata/fake_jmx_scraper.jar",
+				Endpoint:           "myendpoint:55555",
+				CollectionInterval: 10 * time.Second,
+				JmxConfigs:         "testdata/rules.yaml",
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -98,12 +91,9 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "missingendpoint"),
 			expectedErr: "missing required field(s): `endpoint`",
 			expected: &Config{
-				JARPath:      "testdata/fake_jmx.jar",
-				TargetSystem: "jvm",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx.jar",
+				TargetSystem:       "jvm",
+				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -116,12 +106,9 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "missingtarget"),
 			expectedErr: "missing required field(s): `target_system`",
 			expected: &Config{
-				JARPath:  "testdata/fake_jmx.jar",
-				Endpoint: "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
+				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -134,12 +121,9 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "missingtargetandjmxconfig"),
 			expectedErr: "missing required field(s): `target_system`, `jmx_configs`",
 			expected: &Config{
-				JARPath:  "testdata/fake_jmx_scraper.jar",
-				Endpoint: "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx_scraper.jar",
+				Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
+				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -152,13 +136,10 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalidinterval"),
 			expectedErr: "`interval` must be positive: -100ms",
 			expected: &Config{
-				JARPath:      "testdata/fake_jmx.jar",
-				Endpoint:     "myendpoint:23456",
-				TargetSystem: "jvm",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: -100 * time.Millisecond,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:23456",
+				TargetSystem:       "jvm",
+				CollectionInterval: -100 * time.Millisecond,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -171,13 +152,10 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalidotlptimeout"),
 			expectedErr: "`otlp.timeout` must be positive: -100ms",
 			expected: &Config{
-				JARPath:      "testdata/fake_jmx.jar",
-				Endpoint:     "myendpoint:34567",
-				TargetSystem: "jvm",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:34567",
+				TargetSystem:       "jvm",
+				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -192,13 +170,10 @@ func TestLoadConfig(t *testing.T) {
 			// Error is different based on OS, which is why this is contains, not equals
 			expectedErr: "invalid `jar_path`: error hashing file: open testdata/file_does_not_exist.jar:",
 			expected: &Config{
-				JARPath:      "testdata/file_does_not_exist.jar",
-				Endpoint:     "myendpoint:23456",
-				TargetSystem: "jvm",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/file_does_not_exist.jar",
+				Endpoint:           "myendpoint:23456",
+				TargetSystem:       "jvm",
+				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -211,13 +186,10 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalidjar"),
 			expectedErr: "invalid `jar_path`: jar hash does not match known versions",
 			expected: &Config{
-				JARPath:      "testdata/fake_jmx_wrong.jar",
-				Endpoint:     "myendpoint:23456",
-				TargetSystem: "jvm",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx_wrong.jar",
+				Endpoint:           "myendpoint:23456",
+				TargetSystem:       "jvm",
+				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -230,14 +202,11 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalidloglevel"),
 			expectedErr: "`log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'",
 			expected: &Config{
-				JARPath:      "testdata/fake_jmx.jar",
-				Endpoint:     "myendpoint:55555",
-				TargetSystem: "jvm",
-				LogLevel:     "truth",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:55555",
+				TargetSystem:       "jvm",
+				LogLevel:           "truth",
+				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -250,14 +219,11 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalidloglevelscraper"),
 			expectedErr: "`log_level` can only be used with a JMX Metrics Gatherer JAR",
 			expected: &Config{
-				JARPath:      "testdata/fake_jmx_scraper.jar",
-				Endpoint:     "myendpoint:55555",
-				TargetSystem: "jvm",
-				LogLevel:     "truth",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx_scraper.jar",
+				Endpoint:           "myendpoint:55555",
+				TargetSystem:       "jvm",
+				LogLevel:           "truth",
+				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -270,13 +236,10 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalidtargetsystem"),
 			expectedErr: "`target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'",
 			expected: &Config{
-				JARPath:      "testdata/fake_jmx.jar",
-				Endpoint:     "myendpoint:55555",
-				TargetSystem: "jvm,fakejvmtechnology",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx.jar",
+				Endpoint:           "myendpoint:55555",
+				TargetSystem:       "jvm,fakejvmtechnology",
+				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -435,12 +398,9 @@ func TestJARProperties(t *testing.T) {
 		{
 			desc: "Log level and sampling config with JMX Gatherer JAR",
 			cfg: &Config{
-				JARPath:  "testdata/fake_jmx.jar",
-				LogLevel: "trace",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx.jar",
+				LogLevel:           "trace",
+				CollectionInterval: 10 * time.Second,
 			},
 			expectedMainClass:           "io.opentelemetry.contrib.jmxmetrics.JmxMetrics",
 			expectedProperties:          []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=trace"},
@@ -450,12 +410,9 @@ func TestJARProperties(t *testing.T) {
 		{
 			desc: "Sampling config with JMX Scraper JAR",
 			cfg: &Config{
-				JARPath:  "testdata/fake_jmx_scraper.jar",
-				LogLevel: "trace",
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 10 * time.Second,
-					InitialDelay:       time.Second,
-				},
+				JARPath:            "testdata/fake_jmx_scraper.jar",
+				LogLevel:           "trace",
+				CollectionInterval: 10 * time.Second,
 			},
 			expectedMainClass:           "io.opentelemetry.contrib.jmxscraper.JmxScraper",
 			expectedProperties:          nil,

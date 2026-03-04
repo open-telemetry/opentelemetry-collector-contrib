@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -57,14 +58,14 @@ func TestWithPassthrough(t *testing.T) {
 func TestEnabledAttributes(t *testing.T) {
 	// This list needs to be updated when the defaults in metadata.yaml are updated.
 	expected := []string{
-		"k8s.namespace.name",
-		"k8s.pod.name",
-		"k8s.pod.uid",
-		"k8s.pod.start_time",
-		"k8s.deployment.name",
-		"k8s.node.name",
-		"container.image.name",
-		containerImageTag,
+		string(conventions.K8SNamespaceNameKey),
+		string(conventions.K8SPodNameKey),
+		string(conventions.K8SPodUIDKey),
+		metadataPodStartTime,
+		string(conventions.K8SDeploymentNameKey),
+		string(conventions.K8SNodeNameKey),
+		string(conventions.ContainerImageNameKey),
+		string(conventions.ContainerImageTagKey),
 	}
 	assert.ElementsMatch(t, expected, enabledAttributes())
 }
@@ -354,7 +355,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.Node)
 
 	p = &kubernetesprocessor{}
-	assert.NoError(t, withExtractMetadata("k8s.namespace.name", "k8s.pod.name", "k8s.pod.uid")(p))
+	assert.NoError(t, withExtractMetadata(string(conventions.K8SNamespaceNameKey), string(conventions.K8SPodNameKey), string(conventions.K8SPodUIDKey))(p))
 	assert.True(t, p.rules.Namespace)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
@@ -562,54 +563,58 @@ func TestWithFilterFields(t *testing.T) {
 }
 
 func Test_extractFieldRules(t *testing.T) {
+	type args struct {
+		fieldType string
+		fields    []FieldExtractConfig
+	}
 	tests := []struct {
 		name    string
-		fields  []FieldExtractConfig
+		args    args
 		want    []kube.FieldExtractionRule
 		wantErr bool
 	}{
 		{
-			name: "empty tag_name leaves Name empty for dynamic resolution",
-			fields: []FieldExtractConfig{
+			name: "default",
+			args: args{"labels", []FieldExtractConfig{
 				{
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
-			},
+			}},
 			want: []kube.FieldExtractionRule{
 				{
-					Name: "",
+					Name: "k8s.pod.labels.key",
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
 			},
 		},
 		{
-			name: "explicit tag_name is preserved",
-			fields: []FieldExtractConfig{
+			name: "basic",
+			args: args{"field", []FieldExtractConfig{
 				{
-					TagName: "custom.name",
+					TagName: "name",
 					Key:     "key",
 					From:    kube.MetadataFromPod,
 				},
-			},
+			}},
 			want: []kube.FieldExtractionRule{
 				{
-					Name: "custom.name",
+					Name: "name",
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
 			},
 		},
 		{
-			name: "keyregex with capture groups",
-			fields: []FieldExtractConfig{
+			name: "keyregex-capture-group",
+			args: args{"labels", []FieldExtractConfig{
 				{
 					TagName:  "$0-$1-$2",
 					KeyRegex: "(key)(.*)",
 					From:     kube.MetadataFromPod,
 				},
-			},
+			}},
 			want: []kube.FieldExtractionRule{
 				{
 					Name:                 "$0-$1-$2",
@@ -619,43 +624,10 @@ func Test_extractFieldRules(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "namespace metadata source",
-			fields: []FieldExtractConfig{
-				{
-					Key:  "env",
-					From: kube.MetadataFromNamespace,
-				},
-			},
-			want: []kube.FieldExtractionRule{
-				{
-					Name: "",
-					Key:  "env",
-					From: kube.MetadataFromNamespace,
-				},
-			},
-		},
-		{
-			name: "node metadata source",
-			fields: []FieldExtractConfig{
-				{
-					Key:  "zone",
-					From: kube.MetadataFromNode,
-				},
-			},
-			want: []kube.FieldExtractionRule{
-				{
-					Name: "",
-					Key:  "zone",
-					From: kube.MetadataFromNode,
-				},
-			},
-		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractFieldRules(tt.fields...)
+			got, err := extractFieldRules(tt.args.fieldType, tt.args.fields...)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

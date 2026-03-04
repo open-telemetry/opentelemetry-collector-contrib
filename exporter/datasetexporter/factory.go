@@ -1,13 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 package datasetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -32,7 +31,7 @@ func createDefaultConfig() component.Config {
 		LogsSettings:       newDefaultLogsSettings(),
 		ServerHostSettings: newDefaultServerHostSettings(),
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-		QueueSettings:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:      exporterhelper.NewDefaultQueueConfig(),
 		TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 		Debug:              debugDefault,
 	}

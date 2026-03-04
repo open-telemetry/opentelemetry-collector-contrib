@@ -19,7 +19,7 @@ import (
 )
 
 func TestGetK8sInstanceMetadata(t *testing.T) {
-	clientset := fake.NewClientset()
+	clientset := fake.NewSimpleClientset()
 	mockEC2 := ec2.NewFromConfig(aws.Config{})
 
 	tests := []struct {
@@ -246,7 +246,7 @@ func TestGetInstanceMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			clientset := fake.NewClientset()
+			clientset := fake.NewSimpleClientset()
 			eksProvider := &metadataClient{
 				ec2Client: mockClient(tt.ec2DescOutput),
 				clientset: clientset,

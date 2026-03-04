@@ -1,10 +1,9 @@
 type: alibabacloud_logservice
-display_name: AlibabaCloud LogService Exporter
 
 status:
   class: exporter
   stability:
-    unmaintained: [traces, metrics, logs]
+    beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
     active: [shabicheng, kongluoxing, qiansheng91]

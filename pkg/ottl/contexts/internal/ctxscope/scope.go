@@ -63,11 +63,9 @@ func accessInstrumentationScopeName[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetInstrumentationScope().Name(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			str, err := ctxutil.ExpectType[string](val)
-			if err != nil {
-				return err
+			if str, ok := val.(string); ok {
+				tCtx.GetInstrumentationScope().SetName(str)
 			}
-			tCtx.GetInstrumentationScope().SetName(str)
 			return nil
 		},
 	}
@@ -79,11 +77,9 @@ func accessInstrumentationScopeVersion[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetInstrumentationScope().Version(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			str, err := ctxutil.ExpectType[string](val)
-			if err != nil {
-				return err
+			if str, ok := val.(string); ok {
+				tCtx.GetInstrumentationScope().SetVersion(str)
 			}
-			tCtx.GetInstrumentationScope().SetVersion(str)
 			return nil
 		},
 	}
@@ -95,11 +91,9 @@ func accessInstrumentationScopeDroppedAttributesCount[K Context]() ottl.Standard
 			return int64(tCtx.GetInstrumentationScope().DroppedAttributesCount()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			i, err := ctxutil.ExpectType[int64](val)
-			if err != nil {
-				return err
+			if i, ok := val.(int64); ok {
+				tCtx.GetInstrumentationScope().SetDroppedAttributesCount(uint32(i))
 			}
-			tCtx.GetInstrumentationScope().SetDroppedAttributesCount(uint32(i))
 			return nil
 		},
 	}
@@ -111,11 +105,9 @@ func accessInstrumentationScopeSchemaURLItem[K Context]() ottl.StandardGetSetter
 			return tCtx.GetScopeSchemaURLItem().SchemaUrl(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			schemaURL, err := ctxutil.ExpectType[string](val)
-			if err != nil {
-				return err
+			if schemaURL, ok := val.(string); ok {
+				tCtx.GetScopeSchemaURLItem().SetSchemaUrl(schemaURL)
 			}
-			tCtx.GetScopeSchemaURLItem().SetSchemaUrl(schemaURL)
 			return nil
 		},
 	}

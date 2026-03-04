@@ -16,6 +16,8 @@ type Config struct {
 	// for TencentCloud Kubernetes(or CVM), set ap-{region}.cls.tencentyun.com, eg ap-beijing.cls.tencentyun.com;
 	//  others set ap-{region}.cls.tencentcs.com, eg ap-beijing.cls.tencentcs.com
 	Region string `mapstructure:"region"`
+	// Endpoint for TencentCloud Log Service, if not set, will be constructed from Region
+	Endpoint string `mapstructure:"endpoint"`
 	// LogService's LogSet Name
 	LogSet string `mapstructure:"logset"`
 	// LogService's Topic Name
@@ -24,14 +26,19 @@ type Config struct {
 	SecretID string `mapstructure:"secret_id"`
 	// TencentCloud access key secret
 	SecretKey configopaque.String `mapstructure:"secret_key"`
+	// Whether to use intranet endpoint
+	IsIntranet bool `mapstructure:"is_intranet"`
 }
 
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg == nil || cfg.Region == "" || cfg.LogSet == "" || cfg.Topic == "" {
+	if cfg == nil || cfg.LogSet == "" || cfg.Topic == "" {
 		return errors.New("missing tencentcloudlogservice params: Region, LogSet, Topic")
+	}
+	if cfg.Region == "" && cfg.Endpoint == "" {
+		return errors.New("missing tencentcloudlogservice param: Region or Endpoint")
 	}
 	return nil
 }

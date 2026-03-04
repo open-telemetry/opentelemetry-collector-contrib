@@ -20,5 +20,4 @@ FROM
 WHERE
   query != '<insufficient privilege>'
   AND query NOT LIKE '/* otel-collector-ignore */%'
-ORDER BY calls DESC
 LIMIT 31;

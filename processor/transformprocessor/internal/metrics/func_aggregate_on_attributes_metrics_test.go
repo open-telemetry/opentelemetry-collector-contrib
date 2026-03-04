@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
@@ -317,9 +318,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			evaluate, err := AggregateOnAttributes(tt.t, tt.attributes)
 			require.NoError(t, err)
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input)
-			_, err = evaluate(nil, tCtx)
-			tCtx.Close()
+			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.Equal(t, tt.wantErr, err)
 
 			actualMetric := pmetric.NewMetricSlice()

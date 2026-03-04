@@ -1,4 +1,3 @@
-display_name: OIDC Authenticator Extension
 type: oidc
 
 status:

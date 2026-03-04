@@ -1,4 +1,4 @@
-signal_to_metrics:
+signaltometrics:
   spans:
     - name: span.exp_histogram
       description: Exponential histogram

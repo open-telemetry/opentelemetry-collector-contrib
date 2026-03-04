@@ -60,9 +60,11 @@ func (t *tcpServer) ListenAndServe(nextConsumer consumer.Metrics, reporter Repor
 			continue
 		}
 
-		t.wg.Go(func() {
+		t.wg.Add(1)
+		go func() {
+			defer t.wg.Done()
 			handleTCPConn(conn, reporter, transferChan)
-		})
+		}()
 	}
 }
 

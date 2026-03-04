@@ -4,7 +4,6 @@
 package healthcheck
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net"
@@ -29,17 +28,10 @@ import (
 
 func TestComponentStatus(t *testing.T) {
 	cfg := NewDefaultConfig().(*Config)
-	cfg.HTTPConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTPConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
-	defer func() {
-		// Use Background context for shutdown in defer to avoid cancellation issues
-		//nolint:usetesting // defer functions may run after test context is cancelled
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		require.NoError(t, ext.Shutdown(ctx))
-	}()
 
 	// Status before Start will be StatusNone
 	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
@@ -88,9 +80,7 @@ func TestComponentStatus(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 
 	require.NoError(t, ext.NotReady())
-	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
-	defer cancel()
-	require.NoError(t, ext.Shutdown(ctx))
+	require.NoError(t, ext.Shutdown(t.Context()))
 
 	// Events sent after shutdown will be discarded
 	for _, id := range traces.InstanceIDs() {
@@ -116,23 +106,16 @@ func TestNotifyConfig(t *testing.T) {
 
 	cfg := NewDefaultConfig().(*Config)
 	cfg.UseV2 = true
-	cfg.HTTPConfig.NetAddr.Endpoint = endpoint
+	cfg.HTTPConfig.Endpoint = endpoint
 	cfg.HTTPConfig.Config.Enabled = true
 	cfg.HTTPConfig.Config.Path = "/config"
 
 	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
-	defer func() {
-		// Use Background context for shutdown in defer to avoid cancellation issues
-		//nolint:usetesting // defer functions may run after test context is cancelled
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		require.NoError(t, ext.Shutdown(ctx))
-	}()
 
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, ext.Shutdown(t.Context())) })
 
 	client := &http.Client{}
-	defer client.CloseIdleConnections()
 	url := fmt.Sprintf("http://%s/config", endpoint)
 
 	var resp *http.Response
@@ -140,7 +123,6 @@ func TestNotifyConfig(t *testing.T) {
 	resp, err = client.Get(url)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
-	require.NoError(t, resp.Body.Close())
 
 	require.NoError(t, ext.NotifyConfig(t.Context(), confMap))
 
@@ -150,7 +132,6 @@ func TestNotifyConfig(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	require.NoError(t, resp.Body.Close())
 	assert.JSONEq(t, string(confJSON), string(body))
 }
 
@@ -164,14 +145,12 @@ func TestShutdown(t *testing.T) {
 
 		cfg := NewDefaultConfig().(*Config)
 		cfg.UseV2 = true
-		cfg.HTTPConfig.NetAddr.Endpoint = endpoint
+		cfg.HTTPConfig.Endpoint = endpoint
 
 		ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 		// Get address already in use here
 		require.Error(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
-		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
-		defer cancel()
-		require.NoError(t, ext.Shutdown(ctx))
+		require.NoError(t, ext.Shutdown(t.Context()))
 	})
 }

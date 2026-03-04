@@ -1,5 +1,4 @@
 type: alertmanager
-display_name: Alertmanager Exporter
 
 status:
   class: exporter

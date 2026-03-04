@@ -169,7 +169,6 @@ func (m *metricProcessRuntimeMemstatsBuckHashSys) emit(metrics pmetric.MetricSli
 
 func newMetricProcessRuntimeMemstatsBuckHashSys(cfg MetricConfig) metricProcessRuntimeMemstatsBuckHashSys {
 	m := metricProcessRuntimeMemstatsBuckHashSys{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -221,7 +220,6 @@ func (m *metricProcessRuntimeMemstatsFrees) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessRuntimeMemstatsFrees(cfg MetricConfig) metricProcessRuntimeMemstatsFrees {
 	m := metricProcessRuntimeMemstatsFrees{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -271,7 +269,6 @@ func (m *metricProcessRuntimeMemstatsGcCPUFraction) emit(metrics pmetric.MetricS
 
 func newMetricProcessRuntimeMemstatsGcCPUFraction(cfg MetricConfig) metricProcessRuntimeMemstatsGcCPUFraction {
 	m := metricProcessRuntimeMemstatsGcCPUFraction{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -323,7 +320,6 @@ func (m *metricProcessRuntimeMemstatsGcSys) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessRuntimeMemstatsGcSys(cfg MetricConfig) metricProcessRuntimeMemstatsGcSys {
 	m := metricProcessRuntimeMemstatsGcSys{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -375,7 +371,6 @@ func (m *metricProcessRuntimeMemstatsHeapAlloc) emit(metrics pmetric.MetricSlice
 
 func newMetricProcessRuntimeMemstatsHeapAlloc(cfg MetricConfig) metricProcessRuntimeMemstatsHeapAlloc {
 	m := metricProcessRuntimeMemstatsHeapAlloc{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -427,7 +422,6 @@ func (m *metricProcessRuntimeMemstatsHeapIdle) emit(metrics pmetric.MetricSlice)
 
 func newMetricProcessRuntimeMemstatsHeapIdle(cfg MetricConfig) metricProcessRuntimeMemstatsHeapIdle {
 	m := metricProcessRuntimeMemstatsHeapIdle{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -479,7 +473,6 @@ func (m *metricProcessRuntimeMemstatsHeapInuse) emit(metrics pmetric.MetricSlice
 
 func newMetricProcessRuntimeMemstatsHeapInuse(cfg MetricConfig) metricProcessRuntimeMemstatsHeapInuse {
 	m := metricProcessRuntimeMemstatsHeapInuse{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -531,7 +524,6 @@ func (m *metricProcessRuntimeMemstatsHeapObjects) emit(metrics pmetric.MetricSli
 
 func newMetricProcessRuntimeMemstatsHeapObjects(cfg MetricConfig) metricProcessRuntimeMemstatsHeapObjects {
 	m := metricProcessRuntimeMemstatsHeapObjects{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -583,7 +575,6 @@ func (m *metricProcessRuntimeMemstatsHeapReleased) emit(metrics pmetric.MetricSl
 
 func newMetricProcessRuntimeMemstatsHeapReleased(cfg MetricConfig) metricProcessRuntimeMemstatsHeapReleased {
 	m := metricProcessRuntimeMemstatsHeapReleased{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -635,7 +626,6 @@ func (m *metricProcessRuntimeMemstatsHeapSys) emit(metrics pmetric.MetricSlice) 
 
 func newMetricProcessRuntimeMemstatsHeapSys(cfg MetricConfig) metricProcessRuntimeMemstatsHeapSys {
 	m := metricProcessRuntimeMemstatsHeapSys{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -685,7 +675,6 @@ func (m *metricProcessRuntimeMemstatsLastPause) emit(metrics pmetric.MetricSlice
 
 func newMetricProcessRuntimeMemstatsLastPause(cfg MetricConfig) metricProcessRuntimeMemstatsLastPause {
 	m := metricProcessRuntimeMemstatsLastPause{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -737,7 +726,6 @@ func (m *metricProcessRuntimeMemstatsLookups) emit(metrics pmetric.MetricSlice) 
 
 func newMetricProcessRuntimeMemstatsLookups(cfg MetricConfig) metricProcessRuntimeMemstatsLookups {
 	m := metricProcessRuntimeMemstatsLookups{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -789,7 +777,6 @@ func (m *metricProcessRuntimeMemstatsMallocs) emit(metrics pmetric.MetricSlice) 
 
 func newMetricProcessRuntimeMemstatsMallocs(cfg MetricConfig) metricProcessRuntimeMemstatsMallocs {
 	m := metricProcessRuntimeMemstatsMallocs{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -841,7 +828,6 @@ func (m *metricProcessRuntimeMemstatsMcacheInuse) emit(metrics pmetric.MetricSli
 
 func newMetricProcessRuntimeMemstatsMcacheInuse(cfg MetricConfig) metricProcessRuntimeMemstatsMcacheInuse {
 	m := metricProcessRuntimeMemstatsMcacheInuse{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -893,7 +879,6 @@ func (m *metricProcessRuntimeMemstatsMcacheSys) emit(metrics pmetric.MetricSlice
 
 func newMetricProcessRuntimeMemstatsMcacheSys(cfg MetricConfig) metricProcessRuntimeMemstatsMcacheSys {
 	m := metricProcessRuntimeMemstatsMcacheSys{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -945,7 +930,6 @@ func (m *metricProcessRuntimeMemstatsMspanInuse) emit(metrics pmetric.MetricSlic
 
 func newMetricProcessRuntimeMemstatsMspanInuse(cfg MetricConfig) metricProcessRuntimeMemstatsMspanInuse {
 	m := metricProcessRuntimeMemstatsMspanInuse{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -997,7 +981,6 @@ func (m *metricProcessRuntimeMemstatsMspanSys) emit(metrics pmetric.MetricSlice)
 
 func newMetricProcessRuntimeMemstatsMspanSys(cfg MetricConfig) metricProcessRuntimeMemstatsMspanSys {
 	m := metricProcessRuntimeMemstatsMspanSys{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1049,7 +1032,6 @@ func (m *metricProcessRuntimeMemstatsNextGc) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessRuntimeMemstatsNextGc(cfg MetricConfig) metricProcessRuntimeMemstatsNextGc {
 	m := metricProcessRuntimeMemstatsNextGc{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1101,7 +1083,6 @@ func (m *metricProcessRuntimeMemstatsNumForcedGc) emit(metrics pmetric.MetricSli
 
 func newMetricProcessRuntimeMemstatsNumForcedGc(cfg MetricConfig) metricProcessRuntimeMemstatsNumForcedGc {
 	m := metricProcessRuntimeMemstatsNumForcedGc{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1153,7 +1134,6 @@ func (m *metricProcessRuntimeMemstatsNumGc) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessRuntimeMemstatsNumGc(cfg MetricConfig) metricProcessRuntimeMemstatsNumGc {
 	m := metricProcessRuntimeMemstatsNumGc{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1205,7 +1185,6 @@ func (m *metricProcessRuntimeMemstatsOtherSys) emit(metrics pmetric.MetricSlice)
 
 func newMetricProcessRuntimeMemstatsOtherSys(cfg MetricConfig) metricProcessRuntimeMemstatsOtherSys {
 	m := metricProcessRuntimeMemstatsOtherSys{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1257,7 +1236,6 @@ func (m *metricProcessRuntimeMemstatsPauseTotal) emit(metrics pmetric.MetricSlic
 
 func newMetricProcessRuntimeMemstatsPauseTotal(cfg MetricConfig) metricProcessRuntimeMemstatsPauseTotal {
 	m := metricProcessRuntimeMemstatsPauseTotal{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1309,7 +1287,6 @@ func (m *metricProcessRuntimeMemstatsStackInuse) emit(metrics pmetric.MetricSlic
 
 func newMetricProcessRuntimeMemstatsStackInuse(cfg MetricConfig) metricProcessRuntimeMemstatsStackInuse {
 	m := metricProcessRuntimeMemstatsStackInuse{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1361,7 +1338,6 @@ func (m *metricProcessRuntimeMemstatsStackSys) emit(metrics pmetric.MetricSlice)
 
 func newMetricProcessRuntimeMemstatsStackSys(cfg MetricConfig) metricProcessRuntimeMemstatsStackSys {
 	m := metricProcessRuntimeMemstatsStackSys{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1413,7 +1389,6 @@ func (m *metricProcessRuntimeMemstatsSys) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessRuntimeMemstatsSys(cfg MetricConfig) metricProcessRuntimeMemstatsSys {
 	m := metricProcessRuntimeMemstatsSys{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1465,7 +1440,6 @@ func (m *metricProcessRuntimeMemstatsTotalAlloc) emit(metrics pmetric.MetricSlic
 
 func newMetricProcessRuntimeMemstatsTotalAlloc(cfg MetricConfig) metricProcessRuntimeMemstatsTotalAlloc {
 	m := metricProcessRuntimeMemstatsTotalAlloc{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	gocql "github.com/apache/cassandra-gocql-driver/v2"
+	"github.com/gocql/gocql"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -43,19 +43,19 @@ func initializeTraceKernel(cfg *Config) error {
 
 	defer session.Close()
 
-	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).ExecContext(ctx)
+	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).WithContext(ctx).Exec()
 	if createDatabaseError != nil {
 		return createDatabaseError
 	}
-	createLinksTypeError := session.Query(parseCreateLinksTypeSQL(cfg)).ExecContext(ctx)
+	createLinksTypeError := session.Query(parseCreateLinksTypeSQL(cfg)).WithContext(ctx).Exec()
 	if createLinksTypeError != nil {
 		return createLinksTypeError
 	}
-	createEventsTypeError := session.Query(parseCreateEventsTypeSQL(cfg)).ExecContext(ctx)
+	createEventsTypeError := session.Query(parseCreateEventsTypeSQL(cfg)).WithContext(ctx).Exec()
 	if createEventsTypeError != nil {
 		return createEventsTypeError
 	}
-	createSpanTableError := session.Query(parseCreateSpanTableSQL(cfg)).ExecContext(ctx)
+	createSpanTableError := session.Query(parseCreateSpanTableSQL(cfg)).WithContext(ctx).Exec()
 	if createSpanTableError != nil {
 		return createSpanTableError
 	}
@@ -133,7 +133,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
 					traceutil.StatusCodeStr(status.Code()),
 					status.Message(),
-				).ExecContext(ctx)
+				).WithContext(ctx).Exec()
 
 				if insertSpanError != nil {
 					e.logger.Error("insert span error", zap.Error(insertSpanError))

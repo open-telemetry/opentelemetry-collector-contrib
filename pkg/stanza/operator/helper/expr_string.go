@@ -14,6 +14,7 @@ import (
 	"github.com/expr-lang/expr/vm"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 // ExprStringConfig is a string that represents an expression
@@ -79,7 +80,7 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 	for _, subExprString := range subExprStrings {
 		program, err := expr.Compile(subExprString, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}))
 		if err != nil {
-			return nil, fmt.Errorf("compile embedded expression: %w", err)
+			return nil, errors.Wrap(err, "compile embedded expression")
 		}
 		subExprs = append(subExprs, program)
 	}
@@ -112,7 +113,7 @@ func (e *ExprString) Render(env map[string]any) (string, error) {
 		b.WriteString(e.SubStrings[i])
 		out, err := vm.Run(e.SubExprs[i], env)
 		if err != nil {
-			return "", fmt.Errorf("render embedded expression: %w", err)
+			return "", errors.Wrap(err, "render embedded expression")
 		}
 		outString, ok := out.(string)
 		if !ok {

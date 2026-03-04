@@ -98,7 +98,7 @@ func newLogsToLogs(set connector.Settings, cfg component.Config, logs consumer.L
 	config := cfg.(*Config)
 	lr, ok := logs.(connector.LogsRouterAndConsumer)
 	if !ok {
-		return nil, errors.New("consumer is not of type LogsRouter")
+		return nil, errors.New("consumer is not of type MetricsRouter")
 	}
 
 	failover, err := newLogsRouter(lr.Consumer, config)

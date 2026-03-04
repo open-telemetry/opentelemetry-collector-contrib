@@ -87,7 +87,7 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.ControllerConfig.CollectionInterval = time.Second
+				rCfg.CollectionInterval = time.Second
 				rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, postgresqlPort))
 				rCfg.Databases = databases
 				rCfg.Username = "otelu"
@@ -109,7 +109,6 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
-			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(
 				"postgresql.backends",
@@ -246,7 +245,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	assert.True(t, found, "Expected to find a log record with the query text")
 	assert.True(t, ns.newestQueryTimestamp > 0)
 
-	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, time.Minute)
+	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30)
 	assert.NoError(t, err)
 	logRecords = firstTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found = false
@@ -273,9 +272,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
 
-	collectionInterval := time.Minute
-	ns.lastExecutionTimestamp = ns.lastExecutionTimestamp.Add(-collectionInterval)
-	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, collectionInterval)
+	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30)
 	assert.NoError(t, err)
 	logRecords = secondTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found = false

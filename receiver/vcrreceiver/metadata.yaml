@@ -1,8 +1,0 @@
-type: vcr
-
-status:
-  class: receiver
-  stability:
-    development: [traces, metrics, logs, profiles]
-  codeowners:
-    active: [atoulme,robertgustafsonsplunk,garrett-splunk]

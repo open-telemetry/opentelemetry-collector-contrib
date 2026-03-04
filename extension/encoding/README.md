@@ -36,7 +36,6 @@ extensions:
 
 receivers:
   kafka:
-    traces:
-      encoding: zipkin_encoding
+    encoding: zipkin_encoding
     # ... other configuration values
 ```

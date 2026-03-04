@@ -24,19 +24,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		LegacyConfig: healthcheck.HTTPLegacyConfig{
 			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: "tcp",
-					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-				},
+				Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
 			},
 			Path: "/",
 		},
 		HTTPConfig: &healthcheck.HTTPConfig{
 			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: "tcp",
-					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-				},
+				Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
 			},
 			Status: healthcheck.PathConfig{
 				Enabled: true,
@@ -67,7 +61,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)

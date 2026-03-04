@@ -1,4 +1,3 @@
-display_name: Kafka Topics Observer Extension
 type: kafkatopics_observer
 
 status:

@@ -8,7 +8,6 @@ OTEL_STABLE_VERSION=main
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
 CORE_VERSIONS=$(SRC_PARENT_DIR)/opentelemetry-collector/versions.yaml
-GO_COMPAT_VERSION=$(shell grep '^go ' go.mod | awk '{print $$2}')
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -91,7 +90,7 @@ all-groups:
 	@echo -e "\ngenerated: $(GENERATED_MODS)"
 
 .PHONY: all
-all: all-common goporto multimod-verify gotest otelcontribcol
+all: install-tools all-common goporto multimod-verify gotest otelcontribcol
 
 .PHONY: all-common
 all-common:
@@ -146,7 +145,7 @@ gogci:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
 
 .PHONY: tidylist
-tidylist:
+tidylist: $(CROSSLINK)
 	cd internal/tidylist && \
 	$(CROSSLINK) tidylist \
 		--validate \
@@ -160,29 +159,8 @@ tidylist:
 gotidy:
 	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
 		echo "Tidying $$mod"; \
-		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION) && $(GOCMD) get toolchain@none) || exit $?; \
+		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.24.0 && $(GOCMD) get toolchain@none) || exit $?; \
 	done
-
-.PHONY: bump-go-version
-bump-go-version:
-ifndef VERSION
-	$(error VERSION is required. Usage: make bump-go-version VERSION=1.24.11)
-endif
-	@echo "Bumping Go version to $(VERSION)..."
-	
-	# Update main go.mod
-	@echo "Updating main go.mod..."
-	@sed -i '' -E 's/^go [0-9]+\.[0-9]+.*/go $(VERSION)/' go.mod
-	
-	# Update all module go.mod files
-	@echo "Updating all module go.mod files..."
-	@find . -name "go.mod" -type f -not -path "./go.mod" -exec sed -i '' -E 's/^go [0-9]+\.[0-9]+\.[0-9]+/go $(VERSION)/g' {} \;
-	
-	@echo ""
-	@echo "✓ Successfully bumped golang version to $(VERSION)"
-	@echo ""
-	@echo "Note: GitHub Actions workflows use 'oldstable' regardless of the Go version in go.mod"
-	@echo "Next: Optionally run 'make gotidy' (takes ~5-10 minutes)"
 
 .PHONY: remove-toolchain
 remove-toolchain:
@@ -234,16 +212,12 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
-.PHONY: gomodernize
-gomodernize:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="modernize"
-
 .PHONY: gogovulncheck
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
 
 .PHONY: goporto
-goporto:
+goporto: $(PORTO)
 	$(PORTO) -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
@@ -266,7 +240,7 @@ COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
 .PHONY: push-tags
-push-tags:
+push-tags: $(MULTIMOD)
 	$(MULTIMOD) verify
 	set -e; for tag in `$(MULTIMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
@@ -395,52 +369,47 @@ docker-golden:
 
 
 .PHONY: gengithub
-gengithub:
+gengithub: $(GITHUBGEN)
 	$(GITHUBGEN)
 
 .PHONY: gendistributions
-gendistributions:
+gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
 
-.PHONY: gencodecov
-gencodecov:
-	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
+gencodecov: $(CODECOVGEN)
+	$(CODECOVGEN) --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules **/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**
 
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
 	$(MAKE) genlabels
 
 .PHONY: gencodeowners
-gencodeowners:
+gencodeowners: install-tools
 	$(GITHUBGEN) -skipgithub
 
-.PHONY: codeowners
-codeowners:
-	$(GITHUBGEN) codeowners
-
 .PHONY: generate-chloggen-components
-generate-chloggen-components:
+generate-chloggen-components: $(GITHUBGEN)
 	$(GITHUBGEN) chloggen-components
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
-chlog-new:
+chlog-new: $(CHLOGGEN)
 	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate:
+chlog-validate: $(CHLOGGEN)
 	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG)
 
 .PHONY: chlog-preview
-chlog-preview:
+chlog-preview: $(CHLOGGEN)
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --dry
 
 .PHONY: chlog-update
-chlog-update:
+chlog-update: $(CHLOGGEN)
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
 .PHONY: genotelcontribcol
-genotelcontribcol:
+genotelcontribcol: $(BUILDER)
 	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
 	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
 
@@ -457,7 +426,7 @@ otelcontribcollite: genotelcontribcol
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
 .PHONY: genoteltestbedcol
-genoteltestbedcol:
+genoteltestbedcol: $(BUILDER)
 	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
 	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml
 
@@ -534,7 +503,7 @@ endef
 
 
 .PHONY: update-otel
-update-otel:
+update-otel:$(MULTIMOD)
 	# Make sure cmd/otelcontribcol/go.mod and cmd/oteltestbedcol/go.mod are present
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
@@ -545,6 +514,7 @@ update-otel:
 	$(MAKE) gotidy
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
+	$(MAKE) -B install-tools
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
@@ -592,6 +562,7 @@ otel-from-lib:
 .PHONY: build-examples
 build-examples:
 	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker compose -f ../docker-compose.yaml build
+	docker compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
@@ -602,16 +573,16 @@ build-examples:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc:
+checkdoc: $(CHECKFILE)
 	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
 
 # Verify existence of metadata.yaml for components specified as default components in the collector.
 .PHONY: checkmetadata
-checkmetadata:
+checkmetadata: $(CHECKFILE)
 	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: checkapi
-checkapi:
+checkapi: $(CHECKAPI)
 	$(CHECKAPI) -folder . -config .checkapi.yaml
 
 .PHONY: kind-ready
@@ -668,27 +639,27 @@ certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
 
 .PHONY: multimod-verify
-multimod-verify:
+multimod-verify: $(MULTIMOD)
 	@echo "Validating versions.yaml"
 	$(MULTIMOD) verify
 
 .PHONY: multimod-prerelease
-multimod-prerelease:
+multimod-prerelease: $(MULTIMOD)
 	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
 	$(MAKE) gotidy
 
 .PHONY: multimod-sync
-multimod-sync:
+multimod-sync: $(MULTIMOD)
 	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector
 	$(MAKE) gotidy
 
 .PHONY: crosslink
-crosslink:
+crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
 	$(CROSSLINK) --root=$(shell pwd) --prune
 
 .PHONY: actionlint
-actionlint:
+actionlint: $(ACTIONLINT)
 	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(filter-out $(wildcard .github/workflows/*windows.y*), $(wildcard .github/workflows/*.y*))
 
 .PHONY: clean
@@ -706,12 +677,6 @@ clean:
 generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
-SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
-
-.PHONY: generate-schemas
-generate-schemas:
-	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
-
 .PHONY: checks
 checks:
 	$(MAKE) checkdoc
@@ -725,5 +690,4 @@ checks:
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify
-	$(MAKE) generate-schemas
 	git diff --exit-code || (echo 'Some files need committing' && git status && exit 1)

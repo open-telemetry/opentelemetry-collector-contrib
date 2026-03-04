@@ -7,7 +7,7 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
@@ -329,13 +329,13 @@ func getTagFromStatusCode(statusCode ptrace.StatusCode) (model.KeyValue, bool) {
 	switch statusCode {
 	case ptrace.StatusCodeError:
 		return model.KeyValue{
-			Key:   string(conventions.OTelStatusCodeKey),
+			Key:   string(conventions.OtelStatusCodeKey),
 			VType: model.ValueType_STRING,
 			VStr:  statusError,
 		}, true
 	case ptrace.StatusCodeOk:
 		return model.KeyValue{
-			Key:   string(conventions.OTelStatusCodeKey),
+			Key:   string(conventions.OtelStatusCodeKey),
 			VType: model.ValueType_STRING,
 			VStr:  statusOk,
 		}, true
@@ -359,7 +359,7 @@ func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
 		return model.KeyValue{}, false
 	}
 	return model.KeyValue{
-		Key:   string(conventions.OTelStatusDescriptionKey),
+		Key:   string(conventions.OtelStatusDescriptionKey),
 		VStr:  statusMsg,
 		VType: model.ValueType_STRING,
 	}, true
@@ -384,7 +384,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 	var keyValues []model.KeyValue
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
-			Key:   string(conventions.OTelScopeNameKey),
+			Key:   string(conventions.OtelScopeNameKey),
 			VStr:  ilName,
 			VType: model.ValueType_STRING,
 		}
@@ -392,7 +392,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 	}
 	if ilVersion := il.Version(); ilVersion != "" {
 		kv := model.KeyValue{
-			Key:   string(conventions.OTelScopeVersionKey),
+			Key:   string(conventions.OtelScopeVersionKey),
 			VStr:  ilVersion,
 			VType: model.ValueType_STRING,
 		}
@@ -403,7 +403,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 }
 
 func refTypeFromLink(link ptrace.SpanLink) model.SpanRefType {
-	refTypeAttr, ok := link.Attributes().Get(string(conventions.OpenTracingRefTypeKey))
+	refTypeAttr, ok := link.Attributes().Get(string(conventions.OpentracingRefTypeKey))
 	if !ok {
 		return model.SpanRefType_FOLLOWS_FROM
 	}
@@ -411,7 +411,7 @@ func refTypeFromLink(link ptrace.SpanLink) model.SpanRefType {
 }
 
 func strToJRefType(attr string) model.SpanRefType {
-	if attr == conventions.OpenTracingRefTypeChildOf.Value.AsString() {
+	if attr == conventions.OpentracingRefTypeChildOf.Value.AsString() {
 		return model.ChildOf
 	}
 	// There are only 2 types of SpanRefType we assume that everything

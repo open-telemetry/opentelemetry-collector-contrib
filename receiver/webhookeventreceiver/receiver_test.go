@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -44,10 +43,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined config success",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
+					Endpoint: "localhost:8080",
 				},
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
@@ -64,10 +60,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined config success with header_attribute_regex supplied",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
+					Endpoint: "localhost:8080",
 				},
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
@@ -85,10 +78,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined read timeout exceeds max value",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
+					Endpoint: "localhost:8080",
 				},
 				ReadTimeout:  "11s",
 				WriteTimeout: "5s",
@@ -106,10 +96,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined write timeout exceeds max value",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
+					Endpoint: "localhost:8080",
 				},
 				ReadTimeout:  "5s",
 				WriteTimeout: "11s",
@@ -127,10 +114,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined regex fails to compile",
 			cfg: Config{
 				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
+					Endpoint: "localhost:8080",
 				},
 				ReadTimeout:  "5s",
 				WriteTimeout: "5s",
@@ -163,7 +147,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 // these requests should all succeed
 func TestHandleReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.Endpoint = "localhost:0"
 
 	tests := []struct {
 		desc string
@@ -238,9 +222,9 @@ func TestHandleReq(t *testing.T) {
 // failure in its many forms
 func TestFailedReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.Endpoint = "localhost:0"
 	headerCfg := createDefaultConfig().(*Config)
-	headerCfg.NetAddr.Endpoint = "localhost:0"
+	headerCfg.Endpoint = "localhost:0"
 	headerCfg.RequiredHeader.Key = "key-present"
 	headerCfg.RequiredHeader.Value = "value-present"
 
@@ -296,7 +280,7 @@ func TestFailedReq(t *testing.T) {
 			desc: "Request body exceeds max size",
 			cfg: func() Config {
 				c := createDefaultConfig().(*Config)
-				c.NetAddr.Endpoint = "localhost:0"
+				c.Endpoint = "localhost:0"
 				c.MaxRequestBodySize = 70 * 1024 // Set to 70KB limit
 				c.SplitLogsAtNewLine = true
 				return *c
@@ -332,7 +316,7 @@ func TestFailedReq(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")

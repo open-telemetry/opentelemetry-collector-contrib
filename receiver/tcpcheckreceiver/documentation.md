@@ -32,7 +32,7 @@ Records errors occurring during TCP check.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {errors} | Sum | Int | Cumulative | true | Development |
+| {error} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 

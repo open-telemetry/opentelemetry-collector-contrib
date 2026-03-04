@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 // Package awsxrayexporter implements an OpenTelemetry Collector exporter that sends trace data to
 // AWS X-Ray in the region the collector is running in using the PutTraceSegments API.

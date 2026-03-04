@@ -10,7 +10,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -87,7 +86,7 @@ func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphtt
 	// Disable retries, we should push data and if error just log it.
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
-	cfg.QueueConfig = configoptional.Default(*cfg.QueueConfig.Get())
+	cfg.QueueConfig.Enabled = false
 	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
@@ -219,7 +218,7 @@ func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Co
 	// Disable retries, we should push data and if error just log it.
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
-	cfg.QueueConfig = configoptional.Default(*cfg.QueueConfig.Get())
+	cfg.QueueConfig.Enabled = false
 	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}

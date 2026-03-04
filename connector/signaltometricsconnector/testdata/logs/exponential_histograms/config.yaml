@@ -1,4 +1,4 @@
-signal_to_metrics:
+signaltometrics:
   logs:
     - name: total.logrecords.exphistogram
       description: Logrecords as exponential histogram with log.duration from attributes

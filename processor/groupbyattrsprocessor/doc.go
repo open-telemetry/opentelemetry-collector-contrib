@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 // Package groupbyattrsprocessor creates Resources based on specified
 // attributes, and groups metrics, log records and spans with matching

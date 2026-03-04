@@ -28,28 +28,20 @@ func FindFiles(includes, excludes []string) ([]string, error) {
 
 	allSet := make(map[string]struct{}, len(includes))
 	for _, include := range includes {
-		defaultDoublestarOpts := getDefaultDoublestarOptions()
-		matches, err := doublestar.FilepathGlob(
-			include,
-			append(defaultDoublestarOpts, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())...,
-		)
+		matches, err := doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())
 		if err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("find files with '%s' pattern: %w", include, err))
 			// the same pattern could cause an IO error due to one file or directory,
 			// but also could still find files without `doublestar.WithFailOnIOErrors()`.
-			matches, _ = doublestar.FilepathGlob(
-				include,
-				append(defaultDoublestarOpts, doublestar.WithFilesOnly())...,
-			)
+			matches, _ = doublestar.FilepathGlob(include, doublestar.WithFilesOnly())
 		}
+	INCLUDE:
 		for _, match := range matches {
-			if pathExcluded(excludes, match) {
-				continue
+			for _, exclude := range excludes {
+				if itMatches, _ := doublestar.PathMatch(exclude, match); itMatches {
+					continue INCLUDE
+				}
 			}
-
-			// Fix UNC path corruption on Windows: if the include pattern starts with \\
-			// but the match only has \, restore the UNC prefix
-			match = fixUNCPath(include, match)
 
 			allSet[match] = struct{}{}
 		}

@@ -16,26 +16,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/connection"
 )
 
-// DeviceConfig represents configuration for a single Cisco device in the devices list.
-type DeviceConfig struct {
-	// DO NOT USE unkeyed struct initialization
-	_ struct{} `mapstructure:"-"`
-
-	Name string `mapstructure:"name"`
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
-
-	Auth connection.AuthConfig `mapstructure:"auth"`
-}
-
 // Config defines configuration for Cisco OS receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-
-	// Devices is the list of Cisco devices to monitor.
-	Devices []DeviceConfig `mapstructure:"devices"`
-
-	Scrapers map[component.Type]component.Config `mapstructure:"-"`
+	Device                         connection.DeviceConfig             `mapstructure:"device"`
+	Scrapers                       map[component.Type]component.Config `mapstructure:"-"`
 }
 
 var (
@@ -47,27 +32,21 @@ var (
 func (cfg *Config) Validate() error {
 	var err error
 
-	if len(cfg.Devices) == 0 {
-		err = multierr.Append(err, errors.New("must specify at least one device"))
+	if cfg.Device.Device.Host.IP == "" {
+		err = multierr.Append(err, errors.New("device.host.ip cannot be empty"))
+	}
+	if cfg.Device.Device.Host.Port == 0 {
+		err = multierr.Append(err, errors.New("device.host.port cannot be empty"))
+	}
+	if cfg.Device.Auth.Username == "" {
+		err = multierr.Append(err, errors.New("device.auth.username cannot be empty"))
+	}
+	if cfg.Device.Auth.Password == "" && cfg.Device.Auth.KeyFile == "" {
+		err = multierr.Append(err, errors.New("device.auth.password or device.auth.key_file must be provided"))
 	}
 
 	if len(cfg.Scrapers) == 0 {
-		err = multierr.Append(err, errors.New("must specify at least one scraper"))
-	}
-
-	for i, device := range cfg.Devices {
-		if device.Host == "" {
-			err = multierr.Append(err, fmt.Errorf("devices[%d].host cannot be empty", i))
-		}
-		if device.Port == 0 {
-			err = multierr.Append(err, fmt.Errorf("devices[%d].port cannot be empty", i))
-		}
-		if device.Auth.Username == "" {
-			err = multierr.Append(err, fmt.Errorf("devices[%d].auth.username cannot be empty", i))
-		}
-		if device.Auth.Password == "" && device.Auth.KeyFile == "" {
-			err = multierr.Append(err, fmt.Errorf("devices[%d].auth.password or devices[%d].auth.key_file must be provided", i, i))
-		}
+		err = multierr.Append(err, errors.New("must specify at least one scraper when using ciscoosreceiver"))
 	}
 
 	return err
@@ -100,12 +79,12 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 		factory, ok := scraperFactories[key]
 		if !ok {
-			return fmt.Errorf("invalid scraper key: %s", key)
+			return fmt.Errorf("invalid scraper key: %s (available: %v)", key, getAvailableScraperTypes())
 		}
 
 		scraperSection, err := scrapersSection.Sub(keyStr)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting scraper section for %q: %w", key, err)
 		}
 		scraperCfg := factory.CreateDefaultConfig()
 		if err = scraperSection.Unmarshal(scraperCfg); err != nil {
@@ -116,4 +95,13 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	return nil
+}
+
+// getAvailableScraperTypes returns a list of available scraper types for error messages
+func getAvailableScraperTypes() []string {
+	types := make([]string, 0, len(scraperFactories))
+	for key := range scraperFactories {
+		types = append(types, key.String())
+	}
+	return types
 }

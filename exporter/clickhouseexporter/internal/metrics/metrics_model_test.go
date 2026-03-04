@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -227,17 +228,17 @@ func Test_GetServiceName(t *testing.T) {
 	})
 	t.Run("should return correct string from service.name", func(t *testing.T) {
 		resAttr := pcommon.NewMap()
-		resAttr.PutStr("service.name", "test-service")
+		resAttr.PutStr(string(conventions.ServiceNameKey), "test-service")
 		require.Equal(t, "test-service", GetServiceName(resAttr))
 	})
 	t.Run("should return empty string on empty service.name", func(t *testing.T) {
 		resAttr := pcommon.NewMap()
-		resAttr.PutEmpty("service.name")
+		resAttr.PutEmpty(string(conventions.ServiceNameKey))
 		require.Empty(t, GetServiceName(resAttr))
 	})
 	t.Run("should return string from non-string service.name", func(t *testing.T) {
 		resAttr := pcommon.NewMap()
-		resAttr.PutBool("service.name", true)
+		resAttr.PutBool(string(conventions.ServiceNameKey), true)
 		require.Equal(t, "true", GetServiceName(resAttr))
 	})
 }

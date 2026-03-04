@@ -173,7 +173,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			comp := comparisonHelper(tt.l, tt.r, tt.op)
-			evaluator, err := p.newComparisonExpr(comp)
+			evaluator, err := p.newComparisonEvaluator(comp)
 			require.NoError(t, err)
 			result, err := evaluator.Eval(t.Context(), tt.item)
 			require.NoError(t, err)
@@ -209,7 +209,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.newComparisonExpr(tt.comparison)
+			_, err := p.newComparisonEvaluator(tt.comparison)
 			assert.Error(t, err)
 		})
 	}

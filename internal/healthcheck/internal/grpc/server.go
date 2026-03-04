@@ -6,7 +6,6 @@ package grpc // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"errors"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -25,7 +24,6 @@ type Server struct {
 	componentHealthConfig *common.ComponentHealthConfig
 	telemetry             component.TelemetrySettings
 	doneCh                chan struct{}
-	doneOnce              sync.Once
 }
 
 var _ component.Component = (*Server)(nil)
@@ -52,7 +50,7 @@ func NewServer(
 // Start implements the component.Component interface.
 func (s *Server) Start(ctx context.Context, host component.Host) error {
 	var err error
-	s.grpcServer, err = s.config.ToServer(ctx, host.GetExtensions(), s.telemetry)
+	s.grpcServer, err = s.config.ToServer(ctx, host, s.telemetry)
 	if err != nil {
 		return err
 	}
@@ -60,13 +58,11 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 	healthpb.RegisterHealthServer(s.grpcServer, s)
 	ln, err := s.config.NetAddr.Listen(context.Background())
 	if err != nil {
-		// Server never started, ensure doneCh is closed so shutdown doesn't block
-		s.doneOnce.Do(func() { close(s.doneCh) })
 		return err
 	}
 
 	go func() {
-		defer s.doneOnce.Do(func() { close(s.doneCh) })
+		defer close(s.doneCh)
 
 		if err = s.grpcServer.Serve(ln); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 			componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
@@ -77,18 +73,11 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown implements the component.Component interface.
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *Server) Shutdown(context.Context) error {
 	if s.grpcServer == nil {
 		return nil
 	}
-	// Stop the server - this will eventually release the port even if context times out
 	s.grpcServer.GracefulStop()
-	select {
-	case <-s.doneCh:
-		return nil
-	case <-ctx.Done():
-		// Context timed out, but server is stopping. Force stop to ensure port is released.
-		s.grpcServer.Stop()
-		return ctx.Err()
-	}
+	<-s.doneCh
+	return nil
 }

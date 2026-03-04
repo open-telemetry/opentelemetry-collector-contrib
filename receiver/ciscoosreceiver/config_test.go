@@ -4,7 +4,6 @@
 package ciscoosreceiver
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,27 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/connection"
 )
-
-func newTestDeviceConfig(host string, port int, auth connection.AuthConfig) DeviceConfig {
-	return DeviceConfig{
-		Name: "test-device",
-		Host: host,
-		Port: port,
-		Auth: auth,
-	}
-}
-
-func validTestDevice() DeviceConfig {
-	return newTestDeviceConfig("192.168.1.1", 22, connection.AuthConfig{
-		Username: "admin",
-		Password: configopaque.String("password"),
-	})
-}
 
 func TestConfigValidate(t *testing.T) {
 	tests := []struct {
@@ -47,7 +29,19 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{validTestDevice()},
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
+						},
+					},
+					Auth: connection.AuthConfig{
+						Username: "admin",
+						Password: configopaque.String("password"),
+					},
+				},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
@@ -61,11 +55,18 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					newTestDeviceConfig("192.168.1.1", 22, connection.AuthConfig{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
+						},
+					},
+					Auth: connection.AuthConfig{
 						Username: "admin",
 						KeyFile:  "/path/to/key",
-					}),
+					},
 				},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
@@ -74,23 +75,18 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: "",
 		},
 		{
-			name: "empty device host",
+			name: "empty device IP",
 			config: &Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					newTestDeviceConfig("", 22, connection.AuthConfig{
-						Username: "admin",
-						Password: configopaque.String("password"),
-					}),
-				},
+				Device: connection.DeviceConfig{},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "devices[0].host cannot be empty",
+			expectedErr: "device.host.ip cannot be empty",
 		},
 		{
 			name: "missing port",
@@ -99,17 +95,24 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					newTestDeviceConfig("192.168.1.1", 0, connection.AuthConfig{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 0,
+						},
+					},
+					Auth: connection.AuthConfig{
 						Username: "admin",
 						Password: configopaque.String("password"),
-					}),
+					},
 				},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "devices[0].port cannot be empty",
+			expectedErr: "device.host.port cannot be empty",
 		},
 		{
 			name: "missing username",
@@ -118,17 +121,24 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					newTestDeviceConfig("192.168.1.1", 22, connection.AuthConfig{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
+						},
+					},
+					Auth: connection.AuthConfig{
 						Username: "",
 						Password: configopaque.String("password"),
-					}),
+					},
 				},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "devices[0].auth.username cannot be empty",
+			expectedErr: "device.auth.username cannot be empty",
 		},
 		{
 			name: "missing password and key file",
@@ -137,30 +147,23 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices: []DeviceConfig{
-					newTestDeviceConfig("192.168.1.1", 22, connection.AuthConfig{
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
+						},
+					},
+					Auth: connection.AuthConfig{
 						Username: "admin",
-					}),
+					},
 				},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "devices[0].auth.password or devices[0].auth.key_file must be provided",
-		},
-		{
-			name: "no devices configured",
-			config: &Config{
-				ControllerConfig: scraperhelper.ControllerConfig{
-					Timeout:            30 * time.Second,
-					CollectionInterval: 60 * time.Second,
-				},
-				Devices: []DeviceConfig{},
-				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("system"): nil,
-				},
-			},
-			expectedErr: "must specify at least one device",
+			expectedErr: "device.auth.password or device.auth.key_file must be provided",
 		},
 		{
 			name: "no scrapers configured",
@@ -169,7 +172,19 @@ func TestConfigValidate(t *testing.T) {
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
-				Devices:  []DeviceConfig{validTestDevice()},
+				Device: connection.DeviceConfig{
+					Device: connection.DeviceInfo{
+						Host: connection.HostInfo{
+							Name: "test-device",
+							IP:   "192.168.1.1",
+							Port: 22,
+						},
+					},
+					Auth: connection.AuthConfig{
+						Username: "admin",
+						Password: configopaque.String("password"),
+					},
+				},
 				Scrapers: map[component.Type]component.Config{},
 			},
 			expectedErr: "must specify at least one scraper",
@@ -187,27 +202,4 @@ func TestConfigValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestConfigUnmarshal(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	sub, err := cm.Sub("ciscoos")
-	require.NoError(t, err)
-
-	require.NoError(t, sub.Unmarshal(cfg))
-	require.Len(t, cfg.Devices, 2)
-	assert.Len(t, cfg.Scrapers, 2)
-	assert.Contains(t, cfg.Scrapers, component.MustNewType("system"))
-	assert.Contains(t, cfg.Scrapers, component.MustNewType("interfaces"))
-}
-
-func TestConfigUnmarshalNil(t *testing.T) {
-	cfg := &Config{}
-	err := cfg.Unmarshal(nil)
-	require.NoError(t, err)
 }

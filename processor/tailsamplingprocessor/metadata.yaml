@@ -1,4 +1,3 @@
-display_name: Tail Sampling Processor
 type: tail_sampling
 
 status:
@@ -7,7 +6,7 @@ status:
     beta: [traces]
   distributions: [contrib, k8s]
   codeowners:
-    active: [portertech, Logiraptor, jmacd]
+    active: [portertech, Logiraptor]
     emeritus: [jpkrohling]
     seeking_new: true
 
@@ -32,7 +31,8 @@ telemetry:
   metrics:
     processor_tail_sampling_count_spans_sampled:
       description: Count of spans that were sampled or not per sampling policy
-      stability: development
+      stability:
+        level: development
       unit: "{spans}"
       enabled: true
       sum:
@@ -42,7 +42,8 @@ telemetry:
 
     processor_tail_sampling_count_traces_sampled:
       description: Count of traces that were sampled or not per sampling policy
-      stability: development
+      stability:
+        level: development
       unit: "{traces}"
       enabled: true
       sum:
@@ -52,7 +53,8 @@ telemetry:
 
     processor_tail_sampling_early_releases_from_cache_decision:
       description: Number of spans that were able to be immediately released due to a decision cache hit.
-      stability: development
+      stability:
+        level: development
       unit: "{spans}"
       enabled: true
       sum:
@@ -62,7 +64,8 @@ telemetry:
 
     processor_tail_sampling_global_count_traces_sampled:
       description: Global count of traces that were sampled or not by at least one policy
-      stability: development
+      stability:
+        level: development
       unit: "{traces}"
       enabled: true
       sum:
@@ -72,7 +75,8 @@ telemetry:
 
     processor_tail_sampling_new_trace_id_received:
       description: Counts the arrival of new traces
-      stability: development
+      stability:
+        level: development
       unit: "{traces}"
       enabled: true
       sum:
@@ -81,7 +85,8 @@ telemetry:
 
     processor_tail_sampling_sampling_decision_timer_latency:
       description: Latency (in milliseconds) of each run of the sampling decision timer
-      stability: development
+      stability:
+        level: development
       unit: ms
       enabled: true
       histogram:
@@ -90,7 +95,8 @@ telemetry:
 
     processor_tail_sampling_sampling_late_span_age:
       description: Time (in seconds) from the sampling decision was taken and the arrival of a late span
-      stability: development
+      stability:
+        level: development
       unit: s
       enabled: true
       histogram:
@@ -98,7 +104,8 @@ telemetry:
 
     processor_tail_sampling_sampling_policy_evaluation_error:
       description: Count of sampling policy evaluation errors
-      stability: development
+      stability:
+        level: development
       unit: "{errors}"
       enabled: true
       sum:
@@ -107,7 +114,8 @@ telemetry:
 
     processor_tail_sampling_sampling_policy_execution_count:
       description: Total number of executions of a specific sampling policy
-      stability: development
+      stability:
+        level: development
       unit: "{executions}"
       enabled: true
       sum:
@@ -117,7 +125,8 @@ telemetry:
 
     processor_tail_sampling_sampling_policy_execution_time_sum:
       description: Total time spent (in microseconds) executing a specific sampling policy
-      stability: development
+      stability:
+        level: development
       unit: µs
       enabled: true
       sum:
@@ -127,7 +136,8 @@ telemetry:
 
     processor_tail_sampling_sampling_trace_dropped_too_early:
       description: Count of traces that needed to be dropped before the configured wait time
-      stability: development
+      stability:
+        level: development
       unit: "{traces}"
       enabled: true
       sum:
@@ -136,7 +146,8 @@ telemetry:
 
     processor_tail_sampling_sampling_trace_removal_age:
       description: Time (in seconds) from arrival of a new trace until its removal from memory
-      stability: development
+      stability:
+        level: development
       unit: s
       enabled: true
       histogram:
@@ -144,17 +155,9 @@ telemetry:
 
     processor_tail_sampling_sampling_traces_on_memory:
       description: Tracks the number of traces current on memory
-      stability: development
+      stability:
+        level: development
       unit: "{traces}"
       enabled: true
       gauge:
         value_type: int
-
-    processor_tail_sampling_traces_dropped_too_large:
-      description: Count of traces that were dropped because they were too large
-      stability: development
-      unit: "{traces}"
-      enabled: true
-      sum:
-        value_type: int
-        monotonic: true

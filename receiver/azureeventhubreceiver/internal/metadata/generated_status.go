@@ -7,12 +7,12 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("azure_event_hub")
+	Type      = component.MustNewType("azureeventhub")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 )
 
 const (
-	MetricsStability = component.StabilityLevelBeta
-	LogsStability    = component.StabilityLevelBeta
-	TracesStability  = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelAlpha
+	TracesStability  = component.StabilityLevelAlpha
 )

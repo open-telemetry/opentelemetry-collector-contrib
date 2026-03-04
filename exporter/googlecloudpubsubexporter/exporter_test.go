@@ -9,12 +9,11 @@ import (
 	"testing"
 	"time"
 
-	pb "cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
+	pb "cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"github.com/google/uuid"
 	"github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -36,7 +35,7 @@ func TestGetMessageAttributes(t *testing.T) {
 	t.Run("logs", func(t *testing.T) {
 		exporter, _ := newTestExporter(t)
 
-		gotAttributes, err := exporter.getMessageAttributes(signalLog, date)
+		gotAttributes, err := exporter.getMessageAttributes(otlpProtoLog, date)
 		require.NoError(t, err)
 
 		expectedAttributes := map[string]string{
@@ -53,7 +52,7 @@ func TestGetMessageAttributes(t *testing.T) {
 	t.Run("metrics", func(t *testing.T) {
 		exporter, _ := newTestExporter(t)
 
-		gotAttributes, err := exporter.getMessageAttributes(signalMetric, date)
+		gotAttributes, err := exporter.getMessageAttributes(otlpProtoMetric, date)
 		require.NoError(t, err)
 
 		expectedAttributes := map[string]string{
@@ -70,7 +69,7 @@ func TestGetMessageAttributes(t *testing.T) {
 	t.Run("traces", func(t *testing.T) {
 		exporter, _ := newTestExporter(t)
 
-		gotAttributes, err := exporter.getMessageAttributes(signalTrace, date)
+		gotAttributes, err := exporter.getMessageAttributes(otlpProtoTrace, date)
 		require.NoError(t, err)
 
 		expectedAttributes := map[string]string{
@@ -89,7 +88,7 @@ func TestGetMessageAttributes(t *testing.T) {
 			cfg.Compression = "gzip"
 		})
 
-		gotAttributes, err := exporter.getMessageAttributes(signalLog, date)
+		gotAttributes, err := exporter.getMessageAttributes(otlpProtoLog, date)
 		require.NoError(t, err)
 
 		expectedAttributes := map[string]string{
@@ -100,161 +99,6 @@ func TestGetMessageAttributes(t *testing.T) {
 			"ce-type":          "org.opentelemetry.otlp.logs.v1",
 			"content-type":     "application/protobuf",
 			"content-encoding": "gzip",
-		}
-		assert.Equal(t, expectedAttributes, gotAttributes)
-	})
-
-	t.Run("logs with extension", func(t *testing.T) {
-		exporter, _ := newTestExporter(t, func(cfg *Config) {
-			cfg.LogsSignalConfig = SignalConfig{
-				Encoding:   component.NewID(component.MustNewType("all_mock_encoding")),
-				Attributes: nil,
-			}
-		})
-
-		gotAttributes, err := exporter.getMessageAttributes(signalLog, date)
-		require.NoError(t, err)
-
-		expectedAttributes := map[string]string{}
-		assert.Equal(t, expectedAttributes, gotAttributes)
-	})
-
-	t.Run("metrics with extension", func(t *testing.T) {
-		exporter, _ := newTestExporter(t, func(cfg *Config) {
-			cfg.MetricsSignalConfig = SignalConfig{
-				Encoding:   component.NewID(component.MustNewType("all_mock_encoding")),
-				Attributes: nil,
-			}
-		})
-
-		gotAttributes, err := exporter.getMessageAttributes(signalMetric, date)
-		require.NoError(t, err)
-
-		expectedAttributes := map[string]string{}
-		assert.Equal(t, expectedAttributes, gotAttributes)
-	})
-
-	t.Run("traces with extension", func(t *testing.T) {
-		exporter, _ := newTestExporter(t, func(cfg *Config) {
-			cfg.TracesSignalConfig = SignalConfig{
-				Encoding:   component.NewID(component.MustNewType("all_mock_encoding")),
-				Attributes: nil,
-			}
-		})
-
-		gotAttributes, err := exporter.getMessageAttributes(signalTrace, date)
-		require.NoError(t, err)
-
-		expectedAttributes := map[string]string{}
-		assert.Equal(t, expectedAttributes, gotAttributes)
-	})
-
-	t.Run("logs with extension and ce-type", func(t *testing.T) {
-		exporter, _ := newTestExporter(t, func(cfg *Config) {
-			cfg.LogsSignalConfig = SignalConfig{
-				Encoding: component.NewID(component.MustNewType("all_mock_encoding")),
-				Attributes: map[string]string{
-					"ce-type": "org.opentelemetry.mock.logs.v1",
-				},
-			}
-		})
-
-		gotAttributes, err := exporter.getMessageAttributes(signalLog, date)
-		require.NoError(t, err)
-
-		expectedAttributes := map[string]string{
-			"ce-id":          "00000000-0000-0000-0000-000000000000",
-			"ce-source":      "/opentelemetry/collector/googlecloudpubsub/latest",
-			"ce-specversion": "1.0",
-			"ce-time":        "2021-01-01T02:03:04.000000005Z",
-			"ce-type":        "org.opentelemetry.mock.logs.v1",
-		}
-		assert.Equal(t, expectedAttributes, gotAttributes)
-	})
-
-	t.Run("logs with extension and ce-type+attribute", func(t *testing.T) {
-		exporter, _ := newTestExporter(t, func(cfg *Config) {
-			cfg.LogsSignalConfig = SignalConfig{
-				Encoding: component.NewID(component.MustNewType("all_mock_encoding")),
-				Attributes: map[string]string{
-					"ce-type": "org.opentelemetry.mock.logs.v1",
-					"foo":     "bar",
-				},
-			}
-		})
-
-		gotAttributes, err := exporter.getMessageAttributes(signalLog, date)
-		require.NoError(t, err)
-
-		expectedAttributes := map[string]string{
-			"ce-id":          "00000000-0000-0000-0000-000000000000",
-			"ce-source":      "/opentelemetry/collector/googlecloudpubsub/latest",
-			"ce-specversion": "1.0",
-			"ce-time":        "2021-01-01T02:03:04.000000005Z",
-			"ce-type":        "org.opentelemetry.mock.logs.v1",
-			"foo":            "bar",
-		}
-		assert.Equal(t, expectedAttributes, gotAttributes)
-	})
-
-	t.Run("logs with extension and attribute", func(t *testing.T) {
-		exporter, _ := newTestExporter(t, func(cfg *Config) {
-			cfg.LogsSignalConfig = SignalConfig{
-				Encoding: component.NewID(component.MustNewType("all_mock_encoding")),
-				Attributes: map[string]string{
-					"foo": "bar",
-				},
-			}
-		})
-
-		gotAttributes, err := exporter.getMessageAttributes(signalLog, date)
-		require.NoError(t, err)
-
-		expectedAttributes := map[string]string{
-			"foo": "bar",
-		}
-		assert.Equal(t, expectedAttributes, gotAttributes)
-	})
-
-	t.Run("metrics with extension and attribute", func(t *testing.T) {
-		exporter, _ := newTestExporter(t, func(cfg *Config) {
-			cfg.MetricsSignalConfig = SignalConfig{
-				Encoding: component.NewID(component.MustNewType("all_mock_encoding")),
-				Attributes: map[string]string{
-					"foo": "bar",
-				},
-			}
-		})
-
-		gotAttributes, err := exporter.getMessageAttributes(signalMetric, date)
-		require.NoError(t, err)
-
-		expectedAttributes := map[string]string{
-			"foo": "bar",
-		}
-		assert.Equal(t, expectedAttributes, gotAttributes)
-	})
-
-	t.Run("traces with attribute", func(t *testing.T) {
-		exporter, _ := newTestExporter(t, func(cfg *Config) {
-			cfg.TracesSignalConfig = SignalConfig{
-				Attributes: map[string]string{
-					"foo": "bar",
-				},
-			}
-		})
-
-		gotAttributes, err := exporter.getMessageAttributes(signalTrace, date)
-		require.NoError(t, err)
-
-		expectedAttributes := map[string]string{
-			"ce-id":          "00000000-0000-0000-0000-000000000000",
-			"ce-source":      "/opentelemetry/collector/googlecloudpubsub/latest",
-			"ce-specversion": "1.0",
-			"ce-time":        "2021-01-01T02:03:04.000000005Z",
-			"ce-type":        "org.opentelemetry.otlp.traces.v1",
-			"content-type":   "application/protobuf",
-			"foo":            "bar",
 		}
 		assert.Equal(t, expectedAttributes, gotAttributes)
 	})
@@ -285,97 +129,6 @@ func TestExporterClientError(t *testing.T) {
 	}
 
 	require.Error(t, exporter.start(t.Context(), componenttest.NewNopHost()))
-}
-
-func TestExporterStartError(t *testing.T) {
-	testCases := []struct {
-		name     string
-		config   func(*Config)
-		expected string
-	}{
-		{
-			name: "logs with non existing encoding",
-			config: func(cfg *Config) {
-				cfg.LogsSignalConfig = SignalConfig{
-					Encoding: component.MustNewID("non_existing_encoding"),
-				}
-			},
-			expected: "cannot start receiver: extension \"non_existing_encoding\" not found for logs",
-		},
-		{
-			name: "metrics with non existing encoding",
-			config: func(cfg *Config) {
-				cfg.MetricsSignalConfig = SignalConfig{
-					Encoding: component.MustNewID("non_existing_encoding"),
-				}
-			},
-			expected: "cannot start receiver: extension \"non_existing_encoding\" not found for metrics",
-		},
-		{
-			name: "traces with non existing encoding",
-			config: func(cfg *Config) {
-				cfg.TracesSignalConfig = SignalConfig{
-					Encoding: component.MustNewID("non_existing_encoding"),
-				}
-			},
-			expected: "cannot start receiver: extension \"non_existing_encoding\" not found for traces",
-		},
-		{
-			name: "logs with incompatible encoding",
-			config: func(cfg *Config) {
-				cfg.LogsSignalConfig = SignalConfig{
-					Encoding: component.MustNewID("metric_mock_encoding"),
-				}
-			},
-			expected: "cannot start receiver: extension \"metric_mock_encoding\" is not a log unmarshaler",
-		},
-		{
-			name: "metrics with incompatible encoding",
-			config: func(cfg *Config) {
-				cfg.MetricsSignalConfig = SignalConfig{
-					Encoding: component.MustNewID("trace_mock_encoding"),
-				}
-			},
-			expected: "cannot start receiver: extension \"trace_mock_encoding\" is not a metric unmarshaler",
-		},
-		{
-			name: "traces with incompatible encoding",
-			config: func(cfg *Config) {
-				cfg.TracesSignalConfig = SignalConfig{
-					Encoding: component.MustNewID("log_mock_encoding"),
-				}
-			},
-			expected: "cannot start receiver: extension \"log_mock_encoding\" is not a trace unmarshaler",
-		},
-	}
-
-	// Iterate over the test cases
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Helper()
-
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ProjectID = defaultProjectID
-			cfg.Topic = defaultTopic
-			tc.config(cfg)
-
-			require.NoError(t, cfg.Validate())
-
-			exporter := ensureExporter(exportertest.NewNopSettings(metadata.Type), cfg)
-			publisher := &mockPublisher{}
-			exporter.makeClient = func(context.Context, *Config, string) (publisherClient, error) {
-				return publisher, nil
-			}
-			exporter.makeUUID = func() (uuid.UUID, error) {
-				return uuid.Parse(defaultUUID)
-			}
-
-			err := exporter.start(t.Context(), &mockHost{})
-			assert.Equal(t, tc.expected, err.Error())
-			t.Cleanup(func() { assert.NoError(t, exporter.shutdown(t.Context())) })
-		})
-	}
 }
 
 func TestExporterSimpleData(t *testing.T) {
@@ -704,7 +457,7 @@ func newTestExporter(t *testing.T, options ...func(*Config)) (*pubsubExporter, *
 		return uuid.Parse(defaultUUID)
 	}
 
-	require.NoError(t, exporter.start(t.Context(), &mockHost{}))
+	require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { assert.NoError(t, exporter.shutdown(t.Context())) })
 
 	return exporter, publisher
@@ -721,79 +474,4 @@ func (m *mockPublisher) Publish(_ context.Context, request *pb.PublishRequest, _
 
 func (*mockPublisher) Close() error {
 	return nil
-}
-
-type mockExtension struct{}
-
-func (mockExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (mockExtension) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (mockExtension) MarshalLogs(_ plog.Logs) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (mockExtension) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (mockExtension) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
-	return []byte{}, nil
-}
-
-type mockTraceExtension struct{}
-
-func (mockTraceExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (mockTraceExtension) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (mockTraceExtension) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
-	return []byte{0xf0}, nil
-}
-
-type mockMetricExtension struct{}
-
-func (mockMetricExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (mockMetricExtension) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (mockMetricExtension) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
-	return []byte{0xf0}, nil
-}
-
-type mockLogExtension struct{}
-
-func (mockLogExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (mockLogExtension) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (mockLogExtension) MarshalLogs(_ plog.Logs) ([]byte, error) {
-	return []byte{0xf0}, nil
-}
-
-type mockHost struct{}
-
-func (mockHost) GetExtensions() map[component.ID]component.Component {
-	ext := make(map[component.ID]component.Component)
-	ext[component.MustNewID("all_mock_encoding")] = mockExtension{}
-	ext[component.MustNewID("trace_mock_encoding")] = mockTraceExtension{}
-	ext[component.MustNewID("metric_mock_encoding")] = mockMetricExtension{}
-	ext[component.MustNewID("log_mock_encoding")] = mockLogExtension{}
-	return ext
 }

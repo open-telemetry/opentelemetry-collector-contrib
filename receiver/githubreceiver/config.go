@@ -78,7 +78,7 @@ func (cfg *Config) Validate() error {
 
 	maxReadWriteTimeout, _ := time.ParseDuration("10s")
 
-	if cfg.WebHook.NetAddr.Endpoint == "" {
+	if cfg.WebHook.Endpoint == "" {
 		errs = multierr.Append(errs, errMissingEndpointFromConfig)
 	}
 

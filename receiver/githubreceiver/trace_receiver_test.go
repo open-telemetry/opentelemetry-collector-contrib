@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -39,10 +38,7 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 			config: Config{
 				WebHook: WebHook{
 					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:0",
-						},
+						Endpoint: "localhost:0",
 					},
 					Path:       "/events",
 					HealthPath: "/health_check",
@@ -67,7 +63,7 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")

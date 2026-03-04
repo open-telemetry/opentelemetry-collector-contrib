@@ -37,19 +37,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "counter_float"),
-			expected: &Config{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "localhost:8125",
-					Transport: confignet.TransportTypeUDP,
-				},
-				AggregationInterval:   60 * time.Second,
-				CounterType:           protocol.CounterTypeFloat,
-				TimerHistogramMapping: defaultTimerHistogramMapping,
-				SocketPermissions:     0o622,
-			},
-		},
-		{
 			id: component.NewIDWithName(metadata.Type, "receiver_settings"),
 			expected: &Config{
 				NetAddr: confignet.AddrConfig{
@@ -58,7 +45,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				SocketPermissions:   0o622,
 				AggregationInterval: 70 * time.Second,
-				CounterType:         protocol.CounterTypeInt,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
 					{
 						StatsdType:   "histogram",
@@ -123,7 +109,6 @@ func TestValidate(t *testing.T) {
 		invalidHistogramErr               = "histogram configuration requires observer_type: histogram"
 		invalidSummaryErr                 = "summary configuration requires observer_type: summary"
 		invalidExplicitBucketNoPatternErr = "explicit bucket [0] matcher_pattern must not be empty"
-		invalidCounterTypeErr             = "invalid counter_type: %s, must be one of: int, float, stochastic_int"
 	)
 
 	tests := []test{
@@ -220,17 +205,6 @@ func TestValidate(t *testing.T) {
 			expectedErr: negativeAggregationIntervalErr,
 		},
 		{
-			name: "invalidCounterType",
-			cfg: &Config{
-				AggregationInterval: 10,
-				CounterType:         "bad",
-				TimerHistogramMapping: []protocol.TimerHistogramMapping{
-					{StatsdType: "timing", ObserverType: "gauge"},
-				},
-			},
-			expectedErr: fmt.Sprintf(invalidCounterTypeErr, "bad"),
-		},
-		{
 			name: "NotEmptyExplicitBuckets-invalidExplicitBucketsEmptyPattern",
 			cfg: &Config{
 				AggregationInterval: 20 * time.Second,
@@ -257,20 +231,6 @@ func TestValidate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			require.EqualError(t, test.cfg.Validate(), test.expectedErr)
 		})
-	}
-}
-
-func TestConfig_Validate_CounterType(t *testing.T) {
-	validMapping := []protocol.TimerHistogramMapping{
-		{StatsdType: "timing", ObserverType: "gauge"},
-	}
-	for _, counterType := range []protocol.CounterType{"", protocol.CounterTypeInt, protocol.CounterTypeFloat, protocol.CounterTypeStochasticInt} {
-		cfg := &Config{
-			AggregationInterval:   20 * time.Second,
-			CounterType:           counterType,
-			TimerHistogramMapping: validMapping,
-		}
-		assert.NoError(t, cfg.Validate(), "counter_type %q should be valid", counterType)
 	}
 }
 

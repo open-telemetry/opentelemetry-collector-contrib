@@ -17,7 +17,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
-	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,10 +38,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "cloudwatch"),
 			expected: &Config{
 				Format: constants.FormatCloudWatchLogsSubscriptionFilter,
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -51,10 +50,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "text_vpcflow"),
 			expected: &Config{
 				Format: constants.FormatVPCFlowLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -63,10 +62,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "text_vpc_flow_log"),
 			expected: &Config{
 				Format: constants.FormatVPCFlowLogV1,
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -75,10 +74,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "parquet_vpcflow"),
 			expected: &Config{
 				Format: constants.FormatVPCFlowLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatParquet,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -101,10 +100,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "s3access"),
 			expected: &Config{
 				Format: constants.FormatS3AccessLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -113,10 +112,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "waf"),
 			expected: &Config{
 				Format: constants.FormatWAFLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -125,10 +124,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "cloudtrail"),
 			expected: &Config{
 				Format: constants.FormatCloudTrailLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -137,10 +136,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "elbaccess"),
 			expected: &Config{
 				Format: constants.FormatELBAccessLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -149,10 +148,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "networkfirewall"),
 			expected: &Config{
 				Format: constants.FormatNetworkFirewallLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfig: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfigV1: VPCFlowLogConfig{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},

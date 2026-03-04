@@ -9,7 +9,8 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
+	Enabled bool `mapstructure:"enabled"`
+
 	enabledSetByUser bool
 }
 
@@ -17,12 +18,10 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
-
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }

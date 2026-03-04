@@ -54,13 +54,14 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 	}
 
 	allowedMappingModes := cfg.allowedMappingModes()
+	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	exporter := &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
 		index:               index,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
-		defaultMappingMode:  MappingOTel,
+		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
 		bulkIndexers:        bulkIndexers{telemetryBuilder: telemetryBuilder},
 		telemetryBuilder:    telemetryBuilder,
@@ -163,10 +164,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
-	var docID string
-	if e.config.LogsDynamicID.Enabled {
-		docID = extractDocumentIDAttribute(record.Attributes())
-	}
+	docID := e.extractDocumentIDAttribute(record.Attributes())
 	pipeline := e.extractDocumentPipelineAttribute(record.Attributes())
 	if err := encoder.encodeLog(ec, record, index, buf.Buffer); err != nil {
 		buf.Recycle()
@@ -424,16 +422,12 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
-	var docID string
-	if e.config.TracesDynamicID.Enabled {
-		docID = extractDocumentIDAttribute(span.Attributes())
-	}
 	if err := encoder.encodeSpan(ec, span, index, buf.Buffer); err != nil {
 		buf.Recycle()
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, docID, "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, "", "", buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -451,21 +445,19 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
-	var docID string
-	if e.config.TracesDynamicID.Enabled {
-		docID = extractDocumentIDAttribute(spanEvent.Attributes())
-	}
 	if err := encoder.encodeSpanEvent(ec, span, spanEvent, index, buf.Buffer); err != nil || buf.Buffer.Len() == 0 {
 		buf.Recycle()
 		return err
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, docID, "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, "", "", buf, nil, docappender.ActionCreate)
 }
 
-// extractDocumentIDAttribute extracts the document ID from the given attributes map.
-// Returns empty string if the attribute is not present or is empty.
-func extractDocumentIDAttribute(m pcommon.Map) string {
+func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string {
+	if !e.config.LogsDynamicID.Enabled {
+		return ""
+	}
+
 	v, ok := m.Get(elasticsearch.DocumentIDAttributeName)
 	if !ok {
 		return ""

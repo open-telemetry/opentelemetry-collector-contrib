@@ -187,12 +187,14 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 	var ww sync.WaitGroup
 
 	var writeErr error
-	ww.Go(func() {
+	ww.Add(1)
+	go func() {
+		defer ww.Done()
 		writeErr = s.write(ctx)
 		if writeErr != nil {
 			dc.cancel()
 		}
-	})
+	}()
 
 	// the result from read() is processed after cancel and wait,
 	// so we can set s.client = nil in case of a delayed Unimplemented.

@@ -99,7 +99,10 @@ func (cfg *ServicePrincipal) Validate() error {
 		errs = append(errs, errMutuallyExclusiveAuth)
 	}
 
-	return errors.Join(errs...)
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
 }
 
 func (cfg *Config) Validate() error {

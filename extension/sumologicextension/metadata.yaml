@@ -1,4 +1,3 @@
-display_name: Sumo Logic Extension
 type: sumologic
 
 status:
@@ -7,8 +6,8 @@ status:
     alpha: [extension]
   distributions: []
   codeowners:
-    active: [rnishtala-sumo, pankaj101A, jagan2221]
-    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, chan-tim-sumo, echlebek, amdprophet]
+    active: [rnishtala-sumo, chan-tim-sumo, echlebek, amdprophet]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek]
 
 # TODO: Update the extension to make the tests pass
 tests:

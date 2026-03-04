@@ -329,7 +329,6 @@ func (m *metricActiveDirectoryDsBindRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricActiveDirectoryDsBindRate(cfg MetricConfig) metricActiveDirectoryDsBindRate {
 	m := metricActiveDirectoryDsBindRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -379,7 +378,6 @@ func (m *metricActiveDirectoryDsLdapBindLastSuccessfulTime) emit(metrics pmetric
 
 func newMetricActiveDirectoryDsLdapBindLastSuccessfulTime(cfg MetricConfig) metricActiveDirectoryDsLdapBindLastSuccessfulTime {
 	m := metricActiveDirectoryDsLdapBindLastSuccessfulTime{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -431,7 +429,6 @@ func (m *metricActiveDirectoryDsLdapBindRate) emit(metrics pmetric.MetricSlice) 
 
 func newMetricActiveDirectoryDsLdapBindRate(cfg MetricConfig) metricActiveDirectoryDsLdapBindRate {
 	m := metricActiveDirectoryDsLdapBindRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -483,7 +480,6 @@ func (m *metricActiveDirectoryDsLdapClientSessionCount) emit(metrics pmetric.Met
 
 func newMetricActiveDirectoryDsLdapClientSessionCount(cfg MetricConfig) metricActiveDirectoryDsLdapClientSessionCount {
 	m := metricActiveDirectoryDsLdapClientSessionCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -535,7 +531,6 @@ func (m *metricActiveDirectoryDsLdapSearchRate) emit(metrics pmetric.MetricSlice
 
 func newMetricActiveDirectoryDsLdapSearchRate(cfg MetricConfig) metricActiveDirectoryDsLdapSearchRate {
 	m := metricActiveDirectoryDsLdapSearchRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -585,7 +580,6 @@ func (m *metricActiveDirectoryDsNameCacheHitRate) emit(metrics pmetric.MetricSli
 
 func newMetricActiveDirectoryDsNameCacheHitRate(cfg MetricConfig) metricActiveDirectoryDsNameCacheHitRate {
 	m := metricActiveDirectoryDsNameCacheHitRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -637,7 +631,6 @@ func (m *metricActiveDirectoryDsNotificationQueued) emit(metrics pmetric.MetricS
 
 func newMetricActiveDirectoryDsNotificationQueued(cfg MetricConfig) metricActiveDirectoryDsNotificationQueued {
 	m := metricActiveDirectoryDsNotificationQueued{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -691,7 +684,6 @@ func (m *metricActiveDirectoryDsOperationRate) emit(metrics pmetric.MetricSlice)
 
 func newMetricActiveDirectoryDsOperationRate(cfg MetricConfig) metricActiveDirectoryDsOperationRate {
 	m := metricActiveDirectoryDsOperationRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -746,7 +738,6 @@ func (m *metricActiveDirectoryDsReplicationNetworkIo) emit(metrics pmetric.Metri
 
 func newMetricActiveDirectoryDsReplicationNetworkIo(cfg MetricConfig) metricActiveDirectoryDsReplicationNetworkIo {
 	m := metricActiveDirectoryDsReplicationNetworkIo{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -800,7 +791,6 @@ func (m *metricActiveDirectoryDsReplicationObjectRate) emit(metrics pmetric.Metr
 
 func newMetricActiveDirectoryDsReplicationObjectRate(cfg MetricConfig) metricActiveDirectoryDsReplicationObjectRate {
 	m := metricActiveDirectoryDsReplicationObjectRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -852,7 +842,6 @@ func (m *metricActiveDirectoryDsReplicationOperationPending) emit(metrics pmetri
 
 func newMetricActiveDirectoryDsReplicationOperationPending(cfg MetricConfig) metricActiveDirectoryDsReplicationOperationPending {
 	m := metricActiveDirectoryDsReplicationOperationPending{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -906,7 +895,6 @@ func (m *metricActiveDirectoryDsReplicationPropertyRate) emit(metrics pmetric.Me
 
 func newMetricActiveDirectoryDsReplicationPropertyRate(cfg MetricConfig) metricActiveDirectoryDsReplicationPropertyRate {
 	m := metricActiveDirectoryDsReplicationPropertyRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -958,7 +946,6 @@ func (m *metricActiveDirectoryDsReplicationSyncObjectPending) emit(metrics pmetr
 
 func newMetricActiveDirectoryDsReplicationSyncObjectPending(cfg MetricConfig) metricActiveDirectoryDsReplicationSyncObjectPending {
 	m := metricActiveDirectoryDsReplicationSyncObjectPending{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1012,7 +999,6 @@ func (m *metricActiveDirectoryDsReplicationSyncRequestCount) emit(metrics pmetri
 
 func newMetricActiveDirectoryDsReplicationSyncRequestCount(cfg MetricConfig) metricActiveDirectoryDsReplicationSyncRequestCount {
 	m := metricActiveDirectoryDsReplicationSyncRequestCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1067,7 +1053,6 @@ func (m *metricActiveDirectoryDsReplicationValueRate) emit(metrics pmetric.Metri
 
 func newMetricActiveDirectoryDsReplicationValueRate(cfg MetricConfig) metricActiveDirectoryDsReplicationValueRate {
 	m := metricActiveDirectoryDsReplicationValueRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1119,7 +1104,6 @@ func (m *metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued) emit(
 
 func newMetricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued(cfg MetricConfig) metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued {
 	m := metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1173,7 +1157,6 @@ func (m *metricActiveDirectoryDsSuboperationRate) emit(metrics pmetric.MetricSli
 
 func newMetricActiveDirectoryDsSuboperationRate(cfg MetricConfig) metricActiveDirectoryDsSuboperationRate {
 	m := metricActiveDirectoryDsSuboperationRate{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1225,7 +1208,6 @@ func (m *metricActiveDirectoryDsThreadCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricActiveDirectoryDsThreadCount(cfg MetricConfig) metricActiveDirectoryDsThreadCount {
 	m := metricActiveDirectoryDsThreadCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

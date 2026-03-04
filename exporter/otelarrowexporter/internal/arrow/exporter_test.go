@@ -213,10 +213,12 @@ func TestArrowExporterSuccess(t *testing.T) {
 
 					var wg sync.WaitGroup
 					var outputData *arrowpb.BatchArrowRecords
-					wg.Go(func() {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
 						outputData = <-channel.sendChannel()
 						channel.recv <- statusOKFor(outputData.BatchId)
-					})
+					}()
 
 					sent, err := tc.exporter.SendAndWait(ctx, inputData)
 					require.NoError(t, err)
@@ -375,10 +377,12 @@ func TestArrowExporterDisableDowngrade(t *testing.T) {
 			})
 
 			var wg sync.WaitGroup
-			wg.Go(func() {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				outputData := <-goodChannel.sendChannel()
 				goodChannel.recv <- statusOKFor(outputData.BatchId)
-			})
+			}()
 
 			bg := t.Context()
 			require.NoError(t, tc.exporter.Start(bg))
@@ -449,10 +453,12 @@ func TestArrowExporterStreamFailure(t *testing.T) {
 
 			var wg sync.WaitGroup
 			var outputData *arrowpb.BatchArrowRecords
-			wg.Go(func() {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				outputData = <-channel1.sendChannel()
 				channel1.recv <- statusOKFor(outputData.BatchId)
-			})
+			}()
 
 			sent, err := tc.exporter.SendAndWait(bg, twoTraces)
 			require.NoError(t, err)
@@ -496,7 +502,9 @@ func TestArrowExporterStreamRace(t *testing.T) {
 	// context will be canceled and cause these goroutines to
 	// return.
 	for range 5 {
-		wg.Go(func() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			// This blocks until the cancelation.
 			_, err := tc.exporter.SendAndWait(callctx, twoTraces)
 			assert.Error(t, err)
@@ -504,7 +512,7 @@ func TestArrowExporterStreamRace(t *testing.T) {
 			stat, is := status.FromError(err)
 			assert.True(t, is, "is a gRPC status error: %v", err)
 			assert.Equal(t, codes.Canceled, stat.Code())
-		})
+		}()
 	}
 
 	// Wait until 100 streams have started.
@@ -536,7 +544,9 @@ func TestArrowExporterStreaming(t *testing.T) {
 			testCon := arrowRecord.NewConsumer()
 
 			var wg sync.WaitGroup
-			wg.Go(func() {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				for data := range channel.sendChannel() {
 					traces, err := testCon.TracesFrom(data)
 					assert.NoError(t, err)
@@ -544,7 +554,7 @@ func TestArrowExporterStreaming(t *testing.T) {
 					actualOutput = append(actualOutput, traces[0])
 					channel.recv <- statusOKFor(data.BatchId)
 				}
-			})
+			}()
 
 			for range 10 {
 				input := testdata.GenerateTraces(2)
@@ -585,7 +595,9 @@ func TestArrowExporterHeaders(t *testing.T) {
 			var actualOutput []metadata.MD
 
 			var wg sync.WaitGroup
-			wg.Go(func() {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				md := metadata.MD{}
 				hpd := hpack.NewDecoder(4096, func(f hpack.HeaderField) {
 					md[f.Name] = append(md[f.Name], f.Value)
@@ -601,7 +613,7 @@ func TestArrowExporterHeaders(t *testing.T) {
 					}
 					channel.recv <- statusOKFor(data.BatchId)
 				}
-			})
+			}()
 
 			for times := range 10 {
 				input := testdata.GenerateTraces(2)
@@ -675,7 +687,9 @@ func TestArrowExporterIsTraced(t *testing.T) {
 			var actualOutput []metadata.MD
 
 			var wg sync.WaitGroup
-			wg.Go(func() {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				md := metadata.MD{}
 				hpd := hpack.NewDecoder(4096, func(f hpack.HeaderField) {
 					md[f.Name] = append(md[f.Name], f.Value)
@@ -691,7 +705,7 @@ func TestArrowExporterIsTraced(t *testing.T) {
 					}
 					channel.recv <- statusOKFor(data.BatchId)
 				}
-			})
+			}()
 
 			for times := range 10 {
 				input := testdata.GenerateTraces(2)

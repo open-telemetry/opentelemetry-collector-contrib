@@ -86,8 +86,10 @@ const (
 	EvtRenderContextSystem uint32 = 1
 )
 
+var evtSubscribeFunc = evtSubscribe
+
 // evtSubscribe is the direct syscall implementation of EvtSubscribe (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe)
-var evtSubscribe = func(session uintptr, signalEvent windows.Handle, channelPath, query *uint16, bookmark, context, callback uintptr, flags uint32) (uintptr, error) {
+func evtSubscribe(session uintptr, signalEvent windows.Handle, channelPath, query *uint16, bookmark, context, callback uintptr, flags uint32) (uintptr, error) {
 	handle, _, err := subscribeProc.Call(session, uintptr(signalEvent), uintptr(unsafe.Pointer(channelPath)), uintptr(unsafe.Pointer(query)), bookmark, context, callback, uintptr(flags))
 	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
@@ -97,7 +99,7 @@ var evtSubscribe = func(session uintptr, signalEvent windows.Handle, channelPath
 }
 
 // evtNext is the direct syscall implementation of EvtNext (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtnext)
-var evtNext = func(resultSet uintptr, eventsSize uint32, events *uintptr, timeout, flags uint32, returned *uint32) error {
+func evtNext(resultSet uintptr, eventsSize uint32, events *uintptr, timeout, flags uint32, returned *uint32) error {
 	_, _, err := nextProc.Call(resultSet, uintptr(eventsSize), uintptr(unsafe.Pointer(events)), uintptr(timeout), uintptr(flags), uintptr(unsafe.Pointer(returned)))
 	if !errors.Is(err, ErrorSuccess) {
 		return err
@@ -107,7 +109,7 @@ var evtNext = func(resultSet uintptr, eventsSize uint32, events *uintptr, timeou
 }
 
 // evtRender is the direct syscall implementation of EvtRender (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtrender)
-var evtRender = func(context, fragment uintptr, flags, bufferSize uint32, buffer *byte) (*uint32, error) {
+func evtRender(context, fragment uintptr, flags, bufferSize uint32, buffer *byte) (*uint32, error) {
 	bufferUsed := new(uint32)
 	propertyCount := new(uint32)
 	_, _, err := renderProc.Call(context, fragment, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)), uintptr(unsafe.Pointer(propertyCount)))
@@ -119,7 +121,7 @@ var evtRender = func(context, fragment uintptr, flags, bufferSize uint32, buffer
 }
 
 // evtClose is the direct syscall implementation of EvtClose (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtclose)
-var evtClose = func(handle uintptr) error {
+func evtClose(handle uintptr) error {
 	_, _, err := closeProc.Call(handle)
 	if !errors.Is(err, ErrorSuccess) {
 		return err
@@ -129,7 +131,7 @@ var evtClose = func(handle uintptr) error {
 }
 
 // evtCreateBookmark is the direct syscall implementation of EvtCreateBookmark (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreatebookmark)
-var evtCreateBookmark = func(bookmarkXML *uint16) (uintptr, error) {
+func evtCreateBookmark(bookmarkXML *uint16) (uintptr, error) {
 	handle, _, err := createBookmarkProc.Call(uintptr(unsafe.Pointer(bookmarkXML)))
 	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
@@ -139,7 +141,7 @@ var evtCreateBookmark = func(bookmarkXML *uint16) (uintptr, error) {
 }
 
 // evtCreateRenderContext is the direct syscall implementation of EvtCreateRenderContext (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreaterendercontext)
-var evtCreateRenderContext = func(valuePathsCount uint32, valuePaths **uint16, flags uint32) (uintptr, error) {
+func evtCreateRenderContext(valuePathsCount uint32, valuePaths **uint16, flags uint32) (uintptr, error) {
 	handle, _, err := createRenderContextProc.Call(uintptr(valuePathsCount), uintptr(unsafe.Pointer(valuePaths)), uintptr(flags))
 	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
@@ -149,7 +151,7 @@ var evtCreateRenderContext = func(valuePathsCount uint32, valuePaths **uint16, f
 }
 
 // evtUpdateBookmark is the direct syscall implementation of EvtUpdateBookmark (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreatebookmark)
-var evtUpdateBookmark = func(bookmark, event uintptr) error {
+func evtUpdateBookmark(bookmark, event uintptr) error {
 	_, _, err := updateBookmarkProc.Call(bookmark, event)
 	if !errors.Is(err, ErrorSuccess) {
 		return err
@@ -159,7 +161,7 @@ var evtUpdateBookmark = func(bookmark, event uintptr) error {
 }
 
 // evtOpenPublisherMetadata is the direct syscall implementation of EvtOpenPublisherMetadata (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtopenpublishermetadata)
-var evtOpenPublisherMetadata = func(session uintptr, publisherIdentity, logFilePath *uint16, locale, flags uint32) (uintptr, error) {
+func evtOpenPublisherMetadata(session uintptr, publisherIdentity, logFilePath *uint16, locale, flags uint32) (uintptr, error) {
 	handle, _, err := openPublisherMetadataProc.Call(session, uintptr(unsafe.Pointer(publisherIdentity)), uintptr(unsafe.Pointer(logFilePath)), uintptr(locale), uintptr(flags))
 	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
@@ -169,7 +171,7 @@ var evtOpenPublisherMetadata = func(session uintptr, publisherIdentity, logFileP
 }
 
 // evtFormatMessage is the direct syscall implementation of EvtFormatMessage (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtformatmessage)
-var evtFormatMessage = func(publisherMetadata, event uintptr, messageID, valueCount uint32, values uintptr, flags, bufferSize uint32, buffer *byte) (*uint32, error) {
+func evtFormatMessage(publisherMetadata, event uintptr, messageID, valueCount uint32, values uintptr, flags, bufferSize uint32, buffer *byte) (*uint32, error) {
 	bufferUsed := new(uint32)
 	_, _, err := formatMessageProc.Call(publisherMetadata, event, uintptr(messageID), uintptr(valueCount), values, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)))
 	if !errors.Is(err, ErrorSuccess) {
@@ -180,7 +182,7 @@ var evtFormatMessage = func(publisherMetadata, event uintptr, messageID, valueCo
 }
 
 // evtOpenSession is the direct syscall implementation of EvtOpenSession (https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtopensession)
-var evtOpenSession = func(loginClass uint32, login *EvtRPCLogin, timeout, flags uint32) (windows.Handle, error) {
+func evtOpenSession(loginClass uint32, login *EvtRPCLogin, timeout, flags uint32) (windows.Handle, error) {
 	r0, _, e1 := openSessionProc.Call(uintptr(loginClass), uintptr(unsafe.Pointer(login)), uintptr(timeout), uintptr(flags))
 	handle := windows.Handle(r0)
 	if handle == 0 {

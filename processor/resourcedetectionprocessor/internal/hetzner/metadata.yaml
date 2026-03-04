@@ -12,10 +12,6 @@ resource_attributes:
     description: The cloud availability zone
     type: string
     enabled: true
-  cloud.platform:
-    description: The cloud.platform
-    enabled: false
-    type: string
   cloud.provider:
     description: The cloud.provider
     enabled: true

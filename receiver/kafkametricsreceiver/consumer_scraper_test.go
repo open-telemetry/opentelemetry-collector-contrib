@@ -98,7 +98,7 @@ func TestConsumerScraperStart(t *testing.T) {
 	cs, err := createConsumerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
-	err = cs.Start(t.Context(), componenttest.NewNopHost())
+	err = cs.Start(t.Context(), nil)
 	assert.NoError(t, err)
 }
 

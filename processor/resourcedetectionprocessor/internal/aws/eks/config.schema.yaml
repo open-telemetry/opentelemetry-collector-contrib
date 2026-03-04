@@ -1,6 +1,0 @@
-type: object
-properties:
-  node_from_env_var:
-    type: string
-  resource_attributes:
-    $ref: ./internal/metadata.resource_attributes_config

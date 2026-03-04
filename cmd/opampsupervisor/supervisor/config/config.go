@@ -20,7 +20,6 @@ import (
 
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -308,7 +307,7 @@ type HealthCheck struct {
 }
 
 func (h HealthCheck) Port() int64 {
-	_, port, err := net.SplitHostPort(h.NetAddr.Endpoint)
+	_, port, err := net.SplitHostPort(h.Endpoint)
 	if err != nil {
 		return 0
 	}
@@ -386,13 +385,6 @@ func DefaultSupervisor() Supervisor {
 				Level:            zapcore.InfoLevel,
 				OutputPaths:      []string{"stdout"},
 				ErrorOutputPaths: []string{"stderr"},
-			},
-		},
-		HealthCheck: HealthCheck{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-				},
 			},
 		},
 	}

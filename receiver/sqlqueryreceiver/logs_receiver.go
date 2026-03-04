@@ -32,8 +32,9 @@ type logsReceiver struct {
 	queryReceivers   []*logsQueryReceiver
 	nextConsumer     consumer.Logs
 
-	isStarted         bool
-	shutdownRequested chan struct{}
+	isStarted                bool
+	collectionIntervalTicker *time.Ticker
+	shutdownRequested        chan struct{}
 
 	id            component.ID
 	storageClient storage.Client
@@ -133,28 +134,14 @@ func (receiver *logsReceiver) createQueryReceivers() error {
 }
 
 func (receiver *logsReceiver) startCollecting() {
-	initialDelay := receiver.config.InitialDelay
+	receiver.collectionIntervalTicker = time.NewTicker(receiver.config.CollectionInterval)
 
 	go func() {
-		if initialDelay > 0 {
-			timer := time.NewTimer(initialDelay)
-			select {
-			case <-timer.C:
-				receiver.collect()
-			case <-receiver.shutdownRequested:
-				timer.Stop()
-				return
-			}
-		}
-
-		collectionIntervalTicker := time.NewTicker(receiver.config.CollectionInterval)
-
 		for {
 			select {
-			case <-collectionIntervalTicker.C:
+			case <-receiver.collectionIntervalTicker.C:
 				receiver.collect()
 			case <-receiver.shutdownRequested:
-				collectionIntervalTicker.Stop()
 				return
 			}
 		}
@@ -214,6 +201,9 @@ func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (receiver *logsReceiver) stopCollecting() {
+	if receiver.collectionIntervalTicker != nil {
+		receiver.collectionIntervalTicker.Stop()
+	}
 	close(receiver.shutdownRequested)
 }
 

@@ -276,7 +276,6 @@ func (m *metricFlinkJobCheckpointCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJobCheckpointCount(cfg MetricConfig) metricFlinkJobCheckpointCount {
 	m := metricFlinkJobCheckpointCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -328,7 +327,6 @@ func (m *metricFlinkJobCheckpointInProgress) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJobCheckpointInProgress(cfg MetricConfig) metricFlinkJobCheckpointInProgress {
 	m := metricFlinkJobCheckpointInProgress{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -380,7 +378,6 @@ func (m *metricFlinkJobLastCheckpointSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJobLastCheckpointSize(cfg MetricConfig) metricFlinkJobLastCheckpointSize {
 	m := metricFlinkJobLastCheckpointSize{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -430,7 +427,6 @@ func (m *metricFlinkJobLastCheckpointTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJobLastCheckpointTime(cfg MetricConfig) metricFlinkJobLastCheckpointTime {
 	m := metricFlinkJobLastCheckpointTime{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -482,7 +478,6 @@ func (m *metricFlinkJobRestartCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJobRestartCount(cfg MetricConfig) metricFlinkJobRestartCount {
 	m := metricFlinkJobRestartCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -534,7 +529,6 @@ func (m *metricFlinkJvmClassLoaderClassesLoaded) emit(metrics pmetric.MetricSlic
 
 func newMetricFlinkJvmClassLoaderClassesLoaded(cfg MetricConfig) metricFlinkJvmClassLoaderClassesLoaded {
 	m := metricFlinkJvmClassLoaderClassesLoaded{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -584,7 +578,6 @@ func (m *metricFlinkJvmCPULoad) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmCPULoad(cfg MetricConfig) metricFlinkJvmCPULoad {
 	m := metricFlinkJvmCPULoad{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -636,7 +629,6 @@ func (m *metricFlinkJvmCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmCPUTime(cfg MetricConfig) metricFlinkJvmCPUTime {
 	m := metricFlinkJvmCPUTime{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -690,7 +682,6 @@ func (m *metricFlinkJvmGcCollectionsCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmGcCollectionsCount(cfg MetricConfig) metricFlinkJvmGcCollectionsCount {
 	m := metricFlinkJvmGcCollectionsCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -744,7 +735,6 @@ func (m *metricFlinkJvmGcCollectionsTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmGcCollectionsTime(cfg MetricConfig) metricFlinkJvmGcCollectionsTime {
 	m := metricFlinkJvmGcCollectionsTime{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -796,7 +786,6 @@ func (m *metricFlinkJvmMemoryDirectTotalCapacity) emit(metrics pmetric.MetricSli
 
 func newMetricFlinkJvmMemoryDirectTotalCapacity(cfg MetricConfig) metricFlinkJvmMemoryDirectTotalCapacity {
 	m := metricFlinkJvmMemoryDirectTotalCapacity{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -848,7 +837,6 @@ func (m *metricFlinkJvmMemoryDirectUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmMemoryDirectUsed(cfg MetricConfig) metricFlinkJvmMemoryDirectUsed {
 	m := metricFlinkJvmMemoryDirectUsed{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -900,7 +888,6 @@ func (m *metricFlinkJvmMemoryHeapCommitted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmMemoryHeapCommitted(cfg MetricConfig) metricFlinkJvmMemoryHeapCommitted {
 	m := metricFlinkJvmMemoryHeapCommitted{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -952,7 +939,6 @@ func (m *metricFlinkJvmMemoryHeapMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmMemoryHeapMax(cfg MetricConfig) metricFlinkJvmMemoryHeapMax {
 	m := metricFlinkJvmMemoryHeapMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1004,7 +990,6 @@ func (m *metricFlinkJvmMemoryHeapUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmMemoryHeapUsed(cfg MetricConfig) metricFlinkJvmMemoryHeapUsed {
 	m := metricFlinkJvmMemoryHeapUsed{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1056,7 +1041,6 @@ func (m *metricFlinkJvmMemoryMappedTotalCapacity) emit(metrics pmetric.MetricSli
 
 func newMetricFlinkJvmMemoryMappedTotalCapacity(cfg MetricConfig) metricFlinkJvmMemoryMappedTotalCapacity {
 	m := metricFlinkJvmMemoryMappedTotalCapacity{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1108,7 +1092,6 @@ func (m *metricFlinkJvmMemoryMappedUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmMemoryMappedUsed(cfg MetricConfig) metricFlinkJvmMemoryMappedUsed {
 	m := metricFlinkJvmMemoryMappedUsed{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1160,7 +1143,6 @@ func (m *metricFlinkJvmMemoryMetaspaceCommitted) emit(metrics pmetric.MetricSlic
 
 func newMetricFlinkJvmMemoryMetaspaceCommitted(cfg MetricConfig) metricFlinkJvmMemoryMetaspaceCommitted {
 	m := metricFlinkJvmMemoryMetaspaceCommitted{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1212,7 +1194,6 @@ func (m *metricFlinkJvmMemoryMetaspaceMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmMemoryMetaspaceMax(cfg MetricConfig) metricFlinkJvmMemoryMetaspaceMax {
 	m := metricFlinkJvmMemoryMetaspaceMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1264,7 +1245,6 @@ func (m *metricFlinkJvmMemoryMetaspaceUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmMemoryMetaspaceUsed(cfg MetricConfig) metricFlinkJvmMemoryMetaspaceUsed {
 	m := metricFlinkJvmMemoryMetaspaceUsed{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1316,7 +1296,6 @@ func (m *metricFlinkJvmMemoryNonheapCommitted) emit(metrics pmetric.MetricSlice)
 
 func newMetricFlinkJvmMemoryNonheapCommitted(cfg MetricConfig) metricFlinkJvmMemoryNonheapCommitted {
 	m := metricFlinkJvmMemoryNonheapCommitted{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1368,7 +1347,6 @@ func (m *metricFlinkJvmMemoryNonheapMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmMemoryNonheapMax(cfg MetricConfig) metricFlinkJvmMemoryNonheapMax {
 	m := metricFlinkJvmMemoryNonheapMax{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1420,7 +1398,6 @@ func (m *metricFlinkJvmMemoryNonheapUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmMemoryNonheapUsed(cfg MetricConfig) metricFlinkJvmMemoryNonheapUsed {
 	m := metricFlinkJvmMemoryNonheapUsed{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1472,7 +1449,6 @@ func (m *metricFlinkJvmThreadsCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkJvmThreadsCount(cfg MetricConfig) metricFlinkJvmThreadsCount {
 	m := metricFlinkJvmThreadsCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1524,7 +1500,6 @@ func (m *metricFlinkMemoryManagedTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkMemoryManagedTotal(cfg MetricConfig) metricFlinkMemoryManagedTotal {
 	m := metricFlinkMemoryManagedTotal{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1576,7 +1551,6 @@ func (m *metricFlinkMemoryManagedUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkMemoryManagedUsed(cfg MetricConfig) metricFlinkMemoryManagedUsed {
 	m := metricFlinkMemoryManagedUsed{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1631,7 +1605,6 @@ func (m *metricFlinkOperatorRecordCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkOperatorRecordCount(cfg MetricConfig) metricFlinkOperatorRecordCount {
 	m := metricFlinkOperatorRecordCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1685,7 +1658,6 @@ func (m *metricFlinkOperatorWatermarkOutput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkOperatorWatermarkOutput(cfg MetricConfig) metricFlinkOperatorWatermarkOutput {
 	m := metricFlinkOperatorWatermarkOutput{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1739,7 +1711,6 @@ func (m *metricFlinkTaskRecordCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFlinkTaskRecordCount(cfg MetricConfig) metricFlinkTaskRecordCount {
 	m := metricFlinkTaskRecordCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

@@ -5,7 +5,7 @@
     "dependencies"
   ],
   "constraints": {
-    "go": "1.25"
+    "go": "1.24"
   },
   "schedule": [
     "on tuesday"
@@ -101,17 +101,6 @@
     },
     {
       "matchPackagePatterns": ["^github.com/DataDog/opentelemetry-mapping-go/"],
-      "enabled": false
-    },
-    {
-      "matchPaths": [
-        "exporter/datadogexporter/**",
-        "connector/datadogconnector/**",
-        "processor/datadogsemanticsprocessor/**",
-        "internal/datadog/**",
-        "pkg/datadog/**"
-      ],
-      "matchPackagePatterns": ["^github.com/DataDog/datadog-agent"],
       "enabled": false
     },
     {

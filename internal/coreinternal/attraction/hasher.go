@@ -24,41 +24,36 @@ var (
 
 // sha2Hasher hashes an AttributeValue using SHA2-256 and returns a
 // hashed version of the attribute. In practice, this would mostly be used
-// for string attributes, but we support all types for completeness/correctness
+// for string attributes but we support all types for completeness/correctness
 // and eliminate any surprises.
 func sha2Hasher(attr pcommon.Value) {
-	var sum [sha256.Size]byte
-	ok := true
-
+	var val []byte
 	switch attr.Type() {
 	case pcommon.ValueTypeStr:
-		sum = sha256.Sum256([]byte(attr.Str()))
+		val = []byte(attr.Str())
 	case pcommon.ValueTypeBool:
 		if attr.Bool() {
-			sum = sha256.Sum256(byteTrue[:])
+			val = byteTrue[:]
 		} else {
-			sum = sha256.Sum256(byteFalse[:])
+			val = byteFalse[:]
 		}
 	case pcommon.ValueTypeInt:
-		var b [int64ByteSize]byte
-		binary.LittleEndian.PutUint64(b[:], uint64(attr.Int()))
-		sum = sha256.Sum256(b[:])
+		val = make([]byte, int64ByteSize)
+		binary.LittleEndian.PutUint64(val, uint64(attr.Int()))
 	case pcommon.ValueTypeDouble:
-		var b [float64ByteSize]byte
-		binary.LittleEndian.PutUint64(b[:], math.Float64bits(attr.Double()))
-		sum = sha256.Sum256(b[:])
-	default:
-		// No-op for empty, maps, slices, bytes.
-		ok = false
+		val = make([]byte, float64ByteSize)
+		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.Double()))
 	}
 
-	if !ok {
-		attr.SetStr("")
-		return
+	var hashed string
+	if len(val) > 0 {
+		h := sha256.New()
+		_, _ = h.Write(val)
+		val = h.Sum(nil)
+		hashedBytes := make([]byte, hex.EncodedLen(len(val)))
+		hex.Encode(hashedBytes, val)
+		hashed = string(hashedBytes)
 	}
 
-	// Hex encoding is always 64 bytes for SHA-256.
-	var hashedBytes [sha256.Size * 2]byte
-	hex.Encode(hashedBytes[:], sum[:])
-	attr.SetStr(string(hashedBytes[:]))
+	attr.SetStr(hashed)
 }

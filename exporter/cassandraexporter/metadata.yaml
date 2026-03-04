@@ -1,5 +1,4 @@
 type: cassandra
-display_name: Cassandra Exporter
 
 status:
   class: exporter

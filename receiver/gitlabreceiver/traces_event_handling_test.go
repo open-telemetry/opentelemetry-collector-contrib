@@ -11,6 +11,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
 
 // Helper function to parse a PipelineEvent from JSON for the remaining tests
@@ -179,7 +180,7 @@ func TestProcessJobSpans(t *testing.T) {
 func TestNewTraceID(t *testing.T) {
 	tests := []struct {
 		name       string
-		id         int64
+		id         int
 		finishedAt string
 		expectErr  bool
 	}{
@@ -220,7 +221,7 @@ func TestNewTraceID(t *testing.T) {
 func TestNewPipelineSpanID(t *testing.T) {
 	tests := []struct {
 		name       string
-		id         int64
+		id         int
 		finishedAt string
 		expectErr  bool
 	}{
@@ -261,7 +262,7 @@ func TestNewPipelineSpanID(t *testing.T) {
 func TestNewStageSpanID(t *testing.T) {
 	tests := []struct {
 		name      string
-		id        int64
+		id        int
 		stage     string
 		startedAt string
 		expectErr bool
@@ -306,7 +307,7 @@ func TestNewStageSpanID(t *testing.T) {
 func TestNewJobSpanID(t *testing.T) {
 	tests := []struct {
 		name      string
-		id        int64
+		id        int
 		startedAt string
 		expectErr bool
 	}{
@@ -563,16 +564,16 @@ func TestPipelineWithMissingOptionalFields(t *testing.T) {
 	attrs := resource.Attributes()
 
 	// Required fields should be present
-	serviceName, found := attrs.Get("service.name")
+	serviceName, found := attrs.Get(string(semconv.ServiceNameKey))
 	require.True(t, found)
 	require.Equal(t, "test/project", serviceName.Str())
 
 	// Optional fields should be present but may be empty
-	pipelineName, found := attrs.Get("cicd.pipeline.name")
+	pipelineName, found := attrs.Get(string(semconv.CICDPipelineNameKey))
 	require.True(t, found)
 	require.Empty(t, pipelineName.Str())
 
-	repoName, found := attrs.Get("vcs.repository.name")
+	repoName, found := attrs.Get(string(semconv.VCSRepositoryNameKey))
 	require.True(t, found)
 	require.Empty(t, repoName.Str())
 
@@ -594,7 +595,7 @@ func TestPipelineWithMissingOptionalFields(t *testing.T) {
 	require.Empty(t, authorEmail.Str())
 
 	// Merge request ID should not create attributes when 0
-	_, found = attrs.Get("vcs.change.id")
+	_, found = attrs.Get(string(semconv.VCSChangeIDKey))
 	require.False(t, found)
 }
 
@@ -681,7 +682,14 @@ func TestRunnerAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var runner gitlab.PipelineEventBuildRunner
+			var runner struct {
+				ID          int      `json:"id"`
+				Description string   `json:"description"`
+				Active      bool     `json:"active"`
+				IsShared    bool     `json:"is_shared"`
+				RunnerType  string   `json:"runner_type"`
+				Tags        []string `json:"tags"`
+			}
 			err := json.Unmarshal([]byte(tt.runnerData), &runner)
 			require.NoError(t, err)
 

@@ -1,11 +1,4 @@
-display_name: Memcached Receiver
 type: memcached
-
-description: |
-  This receiver can fetch stats from a Memcached instance using the [stats
-  command](https://github.com/memcached/memcached/wiki/Commands#statistics). A
-  detailed description of all the stats available is at
-  https://github.com/memcached/memcached/blob/master/doc/protocol.txt#L1159.
 
 status:
   class: receiver
@@ -56,7 +49,8 @@ metrics:
   memcached.bytes:
     enabled: true
     description: Current number of bytes used by this server to store items.
-    stability: development
+    stability:
+      level: development
     unit: By
     gauge:
       value_type: int
@@ -64,7 +58,8 @@ metrics:
   memcached.commands:
     enabled: true
     description: Commands executed.
-    stability: development
+    stability:
+      level: development
     unit: "{commands}"
     sum:
       value_type: int
@@ -74,7 +69,8 @@ metrics:
   memcached.connections.current:
     enabled: true
     description: The current number of open connections.
-    stability: development
+    stability:
+      level: development
     unit: "{connections}"
     sum:
       value_type: int
@@ -84,7 +80,8 @@ metrics:
   memcached.connections.total:
     enabled: true
     description: Total number of connections opened since the server started running.
-    stability: development
+    stability:
+      level: development
     unit: "{connections}"
     sum:
       value_type: int
@@ -94,7 +91,8 @@ metrics:
   memcached.cpu.usage:
     enabled: true
     description: Accumulated user and system time.
-    stability: development
+    stability:
+      level: development
     unit: s
     sum:
       value_type: double
@@ -104,7 +102,8 @@ metrics:
   memcached.current_items:
     enabled: true
     description: Number of items currently stored in the cache.
-    stability: development
+    stability:
+      level: development
     unit: "{items}"
     sum:
       value_type: int
@@ -114,7 +113,8 @@ metrics:
   memcached.evictions:
     enabled: true
     description: Cache item evictions.
-    stability: development
+    stability:
+      level: development
     unit: "{evictions}"
     sum:
       value_type: int
@@ -124,7 +124,8 @@ metrics:
   memcached.network:
     enabled: true
     description: Bytes transferred over the network.
-    stability: development
+    stability:
+      level: development
     unit: by
     sum:
       value_type: int
@@ -134,7 +135,8 @@ metrics:
   memcached.operation_hit_ratio:
     enabled: true
     description: Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
-    stability: development
+    stability:
+      level: development
     unit: '%'
     gauge:
       value_type: double
@@ -142,7 +144,8 @@ metrics:
   memcached.operations:
     enabled: true
     description: Operation counts.
-    stability: development
+    stability:
+      level: development
     unit: "{operations}"
     sum:
       value_type: int
@@ -152,7 +155,8 @@ metrics:
   memcached.threads:
     enabled: true
     description: Number of threads used by the memcached instance.
-    stability: development
+    stability:
+      level: development
     unit: "{threads}"
     sum:
       value_type: int

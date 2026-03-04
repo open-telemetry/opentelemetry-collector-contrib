@@ -1,9 +1,4 @@
-display_name: Delta to Cumulative Processor
 type: deltatocumulative
-
-description: |
-  The Delta to Cumulative Processor (`deltatocumulativeprocessor`) converts metrics from delta temporality to
-  cumulative, by accumulating samples in memory.
 
 status:
   class: processor
@@ -20,7 +15,8 @@ telemetry:
     # streams
     deltatocumulative_datapoints:
       description: total number of datapoints processed. may have 'error' attribute, if processing failed
-      stability: development
+      stability:
+        level: development
       unit: "{datapoint}"
       sum:
         value_type: int
@@ -28,14 +24,16 @@ telemetry:
       enabled: true
     deltatocumulative_streams_limit:
       description: upper limit of tracked streams
-      stability: development
+      stability:
+        level: development
       unit: "{stream}"
       gauge:
         value_type: int
       enabled: true
     deltatocumulative_streams_max_stale:
       description: duration after which streams inactive streams are dropped
-      stability: development
+      stability:
+        level: development
       unit: "s"
       gauge:
         value_type: int
@@ -43,7 +41,8 @@ telemetry:
     # datapoints
     deltatocumulative_streams_tracked:
       description: number of streams tracked
-      stability: development
+      stability:
+        level: development
       unit: "{dps}"
       sum:
         value_type: int

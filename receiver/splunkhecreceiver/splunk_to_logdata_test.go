@@ -13,18 +13,18 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 var defaultTestingHecConfig = &Config{
-	HecToOtelAttrs: translator.HecToOtelAttrs{
+	HecToOtelAttrs: splunk.HecToOtelAttrs{
 		Source:     splunk.DefaultSourceLabel,
 		SourceType: splunk.DefaultSourceTypeLabel,
 		Index:      splunk.DefaultIndexLabel,
-		Host:       "host.name",
+		Host:       string(conventions.HostNameKey),
 	},
 }
 
@@ -34,14 +34,14 @@ func Test_SplunkHecToLogData(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		events    []*translator.Event
+		events    []*splunk.Event
 		output    plog.ResourceLogsSlice
 		hecConfig *Config
 		wantErr   error
 	}{
 		{
 			name: "happy_path",
-			events: []*translator.Event{
+			events: []*splunk.Event{
 				{
 					Time:       time,
 					Host:       "localhost",
@@ -62,7 +62,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		},
 		{
 			name: "double",
-			events: []*translator.Event{
+			events: []*splunk.Event{
 				{
 					Time:       time,
 					Host:       "localhost",
@@ -85,7 +85,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		},
 		{
 			name: "array",
-			events: []*translator.Event{
+			events: []*splunk.Event{
 				{
 					Time:       time,
 					Host:       "localhost",
@@ -112,7 +112,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		},
 		{
 			name: "complex_structure",
-			events: []*translator.Event{
+			events: []*splunk.Event{
 				{
 					Time:       time,
 					Host:       "localhost",
@@ -144,7 +144,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		},
 		{
 			name: "nil_timestamp",
-			events: []*translator.Event{
+			events: []*splunk.Event{
 				{
 					Host:       "localhost",
 					Source:     "mysource",
@@ -164,7 +164,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		},
 		{
 			name: "custom_config_mapping",
-			events: []*translator.Event{
+			events: []*splunk.Event{
 				{
 					Host:       "localhost",
 					Source:     "mysource",
@@ -177,7 +177,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			hecConfig: &Config{
-				HecToOtelAttrs: translator.HecToOtelAttrs{
+				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",
@@ -204,7 +204,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		},
 		{
 			name: "group_events_by_resource_attributes",
-			events: []*translator.Event{
+			events: []*splunk.Event{
 				{
 					Time:       time,
 					Host:       "1",
@@ -345,7 +345,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 		testTimestampVal = 1695146885
 	)
 	hecConfig := &Config{
-		HecToOtelAttrs: translator.HecToOtelAttrs{
+		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     "mysource",
 			SourceType: "mysourcetype",
 			Index:      "myindex",
@@ -546,13 +546,13 @@ func TestConvertToValueArray(t *testing.T) {
 }
 
 func TestConvertToValueInvalid(t *testing.T) {
-	assert.Error(t, convertToValue(zap.NewNop(), translator.Event{}, pcommon.NewValueEmpty()))
+	assert.Error(t, convertToValue(zap.NewNop(), splunk.Event{}, pcommon.NewValueEmpty()))
 }
 
 func TestConvertToValueInvalidInMap(t *testing.T) {
-	assert.Error(t, convertToValue(zap.NewNop(), map[string]any{"foo": translator.Event{}}, pcommon.NewValueEmpty()))
+	assert.Error(t, convertToValue(zap.NewNop(), map[string]any{"foo": splunk.Event{}}, pcommon.NewValueEmpty()))
 }
 
 func TestConvertToValueInvalidInArray(t *testing.T) {
-	assert.Error(t, convertToValue(zap.NewNop(), []any{translator.Event{}}, pcommon.NewValueEmpty()))
+	assert.Error(t, convertToValue(zap.NewNop(), []any{splunk.Event{}}, pcommon.NewValueEmpty()))
 }

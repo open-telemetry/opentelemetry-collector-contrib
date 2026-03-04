@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v83/github"
+	"github.com/google/go-github/v79/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -68,13 +68,13 @@ func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent, r
 		return ptrace.Traces{}, errors.New("failed to create parent span")
 	}
 
-	err = gtr.createJobQueueSpan(r, e, traceID, parentID)
+	queueSpanID, err := gtr.createJobQueueSpan(r, e, traceID, parentID)
 	if err != nil {
 		gtr.logger.Sugar().Error("failed to create job queue span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create job queue span")
 	}
 
-	err = gtr.createStepSpans(r, e, traceID, parentID)
+	err = gtr.createStepSpans(r, e, traceID, queueSpanID)
 	if err != nil {
 		gtr.logger.Sugar().Error("failed to create step spans", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create step spans")
@@ -121,22 +121,6 @@ func newParentSpanID(runID int64, runAttempt int) (pcommon.SpanID, error) {
 	return spanID, nil
 }
 
-// correctActionTimestamps ensures span timestamps are valid by checking that
-// the end time is not before the start time. When GitHub reports timestamps
-// in reverse order (which can occur with skipped jobs and steps), this function
-// returns corrected timestamps where both start and end are set to the later
-// timestamp, resulting in a zero-duration span.
-//
-// This prevents negative durations that would otherwise appear as excessively
-// long spans in telemetry systems.
-func correctActionTimestamps(start, end time.Time) (time.Time, time.Time) {
-	if end.Before(start) {
-		// Use the later timestamp (start) for both, creating zero-duration span
-		return start, start
-	}
-	return start, end
-}
-
 // createRootSpan creates a root span based on the provided event, associated
 // with the deterministic traceID.
 func (gtr *githubTracesReceiver) createRootSpan(
@@ -157,9 +141,8 @@ func (gtr *githubTracesReceiver) createRootSpan(
 	span.SetSpanID(rootSpanID)
 	span.SetName(event.GetWorkflowRun().GetName())
 	span.SetKind(ptrace.SpanKindServer)
-	startTime, endTime := correctActionTimestamps(event.GetWorkflowRun().GetRunStartedAt().Time, event.GetWorkflowRun().GetUpdatedAt().Time)
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowRun().GetRunStartedAt().Time))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowRun().GetUpdatedAt().Time))
 
 	switch strings.ToLower(event.WorkflowRun.GetConclusion()) {
 	case "success":
@@ -222,11 +205,10 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	span.SetParentSpanID(parentSpanID)
 	span.SetSpanID(jobSpanID)
 	span.SetName(event.GetWorkflowJob().GetName())
-	span.SetKind(ptrace.SpanKindInternal)
+	span.SetKind(ptrace.SpanKindServer)
 
-	startTime, endTime := correctActionTimestamps(event.GetWorkflowJob().GetCreatedAt().Time, event.GetWorkflowJob().GetCompletedAt().Time)
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCompletedAt().Time))
 
 	switch strings.ToLower(event.WorkflowJob.GetConclusion()) {
 	case "success":
@@ -335,7 +317,7 @@ func (*githubTracesReceiver) createStepSpan(
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetName(name)
-	span.SetKind(ptrace.SpanKindInternal)
+	span.SetKind(ptrace.SpanKindServer)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
@@ -352,11 +334,10 @@ func (*githubTracesReceiver) createStepSpan(
 	span.SetSpanID(spanID)
 
 	attrs := span.Attributes()
-	attrs.PutStr(string(conventions.CICDPipelineTaskNameKey), name)
+	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), name)
 	attrs.PutStr(AttributeCICDPipelineTaskRunStatus, step.GetStatus())
-	startTime, endTime := correctActionTimestamps(step.GetStartedAt().Time, step.GetCompletedAt().Time)
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(step.GetStartedAt().Time))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(step.GetCompletedAt().Time))
 
 	switch strings.ToLower(step.GetConclusion()) {
 	case "success":
@@ -403,14 +384,14 @@ func (*githubTracesReceiver) createJobQueueSpan(
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,
 	parentSpanID pcommon.SpanID,
-) error {
+) (pcommon.SpanID, error) {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 	jobName := event.GetWorkflowJob().GetName()
 	spanName := fmt.Sprintf("queue-%s", jobName)
 
 	span.SetName(spanName)
-	span.SetKind(ptrace.SpanKindInternal)
+	span.SetKind(ptrace.SpanKindServer)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
@@ -418,19 +399,30 @@ func (*githubTracesReceiver) createJobQueueSpan(
 	runAttempt := int(event.GetWorkflowJob().GetRunAttempt())
 	spanID, err := newStepSpanID(runID, runAttempt, jobName, spanName, 1)
 	if err != nil {
-		return fmt.Errorf("failed to generate step span ID: %w", err)
+		return pcommon.SpanID{}, fmt.Errorf("failed to generate step span ID: %w", err)
 	}
 
 	span.SetSpanID(spanID)
 
-	createdTime, startedTime := correctActionTimestamps(event.GetWorkflowJob().GetCreatedAt().Time, event.GetWorkflowJob().GetStartedAt().Time)
-	duration := startedTime.Sub(createdTime)
+	created := pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time)
+	started := pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetStartedAt().Time)
+	duration := event.WorkflowJob.GetStartedAt().Sub(event.GetWorkflowJob().GetCreatedAt().Time)
 
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(createdTime))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(startedTime))
+	span.SetStartTimestamp(created)
+	span.SetEndTimestamp(started)
+
+	// GitHub sometimes reports the createdAt value as being a second after the
+	// startedAt value which results in unreal times in duration. To work around
+	// this we set the duration to 0 and the start/end spans to the started
+	// time in that event. Otherwise we calculate the time properly and set the
+	// span start time as the created time.
+	if created.AsTime().After(started.AsTime()) {
+		duration = time.Duration(0)
+		span.SetStartTimestamp(started)
+	}
 
 	attrs := span.Attributes()
 	attrs.PutDouble(AttributeCICDPipelineRunQueueDuration, float64(duration.Nanoseconds()))
 
-	return nil
+	return spanID, nil
 }

@@ -7,8 +7,6 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"sync"
 
 	"go.uber.org/zap"
@@ -65,14 +63,4 @@ OUTER:
 		}(lostReader)
 	}
 	lostWG.Wait()
-}
-
-// normalizePath cleans the path on non-Windows systems.
-// Returns the cleaned path and false (no corruption detection on non-Windows).
-func normalizePath(path string) (string, bool) {
-	return filepath.Clean(path), false
-}
-
-func openFile(path string) (*os.File, error) {
-	return os.Open(path) // #nosec - operator must read in files defined by user
 }

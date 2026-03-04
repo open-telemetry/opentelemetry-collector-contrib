@@ -1,4 +1,4 @@
-signal_to_metrics:
+signaltometrics:
   profiles:
     - name: total.profiles.sum
       description: Count total number of profiles

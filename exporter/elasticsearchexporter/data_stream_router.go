@@ -15,10 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
-var componentsRegex = []*regexp.Regexp{
-	regexp.MustCompile(`/receiver/(\w+receiver)`),
-	regexp.MustCompile(`/connector/(\w+connector)`),
-}
+var receiverRegex = regexp.MustCompile(`/receiver/(\w+receiver)`)
 
 var selfTelemetryScopeNames = map[string]bool{
 	"go.opentelemetry.io/collector/receiver/receiverhelper":   true,
@@ -231,15 +228,13 @@ func applyScopeRouting(scope pcommon.InstrumentationScope) (string, bool) {
 		}
 	}
 
-	// {receiver/connector}-based routing
+	// Receiver-based routing
 	// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
 	// for the scope name
 	// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
-	for _, componentRegex := range componentsRegex {
-		loc := componentRegex.FindStringSubmatchIndex(scope.Name())
-		if len(loc) == 4 {
-			return scope.Name()[loc[2]:loc[3]], true
-		}
+	loc := receiverRegex.FindStringSubmatchIndex(scope.Name())
+	if len(loc) == 4 {
+		return scope.Name()[loc[2]:loc[3]], true
 	}
 
 	return "", false

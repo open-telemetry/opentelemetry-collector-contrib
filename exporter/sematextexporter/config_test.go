@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -46,28 +45,8 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(metadata.Type, "default-config"),
-			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Timeout: 5 * time.Second,
-					Headers: configopaque.MapList{
-						{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
-					},
-				},
-				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-				MetricsConfig: MetricsConfig{
-					MetricsEndpoint: usMetricsEndpoint,
-					AppToken:        metricsAppToken,
-					MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
-					PayloadMaxLines: 1_000,
-					PayloadMaxBytes: 300_000,
-				},
-				LogsConfig: LogsConfig{
-					LogsEndpoint: usLogsEndpoint,
-				},
-				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				Region:        usRegion,
-			},
+			id:       component.NewIDWithName(metadata.Type, "default-config"),
+			expected: createDefaultConfig(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "override-config"),
@@ -78,12 +57,13 @@ func TestLoadConfig(t *testing.T) {
 						{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
 					},
 				},
-				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+				QueueSettings: func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.Enabled = true
 					queue.NumConsumers = 3
 					queue.QueueSize = 10
 					return queue
-				}()),
+				}(),
 				MetricsConfig: MetricsConfig{
 					MetricsEndpoint: usMetricsEndpoint,
 					AppToken:        metricsAppToken,
@@ -188,42 +168,6 @@ func TestConfigValidation(t *testing.T) {
 				},
 			},
 			expectError: true,
-		},
-		{
-			name: "Missing region",
-			config: &Config{
-				MetricsConfig: MetricsConfig{
-					AppToken: metricsAppToken,
-				},
-			},
-			expectError: true,
-		},
-		{
-			name: "Missing app tokens",
-			config: &Config{
-				Region: usRegion,
-			},
-			expectError: true,
-		},
-		{
-			name: "Valid configuration with only metrics token",
-			config: &Config{
-				Region: usRegion,
-				MetricsConfig: MetricsConfig{
-					AppToken: metricsAppToken,
-				},
-			},
-			expectError: false,
-		},
-		{
-			name: "Valid configuration with only logs token",
-			config: &Config{
-				Region: euRegion,
-				LogsConfig: LogsConfig{
-					AppToken: logsAppToken,
-				},
-			},
-			expectError: false,
 		},
 	}
 

@@ -62,8 +62,10 @@ func TestNew_VPCFlowLog(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
-	_, err = e.UnmarshalLogs([]byte("some test input"))
-	require.ErrorContains(t, err, "failed to read first line of VPC logs from S3")
+	// VPC Flow Log unmarshaler handles non-log input gracefully
+	logs, err := e.UnmarshalLogs([]byte("some test input"))
+	require.NoError(t, err)
+	require.NotNil(t, logs)
 }
 
 func TestNew_VPCFlowLogV1(t *testing.T) {
@@ -206,9 +208,11 @@ func TestConcurrentGzipReaderUsage(t *testing.T) {
 	concurrent := 20
 	wg := sync.WaitGroup{}
 	for range concurrent {
-		wg.Go(func() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			testUnmarshall()
-		})
+		}()
 	}
 	wg.Wait()
 }

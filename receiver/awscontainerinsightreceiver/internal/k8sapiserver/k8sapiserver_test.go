@@ -34,7 +34,7 @@ var mockClient = new(MockClient)
 type mockK8sClient struct{}
 
 func (*mockK8sClient) GetClientSet() kubernetes.Interface {
-	return fake.NewClientset()
+	return fake.NewSimpleClientset()
 }
 
 func (*mockK8sClient) GetEpClient() k8sclient.EpClient {

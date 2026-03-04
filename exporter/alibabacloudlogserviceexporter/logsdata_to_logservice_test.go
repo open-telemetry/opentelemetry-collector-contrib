@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 )
 
 func fillComplexAttributeValueMap(m pcommon.Map) {
@@ -29,8 +30,8 @@ func createLogData(numberOfLogs int) plog.Logs {
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().PutStr("resourceKey", "resourceValue")
-	rl.Resource().Attributes().PutStr("service.name", "test-log-service-exporter")
-	rl.Resource().Attributes().PutStr("host.name", "test-host")
+	rl.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "test-log-service-exporter")
+	rl.Resource().Attributes().PutStr(string(conventions.HostNameKey), "test-host")
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("collector")
 	sl.Scope().SetVersion("v0.1.0")
@@ -58,9 +59,9 @@ func createLogData(numberOfLogs int) plog.Logs {
 		default:
 			logRecord.Body().SetStr("log contents")
 		}
-		logRecord.Attributes().PutStr("service.name", "myapp")
+		logRecord.Attributes().PutStr(string(conventions.ServiceNameKey), "myapp")
 		logRecord.Attributes().PutStr("my-label", "myapp-type")
-		logRecord.Attributes().PutStr("host.name", "myhost")
+		logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
 		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.Attributes().PutEmpty("null-value")
 

@@ -996,13 +996,13 @@ func TestNestingAttributesForTraces(t *testing.T) {
 func TestAggregateAttributesForLogs(t *testing.T) {
 	testCases := []struct {
 		name       string
-		config     []AggregationPair
+		config     []aggregationPair
 		createLogs func() plog.Logs
 		test       func(plog.Logs)
 	}{
 		{
 			name: "simple aggregation",
-			config: []AggregationPair{
+			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{"pod_labels_"},
@@ -1040,7 +1040,7 @@ func TestAggregateAttributesForLogs(t *testing.T) {
 		},
 		{
 			name: "no-op",
-			config: []AggregationPair{
+			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{},
@@ -1092,13 +1092,13 @@ func TestAggregateAttributesForLogs(t *testing.T) {
 func TestAggregateAttributesForMetrics(t *testing.T) {
 	testCases := []struct {
 		name          string
-		config        []AggregationPair
+		config        []aggregationPair
 		createMetrics func() pmetric.Metrics
 		test          func(pmetric.Metrics)
 	}{
 		{
 			name: "simple aggregation",
-			config: []AggregationPair{
+			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{"pod_labels_"},
@@ -1138,7 +1138,7 @@ func TestAggregateAttributesForMetrics(t *testing.T) {
 		},
 		{
 			name: "no-op",
-			config: []AggregationPair{
+			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{},
@@ -1192,13 +1192,13 @@ func TestAggregateAttributesForMetrics(t *testing.T) {
 func TestAggregateAttributesForTraces(t *testing.T) {
 	testCases := []struct {
 		name         string
-		config       []AggregationPair
+		config       []aggregationPair
 		createTraces func() ptrace.Traces
 		test         func(ptrace.Traces)
 	}{
 		{
 			name: "simple aggregation",
-			config: []AggregationPair{
+			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{"pod_labels_"},
@@ -1236,7 +1236,7 @@ func TestAggregateAttributesForTraces(t *testing.T) {
 		},
 		{
 			name: "no-op",
-			config: []AggregationPair{
+			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
 					Prefixes:  []string{},
@@ -1405,7 +1405,7 @@ func newNestAttributesConfig(separator string, enabled bool) *Config {
 	return config
 }
 
-func newAggregateAttributesConfig(aggregations []AggregationPair) *Config {
+func newAggregateAttributesConfig(aggregations []aggregationPair) *Config {
 	config := createDefaultConfig().(*Config)
 	config.AddCloudNamespace = false
 	config.TranslateAttributes = false
@@ -1424,11 +1424,11 @@ func newLogFieldsConversionConfig() *Config {
 	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
-	config.LogFieldsAttributes = LogFieldAttributesConfig{
-		SeverityNumberAttribute: &LogFieldAttribute{Enabled: true, Name: "definitely_not_default_name"},
-		SeverityTextAttribute:   &LogFieldAttribute{Enabled: true, Name: SeverityTextAttributeName},
-		SpanIDAttribute:         &LogFieldAttribute{Enabled: true, Name: SpanIDAttributeName},
-		TraceIDAttribute:        &LogFieldAttribute{Enabled: true, Name: TraceIDAttributeName},
+	config.LogFieldsAttributes = logFieldAttributesConfig{
+		&logFieldAttribute{Enabled: true, Name: "definitely_not_default_name"},
+		&logFieldAttribute{Enabled: true, Name: SeverityTextAttributeName},
+		&logFieldAttribute{Enabled: true, Name: SpanIDAttributeName},
+		&logFieldAttribute{Enabled: true, Name: TraceIDAttributeName},
 	}
 	return config
 }

@@ -68,7 +68,6 @@ func (m *metricSystemUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemUptime(cfg MetricConfig) metricSystemUptime {
 	m := metricSystemUptime{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

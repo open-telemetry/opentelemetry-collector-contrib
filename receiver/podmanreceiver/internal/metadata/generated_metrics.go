@@ -110,7 +110,6 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveRead) emit(metrics pmetric
 
 func newMetricContainerBlockioIoServiceBytesRecursiveRead(cfg MetricConfig) metricContainerBlockioIoServiceBytesRecursiveRead {
 	m := metricContainerBlockioIoServiceBytesRecursiveRead{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -162,7 +161,6 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveWrite) emit(metrics pmetri
 
 func newMetricContainerBlockioIoServiceBytesRecursiveWrite(cfg MetricConfig) metricContainerBlockioIoServiceBytesRecursiveWrite {
 	m := metricContainerBlockioIoServiceBytesRecursiveWrite{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -212,7 +210,6 @@ func (m *metricContainerCPUPercent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUPercent(cfg MetricConfig) metricContainerCPUPercent {
 	m := metricContainerCPUPercent{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -266,7 +263,6 @@ func (m *metricContainerCPUUsagePercpu) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUsagePercpu(cfg MetricConfig) metricContainerCPUUsagePercpu {
 	m := metricContainerCPUUsagePercpu{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -318,7 +314,6 @@ func (m *metricContainerCPUUsageSystem) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUsageSystem(cfg MetricConfig) metricContainerCPUUsageSystem {
 	m := metricContainerCPUUsageSystem{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -370,7 +365,6 @@ func (m *metricContainerCPUUsageTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUsageTotal(cfg MetricConfig) metricContainerCPUUsageTotal {
 	m := metricContainerCPUUsageTotal{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -420,7 +414,6 @@ func (m *metricContainerMemoryPercent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryPercent(cfg MetricConfig) metricContainerMemoryPercent {
 	m := metricContainerMemoryPercent{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -472,7 +465,6 @@ func (m *metricContainerMemoryUsageLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryUsageLimit(cfg MetricConfig) metricContainerMemoryUsageLimit {
 	m := metricContainerMemoryUsageLimit{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -524,7 +516,6 @@ func (m *metricContainerMemoryUsageTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryUsageTotal(cfg MetricConfig) metricContainerMemoryUsageTotal {
 	m := metricContainerMemoryUsageTotal{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -576,7 +567,6 @@ func (m *metricContainerNetworkIoUsageRxBytes) emit(metrics pmetric.MetricSlice)
 
 func newMetricContainerNetworkIoUsageRxBytes(cfg MetricConfig) metricContainerNetworkIoUsageRxBytes {
 	m := metricContainerNetworkIoUsageRxBytes{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -628,7 +618,6 @@ func (m *metricContainerNetworkIoUsageTxBytes) emit(metrics pmetric.MetricSlice)
 
 func newMetricContainerNetworkIoUsageTxBytes(cfg MetricConfig) metricContainerNetworkIoUsageTxBytes {
 	m := metricContainerNetworkIoUsageTxBytes{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

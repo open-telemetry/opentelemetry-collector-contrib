@@ -47,7 +47,8 @@ attributes:
 metrics:
   system.network.errors:
     enabled: true
-    stability: development
+    stability:
+      level: development
     description: The number of errors encountered
     unit: "{errors}"
     sum:
@@ -58,7 +59,8 @@ metrics:
 
   system.network.interface.status:
     enabled: true
-    stability: development
+    stability:
+      level: development
     description: Interface operational status (1 = up, 0 = down)
     unit: "1"
     gauge:
@@ -67,7 +69,8 @@ metrics:
 
   system.network.io:
     enabled: true
-    stability: development
+    stability:
+      level: development
     description: The number of bytes transmitted and received
     unit: By
     sum:
@@ -78,7 +81,8 @@ metrics:
 
   system.network.packet.count:
     enabled: true
-    stability: development
+    stability:
+      level: development
     description: The number of packets transmitted or received, categorized by type
     unit: "{packets}"
     sum:
@@ -89,7 +93,8 @@ metrics:
 
   system.network.packet.dropped:
     enabled: true
-    stability: development
+    stability:
+      level: development
     description: The number of packets dropped
     unit: "{packets}"
     sum:

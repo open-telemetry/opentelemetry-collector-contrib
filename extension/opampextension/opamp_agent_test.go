@@ -7,11 +7,9 @@ import (
 	"context"
 	"errors"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"runtime"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -28,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
@@ -55,9 +53,9 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
-	set.Resource.Attributes().PutStr("service.name", "otelcol-distro")
-	set.Resource.Attributes().PutStr("service.version", "distro.0")
-	set.Resource.Attributes().PutStr("service.instance.id", "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
+	set.Resource.Attributes().PutStr(string(semconv.ServiceNameKey), "otelcol-distro")
+	set.Resource.Attributes().PutStr(string(semconv.ServiceVersionKey), "distro.0")
+	set.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcol-distro", o.agentType)
@@ -88,15 +86,15 @@ func TestCreateAgentDescription(t *testing.T) {
 			cfg:  func(_ *Config) {},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue("service.instance.id", serviceInstanceUUID),
-					stringKeyValue("service.name", serviceName),
-					stringKeyValue("service.version", serviceVersion),
+					stringKeyValue(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID),
+					stringKeyValue(string(semconv.ServiceNameKey), serviceName),
+					stringKeyValue(string(semconv.ServiceVersionKey), serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue("host.arch", runtime.GOARCH),
-					stringKeyValue("host.name", hostname),
-					stringKeyValue("os.description", description),
-					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
+					stringKeyValue(string(semconv.HostNameKey), hostname),
+					stringKeyValue(string(semconv.OSDescriptionKey), description),
+					stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
 				},
 			},
 		},
@@ -104,23 +102,23 @@ func TestCreateAgentDescription(t *testing.T) {
 			name: "Extra attributes specified",
 			cfg: func(c *Config) {
 				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
-					"env":          "prod",
-					"k8s.pod.name": "my-very-cool-pod",
+					"env":                         "prod",
+					string(semconv.K8SPodNameKey): "my-very-cool-pod",
 				}
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue("service.instance.id", serviceInstanceUUID),
-					stringKeyValue("service.name", serviceName),
-					stringKeyValue("service.version", serviceVersion),
+					stringKeyValue(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID),
+					stringKeyValue(string(semconv.ServiceNameKey), serviceName),
+					stringKeyValue(string(semconv.ServiceVersionKey), serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue("env", "prod"),
-					stringKeyValue("host.arch", runtime.GOARCH),
-					stringKeyValue("host.name", hostname),
-					stringKeyValue("k8s.pod.name", "my-very-cool-pod"),
-					stringKeyValue("os.description", description),
-					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
+					stringKeyValue(string(semconv.HostNameKey), hostname),
+					stringKeyValue(string(semconv.K8SPodNameKey), "my-very-cool-pod"),
+					stringKeyValue(string(semconv.OSDescriptionKey), description),
+					stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
 				},
 			},
 		},
@@ -128,20 +126,20 @@ func TestCreateAgentDescription(t *testing.T) {
 			name: "Extra attributes override",
 			cfg: func(c *Config) {
 				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
-					"host.name": "override-host",
+					string(semconv.HostNameKey): "override-host",
 				}
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue("service.instance.id", serviceInstanceUUID),
-					stringKeyValue("service.name", serviceName),
-					stringKeyValue("service.version", serviceVersion),
+					stringKeyValue(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID),
+					stringKeyValue(string(semconv.ServiceNameKey), serviceName),
+					stringKeyValue(string(semconv.ServiceVersionKey), serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue("host.arch", runtime.GOARCH),
-					stringKeyValue("host.name", "override-host"),
-					stringKeyValue("os.description", description),
-					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
+					stringKeyValue(string(semconv.HostNameKey), "override-host"),
+					stringKeyValue(string(semconv.OSDescriptionKey), description),
+					stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
 				},
 			},
 		},
@@ -152,16 +150,16 @@ func TestCreateAgentDescription(t *testing.T) {
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue("service.instance.id", serviceInstanceUUID),
-					stringKeyValue("service.name", serviceName),
-					stringKeyValue("service.version", serviceVersion),
+					stringKeyValue(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID),
+					stringKeyValue(string(semconv.ServiceNameKey), serviceName),
+					stringKeyValue(string(semconv.ServiceVersionKey), serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(extraResourceAttrKey, extraResourceAttrValue),
-					stringKeyValue("host.arch", runtime.GOARCH),
-					stringKeyValue("host.name", hostname),
-					stringKeyValue("os.description", description),
-					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
+					stringKeyValue(string(semconv.HostNameKey), hostname),
+					stringKeyValue(string(semconv.OSDescriptionKey), description),
+					stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
 				},
 			},
 		},
@@ -173,9 +171,9 @@ func TestCreateAgentDescription(t *testing.T) {
 			tc.cfg(cfg)
 
 			set := extensiontest.NewNopSettings(extensiontest.NopType)
-			set.Resource.Attributes().PutStr("service.name", serviceName)
-			set.Resource.Attributes().PutStr("service.version", serviceVersion)
-			set.Resource.Attributes().PutStr("service.instance.id", serviceInstanceUUID)
+			set.Resource.Attributes().PutStr(string(semconv.ServiceNameKey), serviceName)
+			set.Resource.Attributes().PutStr(string(semconv.ServiceVersionKey), serviceVersion)
+			set.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), serviceInstanceUUID)
 			set.Resource.Attributes().PutStr(extraResourceAttrKey, extraResourceAttrValue)
 
 			o, err := newOpampAgent(cfg, set)
@@ -776,115 +774,6 @@ func TestOpAMPAgent_Dependencies(t *testing.T) {
 
 		require.Equal(t, []component.ID{authID}, o.Dependencies())
 	})
-}
-
-func TestOpAMPAgent_onCommand(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on windows since SIGHUP isn't a recognized signal")
-	}
-
-	t.Run("restart capability not enabled", func(t *testing.T) {
-		agent := opampAgent{
-			logger: zaptest.NewLogger(t),
-			capabilities: Capabilities{
-				AcceptsRestartCommand: false,
-			},
-		}
-
-		ctx, cancel := context.WithCancel(t.Context())
-		t.Cleanup(cancel)
-
-		sighupReceived := make(chan bool, 1)
-		setupSignalHandler(ctx, t, func() {
-			sighupReceived <- true
-		})
-
-		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
-			Type: protobufs.CommandType_CommandType_Restart,
-		}))
-
-		select {
-		case <-sighupReceived:
-			t.Error("shouldn't have received SIGHUP")
-		case <-time.After(250 * time.Millisecond):
-			// success
-		}
-	})
-	t.Run("happy path - not restart command", func(t *testing.T) {
-		agent := opampAgent{
-			logger: zaptest.NewLogger(t),
-		}
-
-		ctx, cancel := context.WithCancel(t.Context())
-		t.Cleanup(cancel)
-
-		sighupReceived := make(chan bool, 1)
-		setupSignalHandler(ctx, t, func() {
-			sighupReceived <- true
-		})
-
-		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
-			Type: 13,
-		}))
-
-		select {
-		case <-sighupReceived:
-			t.Error("shouldn't have received SIGHUP")
-		case <-time.After(250 * time.Millisecond):
-			// success
-		}
-	})
-	t.Run("happy path", func(t *testing.T) {
-		agent := opampAgent{
-			logger: zaptest.NewLogger(t),
-			capabilities: Capabilities{
-				AcceptsRestartCommand: true,
-			},
-		}
-
-		ctx, cancel := context.WithCancel(t.Context())
-		t.Cleanup(cancel)
-
-		sighupReceived := make(chan bool, 1)
-		setupSignalHandler(ctx, t, func() {
-			sighupReceived <- true
-		})
-
-		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
-			Type: protobufs.CommandType_CommandType_Restart,
-		}))
-
-		select {
-		case <-sighupReceived:
-			// Success
-		case <-time.After(250 * time.Millisecond):
-			t.Error("should have received SIGHUP")
-		}
-	})
-}
-
-func setupSignalHandler(ctx context.Context, tb testing.TB, signalCallback func()) {
-	tb.Helper()
-
-	sigChan := make(chan os.Signal, 1)
-	// Notify sigChan when SIGHUP is received
-	signal.Notify(sigChan, syscall.SIGHUP)
-	tb.Cleanup(func() {
-		signal.Stop(sigChan)
-	})
-
-	go func() {
-		for {
-			select {
-			case sig := <-sigChan:
-				if sig == syscall.SIGHUP {
-					signalCallback()
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
 }
 
 type mockStatusAggregator struct {

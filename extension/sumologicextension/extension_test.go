@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
@@ -28,7 +29,12 @@ import (
 )
 
 func setupTestMain(m *testing.M) {
-	// No-op function. Previously used to enable feature gates.
+	// Enable the feature gates before all tests to avoid flaky tests.
+	err := featuregate.GlobalRegistry().Set(updateCollectorMetadataID, true)
+	if err != nil {
+		panic("unable to set feature gates")
+	}
+
 	code := m.Run()
 	os.Exit(code)
 }
@@ -1598,8 +1604,6 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
-
-	se.host = componenttest.NewNopHost()
 
 	httpClient, err := se.getHTTPClient(t.Context(), se.conf.ClientConfig, api.OpenRegisterResponsePayload{})
 	require.NoError(t, err)

@@ -93,15 +93,6 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
-			{
-				Name: "on_error_drop",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
-					cfg.OnError = "drop"
-					return cfg
-				}(),
-			},
 		},
 	}.Run(t)
 }

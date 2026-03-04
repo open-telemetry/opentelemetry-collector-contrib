@@ -45,7 +45,6 @@ func createDefaultConfig() component.Config {
 		AggregationInterval:   defaultAggregationInterval,
 		EnableMetricType:      defaultEnableMetricType,
 		IsMonotonicCounter:    defaultIsMonotonicCounter,
-		CounterType:           protocol.DefaultCounterType,
 		TimerHistogramMapping: defaultTimerHistogramMapping,
 		SocketPermissions:     defaultSocketPermissions,
 	}

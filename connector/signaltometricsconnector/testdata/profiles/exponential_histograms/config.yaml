@@ -1,4 +1,4 @@
-signal_to_metrics:
+signaltometrics:
   profiles:
     - name: total.profiles.exphistogram
       description: Profiles as exponential histogram with duration

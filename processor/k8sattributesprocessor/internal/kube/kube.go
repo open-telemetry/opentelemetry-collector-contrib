@@ -4,12 +4,14 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
+	"fmt"
 	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -17,6 +19,10 @@ import (
 const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
+	tagNodeName             = "k8s.node.name"
+	tagStartTime            = "k8s.pod.start_time"
+	tagHostName             = "k8s.pod.hostname"
+	tagClusterUID           = "k8s.cluster.uid"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
@@ -35,6 +41,7 @@ const (
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
+	K8sIPLabelName   = "k8s.pod.ip"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod
@@ -105,7 +112,7 @@ type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, Extra
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
-type APIClientsetProvider func(config k8sconfig.APIConfig) (k8sconfig.ClientBundle, error)
+type APIClientsetProvider func(config k8sconfig.APIConfig) (kubernetes.Interface, error)
 
 // Pod represents a kubernetes pod.
 type Pod struct {
@@ -141,8 +148,7 @@ type PodContainers struct {
 type Container struct {
 	Name              string
 	ImageName         string
-	ImageTag          string   // Legacy: single tag (stable uses ImageTags)
-	ImageTags         []string // Stable: array of tags
+	ImageTag          string
 	ServiceInstanceID string
 	ServiceVersion    string
 
@@ -249,8 +255,7 @@ type ExtractionRules struct {
 	ContainerID               bool
 	ContainerImageName        bool
 	ContainerImageRepoDigests bool
-	ContainerImageTag         bool // Legacy
-	ContainerImageTags        bool // Stable
+	ContainerImageTag         bool
 	ClusterUID                bool
 	ServiceNamespace          bool
 	ServiceName               bool
@@ -311,72 +316,65 @@ type FieldExtractionRule struct {
 	From string
 }
 
-func (r *FieldExtractionRule) extractFromPodMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+func (r *FieldExtractionRule) extractFromPodMetadata(metadata, tags map[string]string, formatter string) {
 	// By default if the From field is not set for labels and annotations we want to extract them from pod
 	if r.From == MetadataFromPod || r.From == "" {
-		r.extractFromMetadata(metadata, tags, attrFunc)
+		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromNamespace {
-		r.extractFromMetadata(metadata, tags, attrFunc)
+		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromNodeMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+func (r *FieldExtractionRule) extractFromNodeMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromNode {
-		r.extractFromMetadata(metadata, tags, attrFunc)
+		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromDeployment {
-		r.extractFromMetadata(metadata, tags, attrFunc)
+		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromStatefulSet {
-		r.extractFromMetadata(metadata, tags, attrFunc)
+		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromDaemonSet {
-		r.extractFromMetadata(metadata, tags, attrFunc)
+		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromJob {
-		r.extractFromMetadata(metadata, tags, attrFunc)
+		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]string, formatter string) {
 	if r.KeyRegex != nil {
 		for k, v := range metadata {
 			if r.KeyRegex.MatchString(k) && v != "" {
 				var name string
-				if r.HasKeyRegexReference && r.Name != "" {
+				if r.HasKeyRegexReference {
 					var result []byte
 					name = string(r.KeyRegex.ExpandString(result, r.Name, k, r.KeyRegex.FindStringSubmatchIndex(k)))
-					tags[name] = v
 				} else {
-					kv := attrFunc(k, v)
-					tags[string(kv.Key)] = kv.Value.AsString()
+					name = fmt.Sprintf(formatter, k)
 				}
+				tags[name] = v
 			}
 		}
 	} else if v, ok := metadata[r.Key]; ok {
-		// Use attrFunc to determine attribute name if no custom name was specified
-		name := r.Name
-		if name == "" {
-			kv := attrFunc(r.Key, v)
-			name = string(kv.Key)
-		}
-		tags[name] = r.extractField(v)
+		tags[r.Name] = r.extractField(v)
 	}
 }
 
@@ -401,6 +399,7 @@ type Associations struct {
 
 // Association represents one association rule
 type Association struct {
+	Name    string
 	Sources []AssociationSource
 }
 

@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -48,12 +47,12 @@ var jmxJarReleases = map[string]integrationConfig{
 	},
 	"1.46.0-alpha-scraper-custom-jmxconfig": {
 		downloadURL: "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/1.46.0-alpha/opentelemetry-jmx-scraper-1.46.0-alpha.jar",
-		jmxConfig:   filepath.Join("testdata", "integration", "1.46.0-alpha-scraper-custom-jmxconfig", "simple-tomcat.yaml"),
+		jmxConfig:   filepath.Join("testdata", "integration", "1.46.0-alpha-scraper-custom-jmxconfig", "simple-cassandra.yaml"),
 	},
 }
 
 // It is recommended that this test be run locally with a longer timeout than the default 30s
-// go test -timeout 300s -run ^TestJMXIntegration$ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
+// go test -timeout 60s -run ^TestJMXIntegration$ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
 func TestJMXIntegration(t *testing.T) {
 	versionToJar := setupJARs(t)
 	t.Cleanup(func() {
@@ -103,29 +102,16 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				Image: "tomcat:11-jdk25",
+				Image: "cassandra:3.11",
 				Env: map[string]string{
-					"CATALINA_OPTS": "-Dcom.sun.management.jmxremote " +
-						"-Dcom.sun.management.jmxremote.port=" + jmxPort + " " +
-						"-Dcom.sun.management.jmxremote.rmi.port=" + jmxPort + " " +
-						"-Dcom.sun.management.jmxremote.authenticate=true " +
-						"-Dcom.sun.management.jmxremote.password.file=/usr/local/tomcat/conf/jmxremote.password " +
-						"-Dcom.sun.management.jmxremote.access.file=/usr/local/tomcat/conf/jmxremote.access " +
-						"-Dcom.sun.management.jmxremote.ssl=false " +
-						"-Djava.rmi.server.hostname=0.0.0.0",
+					"LOCAL_JMX": "no",
+					"JVM_OPTS":  "-Djava.rmi.server.hostname=0.0.0.0",
 				},
-				Files: []testcontainers.ContainerFile{
-					{
-						HostFilePath:      filepath.Join("testdata", "integration", "jmxremote.password"),
-						ContainerFilePath: "/usr/local/tomcat/conf/jmxremote.password",
-						FileMode:          0o600,
-					},
-					{
-						HostFilePath:      filepath.Join("testdata", "integration", "jmxremote.access"),
-						ContainerFilePath: "/usr/local/tomcat/conf/jmxremote.access",
-						FileMode:          0o600,
-					},
-				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "jmxremote.password"),
+					ContainerFilePath: "/etc/cassandra/jmxremote.password",
+					FileMode:          400,
+				}},
 				ExposedPorts: []string{jmxPort + ":" + jmxPort},
 				WaitingFor:   wait.ForListeningPort(jmxPort),
 			}),
@@ -139,10 +125,10 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 				if jmxConfig != "" {
 					rCfg.JmxConfigs = jmxConfig
 				} else {
-					rCfg.TargetSystem = "tomcat"
+					rCfg.TargetSystem = "cassandra"
 				}
-				rCfg.Username = "admin"
-				rCfg.Password = "admin"
+				rCfg.Username = "cassandra"
+				rCfg.Password = "cassandra"
 				rCfg.ResourceAttributes = map[string]string{
 					"myattr":      "myvalue",
 					"myotherattr": "myothervalue",
@@ -170,13 +156,10 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	params := receivertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
-		ControllerConfig: scraperhelper.ControllerConfig{
-			CollectionInterval: 100 * time.Millisecond,
-			InitialDelay:       1 * time.Second,
-		},
-		Endpoint:     "service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi",
-		JARPath:      "/notavalidpath",
-		TargetSystem: "jvm",
+		CollectionInterval: 100 * time.Millisecond,
+		Endpoint:           "service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi",
+		JARPath:            "/notavalidpath",
+		TargetSystem:       "jvm",
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",
 			TimeoutSettings: exporterhelper.TimeoutConfig{

@@ -35,10 +35,13 @@ func ParallelRaceCompute(tb testing.TB, count int, fn func() error) {
 		wg    sync.WaitGroup
 	)
 	for range count {
-		wg.Go(func() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
 			<-start
 			assert.NoError(tb, fn(), "Must not error when executing function")
-		})
+		}()
 	}
 	close(start)
 

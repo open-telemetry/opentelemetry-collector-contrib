@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
-	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
+	"github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -82,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 				TargetInfo: TargetInfo{
 					Enabled: true,
 				},
-				RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+				RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 			},
 		},
 		{
@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "unknown_protobuf_message"),
-			errorMessage: "unknown type for remote write protobuf message io.prometheus.write.v4.Request, supported: prometheus.WriteRequest, io.prometheus.write.v2.Request",
+			errorMessage: "unknown remote write protobuf message io.prometheus.write.v4.Request, supported: prometheus.WriteRequest, io.prometheus.write.v2.Request",
 		},
 	}
 

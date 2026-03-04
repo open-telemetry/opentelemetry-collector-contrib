@@ -118,7 +118,10 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 
 	innerCtx, cancel := context.WithCancel(ctx)
 	cfr.cancel = cancel
-	cfr.goroutines.Go(func() {
+	cfr.goroutines.Add(1)
+
+	go func() {
+		defer cfr.goroutines.Done()
 		cfr.settings.Logger.Debug("cloudfoundry receiver starting")
 		_, tokenErr = tokenProvider.ProvideToken()
 		if tokenErr != nil {
@@ -136,7 +139,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
 		}
 		cfr.settings.Logger.Debug("cloudfoundry receiver stopped")
-	})
+	}()
 	return nil
 }
 

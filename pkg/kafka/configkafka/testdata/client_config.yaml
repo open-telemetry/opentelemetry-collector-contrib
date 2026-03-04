@@ -19,7 +19,6 @@ kafka/full:
     retry:
       max: 10
       backoff: 5s
-  conn_idle_timeout: 5m
 kafka/sasl_aws_msk_iam_oauthbearer:
   auth:
     sasl:
@@ -99,6 +98,3 @@ kafka/foo:
 
 kafka/not_use_leader_epoch:
   use_leader_epoch: false
-
-kafka/conn_idle_timeout:
-  conn_idle_timeout: 5m

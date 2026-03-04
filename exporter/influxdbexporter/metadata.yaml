@@ -1,5 +1,4 @@
 type: influxdb
-display_name: InfluxDB Exporter
 
 status:
   class: exporter

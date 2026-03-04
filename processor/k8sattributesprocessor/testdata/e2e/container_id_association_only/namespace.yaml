@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: e2ek8sattribute-container-id-association-only
-  labels:
-    test-namespace: "container-id-association"

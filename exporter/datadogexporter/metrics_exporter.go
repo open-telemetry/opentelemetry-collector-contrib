@@ -39,7 +39,7 @@ type metricsExporter struct {
 	agntConfig       *config.AgentConfig
 	ctx              context.Context
 	metricsAPI       *datadogV2.MetricsApi
-	tr               otlpmetrics.Provider
+	tr               *otlpmetrics.Translator
 	scrubber         scrub.Scrubber
 	retrier          *clientutil.Retrier
 	onceMetadata     *sync.Once
@@ -68,13 +68,9 @@ func newMetricsExporter(
 	options = append(options,
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
 		otlpmetrics.WithStatsOut(statsOut))
-
-	switch {
-	case featuregates.DisableMetricRemappingFeatureGate.IsEnabled():
-		options = append(options, otlpmetrics.WithoutRuntimeMetricMappings())
-	case featuregates.MetricRemappingDisabledFeatureGate.IsEnabled():
-		// Do nothing.
-	default:
+	if featuregates.MetricRemappingDisabledFeatureGate.IsEnabled() {
+		params.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
+	} else {
 		options = append(options, otlpmetrics.WithRemapping())
 	}
 
@@ -83,7 +79,7 @@ func newMetricsExporter(
 		options = append(options, otlpmetrics.WithInferDeltaInterval())
 	}
 
-	tr, err := otlpmetrics.NewDefaultTranslator(params.TelemetrySettings, attrsTranslator, options...)
+	tr, err := otlpmetrics.NewTranslator(params.TelemetrySettings, attrsTranslator, options...)
 	if err != nil {
 		return nil, err
 	}

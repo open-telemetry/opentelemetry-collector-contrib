@@ -44,5 +44,3 @@ func (r *nopItemFilterResolver) Resolve(string) (ItemFilter, error) {
 func (*nopItemFilterResolver) Shutdown() error {
 	return nil
 }
-
-func (*nopItemCardinalityFilter) StartCache() {}

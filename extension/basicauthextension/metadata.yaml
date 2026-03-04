@@ -1,4 +1,3 @@
-display_name: Basic Auth Authenticator Extension
 type: basicauth
 
 status:
@@ -13,5 +12,3 @@ status:
 
 tests:
   config:
-    htpasswd:
-      inline: "username:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="

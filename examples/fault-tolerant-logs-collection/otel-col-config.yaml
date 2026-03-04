@@ -14,11 +14,11 @@ service:
   pipelines:
     logs:
       receivers: [filelog]
-      exporters: [otlp_grpc/custom]
+      exporters: [otlp/custom]
       processors: []
 
 exporters:
-  otlp_grpc/custom:
+  otlp/custom:
     endpoint: http://0.0.0.0:4242
     sending_queue:
       storage: file_storage/otlpoutput

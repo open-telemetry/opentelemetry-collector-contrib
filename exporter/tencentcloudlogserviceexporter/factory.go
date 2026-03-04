@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 package tencentcloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 
@@ -19,6 +19,7 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
@@ -33,4 +34,12 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exp exporter.Logs, err error) {
 	return newLogsExporter(set, cfg)
+}
+
+func createTracesExporter(
+	_ context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (exporter.Traces, error) {
+	return newTracesExporter(set, cfg)
 }

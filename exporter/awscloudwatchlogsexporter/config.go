@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -44,7 +43,7 @@ type Config struct {
 	Tags map[string]string `mapstructure:"tags"`
 
 	// Queue settings frm the exporterhelper
-	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	QueueSettings exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	logger *zap.Logger
 

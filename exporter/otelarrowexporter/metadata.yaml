@@ -1,5 +1,4 @@
 type: otelarrow
-display_name: OpenTelemetry Arrow Exporter
 
 status:
   class: exporter

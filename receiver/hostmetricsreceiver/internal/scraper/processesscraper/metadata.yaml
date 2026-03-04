@@ -21,7 +21,8 @@ metrics:
     enabled: true
     description: Total number of processes in each state.
     unit: "{processes}"
-    stability: development
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -31,7 +32,8 @@ metrics:
     enabled: true
     description: Total number of created processes.
     unit: "{processes}"
-    stability: development
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative

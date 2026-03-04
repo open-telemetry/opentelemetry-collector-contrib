@@ -241,7 +241,7 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int, batchingInput, batchi
 	rcv.set = set
 	rcv.emitter = emitter
 
-	require.NoError(b, rcv.Start(b.Context(), componenttest.NewNopHost()))
+	require.NoError(b, rcv.Start(b.Context(), nil))
 
 	for b.Loop() {
 		nextIteration <- struct{}{}

@@ -88,7 +88,6 @@ func (m *metricSshcheckDuration) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSshcheckDuration(cfg MetricConfig) metricSshcheckDuration {
 	m := metricSshcheckDuration{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -142,7 +141,6 @@ func (m *metricSshcheckError) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSshcheckError(cfg MetricConfig) metricSshcheckError {
 	m := metricSshcheckError{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -192,7 +190,6 @@ func (m *metricSshcheckSftpDuration) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSshcheckSftpDuration(cfg MetricConfig) metricSshcheckSftpDuration {
 	m := metricSshcheckSftpDuration{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -246,7 +243,6 @@ func (m *metricSshcheckSftpError) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSshcheckSftpError(cfg MetricConfig) metricSshcheckSftpError {
 	m := metricSshcheckSftpError{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -298,7 +294,6 @@ func (m *metricSshcheckSftpStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSshcheckSftpStatus(cfg MetricConfig) metricSshcheckSftpStatus {
 	m := metricSshcheckSftpStatus{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -350,7 +345,6 @@ func (m *metricSshcheckStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSshcheckStatus(cfg MetricConfig) metricSshcheckStatus {
 	m := metricSshcheckStatus{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

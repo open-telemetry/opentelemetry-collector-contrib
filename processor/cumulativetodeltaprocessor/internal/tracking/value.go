@@ -18,18 +18,19 @@ type ValuePoint struct {
 }
 
 type HistogramPoint struct {
-	Count        uint64
-	Sum          float64
-	BucketBounds []float64
-	BucketCounts []uint64
+	Count   uint64
+	Sum     float64
+	Buckets []uint64
 }
 
 func (point *HistogramPoint) Clone() HistogramPoint {
+	bucketValues := make([]uint64, len(point.Buckets))
+	copy(bucketValues, point.Buckets)
+
 	return HistogramPoint{
-		Count:        point.Count,
-		Sum:          point.Sum,
-		BucketBounds: slices.Clone(point.BucketBounds),
-		BucketCounts: slices.Clone(point.BucketCounts),
+		Count:   point.Count,
+		Sum:     point.Sum,
+		Buckets: bucketValues,
 	}
 }
 
@@ -38,8 +39,6 @@ type ExponentialBuckets struct {
 	BucketCounts []uint64
 }
 
-// Coarsen reduces an exponential histogram's scale by bitsLost,
-// which amounts to dividing bucket indices by 2**bitsLost and merging buckets with the same resulting index.
 func (buckets *ExponentialBuckets) Coarsen(bitsLost int32) (out ExponentialBuckets) {
 	out.Offset = buckets.Offset >> bitsLost
 	if len(buckets.BucketCounts) > 0 {
@@ -53,24 +52,23 @@ func (buckets *ExponentialBuckets) Coarsen(bitsLost int32) (out ExponentialBucke
 	return out
 }
 
-// TrimZeros removes buckets below a given bucket index, returning the sum of their counts.
-// This is used when increasing the zero threshold: the removed count will be added to the zero count.
 func (buckets *ExponentialBuckets) TrimZeros(thresholdBucket int32) uint64 {
 	thresholdIndex := thresholdBucket - buckets.Offset
 	if thresholdIndex < 0 {
 		return 0
 	}
-	trimmed := min(int(thresholdIndex)+1, len(buckets.BucketCounts))
+	trimmed := int(thresholdIndex) + 1
+	if trimmed > len(buckets.BucketCounts) {
+		trimmed = len(buckets.BucketCounts)
+	}
 	var zeroCount uint64
 	for _, bucketCount := range buckets.BucketCounts[:trimmed] {
 		zeroCount += bucketCount
 	}
 	buckets.BucketCounts = buckets.BucketCounts[trimmed:]
-	buckets.Offset += int32(trimmed)
 	return zeroCount
 }
 
-// Diff computes the delta between two sets of buckets with the same scale.
 func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out ExponentialBuckets) {
 	for index, bucketCount := range buckets.BucketCounts {
 		if bucketCount == 0 {
@@ -90,8 +88,7 @@ func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out Exponentia
 		if out.BucketCounts == nil {
 			out.Offset = int32(bucket)
 		} else {
-			nextBucket := int(out.Offset) + len(out.BucketCounts)
-			zeros := bucket - nextBucket
+			zeros := bucket - int(out.Offset) + len(out.BucketCounts)
 			out.BucketCounts = append(out.BucketCounts, make([]uint64, zeros)...)
 		}
 		out.BucketCounts = append(out.BucketCounts, diff)

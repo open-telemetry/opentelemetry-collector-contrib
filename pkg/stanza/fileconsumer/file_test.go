@@ -22,7 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
@@ -335,20 +334,16 @@ func TestSymlinkedFiles(t *testing.T) {
 
 	t.Parallel()
 
-	// tokenBatch is a slice of file lines in []byte.
-	type tokenBatch [][]byte
-
 	// Create 30 files with a predictable naming scheme, each containing
 	// 100 log lines.
 	const numFiles = 30
 	const logLinesPerFile = 100
 	const pollInterval = 10 * time.Millisecond
-	const testTickInterval = pollInterval + 1*time.Millisecond
 	tempDir := t.TempDir()
-	expectedTokenMap := map[string]tokenBatch{}
+	expectedTokens := [][]byte{}
 	for i := 1; i <= numFiles; i++ {
-		filePath, expectedTokensBatch := symlinkTestCreateLogFile(t, tempDir, i, logLinesPerFile)
-		expectedTokenMap[filePath] = expectedTokensBatch
+		expectedTokensBatch := symlinkTestCreateLogFile(t, tempDir, i, logLinesPerFile)
+		expectedTokens = append(expectedTokens, expectedTokensBatch...)
 	}
 
 	targetTempDir := t.TempDir()
@@ -367,16 +362,14 @@ func TestSymlinkedFiles(t *testing.T) {
 	sink.ExpectNoCalls(t)
 
 	// Create and update symlink to each of the files over time.
-	for targetLogFilePath, expectedTokens := range expectedTokenMap {
+	for i := 1; i <= numFiles; i++ {
+		targetLogFilePath := filepath.Join(tempDir, fmt.Sprintf("%d.log", i))
 		require.NoError(t, os.Symlink(targetLogFilePath, symlinkFilePath))
-
-		require.Eventually(t, func() bool {
-			sink.ExpectTokens(t, expectedTokens...)
-			return true
-		}, 3*testTickInterval, testTickInterval)
-
+		// The sleep time here must be larger than the poll_interval value
+		time.Sleep(pollInterval + 1*time.Millisecond)
 		require.NoError(t, os.Remove(symlinkFilePath))
 	}
+	sink.ExpectTokens(t, expectedTokens...)
 }
 
 // StartAtEndNewFile tests that when `start_at` is configured to `end`,
@@ -1073,7 +1066,7 @@ func TestDeleteAfterRead(t *testing.T) {
 		require.NoError(t, temp.Close())
 	}
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogAllowFileDeletionFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
 
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
@@ -1208,9 +1201,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	shortFileLine := "short file line"
 	longFileLines := 100000
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogAllowFileDeletionFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogAllowFileDeletionFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), false))
 	}()
 
 	tempDir := t.TempDir()
@@ -1242,9 +1235,11 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 
 	var wg sync.WaitGroup
-	wg.Go(func() {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		operator.poll(ctx)
-	})
+	}()
 
 	for !shortOne || !longOne {
 		if token := sink.NextToken(t); string(token) == shortFileLine {
@@ -1535,7 +1530,7 @@ func TestNoTracking(t *testing.T) {
 	}
 }
 
-func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines int) (path string, tokens [][]byte) {
+func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines int) (tokens [][]byte) {
 	logFilePath := fmt.Sprintf("%s/%d.log", tempDir, fileIdx)
 	temp1 := filetest.OpenFile(t, logFilePath)
 	for i := range numLogLines {
@@ -1544,7 +1539,7 @@ func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines
 		tokens = append(tokens, []byte(msg))
 	}
 	temp1.Close()
-	return logFilePath, tokens
+	return tokens
 }
 
 // TestReadGzipCompressedLogsFromBeginning tests that, when starting from beginning of a gzip compressed file, we

@@ -14,14 +14,8 @@ import (
 
 func TestCreateLogsReceiver(t *testing.T) {
 	cfg := createDefaultConfig()
-	r, err := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-}
 
-func TestCreateMetricsReceiver(t *testing.T) {
-	cfg := createDefaultConfig()
-	r, err := createMetricsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	r, err := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 }

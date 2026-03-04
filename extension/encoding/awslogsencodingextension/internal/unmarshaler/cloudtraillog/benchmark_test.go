@@ -75,7 +75,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		},
 	}
 
-	u := NewCloudTrailLogUnmarshaler(component.BuildInfo{}, false)
+	u := NewCloudTrailLogUnmarshaler(component.BuildInfo{})
 	for name, benchmark := range benchmarks {
 		// Generate the log content with the specified number of records
 		logContent := createCloudTrailLogContent(b, benchmark.nLogs)

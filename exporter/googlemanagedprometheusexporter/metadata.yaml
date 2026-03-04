@@ -1,5 +1,4 @@
 type: googlemanagedprometheus
-display_name: Google Cloud Managed Prometheus Exporter
 
 status:
   class: exporter

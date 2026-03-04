@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	vultrmeta "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/vultr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -71,22 +72,19 @@ func TestVultrDetector_Detect_OK(t *testing.T) {
 		},
 	})
 
-	cfg := CreateDefaultConfig()
-	cfg.ResourceAttributes.CloudPlatform.Enabled = true
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	require.Equal(t, conventions.SchemaURL, schemaURL)
 
 	got := res.Attributes().AsRaw()
 	want := map[string]any{
-		"cloud.provider": TypeStr,
-		"cloud.platform": TypeStr + ".cloud_compute",
-		"cloud.region":   strings.ToLower(region),
-		"host.id":        v2ID,
-		"host.name":      hostName,
+		string(conventions.CloudProviderKey): TypeStr,
+		string(conventions.CloudRegionKey):   strings.ToLower(region),
+		string(conventions.HostIDKey):        v2ID,
+		string(conventions.HostNameKey):      hostName,
 	}
 	assert.Equal(t, want, got)
 }

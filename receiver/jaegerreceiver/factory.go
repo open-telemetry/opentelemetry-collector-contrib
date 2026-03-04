@@ -53,10 +53,7 @@ func createDefaultConfig() component.Config {
 				},
 			}),
 			ThriftHTTP: configoptional.Default(confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  defaultHTTPEndpoint,
-					Transport: confignet.TransportTypeTCP,
-				},
+				Endpoint: defaultHTTPEndpoint,
 			}),
 			ThriftBinaryUDP: configoptional.Default(ProtocolUDP{
 				Endpoint:        defaultThriftBinaryEndpoint,

@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap/zaptest"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
@@ -79,14 +80,14 @@ func TestDetect(t *testing.T) {
 			detector:          newTestDetector(t, &providerResponse{}, someErr, nil, nil),
 			expectedErr:       someErr,
 			expectedResource:  pcommon.NewResource(),
-			expectedSchemaURL: "https://opentelemetry.io/schemas/",
+			expectedSchemaURL: conventions.SchemaURL,
 		},
 		{
 			name:              "error getting k8s cluster version",
 			detector:          newTestDetector(t, &providerResponse{}, nil, someErr, nil),
 			expectedErr:       someErr,
 			expectedResource:  pcommon.NewResource(),
-			expectedSchemaURL: "https://opentelemetry.io/schemas/",
+			expectedSchemaURL: conventions.SchemaURL,
 		},
 		{
 			name:             "error getting infrastructure details",
@@ -117,13 +118,13 @@ func TestDetect(t *testing.T) {
 			expectedResource: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attrs := res.Attributes()
-				attrs.PutStr("k8s.cluster.name", "test-d-bm4rt")
-				attrs.PutStr("cloud.provider", "aws")
-				attrs.PutStr("cloud.platform", "aws_openshift")
-				attrs.PutStr("cloud.region", "us-east-1")
+				attrs.PutStr(string(conventions.K8SClusterNameKey), "test-d-bm4rt")
+				attrs.PutStr(string(conventions.CloudProviderKey), "aws")
+				attrs.PutStr(string(conventions.CloudPlatformKey), "aws_openshift")
+				attrs.PutStr(string(conventions.CloudRegionKey), "us-east-1")
 				return res
 			}(),
-			expectedSchemaURL: "https://opentelemetry.io/schemas/",
+			expectedSchemaURL: conventions.SchemaURL,
 		},
 	}
 	for _, tc := range tt {
@@ -136,7 +137,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			assert.Equal(t, tc.expectedResource, resource)
-			assert.Contains(t, schemaURL, tc.expectedSchemaURL)
+			assert.Equal(t, tc.expectedSchemaURL, schemaURL)
 		})
 	}
 }

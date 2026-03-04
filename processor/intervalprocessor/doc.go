@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 // package intervalprocessor implements a processor which aggregates cumulative
 // metrics over time, and periodically exports the latest values

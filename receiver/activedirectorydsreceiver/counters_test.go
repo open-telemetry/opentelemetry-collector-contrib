@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 	"testing"
 
@@ -53,14 +52,16 @@ type mockCounterCreator struct {
 }
 
 func (m *mockCounterCreator) Create(counterName string) (winperfcounters.PerfCounterWatcher, error) {
-	if slices.Contains(m.availableCounterNames, counterName) {
-		watcher := &mockPerfCounterWatcher{
-			val: float64(m.created),
+	for _, availableCounter := range m.availableCounterNames {
+		if counterName == availableCounter {
+			watcher := &mockPerfCounterWatcher{
+				val: float64(m.created),
+			}
+
+			m.created++
+
+			return watcher, nil
 		}
-
-		m.created++
-
-		return watcher, nil
 	}
 
 	return nil, fmt.Errorf("counter %s is not available\navailable counters:\n\t%s", counterName, strings.Join(m.availableCounterNames, "\n\t"))

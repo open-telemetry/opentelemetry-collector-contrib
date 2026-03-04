@@ -117,7 +117,7 @@ func TestValidateInvalidConfigs(t *testing.T) {
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 10*time.Second, cfg.ControllerConfig.CollectionInterval)
+	assert.Equal(t, 10*time.Second, cfg.CollectionInterval)
 }
 
 func TestParseConfig(t *testing.T) {

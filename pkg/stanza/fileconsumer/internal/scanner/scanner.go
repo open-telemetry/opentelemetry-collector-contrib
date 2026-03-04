@@ -6,10 +6,9 @@ package scanner // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
+	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 const DefaultBufferSize = 16 * 1024
@@ -44,7 +43,7 @@ func (s *Scanner) Error() error {
 		return stanzaerrors.NewError("log entry too large", "increase max_log_size or ensure that multiline regex patterns terminate")
 	}
 	if err != nil {
-		return fmt.Errorf("scanner error: %w", err)
+		return stanzaerrors.Wrap(err, "scanner error")
 	}
 	return nil
 }

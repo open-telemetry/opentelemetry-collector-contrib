@@ -38,7 +38,6 @@ func (c *Drop) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *sam
 		if err != nil {
 			return samplingpolicy.Unspecified, err
 		}
-		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		if decision == samplingpolicy.NotSampled || decision == samplingpolicy.InvertNotSampled {
 			return samplingpolicy.NotSampled, nil
 		}

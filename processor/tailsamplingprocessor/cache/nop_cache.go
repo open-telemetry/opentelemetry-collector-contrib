@@ -5,17 +5,20 @@ package cache // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import "go.opentelemetry.io/collector/pdata/pcommon"
 
-type nopDecisionCache struct{}
+type nopDecisionCache[V any] struct{}
 
-var _ Cache = (*nopDecisionCache)(nil)
+var _ Cache[any] = (*nopDecisionCache[any])(nil)
 
-func NewNopDecisionCache() Cache {
-	return &nopDecisionCache{}
+func NewNopDecisionCache[V any]() Cache[V] {
+	return &nopDecisionCache[V]{}
 }
 
-func (*nopDecisionCache) Get(pcommon.TraceID) (DecisionMetadata, bool) {
-	return DecisionMetadata{}, false
+func (*nopDecisionCache[V]) Get(pcommon.TraceID) (V, bool) {
+	var v V
+	return v, false
 }
 
-func (*nopDecisionCache) Put(_ pcommon.TraceID, _ DecisionMetadata) {
+func (*nopDecisionCache[V]) Put(_ pcommon.TraceID, _ V) {
 }
+
+func (*nopDecisionCache[V]) Delete(_ pcommon.TraceID) {}

@@ -28,7 +28,6 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		APIBaseURL:                    DefaultAPIBaseURL,
 		CollectorCredentialsDirectory: defaultCredsPath,
 		DiscoverCollectorTags:         true,
-		UpdateMetadata:                true,
 		BackOff: backOffConfig{
 			InitialInterval: backoff.DefaultInitialInterval,
 			MaxInterval:     backoff.DefaultMaxInterval,

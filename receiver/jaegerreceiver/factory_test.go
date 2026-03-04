@@ -122,10 +122,7 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).ThriftHTTP = configoptional.Some(confighttp.ServerConfig{
-		NetAddr: confignet.AddrConfig{
-			Endpoint:  "0.0.0.0:14268",
-			Transport: confignet.TransportTypeTCP,
-		},
+		Endpoint: "0.0.0.0:14268",
 		TLS: configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
@@ -154,7 +151,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	r, err := factory.CreateTraces(t.Context(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, "localhost:14268", r.(*jReceiver).config.ThriftHTTP.Get().NetAddr.Endpoint, "http port should be default")
+	assert.Equal(t, "localhost:14268", r.(*jReceiver).config.ThriftHTTP.Get().Endpoint, "http port should be default")
 }
 
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {

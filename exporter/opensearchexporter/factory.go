@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 package opensearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 
@@ -10,7 +10,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -37,7 +36,6 @@ func newDefaultConfig() component.Config {
 		BulkAction:       defaultBulkAction,
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		MappingsSettings: MappingsSettings{Mode: defaultMappingMode},
-		QueueConfig:      configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 

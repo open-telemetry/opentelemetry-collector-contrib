@@ -6,7 +6,6 @@ package fluentforwardreceiver
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -107,7 +106,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 				"h":          255,
 				"i":          65535,
 				"j":          4294967295,
-				"k":          strconv.FormatUint(^uint64(0), 10),
+				"k":          -1,
 				"l":          "(0+0i)",
 				"m":          "\001e\002",
 				"n":          []any{"first", "second"},

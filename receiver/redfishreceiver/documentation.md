@@ -24,6 +24,8 @@ Measures the power state of a chassis (-1 unknown, 0 off, 1 on).
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| system.host_name | System host name. | Any Str | Recommended |
+| base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | chassis.asset_tag | Chassis asset tag. | Any Str | Recommended |
 | chassis.model | Chassis model. | Any Str | Recommended |
@@ -45,6 +47,8 @@ Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| system.host_name | System host name. | Any Str | Recommended |
+| base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | chassis.asset_tag | Chassis asset tag. | Any Str | Recommended |
 | chassis.model | Chassis model. | Any Str | Recommended |
@@ -66,6 +70,8 @@ Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| system.host_name | System host name. | Any Str | Recommended |
+| base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | chassis.asset_tag | Chassis asset tag. | Any Str | Recommended |
 | chassis.model | Chassis model. | Any Str | Recommended |
@@ -87,6 +93,8 @@ Measures the reading of a chassis fan.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| system.host_name | System host name. | Any Str | Recommended |
+| base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | fan.name | Fan name. | Any Str | Recommended |
 | fan.reading_units | Fan reading units. | Any Str | Recommended |
@@ -103,6 +111,8 @@ Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| system.host_name | System host name. | Any Str | Recommended |
+| base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | fan.name | Fan name. | Any Str | Recommended |
 
@@ -118,6 +128,8 @@ Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| system.host_name | System host name. | Any Str | Recommended |
+| base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | fan.name | Fan name. | Any Str | Recommended |
 
@@ -133,9 +145,11 @@ Measures the power state of a system (-1 unknown, 0 off, 1 on).
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| base_url | base url. | Any Str | Recommended |
 | system.id | System id. | Any Str | Recommended |
 | system.asset_tag | System asset tag. | Any Str | Recommended |
 | system.bios_version | System bios version. | Any Str | Recommended |
+| system.host_name | System host name. | Any Str | Recommended |
 | system.model | System model. | Any Str | Recommended |
 | system.name | System name. | Any Str | Recommended |
 | system.manufacturer | System manufacturer. | Any Str | Recommended |
@@ -155,9 +169,11 @@ Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| base_url | base url. | Any Str | Recommended |
 | system.id | System id. | Any Str | Recommended |
 | system.asset_tag | System asset tag. | Any Str | Recommended |
 | system.bios_version | System bios version. | Any Str | Recommended |
+| system.host_name | System host name. | Any Str | Recommended |
 | system.model | System model. | Any Str | Recommended |
 | system.name | System name. | Any Str | Recommended |
 | system.manufacturer | System manufacturer. | Any Str | Recommended |
@@ -177,9 +193,11 @@ Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| base_url | base url. | Any Str | Recommended |
 | system.id | System id. | Any Str | Recommended |
 | system.asset_tag | System asset tag. | Any Str | Recommended |
 | system.bios_version | System bios version. | Any Str | Recommended |
+| system.host_name | System host name. | Any Str | Recommended |
 | system.model | System model. | Any Str | Recommended |
 | system.name | System name. | Any Str | Recommended |
 | system.manufacturer | System manufacturer. | Any Str | Recommended |
@@ -199,6 +217,8 @@ Measures the reading of a chassis temperature.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| system.host_name | System host name. | Any Str | Recommended |
+| base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | temperature.name | Temperature name. | Any Str | Recommended |
 
@@ -214,6 +234,8 @@ Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 wa
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| system.host_name | System host name. | Any Str | Recommended |
+| base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | temperature.name | Temperature name. | Any Str | Recommended |
 
@@ -229,12 +251,7 @@ Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
+| system.host_name | System host name. | Any Str | Recommended |
+| base_url | base url. | Any Str | Recommended |
 | chassis.id | Chassis id. | Any Str | Recommended |
 | temperature.name | Temperature name. | Any Str | Recommended |
-
-## Resource Attributes
-
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| base_url | base url. | Any Str | true |
-| system.host_name | System host name. | Any Str | true |

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	upcloudmeta "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/upcloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -76,14 +77,14 @@ func TestUpcloudDetector_Detect_OK(t *testing.T) {
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	require.Equal(t, conventions.SchemaURL, schemaURL)
 
 	got := res.Attributes().AsRaw()
 	want := map[string]any{
-		"cloud.provider": cloud,
-		"cloud.region":   region,
-		"host.id":        instanceID,
-		"host.name":      hostName,
+		string(conventions.CloudProviderKey): cloud,
+		string(conventions.CloudRegionKey):   region,
+		string(conventions.HostIDKey):        instanceID,
+		string(conventions.HostNameKey):      hostName,
 	}
 	assert.Equal(t, want, got)
 }

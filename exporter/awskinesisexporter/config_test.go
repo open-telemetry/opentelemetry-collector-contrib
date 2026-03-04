@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -36,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 				Encoding: Encoding{
@@ -62,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 				Encoding: Encoding{
 					Name:        "otlp-proto",
 					Compression: "none",
@@ -101,15 +100,16 @@ func TestConfigCheck(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	cfg := &Config{
-		QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
+		QueueSettings: exporterhelper.QueueBatchConfig{
+			Enabled:      true,
 			NumConsumers: -1,
-		}),
+		},
 	}
 	err := cfg.Validate()
 	assert.ErrorContains(t, err, "queue settings has invalid configuration",
 		"Validate() error = %v, wantErr %v", err, "queue settings has invalid configuration")
 
-	cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
+	cfg.QueueSettings.Enabled = false
 	err = cfg.Validate()
 	assert.NoError(t, err, "Validate() error = %v, wantNoErr", err)
 }

@@ -28,7 +28,8 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	qs := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	qs := exporterhelper.NewDefaultQueueConfig()
+	qs.Enabled = false
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 30 * time.Second
 	clientConfig.Compression = "gzip"

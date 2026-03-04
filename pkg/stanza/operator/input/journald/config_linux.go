@@ -6,7 +6,6 @@
 package journald // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -195,7 +194,7 @@ func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd,
 	return func(ctx context.Context, cursor []byte) cmd {
 		// Copy args and if needed, add the cursor flag
 		journalArgs := append([]string{}, args...)
-		if len(bytes.TrimSpace(cursor)) > 0 {
+		if cursor != nil {
 			journalArgs = append(journalArgs, "--after-cursor", string(cursor))
 		}
 		cmd := exec.CommandContext(ctx, c.JournalctlPath, journalArgs...) // #nosec - ...

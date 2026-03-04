@@ -82,6 +82,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			r.Offset = currentEOF
 		}()
 	case "auto":
+		// Identifying a filename by its extension may not always be correct. We could have a compressed file without the .gz extension
 		if r.FileType == gzipExtension {
 			currentEOF, err := r.createGzipReader()
 			if err != nil {
@@ -323,11 +324,14 @@ func (r *Reader) Validate() bool {
 	if r.file == nil {
 		return false
 	}
-	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "", r.set.Logger)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "")
 	if err != nil {
 		return false
 	}
-	return refreshedFingerprint.StartsWith(r.Fingerprint)
+	if refreshedFingerprint.StartsWith(r.Fingerprint) {
+		return true
+	}
+	return false
 }
 
 func (r *Reader) GetFileName() string {
@@ -343,7 +347,7 @@ func (r *Reader) updateFingerprint() {
 	if r.file == nil {
 		return
 	}
-	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "", r.set.Logger)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize, r.compression != "")
 	if err != nil {
 		return
 	}

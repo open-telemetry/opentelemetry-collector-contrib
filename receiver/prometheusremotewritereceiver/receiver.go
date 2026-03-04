@@ -3,10 +3,10 @@
 package prometheusremotewritereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver"
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -15,8 +15,7 @@ import (
 	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
-	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
-	"github.com/prometheus/common/model"
+	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -25,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -41,6 +39,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 	if err != nil {
 		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
 	}
+
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -49,12 +48,6 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 			ReadTimeout: 60 * time.Second,
 		},
 		rmCache: cache,
-		bodyBufferPool: &sync.Pool{
-			New: func() any {
-				// Pre-allocate 4KiB
-				return bytes.NewBuffer(make([]byte, 0, 4*1024))
-			},
-		},
 	}, nil
 }
 
@@ -68,8 +61,6 @@ type prometheusRemoteWriteReceiver struct {
 
 	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
 	obsrecv *receiverhelper.ObsReport
-
-	bodyBufferPool *sync.Pool
 }
 
 // metricIdentity contains all the components that uniquely identify a metric
@@ -125,7 +116,7 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 		return fmt.Errorf("failed to create obsreport: %w", err)
 	}
 
-	prw.server, err = prw.config.ToServer(ctx, host.GetExtensions(), prw.settings.TelemetrySettings, mux)
+	prw.server, err = prw.config.ToServer(ctx, host, prw.settings.TelemetrySettings, mux)
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
@@ -134,11 +125,13 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 		return fmt.Errorf("failed to create prometheus remote-write listener: %w", err)
 	}
 
-	prw.wg.Go(func() {
+	prw.wg.Add(1)
+	go func() {
+		defer prw.wg.Done()
 		if err := prw.server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting prometheus remote-write receiver: %w", err)))
 		}
-	})
+	}()
 	return nil
 }
 
@@ -169,7 +162,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return
 	}
-	if msgType != remoteapi.WriteV2MessageType {
+	if msgType != promconfig.RemoteWriteProtoMsgV2 {
 		prw.settings.Logger.Warn("message received with unsupported proto version, rejecting")
 		http.Error(w, "Unsupported proto version", http.StatusUnsupportedMediaType)
 		return
@@ -177,17 +170,16 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 
 	// After parsing the content-type header, the next step would be to handle content-encoding.
 	// Luckly confighttp's Server has middleware that already decompress the request body for us.
-	buf := prw.bodyBufferPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer prw.bodyBufferPool.Put(buf)
-	_, err = buf.ReadFrom(req.Body)
+
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		prw.settings.Logger.Warn("Error reading remote write request body", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	var prw2Req writev2.Request
-	if err = proto.Unmarshal(buf.Bytes(), &prw2Req); err != nil {
+	if err = proto.Unmarshal(body, &prw2Req); err != nil {
 		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -200,32 +192,24 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
-	// Return early if metric count is 0.
+	w.WriteHeader(http.StatusNoContent)
+
+	// Return if metric count is 0.
 	if m.MetricCount() == 0 {
-		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-
 	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
 	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
-	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
 	if err != nil {
 		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		if consumererror.IsPermanent(err) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
 	}
-
-	w.WriteHeader(http.StatusNoContent)
+	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
 // We can't expect that senders of remote-write v1 will add the "proto=" parameter since it was not
 // a requirement in v1. So, if the parameter is not found, we assume v1.
-func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.WriteMessageType, error) {
+func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig.RemoteWriteProtoMsg, error) {
 	contentType = strings.TrimSpace(contentType)
 
 	parts := strings.Split(contentType, ";")
@@ -240,7 +224,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 		}
 
 		if strings.TrimSpace(parameter[0]) == "proto" {
-			ret := remoteapi.WriteMessageType(parameter[1])
+			ret := promconfig.RemoteWriteProtoMsg(parameter[1])
 			if err := ret.Validate(); err != nil {
 				return "", fmt.Errorf("got %v content type; %w", contentType, err)
 			}
@@ -249,7 +233,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 	}
 
 	// No "proto=" parameter found, assume v1.
-	return remoteapi.WriteV1MessageType, nil
+	return promconfig.RemoteWriteProtoMsgV1, nil
 }
 
 // getOrCreateRM returns or creates the ResourceMetrics for a job/instance pair within an HTTP request.
@@ -308,9 +292,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Once the request is fully processed, only the resource attributes contained in the request’s ResourceMetrics are snapshotted back into the LRU cache.
 		// This ensures that future requests start with the enriched resource attributes already applied.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
-
-		// exemplarMap keeps track of exemplars and key is composed by scope_name:scope_version:metric_name:type
-		exemplarMap = collectExemplars(req, prw.settings, &stats)
 	)
 
 	for i := range req.Timeseries {
@@ -336,11 +317,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			attrs := rm.Resource().Attributes()
 
 			// Add the remaining labels as resource attributes
-			ls.Range(func(l labels.Label) {
-				if l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
-					attrs.PutStr(l.Name, l.Value)
+			for labelName, labelValue := range ls.Map() {
+				if labelName != "job" && labelName != "instance" && !schema.IsMetadataLabel(labelName) {
+					attrs.PutStr(labelName, labelValue)
 				}
-			})
+			}
 
 			snapshot := pmetric.NewResourceMetrics()
 			attrs.CopyTo(snapshot.Resource().Attributes())
@@ -366,7 +347,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
 			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, modifiedResourceMetric, exemplarMap)
+			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, modifiedResourceMetric)
 			continue
 		}
 
@@ -439,17 +420,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
-			key := exemplarKey{
-				ScopeName:    scopeName,
-				ScopeVersion: scopeVersion,
-				MetricName:   metricName,
-				MetricType:   ts.Metadata.Type,
-			}
-			// add exemplars to counter datapoints.
-			if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 && metric.Sum().DataPoints().Len() > 0 {
-				ex.CopyTo(metric.Sum().DataPoints().At(0).Exemplars())
-			}
-
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			// Drop summary series as we will not handle them.
 			continue
@@ -470,7 +440,6 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	metricCache map[uint64]pmetric.Metric,
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
-	exemplarMap map[uint64]pmetric.ExemplarSlice,
 ) {
 	// Drop classic histogram series (those with samples)
 	if len(ts.Samples) != 0 {
@@ -478,7 +447,6 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
 		return
 	}
-	attrs := extractAttributes(ls)
 
 	var (
 		hashedLabels uint64
@@ -565,30 +533,12 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
 			histMetric.SetDescription(description)
 		}
-		// all the exemplars for a given histogram are attached to first data point.
-		exemplarSlice := pmetric.NewExemplarSlice()
+
 		// Process the individual histogram
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats)
-			if histMetric.Histogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
-			}
+			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, attrs, ls, stats)
-			if histMetric.ExponentialHistogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.ExponentialHistogram().DataPoints().At(0).Exemplars()
-			}
-		}
-
-		key := exemplarKey{
-			ScopeName:    scopeName,
-			ScopeVersion: scopeVersion,
-			MetricName:   metricName,
-			MetricType:   ts.Metadata.Type,
-		}
-
-		if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
-			ex.CopyTo(exemplarSlice)
+			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
 		}
 	}
 }
@@ -622,22 +572,20 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 // addNumberDatapoints adds the labels to the datapoints attributes.
 func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts *writev2.TimeSeries, stats *promremote.WriteResponseStats) {
 	// Add samples from the timeseries
-	attrs := extractAttributes(ls)
-	for i := range ts.Samples {
-		sample := &ts.Samples[i]
+	for _, sample := range ts.Samples {
 		dp := datapoints.AppendEmpty()
-		dp.SetStartTimestamp(pcommon.Timestamp(sample.StartTimestamp * int64(time.Millisecond)))
+		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
 		// Set timestamp in nanoseconds (Prometheus uses milliseconds)
 		dp.SetTimestamp(pcommon.Timestamp(sample.Timestamp * int64(time.Millisecond)))
 		dp.SetDoubleValue(sample.Value)
 
 		attributes := dp.Attributes()
-		attrs.CopyTo(attributes)
+		extractAttributes(ls).CopyTo(attributes)
 	}
 	stats.Samples += len(ts.Samples)
 }
 
-func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
+func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
 	// Drop Native Histogram with negative counts
 	if hasNegativeCounts(histogram) {
 		prw.settings.Logger.Info("Dropping Native Histogram series with negative counts",
@@ -646,7 +594,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	}
 
 	dp := datapoints.AppendEmpty()
-	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
+	dp.SetStartTimestamp(pcommon.Timestamp(createdTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 	dp.SetScale(histogram.Schema)
 	dp.SetZeroThreshold(histogram.ZeroThreshold)
@@ -684,7 +632,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 		}
 	}
 
-	attrs.CopyTo(dp.Attributes())
+	extractAttributes(ls).CopyTo(dp.Attributes())
 	stats.Histograms++
 }
 
@@ -789,15 +737,14 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 // extractAttributes return all attributes different from job, instance, metric name and scope name/version
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
-	// job, instance and metric name will always become labels
-	attrs.EnsureCapacity(ls.Len() - 3)
-	ls.Range(func(l labels.Label) {
-		if l.Name != "instance" && l.Name != "job" && // Become resource attributes
-			l.Name != model.MetricNameLabel && // Becomes metric name
-			l.Name != "otel_scope_name" && l.Name != "otel_scope_version" { // Becomes scope name and version
-			attrs.PutStr(l.Name, l.Value)
+	for labelName, labelValue := range ls.Map() {
+		if labelName == "instance" || labelName == "job" || // Become resource attributes
+			labelName == labels.MetricName || // Becomes metric name
+			labelName == "otel_scope_name" || labelName == "otel_scope_version" { // Becomes scope name and version
+			continue
 		}
-	})
+		attrs.PutStr(labelName, labelValue)
+	}
 	return attrs
 }
 
@@ -818,13 +765,13 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (st
 }
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, stats *promremote.WriteResponseStats) {
+func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
 	if len(histogram.CustomValues) == 0 {
 		return
 	}
 
 	dp := datapoints.AppendEmpty()
-	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
+	dp.SetStartTimestamp(pcommon.Timestamp(createdTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 
 	if value.IsStaleNaN(histogram.Sum) {
@@ -837,7 +784,7 @@ func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Histog
 	bucketCounts := convertNHCBBuckets(histogram)
 	dp.BucketCounts().FromRaw(bucketCounts)
 
-	attrs.CopyTo(dp.Attributes())
+	extractAttributes(ls).CopyTo(dp.Attributes())
 	stats.Histograms++
 }
 

@@ -4,13 +4,10 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
-	alibabaecs "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
@@ -31,7 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
-	tencentcvm "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 )
@@ -49,16 +45,15 @@ type Config struct {
 	// HTTP client settings for the detector
 	// Timeout default is 5s
 	confighttp.ClientConfig `mapstructure:",squash"`
-	// If > 0, periodically re-run detection for all configured detectors.
-	// When 0 (default), no periodic refresh occurs.
-	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
+	// Attributes is an allowlist of attributes to add.
+	// If a supplied attribute is not a valid attribute of a supplied detector it will be ignored.
+	//
+	// Deprecated: Please use detector's resource_attributes config instead
+	Attributes []string `mapstructure:"attributes"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors
 type DetectorConfig struct {
-	// AlibabaECSConfig contains user-specified configurations for the Alibaba Cloud ECS detector
-	AlibabaECSConfig alibabaecs.Config `mapstructure:"alibaba_ecs"`
-
 	// EC2Config contains user-specified configurations for the EC2 detector
 	EC2Config ec2.Config `mapstructure:"ec2"`
 
@@ -104,7 +99,7 @@ type DetectorConfig struct {
 	// OpenShift contains user-specified configurations for the OpenShift detector
 	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
 
-	// OpenStackNovaConfig contains user-specified configurations for the OpenStackNova detector
+	// OpenShift contains user-specified configurations for the OpenShift detector
 	OpenStackNovaConfig nova.Config `mapstructure:"nova"`
 
 	// OracleCloud contains user-specified configurations for the OracleCloud detector
@@ -119,11 +114,8 @@ type DetectorConfig struct {
 	// AkamaiConfig contains user-specified configurations for the akamai detector
 	AkamaiConfig akamai.Config `mapstructure:"akamai"`
 
-	// ScalewayConfig contains user-specified configurations for the scaleway detector
+	// ScalewayConfig contains user-specified configurations for the akamai detector
 	ScalewayConfig scaleway.Config `mapstructure:"scaleway"`
-
-	// TencentCVMConfig contains user-specified configurations for the Tencent Cloud CVM detector
-	TencentCVMConfig tencentcvm.Config `mapstructure:"tencent_cvm"`
 
 	// UpcloudConfig contains user-specified configurations for the upcloud detector
 	UpcloudConfig upcloud.Config `mapstructure:"upcloud"`
@@ -134,7 +126,6 @@ type DetectorConfig struct {
 
 func detectorCreateDefaultConfig() DetectorConfig {
 	return DetectorConfig{
-		AlibabaECSConfig:       alibabaecs.CreateDefaultConfig(),
 		EC2Config:              ec2.CreateDefaultConfig(),
 		ECSConfig:              ecs.CreateDefaultConfig(),
 		EKSConfig:              eks.CreateDefaultConfig(),
@@ -156,7 +147,6 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
 		AkamaiConfig:           akamai.CreateDefaultConfig(),
 		ScalewayConfig:         scaleway.CreateDefaultConfig(),
-		TencentCVMConfig:       tencentcvm.CreateDefaultConfig(),
 		UpcloudConfig:          upcloud.CreateDefaultConfig(),
 		VultrConfig:            vultr.CreateDefaultConfig(),
 	}
@@ -164,8 +154,6 @@ func detectorCreateDefaultConfig() DetectorConfig {
 
 func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) internal.DetectorConfig {
 	switch detectorType {
-	case alibabaecs.TypeStr:
-		return d.AlibabaECSConfig
 	case ec2.TypeStr:
 		return d.EC2Config
 	case ecs.TypeStr:
@@ -208,8 +196,6 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.AkamaiConfig
 	case scaleway.TypeStr:
 		return d.ScalewayConfig
-	case tencentcvm.TypeStr:
-		return d.TencentCVMConfig
 	case upcloud.TypeStr:
 		return d.UpcloudConfig
 	case vultr.TypeStr:

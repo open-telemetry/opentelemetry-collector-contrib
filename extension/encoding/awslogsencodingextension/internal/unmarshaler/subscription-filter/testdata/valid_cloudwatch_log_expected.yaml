@@ -9,14 +9,10 @@ resourceLogs:
             stringValue: "123456789012"
         - key: aws.log.group.names
           value:
-            arrayValue:
-              values:
-                - stringValue: CloudTrail
+            stringValue: CloudTrail
         - key: aws.log.stream.names
           value:
-            arrayValue:
-              values:
-                - stringValue: 123456789012_CloudTrail_us-east-1
+            stringValue: 123456789012_CloudTrail_us-east-1
     scopeLogs:
       - logRecords:
           - body:

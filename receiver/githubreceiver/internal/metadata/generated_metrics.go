@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // AttributeVcsChangeState specifies the value vcs.change.state attribute.
@@ -265,7 +265,6 @@ func (m *metricVcsChangeCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsChangeCount(cfg MetricConfig) metricVcsChangeCount {
 	m := metricVcsChangeCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -320,7 +319,6 @@ func (m *metricVcsChangeDuration) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsChangeDuration(cfg MetricConfig) metricVcsChangeDuration {
 	m := metricVcsChangeDuration{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -374,7 +372,6 @@ func (m *metricVcsChangeTimeToApproval) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsChangeTimeToApproval(cfg MetricConfig) metricVcsChangeTimeToApproval {
 	m := metricVcsChangeTimeToApproval{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -428,7 +425,6 @@ func (m *metricVcsChangeTimeToMerge) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsChangeTimeToMerge(cfg MetricConfig) metricVcsChangeTimeToMerge {
 	m := metricVcsChangeTimeToMerge{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -481,7 +477,6 @@ func (m *metricVcsContributorCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsContributorCount(cfg MetricConfig) metricVcsContributorCount {
 	m := metricVcsContributorCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -535,7 +530,6 @@ func (m *metricVcsRefCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsRefCount(cfg MetricConfig) metricVcsRefCount {
 	m := metricVcsRefCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -593,7 +587,6 @@ func (m *metricVcsRefLinesDelta) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsRefLinesDelta(cfg MetricConfig) metricVcsRefLinesDelta {
 	m := metricVcsRefLinesDelta{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -651,7 +644,6 @@ func (m *metricVcsRefRevisionsDelta) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsRefRevisionsDelta(cfg MetricConfig) metricVcsRefRevisionsDelta {
 	m := metricVcsRefRevisionsDelta{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -706,7 +698,6 @@ func (m *metricVcsRefTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsRefTime(cfg MetricConfig) metricVcsRefTime {
 	m := metricVcsRefTime{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -756,7 +747,6 @@ func (m *metricVcsRepositoryCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcsRepositoryCount(cfg MetricConfig) metricVcsRepositoryCount {
 	m := metricVcsRepositoryCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

@@ -23,62 +23,46 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name              string
-		componentIDToLoad component.ID
-		expected          component.Config
+		id          component.ID
+		expected    component.Config
+		expectError string
 	}{
 		{
-			name:              "Config with both S3 and CloudWatch encoding",
-			componentIDToLoad: component.NewIDWithName(metadata.Type, "awslogs_encoding"),
+			id: component.NewIDWithName(metadata.Type, awsLogsEncoding),
 			expected: &Config{
-				S3: sharedConfig{
-					Encoding: "awslogs_encoding",
-				},
-				CloudWatch: sharedConfig{
-					Encoding: "awslogs_encoding",
-				},
+				S3Encoding: awsLogsEncoding,
 			},
 		},
 		{
-			name:              "Config with both S3 config only",
-			componentIDToLoad: component.NewIDWithName(metadata.Type, "json_log_encoding"),
+			id: component.NewIDWithName(metadata.Type, "json_log_encoding"),
 			expected: &Config{
-				S3: sharedConfig{
-					Encoding: "json_log_encoding",
-				},
-				CloudWatch: sharedConfig{},
+				S3Encoding: "json_log_encoding",
 			},
 		},
 		{
-			name:              "Config with empty encoding",
-			componentIDToLoad: component.NewIDWithName(metadata.Type, "empty_encoding"),
+			id: component.NewIDWithName(metadata.Type, "empty_encoding"),
 			expected: &Config{
-				S3:         sharedConfig{},
-				CloudWatch: sharedConfig{},
-			},
-		},
-		{
-			name:              "Config with failure bucket ARN",
-			componentIDToLoad: component.NewIDWithName(metadata.Type, "with_failure_arn"),
-			expected: &Config{
-				S3:               sharedConfig{},
-				CloudWatch:       sharedConfig{},
-				FailureBucketARN: "arn:aws:s3:::example",
+				S3Encoding: "",
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		name := strings.ReplaceAll(tt.componentIDToLoad.String(), "/", "_")
+		name := strings.ReplaceAll(tt.id.String(), "/", "_")
 		t.Run(name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
-			sub, err := cm.Sub(tt.componentIDToLoad.String())
+			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			err = xconfmap.Validate(cfg)
+			if tt.expectError != "" {
+				require.ErrorContains(t, err, tt.expectError)
+				return
+			}
+
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, cfg)
 		})

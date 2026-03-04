@@ -6,7 +6,6 @@
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| cloud.platform | The cloud.platform | Any Str | false |
 | cloud.provider | The cloud.provider | Any Str | true |
 | cloud.region | The cloud region | Any Str | true |
 | host.id | The host.id | Any Str | true |

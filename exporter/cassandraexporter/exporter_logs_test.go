@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	gocql "github.com/apache/cassandra-gocql-driver/v2"
+	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/require"
 )
 

@@ -1,5 +1,4 @@
 type: grafanacloud
-display_name: Grafana Cloud Connector
 
 status:
   class: connector
@@ -20,7 +19,8 @@ telemetry:
       description: Number of datapoints sent to Grafana Cloud
       unit: "1"
       enabled: true
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -28,7 +28,8 @@ telemetry:
       description: Number of metrics flushes
       unit: "1"
       enabled: true
-      stability: development
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -36,7 +37,8 @@ telemetry:
       description: Number of unique hosts
       unit: "1"
       enabled: true
-      stability: development
+      stability:
+        level: development
       gauge:
         value_type: int
         async: true

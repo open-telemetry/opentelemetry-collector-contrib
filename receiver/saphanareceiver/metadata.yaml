@@ -211,7 +211,8 @@ attributes:
 metrics:
   saphana.alert.count:
     description: Number of current alerts.
-    stability: development
+    stability:
+      level: development
     unit: '{alerts}'
     sum:
       monotonic: false
@@ -222,7 +223,8 @@ metrics:
     enabled: true
   saphana.backup.latest:
     description: The age of the latest backup by start time.
-    stability: development
+    stability:
+      level: development
     unit: s
     gauge:
       value_type: int
@@ -231,7 +233,8 @@ metrics:
     enabled: true
   saphana.column.memory.used:
     description: The memory used in all columns.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -242,7 +245,8 @@ metrics:
     enabled: true
   saphana.component.memory.used:
     description: The memory used in components.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -253,7 +257,8 @@ metrics:
     enabled: true
   saphana.connection.count:
     description: The number of current connections.
-    stability: development
+    stability:
+      level: development
     unit: '{connections}'
     sum:
       monotonic: false
@@ -264,7 +269,8 @@ metrics:
     enabled: true
   saphana.cpu.used:
     description: Total CPU time spent.
-    stability: development
+    stability:
+      level: development
     unit: ms
     sum:
       monotonic: true
@@ -275,7 +281,8 @@ metrics:
     enabled: true
   saphana.disk.size.current:
     description: The disk size.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -286,7 +293,8 @@ metrics:
     enabled: true
   saphana.host.memory.current:
     description: The amount of physical memory on the host.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -297,7 +305,8 @@ metrics:
     enabled: true
   saphana.host.swap.current:
     description: The amount of swap space on the host.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -308,7 +317,8 @@ metrics:
     enabled: true
   saphana.instance.code_size:
     description: The instance code size, including shared libraries of SAP HANA processes.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -319,7 +329,8 @@ metrics:
     enabled: true
   saphana.instance.memory.current:
     description: The size of the memory pool for all SAP HANA processes.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -330,7 +341,8 @@ metrics:
     enabled: true
   saphana.instance.memory.shared.allocated:
     description: The shared memory size of SAP HANA processes.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -341,7 +353,8 @@ metrics:
     enabled: true
   saphana.instance.memory.used.peak:
     description: The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -352,7 +365,8 @@ metrics:
     enabled: true
   saphana.license.expiration.time:
     description: The amount of time remaining before license expiration.
-    stability: development
+    stability:
+      level: development
     unit: s
     gauge:
       value_type: int
@@ -361,7 +375,8 @@ metrics:
     enabled: true
   saphana.license.limit:
     description: The allowed product usage as specified by the license (for example, main memory).
-    stability: development
+    stability:
+      level: development
     unit: '{licenses}'
     sum:
       monotonic: false
@@ -372,7 +387,8 @@ metrics:
     enabled: true
   saphana.license.peak:
     description: The peak product usage value during last 13 months, measured periodically.
-    stability: development
+    stability:
+      level: development
     unit: '{licenses}'
     sum:
       monotonic: false
@@ -383,7 +399,8 @@ metrics:
     enabled: true
   saphana.network.request.average_time:
     description: The average response time calculated over recent requests
-    stability: development
+    stability:
+      level: development
     unit: ms
     gauge:
       value_type: double
@@ -392,7 +409,8 @@ metrics:
     enabled: true
   saphana.network.request.count:
     description: The number of active and pending service requests.
-    stability: development
+    stability:
+      level: development
     unit: '{requests}'
     sum:
       monotonic: false
@@ -403,7 +421,8 @@ metrics:
     enabled: true
   saphana.network.request.finished.count:
     description: The number of service requests that have completed.
-    stability: development
+    stability:
+      level: development
     unit: '{requests}'
     sum:
       monotonic: true
@@ -414,7 +433,8 @@ metrics:
     enabled: true
   saphana.replication.average_time:
     description: The average amount of time consumed replicating a log.
-    stability: development
+    stability:
+      level: development
     unit: us
     gauge:
       value_type: double
@@ -423,7 +443,8 @@ metrics:
     enabled: true
   saphana.replication.backlog.size:
     description: The current replication backlog size.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -434,7 +455,8 @@ metrics:
     enabled: true
   saphana.replication.backlog.time:
     description: The current replication backlog.
-    stability: development
+    stability:
+      level: development
     unit: us
     sum:
       monotonic: false
@@ -445,7 +467,8 @@ metrics:
     enabled: true
   saphana.row_store.memory.used:
     description: The used memory for all row tables.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -456,7 +479,8 @@ metrics:
     enabled: true
   saphana.schema.memory.used.current:
     description: The memory size for all tables in schema.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -467,7 +491,8 @@ metrics:
     enabled: true
   saphana.schema.memory.used.max:
     description: The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -478,7 +503,8 @@ metrics:
     enabled: true
   saphana.schema.operation.count:
     description: The number of operations done on all tables in schema.
-    stability: development
+    stability:
+      level: development
     unit: '{operations}'
     sum:
       monotonic: true
@@ -489,7 +515,8 @@ metrics:
     enabled: true
   saphana.schema.record.compressed.count:
     description: The number of entries in main during the last optimize compression run for all tables in schema.
-    stability: development
+    stability:
+      level: development
     unit: '{records}'
     sum:
       monotonic: false
@@ -500,7 +527,8 @@ metrics:
     enabled: true
   saphana.schema.record.count:
     description: The number of records for all tables in schema.
-    stability: development
+    stability:
+      level: development
     unit: '{records}'
     sum:
       monotonic: false
@@ -511,7 +539,8 @@ metrics:
     enabled: true
   saphana.service.code_size:
     description: The service code size, including shared libraries.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -522,7 +551,8 @@ metrics:
     enabled: true
   saphana.service.count:
     description: The number of services in a given status.
-    stability: development
+    stability:
+      level: development
     unit: '{services}'
     sum:
       monotonic: false
@@ -533,7 +563,8 @@ metrics:
     enabled: true
   saphana.service.memory.compactors.allocated:
     description: The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -544,7 +575,8 @@ metrics:
     enabled: true
   saphana.service.memory.compactors.freeable:
     description: The memory that can be freed during a memory shortage.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -555,7 +587,8 @@ metrics:
     enabled: true
   saphana.service.memory.effective_limit:
     description: The effective maximum memory pool size, calculated considering the pool sizes of other processes.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -566,7 +599,8 @@ metrics:
     enabled: true
   saphana.service.memory.heap.current:
     description: The size of the heap portion of the memory pool.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -577,7 +611,8 @@ metrics:
     enabled: true
   saphana.service.memory.limit:
     description: The configured maximum memory pool size.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -588,7 +623,8 @@ metrics:
     enabled: true
   saphana.service.memory.shared.current:
     description: The size of the shared portion of the memory pool.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -599,7 +635,8 @@ metrics:
     enabled: true
   saphana.service.memory.used:
     description: The used memory from the operating system perspective.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -610,7 +647,8 @@ metrics:
     enabled: true
   saphana.service.stack_size:
     description: The service stack size.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: false
@@ -621,7 +659,8 @@ metrics:
     enabled: true
   saphana.service.thread.count:
     description: The number of service threads in a given status.
-    stability: development
+    stability:
+      level: development
     unit: '{threads}'
     sum:
       monotonic: false
@@ -632,7 +671,8 @@ metrics:
     enabled: true
   saphana.transaction.blocked:
     description: The number of transactions waiting for a lock.
-    stability: development
+    stability:
+      level: development
     unit: '{transactions}'
     sum:
       monotonic: false
@@ -643,7 +683,8 @@ metrics:
     enabled: true
   saphana.transaction.count:
     description: The number of transactions.
-    stability: development
+    stability:
+      level: development
     unit: '{transactions}'
     sum:
       monotonic: true
@@ -654,7 +695,8 @@ metrics:
     enabled: true
   saphana.uptime:
     description: The uptime of the database.
-    stability: development
+    stability:
+      level: development
     unit: s
     sum:
       monotonic: false
@@ -665,7 +707,8 @@ metrics:
     enabled: true
   saphana.volume.operation.count:
     description: The number of operations executed.
-    stability: development
+    stability:
+      level: development
     unit: '{operations}'
     sum:
       monotonic: true
@@ -676,7 +719,8 @@ metrics:
     enabled: true
   saphana.volume.operation.size:
     description: The size of operations executed.
-    stability: development
+    stability:
+      level: development
     unit: By
     sum:
       monotonic: true
@@ -687,7 +731,8 @@ metrics:
     enabled: true
   saphana.volume.operation.time:
     description: The time spent executing operations.
-    stability: development
+    stability:
+      level: development
     unit: ms
     sum:
       monotonic: true

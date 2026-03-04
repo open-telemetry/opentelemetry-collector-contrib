@@ -11,6 +11,6 @@
 // More details can be found at:
 // https://docs.aws.amazon.com/firehose/latest/dev/httpdeliveryrequestresponse.html
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"

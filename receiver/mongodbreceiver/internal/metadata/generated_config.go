@@ -9,7 +9,8 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
+	Enabled bool `mapstructure:"enabled"`
+
 	enabledSetByUser bool
 }
 
@@ -17,12 +18,10 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
-
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
@@ -252,21 +251,21 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for mongodb resource attributes.
 type ResourceAttributesConfig struct {
-	ServerAddress     ResourceAttributeConfig `mapstructure:"server.address"`
-	ServerPort        ResourceAttributeConfig `mapstructure:"server.port"`
-	ServiceInstanceID ResourceAttributeConfig `mapstructure:"service.instance.id"`
+	Database      ResourceAttributeConfig `mapstructure:"database"`
+	ServerAddress ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort    ResourceAttributeConfig `mapstructure:"server.port"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		Database: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		ServerAddress: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServerPort: ResourceAttributeConfig{
 			Enabled: false,
-		},
-		ServiceInstanceID: ResourceAttributeConfig{
-			Enabled: true,
 		},
 	}
 }

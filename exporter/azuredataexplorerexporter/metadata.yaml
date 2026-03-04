@@ -1,5 +1,4 @@
 type: azuredataexplorer
-display_name: Azure Data Explorer Exporter
 
 status:
   class: exporter

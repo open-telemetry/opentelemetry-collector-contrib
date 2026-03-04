@@ -9,11 +9,9 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
-	transfermanagertypes "github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager/types"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/klauspost/compress/zstd"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -32,7 +30,7 @@ type UploadOptions struct {
 type s3manager struct {
 	bucket       string
 	builder      *PartitionKeyBuilder
-	uploader     *transfermanager.Client
+	uploader     *manager.Uploader
 	storageClass s3types.StorageClass
 	acl          s3types.ObjectCannedACL
 }
@@ -43,7 +41,7 @@ func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Clien
 	manager := &s3manager{
 		bucket:       bucket,
 		builder:      builder,
-		uploader:     transfermanager.New(service),
+		uploader:     manager.NewUploader(service),
 		storageClass: storageClass,
 	}
 	for _, opt := range opts {
@@ -84,12 +82,12 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		}
 	}
 
-	uploadInput := &transfermanager.UploadObjectInput{
+	uploadInput := &s3.PutObjectInput{
 		Bucket:       aws.String(overrideBucket),
 		Key:          aws.String(sw.builder.Build(now, overridePrefix)),
 		Body:         content,
-		StorageClass: transfermanagertypes.StorageClass(sw.storageClass),
-		ACL:          transfermanagertypes.ObjectCannedACL(sw.acl),
+		StorageClass: sw.storageClass,
+		ACL:          sw.acl,
 	}
 
 	// Only set ContentEncoding if we have a non-empty encoding value
@@ -97,7 +95,7 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		uploadInput.ContentEncoding = aws.String(encoding)
 	}
 
-	_, err = sw.uploader.UploadObject(ctx, uploadInput)
+	_, err = sw.uploader.Upload(ctx, uploadInput)
 	return err
 }
 
@@ -111,22 +109,6 @@ func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
 			return nil, err
 		}
 		if err := zipper.Close(); err != nil {
-			return nil, err
-		}
-
-		return content, nil
-	case configcompression.TypeZstd:
-		content := bytes.NewBuffer(nil)
-		zipper, err := zstd.NewWriter(content)
-		if err != nil {
-			return nil, err
-		}
-		_, err = zipper.Write(raw)
-		if err != nil {
-			return nil, err
-		}
-		err = zipper.Close()
-		if err != nil {
 			return nil, err
 		}
 

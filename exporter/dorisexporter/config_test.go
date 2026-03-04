@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -54,12 +53,13 @@ func TestLoadConfig(t *testing.T) {
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
 			Multiplier:          backoff.DefaultMultiplier,
 		},
-		QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+		QueueSettings: func() exporterhelper.QueueBatchConfig {
 			queue := exporterhelper.NewDefaultQueueConfig()
+			queue.Enabled = true
 			queue.NumConsumers = 10
 			queue.QueueSize = 1000
 			return queue
-		}()),
+		}(),
 		Table: Table{
 			Logs:    "otel_logs",
 			Traces:  "otel_traces",

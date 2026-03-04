@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	defaultDockerAPIVersion         = "1.44"
+	defaultDockerAPIVersion         = "1.24"
 	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion(defaultDockerAPIVersion)
 )
 

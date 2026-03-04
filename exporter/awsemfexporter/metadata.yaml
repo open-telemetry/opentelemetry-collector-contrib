@@ -1,5 +1,4 @@
 type: awsemf
-display_name: AWS CloudWatch EMF Exporter
 
 status:
   class: exporter

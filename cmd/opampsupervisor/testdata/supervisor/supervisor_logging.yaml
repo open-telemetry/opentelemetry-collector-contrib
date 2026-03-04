@@ -21,7 +21,4 @@ agent:
 telemetry:
   logs:
     level: {{.log_level}} # info level logs
-    # keep stdout so we can see logs in test output
-    output_paths: 
-      - '{{.log_file}}'
-      - 'stdout'
+    output_paths: ['{{.log_file}}']

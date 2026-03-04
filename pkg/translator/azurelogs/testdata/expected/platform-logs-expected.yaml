@@ -1,0 +1,42 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/DA2DD5CC-E7BC-4DB6-94D9-0AFB3BD30577/RESOURCEGROUPS/FRETBADGER/PROVIDERS/MICROSOFT.WEB/SITES/FBEHTESTAPP
+        - key: event.name
+          value:
+            stringValue: az.resource.log
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: operation.name
+                    value:
+                      stringValue: ContainerLogs
+                  - key: container.id
+                    value:
+                      stringValue: CONTAINER_ID
+                  - key: container.name
+                    value:
+                      stringValue: CONTAINER_NAME
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: message
+                            value:
+                              stringValue: Initiating warmup request to container fbehtestapp_1_b8a27b37 for site fbehtestapp
+                  - key: category
+                    value:
+                      stringValue: AppServicePlatformLogs
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1713960235630000000"
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

@@ -1,4 +1,3 @@
-display_name: Health Check Extension V2
 type: healthcheckv2
 
 status:
@@ -7,6 +6,6 @@ status:
     development: [extension]
   distributions: []
   codeowners:
-    active: [evan-bradley]
-    emeritus: [jpkrohling, mwear]
+    active: [mwear, evan-bradley]
+    emeritus: [jpkrohling]
     seeking_new: true

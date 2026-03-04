@@ -9,7 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -148,15 +150,11 @@ func TestLogRecord_Matching_False(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, expr)
 
-			tCtx := ottllog.NewTransformContextPtr(plog.NewResourceLogs(), plog.NewScopeLogs(), lr)
-			defer tCtx.Close()
-			val, err := expr.Eval(t.Context(), tCtx)
+			val, err := expr.Eval(t.Context(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.False(t, val)
 
-			neCtx := ottllog.NewTransformContextPtr(plog.NewResourceLogs(), plog.NewScopeLogs(), lrm)
-			defer neCtx.Close()
-			val, err = expr.Eval(t.Context(), neCtx)
+			val, err = expr.Eval(t.Context(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.False(t, val)
 		})
@@ -229,16 +227,12 @@ func TestLogRecord_Matching_True(t *testing.T) {
 			require.NotNil(t, expr)
 
 			assert.NotNil(t, lr)
-			tCtx := ottllog.NewTransformContextPtr(plog.NewResourceLogs(), plog.NewScopeLogs(), lr)
-			defer tCtx.Close()
-			val, err := expr.Eval(t.Context(), tCtx)
+			val, err := expr.Eval(t.Context(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.True(t, val)
 
-			neCtx := ottllog.NewTransformContextPtr(plog.NewResourceLogs(), plog.NewScopeLogs(), lrm)
-			defer neCtx.Close()
 			assert.NotNil(t, lrm)
-			val, err = expr.Eval(t.Context(), neCtx)
+			val, err = expr.Eval(t.Context(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.True(t, val)
 		})
@@ -1294,9 +1288,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rLogs := plog.NewResourceLogs()
-			rLogs.Resource().Attributes().PutStr("service.name", "svcA")
-			log := rLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+			log := plog.NewLogRecord()
 			log.Body().SetStr("body")
 			log.Attributes().PutStr("keyString", "arithmetic")
 			log.Attributes().PutInt("keyInt", 123)
@@ -1306,8 +1298,12 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			log.SetSeverityText("severity text")
 			log.SetSeverityNumber(tt.logSeverity)
 
-			tCtx := ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), log)
-			defer tCtx.Close()
+			resource := pcommon.NewResource()
+			resource.Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
+
+			scope := pcommon.NewInstrumentationScope()
+
+			tCtx := ottllog.NewTransformContext(log, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 
 			boolExpr, err := NewSkipExpr(tt.condition)
 			require.NoError(t, err)
@@ -1373,13 +1369,15 @@ func BenchmarkFilterlog_NewSkipExpr(b *testing.B) {
 		skipExpr, err := NewSkipExpr(tt.mc)
 		assert.NoError(b, err)
 
-		rLogs := plog.NewResourceLogs()
-		log := rLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		log := plog.NewLogRecord()
 		log.Body().SetStr("body")
 		log.SetSeverityNumber(plog.SeverityNumberUnspecified)
 
-		tCtx := ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), log)
-		defer tCtx.Close()
+		resource := pcommon.NewResource()
+
+		scope := pcommon.NewInstrumentationScope()
+
+		tCtx := ottllog.NewTransformContext(log, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 
 		b.Run(tt.name, func(b *testing.B) {
 			for b.Loop() {

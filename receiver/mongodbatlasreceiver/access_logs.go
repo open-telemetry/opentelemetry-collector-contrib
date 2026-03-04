@@ -111,7 +111,9 @@ func (alr *accessLogsReceiver) startPolling(ctx context.Context) error {
 		}
 
 		t := time.NewTicker(pc.AccessLogs.PollInterval)
-		alr.wg.Go(func() {
+		alr.wg.Add(1)
+		go func() {
+			defer alr.wg.Done()
 			for {
 				select {
 				case <-t.C:
@@ -122,7 +124,7 @@ func (alr *accessLogsReceiver) startPolling(ctx context.Context) error {
 					return
 				}
 			}
-		})
+		}()
 	}
 
 	return nil

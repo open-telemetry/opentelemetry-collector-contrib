@@ -21,7 +21,7 @@ processors:
 exporters:
   debug:
     verbosity: detailed
-  otlp_http:
+  otlphttp:
     endpoint: "http://localhost:4318"
     sending_queue:
       batch:
@@ -46,12 +46,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter]
-      exporters: [debug, otlp_http, datadog/connector]
+      exporters: [debug, otlphttp, datadog/connector]
     metrics:
       receivers: [otlp, hostmetrics, datadog/connector]
       processors: [memory_limiter]
-      exporters: [debug, otlp_http]
+      exporters: [debug, otlphttp]
     logs:
       receivers: [otlp]
       processors: [memory_limiter]
-      exporters: [debug, otlp_http]
+      exporters: [debug, otlphttp]

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -35,6 +36,20 @@ const (
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
+)
+
+var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
+	"filelog.allowFileDeletion",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
+)
+
+var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
+	"filelog.allowHeaderMetadataParsing",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
 )
 
 // NewConfig creates a new input config with default values
@@ -207,8 +222,8 @@ func (c Config) validate() error {
 	}
 
 	if c.DeleteAfterRead {
-		if !metadata.FilelogAllowFileDeletionFeatureGate.IsEnabled() {
-			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", metadata.FilelogAllowFileDeletionFeatureGate.ID())
+		if !allowFileDeletion.IsEnabled() {
+			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", allowFileDeletion.ID())
 		}
 		if c.StartAt == "end" {
 			return errors.New("'delete_after_read' cannot be used with 'start_at: end'")
@@ -216,8 +231,8 @@ func (c Config) validate() error {
 	}
 
 	if c.Header != nil {
-		if !metadata.FilelogAllowHeaderMetadataParsingFeatureGate.IsEnabled() {
-			return fmt.Errorf("'header' requires feature gate '%s'", metadata.FilelogAllowHeaderMetadataParsingFeatureGate.ID())
+		if !AllowHeaderMetadataParsing.IsEnabled() {
+			return fmt.Errorf("'header' requires feature gate '%s'", AllowHeaderMetadataParsing.ID())
 		}
 		if c.StartAt == "end" {
 			return errors.New("'header' cannot be specified with 'start_at: end'")
@@ -229,7 +244,7 @@ func (c Config) validate() error {
 	}
 
 	if runtime.GOOS == "windows" && (c.IncludeFileOwnerName || c.IncludeFileOwnerGroupName) {
-		return errors.New("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported on Windows")
+		return fmt.Errorf("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported for windows: %w", err)
 	}
 
 	return nil

@@ -66,7 +66,7 @@ func (e *tracesJSONExporter) start(ctx context.Context, _ component.Host) error 
 
 	err = e.detectSchemaFeatures(ctx)
 	if err != nil {
-		e.logger.Error("schema detection failed", zap.Error(err))
+		return fmt.Errorf("schema detection: %w", err)
 	}
 
 	e.renderInsertTracesJSONSQL()

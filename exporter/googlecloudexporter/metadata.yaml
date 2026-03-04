@@ -1,5 +1,4 @@
 type: googlecloud
-display_name: Google Cloud Exporter
 
 status:
   class: exporter

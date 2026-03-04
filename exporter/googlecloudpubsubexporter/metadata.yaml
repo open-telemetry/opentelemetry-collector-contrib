@@ -1,5 +1,4 @@
 type: googlecloudpubsub
-display_name: Google Cloud Pub/Sub Exporter
 
 status:
   class: exporter

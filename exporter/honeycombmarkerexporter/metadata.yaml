@@ -1,5 +1,4 @@
 type: honeycombmarker
-display_name: Honeycomb Marker Exporter
 
 status:
   class: exporter

@@ -140,7 +140,7 @@ func TestOTLPProtoUnmarshal(t *testing.T) {
 func createAndExtension0(t *testing.T, c *Config) *otlpExtension {
 	ex, err := newExtension(c)
 	require.NoError(t, err)
-	err = ex.Start(t.Context(), componenttest.NewNopHost())
+	err = ex.Start(t.Context(), nil)
 	require.NoError(t, err)
 	return ex
 }
@@ -202,7 +202,7 @@ func generateProfiles() pprofile.Profiles {
 		im := ilm.Profiles().AppendEmpty()
 		im.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04})
 		im.SetTime(pcommon.NewTimestampFromTime(now))
-		im.SetDurationNano(1)
+		im.SetDuration(pcommon.NewTimestampFromTime(time.Now()))
 	}
 	return pd
 }

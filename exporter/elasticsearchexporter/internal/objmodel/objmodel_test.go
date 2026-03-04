@@ -164,7 +164,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			doc := test.build()
-			doc.Dedup(nil)
+			doc.Dedup()
 			assert.Equal(t, test.want, doc)
 		})
 	}
@@ -282,8 +282,8 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 			m := pcommon.NewMap()
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
-			doc.Dedup(nil)
-			err := doc.Serialize(&buf, false, nil)
+			doc.Dedup()
+			err := doc.Serialize(&buf, false)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want, buf.String())
@@ -343,8 +343,8 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 			m := pcommon.NewMap()
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
-			doc.Dedup(nil)
-			err := doc.Serialize(&buf, true, nil)
+			doc.Dedup()
+			err := doc.Serialize(&buf, true)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want, buf.String())

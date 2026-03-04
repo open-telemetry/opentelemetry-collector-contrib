@@ -3,5 +3,5 @@
 
 // Package prometheusremotewriteexporter sends metrics data to Prometheus Remote Write (PRW) endpoints.
 //
-//go:generate make mdatagen
+//go:generate mdatagen metadata.yaml
 package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"

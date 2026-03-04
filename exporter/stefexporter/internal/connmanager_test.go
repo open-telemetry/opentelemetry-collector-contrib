@@ -194,13 +194,15 @@ func TestConnManagerAcquireReleaseConcurrent(t *testing.T) {
 			test: func(cm *ConnManager) {
 				var wg sync.WaitGroup
 				for range 100 {
-					wg.Go(func() {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
 						conn, err := cm.Acquire(t.Context())
 						if err != nil {
 							return
 						}
 						cm.Release(t.Context(), conn)
-					})
+					}()
 				}
 				wg.Wait()
 			},
@@ -226,13 +228,15 @@ func TestConnManagerAcquireDiscardConcurrent(t *testing.T) {
 			test: func(cm *ConnManager) {
 				var wg sync.WaitGroup
 				for range 100 {
-					wg.Go(func() {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
 						conn, err := cm.Acquire(t.Context())
 						if err != nil {
 							return
 						}
 						cm.DiscardAndClose(conn)
-					})
+					}()
 				}
 				wg.Wait()
 			},

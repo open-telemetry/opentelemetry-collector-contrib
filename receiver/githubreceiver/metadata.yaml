@@ -1,7 +1,6 @@
-display_name: GitHub Receiver
 type: github
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.37.0
 
 status:
   class: receiver
@@ -76,7 +75,8 @@ metrics:
   vcs.change.count:
     description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
     enabled: true
-    stability: development
+    stability:
+      level: development
     gauge:
       value_type: int
     unit: "{change}"
@@ -84,7 +84,8 @@ metrics:
   vcs.change.duration:
     enabled: true
     description: The time duration a change (pull request/merge request/changelist) has been in an open state.
-    stability: development
+    stability:
+      level: development
     unit: s
     gauge:
       value_type: int
@@ -92,7 +93,8 @@ metrics:
   vcs.change.time_to_approval:
     enabled: true
     description: The amount of time it took a change (pull request) to go from open to approved.
-    stability: development
+    stability:
+      level: development
     unit: s
     gauge:
       value_type: int
@@ -100,7 +102,8 @@ metrics:
   vcs.change.time_to_merge:
     enabled: true
     description: The amount of time it took a change (pull request) to go from open to merged.
-    stability: development
+    stability:
+      level: development
     unit: s
     gauge:
       value_type: int
@@ -108,7 +111,8 @@ metrics:
   vcs.contributor.count:
     enabled: false
     description: The number of unique contributors to a repository.
-    stability: development
+    stability:
+      level: development
     unit: "{contributor}"
     gauge:
       value_type: int
@@ -116,7 +120,8 @@ metrics:
   vcs.ref.count:
     enabled: true
     description: The number of refs of type branch in a repository.
-    stability: development
+    stability:
+      level: development
     unit: "{ref}"
     gauge:
       value_type: int
@@ -124,7 +129,8 @@ metrics:
   vcs.ref.lines_delta:
     enabled: true
     description: The number of lines added/removed in a ref (branch) relative to the default branch (trunk).
-    stability: development
+    stability:
+      level: development
     unit: "{line}"
     gauge:
       value_type: int
@@ -132,7 +138,8 @@ metrics:
   vcs.ref.revisions_delta:
     enabled: true
     description: The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
-    stability: development
+    stability:
+      level: development
     unit: "{revision}"
     gauge:
       value_type: int
@@ -140,7 +147,8 @@ metrics:
   vcs.ref.time:
     enabled: true
     description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.type` attribute will always be `branch`.
-    stability: development
+    stability:
+      level: development
     unit: s
     gauge:
       value_type: int
@@ -148,7 +156,8 @@ metrics:
   vcs.repository.count:
     enabled: true
     description: The number of repositories in an organization.
-    stability: development
+    stability:
+      level: development
     unit: "{repository}"
     gauge:
       value_type: int

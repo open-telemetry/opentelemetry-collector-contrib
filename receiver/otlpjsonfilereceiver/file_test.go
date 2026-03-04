@@ -45,7 +45,7 @@ func TestFileProfilesReceiver(t *testing.T) {
 	sink := new(consumertest.ProfilesSink)
 	receiver, err := factory.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
-	err = receiver.Start(t.Context(), componenttest.NewNopHost())
+	err = receiver.Start(t.Context(), nil)
 	require.NoError(t, err)
 
 	pd := testdata.GenerateProfiles(1)
@@ -57,14 +57,8 @@ func TestFileProfilesReceiver(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
-	// MarshalProfiles applies changes to pd, by replacing strings with references.
-	// Therefore, use unmarshal to get expected profiles with resolved string references
-	unmarshaler := &pprofile.JSONUnmarshaler{}
-	expected, err := unmarshaler.UnmarshalProfiles(b[:len(b)-1]) // remove trailing newline
-	assert.NoError(t, err)
-
 	require.Len(t, sink.AllProfiles(), 1)
-	assert.Equal(t, expected, sink.AllProfiles()[0])
+	assert.Equal(t, pd, sink.AllProfiles()[0])
 	err = receiver.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
@@ -78,7 +72,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	receiver, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
-	err = receiver.Start(t.Context(), componenttest.NewNopHost())
+	err = receiver.Start(t.Context(), nil)
 	require.NoError(t, err)
 
 	td := testdata.GenerateTraces(1)
@@ -108,7 +102,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
-	err = receiver.Start(t.Context(), componenttest.NewNopHost())
+	err = receiver.Start(t.Context(), nil)
 	assert.NoError(t, err)
 
 	md := testdata.GenerateMetrics(1)
@@ -142,7 +136,7 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
-	err = receiver.Start(t.Context(), componenttest.NewNopHost())
+	err = receiver.Start(t.Context(), nil)
 	assert.NoError(t, err)
 
 	md := testdata.GenerateMetrics(5)
@@ -177,7 +171,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	receiver, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
-	err = receiver.Start(t.Context(), componenttest.NewNopHost())
+	err = receiver.Start(t.Context(), nil)
 	assert.NoError(t, err)
 
 	ld := testdata.GenerateLogs(1)
@@ -247,22 +241,22 @@ func TestFileMixedSignals(t *testing.T) {
 	ms := new(consumertest.MetricsSink)
 	mr, err := factory.CreateMetrics(t.Context(), cs, cfg, ms)
 	assert.NoError(t, err)
-	err = mr.Start(t.Context(), componenttest.NewNopHost())
+	err = mr.Start(t.Context(), nil)
 	assert.NoError(t, err)
 	ts := new(consumertest.TracesSink)
 	tr, err := factory.CreateTraces(t.Context(), cs, cfg, ts)
 	assert.NoError(t, err)
-	err = tr.Start(t.Context(), componenttest.NewNopHost())
+	err = tr.Start(t.Context(), nil)
 	assert.NoError(t, err)
 	ls := new(consumertest.LogsSink)
 	lr, err := factory.CreateLogs(t.Context(), cs, cfg, ls)
 	assert.NoError(t, err)
-	err = lr.Start(t.Context(), componenttest.NewNopHost())
+	err = lr.Start(t.Context(), nil)
 	assert.NoError(t, err)
 	ps := new(consumertest.ProfilesSink)
 	pr, err := factory.(xreceiver.Factory).CreateProfiles(t.Context(), cs, cfg, ps)
 	assert.NoError(t, err)
-	err = pr.Start(t.Context(), componenttest.NewNopHost())
+	err = pr.Start(t.Context(), nil)
 	assert.NoError(t, err)
 
 	md := testdata.GenerateMetrics(5)
@@ -292,11 +286,6 @@ func TestFileMixedSignals(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
-	// Unmarshal to get expected profiles with resolved string references
-	punmarshaler := &pprofile.JSONUnmarshaler{}
-	expectedProfiles, err := punmarshaler.UnmarshalProfiles(b4)
-	assert.NoError(t, err)
-
 	require.Len(t, ms.AllMetrics(), 1)
 	assert.Equal(t, md, ms.AllMetrics()[0])
 	require.Len(t, ts.AllTraces(), 1)
@@ -304,7 +293,7 @@ func TestFileMixedSignals(t *testing.T) {
 	require.Len(t, ls.AllLogs(), 1)
 	assert.Equal(t, ld, ls.AllLogs()[0])
 	require.Len(t, ps.AllProfiles(), 1)
-	assert.Equal(t, expectedProfiles, ps.AllProfiles()[0])
+	assert.Equal(t, pd, ps.AllProfiles()[0])
 	err = mr.Shutdown(t.Context())
 	assert.NoError(t, err)
 	err = tr.Shutdown(t.Context())
@@ -325,7 +314,7 @@ func TestEmptyLine(t *testing.T) {
 		ms := new(consumertest.MetricsSink)
 		mr, err := NewFactory().CreateMetrics(t.Context(), cs, cfg, ms)
 		assert.NoError(t, err)
-		err = mr.Start(t.Context(), componenttest.NewNopHost())
+		err = mr.Start(t.Context(), nil)
 		assert.NoError(t, err)
 		t.Cleanup(func() {
 			assert.NoError(t, mr.Shutdown(t.Context()))
@@ -346,7 +335,7 @@ func TestEmptyLine(t *testing.T) {
 		ts := new(consumertest.TracesSink)
 		tr, err := NewFactory().CreateTraces(t.Context(), cs, cfg, ts)
 		assert.NoError(t, err)
-		err = tr.Start(t.Context(), componenttest.NewNopHost())
+		err = tr.Start(t.Context(), nil)
 		assert.NoError(t, err)
 		t.Cleanup(func() {
 			assert.NoError(t, tr.Shutdown(t.Context()))
@@ -367,7 +356,7 @@ func TestEmptyLine(t *testing.T) {
 		ls := new(consumertest.LogsSink)
 		lr, err := NewFactory().CreateLogs(t.Context(), cs, cfg, ls)
 		assert.NoError(t, err)
-		err = lr.Start(t.Context(), componenttest.NewNopHost())
+		err = lr.Start(t.Context(), nil)
 		assert.NoError(t, err)
 		t.Cleanup(func() {
 			assert.NoError(t, lr.Shutdown(t.Context()))

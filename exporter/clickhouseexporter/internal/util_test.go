@@ -170,8 +170,8 @@ func BenchmarkUniqueFlattenedAttributes(b *testing.B) {
 	m.PutStr("span.kind", "server")
 
 	b.ReportAllocs()
-
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		_ = UniqueFlattenedAttributes(m)
 	}
 }

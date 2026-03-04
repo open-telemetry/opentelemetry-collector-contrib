@@ -146,7 +146,6 @@ func (m *metricSystemProcessesCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemProcessesCount(cfg MetricConfig) metricSystemProcessesCount {
 	m := metricSystemProcessesCount{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -198,7 +197,6 @@ func (m *metricSystemProcessesCreated) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemProcessesCreated(cfg MetricConfig) metricSystemProcessesCreated {
 	m := metricSystemProcessesCreated{config: cfg}
-
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

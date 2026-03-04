@@ -47,9 +47,10 @@ func (dims byDimensions) Swap(i, j int) { dims[i], dims[j] = dims[j], dims[i] }
 
 func TestNewMetricTranslator(t *testing.T) {
 	tests := []struct {
-		name      string
-		trs       []Rule
-		wantError string
+		name              string
+		trs               []Rule
+		wantDimensionsMap map[string]string
+		wantError         string
 	}{
 		{
 			name: "invalid_rule",
@@ -58,7 +59,53 @@ func TestNewMetricTranslator(t *testing.T) {
 					Action: "invalid_rule",
 				},
 			},
-			wantError: "unknown \"action\" value: \"invalid_rule\"",
+			wantDimensionsMap: nil,
+			wantError:         "unknown \"action\" value: \"invalid_rule\"",
+		},
+		{
+			name: "rename_dimension_keys_valid",
+			trs: []Rule{
+				{
+					Action: ActionRenameDimensionKeys,
+					Mapping: map[string]string{
+						"k8s.cluster.name": "kubernetes_cluster",
+					},
+				},
+			},
+			wantDimensionsMap: map[string]string{
+				"k8s.cluster.name": "kubernetes_cluster",
+			},
+			wantError: "",
+		},
+		{
+			name: "rename_dimension_keys_no_mapping",
+			trs: []Rule{
+				{
+					Action: ActionRenameDimensionKeys,
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "field \"mapping\" is required for \"rename_dimension_keys\" translation rule",
+		},
+		{
+			name: "rename_dimension_keys_many_actions_invalid",
+			trs: []Rule{
+				{
+					Action: ActionRenameDimensionKeys,
+					Mapping: map[string]string{
+						"dimension1": "dimension2",
+						"dimension3": "dimension4",
+					},
+				},
+				{
+					Action: ActionRenameDimensionKeys,
+					Mapping: map[string]string{
+						"dimension4": "dimension5",
+					},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "only one \"rename_dimension_keys\" translation rule without \"metric_names\" can be specified",
 		},
 		{
 			name: "rename_metric_valid",
@@ -70,7 +117,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "rename_metric_valid_add_dimensions",
@@ -85,7 +133,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "rename_metric_valid_copy_dimensions",
@@ -100,7 +149,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "rename_metric_invalid",
@@ -109,7 +159,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					Action: ActionRenameMetrics,
 				},
 			},
-			wantError: "field \"mapping\" is required for \"rename_metrics\" translation rule",
+			wantDimensionsMap: nil,
+			wantError:         "field \"mapping\" is required for \"rename_metrics\" translation rule",
 		},
 		{
 			name: "rename_metric_invalid_copy_dimensions",
@@ -124,7 +175,31 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: `mapping "copy_dimensions" for "rename_metrics" translation rule must not contain empty string keys or values`,
+			wantDimensionsMap: nil,
+			wantError:         `mapping "copy_dimensions" for "rename_metrics" translation rule must not contain empty string keys or values`,
+		},
+		{
+			name: "rename_dimensions_and_metrics_valid",
+			trs: []Rule{
+				{
+					Action: ActionRenameDimensionKeys,
+					Mapping: map[string]string{
+						"dimension1": "dimension2",
+						"dimension3": "dimension4",
+					},
+				},
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+				},
+			},
+			wantDimensionsMap: map[string]string{
+				"dimension1": "dimension2",
+				"dimension3": "dimension4",
+			},
+			wantError: "",
 		},
 		{
 			name: "multiply_int_valid",
@@ -136,7 +211,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "multiply_int_invalid",
@@ -145,7 +221,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					Action: ActionMultiplyInt,
 				},
 			},
-			wantError: "field \"scale_factors_int\" is required for \"multiply_int\" translation rule",
+			wantDimensionsMap: nil,
+			wantError:         "field \"scale_factors_int\" is required for \"multiply_int\" translation rule",
 		},
 		{
 			name: "divide_int_valid",
@@ -157,7 +234,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "divide_int_invalid_no_scale_factors",
@@ -166,7 +244,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					Action: ActionDivideInt,
 				},
 			},
-			wantError: "field \"scale_factors_int\" is required for \"divide_int\" translation rule",
+			wantDimensionsMap: nil,
+			wantError:         "field \"scale_factors_int\" is required for \"divide_int\" translation rule",
 		},
 		{
 			name: "divide_int_invalid_zero",
@@ -179,7 +258,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "\"scale_factors_int\" for \"divide_int\" translation rule has 0 value for \"metric2\" metric",
+			wantDimensionsMap: nil,
+			wantError:         "\"scale_factors_int\" for \"divide_int\" translation rule has 0 value for \"metric2\" metric",
 		},
 		{
 			name: "multiply_float_valid",
@@ -191,7 +271,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "multiply_float_invalid",
@@ -200,7 +281,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					Action: ActionMultiplyFloat,
 				},
 			},
-			wantError: "field \"scale_factors_float\" is required for \"multiply_float\" translation rule",
+			wantDimensionsMap: nil,
+			wantError:         "field \"scale_factors_float\" is required for \"multiply_float\" translation rule",
 		},
 		{
 			name: "copy_metric_valid",
@@ -212,7 +294,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "copy_metric_invalid_no_mapping",
@@ -221,7 +304,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					Action: ActionCopyMetrics,
 				},
 			},
-			wantError: "field \"mapping\" is required for \"copy_metrics\" translation rule",
+			wantDimensionsMap: nil,
+			wantError:         "field \"mapping\" is required for \"copy_metrics\" translation rule",
 		},
 		{
 			name: "copy_metric_invalid_no_dimensions_filter",
@@ -234,6 +318,7 @@ func TestNewMetricTranslator(t *testing.T) {
 					DimensionKey: "dim1",
 				},
 			},
+			wantDimensionsMap: nil,
 			wantError: "\"dimension_values_filer\" has to be provided if \"dimension_key\" is set " +
 				"for \"copy_metrics\" translation rule",
 		},
@@ -249,7 +334,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "split_metric_invalid",
@@ -260,6 +346,7 @@ func TestNewMetricTranslator(t *testing.T) {
 					DimensionKey: "dim1",
 				},
 			},
+			wantDimensionsMap: nil,
 			wantError: "fields \"metric_name\", \"dimension_key\", and \"mapping\" are required " +
 				"for \"split_metric\" translation rule",
 		},
@@ -273,7 +360,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "convert_values_invalid_no_mapping",
@@ -282,7 +370,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					Action: ActionConvertValues,
 				},
 			},
-			wantError: "field \"types_mapping\" are required for \"convert_values\" translation rule",
+			wantDimensionsMap: nil,
+			wantError:         "field \"types_mapping\" are required for \"convert_values\" translation rule",
 		},
 		{
 			name: "convert_values_invalid_type",
@@ -294,7 +383,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					},
 				},
 			},
-			wantError: "invalid value type \"invalid-type\" set for metric \"metric1\" in \"types_mapping\"",
+			wantDimensionsMap: nil,
+			wantError:         "invalid value type \"invalid-type\" set for metric \"metric1\" in \"types_mapping\"",
 		},
 		{
 			name: "aggregate_metric_valid",
@@ -306,7 +396,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					AggregationMethod: AggregationMethodCount,
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "aggregate_metric_invalid_no_dimension_key",
@@ -317,6 +408,7 @@ func TestNewMetricTranslator(t *testing.T) {
 					AggregationMethod: AggregationMethodCount,
 				},
 			},
+			wantDimensionsMap: nil,
 			wantError: "fields \"metric_name\", \"without_dimensions\", and \"aggregation_method\" " +
 				"are required for \"aggregate_metric\" translation rule",
 		},
@@ -330,7 +422,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					AggregationMethod: AggregationMethod("invalid"),
 				},
 			},
-			wantError: "invalid \"aggregation_method\": \"invalid\" provided for \"aggregate_metric\" translation rule",
+			wantDimensionsMap: nil,
+			wantError:         "invalid \"aggregation_method\": \"invalid\" provided for \"aggregate_metric\" translation rule",
 		},
 		{
 			name: "calculate_new_metric_valid",
@@ -343,7 +436,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					Operator:       MetricOperatorDivision,
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "divide_metrics_invalid_missing_metric_name",
@@ -355,6 +449,7 @@ func TestNewMetricTranslator(t *testing.T) {
 					Operator:       MetricOperatorDivision,
 				},
 			},
+			wantDimensionsMap: nil,
 			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
 				`are required for "calculate_new_metric" translation rule`,
 		},
@@ -368,6 +463,7 @@ func TestNewMetricTranslator(t *testing.T) {
 					Operator:       MetricOperatorDivision,
 				},
 			},
+			wantDimensionsMap: nil,
 			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
 				`are required for "calculate_new_metric" translation rule`,
 		},
@@ -381,6 +477,7 @@ func TestNewMetricTranslator(t *testing.T) {
 					Operator:       MetricOperatorDivision,
 				},
 			},
+			wantDimensionsMap: nil,
 			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
 				`are required for "calculate_new_metric" translation rule`,
 		},
@@ -394,6 +491,7 @@ func TestNewMetricTranslator(t *testing.T) {
 					Operand2Metric: "op2_metric",
 				},
 			},
+			wantDimensionsMap: nil,
 			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
 				`are required for "calculate_new_metric" translation rule`,
 		},
@@ -405,7 +503,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					MetricNames: map[string]bool{"metric": true},
 				},
 			},
-			wantError: "",
+			wantDimensionsMap: nil,
+			wantError:         "",
 		},
 		{
 			name: "drop_metrics_invalid",
@@ -414,7 +513,8 @@ func TestNewMetricTranslator(t *testing.T) {
 					Action: ActionDropMetrics,
 				},
 			},
-			wantError: `field "metric_names" is required for "drop_metrics" translation rule`,
+			wantDimensionsMap: nil,
+			wantError:         `field "metric_names" is required for "drop_metrics" translation rule`,
 		},
 		{
 			name: "delta_metric_invalid",
@@ -425,6 +525,15 @@ func TestNewMetricTranslator(t *testing.T) {
 			},
 			wantError: `field "mapping" is required for "delta_metric" translation rule`,
 		},
+		{
+			name: "drop_dimensions_invalid",
+			trs: []Rule{
+				{
+					Action: ActionDropDimensions,
+				},
+			},
+			wantError: `field "dimension_pairs" is required for "drop_dimensions" translation rule`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -434,6 +543,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, mt)
 				assert.Equal(t, tt.trs, mt.rules)
+				assert.Equal(t, tt.wantDimensionsMap, mt.dimensionsMap)
 			} else {
 				require.Error(t, err)
 				assert.Equal(t, tt.wantError, err.Error())
@@ -455,6 +565,141 @@ func TestTranslateDataPoints(t *testing.T) {
 		dps  []*sfxpb.DataPoint
 		want []*sfxpb.DataPoint
 	}{
+		{
+			name: "rename_dimension_keys",
+			trs: []Rule{
+				{
+					Action: ActionRenameDimensionKeys,
+					Mapping: map[string]string{
+						"old_dimension": "new_dimension",
+						"old.dimension": "new.dimension",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "single",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old_dimension",
+							Value: "value1",
+						},
+						{
+							Key:   "old.dimension",
+							Value: "value2",
+						},
+						{
+							Key:   "dimension",
+							Value: "value3",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "single",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "new_dimension",
+							Value: "value1",
+						},
+						{
+							Key:   "new.dimension",
+							Value: "value2",
+						},
+						{
+							Key:   "dimension",
+							Value: "value3",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "rename_dimension_keys_filtered_metric",
+			trs: []Rule{
+				{
+					Action: ActionRenameDimensionKeys,
+					Mapping: map[string]string{
+						"old.dimension": "new.dimension",
+					},
+					MetricNames: map[string]bool{
+						"metric1": true,
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old.dimension",
+							Value: "value1",
+						},
+					},
+				},
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old.dimension",
+							Value: "value1",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "new.dimension",
+							Value: "value1",
+						},
+					},
+				},
+				// This metric doesn't match provided metric_name filter, so dimension key is not changed
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old.dimension",
+							Value: "value1",
+						},
+					},
+				},
+			},
+		},
 		{
 			name: "rename_metric",
 			trs: []Rule{
@@ -1673,6 +1918,28 @@ func assertEqualPoints(t *testing.T, got, want []*sfxpb.DataPoint, action Action
 	assert.Equal(t, want, got)
 }
 
+func TestTestTranslateDimension(t *testing.T) {
+	mt, err := NewMetricTranslator([]Rule{
+		{
+			Action: ActionRenameDimensionKeys,
+			Mapping: map[string]string{
+				"old_dimension": "new_dimension",
+				"old.dimension": "new.dimension",
+			},
+		},
+	}, 1, make(chan struct{}))
+	require.NoError(t, err)
+
+	assert.Equal(t, "new_dimension", mt.translateDimension("old_dimension"))
+	assert.Equal(t, "new.dimension", mt.translateDimension("old.dimension"))
+	assert.Equal(t, "another_dimension", mt.translateDimension("another_dimension"))
+
+	// Test no rename_dimension_keys translation rule
+	mt, err = NewMetricTranslator([]Rule{}, 1, make(chan struct{}))
+	require.NoError(t, err)
+	assert.Equal(t, "old_dimension", mt.translateDimension("old_dimension"))
+}
+
 func TestNewCalculateNewMetricErrors(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -2314,6 +2581,378 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pmetric.Metrics) (
 		require.Equal(t, &counterType, pt.MetricType)
 	}
 	return deltaPts1, deltaPts2
+}
+
+func TestDropDimensions(t *testing.T) {
+	tests := []struct {
+		name        string
+		rules       []Rule
+		inputDps    []*sfxpb.DataPoint
+		expectedDps []*sfxpb.DataPoint
+	}{
+		{
+			name: "With metric name",
+			rules: []Rule{
+				{
+					Action:     ActionDropDimensions,
+					MetricName: "/metric.*/",
+					MetricNames: map[string]bool{
+						"testmetric": true,
+					},
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": nil,
+						"dim_key2": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "metrik1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "testmetric",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+				{
+					Metric: "metrik1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric:     "testmetric",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+			},
+		},
+		{
+			name: "Without metric name",
+			rules: []Rule{
+				{
+					Action: ActionDropDimensions,
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": nil,
+						"dim_key2": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "metric2",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "testmetric",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+				{
+					Metric:     "metric2",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+				{
+					Metric:     "testmetric",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+			},
+		},
+		{
+			name: "Drop dimension on all values",
+			rules: []Rule{
+				{
+					Action: ActionDropDimensions,
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": {},
+						"dim_key2": nil,
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "metric2",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val2",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+				{
+					Metric:     "metric2",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+			},
+		},
+		{
+			name: "Drop dimension on listed values",
+			rules: []Rule{
+				{
+					Action: ActionDropDimensions,
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": {"dim_val1": true},
+						"dim_key2": {"dim_val2": true},
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "metric2",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val2",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "metric2",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val2",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Do not drop dimension not listed",
+			rules: []Rule{
+				{
+					Action: ActionDropDimensions,
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": {"dim_val1": true},
+						"dim_key2": {"dim_val2": true},
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key3",
+							Value: "dim_val1",
+						},
+					},
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key3",
+							Value: "dim_val1",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "No op when dimensions do not exist on dp",
+			rules: []Rule{
+				{
+					Action: ActionDropDimensions,
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": {"dim_val1": true},
+						"dim_key2": {"dim_val2": true},
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mt, err := NewMetricTranslator(test.rules, 1, make(chan struct{}))
+			require.NoError(t, err)
+			outputSFxDps := mt.TranslateDataPoints(zap.NewNop(), test.inputDps)
+			require.Equal(t, test.expectedDps, outputSFxDps)
+		})
+	}
+}
+
+func TestDropDimensionsErrorCases(t *testing.T) {
+	tests := []struct {
+		name          string
+		rules         []Rule
+		expectedError string
+	}{
+		{
+			name: "Test with invalid metric name pattern",
+			rules: []Rule{
+				{
+					Action:     ActionDropDimensions,
+					MetricName: "/metric.*(/",
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": nil,
+						"dim_key2": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
+					},
+				},
+			},
+			expectedError: "failed creating metric matcher: error parsing regexp: missing closing ): `metric.*(`",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mt, err := NewMetricTranslator(test.rules, 1, make(chan struct{}))
+			require.EqualError(t, err, test.expectedError)
+			require.Nil(t, mt)
+		})
+	}
 }
 
 func testConverter(t *testing.T, mapping map[string]string) *MetricsConverter {

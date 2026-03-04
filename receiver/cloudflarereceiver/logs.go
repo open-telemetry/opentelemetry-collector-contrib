@@ -106,7 +106,10 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 		return err
 	}
 
-	l.wg.Go(func() {
+	l.wg.Add(1)
+	go func() {
+		defer l.wg.Done()
+
 		if l.cfg.TLS != nil {
 			l.logger.Debug("Starting ServeTLS",
 				zap.String("address", l.cfg.Endpoint),
@@ -134,7 +137,7 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 		}
-	})
+	}()
 	return nil
 }
 

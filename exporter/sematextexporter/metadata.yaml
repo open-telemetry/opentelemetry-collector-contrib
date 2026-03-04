@@ -1,5 +1,4 @@
 type: sematext
-display_name: Sematext Exporter
 
 status:
   class: exporter
