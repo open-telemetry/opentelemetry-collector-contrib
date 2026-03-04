@@ -205,7 +205,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		},
 	}
 
-	u := s3AccessLogUnmarshaler{buildInfo: component.BuildInfo{}}
+	u := S3AccessLogUnmarshaler{buildInfo: component.BuildInfo{}}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
