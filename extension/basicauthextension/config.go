@@ -26,8 +26,14 @@ type HtpasswdSettings struct {
 type ClientAuthSettings struct {
 	// Username holds the username to use for client authentication.
 	Username string `mapstructure:"username"`
+	// UsernameFile points to a file that contains the username.
+	// If set, takes precedence over Username. The file is watched for changes.
+	UsernameFile string `mapstructure:"username_file"`
 	// Password holds the password to use for client authentication.
 	Password configopaque.String `mapstructure:"password"`
+	// PasswordFile points to a file that contains the password.
+	// If set, takes precedence over Password. The file is watched for changes.
+	PasswordFile string `mapstructure:"password_file"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

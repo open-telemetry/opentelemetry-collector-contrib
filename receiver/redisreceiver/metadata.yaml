@@ -1,5 +1,7 @@
 type: redis
 
+reaggregation_enabled: true
+
 status:
   class: receiver
   stability:
@@ -26,18 +28,22 @@ attributes:
   cluster_state:
     description: State of the cluster
     type: string
+    requirement_level: recommended
     enum:
       - ok
       - fail
   cmd:
     description: Redis command name
     type: string
+    requirement_level: recommended
   db:
     description: Redis database identifier
     type: string
+    requirement_level: recommended
   mode:
     description: Redis server mode
     type: string
+    requirement_level: recommended
     enum:
       - cluster
       - sentinel
@@ -45,6 +51,7 @@ attributes:
   percentile:
     description: Percentile
     type: string
+    requirement_level: recommended
     enum:
       - p50
       - p99
@@ -52,12 +59,14 @@ attributes:
   role:
     description: Redis node's role
     type: string
+    requirement_level: recommended
     enum:
       - replica
       - primary
   state:
     description: Redis CPU usage state
     type: string
+    requirement_level: recommended
     # Redis versions < 6.0 have:
     #   used_cpu_sys: System CPU consumed by the Redis server, which is the sum of system CPU consumed by all threads of the server process (main thread and background threads)
     #   used_cpu_user: User CPU consumed by the Redis server, which is the sum of user CPU consumed by all threads of the server process (main thread and background threads)
