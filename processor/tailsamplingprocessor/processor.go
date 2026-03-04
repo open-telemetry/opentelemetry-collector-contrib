@@ -791,10 +791,6 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	}
 
 	if finalDecision == samplingpolicy.Unspecified {
-		// If the final decision hasn't been made, add the new spans to the
-		// existing trace.
-		appendToTraces(actualData.ReceivedBatches, rss)
-
 		// In root-only mode, evaluate as soon as the root span is seen and only
 		// use root span data for the sampling decision.
 		if tsp.cfg.SampleOnRootSpanOnly && containsRootSpan {
@@ -808,11 +804,19 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 			actualData.ReceivedBatches = ptrace.NewTraces()
 
 			if decision == samplingpolicy.Sampled {
+				// Root-only mode decides immediately on root span receipt. Avoid writing
+				// the current batch to storage and merge it directly into the release payload.
+				appendToTraces(allSpans, rss)
 				tsp.releaseSampledTrace(tsp.ctx, id, allSpans, policyName)
 			} else {
 				tsp.releaseNotSampledTrace(id, policyName)
 			}
+			return
 		}
+
+		// If the final decision hasn't been made, add the new spans to the
+		// existing trace.
+		appendToTraces(actualData.ReceivedBatches, rss)
 		return
 	}
 
