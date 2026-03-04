@@ -39,7 +39,7 @@ feature_gates:
     stage: alpha
     description: >-
       Use protobuf encoding for checkpoint storage instead of JSON.
-    from_version: v0.145.0
+    from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266
   - id: filelog.windows.caseInsensitive
     stage: alpha
