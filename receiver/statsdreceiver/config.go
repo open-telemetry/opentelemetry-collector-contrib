@@ -30,7 +30,8 @@ type Config struct {
 	// Valid values: "int" (default), "float", "stochastic_int".
 	CounterType           protocol.CounterType             `mapstructure:"counter_type"`
 	TimerHistogramMapping []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
-	SocketPermissions     os.FileMode                      `mapstructure:"socket_permissions"`
+	// Will only be used when transport set to 'unixgram'.
+	SocketPermissions     os.FileMode `mapstructure:"socket_permissions"`
 }
 
 func (c *Config) Validate() error {
