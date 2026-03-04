@@ -120,8 +120,8 @@ type Supervisor struct {
 	// Supervisor's own config.
 	config config.Supervisor
 
-	// configWriteMu serializes initial config loading between Start and
-	// OpAMP OnConnect callback to avoid concurrent config mutations.
+	// configWriteMu is used to synchronize writes to the agent config file.
+	// This ensures that configuration write through the OnConnect callback
 	configWriteMu sync.Mutex
 
 	agentDescription    *atomic.Value
