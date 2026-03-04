@@ -67,6 +67,7 @@ func TestReceiverTLSIntegration(t *testing.T) {
 						Attributes: map[string]string{
 							"ClientIP": "http_request.client_ip",
 						},
+						MaxRequestBodySize: 1024 * 20,
 					},
 				},
 				sink,
