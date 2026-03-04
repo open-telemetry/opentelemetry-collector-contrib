@@ -1,4 +1,10 @@
+display_name: Oracle DB Receiver
 type: oracledb
+
+description: |
+  This receiver periodically queries an Oracle Database host to collect metrics.
+
+reaggregation_enabled: true
 
 status:
   class: receiver
@@ -160,12 +166,15 @@ attributes:
   session_status:
     description: Session status
     type: string
+    requirement_level: recommended
   session_type:
     description: Session type
     type: string
+    requirement_level: recommended
   tablespace_name:
     description: Tablespace name
     type: string
+    requirement_level: recommended
   # attributes for events
   ## top query
   user.name:

@@ -40,20 +40,23 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/34473
 
   - id: receiver.prometheusreceiver.EnableReportExtraScrapeMetrics
-    stage: alpha
+    stage: deprecated
     description: >-
-      Enables reporting of extra Prometheus scrape metrics. This replaces the deprecated
-      'report_extra_scrape_metrics' configuration option.
+      Enables reporting of extra Prometheus scrape metrics. This gate is deprecated, use the
+      `extra_scrape_metrics` Prometheus scrape configuration instead.
     from_version: v0.143.0
+    to_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181
 
   - id: receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig
-    stage: beta
+    stage: stable
     description: >-
-      When enabled, the 'report_extra_scrape_metrics' configuration option is ignored,
-      and extra scrape metrics are controlled solely by the EnableReportExtraScrapeMetrics
-      feature gate. The intention is to have extra scrape metrics enabled all the time in the future.
+      This gate is always enabled and cannot be turned off. The 'report_extra_scrape_metrics'
+      configuration option is always ignored. The extra scrape metrics are controlled by the
+      EnableReportExtraScrapeMetrics feature gate, unless otherwise specified in the Prometheus
+      scrape configuration.
     from_version: v0.143.0
+    to_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181
 
   - id: receiver.prometheusreceiver.RemoveStartTimeAdjustment

@@ -1,4 +1,11 @@
+display_name: Memcached Receiver
 type: memcached
+
+description: |
+  This receiver can fetch stats from a Memcached instance using the [stats
+  command](https://github.com/memcached/memcached/wiki/Commands#statistics). A
+  detailed description of all the stats available is at
+  https://github.com/memcached/memcached/blob/master/doc/protocol.txt#L1159.
 
 status:
   class: receiver

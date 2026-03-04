@@ -157,8 +157,7 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	}
 
 	var commentStrs []string
-	commentStrs, attrErr = getAttributeStringWithPrefix(src.Dictionary(),
-		string(semconv.PprofProfileCommentKey))
+	commentStrs, attrErr = getAttributeStringWithPrefix(src.Dictionary())
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
@@ -221,10 +220,11 @@ func getAttributeString(dic pprofile.ProfilesDictionary, key string) (string, er
 }
 
 // getAttributeStringWithPrefix walks the attribute_table and returns a string array
-// for all keys that start with the given prefix.
+// for all keys that start with the prefix pprof.profile.comment.
 // It returns errNotFound if the key can not be found in attribute_table.
-func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary, keyprefix string) ([]string, error) {
+func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary) ([]string, error) {
 	tmp := make(map[int]string)
+	keyprefix := string(semconv.PprofProfileCommentKey)
 
 	for _, attr := range dic.AttributeTable().All() {
 		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
