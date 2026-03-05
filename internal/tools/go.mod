@@ -8,7 +8,7 @@ tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/google/addlicense
 	github.com/jcchavezs/porto/cmd/porto
-	github.com/jstemmer/go-junit-report
+	github.com/jstemmer/go-junit-report/v2
 	github.com/rhysd/actionlint/cmd/actionlint
 	go.opentelemetry.io/build-tools/checkapi
 	go.opentelemetry.io/build-tools/checkfile
@@ -153,7 +153,7 @@ require (
 	github.com/jjti/go-spancheck v0.6.5 // indirect
 	github.com/joshdk/go-junit v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/jstemmer/go-junit-report v1.0.0 // indirect
+	github.com/jstemmer/go-junit-report/v2 v2.1.0 // indirect
 	github.com/julz/importas v0.2.0 // indirect
 	github.com/kaptinlin/go-i18n v0.1.6 // indirect
 	github.com/kaptinlin/jsonschema v0.4.12 // indirect
