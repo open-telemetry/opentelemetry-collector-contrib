@@ -39,6 +39,7 @@ attributes:
   cache_name:
     description: The name of cache.
     type: string
+    requirement_level: recommended
     enum:
       - fielddata
       - query
@@ -46,10 +47,12 @@ attributes:
     name_override: name
     description: The name of circuit breaker.
     type: string
+    requirement_level: recommended
   cluster_published_difference_state:
     name_override: state
     description: State of the published differences
     type: string
+    requirement_level: recommended
     enum:
       - incompatible
       - compatible
@@ -57,6 +60,7 @@ attributes:
     name_override: state
     description: State of the published differences
     type: string
+    requirement_level: recommended
     enum:
       - pending
       - committed
@@ -64,10 +68,12 @@ attributes:
     name_override: state
     description: State of cluster state update
     type: string
+    requirement_level: recommended
   cluster_state_update_type:
     name_override: type
     description: Type of cluster state update
     type: string
+    requirement_level: recommended
     enum:
       - computation
       - context_construction
@@ -79,9 +85,11 @@ attributes:
     name_override: name
     description: The name of the garbage collector.
     type: string
+    requirement_level: recommended
   direction:
     description: The direction of network data.
     type: string
+    requirement_level: recommended
     enum:
       - received
       - sent
@@ -89,6 +97,7 @@ attributes:
     name_override: state
     description: The state of the document.
     type: string
+    requirement_level: recommended
     enum:
       - active
       - deleted
@@ -96,6 +105,7 @@ attributes:
     name_override: result
     description: Result of get operation
     type: string
+    requirement_level: recommended
     enum:
       - hit
       - miss
@@ -104,6 +114,7 @@ attributes:
     name_override: status
     description: The health status of the cluster.
     type: string
+    requirement_level: recommended
     enum:
       - green
       - yellow
@@ -112,6 +123,7 @@ attributes:
     name_override: aggregation
     description: Type of shard aggregation for index statistics
     type: string
+    requirement_level: recommended
     enum:
       - primary_shards
       - total
@@ -119,6 +131,7 @@ attributes:
     name_override: stage
     description: Stage of the indexing pressure
     type: string
+    requirement_level: recommended
     enum:
       - coordinating
       - primary
@@ -127,14 +140,17 @@ attributes:
     name_override: name
     description: Name of the ingest pipeline.
     type: string
+    requirement_level: recommended
   memory_pool_name:
     name_override: name
     description: The name of the JVM memory pool.
     type: string
+    requirement_level: recommended
   memory_state:
     name_override: state
     description: State of the memory
     type: string
+    requirement_level: recommended
     enum:
       - free
       - used
@@ -142,6 +158,7 @@ attributes:
     name_override: operation
     description: The type of operation.
     type: string
+    requirement_level: recommended
     enum:
       - index
       - delete
@@ -158,6 +175,7 @@ attributes:
     name_override: type
     description: Type of query cache count
     type: string
+    requirement_level: recommended
     enum:
       - hit
       - miss
@@ -165,6 +183,7 @@ attributes:
     name_override: object
     description: Type of object in segment
     type: string
+    requirement_level: recommended
     enum:
       - term
       - doc_value
@@ -174,6 +193,7 @@ attributes:
     name_override: state
     description: The state of the shard.
     type: string
+    requirement_level: recommended
     enum:
       - active
       - active_primary
@@ -185,16 +205,19 @@ attributes:
     name_override: state
     description: The state of the task.
     type: string
+    requirement_level: recommended
     enum:
       - rejected
       - completed
   thread_pool_name:
     description: The name of the thread pool.
     type: string
+    requirement_level: recommended
   thread_state:
     name_override: state
     description: The state of the thread.
     type: string
+    requirement_level: recommended
     enum:
       - active
       - idle
