@@ -27,7 +27,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260305023648-92d73035a497 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.147.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.147.1-0.20260305023648-92d73035a497 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
