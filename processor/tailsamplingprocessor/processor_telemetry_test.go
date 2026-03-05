@@ -32,8 +32,9 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		DecisionWait: 1,
-		NumTraces:    100,
+		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		DecisionWait:     1,
+		NumTraces:        100,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -249,8 +250,9 @@ func TestMetricsWithComponentID(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		DecisionWait: 1,
-		NumTraces:    100,
+		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		DecisionWait:     1,
+		NumTraces:        100,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -603,9 +605,10 @@ func TestMetricsCountSampled(t *testing.T) {
 			controller := newTestTSPController()
 
 			cfg := Config{
-				DecisionWait: 1,
-				NumTraces:    100,
-				PolicyCfgs:   tt.policyCfgs,
+				SamplingStrategy: SamplingStrategyFullTraceWayOut,
+				DecisionWait:     1,
+				NumTraces:        100,
+				PolicyCfgs:       tt.policyCfgs,
 				Options: []Option{
 					withTestController(controller),
 				},
@@ -650,8 +653,9 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		DecisionWait: 1,
-		NumTraces:    2,
+		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		DecisionWait:     1,
+		NumTraces:        2,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -709,8 +713,9 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		DecisionWait: 1,
-		NumTraces:    100,
+		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		DecisionWait:     1,
+		NumTraces:        100,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -793,8 +798,9 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		DecisionWait: 1,
-		NumTraces:    2,
+		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		DecisionWait:     1,
+		NumTraces:        2,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -858,8 +864,9 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		DecisionWait: 1,
-		NumTraces:    100,
+		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		DecisionWait:     1,
+		NumTraces:        100,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -931,8 +938,9 @@ func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Config{
-		DecisionWait: 1,
-		NumTraces:    100,
+		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		DecisionWait:     1,
+		NumTraces:        100,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{

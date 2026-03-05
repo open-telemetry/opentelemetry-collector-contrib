@@ -94,9 +94,6 @@ type tailSamplingSpanProcessor struct {
 }
 
 func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
-	if cfg.SamplingStrategy == "" {
-		cfg.SamplingStrategy = SamplingStrategyFullTraceWayOut
-	}
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
