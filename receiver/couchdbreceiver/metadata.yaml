@@ -15,6 +15,8 @@ status:
     emeritus: [djaglowski]
     seeking_new: true
 
+reaggregation_enabled: true
+
 resource_attributes:
   couchdb.node.name:
     description: The name of the node.
@@ -25,17 +27,21 @@ attributes:
   http.method:
     description: An HTTP request method.
     type: string
+    requirement_level: recommended
     enum: [COPY, DELETE, GET, HEAD, OPTIONS, POST, PUT]
   http.status_code:
     description: An HTTP status code.
     type: string
+    requirement_level: recommended
   operation:
     description: The operation type.
     type: string
+    requirement_level: recommended
     enum: [writes, reads]
   view:
     description: The view type.
     type: string
+    requirement_level: recommended
     enum: [temporary_view_reads, view_reads]
 
 metrics:
