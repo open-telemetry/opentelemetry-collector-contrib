@@ -232,14 +232,16 @@ service:
 > The scope attribute `elastic.mapping.mode` takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
 > The attribute will be excluded from the final document sent to Elasticsearch.
 
+> [!NOTE]
+> `otel` and `ecs` mapping modes require Elasticsearch 8.12 or above[^1].
+> `otel` mode works best with Elasticsearch 8.16 or above[^2].
+
+[^1]: as OTel and ECS mapping modes rely on the `require_data_stream` bulk API parameter, available since Elasticsearch 8.12
+[^2]: Elasticsearch 8.16 contains a built-in `otel-data` plugin
+
 #### OTel mapping mode
 
 The default and recommended "OTel-native" mapping mode.
-
-Requires Elasticsearch 8.12 or above[^1], works best with Elasticsearch 8.16 or above[^2].
-
-[^1]: as it uses the undocumented `require_data_stream` bulk API parameter supported from Elasticsearch 8.12
-[^2]: Elasticsearch 8.16 contains a built-in `otel-data` plugin
 
 In `otel` mapping mode, the Elasticsearch Exporter stores documents in Elastic's preferred
 "OTel-native" schema. In this mapping mode, documents use the original attribute names and
@@ -700,9 +702,10 @@ error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flu
 }
 ```
 
-This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) sending to Elasticsearch version < 8.12.
+In this scenario, Elasticsearch may reject the bulk request because the `require_data_stream` query parameter is not supported.
+This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
 
-To resolve this, it is recommended to upgrade your Elasticsearch to 8.12+, ideally 8.16+.
+To resolve this, upgrade Elasticsearch to 8.12+; for OTel mapping mode, 8.16+ is recommended.
 Alternatively, try other mapping modes, but the document structure will be different.
 
 ### "dropping cumulative temporality histogram" and "dropping cumulative temporality exponential histogram"
