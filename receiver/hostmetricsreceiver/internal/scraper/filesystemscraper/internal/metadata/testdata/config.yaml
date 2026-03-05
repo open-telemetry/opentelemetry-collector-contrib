@@ -3,15 +3,32 @@ all_set:
   metrics:
     system.filesystem.inodes.usage:
       enabled: true
+      attributes: ["device","mode","mountpoint","type","state"]
     system.filesystem.usage:
       enabled: true
+      attributes: ["device","mode","mountpoint","type","state"]
     system.filesystem.utilization:
       enabled: true
+      attributes: ["device","mode","mountpoint","type"]
+reaggregate_set:
+  metrics:
+    system.filesystem.inodes.usage:
+      enabled: true
+      attributes: []
+    system.filesystem.usage:
+      enabled: true
+      attributes: []
+    system.filesystem.utilization:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     system.filesystem.inodes.usage:
       enabled: false
+      attributes: ["device","mode","mountpoint","type","state"]
     system.filesystem.usage:
       enabled: false
+      attributes: ["device","mode","mountpoint","type","state"]
     system.filesystem.utilization:
       enabled: false
+      attributes: ["device","mode","mountpoint","type"]
