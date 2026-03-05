@@ -5,6 +5,7 @@ package heroku // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -36,7 +37,7 @@ type detector struct {
 }
 
 // Detect detects heroku metadata and returns a resource with the available ones
-func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	dynoIDMissing := false
 	if dynoID, ok := os.LookupEnv("HEROKU_DYNO_ID"); ok {
 		d.rb.SetServiceInstanceID(dynoID)
@@ -50,13 +51,14 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	} else {
 		herokuAppIDMissing = true
 	}
-	if dynoIDMissing {
-		if herokuAppIDMissing {
-			d.logger.Debug("Heroku metadata is missing. Please check metadata is enabled.")
-		} else {
-			// some heroku deployments will enable some of the metadata.
-			d.logger.Debug("Partial Heroku metadata is missing. Please check metadata is supported.")
+	if dynoIDMissing && herokuAppIDMissing {
+		if internal.FailOnMissingMetadataFromContext(ctx) {
+			return pcommon.NewResource(), "", errors.New("heroku metadata unavailable: HEROKU_DYNO_ID and HEROKU_APP_ID env vars not set")
 		}
+		d.logger.Debug("Heroku metadata is missing. Please check metadata is enabled.")
+	} else if dynoIDMissing {
+		// some heroku deployments will enable some of the metadata.
+		d.logger.Debug("Partial Heroku metadata is missing. Please check metadata is supported.")
 	}
 	if !herokuAppIDMissing {
 		d.rb.SetCloudProvider(conventions.CloudProviderHeroku.Value.AsString())

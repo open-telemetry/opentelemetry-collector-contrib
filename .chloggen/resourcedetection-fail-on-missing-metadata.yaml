@@ -1,0 +1,9 @@
+change_type: enhancement
+component: processor/resourcedetection
+note: Add top-level `fail_on_missing_metadata` to make unreachable metadata services a hard failure
+issues: [46579]
+subtext: |
+  When `true`, network-based detectors return an error instead of silently returning an empty
+  resource when their metadata service is unreachable.
+  Supersedes the per-detector `fail_on_missing_metadata` fields, which are now deprecated.
+change_logs: [user]

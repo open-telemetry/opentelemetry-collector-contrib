@@ -5,6 +5,7 @@ package eks // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -103,6 +104,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if isEKS, err := d.isEKS(ctx); err != nil || !isEKS {
 		if err != nil {
 			d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
+			if internal.FailOnMissingMetadataFromContext(ctx) {
+				return pcommon.NewResource(), "", fmt.Errorf("eks metadata unavailable: %w", err)
+			}
+		} else if internal.FailOnMissingMetadataFromContext(ctx) {
+			return pcommon.NewResource(), "", errors.New("eks metadata unavailable: not running on EKS")
 		}
 		return pcommon.NewResource(), "", err
 	}

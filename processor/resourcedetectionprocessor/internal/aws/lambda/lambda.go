@@ -5,6 +5,7 @@ package lambda // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -42,11 +43,14 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }
 
-func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	functionName, ok := os.LookupEnv(awsLambdaFunctionNameEnvVar)
 	if !ok || functionName == "" {
-		d.logger.Debug("Unable to identify AWS Lambda environment", zap.Error(err))
-		return pcommon.NewResource(), "", err
+		if internal.FailOnMissingMetadataFromContext(ctx) {
+			return pcommon.NewResource(), "", errors.New("lambda metadata unavailable: " + awsLambdaFunctionNameEnvVar + " env var not set")
+		}
+		d.logger.Debug("Unable to identify AWS Lambda environment")
+		return pcommon.NewResource(), "", nil
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md

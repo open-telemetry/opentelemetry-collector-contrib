@@ -52,7 +52,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.ra.K8sClusterName.Enabled {
 		clusterName, err := d.provider.ClusterName(ctx)
 		if err != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster name: %w", err)
+			if internal.FailOnMissingMetadataFromContext(ctx) {
+				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster name: %w", err)
+			}
+			d.logger.Debug("kubeadm metadata unavailable", zap.Error(err))
+			return pcommon.NewResource(), "", nil
 		}
 		d.rb.SetK8sClusterName(clusterName)
 	}
@@ -60,7 +64,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.ra.K8sClusterUID.Enabled {
 		clusterUID, err := d.provider.ClusterUID(ctx)
 		if err != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster uid: %w", err)
+			if internal.FailOnMissingMetadataFromContext(ctx) {
+				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster uid: %w", err)
+			}
+			d.logger.Debug("kubeadm metadata unavailable", zap.Error(err))
+			return pcommon.NewResource(), "", nil
 		}
 		d.rb.SetK8sClusterUID(clusterUID)
 	}

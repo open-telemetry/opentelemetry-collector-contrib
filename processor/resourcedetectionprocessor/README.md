@@ -120,6 +120,8 @@ processors:
     override: false
 ```
 
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Docker daemon cannot be contacted. When `false` (default), failures are logged and an empty resource is returned.
+
 #### Docker Socket Permissions
 
 Since version 0.40.0, official OpenTelemetry Collector images run as a non-root user. To access the Docker socket, you need to configure appropriate permissions:
@@ -157,6 +159,8 @@ processors:
     timeout: 2s
     override: false
 ```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if both `HEROKU_DYNO_ID` and `HEROKU_APP_ID` environment variables are not set, instead of silently returning an empty resource.
 
 ### GCP Metadata
 
@@ -309,15 +313,8 @@ processors:
       max_backoff: 5m
 ```
 
-The EC2 detector will report an error in logs if the EC2 metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resourcedetection/ec2:
-    detectors: ["ec2"]
-    ec2:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Amazon ECS
 
@@ -335,6 +332,8 @@ processors:
     override: false
 ```
 
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the ECS Task Metadata Endpoint is not detected (not running on ECS) or if container sidecar metadata retrieval fails, instead of silently returning an empty or partial resource.
+
 ### Amazon Elastic Beanstalk
 
 Reads the AWS X-Ray configuration file available on all Beanstalk instances with [X-Ray Enabled](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environment-configuration-debugging.html).
@@ -350,6 +349,8 @@ processors:
     timeout: 2s
     override: false
 ```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Elastic Beanstalk configuration file is not found, instead of silently returning an empty resource.
 
 ### Amazon EKS
 
@@ -370,6 +371,8 @@ processors:
     timeout: 15s
     override: false
 ```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if EKS cannot be detected (environment check fails) or if metadata retrieval fails, instead of silently returning an empty resource.
 
 #### Cluster Name
 
@@ -430,6 +433,8 @@ processors:
     timeout: 0.2s
     override: false
 ```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the `AWS_LAMBDA_FUNCTION_NAME` environment variable is not set (not running on Lambda), instead of silently returning an empty resource.
 
 ### Azure
 
@@ -532,6 +537,8 @@ Queries the K8S API server to retrieve kubeadm resource attributes:
 
 The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
 
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if Kubernetes API calls fail. When `false` (default), failures are logged and an empty resource is returned.
+
 ---
 
 ### Oracle Cloud Infrastructure (OCI) metadata
@@ -608,6 +615,8 @@ roleRef:
 Queries the K8S api server to retrieve node resource attributes.
 
 The list of the populated resource attributes can be found at [k8snode Detector Resource Attributes](./internal/k8snode/documentation.md).
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if Kubernetes API calls fail. When `false` (default), failures are logged and an empty resource is returned.
 
 The following permissions are required:
 ```yaml
@@ -781,15 +790,8 @@ processors:
     detectors: ["upcloud"]
 ```
 
-The Upcloud detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resourcedetection/upcloud:
-    detectors: ["upcloud"]
-    upcloud:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Vultr
 
@@ -805,15 +807,8 @@ processors:
     detectors: ["vultr"]
 ```
 
-The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resourcedetection/vultr:
-    detectors: ["vultr"]
-    vultr:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Digital Ocean
 
@@ -850,15 +845,8 @@ processors:
         - ^label.*$
 ```
 
-The Nova detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resourcedetection/nova:
-    detectors: ["nova"]
-    nova:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Alibaba Cloud ECS
 
@@ -874,15 +862,8 @@ processors:
     detectors: ["alibaba_ecs"]
 ```
 
-The Alibaba Cloud ECS detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resourcedetection/alibaba_ecs:
-    detectors: ["alibaba_ecs"]
-    alibaba_ecs:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ### Tencent Cloud CVM
 
@@ -898,15 +879,8 @@ processors:
     detectors: ["tencent_cvm"]
 ```
 
-The Tencent Cloud CVM detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resourcedetection/tencent_cvm:
-    detectors: ["tencent_cvm"]
-    tencent_cvm:
-      fail_on_missing_metadata: true
-```
+> **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
+> `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
 ## Configuration
 
@@ -917,6 +891,9 @@ detectors: [ <string> ]
 override: <bool>
 # how often resource detection should be refreshed; if unset, detection runs only once at startup
 refresh_interval: <duration>
+# controls whether network-based detectors treat an unreachable metadata service as a hard failure;
+# supersedes the per-detector fail_on_missing_metadata fields (now deprecated). Default: false
+fail_on_missing_metadata: <bool>
 ```
 
 You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
@@ -949,6 +926,21 @@ The `refresh_interval` option allows resource attributes to be periodically refr
 - **Performance impact**: Each refresh re-runs all configured detectors. Values below 5 minutes can increase CPU and memory usage. There is no enforced minimum, but intervals below 1 minute are strongly discouraged.
 
 **Recommendation**: In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector's lifetime (e.g., Kubernetes pod labels, cloud instance tags).
+
+### Using the `fail_on_missing_metadata` parameter
+
+The `fail_on_missing_metadata` option controls whether detectors treat an unreachable metadata service as a hard failure. When set to `true`, affected detectors return an error instead of silently returning an empty resource, enabling the collector's retry mechanism to wait until the metadata service becomes available.
+
+This is particularly useful workloads where the metadata service may be temporarily unavailable during node startup.
+
+```yaml
+processors:
+  resourcedetection/gke:
+    detectors: [gcp]
+    fail_on_missing_metadata: true
+```
+
+> **Note**: The per-detector `fail_on_missing_metadata` fields in the `ec2`, `alibaba_ecs`, `tencent_cvm`, `upcloud`, `vultr`, and `nova` detector configs are deprecated. Use this top-level flag instead.
 
 ## Performance
 
