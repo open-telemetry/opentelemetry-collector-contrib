@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,18 +27,66 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HttpcheckClientConnectionDuration: MetricConfig{Enabled: true},
-					HttpcheckClientRequestDuration:    MetricConfig{Enabled: true},
-					HttpcheckDNSLookupDuration:        MetricConfig{Enabled: true},
-					HttpcheckDuration:                 MetricConfig{Enabled: true},
-					HttpcheckError:                    MetricConfig{Enabled: true},
-					HttpcheckResponseDuration:         MetricConfig{Enabled: true},
-					HttpcheckResponseSize:             MetricConfig{Enabled: true},
-					HttpcheckStatus:                   MetricConfig{Enabled: true},
-					HttpcheckTLSCertRemaining:         MetricConfig{Enabled: true},
-					HttpcheckTLSHandshakeDuration:     MetricConfig{Enabled: true},
-					HttpcheckValidationFailed:         MetricConfig{Enabled: true},
-					HttpcheckValidationPassed:         MetricConfig{Enabled: true},
+					HttpcheckClientConnectionDuration: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url", "network.transport"},
+					},
+					HttpcheckClientRequestDuration: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckDNSLookupDuration: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckDuration: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckError: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"http.url", "error.message"},
+					},
+					HttpcheckResponseDuration: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckResponseSize: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckStatus: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"http.url", "http.status_code", "http.method", "http.status_class"},
+					},
+					HttpcheckTLSCertRemaining: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url", "http.tls.issuer", "http.tls.cn", "http.tls.san"},
+					},
+					HttpcheckTLSHandshakeDuration: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckValidationFailed: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"http.url", "validation.type"},
+					},
+					HttpcheckValidationPassed: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"http.url", "validation.type"},
+					},
 				},
 			},
 		},
@@ -45,18 +94,66 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HttpcheckClientConnectionDuration: MetricConfig{Enabled: false},
-					HttpcheckClientRequestDuration:    MetricConfig{Enabled: false},
-					HttpcheckDNSLookupDuration:        MetricConfig{Enabled: false},
-					HttpcheckDuration:                 MetricConfig{Enabled: false},
-					HttpcheckError:                    MetricConfig{Enabled: false},
-					HttpcheckResponseDuration:         MetricConfig{Enabled: false},
-					HttpcheckResponseSize:             MetricConfig{Enabled: false},
-					HttpcheckStatus:                   MetricConfig{Enabled: false},
-					HttpcheckTLSCertRemaining:         MetricConfig{Enabled: false},
-					HttpcheckTLSHandshakeDuration:     MetricConfig{Enabled: false},
-					HttpcheckValidationFailed:         MetricConfig{Enabled: false},
-					HttpcheckValidationPassed:         MetricConfig{Enabled: false},
+					HttpcheckClientConnectionDuration: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url", "network.transport"},
+					},
+					HttpcheckClientRequestDuration: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckDNSLookupDuration: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckDuration: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckError: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"http.url", "error.message"},
+					},
+					HttpcheckResponseDuration: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckResponseSize: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckStatus: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"http.url", "http.status_code", "http.method", "http.status_class"},
+					},
+					HttpcheckTLSCertRemaining: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url", "http.tls.issuer", "http.tls.cn", "http.tls.san"},
+					},
+					HttpcheckTLSHandshakeDuration: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"http.url"},
+					},
+					HttpcheckValidationFailed: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"http.url", "validation.type"},
+					},
+					HttpcheckValidationPassed: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"http.url", "validation.type"},
+					},
 				},
 			},
 		},

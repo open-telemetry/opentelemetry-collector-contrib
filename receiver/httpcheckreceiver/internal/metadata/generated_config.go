@@ -3,6 +3,9 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -10,6 +13,11 @@ import (
 type MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []string `mapstructure:"attributes"`
+	definedAttributes   []string
+	requiredAttributes  []string
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -21,9 +29,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+	for _, val := range ms.EnabledAttributes {
+		if !slices.Contains(ms.definedAttributes, val) {
+			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		}
+	}
+
+	for _, val := range ms.requiredAttributes {
+		if !slices.Contains(ms.EnabledAttributes, val) {
+			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		}
+	}
+
+	if ms.AggregationStrategy != AggregationStrategySum &&
+		ms.AggregationStrategy != AggregationStrategyAvg &&
+		ms.AggregationStrategy != AggregationStrategyMin &&
+		ms.AggregationStrategy != AggregationStrategyMax {
+		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for httpcheck metrics.
@@ -46,39 +77,99 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		HttpcheckClientConnectionDuration: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url", "network.transport"},
+			EnabledAttributes:   []string{"http.url", "network.transport"},
 		},
 		HttpcheckClientRequestDuration: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url"},
+			EnabledAttributes:   []string{"http.url"},
 		},
 		HttpcheckDNSLookupDuration: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url"},
+			EnabledAttributes:   []string{"http.url"},
 		},
 		HttpcheckDuration: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url"},
+			EnabledAttributes:   []string{"http.url"},
 		},
 		HttpcheckError: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url", "error.message"},
+			EnabledAttributes:   []string{"http.url", "error.message"},
 		},
 		HttpcheckResponseDuration: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url"},
+			EnabledAttributes:   []string{"http.url"},
 		},
 		HttpcheckResponseSize: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url"},
+			EnabledAttributes:   []string{"http.url"},
 		},
 		HttpcheckStatus: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url", "http.status_code", "http.method", "http.status_class"},
+			EnabledAttributes:   []string{"http.url", "http.status_code", "http.method", "http.status_class"},
 		},
 		HttpcheckTLSCertRemaining: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url", "http.tls.issuer", "http.tls.cn", "http.tls.san"},
+			EnabledAttributes:   []string{"http.url", "http.tls.issuer", "http.tls.cn", "http.tls.san"},
 		},
 		HttpcheckTLSHandshakeDuration: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url"},
+			EnabledAttributes:   []string{"http.url"},
 		},
 		HttpcheckValidationFailed: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url", "validation.type"},
+			EnabledAttributes:   []string{"http.url", "validation.type"},
 		},
 		HttpcheckValidationPassed: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"http.url", "validation.type"},
+			EnabledAttributes:   []string{"http.url", "validation.type"},
 		},
 	}
 }
