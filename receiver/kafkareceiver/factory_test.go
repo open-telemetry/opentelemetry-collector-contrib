@@ -55,8 +55,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestNewFactory_UsesRegisteredGroupBalancerResolver(t *testing.T) {
-	resolverCalled := false
-	resolver := func(strategy configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+	var resolverCalled bool
+	resolver := func(strategy string) ([]kgo.GroupBalancer, bool, error) {
 		resolverCalled = true
 		if strategy == "" {
 			return []kgo.GroupBalancer{kgo.RangeBalancer()}, true, nil
@@ -107,10 +107,10 @@ func TestNewFactory_WrappedFactoryStart_UsesCustomBalancerWhenUnset(t *testing.T
 	})
 
 	customProtocol := "private-coop-sticky"
-	resolverCalled := false
-	resolver := func(strategy configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+	var resolverCalled bool
+	resolver := func(strategy string) ([]kgo.GroupBalancer, bool, error) {
 		resolverCalled = true
-		require.Equal(t, configkafka.GroupRebalanceStrategy(""), strategy)
+		require.Zero(t, strategy)
 		return []kgo.GroupBalancer{
 			namedTestBalancer{
 				GroupBalancer: kgo.CooperativeStickyBalancer(),
@@ -179,8 +179,8 @@ func TestNewFactory_WrappedFactoryStart_ConfiguredStrategySkipsCustomResolver(t 
 		return nil, nil, false
 	})
 
-	resolverCalled := false
-	resolver := func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+	var resolverCalled bool
+	resolver := func(string) ([]kgo.GroupBalancer, bool, error) {
 		resolverCalled = true
 		return []kgo.GroupBalancer{
 			namedTestBalancer{

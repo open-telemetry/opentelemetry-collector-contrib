@@ -155,11 +155,14 @@ func resolveCustomGroupBalancerOpt(
 	strategy configkafka.GroupRebalanceStrategy,
 	resolver groupBalancerResolver,
 ) (kgo.Opt, bool, error) {
+	// Non-empty strategies are handled by the built-in switch in
+	// NewFranzConsumerGroup; only invoke the resolver for the empty
+	// (unset) case so custom distributions can supply a private default.
 	if strategy != "" || resolver == nil {
 		return nil, false, nil
 	}
 
-	extBalancers, handled, err := resolver(strategy)
+	extBalancers, handled, err := resolver(string(strategy))
 	if err != nil {
 		return nil, false, fmt.Errorf("failed resolving custom default group balancer: %w", err)
 	}

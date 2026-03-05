@@ -394,9 +394,9 @@ func TestResolveCustomGroupBalancerOpt_UnsetStrategyUsesResolver(t *testing.T) {
 	resolverCalled := false
 	opt, ok, err := resolveCustomGroupBalancerOpt(
 		"",
-		func(strategy configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+		func(strategy string) ([]kgo.GroupBalancer, bool, error) {
 			resolverCalled = true
-			require.Equal(t, configkafka.GroupRebalanceStrategy(""), strategy)
+			require.Zero(t, strategy)
 			return []kgo.GroupBalancer{kgo.RangeBalancer()}, true, nil
 		},
 	)
@@ -412,7 +412,7 @@ func TestResolveCustomGroupBalancerOpt_ConfiguredStrategySkipsResolver(t *testin
 	resolverCalled := false
 	opt, ok, err := resolveCustomGroupBalancerOpt(
 		configkafka.StickyBalanceStrategy,
-		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+		func(strategy string) ([]kgo.GroupBalancer, bool, error) {
 			resolverCalled = true
 			return []kgo.GroupBalancer{kgo.RangeBalancer()}, true, nil
 		},
@@ -428,7 +428,7 @@ func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverNoMatch(t *testing.T
 
 	opt, ok, err := resolveCustomGroupBalancerOpt(
 		"",
-		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+		func(strategy string) ([]kgo.GroupBalancer, bool, error) {
 			return nil, false, nil
 		},
 	)
@@ -451,7 +451,7 @@ func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverEmpty(t *testing.T) 
 
 	_, _, err := resolveCustomGroupBalancerOpt(
 		"",
-		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+		func(strategy string) ([]kgo.GroupBalancer, bool, error) {
 			return []kgo.GroupBalancer{}, true, nil
 		},
 	)
@@ -464,7 +464,7 @@ func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverNilBalancer(t *testi
 
 	_, _, err := resolveCustomGroupBalancerOpt(
 		"",
-		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+		func(strategy string) ([]kgo.GroupBalancer, bool, error) {
 			return []kgo.GroupBalancer{nil}, true, nil
 		},
 	)
@@ -477,7 +477,7 @@ func TestResolveCustomGroupBalancerOpt_UnsetStrategyResolverError(t *testing.T) 
 
 	_, _, err := resolveCustomGroupBalancerOpt(
 		"",
-		func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+		func(strategy string) ([]kgo.GroupBalancer, bool, error) {
 			return nil, true, errors.New("resolver failure")
 		},
 	)
@@ -529,8 +529,8 @@ func TestFranzConsumer_UnsetStrategyResolverUsesCustomBalancer(t *testing.T) {
 
 	base := kgo.CooperativeStickyBalancer()
 	customProtocol := "private-coop-sticky"
-	resolver := func(strategy configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
-		require.Equal(t, configkafka.GroupRebalanceStrategy(""), strategy)
+	resolver := func(strategy string) ([]kgo.GroupBalancer, bool, error) {
+		require.Zero(t, strategy)
 		return []kgo.GroupBalancer{
 			namedTestBalancer{GroupBalancer: base, name: customProtocol},
 		}, true, nil

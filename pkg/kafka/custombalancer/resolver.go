@@ -12,14 +12,14 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
-// GroupBalancerResolver resolves a custom group rebalance strategy value into
-// franz-go balancers. When group_rebalance_strategy is left unset, strategy is
-// an empty string. ok=false indicates the strategy is not handled.
-type GroupBalancerResolver func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error)
+// GroupBalancerResolver resolves a custom default group balancer when
+// group_rebalance_strategy is explicitly left empty. The resolver is only
+// invoked with an empty strategy; non-empty values are always handled by the
+// built-in strategy switch and never reach the resolver.
+// ok=false indicates the resolver does not wish to override the default.
+type GroupBalancerResolver func(string) ([]kgo.GroupBalancer, bool, error)
 
 type resolverContextKey struct{}
 

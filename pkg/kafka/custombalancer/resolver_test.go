@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 type testConfig struct{}
@@ -28,7 +26,7 @@ func (noopLogsReceiver) Start(context.Context, component.Host) error { return ni
 func (noopLogsReceiver) Shutdown(context.Context) error              { return nil }
 
 func TestContextWithGroupBalancerResolver_NilContext(t *testing.T) {
-	resolver := func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+	resolver := func(string) ([]kgo.GroupBalancer, bool, error) {
 		return nil, false, nil
 	}
 
@@ -45,7 +43,7 @@ func TestContextWithGroupBalancerResolver_NilResolver(t *testing.T) {
 
 func TestWrapFactory_InjectsResolverIntoContext(t *testing.T) {
 	resolverCalled := false
-	resolver := func(configkafka.GroupRebalanceStrategy) ([]kgo.GroupBalancer, bool, error) {
+	resolver := func(string) ([]kgo.GroupBalancer, bool, error) {
 		resolverCalled = true
 		return nil, false, nil
 	}
