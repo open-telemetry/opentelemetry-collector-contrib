@@ -110,7 +110,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		} else if internal.FailOnMissingMetadataFromContext(ctx) {
 			return pcommon.NewResource(), "", errors.New("eks metadata unavailable: not running on EKS")
 		}
-		return pcommon.NewResource(), "", err
+		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
