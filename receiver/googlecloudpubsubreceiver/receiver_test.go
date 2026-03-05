@@ -22,6 +22,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
@@ -81,6 +84,31 @@ func createBaseReceiver() (*pstest.Server, *pubsubReceiver) {
 			Subscription: "projects/my-project/subscriptions/otlp",
 		},
 	}
+}
+
+// createObservedReceiver creates a receiver whose logger captures log entries
+// for assertion in tests.
+func createObservedReceiver(t *testing.T, srv *pstest.Server) (*pubsubReceiver, *observer.ObservedLogs) {
+	t.Helper()
+	core, logs := observer.New(zapcore.DebugLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
+	require.NoError(t, err)
+	return &pubsubReceiver{
+		settings:         settings,
+		userAgent:        "test-user-agent",
+		telemetryBuilder: telemetryBuilder,
+		config: &Config{
+			Endpoint:  srv.Addr,
+			Insecure:  true,
+			ProjectID: "my-project",
+			TimeoutSettings: exporterhelper.TimeoutConfig{
+				Timeout: 12 * time.Second,
+			},
+			Subscription: "projects/my-project/subscriptions/otlp",
+		},
+	}, logs
 }
 
 type fakeUnmarshalLog struct{}
@@ -408,4 +436,129 @@ func TestEncodingWithCompressionConfig(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return len(traceSink.AllTraces()) == 1
 	}, time.Second, 10*time.Millisecond)
+}
+
+// TestHandleLogEncodingErrorDebugLog verifies that a debug log containing the
+// pubsub message context (message_id, attributes, and error) is emitted when the
+// logs unmarshaler returns an error.
+func TestHandleLogEncodingErrorDebugLog(t *testing.T) {
+	ctx := t.Context()
+	srv := pstest.NewServer()
+	defer srv.Close()
+
+	recv, logs := createObservedReceiver(t, srv)
+	recv.logsConsumer = consumertest.NewNop()
+	recv.logsUnmarshaler = &plog.ProtoUnmarshaler{}
+
+	msg := &pb.ReceivedMessage{
+		AckId: "ack-1",
+		Message: &pb.PubsubMessage{
+			MessageId:  "msg-logs-001",
+			Data:       []byte("this is not valid protobuf"),
+			Attributes: map[string]string{"env": "test"},
+		},
+	}
+
+	err := recv.handleLog(ctx, msg, uncompressed)
+	// Error should be returned (IgnoreEncodingError is false by default)
+	assert.Error(t, err)
+
+	// Exactly one debug log should have been emitted
+	debugLogs := logs.FilterLevelExact(zapcore.DebugLevel)
+	require.Equal(t, 1, debugLogs.Len(), "expected exactly one debug log entry on encoding error")
+
+	entry := debugLogs.All()[0]
+	assert.Equal(t, "failed to decode pubsub message for logs", entry.Message)
+	assert.Equal(t, "msg-logs-001", entry.ContextMap()["message_id"])
+}
+
+// TestHandleTraceEncodingErrorDebugLog verifies debug logging for traces.
+func TestHandleTraceEncodingErrorDebugLog(t *testing.T) {
+	ctx := t.Context()
+	srv := pstest.NewServer()
+	defer srv.Close()
+
+	recv, logs := createObservedReceiver(t, srv)
+	recv.tracesConsumer = consumertest.NewNop()
+	recv.tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
+
+	msg := &pb.ReceivedMessage{
+		AckId: "ack-2",
+		Message: &pb.PubsubMessage{
+			MessageId:  "msg-traces-001",
+			Data:       []byte("not valid protobuf"),
+			Attributes: map[string]string{"env": "test"},
+		},
+	}
+
+	err := recv.handleTrace(ctx, msg, uncompressed)
+	assert.Error(t, err)
+
+	debugLogs := logs.FilterLevelExact(zapcore.DebugLevel)
+	require.Equal(t, 1, debugLogs.Len())
+	entry := debugLogs.All()[0]
+	assert.Equal(t, "failed to decode pubsub message for traces", entry.Message)
+	assert.Equal(t, "msg-traces-001", entry.ContextMap()["message_id"])
+}
+
+// TestHandleMetricEncodingErrorDebugLog verifies debug logging for metrics.
+func TestHandleMetricEncodingErrorDebugLog(t *testing.T) {
+	ctx := t.Context()
+	srv := pstest.NewServer()
+	defer srv.Close()
+
+	recv, logs := createObservedReceiver(t, srv)
+	recv.metricsConsumer = consumertest.NewNop()
+	recv.metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+
+	msg := &pb.ReceivedMessage{
+		AckId: "ack-3",
+		Message: &pb.PubsubMessage{
+			MessageId:  "msg-metrics-001",
+			Data:       []byte("not valid protobuf"),
+			Attributes: map[string]string{"env": "test"},
+		},
+	}
+
+	err := recv.handleMetric(ctx, msg, uncompressed)
+	assert.Error(t, err)
+
+	debugLogs := logs.FilterLevelExact(zapcore.DebugLevel)
+	require.Equal(t, 1, debugLogs.Len())
+	entry := debugLogs.All()[0]
+	assert.Equal(t, "failed to decode pubsub message for metrics", entry.Message)
+	assert.Equal(t, "msg-metrics-001", entry.ContextMap()["message_id"])
+}
+
+// TestHandleLogEncodingErrorIgnored verifies that when IgnoreEncodingError is
+// true, the error is silently dropped AND the debug log is still emitted.
+func TestHandleLogEncodingErrorIgnored(t *testing.T) {
+	ctx := t.Context()
+	srv := pstest.NewServer()
+	defer srv.Close()
+
+	recv, logs := createObservedReceiver(t, srv)
+	recv.logsConsumer = consumertest.NewNop()
+	recv.logsUnmarshaler = &plog.ProtoUnmarshaler{}
+	recv.config.IgnoreEncodingError = true
+
+	msg := &pb.ReceivedMessage{
+		AckId: "ack-4",
+		Message: &pb.PubsubMessage{
+			MessageId:  "msg-ignored-001",
+			Data:       []byte("not valid protobuf"),
+			Attributes: map[string]string{"env": "test"},
+		},
+	}
+
+	// No error returned when IgnoreEncodingError is true
+	err := recv.handleLog(ctx, msg, uncompressed)
+	assert.NoError(t, err)
+
+	// But the debug log should still have been emitted
+	debugLogs := logs.FilterLevelExact(zapcore.DebugLevel)
+	require.Equal(t, 1, debugLogs.Len(), "expected debug log even when error is ignored")
+	entry := debugLogs.All()[0]
+	assert.Equal(t, "failed to decode pubsub message for logs", entry.Message)
+	assert.Equal(t, "msg-ignored-001", entry.ContextMap()["message_id"])
 }
