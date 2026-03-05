@@ -41,20 +41,21 @@ type policy struct {
 	attribute metric.MeasurementOption
 }
 
-// traceData is a wrapper around the publically used samplingpolicy.TraceData
+// TraceData is a wrapper around the publically used samplingpolicy.TraceData
 // that tracks information related to the decision making process but not
 // needed by any sampler implementations.
-type traceData struct {
+type TraceData struct {
 	samplingpolicy.TraceData
+	FinalDecision samplingpolicy.Decision
+	PolicyName    string
 
 	arrivalTime   time.Time
 	decisionTime  time.Time
-	bytes         uint64
-	finalDecision samplingpolicy.Decision
-	policyName    string
 	deleteElement *list.Element
 	batchID       uint64
 }
+
+type DecisionHook func(ctx context.Context, id pcommon.TraceID, td *TraceData)
 
 type tailSamplingSpanProcessor struct {
 	ctx context.Context
@@ -66,7 +67,7 @@ type tailSamplingSpanProcessor struct {
 	deleteTraceQueue   *list.List
 	nextConsumer       consumer.Traces
 	policies           []*policy
-	idToTrace          map[pcommon.TraceID]*traceData
+	idToTrace          map[pcommon.TraceID]*TraceData
 	tickerFrequency    time.Duration
 	decisionBatcher    idbatcher.Batcher
 	sampledIDCache     cache.Cache
@@ -78,6 +79,9 @@ type tailSamplingSpanProcessor struct {
 
 	cfg  Config
 	host component.Host
+
+	sampledHooks    []DecisionHook
+	nonSampledHooks []DecisionHook
 
 	newPolicyChan    chan newPolicyCmd
 	newTraceSizeChan chan uint64
@@ -120,7 +124,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		sampledIDCache:     sampledDecisions,
 		nonSampledIDCache:  nonSampledDecisions,
 		logger:             set.Logger,
-		idToTrace:          make(map[pcommon.TraceID]*traceData),
+		idToTrace:          make(map[pcommon.TraceID]*TraceData),
 		deleteTraceQueue:   list.New(),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		blockOnOverflow:    cfg.BlockOnOverflow,
@@ -314,6 +318,20 @@ func WithSampledDecisionCache(c cache.Cache) Option {
 func WithNonSampledDecisionCache(c cache.Cache) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.nonSampledIDCache = c
+	}
+}
+
+// WithSampledHooks sets hooks to be called when a trace is sampled.
+func WithSampledHooks(hooks ...DecisionHook) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.sampledHooks = hooks
+	}
+}
+
+// WithNonSampledHooks sets hooks to be called when a trace is not sampled.
+func WithNonSampledHooks(hooks ...DecisionHook) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.nonSampledHooks = hooks
 	}
 }
 
@@ -580,7 +598,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		// A decision was already made, no need to do it again. This happens
 		// when no decision cache is used and a trace was processed both due to
 		// a root span trigger and after decision_wait.
-		if trace.finalDecision != samplingpolicy.Unspecified {
+		if trace.FinalDecision != samplingpolicy.Unspecified {
 			continue
 		}
 
@@ -589,17 +607,17 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		decision, policyName := tsp.makeDecision(id, &trace.TraceData, metrics)
 		globalTracesSampledByDecision[decision]++
 
-		// Sampled or not, remove the batches
-		allSpans := trace.ReceivedBatches
-		trace.finalDecision = decision
-		trace.policyName = policyName
-		trace.ReceivedBatches = ptrace.NewTraces()
+		trace.FinalDecision = decision
+		trace.PolicyName = policyName
 
 		if decision == samplingpolicy.Sampled {
-			tsp.releaseSampledTrace(ctx, id, allSpans, policyName)
+			tsp.releaseSampledTrace(ctx, id, trace)
 		} else {
-			tsp.releaseNotSampledTrace(id, policyName)
+			tsp.releaseNotSampledTrace(id, trace)
 		}
+
+		// Sampled or not, remove the batches
+		trace.ReceivedBatches = ptrace.NewTraces()
 	}
 
 	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, time.Since(startTime).Milliseconds())
@@ -746,7 +764,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 
 	actualData, ok := tsp.idToTrace[id]
 	if !ok {
-		actualData = &traceData{
+		actualData = &TraceData{
 			arrivalTime: currTime,
 			TraceData: samplingpolicy.TraceData{
 				SpanCount:       spanCount,
@@ -769,19 +787,19 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		actualData.batchID = tsp.decisionBatcher.MoveToEarlierBatch(id, actualData.batchID, uint64(tsp.cfg.DecisionWaitAfterRootReceived.Seconds()))
 	}
 
-	finalDecision := actualData.finalDecision
+	finalDecision := actualData.FinalDecision
 
 	marshaler := &ptrace.ProtoMarshaler{}
-	actualData.bytes += uint64(marshaler.ResourceSpansSize(rss))
+	actualData.SizeBytes += uint64(marshaler.ResourceSpansSize(rss))
 
 	if finalDecision == samplingpolicy.Unspecified &&
 		tsp.maxTraceSizeBytes > 0 &&
-		actualData.bytes > tsp.maxTraceSizeBytes {
+		actualData.SizeBytes > tsp.maxTraceSizeBytes {
 		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
-		actualData.finalDecision = samplingpolicy.NotSampled
+		actualData.FinalDecision = samplingpolicy.NotSampled
 		// Since we are not in a normal decision flow when dropping large traces, also be sure to remove it from the batcher.
 		tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
-		tsp.releaseNotSampledTrace(id, "")
+		tsp.releaseNotSampledTrace(id, actualData)
 		return
 	}
 
@@ -798,7 +816,8 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		appendToTraces(traceTd, rss)
 		tsp.forwardSpans(tsp.ctx, traceTd)
 	case samplingpolicy.NotSampled:
-		tsp.releaseNotSampledTrace(id, actualData.policyName)
+		// TODO: I don't think this is correct? If it isn't sampled shouldn't we just do nothing?
+		tsp.releaseNotSampledTrace(id, actualData)
 	default:
 		tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
 	}
@@ -863,9 +882,12 @@ func (tsp *tailSamplingSpanProcessor) forwardSpans(ctx context.Context, td ptrac
 // releaseSampledTrace sends the trace data to the next consumer. It
 // additionally adds the trace ID to the cache of sampled trace IDs. If the
 // trace ID is cached, it deletes the spans from the internal map.
-func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces, policyName string) {
-	tsp.sampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: policyName})
-	tsp.forwardSpans(ctx, td)
+func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td *TraceData) {
+	for _, hook := range tsp.sampledHooks {
+		hook(ctx, id, td)
+	}
+	tsp.sampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: td.PolicyName})
+	tsp.forwardSpans(ctx, td.ReceivedBatches)
 	_, ok := tsp.sampledIDCache.Get(id)
 	if ok {
 		tsp.dropTrace(id, time.Now())
@@ -874,8 +896,11 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 
 // releaseNotSampledTrace adds the trace ID to the cache of not sampled trace
 // IDs. If the trace ID is cached, it deletes the spans from the internal map.
-func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID, policyName string) {
-	tsp.nonSampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: policyName})
+func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID, td *TraceData) {
+	for _, hook := range tsp.nonSampledHooks {
+		hook(context.Background(), id, td)
+	}
+	tsp.nonSampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: td.PolicyName})
 	_, ok := tsp.nonSampledIDCache.Get(id)
 	if ok {
 		tsp.dropTrace(id, time.Now())
