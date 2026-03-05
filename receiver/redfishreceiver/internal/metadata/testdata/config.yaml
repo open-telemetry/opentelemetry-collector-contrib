@@ -26,11 +26,7 @@ all_set:
     temperature.status.state:
       enabled: true
   resource_attributes:
-    base_url:
-      enabled: true
     host.name:
-      enabled: true
-    system.host_name:
       enabled: true
     url.full:
       enabled: true
@@ -61,25 +57,13 @@ none_set:
     temperature.status.state:
       enabled: false
   resource_attributes:
-    base_url:
-      enabled: false
     host.name:
-      enabled: false
-    system.host_name:
       enabled: false
     url.full:
       enabled: false
 filter_set_include:
   resource_attributes:
-    base_url:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
     host.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    system.host_name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -89,18 +73,10 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
-    base_url:
-      enabled: true
-      metrics_exclude:
-        - strict: "base_url-val"
     host.name:
       enabled: true
       metrics_exclude:
         - strict: "host.name-val"
-    system.host_name:
-      enabled: true
-      metrics_exclude:
-        - strict: "system.host_name-val"
     url.full:
       enabled: true
       metrics_exclude:

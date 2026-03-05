@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -40,10 +41,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TemperatureStatusState:  MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					BaseURL:        ResourceAttributeConfig{Enabled: true},
-					HostName:       ResourceAttributeConfig{Enabled: true},
-					SystemHostName: ResourceAttributeConfig{Enabled: true},
-					URLFull:        ResourceAttributeConfig{Enabled: true},
+					HostName: ResourceAttributeConfig{Enabled: true},
+					URLFull:  ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -65,10 +64,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TemperatureStatusState:  MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					BaseURL:        ResourceAttributeConfig{Enabled: false},
-					HostName:       ResourceAttributeConfig{Enabled: false},
-					SystemHostName: ResourceAttributeConfig{Enabled: false},
-					URLFull:        ResourceAttributeConfig{Enabled: false},
+					HostName: ResourceAttributeConfig{Enabled: false},
+					URLFull:  ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -104,19 +101,15 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				BaseURL:        ResourceAttributeConfig{Enabled: true},
-				HostName:       ResourceAttributeConfig{Enabled: true},
-				SystemHostName: ResourceAttributeConfig{Enabled: true},
-				URLFull:        ResourceAttributeConfig{Enabled: true},
+				HostName: ResourceAttributeConfig{Enabled: true},
+				URLFull:  ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				BaseURL:        ResourceAttributeConfig{Enabled: false},
-				HostName:       ResourceAttributeConfig{Enabled: false},
-				SystemHostName: ResourceAttributeConfig{Enabled: false},
-				URLFull:        ResourceAttributeConfig{Enabled: false},
+				HostName: ResourceAttributeConfig{Enabled: false},
+				URLFull:  ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

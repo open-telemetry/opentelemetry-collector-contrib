@@ -95,7 +95,6 @@ func (s *redfishScraper) start(_ context.Context, _ component.Host) error {
 // and add their metrics to a metrics buffer
 func (s *redfishScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	s.logger.Info("scraping redfish...")
-	s.logger.Warn("resource attributes system.host_name and base_url are deprecated in favor of host.name and url.full respectively. Deprecated attributes will be removed in subsequent versions")
 
 	errs := &scrapererror.ScrapeErrors{}
 	for _, client := range s.clients {
@@ -147,8 +146,8 @@ func (s *redfishScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		// Always present - resource attributes
 		rb := s.mb.NewResourceBuilder()
-		rb.SetBaseURL(baseURL)
-		rb.SetSystemHostName(compSys.HostName)
+		rb.SetURLFull(baseURL)
+		rb.SetHostName(compSys.HostName)
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}

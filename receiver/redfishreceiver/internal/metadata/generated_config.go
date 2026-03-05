@@ -112,21 +112,13 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for redfish resource attributes.
 type ResourceAttributesConfig struct {
-	BaseURL        ResourceAttributeConfig `mapstructure:"base_url"`
-	HostName       ResourceAttributeConfig `mapstructure:"host.name"`
-	SystemHostName ResourceAttributeConfig `mapstructure:"system.host_name"`
-	URLFull        ResourceAttributeConfig `mapstructure:"url.full"`
+	HostName ResourceAttributeConfig `mapstructure:"host.name"`
+	URLFull  ResourceAttributeConfig `mapstructure:"url.full"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		BaseURL: ResourceAttributeConfig{
-			Enabled: true,
-		},
 		HostName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		SystemHostName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		URLFull: ResourceAttributeConfig{
