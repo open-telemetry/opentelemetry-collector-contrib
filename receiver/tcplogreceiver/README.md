@@ -30,6 +30,10 @@ Receives logs over TCP.
 | `multiline`               |                      | A `multiline` configuration block. See below for details                                                           |
 | `encoding`                | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `operators`               | []                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
+| `retry_on_failure.enabled`            | `false`                              | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                                         |
+| `retry_on_failure.initial_interval`   | `1s`                                 | [Time](#time-parameters) to wait after the first failure before retrying.                                                                                                                                                                                       |
+| `retry_on_failure.max_interval`       | `30s`                                | Upper bound on retry backoff [interval](#time-parameters). Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                        |
+| `retry_on_failure.max_elapsed_time`   | `5m`                                 | Maximum amount of [time](#time-parameters) (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                               |
 
 ### TLS Configuration
 

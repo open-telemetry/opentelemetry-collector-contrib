@@ -3,36 +3,105 @@ all_set:
   metrics:
     kafka.broker.log_retention_period:
       enabled: true
+      attributes: ["broker"]
     kafka.brokers:
       enabled: true
+      attributes: []
     kafka.consumer_group.lag:
       enabled: true
+      attributes: ["group","topic","partition"]
     kafka.consumer_group.lag_sum:
       enabled: true
+      attributes: ["group","topic"]
     kafka.consumer_group.members:
       enabled: true
+      attributes: ["group"]
     kafka.consumer_group.offset:
       enabled: true
+      attributes: ["group","topic","partition"]
     kafka.consumer_group.offset_sum:
       enabled: true
+      attributes: ["group","topic"]
     kafka.partition.current_offset:
       enabled: true
+      attributes: ["topic","partition"]
     kafka.partition.oldest_offset:
       enabled: true
+      attributes: ["topic","partition"]
     kafka.partition.replicas:
       enabled: true
+      attributes: ["topic","partition"]
     kafka.partition.replicas_in_sync:
       enabled: true
+      attributes: ["topic","partition"]
     kafka.topic.log_retention_period:
       enabled: true
+      attributes: ["topic"]
     kafka.topic.log_retention_size:
       enabled: true
+      attributes: ["topic"]
     kafka.topic.min_insync_replicas:
       enabled: true
+      attributes: ["topic"]
     kafka.topic.partitions:
       enabled: true
+      attributes: ["topic"]
     kafka.topic.replication_factor:
       enabled: true
+      attributes: ["topic"]
+  resource_attributes:
+    kafka.cluster.alias:
+      enabled: true
+reaggregate_set:
+  metrics:
+    kafka.broker.log_retention_period:
+      enabled: true
+      attributes: []
+    kafka.brokers:
+      enabled: true
+      attributes: []
+    kafka.consumer_group.lag:
+      enabled: true
+      attributes: []
+    kafka.consumer_group.lag_sum:
+      enabled: true
+      attributes: []
+    kafka.consumer_group.members:
+      enabled: true
+      attributes: []
+    kafka.consumer_group.offset:
+      enabled: true
+      attributes: []
+    kafka.consumer_group.offset_sum:
+      enabled: true
+      attributes: []
+    kafka.partition.current_offset:
+      enabled: true
+      attributes: []
+    kafka.partition.oldest_offset:
+      enabled: true
+      attributes: []
+    kafka.partition.replicas:
+      enabled: true
+      attributes: []
+    kafka.partition.replicas_in_sync:
+      enabled: true
+      attributes: []
+    kafka.topic.log_retention_period:
+      enabled: true
+      attributes: []
+    kafka.topic.log_retention_size:
+      enabled: true
+      attributes: []
+    kafka.topic.min_insync_replicas:
+      enabled: true
+      attributes: []
+    kafka.topic.partitions:
+      enabled: true
+      attributes: []
+    kafka.topic.replication_factor:
+      enabled: true
+      attributes: []
   resource_attributes:
     kafka.cluster.alias:
       enabled: true
@@ -40,36 +109,52 @@ none_set:
   metrics:
     kafka.broker.log_retention_period:
       enabled: false
+      attributes: ["broker"]
     kafka.brokers:
       enabled: false
+      attributes: []
     kafka.consumer_group.lag:
       enabled: false
+      attributes: ["group","topic","partition"]
     kafka.consumer_group.lag_sum:
       enabled: false
+      attributes: ["group","topic"]
     kafka.consumer_group.members:
       enabled: false
+      attributes: ["group"]
     kafka.consumer_group.offset:
       enabled: false
+      attributes: ["group","topic","partition"]
     kafka.consumer_group.offset_sum:
       enabled: false
+      attributes: ["group","topic"]
     kafka.partition.current_offset:
       enabled: false
+      attributes: ["topic","partition"]
     kafka.partition.oldest_offset:
       enabled: false
+      attributes: ["topic","partition"]
     kafka.partition.replicas:
       enabled: false
+      attributes: ["topic","partition"]
     kafka.partition.replicas_in_sync:
       enabled: false
+      attributes: ["topic","partition"]
     kafka.topic.log_retention_period:
       enabled: false
+      attributes: ["topic"]
     kafka.topic.log_retention_size:
       enabled: false
+      attributes: ["topic"]
     kafka.topic.min_insync_replicas:
       enabled: false
+      attributes: ["topic"]
     kafka.topic.partitions:
       enabled: false
+      attributes: ["topic"]
     kafka.topic.replication_factor:
       enabled: false
+      attributes: ["topic"]
   resource_attributes:
     kafka.cluster.alias:
       enabled: false
