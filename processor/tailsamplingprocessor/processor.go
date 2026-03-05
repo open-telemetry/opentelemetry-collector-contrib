@@ -94,6 +94,13 @@ type tailSamplingSpanProcessor struct {
 }
 
 func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
+	if cfg.SamplingStrategy == "" {
+		cfg.SamplingStrategy = SamplingStrategyFullTraceWayOut
+	}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
 	telemetrySettings := set.TelemetrySettings
 	telemetry, err := metadata.NewTelemetryBuilder(telemetrySettings)
 	if err != nil {
@@ -776,7 +783,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		tsp.idToTrace[id] = actualData
 
 		newTraceIDs++
-		if !tsp.cfg.SampleOnRootSpanOnly {
+		if tsp.cfg.SamplingStrategy != SamplingStrategyRootSpanOnlyWayIn {
 			actualData.batchID = tsp.decisionBatcher.AddToCurrentBatch(id)
 		}
 
@@ -786,7 +793,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	} else {
 		actualData.SpanCount += spanCount
 	}
-	if containsRootSpan && !tsp.cfg.SampleOnRootSpanOnly && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
+	if containsRootSpan && tsp.cfg.SamplingStrategy != SamplingStrategyRootSpanOnlyWayIn && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
 		actualData.batchID = tsp.decisionBatcher.MoveToEarlierBatch(id, actualData.batchID, uint64(tsp.cfg.DecisionWaitAfterRootReceived.Seconds()))
 	}
 
@@ -801,7 +808,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
 		actualData.FinalDecision = samplingpolicy.NotSampled
 		// Since we are not in a normal decision flow when dropping large traces, also be sure to remove it from the batcher.
-		if !tsp.cfg.SampleOnRootSpanOnly {
+		if tsp.cfg.SamplingStrategy != SamplingStrategyRootSpanOnlyWayIn {
 			tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
 		}
 		tsp.releaseNotSampledTrace(id, actualData)
@@ -811,7 +818,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	if finalDecision == samplingpolicy.Unspecified {
 		// In root-only mode, evaluate as soon as the root span is seen and only
 		// use root span data for the sampling decision.
-		if tsp.cfg.SampleOnRootSpanOnly && containsRootSpan {
+		if tsp.cfg.SamplingStrategy == SamplingStrategyRootSpanOnlyWayIn && containsRootSpan {
 			actualData.decisionTime = time.Now()
 			rootOnlyTraceData := traceDataWithRootSpanOnly(rss, *rootSpan)
 			decision, policyName := tsp.makeDecision(id, &rootOnlyTraceData, newPolicyTickMetrics(len(tsp.policies)))

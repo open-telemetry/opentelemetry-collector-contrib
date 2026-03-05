@@ -4,6 +4,7 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -51,6 +52,18 @@ const (
 	BytesLimiting PolicyType = "bytes_limiting"
 	// TraceFlags sample traces which have specific trace flags set.
 	TraceFlags PolicyType = "trace_flags"
+)
+
+// SamplingStrategy indicates when and with what data a sampling decision is made.
+type SamplingStrategy string
+
+const (
+	// SamplingStrategyFullTraceWayOut keeps the current tail-sampling behavior:
+	// accumulate spans and decide on full trace data after decision timing.
+	SamplingStrategyFullTraceWayOut SamplingStrategy = "full-trace-way-out"
+	// SamplingStrategyRootSpanOnlyWayIn makes a decision when the root span arrives,
+	// evaluating policies using only root span data.
+	SamplingStrategyRootSpanOnlyWayIn SamplingStrategy = "root-span-only-way-in"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -325,10 +338,10 @@ type Config struct {
 	Options []Option `mapstructure:"-"`
 	// Make decision as soon as a policy matches
 	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
-	// SampleOnRootSpanOnly makes a sampling decision immediately when the root span is received,
-	// using only the root span data. When enabled, decision_wait and
-	// decision_wait_after_root_received are not used for sampling decisions.
-	SampleOnRootSpanOnly bool `mapstructure:"sample_on_root_span_only"`
+	// SamplingStrategy controls how/when sampling decisions are made.
+	// "full-trace-way-out" (default) keeps classic tail sampling behavior.
+	// "root-span-only-way-in" makes a decision when the root span arrives using root-only data.
+	SamplingStrategy SamplingStrategy `mapstructure:"sampling_strategy"`
 	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
 	// wait when the processor is shutdown.
 	DropPendingTracesOnShutdown bool `mapstructure:"drop_pending_traces_on_shutdown"`
@@ -336,4 +349,13 @@ type Config struct {
 	// If the trace size exceeds this it will be dropped before the decision period to keep memory more predictable.
 	// A 0 value disables dropping large traces early.
 	MaximumTraceSizeBytes uint64 `mapstructure:"maximum_trace_size_bytes"`
+}
+
+func (cfg *Config) Validate() error {
+	switch cfg.SamplingStrategy {
+	case SamplingStrategyFullTraceWayOut, SamplingStrategyRootSpanOnlyWayIn:
+		return nil
+	default:
+		return fmt.Errorf("invalid sampling_strategy %q, expected one of %q or %q", cfg.SamplingStrategy, SamplingStrategyFullTraceWayOut, SamplingStrategyRootSpanOnlyWayIn)
+	}
 }

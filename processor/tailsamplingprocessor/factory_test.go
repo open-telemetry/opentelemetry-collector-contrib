@@ -45,3 +45,15 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, tp.Start(t.Context(), componenttest.NewNopHost()))
 	assert.NoError(t, tp.Shutdown(t.Context()))
 }
+
+func TestCreateProcessorRejectsInvalidSamplingStrategy(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SamplingStrategy = SamplingStrategy("invalid")
+
+	params := processortest.NewNopSettings(metadata.Type)
+	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
+	assert.Nil(t, tp)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid sampling_strategy")
+}

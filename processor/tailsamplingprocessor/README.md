@@ -50,7 +50,9 @@ Multiple policies exist today and it is straight forward to add more. These incl
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before making a sampling decision. 0s means disabled (only use `decision_wait`).
-- `sample_on_root_span_only` (default = false): Make a sampling decision immediately when the root span is received, using only root span data. When enabled, `decision_wait` and `decision_wait_after_root_received` do not drive sampling decisions. Policies that rely on inner/non-root span data are ineffective in this mode because evaluators only see the root span. This can improve memory and decision latency under load because spans for decided traces are released earlier.
+- `sampling_strategy` (default = `full-trace-way-out`): Controls how/when sampling decisions are made.
+  - `full-trace-way-out`: Make sampling decisions from accumulated trace data. Decision timing is controlled by `decision_wait` and optionally `decision_wait_after_root_received`.
+  - `root-span-only-way-in`: Make a sampling decision immediately when the root span is received, using only root span data. In this mode, `decision_wait` and `decision_wait_after_root_received` do not drive sampling decisions. Policies that rely on inner/non-root span data are ineffective because evaluators only see the root span. This can improve memory and decision latency under load because spans for decided traces are released earlier.
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches

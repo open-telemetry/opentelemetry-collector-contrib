@@ -881,7 +881,7 @@ func TestSampleOnRootSpanOnly(t *testing.T) {
 	cfg := Config{
 		DecisionWait:                  defaultTestDecisionWait,
 		NumTraces:                     defaultNumTraces,
-		SampleOnRootSpanOnly:          true,
+		SamplingStrategy:              SamplingStrategyRootSpanOnlyWayIn,
 		DecisionWaitAfterRootReceived: time.Second,
 		Options: []Option{
 			withTestController(controller),

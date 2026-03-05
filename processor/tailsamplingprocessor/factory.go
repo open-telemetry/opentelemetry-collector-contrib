@@ -27,10 +27,10 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		DecisionWait:         30 * time.Second,
-		NumTraces:            50000,
-		SampleOnFirstMatch:   false,
-		SampleOnRootSpanOnly: false,
+		DecisionWait:       30 * time.Second,
+		NumTraces:          50000,
+		SampleOnFirstMatch: false,
+		SamplingStrategy:   SamplingStrategyFullTraceWayOut,
 	}
 }
 
