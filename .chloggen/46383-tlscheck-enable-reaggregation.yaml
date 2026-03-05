@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/tlscheckreceiver
+note: Enable re-aggregation feature for tlscheck receiver.
+issues: [46383]
+subtext: ""
