@@ -20,6 +20,7 @@ attributes:
   operation:
     description: The operation type for index operations.
     type: string
+    requirement_level: recommended
     enum:
       - read
       - write
@@ -27,6 +28,7 @@ attributes:
   request:
     description: The request operation type.
     type: string
+    requirement_level: recommended
     enum:
       - put
       - get
