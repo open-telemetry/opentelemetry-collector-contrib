@@ -1,4 +1,10 @@
+display_name: ICMP Check Receiver
 type: icmpcheckreceiver
+
+description: |
+  The ICMP Check Receiver can be used for synthetic checks against network endpoints. This receiver will send ICMP Echo
+  Requests (pings) to the specified `targets`. It provides device availability monitoring and interface statistics with
+  native OpenTelemetry OTLP metrics generation.
 
 status:
   class: receiver

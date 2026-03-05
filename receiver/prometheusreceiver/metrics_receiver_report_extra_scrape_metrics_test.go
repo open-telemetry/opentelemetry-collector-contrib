@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
@@ -27,7 +26,7 @@ foo_gauge_total{method="get",port="6380"} 13
 # EOF
 `
 
-// TestReportExtraScrapeMetrics validates extra scrape metrics enablement via config and feature gate.
+// TestReportExtraScrapeMetrics validates extra scrape metrics enablement via the Prometheus scrape configuration.
 func TestReportExtraScrapeMetrics(t *testing.T) {
 	target := func(expectExtraScrapeMetrics bool) *testData {
 		return &testData{
@@ -44,66 +43,45 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		featureGate bool
 		globalExtra *bool
 		scrapeExtra *bool
 		expectExtra bool
 	}{
 		{
-			name:        "gate_off_global_true",
-			featureGate: false,
+			name:        "global_true",
 			globalExtra: boolPtr(true),
 			scrapeExtra: nil,
 			expectExtra: true,
 		},
 		{
-			name:        "gate_off_scrape_true",
-			featureGate: false,
+			name:        "scrape_true",
 			globalExtra: boolPtr(false),
 			scrapeExtra: boolPtr(true),
 			expectExtra: true,
 		},
 		{
-			name:        "gate_off_scrape_false_overrides_global",
-			featureGate: false,
+			name:        "scrape_false_overrides_global",
 			globalExtra: boolPtr(true),
 			scrapeExtra: boolPtr(false),
 			expectExtra: false,
 		},
 		{
-			name:        "gate_off_global_false",
-			featureGate: false,
+			name:        "global_false",
 			globalExtra: boolPtr(false),
 			scrapeExtra: nil,
-			expectExtra: false,
-		},
-		{
-			name:        "gate_on_forces_global_true",
-			featureGate: true,
-			globalExtra: boolPtr(false),
-			scrapeExtra: nil,
-			expectExtra: true,
-		},
-		{
-			name:        "gate_on_scrape_false_overrides_global",
-			featureGate: true,
-			globalExtra: boolPtr(false),
-			scrapeExtra: boolPtr(false),
 			expectExtra: false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			testScraperMetrics(t, []*testData{target(tc.expectExtra)}, tc.featureGate, tc.globalExtra, tc.scrapeExtra, tc.expectExtra)
+			testScraperMetrics(t, []*testData{target(tc.expectExtra)}, tc.globalExtra, tc.scrapeExtra, tc.expectExtra)
 		})
 	}
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testScraperMetrics(t *testing.T, targets []*testData, featureGateEnabled bool, globalExtra, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate, featureGateEnabled)()
-
+func testScraperMetrics(t *testing.T, targets []*testData, globalExtra, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
 	mp, cfg, err := setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra, targets...)
 	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()

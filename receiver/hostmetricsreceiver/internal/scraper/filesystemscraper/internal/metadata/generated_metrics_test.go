@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -51,9 +57,15 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := scrapertest.NewNopSettings(scrapertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["SystemFilesystemInodesUsage"] = mb.metricSystemFilesystemInodesUsage.config.AggregationStrategy
+			aggMap["SystemFilesystemUsage"] = mb.metricSystemFilesystemUsage.config.AggregationStrategy
+			aggMap["SystemFilesystemUtilization"] = mb.metricSystemFilesystemUtilization.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -61,16 +73,30 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemFilesystemInodesUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemFilesystemInodesUsageDataPoint(ts, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2", AttributeStateReserved)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemFilesystemUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemFilesystemUsageDataPoint(ts, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2", AttributeStateReserved)
+			}
 
 			allMetricsCount++
 			mb.RecordSystemFilesystemUtilizationDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemFilesystemUtilizationDataPoint(ts, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2")
+			}
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSystemFilesystemInodesUsage.aggDataPoints)
+				assert.Empty(t, mb.metricSystemFilesystemUsage.aggDataPoints)
+				assert.Empty(t, mb.metricSystemFilesystemUtilization.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -92,87 +118,188 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "system.filesystem.inodes.usage":
-					assert.False(t, validatedMetrics["system.filesystem.inodes.usage"], "Found a duplicate in the metrics slice: system.filesystem.inodes.usage")
-					validatedMetrics["system.filesystem.inodes.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "FileSystem inodes used.", ms.At(i).Description())
-					assert.Equal(t, "{inodes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mode")
-					assert.True(t, ok)
-					assert.Equal(t, "mode-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mountpoint")
-					assert.True(t, ok)
-					assert.Equal(t, "mountpoint-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "free", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.filesystem.inodes.usage"], "Found a duplicate in the metrics slice: system.filesystem.inodes.usage")
+						validatedMetrics["system.filesystem.inodes.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "FileSystem inodes used.", ms.At(i).Description())
+						assert.Equal(t, "{inodes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+						assert.Equal(t, "mode-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mountpoint")
+						assert.True(t, ok)
+						assert.Equal(t, "mountpoint-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "free", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.filesystem.inodes.usage"], "Found a duplicate in the metrics slice: system.filesystem.inodes.usage")
+						validatedMetrics["system.filesystem.inodes.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "FileSystem inodes used.", ms.At(i).Description())
+						assert.Equal(t, "{inodes}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.filesystem.inodes.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("mode")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("mountpoint")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("state")
+						assert.False(t, ok)
+					}
 				case "system.filesystem.usage":
-					assert.False(t, validatedMetrics["system.filesystem.usage"], "Found a duplicate in the metrics slice: system.filesystem.usage")
-					validatedMetrics["system.filesystem.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Filesystem bytes used.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mode")
-					assert.True(t, ok)
-					assert.Equal(t, "mode-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mountpoint")
-					assert.True(t, ok)
-					assert.Equal(t, "mountpoint-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "free", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.filesystem.usage"], "Found a duplicate in the metrics slice: system.filesystem.usage")
+						validatedMetrics["system.filesystem.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Filesystem bytes used.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+						assert.Equal(t, "mode-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mountpoint")
+						assert.True(t, ok)
+						assert.Equal(t, "mountpoint-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "free", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.filesystem.usage"], "Found a duplicate in the metrics slice: system.filesystem.usage")
+						validatedMetrics["system.filesystem.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Filesystem bytes used.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.filesystem.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("mode")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("mountpoint")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("state")
+						assert.False(t, ok)
+					}
 				case "system.filesystem.utilization":
-					assert.False(t, validatedMetrics["system.filesystem.utilization"], "Found a duplicate in the metrics slice: system.filesystem.utilization")
-					validatedMetrics["system.filesystem.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Fraction of filesystem bytes used.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mode")
-					assert.True(t, ok)
-					assert.Equal(t, "mode-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mountpoint")
-					assert.True(t, ok)
-					assert.Equal(t, "mountpoint-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "type-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.filesystem.utilization"], "Found a duplicate in the metrics slice: system.filesystem.utilization")
+						validatedMetrics["system.filesystem.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Fraction of filesystem bytes used.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+						assert.Equal(t, "mode-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mountpoint")
+						assert.True(t, ok)
+						assert.Equal(t, "mountpoint-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "type-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.filesystem.utilization"], "Found a duplicate in the metrics slice: system.filesystem.utilization")
+						validatedMetrics["system.filesystem.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Fraction of filesystem bytes used.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["system.filesystem.utilization"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("mode")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("mountpoint")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})
