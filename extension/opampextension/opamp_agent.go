@@ -378,7 +378,13 @@ func (o *opampAgent) createAgentDescription() error {
 
 	ident := []*protobufs.KeyValue{}
 
-	for key := range identifyingAttributes {
+	orderedKeys := []string{
+		string(conventions.ServiceInstanceIDKey),
+		string(conventions.ServiceNameKey),
+		string(conventions.ServiceVersionKey),
+	}
+
+	for _, key := range orderedKeys {
 		if val, ok := o.resourceAttrs[key]; ok {
 			ident = append(ident, stringKeyValue(key, val))
 		}
