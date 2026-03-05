@@ -8,7 +8,7 @@ tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/google/addlicense
 	github.com/jcchavezs/porto/cmd/porto
-	github.com/jstemmer/go-junit-report
+	github.com/jstemmer/go-junit-report/v2
 	github.com/rhysd/actionlint/cmd/actionlint
 	go.opentelemetry.io/build-tools/checkapi
 	go.opentelemetry.io/build-tools/checkfile
