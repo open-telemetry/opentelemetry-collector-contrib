@@ -181,12 +181,14 @@ This allows streaming implementation to work independently of compression algori
 
 The table below summarizes streaming support details for each log type, along with the offset tracking mechanism,
 
-| Log Type            | Sub Log Type/Source | Offset Tracking             | Notes                                                                                        |
-|---------------------|---------------------|-----------------------------|----------------------------------------------------------------------------------------------|
-| Network Firewall    | Alert/Flow/TLS      | Bytes processed             |                                                                                              |
-| S3 Access Logs      | -                   | Bytes processed             |                                                                                              |
-| Subscription filter | -                   | Number of records processed | Supports processing multi-line inputs and offset tracks number of records that get processed |
-| WAF Logs            | -                   | Bytes processed             |                                                                                              |
+| Log Type            | Sub Log Type/Source            | Offset Tracking             | Notes                                                                                                                 |
+|---------------------|--------------------------------|-----------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| Network Firewall    | Alert/Flow/TLS                 | Bytes processed             |                                                                                                                       |
+| S3 Access Logs      | -                              | Bytes processed             |                                                                                                                       |
+| Subscription filter | -                              | Number of records processed | Supports processing multi-line inputs and offset tracks number of records that get processed                          |
+| VPC Flow Logs       | S3 plain text                  | Bytes processed             |                                                                                                                       |
+| VPC Flow Logs       | CloudWatch subscription filter | Bytes processed             | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| WAF Logs            | -                              | Bytes processed             |                                                                                                                       |
 
 ## Produced Records per Format
 
