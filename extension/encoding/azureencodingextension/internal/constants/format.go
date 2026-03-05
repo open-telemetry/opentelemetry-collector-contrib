@@ -17,7 +17,6 @@ const (
 	FormatFrontDoor          = "azure.frontdoor"
 	FormatFunctionApp        = "azure.function_app"
 	FormatMessaging          = "azure.messaging"
-	FormatRecommendation     = "azure.recommendation"
 	FormatStorage            = "azure.storage"
 
 	// AzureFormatResourceLog is the value for unknown/raw Azure resource logs.
@@ -43,13 +42,11 @@ func FormatForCategory(category string) string {
 		return FormatFrontDoor
 	case "FunctionAppLogs":
 		return FormatFunctionApp
-	case "Recommendation":
-		return FormatRecommendation
 	case "StorageRead", "StorageWrite", "StorageDelete":
 		return FormatStorage
 	case "AuditEvent":
 		return FormatAudit
-	case "Administrative", "Alert", "Autoscale", "Policy", "ResourceHealth", "Security", "ServiceHealth":
+	case "Administrative", "Alert", "Autoscale", "Policy", "Recommendation", "ResourceHealth", "Security", "ServiceHealth":
 		return FormatActivity
 	default:
 		return AzureFormatResourceLog

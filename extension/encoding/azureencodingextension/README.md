@@ -196,7 +196,7 @@ The following format values are supported at the **log family** level:
 
 | **Azure log family** | **Format value** | **Description** |
 |----------------------|------------------|-----------------|
-| Activity | `azure.activity` | Azure activity logs (administrative, alert, policy, security, etc.) |
+| Activity | `azure.activity` | Azure activity logs (administrative, alert, policy, recommendation, security, etc.) |
 | Audit | `azure.audit` | Azure audit logs (AuditEvent category) |
 | Application Gateway | `azure.application_gateway` | Application Gateway logs (access, performance, firewall) |
 | App Service | `azure.appservice` | App Service logs (app, audit, HTTP, platform, etc.) |
@@ -205,6 +205,5 @@ The following format values are supported at the **log family** level:
 | Front Door | `azure.frontdoor` | Front Door logs (access, health probe, WAF) |
 | Function App | `azure.function_app` | Azure Functions application logs |
 | Messaging | `azure.messaging` | Event Hubs/Service Bus logs (operational, metrics, audit, etc.) |
-| Recommendation | `azure.recommendation` | Azure Advisor recommendation logs |
 | Storage | `azure.storage` | Storage operation logs (read, write, delete) |
 | Resource Log (unknown) | `azure.resource` | Unknown or raw Azure resource log records |

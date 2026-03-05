@@ -72,6 +72,6 @@ resourceLogs:
           attributes:
             - key: encoding.format
               value:
-                stringValue: azure.recommendation
+                stringValue: azure.activity
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
