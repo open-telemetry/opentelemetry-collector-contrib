@@ -70,6 +70,7 @@ func createDefaultConfig() component.Config {
 			MaxRowsPerQuery: 1000,
 		},
 		TopQueryCollection: TopQueryCollection{
+			CollectionInterval:     time.Minute,
 			TopNQuery:              200,
 			MaxRowsPerQuery:        1000,
 			MaxExplainEachInterval: 1000,
@@ -146,7 +147,7 @@ func createLogsReceiver(
 		// we have 10 updated only attributes. so we set the cache size accordingly.
 		ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(int(cfg.TopNQuery*10*2)), newTTLCache[string](cfg.QueryPlanCacheSize, cfg.QueryPlanCacheTTL))
 		s, err := scraper.NewLogs(func(ctx context.Context) (plog.Logs, error) {
-			return ns.scrapeTopQuery(ctx, cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopNQuery, cfg.MaxExplainEachInterval)
+			return ns.scrapeTopQuery(ctx, cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopNQuery, cfg.MaxExplainEachInterval, cfg.TopQueryCollection.CollectionInterval)
 		}, scraper.WithShutdown(ns.shutdown))
 		if err != nil {
 			return nil, err

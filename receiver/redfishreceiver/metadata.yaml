@@ -1,4 +1,9 @@
+display_name: Redfish Receiver
 type: redfish
+
+description: |
+  This receiver fetches metrics for a server running a [Redfish](https://en.wikipedia.org/wiki/Redfish_(specification))
+  API.
 
 status:
   class: receiver

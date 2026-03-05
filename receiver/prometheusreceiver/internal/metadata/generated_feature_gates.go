@@ -25,18 +25,20 @@ var ReceiverPrometheusreceiverEnableNativeHistogramsFeatureGate = featuregate.Gl
 
 var ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.EnableReportExtraScrapeMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Enables reporting of extra Prometheus scrape metrics. This replaces the deprecated 'report_extra_scrape_metrics' configuration option."),
+	featuregate.StageDeprecated,
+	featuregate.WithRegisterDescription("Enables reporting of extra Prometheus scrape metrics. This gate is deprecated, use the `extra_scrape_metrics` Prometheus scrape configuration instead."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181"),
 	featuregate.WithRegisterFromVersion("v0.143.0"),
+	featuregate.WithRegisterToVersion("v0.148.0"),
 )
 
 var ReceiverPrometheusreceiverRemoveReportExtraScrapeMetricsConfigFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, the 'report_extra_scrape_metrics' configuration option is ignored, and extra scrape metrics are controlled solely by the EnableReportExtraScrapeMetrics feature gate. The intention is to have extra scrape metrics enabled all the time in the future."),
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("This gate is always enabled and cannot be turned off. The 'report_extra_scrape_metrics' configuration option is always ignored. The extra scrape metrics are controlled by the EnableReportExtraScrapeMetrics feature gate, unless otherwise specified in the Prometheus scrape configuration."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181"),
 	featuregate.WithRegisterFromVersion("v0.143.0"),
+	featuregate.WithRegisterToVersion("v0.148.0"),
 )
 
 var ReceiverPrometheusreceiverRemoveStartTimeAdjustmentFeatureGate = featuregate.GlobalRegistry().MustRegister(

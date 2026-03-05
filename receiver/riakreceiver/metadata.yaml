@@ -1,3 +1,4 @@
+display_name: Riak Receiver
 type: riak
 
 status:
