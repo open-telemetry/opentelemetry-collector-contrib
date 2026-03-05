@@ -31,11 +31,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"broker"},
 					},
-					KafkaBrokers: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					KafkaBrokers: MetricConfig{Enabled: true},
 					KafkaConsumerGroupLag: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -121,11 +117,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"broker"},
 					},
-					KafkaBrokers: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					KafkaBrokers: MetricConfig{Enabled: false},
 					KafkaConsumerGroupLag: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,

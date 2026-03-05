@@ -31,16 +31,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{"protocol", "state"},
 					},
-					SystemNetworkConntrackCount: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemNetworkConntrackMax: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					SystemNetworkConntrackCount: MetricConfig{Enabled: true},
+					SystemNetworkConntrackMax:   MetricConfig{Enabled: true},
 					SystemNetworkDropped: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -73,16 +65,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{"protocol", "state"},
 					},
-					SystemNetworkConntrackCount: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemNetworkConntrackMax: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					SystemNetworkConntrackCount: MetricConfig{Enabled: false},
+					SystemNetworkConntrackMax:   MetricConfig{Enabled: false},
 					SystemNetworkDropped: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,

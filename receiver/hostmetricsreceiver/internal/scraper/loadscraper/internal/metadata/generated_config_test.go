@@ -26,21 +26,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPULoadAverage15m: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SystemCPULoadAverage1m: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SystemCPULoadAverage5m: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					SystemCPULoadAverage15m: MetricConfig{Enabled: true},
+					SystemCPULoadAverage1m:  MetricConfig{Enabled: true},
+					SystemCPULoadAverage5m:  MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -48,21 +36,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPULoadAverage15m: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SystemCPULoadAverage1m: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SystemCPULoadAverage5m: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					SystemCPULoadAverage15m: MetricConfig{Enabled: false},
+					SystemCPULoadAverage1m:  MetricConfig{Enabled: false},
+					SystemCPULoadAverage5m:  MetricConfig{Enabled: false},
 				},
 			},
 		},

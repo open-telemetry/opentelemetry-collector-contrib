@@ -3,22 +3,16 @@ all_set:
   metrics:
     iis.application_pool.state:
       enabled: true
-      attributes: []
     iis.application_pool.uptime:
       enabled: true
-      attributes: []
     iis.connection.active:
       enabled: true
-      attributes: []
     iis.connection.anonymous:
       enabled: true
-      attributes: []
     iis.connection.attempt.count:
       enabled: true
-      attributes: []
     iis.network.blocked:
       enabled: true
-      attributes: []
     iis.network.file.count:
       enabled: true
       attributes: ["direction"]
@@ -30,19 +24,14 @@ all_set:
       attributes: ["request"]
     iis.request.queue.age.max:
       enabled: true
-      attributes: []
     iis.request.queue.count:
       enabled: true
-      attributes: []
     iis.request.rejected:
       enabled: true
-      attributes: []
     iis.thread.active:
       enabled: true
-      attributes: []
     iis.uptime:
       enabled: true
-      attributes: []
   resource_attributes:
     iis.application_pool:
       enabled: true
@@ -52,22 +41,16 @@ reaggregate_set:
   metrics:
     iis.application_pool.state:
       enabled: true
-      attributes: []
     iis.application_pool.uptime:
       enabled: true
-      attributes: []
     iis.connection.active:
       enabled: true
-      attributes: []
     iis.connection.anonymous:
       enabled: true
-      attributes: []
     iis.connection.attempt.count:
       enabled: true
-      attributes: []
     iis.network.blocked:
       enabled: true
-      attributes: []
     iis.network.file.count:
       enabled: true
       attributes: []
@@ -79,19 +62,14 @@ reaggregate_set:
       attributes: []
     iis.request.queue.age.max:
       enabled: true
-      attributes: []
     iis.request.queue.count:
       enabled: true
-      attributes: []
     iis.request.rejected:
       enabled: true
-      attributes: []
     iis.thread.active:
       enabled: true
-      attributes: []
     iis.uptime:
       enabled: true
-      attributes: []
   resource_attributes:
     iis.application_pool:
       enabled: true
@@ -101,22 +79,16 @@ none_set:
   metrics:
     iis.application_pool.state:
       enabled: false
-      attributes: []
     iis.application_pool.uptime:
       enabled: false
-      attributes: []
     iis.connection.active:
       enabled: false
-      attributes: []
     iis.connection.anonymous:
       enabled: false
-      attributes: []
     iis.connection.attempt.count:
       enabled: false
-      attributes: []
     iis.network.blocked:
       enabled: false
-      attributes: []
     iis.network.file.count:
       enabled: false
       attributes: ["direction"]
@@ -128,19 +100,14 @@ none_set:
       attributes: ["request"]
     iis.request.queue.age.max:
       enabled: false
-      attributes: []
     iis.request.queue.count:
       enabled: false
-      attributes: []
     iis.request.rejected:
       enabled: false
-      attributes: []
     iis.thread.active:
       enabled: false
-      attributes: []
     iis.uptime:
       enabled: false
-      attributes: []
   resource_attributes:
     iis.application_pool:
       enabled: false
