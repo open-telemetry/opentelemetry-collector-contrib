@@ -181,21 +181,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"user_name"},
 					},
-					SnowflakeStorageFailsafeBytesTotal: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SnowflakeStorageStageBytesTotal: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SnowflakeStorageStorageBytesTotal: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					SnowflakeStorageFailsafeBytesTotal: MetricConfig{Enabled: true},
+					SnowflakeStorageStageBytesTotal:    MetricConfig{Enabled: true},
+					SnowflakeStorageStorageBytesTotal:  MetricConfig{Enabled: true},
 					SnowflakeTotalElapsedTimeAvg: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -366,21 +354,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"user_name"},
 					},
-					SnowflakeStorageFailsafeBytesTotal: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SnowflakeStorageStageBytesTotal: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SnowflakeStorageStorageBytesTotal: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					SnowflakeStorageFailsafeBytesTotal: MetricConfig{Enabled: false},
+					SnowflakeStorageStageBytesTotal:    MetricConfig{Enabled: false},
+					SnowflakeStorageStorageBytesTotal:  MetricConfig{Enabled: false},
 					SnowflakeTotalElapsedTimeAvg: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
