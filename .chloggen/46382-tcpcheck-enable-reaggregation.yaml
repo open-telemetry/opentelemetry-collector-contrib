@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/tcpcheckreceiver
+note: Enable re-aggregation feature for tcpcheck receiver.
+issues: [46382]
+subtext: ""

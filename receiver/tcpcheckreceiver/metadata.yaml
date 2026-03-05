@@ -14,10 +14,12 @@ attributes:
   error.code:
     description: Error code recorded during check
     type: string
+    requirement_level: recommended
     enum: [connection_refused, connection_timeout, invalid_endpoint, network_unreachable, unknown_error]
   tcpcheck.endpoint:
     description: TCP endpoint
     type: string
+    requirement_level: recommended
 
 metrics:
   tcpcheck.duration:
