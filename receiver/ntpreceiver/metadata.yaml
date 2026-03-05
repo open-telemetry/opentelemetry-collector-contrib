@@ -4,6 +4,8 @@ type: ntp
 description: |
   This receiver periodically retrieves the clock offset from a NTP server.
 
+reaggregation_enabled: true
+
 status:
   class: receiver
   stability:
