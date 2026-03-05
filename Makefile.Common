@@ -96,6 +96,10 @@ ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
 # All source code and .sh files (evaluated when used)
 ALL_SRC_AND_SHELL_CMD := find . -type f \( \( -name "*.go" -o -name "*.sh" \) -and \( -not -path '*/third_party/*' \) \) | sort
 
+no_targets__:
+help:
+	sh -c "$(MAKE) -p no_targets__ | awk -F':' '/^[a-zA-Z0-9][^\$$#\/\\t=]*:([^=]|$$)/ {split(\$$1,A,/ /);for(i in A)print A[i]}' | grep -v '__\$$' | sort"
+
 pwd:
 	@pwd
 

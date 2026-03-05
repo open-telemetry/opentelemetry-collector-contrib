@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.146.0
+    version: v0.147.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -68,7 +68,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
@@ -85,6 +84,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding
@@ -269,7 +269,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8slogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver

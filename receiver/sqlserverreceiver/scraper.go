@@ -174,12 +174,28 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(row sqlquery.StringMap) *m
 	rb := s.mb.NewResourceBuilder()
 	rb.SetSqlserverComputerName(row[computerNameKey])
 	rb.SetSqlserverInstanceName(row[instanceNameKey])
-	rb.SetHostName(s.config.Server)
+
+	hostName := s.config.Server
+	serverAddress := s.config.Server
+	serverPort := int64(s.config.Port)
+
+	if s.config.DataSource != "" {
+		host, port, err := parseDataSource(s.config.DataSource)
+		if err != nil {
+			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
+		} else {
+			hostName = host
+			serverAddress = host
+			serverPort = int64(port)
+		}
+	}
+
+	rb.SetHostName(hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 
 	if !removeServerResourceAttributeFeatureGate.IsEnabled() {
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetServerAddress(serverAddress)
+		rb.SetServerPort(serverPort)
 	}
 
 	return rb
