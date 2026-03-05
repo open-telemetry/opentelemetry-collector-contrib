@@ -1,6 +1,8 @@
 display_name: File Stats Receiver
 type: filestats
 
+reaggregation_enabled: true
+
 description: The File Stats receiver collects metrics from files specified with a glob pattern.
 
 status:
@@ -27,6 +29,7 @@ attributes:
   file.permissions:
     description: the permissions associated with the file, using an octal format.
     type: string
+    requirement_level: recommended
 
 metrics:
   file.atime:
