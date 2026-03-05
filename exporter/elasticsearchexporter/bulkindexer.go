@@ -537,7 +537,6 @@ func (b *bulkIndexers) start(
 	}
 
 	for _, mode := range allowedMappingModes {
-		mode := mode
 		requireDataStream := mode == MappingOTel || mode == MappingECS
 		modeSpecificErrorHintFunc := func(index, errorType string) string {
 			return getErrorHint(mode, index, errorType)
