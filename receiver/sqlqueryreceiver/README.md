@@ -260,7 +260,7 @@ Value: 1
 
 #### NULL values
 
-If a query produces a NULL value, a warning will be logged unless ignore_null_values is set to true. Furthermore,
+If a query produces a NULL value, a warning will be logged unless `ignore_null_values` is set to true. Furthermore,
 if a configuration references the column that produces a NULL value, an error will always be logged. However, in
 either case, the receiver will continue to operate.
 
