@@ -4,21 +4,20 @@
 package constants // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/constants"
 
 const (
-	// FormatIdentificationTag is the attribute key used to identify
-	// the encoding format of the log (e.g. for filtering and routing).
+	// FormatIdentificationTag is the attribute key used to identify the encoding format of the log.
 	FormatIdentificationTag = "encoding.format"
 
 	// Format values at log family level
-	FormatActivity            = "azure.activity"
-	FormatApplicationGateway  = "azure.application_gateway"
-	FormatAppService          = "azure.appservice"
-	FormatCdn                 = "azure.cdn"
-	FormatDataFactory         = "azure.datafactory"
-	FormatFrontDoor           = "azure.frontdoor"
-	FormatFunctionApp         = "azure.function_app"
-	FormatMessaging           = "azure.messaging"
-	FormatRecommendation      = "azure.recommendation"
-	FormatStorage             = "azure.storage"
+	FormatActivity           = "azure.activity"
+	FormatApplicationGateway = "azure.application_gateway"
+	FormatAppService         = "azure.appservice"
+	FormatCdn                = "azure.cdn"
+	FormatDataFactory        = "azure.datafactory"
+	FormatFrontDoor          = "azure.frontdoor"
+	FormatFunctionApp        = "azure.function_app"
+	FormatMessaging          = "azure.messaging"
+	FormatRecommendation     = "azure.recommendation"
+	FormatStorage            = "azure.storage"
 
 	// AzureFormatResourceLog is the value for unknown/raw Azure resource logs.
 	AzureFormatResourceLog = "azure.resource"
