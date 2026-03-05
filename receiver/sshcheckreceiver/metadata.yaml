@@ -19,6 +19,7 @@ attributes:
   error.message:
     description: Error message recorded during check
     type: string
+    requirement_level: recommended
 
 metrics:
   sshcheck.duration:
