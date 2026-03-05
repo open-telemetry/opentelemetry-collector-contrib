@@ -46,7 +46,7 @@ type logsResourceAttributes struct {
 // scopeKey keys ScopeLogs by resource attributes and encoding.format so each scope has a single format.
 type scopeKey struct {
 	Resource logsResourceAttributes
-	Format   string
+	Format   constants.Format
 }
 
 // categoryHolder is a small helper struct to get `category`/`type` fields
@@ -244,14 +244,14 @@ func (r ResourceLogsUnmarshaler) unmarshalRecord(allResourceScopeLogs map[scopeK
 }
 
 // getScopeLog gets or creates ScopeLogs keyed by resource attributes and encoding.format (one format per scope).
-func (r ResourceLogsUnmarshaler) getScopeLog(allResourceScopeLogs map[scopeKey]plog.ScopeLogs, rs logsResourceAttributes, format string) plog.ScopeLogs {
+func (r ResourceLogsUnmarshaler) getScopeLog(allResourceScopeLogs map[scopeKey]plog.ScopeLogs, rs logsResourceAttributes, format constants.Format) plog.ScopeLogs {
 	key := scopeKey{Resource: rs, Format: format}
 	scopeLogs, found := allResourceScopeLogs[key]
 	if !found {
 		scopeLogs = plog.NewScopeLogs()
 		scopeLogs.Scope().SetName(metadata.ScopeName)
 		scopeLogs.Scope().SetVersion(r.buildInfo.Version)
-		scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, format)
+		scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, string(format))
 		allResourceScopeLogs[key] = scopeLogs
 	}
 

@@ -3,29 +3,32 @@
 
 package constants // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/constants"
 
+// Format is the encoding format for Azure logs.
+type Format string
+
 const (
 	// FormatIdentificationTag is the attribute key used to identify the encoding format of the log.
 	FormatIdentificationTag = "encoding.format"
 
 	// Format values at log family level
-	FormatActivity           = "azure.activity"
-	FormatApplicationGateway = "azure.application_gateway"
-	FormatAudit              = "azure.audit"
-	FormatAppService         = "azure.appservice"
-	FormatCdn                = "azure.cdn"
-	FormatDataFactory        = "azure.datafactory"
-	FormatFrontDoor          = "azure.frontdoor"
-	FormatFunctionApp        = "azure.function_app"
-	FormatMessaging          = "azure.messaging"
-	FormatStorage            = "azure.storage"
+	FormatActivity           Format = "azure.activity"
+	FormatApplicationGateway Format = "azure.application_gateway"
+	FormatAudit              Format = "azure.audit"
+	FormatAppService         Format = "azure.appservice"
+	FormatCdn                Format = "azure.cdn"
+	FormatDataFactory        Format = "azure.datafactory"
+	FormatFrontDoor          Format = "azure.frontdoor"
+	FormatFunctionApp        Format = "azure.function_app"
+	FormatMessaging          Format = "azure.messaging"
+	FormatStorage            Format = "azure.storage"
 
 	// AzureFormatResourceLog is the value for unknown/raw Azure resource logs.
-	AzureFormatResourceLog = "azure.resource"
+	AzureFormatResourceLog Format = "azure.resource"
 )
 
 // FormatForCategory returns the encoding.format value (log family) for the given Azure log category.
 // Unknown categories return AzureFormatResourceLog.
-func FormatForCategory(category string) string {
+func FormatForCategory(category string) Format {
 	switch category {
 	case "ApplicationGatewayAccessLog", "ApplicationGatewayPerformanceLog", "ApplicationGatewayFirewallLog":
 		return FormatApplicationGateway
