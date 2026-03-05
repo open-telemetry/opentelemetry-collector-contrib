@@ -376,10 +376,16 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 	description := getOSDescription(o.logger)
 
-	ident := []*protobufs.KeyValue{
-		stringKeyValue(string(conventions.ServiceInstanceIDKey), o.instanceID.String()),
-		stringKeyValue(string(conventions.ServiceNameKey), o.agentType),
-		stringKeyValue(string(conventions.ServiceVersionKey), o.agentVersion),
+	ident := []*protobufs.KeyValue{}
+
+	for key := range identifyingAttributes {
+		if val, ok := o.resourceAttrs[key]; ok {
+			ident = append(ident, stringKeyValue(key, val))
+		}
+	}
+
+	if len(ident) == 0 {
+		o.logger.Warn("No identifying attributes found in collector resource attributes")
 	}
 
 	// Initially construct using a map to properly deduplicate any keys that
