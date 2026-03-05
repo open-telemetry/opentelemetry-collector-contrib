@@ -57,3 +57,51 @@ func TestCreateProcessorRejectsInvalidSamplingStrategy(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid sampling_strategy")
 }
+
+func TestCreateProcessorRejectsStatefulPolicyForRootOnlyWayIn(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SamplingStrategy = SamplingStrategyRootSpanOnlyWayIn
+	cfg.PolicyCfgs = []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "stateful-policy",
+				Type: RateLimiting,
+				RateLimitingCfg: RateLimitingCfg{
+					SpansPerSecond: 10,
+				},
+			},
+		},
+	}
+
+	params := processortest.NewNopSettings(metadata.Type)
+	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, tp)
+	err = tp.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "requires all policies to be stateless")
+	assert.Contains(t, err.Error(), "stateful-policy")
+}
+
+func TestCreateProcessorAllowsStatelessPolicyForRootOnlyWayIn(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SamplingStrategy = SamplingStrategyRootSpanOnlyWayIn
+	cfg.PolicyCfgs = []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "stateless-policy",
+				Type: Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{
+					SamplingPercentage: 1,
+				},
+			},
+		},
+	}
+
+	params := processortest.NewNopSettings(metadata.Type)
+	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
+	assert.NotNil(t, tp)
+	assert.NoError(t, err)
+}

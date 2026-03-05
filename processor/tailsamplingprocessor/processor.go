@@ -248,6 +248,9 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to create policy evaluator for %q: %w", cfg.Name, err)
 		}
+		if tsp.cfg.SamplingStrategy == SamplingStrategyRootSpanOnlyWayIn && eval.IsStateful() {
+			return nil, fmt.Errorf("sampling_strategy %q requires all policies to be stateless, but policy %q is stateful", tsp.cfg.SamplingStrategy, cfg.Name)
+		}
 
 		uniquePolicyName := cfg.Name
 		if componentID != "" {
