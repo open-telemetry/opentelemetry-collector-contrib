@@ -65,6 +65,10 @@ func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.Trac
 	return t.pe.Evaluate(ctx, traceID, trace)
 }
 
+func (t *TestPolicyEvaluator) IsStateful() bool {
+	return t.pe.IsStateful()
+}
+
 // testTSPController is a set of mechanisms to make the TSP do predictable
 // things in tests.
 type testTSPController struct {
@@ -1030,6 +1034,10 @@ var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
 func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
+}
+
+func (*mockPolicyEvaluator) IsStateful() bool {
+	return false
 }
 
 type syncIDBatcher struct {
