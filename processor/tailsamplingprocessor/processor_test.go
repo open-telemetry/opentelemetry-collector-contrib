@@ -855,6 +855,102 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	assert.Contains(t, sampledTraceIDs, uInt64ToTraceID(2))
 }
 
+func TestDecisionHooks(t *testing.T) {
+	controller := newTestTSPController()
+
+	// Track hook invocations
+	var sampledHookCalls []struct {
+		id pcommon.TraceID
+		td *TraceData
+	}
+	var nonSampledHookCalls []struct {
+		id pcommon.TraceID
+		td *TraceData
+	}
+
+	sampledHook := func(_ context.Context, id pcommon.TraceID, td *TraceData) {
+		sampledHookCalls = append(sampledHookCalls, struct {
+			id pcommon.TraceID
+			td *TraceData
+		}{id: id, td: td})
+	}
+
+	nonSampledHook := func(_ context.Context, id pcommon.TraceID, td *TraceData) {
+		nonSampledHookCalls = append(nonSampledHookCalls, struct {
+			id pcommon.TraceID
+			td *TraceData
+		}{id: id, td: td})
+	}
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "sample-high-latency",
+					Type: Latency,
+					LatencyCfg: LatencyCfg{
+						ThresholdMs: 100,
+					},
+				},
+			},
+		},
+		Options: []Option{
+			withTestController(controller),
+			WithSampledHooks(sampledHook),
+			WithNonSampledHooks(nonSampledHook),
+		},
+	}
+
+	msp := new(consumertest.TracesSink)
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Create a trace that will be sampled (high latency)
+	sampledTraceID := uInt64ToTraceID(1)
+	sampledTrace := simpleTracesWithID(sampledTraceID)
+	sampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-200 * time.Millisecond)))
+	sampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	// Create a trace that will not be sampled (low latency)
+	nonSampledTraceID := uInt64ToTraceID(2)
+	nonSampledTrace := simpleTracesWithID(nonSampledTraceID)
+	nonSampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-50 * time.Millisecond)))
+	nonSampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), sampledTrace))
+	require.NoError(t, p.ConsumeTraces(t.Context(), nonSampledTrace))
+
+	controller.waitForTick() // First tick does nothing
+	controller.waitForTick() // Second tick makes decisions
+
+	// Verify hooks were called
+	require.Len(t, sampledHookCalls, 1, "sampled hook should be called once")
+	require.Len(t, nonSampledHookCalls, 1, "non-sampled hook should be called once")
+
+	// Verify sampled hook data
+	sampledCall := sampledHookCalls[0]
+	assert.Equal(t, sampledTraceID, sampledCall.id)
+	assert.NotNil(t, sampledCall.td)
+	assert.Equal(t, samplingpolicy.Sampled, sampledCall.td.FinalDecision)
+	assert.Equal(t, "sample-high-latency", sampledCall.td.PolicyName)
+	assert.Equal(t, int64(1), sampledCall.td.SpanCount)
+
+	// Verify non-sampled hook data
+	nonSampledCall := nonSampledHookCalls[0]
+	assert.Equal(t, nonSampledTraceID, nonSampledCall.id)
+	assert.NotNil(t, nonSampledCall.td)
+	assert.Equal(t, samplingpolicy.NotSampled, nonSampledCall.td.FinalDecision)
+	assert.Empty(t, nonSampledCall.td.PolicyName, "PolicyName should be empty for not sampled traces")
+	assert.Equal(t, int64(1), nonSampledCall.td.SpanCount)
+}
+
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
 	var spanIDs []pcommon.SpanID
 
