@@ -5,6 +5,7 @@ package sqlserverreceiver
 
 import (
 	"context"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -18,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -628,6 +630,77 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 			assert.Equal(t, "db.server.query_sample", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 			assert.NoError(t, errs)
+		})
+	}
+}
+
+func TestSetupResourceBuilder(t *testing.T) {
+	tests := []struct {
+		name             string
+		config           *Config
+		expectedHostName string
+	}{
+		{
+			name: "with server configuration",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Server = "testserver.example.com"
+				cfg.Port = 1433
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName: "testserver.example.com",
+		},
+		{
+			name: "with datasource configuration",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName: "datasource-host.example.com",
+		},
+		{
+			name: "with datasource default port",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.DataSource = "sqlserver://testuser:testpass@datasource-host2.example.com?database=testdb"
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName: "datasource-host2.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			settings := receivertest.NewNopSettings(metadata.Type)
+			scraper := newSQLServerScraper(
+				settings.ID,
+				"SELECT 1",
+				sqlquery.TelemetryConfig{},
+				func() (*sql.DB, error) { return nil, nil },
+				func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
+					return nil
+				},
+				settings,
+				tt.config,
+				nil,
+			)
+			scraper.mb = metadata.NewMetricsBuilder(tt.config.MetricsBuilderConfig, settings)
+
+			row := sqlquery.StringMap{
+				computerNameKey: "test-computer",
+				instanceNameKey: "test-instance",
+			}
+
+			rb := scraper.setupResourceBuilder(row)
+			resource := rb.Emit()
+
+			hostName, exists := resource.Attributes().Get("host.name")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedHostName, hostName.AsString())
 		})
 	}
 }
