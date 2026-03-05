@@ -49,7 +49,7 @@ func TestCreateProcessor(t *testing.T) {
 func TestCreateProcessorRejectsInvalidSamplingStrategy(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SamplingStrategy = SamplingStrategy("invalid")
+	cfg.SamplingStrategy = "invalid"
 
 	params := processortest.NewNopSettings(metadata.Type)
 	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
@@ -61,7 +61,7 @@ func TestCreateProcessorRejectsInvalidSamplingStrategy(t *testing.T) {
 func TestCreateProcessorRejectsStatefulPolicyForRootOnlyWayIn(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SamplingStrategy = SamplingStrategyRootSpanOnlyWayIn
+	cfg.SamplingStrategy = samplingStrategyRootSpanOnlyWayIn
 	cfg.PolicyCfgs = []PolicyCfg{
 		{
 			sharedPolicyCfg: sharedPolicyCfg{
@@ -87,7 +87,7 @@ func TestCreateProcessorRejectsStatefulPolicyForRootOnlyWayIn(t *testing.T) {
 func TestCreateProcessorAllowsStatelessPolicyForRootOnlyWayIn(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SamplingStrategy = SamplingStrategyRootSpanOnlyWayIn
+	cfg.SamplingStrategy = samplingStrategyRootSpanOnlyWayIn
 	cfg.PolicyCfgs = []PolicyCfg{
 		{
 			sharedPolicyCfg: sharedPolicyCfg{

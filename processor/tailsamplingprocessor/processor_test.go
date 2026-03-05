@@ -203,7 +203,7 @@ func TestTraceIntegrity(t *testing.T) {
 
 	controller := newTestTSPController()
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -257,7 +257,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 	traceIDs, batches := generateIDsAndBatches(128)
 	controller := newTestTSPController()
 	cfg := Config{
-		SamplingStrategy:        SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:        samplingStrategyFullTraceWayOut,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
@@ -306,7 +306,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	controller := newTestTSPController()
 	var wg sync.WaitGroup
 	cfg := Config{
-		SamplingStrategy:        SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:        samplingStrategyFullTraceWayOut,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
@@ -375,7 +375,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 
 	var wg sync.WaitGroup
 	cfg := Config{
-		SamplingStrategy:        SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:        samplingStrategyFullTraceWayOut,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
@@ -417,7 +417,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 	controller := newTestTSPController()
 	traceIDs, batches := generateIDsAndBatches(210)
 	cfg := Config{
-		SamplingStrategy:        SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:        samplingStrategyFullTraceWayOut,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               defaultNumTraces,
 		ExpectedNewTracesPerSec: 64,
@@ -493,7 +493,7 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	// prepare
 	msp := new(consumertest.TracesSink)
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     10 * time.Millisecond,
 		// idToTrace map size is 2x the number of batches, to eliminate "expected"
 		// dropped too early errors.
@@ -569,7 +569,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	msp := new(consumertest.TracesSink)
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
@@ -643,7 +643,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 	telem := setupTestTelemetry()
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
@@ -722,7 +722,7 @@ func TestSubSecondDecisionTime(t *testing.T) {
 	// prepare
 	msp := new(consumertest.TracesSink)
 	tsp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     500 * time.Millisecond,
 		NumTraces:        defaultNumTraces,
 		PolicyCfgs:       testPolicy,
@@ -780,7 +780,7 @@ func TestDuplicatePolicyName(t *testing.T) {
 	}
 
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
@@ -804,7 +804,7 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	msp := new(consumertest.TracesSink)
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
@@ -898,7 +898,7 @@ func TestDecisionHooks(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
@@ -1247,7 +1247,7 @@ func TestDropLargeTraces(t *testing.T) {
 	sp.Attributes().PutStr("foo", "short")
 
 	cfg := Config{
-		SamplingStrategy:        SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:        samplingStrategyFullTraceWayOut,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(4),
 		ExpectedNewTracesPerSec: 64,
@@ -1343,7 +1343,7 @@ func TestDeleteQueueCleared(t *testing.T) {
 
 	traceIDs, batches := generateIDsAndBatches(128)
 	cfg := Config{
-		SamplingStrategy:        SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:        samplingStrategyFullTraceWayOut,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
@@ -1387,7 +1387,7 @@ func TestDeleteQueueCleared(t *testing.T) {
 func TestRootReceivedBatcher(t *testing.T) {
 	traceIDs, batches := generateIDsAndBatches(128)
 	cfg := Config{
-		SamplingStrategy:        SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:        samplingStrategyFullTraceWayOut,
 		DecisionWait:            time.Minute,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
@@ -1438,7 +1438,7 @@ func TestExtension(t *testing.T) {
 	msp := new(consumertest.TracesSink)
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{

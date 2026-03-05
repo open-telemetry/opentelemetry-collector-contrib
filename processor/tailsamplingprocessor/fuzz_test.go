@@ -23,7 +23,7 @@ func FuzzConsumeTraces(f *testing.F) {
 		sink := new(consumertest.TracesSink)
 		set := processortest.NewNopSettings(metadata.Type)
 		cfg := &Config{
-			SamplingStrategy: SamplingStrategyFullTraceWayOut}
+			SamplingStrategy: samplingStrategyFullTraceWayOut}
 		tsp, err := newTracesProcessor(t.Context(), set, sink, *cfg)
 		if err != nil {
 			t.Fatal(err)

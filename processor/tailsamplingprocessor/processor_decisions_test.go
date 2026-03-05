@@ -34,7 +34,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 
 	controller := newTestTSPController()
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -80,7 +80,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -129,7 +129,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -183,7 +183,7 @@ func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options:          []Option{withTestController(controller), withPolicies(policies), withRecordPolicy()},
@@ -231,7 +231,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -280,7 +280,7 @@ func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options:          []Option{withTestController(controller), withPolicies(policies), withRecordPolicy()},
@@ -322,7 +322,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -377,7 +377,7 @@ func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options:          []Option{withTestController(controller), withPolicies(policies), withRecordPolicy()},
@@ -421,7 +421,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -494,7 +494,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait * 10,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -592,7 +592,7 @@ func TestLateArrivingSpanUsesDecisionCacheWhenDropped(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait * 10,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -684,7 +684,7 @@ func TestLateArrivingSpanWithoutCacheMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait * 10,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -757,7 +757,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait * 10,
 		NumTraces:        defaultNumTraces,
 		Options: []Option{
@@ -841,7 +841,7 @@ func TestSampleOnFirstMatch(t *testing.T) {
 	}
 
 	cfg := Config{
-		SamplingStrategy:   SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:   samplingStrategyFullTraceWayOut,
 		DecisionWait:       defaultTestDecisionWait,
 		NumTraces:          defaultNumTraces,
 		SampleOnFirstMatch: true,
@@ -895,7 +895,7 @@ func TestSampleOnRootSpanOnly(t *testing.T) {
 	cfg := Config{
 		DecisionWait:                  defaultTestDecisionWait,
 		NumTraces:                     defaultNumTraces,
-		SamplingStrategy:              SamplingStrategyRootSpanOnlyWayIn,
+		SamplingStrategy:              samplingStrategyRootSpanOnlyWayIn,
 		DecisionWaitAfterRootReceived: time.Second,
 		Options: []Option{
 			withTestController(controller),
@@ -948,7 +948,7 @@ func TestRateLimiter(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		SamplingStrategy:   SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:   samplingStrategyFullTraceWayOut,
 		DecisionWait:       defaultTestDecisionWait,
 		NumTraces:          defaultNumTraces,
 		SampleOnFirstMatch: true,

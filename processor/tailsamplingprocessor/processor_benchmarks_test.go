@@ -23,7 +23,7 @@ import (
 func BenchmarkSampling(b *testing.B) {
 	traceIDs, batches := generateIDsAndBatches(128)
 	cfg := Config{
-		SamplingStrategy:        SamplingStrategyFullTraceWayOut,
+		SamplingStrategy:        samplingStrategyFullTraceWayOut,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
@@ -54,7 +54,7 @@ func BenchmarkSampling(b *testing.B) {
 
 func BenchmarkProcessorThroughput(b *testing.B) {
 	cfg := Config{
-		SamplingStrategy: SamplingStrategyFullTraceWayOut,
+		SamplingStrategy: samplingStrategyFullTraceWayOut,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        1024,
 		// Create a handful of reasonable policies to not only test batching.

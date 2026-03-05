@@ -245,7 +245,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to create policy evaluator for %q: %w", cfg.Name, err)
 		}
-		if tsp.cfg.SamplingStrategy == SamplingStrategyRootSpanOnlyWayIn && eval.IsStateful() {
+		if tsp.cfg.SamplingStrategy == samplingStrategyRootSpanOnlyWayIn && eval.IsStateful() {
 			return nil, fmt.Errorf("sampling_strategy %q requires all policies to be stateless, but policy %q is stateful", tsp.cfg.SamplingStrategy, cfg.Name)
 		}
 
@@ -783,7 +783,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		tsp.idToTrace[id] = actualData
 
 		newTraceIDs++
-		if tsp.cfg.SamplingStrategy != SamplingStrategyRootSpanOnlyWayIn {
+		if tsp.cfg.SamplingStrategy != samplingStrategyRootSpanOnlyWayIn {
 			actualData.batchID = tsp.decisionBatcher.AddToCurrentBatch(id)
 		}
 
@@ -793,7 +793,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	} else {
 		actualData.SpanCount += spanCount
 	}
-	if containsRootSpan && tsp.cfg.SamplingStrategy != SamplingStrategyRootSpanOnlyWayIn && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
+	if containsRootSpan && tsp.cfg.SamplingStrategy != samplingStrategyRootSpanOnlyWayIn && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
 		actualData.batchID = tsp.decisionBatcher.MoveToEarlierBatch(id, actualData.batchID, uint64(tsp.cfg.DecisionWaitAfterRootReceived.Seconds()))
 	}
 
@@ -808,7 +808,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
 		actualData.FinalDecision = samplingpolicy.NotSampled
 		// Since we are not in a normal decision flow when dropping large traces, also be sure to remove it from the batcher.
-		if tsp.cfg.SamplingStrategy != SamplingStrategyRootSpanOnlyWayIn {
+		if tsp.cfg.SamplingStrategy != samplingStrategyRootSpanOnlyWayIn {
 			tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
 		}
 		tsp.releaseNotSampledTrace(id, actualData)
@@ -818,7 +818,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	if finalDecision == samplingpolicy.Unspecified {
 		// In root-only mode, evaluate as soon as the root span is seen and only
 		// use root span data for the sampling decision.
-		if tsp.cfg.SamplingStrategy == SamplingStrategyRootSpanOnlyWayIn && containsRootSpan {
+		if tsp.cfg.SamplingStrategy == samplingStrategyRootSpanOnlyWayIn && containsRootSpan {
 			actualData.decisionTime = time.Now()
 			rootOnlyTraceData := traceDataWithRootSpanOnly(rss, *rootSpan)
 			decision, policyName := tsp.makeDecision(id, &rootOnlyTraceData, newPolicyTickMetrics(len(tsp.policies)))

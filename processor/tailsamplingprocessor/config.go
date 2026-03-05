@@ -54,17 +54,16 @@ const (
 	TraceFlags PolicyType = "trace_flags"
 )
 
-// SamplingStrategy indicates when and with what data a sampling decision is made.
-type SamplingStrategy string
-
 const (
-	// SamplingStrategyFullTraceWayOut keeps the current tail-sampling behavior:
+	// samplingStrategyFullTraceWayOut keeps the current tail-sampling behavior:
 	// accumulate spans and decide on full trace data after decision timing.
-	SamplingStrategyFullTraceWayOut SamplingStrategy = "full-trace-way-out"
-	// SamplingStrategyRootSpanOnlyWayIn makes a decision when the root span arrives,
+	samplingStrategyFullTraceWayOut samplingStrategy = "full-trace-way-out"
+	// samplingStrategyRootSpanOnlyWayIn makes a decision when the root span arrives,
 	// evaluating policies using only root span data.
-	SamplingStrategyRootSpanOnlyWayIn SamplingStrategy = "root-span-only-way-in"
+	samplingStrategyRootSpanOnlyWayIn samplingStrategy = "root-span-only-way-in"
 )
+
+type samplingStrategy string
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
 // such as the and & composite policies.
@@ -341,7 +340,7 @@ type Config struct {
 	// SamplingStrategy controls how/when sampling decisions are made.
 	// "full-trace-way-out" (default) keeps classic tail sampling behavior.
 	// "root-span-only-way-in" makes a decision when the root span arrives using root-only data.
-	SamplingStrategy SamplingStrategy `mapstructure:"sampling_strategy"`
+	SamplingStrategy samplingStrategy `mapstructure:"sampling_strategy"`
 	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
 	// wait when the processor is shutdown.
 	DropPendingTracesOnShutdown bool `mapstructure:"drop_pending_traces_on_shutdown"`
@@ -353,9 +352,9 @@ type Config struct {
 
 func (cfg *Config) Validate() error {
 	switch cfg.SamplingStrategy {
-	case SamplingStrategyFullTraceWayOut, SamplingStrategyRootSpanOnlyWayIn:
+	case samplingStrategyFullTraceWayOut, samplingStrategyRootSpanOnlyWayIn:
 		return nil
 	default:
-		return fmt.Errorf("invalid sampling_strategy %q, expected one of %q or %q", cfg.SamplingStrategy, SamplingStrategyFullTraceWayOut, SamplingStrategyRootSpanOnlyWayIn)
+		return fmt.Errorf("invalid sampling_strategy %q, expected one of %q or %q", cfg.SamplingStrategy, samplingStrategyFullTraceWayOut, samplingStrategyRootSpanOnlyWayIn)
 	}
 }
