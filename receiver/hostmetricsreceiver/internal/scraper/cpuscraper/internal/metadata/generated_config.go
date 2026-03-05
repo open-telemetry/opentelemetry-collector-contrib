@@ -11,9 +11,8 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
+	Enabled             bool `mapstructure:"enabled"`
+	enabledSetByUser    bool
 	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []string `mapstructure:"attributes"`
 	definedAttributes   []string
@@ -29,23 +28,25 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	for _, val := range ms.EnabledAttributes {
-		if !slices.Contains(ms.definedAttributes, val) {
-			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+	if len(ms.definedAttributes) > 0 {
+		for _, val := range ms.EnabledAttributes {
+			if !slices.Contains(ms.definedAttributes, val) {
+				return fmt.Errorf("%v is not defined in metadata.yaml", val)
+			}
 		}
-	}
 
-	for _, val := range ms.requiredAttributes {
-		if !slices.Contains(ms.EnabledAttributes, val) {
-			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		for _, val := range ms.requiredAttributes {
+			if !slices.Contains(ms.EnabledAttributes, val) {
+				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+			}
 		}
-	}
 
-	if ms.AggregationStrategy != AggregationStrategySum &&
-		ms.AggregationStrategy != AggregationStrategyAvg &&
-		ms.AggregationStrategy != AggregationStrategyMin &&
-		ms.AggregationStrategy != AggregationStrategyMax {
-		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		if ms.AggregationStrategy != AggregationStrategySum &&
+			ms.AggregationStrategy != AggregationStrategyAvg &&
+			ms.AggregationStrategy != AggregationStrategyMin &&
+			ms.AggregationStrategy != AggregationStrategyMax {
+			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		}
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
@@ -69,44 +70,28 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		SystemCPUFrequency: MetricConfig{
-			Enabled: false,
-
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"cpu"},
-			EnabledAttributes:   []string{"cpu"},
+			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"cpu"},
+			EnabledAttributes:  []string{"cpu"},
 		},
 		SystemCPULogicalCount: MetricConfig{
 			Enabled: false,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
 		},
 		SystemCPUPhysicalCount: MetricConfig{
 			Enabled: false,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
 		},
 		SystemCPUTime: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"cpu", "state"},
-			EnabledAttributes:   []string{"cpu", "state"},
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"cpu", "state"},
+			EnabledAttributes:  []string{"cpu", "state"},
 		},
 		SystemCPUUtilization: MetricConfig{
-			Enabled: false,
-
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"cpu", "state"},
-			EnabledAttributes:   []string{"cpu", "state"},
+			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"cpu", "state"},
+			EnabledAttributes:  []string{"cpu", "state"},
 		},
 	}
 }

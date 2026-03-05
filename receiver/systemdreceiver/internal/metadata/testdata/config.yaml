@@ -6,7 +6,6 @@ all_set:
       attributes: ["cpu.mode"]
     systemd.service.restarts:
       enabled: true
-      attributes: []
     systemd.unit.state:
       enabled: true
       attributes: ["systemd.unit.active_state"]
@@ -20,7 +19,6 @@ reaggregate_set:
       attributes: []
     systemd.service.restarts:
       enabled: true
-      attributes: []
     systemd.unit.state:
       enabled: true
       attributes: []
@@ -34,7 +32,6 @@ none_set:
       attributes: ["cpu.mode"]
     systemd.service.restarts:
       enabled: false
-      attributes: []
     systemd.unit.state:
       enabled: false
       attributes: ["systemd.unit.active_state"]
