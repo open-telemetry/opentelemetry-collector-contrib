@@ -279,6 +279,13 @@ func AttrPutHostPortIf(attrs pcommon.Map, addrKey, portKey, value string) {
 		return
 	}
 
+	// Do not store "unspecified" address for both IPv4 and IPv6,
+	// including cases when it contains "unspecified" port
+	// as it doesn't provide any valuable information
+	if value == "0.0.0.0" || value == "::" || value == "0.0.0.0:0" || value == "[::]:0" {
+		return
+	}
+
 	// Not a "host:port" format or only IPv6
 	// put only "*.address" attribute
 	if strings.LastIndexByte(value, ':') < 0 || (strings.Count(value, ":") > 1 && !strings.Contains(value, "]:")) {

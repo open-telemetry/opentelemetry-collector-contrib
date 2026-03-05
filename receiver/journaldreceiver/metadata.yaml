@@ -1,4 +1,7 @@
+display_name: Journald Receiver
 type: journald
+
+description: The Journald Receiver parses Journald events from systemd journal.
 
 status:
   class: receiver

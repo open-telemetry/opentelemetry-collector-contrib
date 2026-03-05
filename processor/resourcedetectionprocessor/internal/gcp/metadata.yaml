@@ -23,10 +23,6 @@ resource_attributes:
     description: The cloud.region
     type: string
     enabled: true
-  faas.id:
-    description: The faas.id.
-    type: string
-    enabled: true
   faas.instance:
     description: The faas.instance
     type: string

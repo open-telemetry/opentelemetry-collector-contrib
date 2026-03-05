@@ -3,70 +3,211 @@ all_set:
   metrics:
     haproxy.active:
       enabled: true
+      attributes: []
     haproxy.backup:
       enabled: true
+      attributes: []
     haproxy.bytes.input:
       enabled: true
+      attributes: []
     haproxy.bytes.output:
       enabled: true
+      attributes: []
     haproxy.clients.canceled:
       enabled: true
+      attributes: []
     haproxy.compression.bypass:
       enabled: true
+      attributes: []
     haproxy.compression.count:
       enabled: true
+      attributes: []
     haproxy.compression.input:
       enabled: true
+      attributes: []
     haproxy.compression.output:
       enabled: true
+      attributes: []
     haproxy.connections.average_time:
       enabled: true
+      attributes: []
     haproxy.connections.errors:
       enabled: true
+      attributes: []
     haproxy.connections.rate:
       enabled: true
+      attributes: []
     haproxy.connections.retries:
       enabled: true
+      attributes: []
     haproxy.connections.total:
       enabled: true
+      attributes: []
     haproxy.downtime:
       enabled: true
+      attributes: []
     haproxy.failed_checks:
       enabled: true
+      attributes: []
     haproxy.requests.average_time:
       enabled: true
+      attributes: []
     haproxy.requests.denied:
       enabled: true
+      attributes: []
     haproxy.requests.errors:
       enabled: true
+      attributes: []
     haproxy.requests.queued:
       enabled: true
+      attributes: []
     haproxy.requests.rate:
       enabled: true
+      attributes: []
     haproxy.requests.redispatched:
       enabled: true
+      attributes: []
     haproxy.requests.total:
       enabled: true
+      attributes: ["status_code"]
     haproxy.responses.average_time:
       enabled: true
+      attributes: []
     haproxy.responses.denied:
       enabled: true
+      attributes: []
     haproxy.responses.errors:
       enabled: true
+      attributes: []
     haproxy.server_selected.total:
       enabled: true
+      attributes: []
     haproxy.sessions.average:
       enabled: true
+      attributes: []
     haproxy.sessions.count:
       enabled: true
+      attributes: []
     haproxy.sessions.limit:
       enabled: true
+      attributes: []
     haproxy.sessions.rate:
       enabled: true
+      attributes: []
     haproxy.sessions.total:
       enabled: true
+      attributes: []
     haproxy.weight:
       enabled: true
+      attributes: []
+  resource_attributes:
+    haproxy.addr:
+      enabled: true
+    haproxy.proxy_name:
+      enabled: true
+    haproxy.service_name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    haproxy.active:
+      enabled: true
+      attributes: []
+    haproxy.backup:
+      enabled: true
+      attributes: []
+    haproxy.bytes.input:
+      enabled: true
+      attributes: []
+    haproxy.bytes.output:
+      enabled: true
+      attributes: []
+    haproxy.clients.canceled:
+      enabled: true
+      attributes: []
+    haproxy.compression.bypass:
+      enabled: true
+      attributes: []
+    haproxy.compression.count:
+      enabled: true
+      attributes: []
+    haproxy.compression.input:
+      enabled: true
+      attributes: []
+    haproxy.compression.output:
+      enabled: true
+      attributes: []
+    haproxy.connections.average_time:
+      enabled: true
+      attributes: []
+    haproxy.connections.errors:
+      enabled: true
+      attributes: []
+    haproxy.connections.rate:
+      enabled: true
+      attributes: []
+    haproxy.connections.retries:
+      enabled: true
+      attributes: []
+    haproxy.connections.total:
+      enabled: true
+      attributes: []
+    haproxy.downtime:
+      enabled: true
+      attributes: []
+    haproxy.failed_checks:
+      enabled: true
+      attributes: []
+    haproxy.requests.average_time:
+      enabled: true
+      attributes: []
+    haproxy.requests.denied:
+      enabled: true
+      attributes: []
+    haproxy.requests.errors:
+      enabled: true
+      attributes: []
+    haproxy.requests.queued:
+      enabled: true
+      attributes: []
+    haproxy.requests.rate:
+      enabled: true
+      attributes: []
+    haproxy.requests.redispatched:
+      enabled: true
+      attributes: []
+    haproxy.requests.total:
+      enabled: true
+      attributes: []
+    haproxy.responses.average_time:
+      enabled: true
+      attributes: []
+    haproxy.responses.denied:
+      enabled: true
+      attributes: []
+    haproxy.responses.errors:
+      enabled: true
+      attributes: []
+    haproxy.server_selected.total:
+      enabled: true
+      attributes: []
+    haproxy.sessions.average:
+      enabled: true
+      attributes: []
+    haproxy.sessions.count:
+      enabled: true
+      attributes: []
+    haproxy.sessions.limit:
+      enabled: true
+      attributes: []
+    haproxy.sessions.rate:
+      enabled: true
+      attributes: []
+    haproxy.sessions.total:
+      enabled: true
+      attributes: []
+    haproxy.weight:
+      enabled: true
+      attributes: []
   resource_attributes:
     haproxy.addr:
       enabled: true
@@ -78,70 +219,103 @@ none_set:
   metrics:
     haproxy.active:
       enabled: false
+      attributes: []
     haproxy.backup:
       enabled: false
+      attributes: []
     haproxy.bytes.input:
       enabled: false
+      attributes: []
     haproxy.bytes.output:
       enabled: false
+      attributes: []
     haproxy.clients.canceled:
       enabled: false
+      attributes: []
     haproxy.compression.bypass:
       enabled: false
+      attributes: []
     haproxy.compression.count:
       enabled: false
+      attributes: []
     haproxy.compression.input:
       enabled: false
+      attributes: []
     haproxy.compression.output:
       enabled: false
+      attributes: []
     haproxy.connections.average_time:
       enabled: false
+      attributes: []
     haproxy.connections.errors:
       enabled: false
+      attributes: []
     haproxy.connections.rate:
       enabled: false
+      attributes: []
     haproxy.connections.retries:
       enabled: false
+      attributes: []
     haproxy.connections.total:
       enabled: false
+      attributes: []
     haproxy.downtime:
       enabled: false
+      attributes: []
     haproxy.failed_checks:
       enabled: false
+      attributes: []
     haproxy.requests.average_time:
       enabled: false
+      attributes: []
     haproxy.requests.denied:
       enabled: false
+      attributes: []
     haproxy.requests.errors:
       enabled: false
+      attributes: []
     haproxy.requests.queued:
       enabled: false
+      attributes: []
     haproxy.requests.rate:
       enabled: false
+      attributes: []
     haproxy.requests.redispatched:
       enabled: false
+      attributes: []
     haproxy.requests.total:
       enabled: false
+      attributes: ["status_code"]
     haproxy.responses.average_time:
       enabled: false
+      attributes: []
     haproxy.responses.denied:
       enabled: false
+      attributes: []
     haproxy.responses.errors:
       enabled: false
+      attributes: []
     haproxy.server_selected.total:
       enabled: false
+      attributes: []
     haproxy.sessions.average:
       enabled: false
+      attributes: []
     haproxy.sessions.count:
       enabled: false
+      attributes: []
     haproxy.sessions.limit:
       enabled: false
+      attributes: []
     haproxy.sessions.rate:
       enabled: false
+      attributes: []
     haproxy.sessions.total:
       enabled: false
+      attributes: []
     haproxy.weight:
       enabled: false
+      attributes: []
   resource_attributes:
     haproxy.addr:
       enabled: false

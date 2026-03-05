@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: exporter/elasticsearch
+note: Fix retry exponential backoff overflow handling edge case
+issues: [46178]
+subtext: |
+  The retry delay growth now guards against duration overflow while preserving
+  exponential backoff with jitter, so retries cap correctly at the configured
+  max interval even for large attempt counts.
+change_logs: [user]
