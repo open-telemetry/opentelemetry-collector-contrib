@@ -113,7 +113,7 @@ func TestSyncBulkIndexer(t *testing.T) {
 			require.NoError(t, err)
 
 			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
-			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
 
 			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
 			ctx := client.NewContext(t.Context(), info)
@@ -229,7 +229,7 @@ func TestBulkIndexerLogsStatusCode(t *testing.T) {
 	require.NoError(t, err)
 
 	core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
-	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
 
 	ctx := t.Context()
 	session := bi.StartSession(ctx)
@@ -279,76 +279,79 @@ func TestNewBulkIndexer(t *testing.T) {
 	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
 	require.NoError(t, err)
 
-	bi := newBulkIndexer(client, cfg, true, nil, nil)
+	bi := newBulkIndexer(client, cfg, true, nil, nil, nil)
 	t.Cleanup(func() { bi.Close(t.Context()) })
 }
 
 func TestGetErrorHint(t *testing.T) {
 	tests := []struct {
 		name      string
+		mode      MappingMode
 		index     string
 		errorType string
 		want      string
 	}{
 		{
 			name:      "version_conflict_engine_exception with .ds-metrics- prefix",
+			mode:      MappingNone,
 			index:     ".ds-metrics-foo",
 			errorType: "version_conflict_engine_exception",
 			want:      errorHintKnownIssues,
 		},
 		{
-			name:      "illegal_argument_exception with .otel- in index (OTel mapping mode)",
+			name:      "illegal_argument_exception in OTel mode",
+			mode:      MappingOTel,
 			index:     "logs-generic.otel-default",
 			errorType: "illegal_argument_exception",
 			want:      errorHintOTelMappingMode,
 		},
 		{
-			name:      "illegal_argument_exception with .otel- in metrics index",
-			index:     "metrics-generic.otel-default",
-			errorType: "illegal_argument_exception",
-			want:      errorHintOTelMappingMode,
-		},
-		{
-			name:      "illegal_argument_exception with .otel- in traces index",
-			index:     "traces-generic.otel-default",
-			errorType: "illegal_argument_exception",
-			want:      errorHintOTelMappingMode,
-		},
-		{
-			name:      "illegal_argument_exception without .otel- (not OTel mapping mode)",
-			index:     "logs-generic-default",
-			errorType: "illegal_argument_exception",
-			want:      "",
-		},
-		{
-			name:      "illegal_argument_exception with .otel but not as suffix (should not match)",
-			index:     "logs-generic.oteldefault",
-			errorType: "illegal_argument_exception",
-			want:      "",
-		},
-		{
-			name:      "other error type with .otel-",
+			name:      "other error type in OTel mode",
+			mode:      MappingOTel,
 			index:     "logs-generic.otel-default",
 			errorType: "mapper_parsing_exception",
 			want:      "",
 		},
 		{
 			name:      "version_conflict_engine_exception without .ds-metrics- prefix",
+			mode:      MappingNone,
 			index:     "logs-foo",
 			errorType: "version_conflict_engine_exception",
 			want:      "",
 		},
 		{
 			name:      "empty index and error type",
+			mode:      MappingNone,
 			index:     "",
 			errorType: "",
+			want:      "",
+		},
+		{
+			name:      "illegal_argument_exception in ECS mode",
+			mode:      MappingECS,
+			index:     "metrics.apm.app-default",
+			errorType: "illegal_argument_exception",
+			want:      errorHintECSMappingMode,
+		},
+		{
+			name:      "illegal_argument_exception in none mode",
+			mode:      MappingNone,
+			index:     "logs-generic-default",
+			errorType: "illegal_argument_exception",
+			want:      "",
+		},
+		{
+			name:      "illegal_argument_exception in raw mode",
+			mode:      MappingRaw,
+			index:     "logs-generic-default",
+			errorType: "illegal_argument_exception",
 			want:      "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getErrorHint(tt.index, tt.errorType)
+			got := getErrorHint(tt.mode, tt.index, tt.errorType)
 			assert.Equal(t, tt.want, got)
 		})
 	}
