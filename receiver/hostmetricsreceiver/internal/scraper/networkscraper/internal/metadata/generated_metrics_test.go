@@ -83,15 +83,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSystemNetworkConntrackCountDataPoint(ts, 1)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSystemNetworkConntrackCountDataPoint(ts, 3)
-			}
 
 			allMetricsCount++
 			mb.RecordSystemNetworkConntrackMaxDataPoint(ts, 1)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSystemNetworkConntrackMaxDataPoint(ts, 3)
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -125,8 +119,6 @@ func TestMetricsBuilder(t *testing.T) {
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
 				assert.Empty(t, mb.metricSystemNetworkConnections.aggDataPoints)
-				assert.Empty(t, mb.metricSystemNetworkConntrackCount.aggDataPoints)
-				assert.Empty(t, mb.metricSystemNetworkConntrackMax.aggDataPoints)
 				assert.Empty(t, mb.metricSystemNetworkDropped.aggDataPoints)
 				assert.Empty(t, mb.metricSystemNetworkErrors.aggDataPoints)
 				assert.Empty(t, mb.metricSystemNetworkIo.aggDataPoints)
@@ -202,83 +194,33 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 					}
 				case "system.network.conntrack.count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["system.network.conntrack.count"], "Found a duplicate in the metrics slice: system.network.conntrack.count")
-						validatedMetrics["system.network.conntrack.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "The count of entries in conntrack table.", ms.At(i).Description())
-						assert.Equal(t, "{entries}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["system.network.conntrack.count"], "Found a duplicate in the metrics slice: system.network.conntrack.count")
-						validatedMetrics["system.network.conntrack.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "The count of entries in conntrack table.", ms.At(i).Description())
-						assert.Equal(t, "{entries}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["system.network.conntrack.count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["system.network.conntrack.count"], "Found a duplicate in the metrics slice: system.network.conntrack.count")
+					validatedMetrics["system.network.conntrack.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The count of entries in conntrack table.", ms.At(i).Description())
+					assert.Equal(t, "{entries}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.network.conntrack.max":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["system.network.conntrack.max"], "Found a duplicate in the metrics slice: system.network.conntrack.max")
-						validatedMetrics["system.network.conntrack.max"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "The limit for entries in the conntrack table.", ms.At(i).Description())
-						assert.Equal(t, "{entries}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["system.network.conntrack.max"], "Found a duplicate in the metrics slice: system.network.conntrack.max")
-						validatedMetrics["system.network.conntrack.max"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "The limit for entries in the conntrack table.", ms.At(i).Description())
-						assert.Equal(t, "{entries}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["system.network.conntrack.max"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["system.network.conntrack.max"], "Found a duplicate in the metrics slice: system.network.conntrack.max")
+					validatedMetrics["system.network.conntrack.max"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The limit for entries in the conntrack table.", ms.At(i).Description())
+					assert.Equal(t, "{entries}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.network.dropped":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["system.network.dropped"], "Found a duplicate in the metrics slice: system.network.dropped")

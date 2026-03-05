@@ -80,15 +80,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSystemCPULogicalCountDataPoint(ts, 1)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPULogicalCountDataPoint(ts, 3)
-			}
 
 			allMetricsCount++
 			mb.RecordSystemCPUPhysicalCountDataPoint(ts, 1)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPUPhysicalCountDataPoint(ts, 3)
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -107,8 +101,6 @@ func TestMetricsBuilder(t *testing.T) {
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
 				assert.Empty(t, mb.metricSystemCPUFrequency.aggDataPoints)
-				assert.Empty(t, mb.metricSystemCPULogicalCount.aggDataPoints)
-				assert.Empty(t, mb.metricSystemCPUPhysicalCount.aggDataPoints)
 				assert.Empty(t, mb.metricSystemCPUTime.aggDataPoints)
 				assert.Empty(t, mb.metricSystemCPUUtilization.aggDataPoints)
 			}
@@ -173,83 +165,33 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 					}
 				case "system.cpu.logical.count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["system.cpu.logical.count"], "Found a duplicate in the metrics slice: system.cpu.logical.count")
-						validatedMetrics["system.cpu.logical.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of available logical CPUs.", ms.At(i).Description())
-						assert.Equal(t, "{cpu}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["system.cpu.logical.count"], "Found a duplicate in the metrics slice: system.cpu.logical.count")
-						validatedMetrics["system.cpu.logical.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of available logical CPUs.", ms.At(i).Description())
-						assert.Equal(t, "{cpu}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["system.cpu.logical.count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["system.cpu.logical.count"], "Found a duplicate in the metrics slice: system.cpu.logical.count")
+					validatedMetrics["system.cpu.logical.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of available logical CPUs.", ms.At(i).Description())
+					assert.Equal(t, "{cpu}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.cpu.physical.count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["system.cpu.physical.count"], "Found a duplicate in the metrics slice: system.cpu.physical.count")
-						validatedMetrics["system.cpu.physical.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of available physical CPUs.", ms.At(i).Description())
-						assert.Equal(t, "{cpu}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["system.cpu.physical.count"], "Found a duplicate in the metrics slice: system.cpu.physical.count")
-						validatedMetrics["system.cpu.physical.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of available physical CPUs.", ms.At(i).Description())
-						assert.Equal(t, "{cpu}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["system.cpu.physical.count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["system.cpu.physical.count"], "Found a duplicate in the metrics slice: system.cpu.physical.count")
+					validatedMetrics["system.cpu.physical.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of available physical CPUs.", ms.At(i).Description())
+					assert.Equal(t, "{cpu}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.cpu.time":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")

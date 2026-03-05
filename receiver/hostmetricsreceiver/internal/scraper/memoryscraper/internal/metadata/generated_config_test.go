@@ -26,41 +26,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemLinuxMemoryAvailable: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemLinuxMemoryDirty: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLimit: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLinuxHugepagesLimit: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLinuxHugepagesPageSize: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLinuxHugepagesReserved: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLinuxHugepagesSurplus: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					SystemLinuxMemoryAvailable:         MetricConfig{Enabled: true},
+					SystemLinuxMemoryDirty:             MetricConfig{Enabled: true},
+					SystemMemoryLimit:                  MetricConfig{Enabled: true},
+					SystemMemoryLinuxHugepagesLimit:    MetricConfig{Enabled: true},
+					SystemMemoryLinuxHugepagesPageSize: MetricConfig{Enabled: true},
+					SystemMemoryLinuxHugepagesReserved: MetricConfig{Enabled: true},
+					SystemMemoryLinuxHugepagesSurplus:  MetricConfig{Enabled: true},
 					SystemMemoryLinuxHugepagesUsage: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -71,16 +43,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"system.memory.linux.hugepages.state"},
 					},
-					SystemMemoryLinuxShared: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryPageSize: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					SystemMemoryLinuxShared: MetricConfig{Enabled: true},
+					SystemMemoryPageSize:    MetricConfig{Enabled: true},
 					SystemMemoryUsage: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -98,41 +62,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemLinuxMemoryAvailable: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemLinuxMemoryDirty: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLimit: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLinuxHugepagesLimit: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLinuxHugepagesPageSize: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLinuxHugepagesReserved: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryLinuxHugepagesSurplus: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					SystemLinuxMemoryAvailable:         MetricConfig{Enabled: false},
+					SystemLinuxMemoryDirty:             MetricConfig{Enabled: false},
+					SystemMemoryLimit:                  MetricConfig{Enabled: false},
+					SystemMemoryLinuxHugepagesLimit:    MetricConfig{Enabled: false},
+					SystemMemoryLinuxHugepagesPageSize: MetricConfig{Enabled: false},
+					SystemMemoryLinuxHugepagesReserved: MetricConfig{Enabled: false},
+					SystemMemoryLinuxHugepagesSurplus:  MetricConfig{Enabled: false},
 					SystemMemoryLinuxHugepagesUsage: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -143,16 +79,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"system.memory.linux.hugepages.state"},
 					},
-					SystemMemoryLinuxShared: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemMemoryPageSize: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					SystemMemoryLinuxShared: MetricConfig{Enabled: false},
+					SystemMemoryPageSize:    MetricConfig{Enabled: false},
 					SystemMemoryUsage: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,

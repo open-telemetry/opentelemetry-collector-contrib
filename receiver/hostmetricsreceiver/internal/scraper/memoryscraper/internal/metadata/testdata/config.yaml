@@ -3,25 +3,18 @@ all_set:
   metrics:
     system.linux.memory.available:
       enabled: true
-      attributes: []
     system.linux.memory.dirty:
       enabled: true
-      attributes: []
     system.memory.limit:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.limit:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.page_size:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.reserved:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.surplus:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.usage:
       enabled: true
       attributes: ["system.memory.linux.hugepages.state"]
@@ -30,10 +23,8 @@ all_set:
       attributes: ["system.memory.linux.hugepages.state"]
     system.memory.linux.shared:
       enabled: true
-      attributes: []
     system.memory.page_size:
       enabled: true
-      attributes: []
     system.memory.usage:
       enabled: true
       attributes: ["state"]
@@ -44,25 +35,18 @@ reaggregate_set:
   metrics:
     system.linux.memory.available:
       enabled: true
-      attributes: []
     system.linux.memory.dirty:
       enabled: true
-      attributes: []
     system.memory.limit:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.limit:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.page_size:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.reserved:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.surplus:
       enabled: true
-      attributes: []
     system.memory.linux.hugepages.usage:
       enabled: true
       attributes: []
@@ -71,10 +55,8 @@ reaggregate_set:
       attributes: []
     system.memory.linux.shared:
       enabled: true
-      attributes: []
     system.memory.page_size:
       enabled: true
-      attributes: []
     system.memory.usage:
       enabled: true
       attributes: []
@@ -85,25 +67,18 @@ none_set:
   metrics:
     system.linux.memory.available:
       enabled: false
-      attributes: []
     system.linux.memory.dirty:
       enabled: false
-      attributes: []
     system.memory.limit:
       enabled: false
-      attributes: []
     system.memory.linux.hugepages.limit:
       enabled: false
-      attributes: []
     system.memory.linux.hugepages.page_size:
       enabled: false
-      attributes: []
     system.memory.linux.hugepages.reserved:
       enabled: false
-      attributes: []
     system.memory.linux.hugepages.surplus:
       enabled: false
-      attributes: []
     system.memory.linux.hugepages.usage:
       enabled: false
       attributes: ["system.memory.linux.hugepages.state"]
@@ -112,10 +87,8 @@ none_set:
       attributes: ["system.memory.linux.hugepages.state"]
     system.memory.linux.shared:
       enabled: false
-      attributes: []
     system.memory.page_size:
       enabled: false
-      attributes: []
     system.memory.usage:
       enabled: false
       attributes: ["state"]
