@@ -2,4 +2,4 @@ change_type: enhancement
 component: receiver/mongodbreceiver
 note: Enable re-aggregation feature for mongodb receiver.
 issues: [46366]
-subtext: \"\"
+subtext: ""
