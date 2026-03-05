@@ -187,7 +187,8 @@ Examples:
 - Application Gateway: `encoding.format:"azure.application_gateway"`
 - App Service: `encoding.format:"azure.appservice"`
 - Front Door: `encoding.format:"azure.frontdoor"`
-- Activity/audit: `encoding.format:"azure.activity"`
+- Activity: `encoding.format:"azure.activity"`
+- Audit: `encoding.format:"azure.audit"`
 
 #### Format values
 
@@ -195,7 +196,8 @@ The following format values are supported at the **log family** level:
 
 | **Azure log family** | **Format value** | **Description** |
 |----------------------|------------------|-----------------|
-| Activity | `azure.activity` | Azure activity/audit logs |
+| Activity | `azure.activity` | Azure activity logs (administrative, alert, policy, security, etc.) |
+| Audit | `azure.audit` | Azure audit logs (AuditEvent category) |
 | Application Gateway | `azure.application_gateway` | Application Gateway logs (access, performance, firewall) |
 | App Service | `azure.appservice` | App Service logs (app, audit, HTTP, platform, etc.) |
 | CDN | `azure.cdn` | Azure CDN access logs |

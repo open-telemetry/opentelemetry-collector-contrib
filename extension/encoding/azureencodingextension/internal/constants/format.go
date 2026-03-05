@@ -10,6 +10,7 @@ const (
 	// Format values at log family level
 	FormatActivity           = "azure.activity"
 	FormatApplicationGateway = "azure.application_gateway"
+	FormatAudit              = "azure.audit"
 	FormatAppService         = "azure.appservice"
 	FormatCdn                = "azure.cdn"
 	FormatDataFactory        = "azure.datafactory"
@@ -47,6 +48,8 @@ func FormatForCategory(category string) string {
 	case "StorageRead", "StorageWrite", "StorageDelete":
 		return FormatStorage
 	case "AuditEvent":
+		return FormatAudit
+	case "Administrative", "Alert", "Autoscale", "Policy", "ResourceHealth", "Security", "ServiceHealth":
 		return FormatActivity
 	default:
 		return AzureFormatResourceLog
