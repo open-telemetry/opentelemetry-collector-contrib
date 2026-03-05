@@ -12,7 +12,7 @@ import (
 	"syscall"
 )
 
-func (r *Resolver) addOwnerInfo(file *os.File, attributes map[string]any) error {
+func (r *Resolver) addPermissionInfo(file *os.File, attributes map[string]any) error {
 	fileInfo, errStat := file.Stat()
 	if errStat != nil {
 		return fmt.Errorf("resolve file stat: %w", errStat)
@@ -32,6 +32,15 @@ func (r *Resolver) addOwnerInfo(file *os.File, attributes map[string]any) error 
 			return fmt.Errorf("resolve file group name: %w", errFileGroup)
 		}
 		attributes[LogFileOwnerGroupName] = fileGroup.Name
+	}
+	if r.IncludeFileMode {
+		fileInfo, errFileInfo := file.Stat()
+		if errFileInfo != nil {
+			return fmt.Errorf("resolve file stat: %w", errFileInfo)
+		}
+		// Format the file mode as a 3-digit octal string (e.g., "755")
+		mode := fmt.Sprintf("%03o", fileInfo.Mode().Perm())
+		attributes[LogFileMode] = mode
 	}
 	return nil
 }

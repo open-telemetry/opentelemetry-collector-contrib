@@ -42,20 +42,11 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 	if r.IncludeFilePath {
 		attributes[LogFilePath] = path
 	}
-	if r.IncludeFileOwnerName || r.IncludeFileOwnerGroupName {
-		err = r.addOwnerInfo(file, attributes)
+	if r.IncludeFileOwnerName || r.IncludeFileOwnerGroupName || r.IncludeFileMode {
+		err = r.addPermissionInfo(file, attributes)
 		if err != nil {
 			return nil, err
 		}
-	}
-	if r.IncludeFileMode && runtime.GOOS != "windows" {
-		fileInfo, err2 := file.Stat()
-		if err2 != nil {
-			return nil, fmt.Errorf("resolve file stat: %w", err2)
-		}
-		// Format the file mode as a 4-digit octal string (e.g., "0755")
-		mode := fmt.Sprintf("%04o", fileInfo.Mode().Perm())
-		attributes[LogFileMode] = mode
 	}
 	if !r.IncludeFileNameResolved && !r.IncludeFilePathResolved {
 		return attributes, nil
