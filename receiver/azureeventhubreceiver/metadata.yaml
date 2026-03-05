@@ -4,7 +4,7 @@ type: azure_event_hub
 status:
   class: receiver
   stability:
-    alpha: [metrics, logs, traces]
+    beta: [metrics, logs, traces]
   distributions: [contrib]
   codeowners:
     active: [atoulme, cparkins, dyl10s]

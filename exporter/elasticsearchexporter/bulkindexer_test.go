@@ -113,7 +113,7 @@ func TestSyncBulkIndexer(t *testing.T) {
 			require.NoError(t, err)
 
 			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
-			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
 
 			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
 			ctx := client.NewContext(t.Context(), info)
@@ -193,6 +193,72 @@ func TestSyncBulkIndexer(t *testing.T) {
 	}
 }
 
+func TestBulkIndexerLogsStatusCode(t *testing.T) {
+	responseBody := `{"errors": true, "items":[
+		{"create":{"_index":"foo-200","status":200}},
+		{"create":{"_index":"foo-400","status":400,"error":{"type":"error_400","reason":"status 400"}}},
+		{"create":{"_index":"foo-401","status":401,"error":{"type":"error_401","reason":"status 401"}}},
+		{"create":{"_index":"foo-429","status":429,"error":{"type":"error_429","reason":"status 429"}}},
+		{"create":{"_index":"foo-500","status":500,"error":{"type":"error_500","reason":"status 500"}}}
+	]}`
+	statuses := []int{400, 401, 429, 500}
+
+	cfg := Config{
+		QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
+			NumConsumers: 1,
+		}),
+	}
+	esClient, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body:       io.NopCloser(strings.NewReader(responseBody)),
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	ct := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(
+		metadatatest.NewSettings(ct).TelemetrySettings,
+	)
+	require.NoError(t, err)
+
+	core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
+
+	ctx := t.Context()
+	session := bi.StartSession(ctx)
+	// Add initial document to ensure we have at least one document to process.
+	require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	for range statuses {
+		require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	}
+	require.NoError(t, session.Flush(ctx))
+	session.End()
+	assert.NoError(t, bi.Close(ctx))
+
+	messages := observed.FilterMessage("failed to index document").FilterFieldKey("http.response.status_code")
+	require.Equal(t, len(statuses), messages.Len(), "message not found; observed.All()=%v", observed.All())
+	for i, status := range statuses {
+		if i >= messages.Len() {
+			t.Errorf("expected at least %d log messages, got %d", i+1, messages.Len())
+			continue
+		}
+		msg := messages.All()[i]
+		statusCode, ok := msg.ContextMap()["http.response.status_code"]
+		if !ok {
+			t.Errorf("http.response.status_code missing in log at index %d; msg: %+v", i, msg.ContextMap())
+			continue
+		}
+		assert.Equal(t, int64(status), statusCode, "http.response.status_code does not match at index %d; msg: %s", i, msg.Message)
+	}
+}
+
 func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
@@ -213,76 +279,79 @@ func TestNewBulkIndexer(t *testing.T) {
 	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
 	require.NoError(t, err)
 
-	bi := newBulkIndexer(client, cfg, true, nil, nil)
+	bi := newBulkIndexer(client, cfg, true, nil, nil, nil)
 	t.Cleanup(func() { bi.Close(t.Context()) })
 }
 
 func TestGetErrorHint(t *testing.T) {
 	tests := []struct {
 		name      string
+		mode      MappingMode
 		index     string
 		errorType string
 		want      string
 	}{
 		{
 			name:      "version_conflict_engine_exception with .ds-metrics- prefix",
+			mode:      MappingNone,
 			index:     ".ds-metrics-foo",
 			errorType: "version_conflict_engine_exception",
 			want:      errorHintKnownIssues,
 		},
 		{
-			name:      "illegal_argument_exception with .otel- in index (OTel mapping mode)",
+			name:      "illegal_argument_exception in OTel mode",
+			mode:      MappingOTel,
 			index:     "logs-generic.otel-default",
 			errorType: "illegal_argument_exception",
 			want:      errorHintOTelMappingMode,
 		},
 		{
-			name:      "illegal_argument_exception with .otel- in metrics index",
-			index:     "metrics-generic.otel-default",
-			errorType: "illegal_argument_exception",
-			want:      errorHintOTelMappingMode,
-		},
-		{
-			name:      "illegal_argument_exception with .otel- in traces index",
-			index:     "traces-generic.otel-default",
-			errorType: "illegal_argument_exception",
-			want:      errorHintOTelMappingMode,
-		},
-		{
-			name:      "illegal_argument_exception without .otel- (not OTel mapping mode)",
-			index:     "logs-generic-default",
-			errorType: "illegal_argument_exception",
-			want:      "",
-		},
-		{
-			name:      "illegal_argument_exception with .otel but not as suffix (should not match)",
-			index:     "logs-generic.oteldefault",
-			errorType: "illegal_argument_exception",
-			want:      "",
-		},
-		{
-			name:      "other error type with .otel-",
+			name:      "other error type in OTel mode",
+			mode:      MappingOTel,
 			index:     "logs-generic.otel-default",
 			errorType: "mapper_parsing_exception",
 			want:      "",
 		},
 		{
 			name:      "version_conflict_engine_exception without .ds-metrics- prefix",
+			mode:      MappingNone,
 			index:     "logs-foo",
 			errorType: "version_conflict_engine_exception",
 			want:      "",
 		},
 		{
 			name:      "empty index and error type",
+			mode:      MappingNone,
 			index:     "",
 			errorType: "",
+			want:      "",
+		},
+		{
+			name:      "illegal_argument_exception in ECS mode",
+			mode:      MappingECS,
+			index:     "metrics.apm.app-default",
+			errorType: "illegal_argument_exception",
+			want:      errorHintECSMappingMode,
+		},
+		{
+			name:      "illegal_argument_exception in none mode",
+			mode:      MappingNone,
+			index:     "logs-generic-default",
+			errorType: "illegal_argument_exception",
+			want:      "",
+		},
+		{
+			name:      "illegal_argument_exception in raw mode",
+			mode:      MappingRaw,
+			index:     "logs-generic-default",
+			errorType: "illegal_argument_exception",
 			want:      "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getErrorHint(tt.index, tt.errorType)
+			got := getErrorHint(tt.mode, tt.index, tt.errorType)
 			assert.Equal(t, tt.want, got)
 		})
 	}

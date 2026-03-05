@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,25 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["ApacheConnectionsAsync"] = mb.metricApacheConnectionsAsync.config.AggregationStrategy
+			aggMap["ApacheCPULoad"] = mb.metricApacheCPULoad.config.AggregationStrategy
+			aggMap["ApacheCPUTime"] = mb.metricApacheCPUTime.config.AggregationStrategy
+			aggMap["ApacheCurrentConnections"] = mb.metricApacheCurrentConnections.config.AggregationStrategy
+			aggMap["ApacheLoad1"] = mb.metricApacheLoad1.config.AggregationStrategy
+			aggMap["ApacheLoad15"] = mb.metricApacheLoad15.config.AggregationStrategy
+			aggMap["ApacheLoad5"] = mb.metricApacheLoad5.config.AggregationStrategy
+			aggMap["ApacheRequestTime"] = mb.metricApacheRequestTime.config.AggregationStrategy
+			aggMap["ApacheRequests"] = mb.metricApacheRequests.config.AggregationStrategy
+			aggMap["ApacheScoreboard"] = mb.metricApacheScoreboard.config.AggregationStrategy
+			aggMap["ApacheTraffic"] = mb.metricApacheTraffic.config.AggregationStrategy
+			aggMap["ApacheUptime"] = mb.metricApacheUptime.config.AggregationStrategy
+			aggMap["ApacheWorkers"] = mb.metricApacheWorkers.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,6 +92,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheConnectionsAsyncDataPoint(ts, "1", AttributeConnectionStateWriting)
+			if tt.name == "reaggregate_set" {
+				mb.RecordApacheConnectionsAsyncDataPoint(ts, "3", AttributeConnectionStateKeepalive)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -78,6 +103,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevelSelf, AttributeCPUModeSystem)
+			if tt.name == "reaggregate_set" {
+				mb.RecordApacheCPUTimeDataPoint(ts, "3", AttributeCPULevelChildren, AttributeCPUModeUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -106,6 +134,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardStateOpen)
+			if tt.name == "reaggregate_set" {
+				mb.RecordApacheScoreboardDataPoint(ts, 3, AttributeScoreboardStateWaiting)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -118,12 +149,21 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersStateBusy)
+			if tt.name == "reaggregate_set" {
+				mb.RecordApacheWorkersDataPoint(ts, "3", AttributeWorkersStateIdle)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetApacheServerName("apache.server.name-val")
 			rb.SetApacheServerPort("apache.server.port-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricApacheConnectionsAsync.aggDataPoints)
+				assert.Empty(t, mb.metricApacheCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricApacheScoreboard.aggDataPoints)
+				assert.Empty(t, mb.metricApacheWorkers.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -145,20 +185,45 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "apache.connections.async":
-					assert.False(t, validatedMetrics["apache.connections.async"], "Found a duplicate in the metrics slice: apache.connections.async")
-					validatedMetrics["apache.connections.async"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of connections in different asynchronous states reported by Apache's server-status.", ms.At(i).Description())
-					assert.Equal(t, "{connections}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("connection_state")
-					assert.True(t, ok)
-					assert.Equal(t, "writing", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["apache.connections.async"], "Found a duplicate in the metrics slice: apache.connections.async")
+						validatedMetrics["apache.connections.async"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of connections in different asynchronous states reported by Apache's server-status.", ms.At(i).Description())
+						assert.Equal(t, "{connections}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("connection_state")
+						assert.True(t, ok)
+						assert.Equal(t, "writing", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["apache.connections.async"], "Found a duplicate in the metrics slice: apache.connections.async")
+						validatedMetrics["apache.connections.async"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of connections in different asynchronous states reported by Apache's server-status.", ms.At(i).Description())
+						assert.Equal(t, "{connections}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["apache.connections.async"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("connection_state")
+						assert.False(t, ok)
+					}
 				case "apache.cpu.load":
 					assert.False(t, validatedMetrics["apache.cpu.load"], "Found a duplicate in the metrics slice: apache.cpu.load")
 					validatedMetrics["apache.cpu.load"] = true
@@ -172,25 +237,54 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "apache.cpu.time":
-					assert.False(t, validatedMetrics["apache.cpu.time"], "Found a duplicate in the metrics slice: apache.cpu.time")
-					validatedMetrics["apache.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Jiffs used by processes of given category.", ms.At(i).Description())
-					assert.Equal(t, "{jiff}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("level")
-					assert.True(t, ok)
-					assert.Equal(t, "self", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mode")
-					assert.True(t, ok)
-					assert.Equal(t, "system", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["apache.cpu.time"], "Found a duplicate in the metrics slice: apache.cpu.time")
+						validatedMetrics["apache.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Jiffs used by processes of given category.", ms.At(i).Description())
+						assert.Equal(t, "{jiff}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("level")
+						assert.True(t, ok)
+						assert.Equal(t, "self", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("mode")
+						assert.True(t, ok)
+						assert.Equal(t, "system", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["apache.cpu.time"], "Found a duplicate in the metrics slice: apache.cpu.time")
+						validatedMetrics["apache.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Jiffs used by processes of given category.", ms.At(i).Description())
+						assert.Equal(t, "{jiff}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["apache.cpu.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("level")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("mode")
+						assert.False(t, ok)
+					}
 				case "apache.current_connections":
 					assert.False(t, validatedMetrics["apache.current_connections"], "Found a duplicate in the metrics slice: apache.current_connections")
 					validatedMetrics["apache.current_connections"] = true
@@ -270,22 +364,49 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "apache.scoreboard":
-					assert.False(t, validatedMetrics["apache.scoreboard"], "Found a duplicate in the metrics slice: apache.scoreboard")
-					validatedMetrics["apache.scoreboard"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of workers in each state.", ms.At(i).Description())
-					assert.Equal(t, "{workers}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "open", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["apache.scoreboard"], "Found a duplicate in the metrics slice: apache.scoreboard")
+						validatedMetrics["apache.scoreboard"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of workers in each state.", ms.At(i).Description())
+						assert.Equal(t, "{workers}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "open", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["apache.scoreboard"], "Found a duplicate in the metrics slice: apache.scoreboard")
+						validatedMetrics["apache.scoreboard"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of workers in each state.", ms.At(i).Description())
+						assert.Equal(t, "{workers}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["apache.scoreboard"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.False(t, ok)
+					}
 				case "apache.traffic":
 					assert.False(t, validatedMetrics["apache.traffic"], "Found a duplicate in the metrics slice: apache.traffic")
 					validatedMetrics["apache.traffic"] = true
@@ -315,22 +436,49 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "apache.workers":
-					assert.False(t, validatedMetrics["apache.workers"], "Found a duplicate in the metrics slice: apache.workers")
-					validatedMetrics["apache.workers"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of workers currently attached to the HTTP server.", ms.At(i).Description())
-					assert.Equal(t, "{workers}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "busy", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["apache.workers"], "Found a duplicate in the metrics slice: apache.workers")
+						validatedMetrics["apache.workers"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of workers currently attached to the HTTP server.", ms.At(i).Description())
+						assert.Equal(t, "{workers}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "busy", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["apache.workers"], "Found a duplicate in the metrics slice: apache.workers")
+						validatedMetrics["apache.workers"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The number of workers currently attached to the HTTP server.", ms.At(i).Description())
+						assert.Equal(t, "{workers}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["apache.workers"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

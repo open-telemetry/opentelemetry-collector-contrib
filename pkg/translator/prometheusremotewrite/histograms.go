@@ -23,7 +23,7 @@ func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetr
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, model.MetricNameLabel, baseName)
+		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, baseName)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -77,9 +77,6 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		Schema:    scale,
 
 		ZeroCount: &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
-		// TODO use zero_threshold, if set, see
-		// https://github.com/open-telemetry/opentelemetry-proto/pull/441
-		ZeroThreshold: defaultZeroThreshold,
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
@@ -87,6 +84,12 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		NegativeDeltas: nDeltas,
 
 		Timestamp: convertTimeStamp(p.Timestamp()),
+	}
+
+	if p.ZeroThreshold() != 0 {
+		h.ZeroThreshold = p.ZeroThreshold()
+	} else {
+		h.ZeroThreshold = defaultZeroThreshold
 	}
 
 	if p.Flags().NoRecordedValue() {
