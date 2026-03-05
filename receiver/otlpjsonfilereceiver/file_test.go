@@ -57,8 +57,14 @@ func TestFileProfilesReceiver(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
+	// MarshalProfiles applies changes to pd, by replacing strings with references.
+	// Therefore, use unmarshal to get expected profiles with resolved string references
+	unmarshaler := &pprofile.JSONUnmarshaler{}
+	expected, err := unmarshaler.UnmarshalProfiles(b[:len(b)-1]) // remove trailing newline
+	assert.NoError(t, err)
+
 	require.Len(t, sink.AllProfiles(), 1)
-	assert.Equal(t, pd, sink.AllProfiles()[0])
+	assert.Equal(t, expected, sink.AllProfiles()[0])
 	err = receiver.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
@@ -286,6 +292,11 @@ func TestFileMixedSignals(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
+	// Unmarshal to get expected profiles with resolved string references
+	punmarshaler := &pprofile.JSONUnmarshaler{}
+	expectedProfiles, err := punmarshaler.UnmarshalProfiles(b4)
+	assert.NoError(t, err)
+
 	require.Len(t, ms.AllMetrics(), 1)
 	assert.Equal(t, md, ms.AllMetrics()[0])
 	require.Len(t, ts.AllTraces(), 1)
@@ -293,7 +304,7 @@ func TestFileMixedSignals(t *testing.T) {
 	require.Len(t, ls.AllLogs(), 1)
 	assert.Equal(t, ld, ls.AllLogs()[0])
 	require.Len(t, ps.AllProfiles(), 1)
-	assert.Equal(t, pd, ps.AllProfiles()[0])
+	assert.Equal(t, expectedProfiles, ps.AllProfiles()[0])
 	err = mr.Shutdown(t.Context())
 	assert.NoError(t, err)
 	err = tr.Shutdown(t.Context())

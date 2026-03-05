@@ -1,4 +1,8 @@
+display_name: Pulsar Receiver
 type: pulsar
+
+description: |
+  The Pulsar Receiver receives logs, metrics, and traces from [Apache Pulsar](https://pulsar.apache.org/).
 
 status:
   class: receiver
