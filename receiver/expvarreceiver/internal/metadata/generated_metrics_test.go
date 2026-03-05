@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -51,9 +57,38 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["ProcessRuntimeMemstatsBuckHashSys"] = mb.metricProcessRuntimeMemstatsBuckHashSys.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsFrees"] = mb.metricProcessRuntimeMemstatsFrees.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsGcCPUFraction"] = mb.metricProcessRuntimeMemstatsGcCPUFraction.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsGcSys"] = mb.metricProcessRuntimeMemstatsGcSys.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsHeapAlloc"] = mb.metricProcessRuntimeMemstatsHeapAlloc.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsHeapIdle"] = mb.metricProcessRuntimeMemstatsHeapIdle.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsHeapInuse"] = mb.metricProcessRuntimeMemstatsHeapInuse.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsHeapObjects"] = mb.metricProcessRuntimeMemstatsHeapObjects.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsHeapReleased"] = mb.metricProcessRuntimeMemstatsHeapReleased.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsHeapSys"] = mb.metricProcessRuntimeMemstatsHeapSys.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsLastPause"] = mb.metricProcessRuntimeMemstatsLastPause.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsLookups"] = mb.metricProcessRuntimeMemstatsLookups.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsMallocs"] = mb.metricProcessRuntimeMemstatsMallocs.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsMcacheInuse"] = mb.metricProcessRuntimeMemstatsMcacheInuse.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsMcacheSys"] = mb.metricProcessRuntimeMemstatsMcacheSys.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsMspanInuse"] = mb.metricProcessRuntimeMemstatsMspanInuse.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsMspanSys"] = mb.metricProcessRuntimeMemstatsMspanSys.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsNextGc"] = mb.metricProcessRuntimeMemstatsNextGc.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsNumForcedGc"] = mb.metricProcessRuntimeMemstatsNumForcedGc.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsNumGc"] = mb.metricProcessRuntimeMemstatsNumGc.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsOtherSys"] = mb.metricProcessRuntimeMemstatsOtherSys.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsPauseTotal"] = mb.metricProcessRuntimeMemstatsPauseTotal.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsStackInuse"] = mb.metricProcessRuntimeMemstatsStackInuse.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsStackSys"] = mb.metricProcessRuntimeMemstatsStackSys.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsSys"] = mb.metricProcessRuntimeMemstatsSys.config.AggregationStrategy
+			aggMap["ProcessRuntimeMemstatsTotalAlloc"] = mb.metricProcessRuntimeMemstatsTotalAlloc.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -61,107 +96,213 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsBuckHashSysDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsBuckHashSysDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsFreesDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsFreesDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsGcCPUFractionDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsGcCPUFractionDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsGcSysDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsGcSysDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapAllocDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsHeapAllocDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapIdleDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsHeapIdleDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapInuseDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsHeapInuseDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapObjectsDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsHeapObjectsDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapReleasedDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsHeapReleasedDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapSysDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsHeapSysDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsLastPauseDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsLastPauseDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsLookupsDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsLookupsDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMallocsDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsMallocsDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMcacheInuseDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsMcacheInuseDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMcacheSysDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsMcacheSysDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMspanInuseDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsMspanInuseDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMspanSysDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsMspanSysDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsNextGcDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsNextGcDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsNumForcedGcDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsNumForcedGcDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsNumGcDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsNumGcDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsOtherSysDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsOtherSysDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsPauseTotalDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsPauseTotalDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsStackInuseDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsStackInuseDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsStackSysDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsStackSysDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsSysDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsSysDataPoint(ts, 3)
+			}
 
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsTotalAllocDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessRuntimeMemstatsTotalAllocDataPoint(ts, 3)
+			}
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsBuckHashSys.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsFrees.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsGcCPUFraction.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsGcSys.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsHeapAlloc.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsHeapIdle.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsHeapInuse.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsHeapObjects.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsHeapReleased.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsHeapSys.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsLastPause.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsLookups.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsMallocs.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsMcacheInuse.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsMcacheSys.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsMspanInuse.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsMspanSys.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsNextGc.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsNumForcedGc.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsNumGc.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsOtherSys.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsPauseTotal.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsStackInuse.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsStackSys.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsSys.aggDataPoints)
+				assert.Empty(t, mb.metricProcessRuntimeMemstatsTotalAlloc.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -183,365 +324,1011 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "process.runtime.memstats.buck_hash_sys":
-					assert.False(t, validatedMetrics["process.runtime.memstats.buck_hash_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.buck_hash_sys")
-					validatedMetrics["process.runtime.memstats.buck_hash_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory in profiling bucket hash tables.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.buck_hash_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.buck_hash_sys")
+						validatedMetrics["process.runtime.memstats.buck_hash_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in profiling bucket hash tables.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.buck_hash_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.buck_hash_sys")
+						validatedMetrics["process.runtime.memstats.buck_hash_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in profiling bucket hash tables.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.buck_hash_sys"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.frees":
-					assert.False(t, validatedMetrics["process.runtime.memstats.frees"], "Found a duplicate in the metrics slice: process.runtime.memstats.frees")
-					validatedMetrics["process.runtime.memstats.frees"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative count of heap objects freed.", ms.At(i).Description())
-					assert.Equal(t, "{objects}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.frees"], "Found a duplicate in the metrics slice: process.runtime.memstats.frees")
+						validatedMetrics["process.runtime.memstats.frees"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative count of heap objects freed.", ms.At(i).Description())
+						assert.Equal(t, "{objects}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.frees"], "Found a duplicate in the metrics slice: process.runtime.memstats.frees")
+						validatedMetrics["process.runtime.memstats.frees"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative count of heap objects freed.", ms.At(i).Description())
+						assert.Equal(t, "{objects}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.frees"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.gc_cpu_fraction":
-					assert.False(t, validatedMetrics["process.runtime.memstats.gc_cpu_fraction"], "Found a duplicate in the metrics slice: process.runtime.memstats.gc_cpu_fraction")
-					validatedMetrics["process.runtime.memstats.gc_cpu_fraction"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The fraction of this program's available CPU time used by the GC since the program started.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.gc_cpu_fraction"], "Found a duplicate in the metrics slice: process.runtime.memstats.gc_cpu_fraction")
+						validatedMetrics["process.runtime.memstats.gc_cpu_fraction"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The fraction of this program's available CPU time used by the GC since the program started.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.gc_cpu_fraction"], "Found a duplicate in the metrics slice: process.runtime.memstats.gc_cpu_fraction")
+						validatedMetrics["process.runtime.memstats.gc_cpu_fraction"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The fraction of this program's available CPU time used by the GC since the program started.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["process.runtime.memstats.gc_cpu_fraction"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "process.runtime.memstats.gc_sys":
-					assert.False(t, validatedMetrics["process.runtime.memstats.gc_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.gc_sys")
-					validatedMetrics["process.runtime.memstats.gc_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory in garbage collection metadata.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.gc_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.gc_sys")
+						validatedMetrics["process.runtime.memstats.gc_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in garbage collection metadata.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.gc_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.gc_sys")
+						validatedMetrics["process.runtime.memstats.gc_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in garbage collection metadata.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.gc_sys"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.heap_alloc":
-					assert.False(t, validatedMetrics["process.runtime.memstats.heap_alloc"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_alloc")
-					validatedMetrics["process.runtime.memstats.heap_alloc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of allocated heap objects.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_alloc"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_alloc")
+						validatedMetrics["process.runtime.memstats.heap_alloc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of allocated heap objects.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_alloc"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_alloc")
+						validatedMetrics["process.runtime.memstats.heap_alloc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of allocated heap objects.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.heap_alloc"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.heap_idle":
-					assert.False(t, validatedMetrics["process.runtime.memstats.heap_idle"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_idle")
-					validatedMetrics["process.runtime.memstats.heap_idle"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes in idle (unused) spans.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_idle"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_idle")
+						validatedMetrics["process.runtime.memstats.heap_idle"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes in idle (unused) spans.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_idle"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_idle")
+						validatedMetrics["process.runtime.memstats.heap_idle"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes in idle (unused) spans.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.heap_idle"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.heap_inuse":
-					assert.False(t, validatedMetrics["process.runtime.memstats.heap_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_inuse")
-					validatedMetrics["process.runtime.memstats.heap_inuse"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes in in-use spans.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_inuse")
+						validatedMetrics["process.runtime.memstats.heap_inuse"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes in in-use spans.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_inuse")
+						validatedMetrics["process.runtime.memstats.heap_inuse"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes in in-use spans.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.heap_inuse"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.heap_objects":
-					assert.False(t, validatedMetrics["process.runtime.memstats.heap_objects"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_objects")
-					validatedMetrics["process.runtime.memstats.heap_objects"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of allocated heap objects.", ms.At(i).Description())
-					assert.Equal(t, "{objects}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_objects"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_objects")
+						validatedMetrics["process.runtime.memstats.heap_objects"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of allocated heap objects.", ms.At(i).Description())
+						assert.Equal(t, "{objects}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_objects"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_objects")
+						validatedMetrics["process.runtime.memstats.heap_objects"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of allocated heap objects.", ms.At(i).Description())
+						assert.Equal(t, "{objects}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.heap_objects"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.heap_released":
-					assert.False(t, validatedMetrics["process.runtime.memstats.heap_released"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_released")
-					validatedMetrics["process.runtime.memstats.heap_released"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of physical memory returned to the OS.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_released"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_released")
+						validatedMetrics["process.runtime.memstats.heap_released"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of physical memory returned to the OS.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_released"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_released")
+						validatedMetrics["process.runtime.memstats.heap_released"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of physical memory returned to the OS.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.heap_released"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.heap_sys":
-					assert.False(t, validatedMetrics["process.runtime.memstats.heap_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_sys")
-					validatedMetrics["process.runtime.memstats.heap_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of heap memory obtained by the OS.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_sys")
+						validatedMetrics["process.runtime.memstats.heap_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of heap memory obtained by the OS.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.heap_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_sys")
+						validatedMetrics["process.runtime.memstats.heap_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of heap memory obtained by the OS.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.heap_sys"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.last_pause":
-					assert.False(t, validatedMetrics["process.runtime.memstats.last_pause"], "Found a duplicate in the metrics slice: process.runtime.memstats.last_pause")
-					validatedMetrics["process.runtime.memstats.last_pause"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The most recent stop-the-world pause time.", ms.At(i).Description())
-					assert.Equal(t, "ns", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.last_pause"], "Found a duplicate in the metrics slice: process.runtime.memstats.last_pause")
+						validatedMetrics["process.runtime.memstats.last_pause"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The most recent stop-the-world pause time.", ms.At(i).Description())
+						assert.Equal(t, "ns", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.last_pause"], "Found a duplicate in the metrics slice: process.runtime.memstats.last_pause")
+						validatedMetrics["process.runtime.memstats.last_pause"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "The most recent stop-the-world pause time.", ms.At(i).Description())
+						assert.Equal(t, "ns", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.last_pause"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.lookups":
-					assert.False(t, validatedMetrics["process.runtime.memstats.lookups"], "Found a duplicate in the metrics slice: process.runtime.memstats.lookups")
-					validatedMetrics["process.runtime.memstats.lookups"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of pointer lookups performed by the runtime.", ms.At(i).Description())
-					assert.Equal(t, "{lookups}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.lookups"], "Found a duplicate in the metrics slice: process.runtime.memstats.lookups")
+						validatedMetrics["process.runtime.memstats.lookups"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of pointer lookups performed by the runtime.", ms.At(i).Description())
+						assert.Equal(t, "{lookups}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.lookups"], "Found a duplicate in the metrics slice: process.runtime.memstats.lookups")
+						validatedMetrics["process.runtime.memstats.lookups"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of pointer lookups performed by the runtime.", ms.At(i).Description())
+						assert.Equal(t, "{lookups}", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.lookups"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.mallocs":
-					assert.False(t, validatedMetrics["process.runtime.memstats.mallocs"], "Found a duplicate in the metrics slice: process.runtime.memstats.mallocs")
-					validatedMetrics["process.runtime.memstats.mallocs"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative count of heap objects allocated.", ms.At(i).Description())
-					assert.Equal(t, "{objects}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mallocs"], "Found a duplicate in the metrics slice: process.runtime.memstats.mallocs")
+						validatedMetrics["process.runtime.memstats.mallocs"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative count of heap objects allocated.", ms.At(i).Description())
+						assert.Equal(t, "{objects}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mallocs"], "Found a duplicate in the metrics slice: process.runtime.memstats.mallocs")
+						validatedMetrics["process.runtime.memstats.mallocs"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative count of heap objects allocated.", ms.At(i).Description())
+						assert.Equal(t, "{objects}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.mallocs"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.mcache_inuse":
-					assert.False(t, validatedMetrics["process.runtime.memstats.mcache_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.mcache_inuse")
-					validatedMetrics["process.runtime.memstats.mcache_inuse"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of allocated mcache structures.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mcache_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.mcache_inuse")
+						validatedMetrics["process.runtime.memstats.mcache_inuse"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of allocated mcache structures.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mcache_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.mcache_inuse")
+						validatedMetrics["process.runtime.memstats.mcache_inuse"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of allocated mcache structures.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.mcache_inuse"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.mcache_sys":
-					assert.False(t, validatedMetrics["process.runtime.memstats.mcache_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.mcache_sys")
-					validatedMetrics["process.runtime.memstats.mcache_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory obtained from the OS for mcache structures.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mcache_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.mcache_sys")
+						validatedMetrics["process.runtime.memstats.mcache_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory obtained from the OS for mcache structures.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mcache_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.mcache_sys")
+						validatedMetrics["process.runtime.memstats.mcache_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory obtained from the OS for mcache structures.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.mcache_sys"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.mspan_inuse":
-					assert.False(t, validatedMetrics["process.runtime.memstats.mspan_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.mspan_inuse")
-					validatedMetrics["process.runtime.memstats.mspan_inuse"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of allocated mspan structures.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mspan_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.mspan_inuse")
+						validatedMetrics["process.runtime.memstats.mspan_inuse"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of allocated mspan structures.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mspan_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.mspan_inuse")
+						validatedMetrics["process.runtime.memstats.mspan_inuse"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of allocated mspan structures.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.mspan_inuse"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.mspan_sys":
-					assert.False(t, validatedMetrics["process.runtime.memstats.mspan_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.mspan_sys")
-					validatedMetrics["process.runtime.memstats.mspan_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory obtained from the OS for mspan structures.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mspan_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.mspan_sys")
+						validatedMetrics["process.runtime.memstats.mspan_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory obtained from the OS for mspan structures.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.mspan_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.mspan_sys")
+						validatedMetrics["process.runtime.memstats.mspan_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory obtained from the OS for mspan structures.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.mspan_sys"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.next_gc":
-					assert.False(t, validatedMetrics["process.runtime.memstats.next_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.next_gc")
-					validatedMetrics["process.runtime.memstats.next_gc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The target heap size of the next GC cycle.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.next_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.next_gc")
+						validatedMetrics["process.runtime.memstats.next_gc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The target heap size of the next GC cycle.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.next_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.next_gc")
+						validatedMetrics["process.runtime.memstats.next_gc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The target heap size of the next GC cycle.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.next_gc"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.num_forced_gc":
-					assert.False(t, validatedMetrics["process.runtime.memstats.num_forced_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.num_forced_gc")
-					validatedMetrics["process.runtime.memstats.num_forced_gc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of GC cycles that were forced by the application calling the GC function.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.num_forced_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.num_forced_gc")
+						validatedMetrics["process.runtime.memstats.num_forced_gc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of GC cycles that were forced by the application calling the GC function.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.num_forced_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.num_forced_gc")
+						validatedMetrics["process.runtime.memstats.num_forced_gc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of GC cycles that were forced by the application calling the GC function.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.num_forced_gc"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.num_gc":
-					assert.False(t, validatedMetrics["process.runtime.memstats.num_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.num_gc")
-					validatedMetrics["process.runtime.memstats.num_gc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of completed GC cycles.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.num_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.num_gc")
+						validatedMetrics["process.runtime.memstats.num_gc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of completed GC cycles.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.num_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.num_gc")
+						validatedMetrics["process.runtime.memstats.num_gc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of completed GC cycles.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.num_gc"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.other_sys":
-					assert.False(t, validatedMetrics["process.runtime.memstats.other_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.other_sys")
-					validatedMetrics["process.runtime.memstats.other_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory in miscellaneous off-heap runtime allocations.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.other_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.other_sys")
+						validatedMetrics["process.runtime.memstats.other_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in miscellaneous off-heap runtime allocations.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.other_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.other_sys")
+						validatedMetrics["process.runtime.memstats.other_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in miscellaneous off-heap runtime allocations.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.other_sys"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.pause_total":
-					assert.False(t, validatedMetrics["process.runtime.memstats.pause_total"], "Found a duplicate in the metrics slice: process.runtime.memstats.pause_total")
-					validatedMetrics["process.runtime.memstats.pause_total"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The cumulative nanoseconds in GC stop-the-world pauses since the program started.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.pause_total"], "Found a duplicate in the metrics slice: process.runtime.memstats.pause_total")
+						validatedMetrics["process.runtime.memstats.pause_total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative nanoseconds in GC stop-the-world pauses since the program started.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.pause_total"], "Found a duplicate in the metrics slice: process.runtime.memstats.pause_total")
+						validatedMetrics["process.runtime.memstats.pause_total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "The cumulative nanoseconds in GC stop-the-world pauses since the program started.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.pause_total"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.stack_inuse":
-					assert.False(t, validatedMetrics["process.runtime.memstats.stack_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.stack_inuse")
-					validatedMetrics["process.runtime.memstats.stack_inuse"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes in stack spans.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.stack_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.stack_inuse")
+						validatedMetrics["process.runtime.memstats.stack_inuse"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes in stack spans.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.stack_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.stack_inuse")
+						validatedMetrics["process.runtime.memstats.stack_inuse"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes in stack spans.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.stack_inuse"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.stack_sys":
-					assert.False(t, validatedMetrics["process.runtime.memstats.stack_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.stack_sys")
-					validatedMetrics["process.runtime.memstats.stack_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of stack memory obtained from the OS.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.stack_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.stack_sys")
+						validatedMetrics["process.runtime.memstats.stack_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of stack memory obtained from the OS.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.stack_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.stack_sys")
+						validatedMetrics["process.runtime.memstats.stack_sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of stack memory obtained from the OS.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.stack_sys"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.sys":
-					assert.False(t, validatedMetrics["process.runtime.memstats.sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.sys")
-					validatedMetrics["process.runtime.memstats.sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total bytes of memory obtained from the OS.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.sys")
+						validatedMetrics["process.runtime.memstats.sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total bytes of memory obtained from the OS.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.sys")
+						validatedMetrics["process.runtime.memstats.sys"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total bytes of memory obtained from the OS.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.sys"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				case "process.runtime.memstats.total_alloc":
-					assert.False(t, validatedMetrics["process.runtime.memstats.total_alloc"], "Found a duplicate in the metrics slice: process.runtime.memstats.total_alloc")
-					validatedMetrics["process.runtime.memstats.total_alloc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative bytes allocated for heap objects.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.runtime.memstats.total_alloc"], "Found a duplicate in the metrics slice: process.runtime.memstats.total_alloc")
+						validatedMetrics["process.runtime.memstats.total_alloc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative bytes allocated for heap objects.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["process.runtime.memstats.total_alloc"], "Found a duplicate in the metrics slice: process.runtime.memstats.total_alloc")
+						validatedMetrics["process.runtime.memstats.total_alloc"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative bytes allocated for heap objects.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.runtime.memstats.total_alloc"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+					}
 				}
 			}
 		})

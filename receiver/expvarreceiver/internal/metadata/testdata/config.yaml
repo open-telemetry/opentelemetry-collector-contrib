@@ -3,107 +3,239 @@ all_set:
   metrics:
     process.runtime.memstats.buck_hash_sys:
       enabled: true
+      attributes: []
     process.runtime.memstats.frees:
       enabled: true
+      attributes: []
     process.runtime.memstats.gc_cpu_fraction:
       enabled: true
+      attributes: []
     process.runtime.memstats.gc_sys:
       enabled: true
+      attributes: []
     process.runtime.memstats.heap_alloc:
       enabled: true
+      attributes: []
     process.runtime.memstats.heap_idle:
       enabled: true
+      attributes: []
     process.runtime.memstats.heap_inuse:
       enabled: true
+      attributes: []
     process.runtime.memstats.heap_objects:
       enabled: true
+      attributes: []
     process.runtime.memstats.heap_released:
       enabled: true
+      attributes: []
     process.runtime.memstats.heap_sys:
       enabled: true
+      attributes: []
     process.runtime.memstats.last_pause:
       enabled: true
+      attributes: []
     process.runtime.memstats.lookups:
       enabled: true
+      attributes: []
     process.runtime.memstats.mallocs:
       enabled: true
+      attributes: []
     process.runtime.memstats.mcache_inuse:
       enabled: true
+      attributes: []
     process.runtime.memstats.mcache_sys:
       enabled: true
+      attributes: []
     process.runtime.memstats.mspan_inuse:
       enabled: true
+      attributes: []
     process.runtime.memstats.mspan_sys:
       enabled: true
+      attributes: []
     process.runtime.memstats.next_gc:
       enabled: true
+      attributes: []
     process.runtime.memstats.num_forced_gc:
       enabled: true
+      attributes: []
     process.runtime.memstats.num_gc:
       enabled: true
+      attributes: []
     process.runtime.memstats.other_sys:
       enabled: true
+      attributes: []
     process.runtime.memstats.pause_total:
       enabled: true
+      attributes: []
     process.runtime.memstats.stack_inuse:
       enabled: true
+      attributes: []
     process.runtime.memstats.stack_sys:
       enabled: true
+      attributes: []
     process.runtime.memstats.sys:
       enabled: true
+      attributes: []
     process.runtime.memstats.total_alloc:
       enabled: true
+      attributes: []
+reaggregate_set:
+  metrics:
+    process.runtime.memstats.buck_hash_sys:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.frees:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.gc_cpu_fraction:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.gc_sys:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.heap_alloc:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.heap_idle:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.heap_inuse:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.heap_objects:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.heap_released:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.heap_sys:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.last_pause:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.lookups:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.mallocs:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.mcache_inuse:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.mcache_sys:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.mspan_inuse:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.mspan_sys:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.next_gc:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.num_forced_gc:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.num_gc:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.other_sys:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.pause_total:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.stack_inuse:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.stack_sys:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.sys:
+      enabled: true
+      attributes: []
+    process.runtime.memstats.total_alloc:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     process.runtime.memstats.buck_hash_sys:
       enabled: false
+      attributes: []
     process.runtime.memstats.frees:
       enabled: false
+      attributes: []
     process.runtime.memstats.gc_cpu_fraction:
       enabled: false
+      attributes: []
     process.runtime.memstats.gc_sys:
       enabled: false
+      attributes: []
     process.runtime.memstats.heap_alloc:
       enabled: false
+      attributes: []
     process.runtime.memstats.heap_idle:
       enabled: false
+      attributes: []
     process.runtime.memstats.heap_inuse:
       enabled: false
+      attributes: []
     process.runtime.memstats.heap_objects:
       enabled: false
+      attributes: []
     process.runtime.memstats.heap_released:
       enabled: false
+      attributes: []
     process.runtime.memstats.heap_sys:
       enabled: false
+      attributes: []
     process.runtime.memstats.last_pause:
       enabled: false
+      attributes: []
     process.runtime.memstats.lookups:
       enabled: false
+      attributes: []
     process.runtime.memstats.mallocs:
       enabled: false
+      attributes: []
     process.runtime.memstats.mcache_inuse:
       enabled: false
+      attributes: []
     process.runtime.memstats.mcache_sys:
       enabled: false
+      attributes: []
     process.runtime.memstats.mspan_inuse:
       enabled: false
+      attributes: []
     process.runtime.memstats.mspan_sys:
       enabled: false
+      attributes: []
     process.runtime.memstats.next_gc:
       enabled: false
+      attributes: []
     process.runtime.memstats.num_forced_gc:
       enabled: false
+      attributes: []
     process.runtime.memstats.num_gc:
       enabled: false
+      attributes: []
     process.runtime.memstats.other_sys:
       enabled: false
+      attributes: []
     process.runtime.memstats.pause_total:
       enabled: false
+      attributes: []
     process.runtime.memstats.stack_inuse:
       enabled: false
+      attributes: []
     process.runtime.memstats.stack_sys:
       enabled: false
+      attributes: []
     process.runtime.memstats.sys:
       enabled: false
+      attributes: []
     process.runtime.memstats.total_alloc:
       enabled: false
+      attributes: []

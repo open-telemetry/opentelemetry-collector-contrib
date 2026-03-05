@@ -3,6 +3,9 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -10,6 +13,11 @@ import (
 type MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []string `mapstructure:"attributes"`
+	definedAttributes   []string
+	requiredAttributes  []string
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -21,9 +29,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+	for _, val := range ms.EnabledAttributes {
+		if !slices.Contains(ms.definedAttributes, val) {
+			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		}
+	}
+
+	for _, val := range ms.requiredAttributes {
+		if !slices.Contains(ms.EnabledAttributes, val) {
+			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		}
+	}
+
+	if ms.AggregationStrategy != AggregationStrategySum &&
+		ms.AggregationStrategy != AggregationStrategyAvg &&
+		ms.AggregationStrategy != AggregationStrategyMin &&
+		ms.AggregationStrategy != AggregationStrategyMax {
+		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for expvar metrics.
@@ -60,81 +91,211 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		ProcessRuntimeMemstatsBuckHashSys: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsFrees: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsGcCPUFraction: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsGcSys: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsHeapAlloc: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsHeapIdle: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsHeapInuse: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsHeapObjects: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsHeapReleased: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsHeapSys: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsLastPause: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsLookups: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsMallocs: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsMcacheInuse: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsMcacheSys: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsMspanInuse: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsMspanSys: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsNextGc: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsNumForcedGc: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsNumGc: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsOtherSys: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsPauseTotal: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsStackInuse: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsStackSys: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsSys: MetricConfig{
 			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 		ProcessRuntimeMemstatsTotalAlloc: MetricConfig{
 			Enabled: false,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{},
+			EnabledAttributes:   []string{},
 		},
 	}
 }
