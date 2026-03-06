@@ -36,7 +36,7 @@ components:
     - exporter/awskinesis
     - exporter/awss3
     - exporter/awsxray
-    - exporter/azureblob
+    - exporter/azure_blob
     - exporter/azuredataexplorer
     - exporter/azuremonitor
     - exporter/bmchelix
