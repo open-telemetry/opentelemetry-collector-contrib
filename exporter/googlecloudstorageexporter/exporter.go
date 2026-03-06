@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -27,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"google.golang.org/api/googleapi"
 )
 
 type poolItem interface {
@@ -153,14 +151,6 @@ func newStorageExporter(
 	}, nil
 }
 
-func isBucketConflictError(err error) bool {
-	var gErr *googleapi.Error
-	if !errors.As(err, &gErr) {
-		return false
-	}
-	return gErr.Code == http.StatusConflict
-}
-
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
 	// Initialize default marshalers
 	s.logsMarshaler = &plog.JSONMarshaler{}
@@ -193,21 +183,31 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	if err != nil {
 		return fmt.Errorf("failed to create storage client: %w", err)
 	}
-	err = client.Bucket(s.cfg.Bucket.Name).Create(ctx, s.cfg.Bucket.ProjectID, &storage.BucketAttrs{
-		Location: s.cfg.Bucket.Region,
-	})
-	if err != nil {
-		if !s.cfg.Bucket.ReuseIfExists {
+
+	bucketHandle := client.Bucket(s.cfg.Bucket.Name)
+
+	if s.cfg.Bucket.ReuseIfExists {
+		// Check if bucket exists without attempting to create it
+		_, err = bucketHandle.Attrs(ctx)
+		if err != nil {
+			if errors.Is(err, storage.ErrBucketNotExist) {
+				return fmt.Errorf("bucket %q does not exist and reuse_if_exists is true (bucket must be created externally): %w", s.cfg.Bucket.Name, err)
+			}
+			// Return error if it's a permission issue or network failure
+			return fmt.Errorf("failed to get bucket attributes: %w", err)
+		}
+		s.logger.Info("Using existing bucket", zap.String("bucket", s.cfg.Bucket.Name))
+	} else {
+		// Attempt to create the bucket
+		err = bucketHandle.Create(ctx, s.cfg.Bucket.ProjectID, &storage.BucketAttrs{
+			Location: s.cfg.Bucket.Region,
+		})
+		if err != nil {
 			return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
 		}
-		if !isBucketConflictError(err) {
-			return fmt.Errorf("unexpected error creating the storage bucket %q: %w", s.cfg.Bucket.Name, err)
-		}
-		// otherwise bucket exists and will be reused
-		s.logger.Info("Existing bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
-	} else {
 		s.logger.Info("Created bucket", zap.String("bucket", s.cfg.Bucket.Name))
 	}
+
 	s.bucketHandle = client.Bucket(s.cfg.Bucket.Name)
 	s.storageClient = client
 	return nil

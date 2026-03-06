@@ -31,16 +31,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"cpu"},
 					},
-					SystemCPULogicalCount: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemCPUPhysicalCount: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					SystemCPULogicalCount:  MetricConfig{Enabled: true},
+					SystemCPUPhysicalCount: MetricConfig{Enabled: true},
 					SystemCPUTime: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -63,16 +55,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"cpu"},
 					},
-					SystemCPULogicalCount: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					SystemCPUPhysicalCount: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					SystemCPULogicalCount:  MetricConfig{Enabled: false},
+					SystemCPUPhysicalCount: MetricConfig{Enabled: false},
 					SystemCPUTime: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,

@@ -568,35 +568,42 @@ func (c *franzConsumer) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration
 	if err != nil {
 		outcome = "failure"
 	}
+	opt := metric.WithAttributeSet(attribute.NewSet(
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		attribute.String("outcome", outcome),
+	))
 	c.telemetryBuilder.KafkaBrokerConnects.Add(
 		context.Background(),
 		1,
-		metric.WithAttributes(
-			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-			attribute.String("outcome", outcome),
-		),
+		opt,
 	)
 }
 
 func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
+	opt := metric.WithAttributeSet(attribute.NewSet(
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+	))
 	c.telemetryBuilder.KafkaBrokerClosed.Add(
 		context.Background(),
 		1,
-		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
+		opt,
 	)
 }
 
 func (c *franzConsumer) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
+	opt := metric.WithAttributeSet(attribute.NewSet(
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+	))
 	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
 	c.telemetryBuilder.KafkaBrokerThrottlingDuration.Record(
 		context.Background(),
 		throttleInterval.Milliseconds(),
-		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
+		opt,
 	)
 	c.telemetryBuilder.KafkaBrokerThrottlingLatency.Record(
 		context.Background(),
 		throttleInterval.Seconds(),
-		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
+		opt,
 	)
 }
 
@@ -605,55 +612,53 @@ func (c *franzConsumer) OnBrokerRead(meta kgo.BrokerMetadata, _ int16, _ int, re
 	if err != nil {
 		outcome = "failure"
 	}
+	opt := metric.WithAttributeSet(attribute.NewSet(
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		attribute.String("outcome", outcome),
+	))
 	// KafkaReceiverLatency is deprecated in favor of KafkaReceiverReadLatency.
 	c.telemetryBuilder.KafkaReceiverLatency.Record(
 		context.Background(),
 		readWait.Milliseconds()+timeToRead.Milliseconds(),
-		metric.WithAttributes(
-			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-			attribute.String("outcome", outcome),
-		),
+		opt,
 	)
 	c.telemetryBuilder.KafkaReceiverReadLatency.Record(
 		context.Background(),
 		readWait.Seconds()+timeToRead.Seconds(),
-		metric.WithAttributes(
-			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-			attribute.String("outcome", outcome),
-		),
+		opt,
 	)
 }
 
 // OnFetchBatchRead is called once per batch read from Kafka.
 // https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookFetchBatchRead
 func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, partition int32, m kgo.FetchBatchMetrics) {
-	attrs := []attribute.KeyValue{
+	opt := metric.WithAttributeSet(attribute.NewSet(
 		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		attribute.String("topic", topic),
 		attribute.Int64("partition", int64(partition)),
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
 		attribute.String("outcome", "success"),
-	}
+	))
 	// KafkaReceiverMessages is deprecated in favor of KafkaReceiverRecords.
 	c.telemetryBuilder.KafkaReceiverMessages.Add(
 		context.Background(),
 		int64(m.NumRecords),
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 	c.telemetryBuilder.KafkaReceiverRecords.Add(
 		context.Background(),
 		int64(m.NumRecords),
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 	c.telemetryBuilder.KafkaReceiverBytes.Add(
 		context.Background(),
 		int64(m.CompressedBytes),
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 	c.telemetryBuilder.KafkaReceiverBytesUncompressed.Add(
 		context.Background(),
 		int64(m.UncompressedBytes),
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 }
 
@@ -670,13 +675,14 @@ func (c franzConsumerWithOptionalHooks) OnFetchRecordUnbuffered(r *kgo.Record, p
 	if !polled {
 		return // Record metrics when polled by `client.PollRecords()`.
 	}
+	opt := metric.WithAttributeSet(attribute.NewSet(
+		attribute.String("topic", r.Topic),
+		attribute.Int64("partition", int64(r.Partition)),
+	))
 	c.telemetryBuilder.KafkaReceiverRecordsDelay.Record(
 		context.Background(),
 		time.Since(r.Timestamp).Seconds(),
-		metric.WithAttributes(
-			attribute.String("topic", r.Topic),
-			attribute.Int64("partition", int64(r.Partition)),
-		),
+		opt,
 	)
 }
 

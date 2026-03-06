@@ -6,7 +6,6 @@ all_set:
       attributes: ["broker"]
     kafka.brokers:
       enabled: true
-      attributes: []
     kafka.consumer_group.lag:
       enabled: true
       attributes: ["group","topic","partition"]
@@ -59,7 +58,6 @@ reaggregate_set:
       attributes: []
     kafka.brokers:
       enabled: true
-      attributes: []
     kafka.consumer_group.lag:
       enabled: true
       attributes: []
@@ -112,7 +110,6 @@ none_set:
       attributes: ["broker"]
     kafka.brokers:
       enabled: false
-      attributes: []
     kafka.consumer_group.lag:
       enabled: false
       attributes: ["group","topic","partition"]
