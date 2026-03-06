@@ -268,7 +268,7 @@ func (r ResourceLogsUnmarshaler) storeRawLog(allResourceScopeLogs map[scopeKey]p
 	// because it doesn't have a "category" field which we rely on
 	// So we will save incoming Log Record as a JSON string into Body just
 	// not to loose data
-	scopeLogs := r.getScopeLog(allResourceScopeLogs, logsResourceAttributes{}, constants.AzureFormatResourceLog)
+	scopeLogs := r.getScopeLog(allResourceScopeLogs, logsResourceAttributes{}, constants.FormatGeneric)
 	lr := scopeLogs.LogRecords().AppendEmpty()
 	// We couldn't get timestamp from incoming Record, so to keep the Log
 	// we will set timestamp to current time

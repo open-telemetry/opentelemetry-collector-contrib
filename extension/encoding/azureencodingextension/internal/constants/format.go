@@ -22,12 +22,13 @@ const (
 	FormatMessaging          Format = "azure.messaging"
 	FormatStorage            Format = "azure.storage"
 
-	// AzureFormatResourceLog is the value for unknown/raw Azure resource logs.
-	AzureFormatResourceLog Format = "azure.resource"
+	// FormatGeneric is the value when a generic parser is applied: the log has an Azure category
+	// but no dedicated parser yet.
+	FormatGeneric Format = "azure.generic"
 )
 
 // FormatForCategory returns the encoding.format value (log family) for the given Azure log category.
-// Unknown categories return AzureFormatResourceLog.
+// Unsupported categories return FormatGeneric (generic parser applied).
 func FormatForCategory(category string) Format {
 	switch category {
 	case "ApplicationGatewayAccessLog", "ApplicationGatewayPerformanceLog", "ApplicationGatewayFirewallLog":
@@ -47,11 +48,9 @@ func FormatForCategory(category string) Format {
 		return FormatFunctionApp
 	case "StorageRead", "StorageWrite", "StorageDelete":
 		return FormatStorage
-	case "AuditEvent":
-		return FormatAudit
 	case "Administrative", "Alert", "Autoscale", "Policy", "Recommendation", "ResourceHealth", "Security", "ServiceHealth":
 		return FormatActivity
 	default:
-		return AzureFormatResourceLog
+		return FormatGeneric
 	}
 }
