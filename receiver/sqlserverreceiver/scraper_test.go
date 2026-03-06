@@ -89,6 +89,11 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// cfg.QuerySample.Enabled = enabled
 }
 
+func enableLogResourceAttributesForGoldenTests(cfg *Config) {
+	cfg.LogsBuilderConfig.ResourceAttributes.SqlserverComputerName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+}
+
 func TestEmptyScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
@@ -379,6 +384,7 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	enableLogResourceAttributesForGoldenTests(cfg)
 	cfg.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
@@ -454,6 +460,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	enableLogResourceAttributesForGoldenTests(cfg)
 	cfg.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
@@ -603,6 +610,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			cfg.Port = 1433
 			cfg.Server = "0.0.0.0"
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+			enableLogResourceAttributesForGoldenTests(cfg)
 			assert.NoError(t, cfg.Validate())
 
 			configureAllScraperMetricsAndEvents(cfg, false)
@@ -632,6 +640,118 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			assert.NoError(t, errs)
 		})
 	}
+}
+
+func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
+	cfg.LogsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+	cfg.Events.DbServerQuerySample.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Events.DbServerQuerySample.Enabled = true
+
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.Len(t, scrapers, 1)
+
+	scraper := scrapers[0]
+	scraper.client = mockClient{
+		instanceName:    scraper.config.InstanceName,
+		SQL:             scraper.sqlQuery,
+		maxRowsPerQuery: 100,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, actualLogs.ResourceLogs().Len())
+
+	resourceAttributes := actualLogs.ResourceLogs().At(0).Resource().Attributes()
+	hostName, exists := resourceAttributes.Get("host.name")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com", hostName.AsString())
+
+	serviceInstanceID, exists := resourceAttributes.Get("service.instance.id")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com:1434", serviceInstanceID.AsString())
+
+	serverAddress, exists := resourceAttributes.Get("server.address")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com", serverAddress.AsString())
+
+	serverPort, exists := resourceAttributes.Get("server.port")
+	assert.True(t, exists)
+	assert.Equal(t, int64(1434), serverPort.Int())
+}
+
+func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
+	cfg.LogsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+	cfg.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.Len(t, scrapers, 1)
+
+	scraper := scrapers[0]
+	const totalElapsedTime = "total_elapsed_time"
+	const rowsReturned = "total_rows"
+	const totalWorkerTime = "total_worker_time"
+	const logicalReads = "total_logical_reads"
+	const logicalWrites = "total_logical_writes"
+	const physicalReads = "total_physical_reads"
+	const executionCount = "execution_count"
+	const totalGrant = "total_grant_kb"
+
+	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
+	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 846)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
+
+	scraper.client = mockClient{
+		instanceName:        scraper.config.InstanceName,
+		SQL:                 scraper.sqlQuery,
+		maxQuerySampleCount: 1000,
+		lookbackTime:        20,
+		topQueryCount:       200,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, actualLogs.ResourceLogs().Len())
+
+	resourceAttributes := actualLogs.ResourceLogs().At(0).Resource().Attributes()
+	hostName, exists := resourceAttributes.Get("host.name")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com", hostName.AsString())
+
+	serviceInstanceID, exists := resourceAttributes.Get("service.instance.id")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com:1434", serviceInstanceID.AsString())
+
+	serverAddress, exists := resourceAttributes.Get("server.address")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com", serverAddress.AsString())
+
+	serverPort, exists := resourceAttributes.Get("server.port")
+	assert.True(t, exists)
+	assert.Equal(t, int64(1434), serverPort.Int())
 }
 
 func TestSetupResourceBuilder(t *testing.T) {
@@ -695,7 +815,7 @@ func TestSetupResourceBuilder(t *testing.T) {
 				instanceNameKey: "test-instance",
 			}
 
-			rb := scraper.setupResourceBuilder(row)
+			rb := scraper.setupResourceBuilder(scraper.mb.NewResourceBuilder(), row)
 			resource := rb.Emit()
 
 			hostName, exists := resource.Attributes().Get("host.name")
