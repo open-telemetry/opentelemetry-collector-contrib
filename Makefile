@@ -706,7 +706,7 @@ clean:
 generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
-SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
+SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*internal/metadata/*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
 
 .PHONY: generate-schemas
 generate-schemas:
