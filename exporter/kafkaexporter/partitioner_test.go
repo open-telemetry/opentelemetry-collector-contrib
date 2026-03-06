@@ -118,11 +118,11 @@ func TestMergeCtx(t *testing.T) {
 			metadataKeys: []string{"key1", "key2"},
 			ctx1Metadata: map[string][]string{
 				"key1": nil,
-				"key2": []string{},
+				"key2": {},
 			},
 			ctx2Metadata: map[string][]string{
 				"key1": nil,
-				"key2": []string{},
+				"key2": {},
 			},
 			expectedAbsent: []string{"key1", "key2"},
 		},
