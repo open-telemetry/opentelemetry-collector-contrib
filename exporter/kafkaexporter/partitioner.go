@@ -40,7 +40,7 @@ func (p metadataKeysPartitioner) GetKey(
 }
 
 func (p metadataKeysPartitioner) MergeCtx(
-	ctx1, ctx2 context.Context,
+	ctx1, _ context.Context,
 ) context.Context {
 	m1 := client.FromContext(ctx1).Metadata
 

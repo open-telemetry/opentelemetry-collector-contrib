@@ -73,13 +73,13 @@ func TestMergeCtx(t *testing.T) {
 			name:         "preserves included metadata keys from first context",
 			metadataKeys: []string{"key1", "key2"},
 			ctx1Metadata: map[string][]string{
-				"key1":       {"val1"},
-				"key2":       {"val2.1", "val2.2"},
+				"key1":        {"val1"},
+				"key2":        {"val2.1", "val2.2"},
 				"ignored-key": {"ctx1"},
 			},
 			ctx2Metadata: map[string][]string{
-				"key1":       {"val1"},
-				"key2":       {"val2.1", "val2.2"},
+				"key1":        {"val1"},
+				"key2":        {"val2.1", "val2.2"},
 				"ignored-key": {"ctx2"},
 			},
 			expected: map[string][]string{
