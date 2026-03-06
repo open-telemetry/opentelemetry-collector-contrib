@@ -78,6 +78,8 @@ func newKubeletScraper(
 			metricsConfig.Metrics.K8sPodCPULimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sPodCPURequest.Enabled ||
 			metricsConfig.Metrics.K8sPodCPURequestUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodMemoryLimit.Enabled ||
+			metricsConfig.Metrics.K8sPodMemoryRequest.Enabled ||
 			metricsConfig.Metrics.K8sContainerCPULimit.Enabled ||
 			metricsConfig.Metrics.K8sContainerCPULimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerCPURequest.Enabled ||
@@ -85,6 +87,7 @@ func newKubeletScraper(
 			metricsConfig.Metrics.K8sPodMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryLimit.Enabled ||
+			metricsConfig.Metrics.K8sContainerMemoryRequest.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
 		stopCh:   make(chan struct{}),

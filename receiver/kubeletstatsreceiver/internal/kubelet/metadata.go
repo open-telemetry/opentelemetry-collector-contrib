@@ -83,6 +83,26 @@ func getResources(r *v1.ResourceRequirements) resources {
 	}
 }
 
+func addCPUResource(defined *bool, sum *float64, val float64) {
+	if *defined && val == 0 {
+		*defined = false
+		*sum = 0
+	}
+	if *defined {
+		*sum += val
+	}
+}
+
+func addMemoryResource(defined *bool, sum *int64, val int64) {
+	if *defined && val == 0 {
+		*defined = false
+		*sum = 0
+	}
+	if *defined {
+		*sum += val
+	}
+}
+
 func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeInfo NodeInfo,
 	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error,
 ) Metadata {
@@ -98,17 +118,32 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeInfo Node
 	if podsMetadata != nil {
 		for i := range podsMetadata.Items {
 			pod := &podsMetadata.Items[i]
-			var podResource resources
+			podUID := string(pod.UID)
+
+			var sumPodResources resources
+			allCPULimit, allCPURequest := true, true
+			allMemoryLimit, allMemoryReq := true, true
 
 			if pod.Spec.Resources != nil {
-				podResource = getResources(pod.Spec.Resources)
-				m.podResources[string(pod.UID)] = podResource
+				m.podResources[podUID] = getResources(pod.Spec.Resources)
 			}
 
-			for i := range pod.Spec.Containers {
-				container := pod.Spec.Containers[i]
-				containerResource := getResources(&container.Resources)
-				m.containerResources[string(pod.UID)+container.Name] = containerResource
+			for j := range pod.Spec.Containers {
+				container := &pod.Spec.Containers[j]
+				r := getResources(&container.Resources)
+				m.containerResources[podUID+container.Name] = r
+
+				if _, ok := m.podResources[podUID]; !ok {
+					// Only sum container resources if pod-level resources are not present
+					addCPUResource(&allCPULimit, &sumPodResources.cpuLimit, r.cpuLimit)
+					addCPUResource(&allCPURequest, &sumPodResources.cpuRequest, r.cpuRequest)
+					addMemoryResource(&allMemoryLimit, &sumPodResources.memoryLimit, r.memoryLimit)
+					addMemoryResource(&allMemoryReq, &sumPodResources.memoryRequest, r.memoryRequest)
+				}
+			}
+
+			if _, ok := m.podResources[podUID]; !ok {
+				m.podResources[podUID] = sumPodResources
 			}
 		}
 	}

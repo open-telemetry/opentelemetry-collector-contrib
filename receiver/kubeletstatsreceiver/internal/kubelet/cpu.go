@@ -42,15 +42,11 @@ func addCPUUtilizationMetrics(
 	}
 	if r.cpuLimit > 0 {
 		cpuMetrics.LimitUtilization(mb, currentTime, usageCores/r.cpuLimit)
-		if cpuMetrics.Limit != nil {
-			cpuMetrics.Limit(mb, currentTime, r.cpuLimit)
-		}
+		cpuMetrics.Limit(mb, currentTime, r.cpuLimit)
 	}
 	if r.cpuRequest > 0 {
 		cpuMetrics.RequestUtilization(mb, currentTime, usageCores/r.cpuRequest)
-		if cpuMetrics.Request != nil {
-			cpuMetrics.Request(mb, currentTime, r.cpuRequest)
-		}
+		cpuMetrics.Request(mb, currentTime, r.cpuRequest)
 	}
 }
 

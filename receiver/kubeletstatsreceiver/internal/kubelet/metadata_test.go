@@ -60,6 +60,60 @@ func TestValidateMetadataLabelsConfig(t *testing.T) {
 	}
 }
 
+func TestAddCPUResource(t *testing.T) {
+	t.Run("value zero sets sum to zero", func(t *testing.T) {
+		defined, sum := true, 5.0
+		addCPUResource(&defined, &sum, 0)
+		assert.False(t, defined)
+		assert.Equal(t, 0.0, sum)
+	})
+	t.Run("val adds to sum", func(t *testing.T) {
+		defined, sum := true, 0.0
+		addCPUResource(&defined, &sum, 1.5)
+		assert.True(t, defined)
+		assert.InDelta(t, 1.5, sum, 0.01)
+	})
+	t.Run("val when not defined does not add to sum", func(t *testing.T) {
+		defined, sum := false, 0.0
+		addCPUResource(&defined, &sum, 2.0)
+		assert.Equal(t, 0.0, sum)
+	})
+	t.Run("multiple values adds to sum", func(t *testing.T) {
+		defined, sum := true, 0.0
+		addCPUResource(&defined, &sum, 0.5)
+		addCPUResource(&defined, &sum, 0.3)
+		assert.True(t, defined)
+		assert.InDelta(t, 0.8, sum, 0.01)
+	})
+}
+
+func TestAddMemoryResource(t *testing.T) {
+	t.Run("val zero sets sum to zero", func(t *testing.T) {
+		defined, sum := true, int64(1000)
+		addMemoryResource(&defined, &sum, 0)
+		assert.False(t, defined)
+		assert.Equal(t, int64(0), sum)
+	})
+	t.Run("val adds to sum", func(t *testing.T) {
+		defined, sum := true, int64(0)
+		addMemoryResource(&defined, &sum, 1024)
+		assert.True(t, defined)
+		assert.Equal(t, int64(1024), sum)
+	})
+	t.Run("val when not defined does not add to sum", func(t *testing.T) {
+		defined, sum := false, int64(0)
+		addMemoryResource(&defined, &sum, 2048)
+		assert.Equal(t, int64(0), sum)
+	})
+	t.Run("multiple values adds to sum", func(t *testing.T) {
+		defined, sum := true, int64(8*1024*1024*1024)              // 8GB
+		addMemoryResource(&defined, &sum, int64(4*1024*1024*1024)) // 4GB
+		addMemoryResource(&defined, &sum, int64(2*1024*1024*1024)) // 2GB
+		assert.True(t, defined)
+		assert.Equal(t, int64(14*1024*1024*1024), sum)
+	})
+}
+
 func TestSetExtraLabels(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -664,7 +718,123 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			wantContainerMemoryLimit: 1000000000,
 		},
 		{
-			name: "container limit not set but other is",
+			name: "pod has only requests",
+			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Spec: v1.PodSpec{
+							Resources: &v1.ResourceRequirements{
+								Requests: v1.ResourceList{
+									v1.ResourceCPU:    k8sresource.MustParse("500m"),
+									v1.ResourceMemory: k8sresource.MustParse("2G"),
+								},
+							},
+							Containers: []v1.Container{
+								{
+									Name: "container-1",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("250m"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("3G"),
+										},
+									},
+								},
+								{
+									Name: "container-2",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("250m"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, NodeInfo{}, nil),
+			podUID:                     "uid-1234",
+			containerName:              "container-2",
+			wantPodCPULimit:            0,
+			wantPodCPURequest:          0.5,
+			wantContainerCPULimit:      1,
+			wantContainerCPURequest:    0.25,
+			wantPodMemoryLimit:         0,
+			wantPodMemoryRequest:       2000000000,
+			wantContainerMemoryLimit:   1000000000,
+			wantContainerMemoryRequest: 1000000000,
+		},
+		{
+			name: "pod has only limits",
+			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Spec: v1.PodSpec{
+							Resources: &v1.ResourceRequirements{
+								Limits: v1.ResourceList{
+									v1.ResourceCPU:    k8sresource.MustParse("3"),
+									v1.ResourceMemory: k8sresource.MustParse("3G"),
+								},
+							},
+							Containers: []v1.Container{
+								{
+									Name: "container-1",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("500m"),
+											v1.ResourceMemory: k8sresource.MustParse("2G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+								{
+									Name: "container-2",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("500m"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("2"),
+											v1.ResourceMemory: k8sresource.MustParse("2G"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, NodeInfo{}, nil),
+			podUID:                     "uid-1234",
+			containerName:              "container-2",
+			wantPodCPULimit:            3,
+			wantPodCPURequest:          0,
+			wantContainerCPULimit:      2,
+			wantContainerCPURequest:    0.5,
+			wantPodMemoryLimit:         3000000000,
+			wantPodMemoryRequest:       0,
+			wantContainerMemoryLimit:   2000000000,
+			wantContainerMemoryRequest: 1000000000,
+		},
+		{
+			name: "container limit not set in container-2",
 			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -696,10 +866,67 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			}, NodeInfo{}, nil),
 			podUID:                     "uid-1234",
 			containerName:              "container-1",
+			wantPodCPULimit:            0,
+			wantPodCPURequest:          0,
+			wantPodMemoryLimit:         0,
+			wantPodMemoryRequest:       0,
 			wantContainerCPULimit:      1,
 			wantContainerCPURequest:    1,
 			wantContainerMemoryLimit:   1000000000,
 			wantContainerMemoryRequest: 1000000000,
+		},
+		{
+			name: "multiple pods - pod 1",
+			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{UID: "uid-1"},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "c1",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("100m"),
+											v1.ResourceMemory: k8sresource.MustParse("128Mi"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("200m"),
+											v1.ResourceMemory: k8sresource.MustParse("256Mi"),
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{UID: "uid-2"},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "c1",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("500m"),
+											v1.ResourceMemory: k8sresource.MustParse("512Mi"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, NodeInfo{}, nil),
+			podUID:                     "uid-1",
+			containerName:              "c1",
+			wantPodCPULimit:            0.2,
+			wantPodCPURequest:          0.1,
+			wantContainerCPULimit:      0.2,
+			wantContainerCPURequest:    0.1,
+			wantPodMemoryLimit:         268435456,
+			wantPodMemoryRequest:       134217728,
+			wantContainerMemoryLimit:   268435456,
+			wantContainerMemoryRequest: 134217728,
 		},
 	}
 	for _, tt := range tests {

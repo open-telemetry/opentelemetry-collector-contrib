@@ -142,13 +142,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sContainerCPULimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordK8sContainerCPULimitUtilizationDataPoint(ts, 1)
-
-			allMetricsCount++
 			mb.RecordK8sContainerCPUNodeUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordK8sContainerCPURequestDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerCPULimitUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordK8sContainerCPURequestUtilizationDataPoint(ts, 1)
@@ -157,10 +157,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sContainerMemoryLimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordK8sContainerMemoryLimitUtilizationDataPoint(ts, 1)
+			mb.RecordK8sContainerMemoryNodeUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordK8sContainerMemoryNodeUtilizationDataPoint(ts, 1)
+			mb.RecordK8sContainerMemoryRequestDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerMemoryLimitUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordK8sContainerMemoryRequestUtilizationDataPoint(ts, 1)
@@ -224,16 +227,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sPodCPULimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordK8sPodCPULimitUtilizationDataPoint(ts, 1)
-
-			allMetricsCount++
 			mb.RecordK8sPodCPUNodeUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordK8sPodCPURequestDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordK8sPodCPURequestUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -242,6 +239,12 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodCPUUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPodCPULimitUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPodCPURequestUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -259,6 +262,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordK8sPodMemoryLimitDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryMajorPageFaultsDataPoint(ts, 1)
@@ -269,6 +275,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryPageFaultsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPodMemoryRequestDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -520,18 +529,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.container.cpu.limit_utilization":
-					assert.False(t, validatedMetrics["k8s.container.cpu.limit_utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu.limit_utilization")
-					validatedMetrics["k8s.container.cpu.limit_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container cpu utilization as a ratio of the container's limits", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "k8s.container.cpu.node.utilization":
 					assert.False(t, validatedMetrics["k8s.container.cpu.node.utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu.node.utilization")
 					validatedMetrics["k8s.container.cpu.node.utilization"] = true
@@ -556,9 +553,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.container.cpu.request_utilization":
-					assert.False(t, validatedMetrics["k8s.container.cpu.request_utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu.request_utilization")
-					validatedMetrics["k8s.container.cpu.request_utilization"] = true
+				case "k8s.container.cpu_limit_utilization":
+					assert.False(t, validatedMetrics["k8s.container.cpu_limit_utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu_limit_utilization")
+					validatedMetrics["k8s.container.cpu_limit_utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container cpu utilization as a ratio of the container's limits", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.container.cpu_request_utilization":
+					assert.False(t, validatedMetrics["k8s.container.cpu_request_utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu_request_utilization")
+					validatedMetrics["k8s.container.cpu_request_utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Container cpu utilization as a ratio of the container's requests", ms.At(i).Description())
@@ -574,24 +583,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Container memory limit in bytes", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.container.memory.limit_utilization":
-					assert.False(t, validatedMetrics["k8s.container.memory.limit_utilization"], "Found a duplicate in the metrics slice: k8s.container.memory.limit_utilization")
-					validatedMetrics["k8s.container.memory.limit_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory utilization as a ratio of the container's limits", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.container.memory.node.utilization":
 					assert.False(t, validatedMetrics["k8s.container.memory.node.utilization"], "Found a duplicate in the metrics slice: k8s.container.memory.node.utilization")
 					validatedMetrics["k8s.container.memory.node.utilization"] = true
@@ -604,9 +601,33 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.container.memory.request_utilization":
-					assert.False(t, validatedMetrics["k8s.container.memory.request_utilization"], "Found a duplicate in the metrics slice: k8s.container.memory.request_utilization")
-					validatedMetrics["k8s.container.memory.request_utilization"] = true
+				case "k8s.container.memory.request":
+					assert.False(t, validatedMetrics["k8s.container.memory.request"], "Found a duplicate in the metrics slice: k8s.container.memory.request")
+					validatedMetrics["k8s.container.memory.request"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory request in bytes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.memory_limit_utilization":
+					assert.False(t, validatedMetrics["k8s.container.memory_limit_utilization"], "Found a duplicate in the metrics slice: k8s.container.memory_limit_utilization")
+					validatedMetrics["k8s.container.memory_limit_utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory utilization as a ratio of the container's limits", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.container.memory_request_utilization":
+					assert.False(t, validatedMetrics["k8s.container.memory_request_utilization"], "Found a duplicate in the metrics slice: k8s.container.memory_request_utilization")
+					validatedMetrics["k8s.container.memory_request_utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Container memory utilization as a ratio of the container's requests", ms.At(i).Description())
@@ -816,18 +837,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.pod.cpu.limit_utilization":
-					assert.False(t, validatedMetrics["k8s.pod.cpu.limit_utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu.limit_utilization")
-					validatedMetrics["k8s.pod.cpu.limit_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's total container limits. If pod has no limits as introduced in k8s v1.34, the metric is not emitted.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "k8s.pod.cpu.node.utilization":
 					assert.False(t, validatedMetrics["k8s.pod.cpu.node.utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu.node.utilization")
 					validatedMetrics["k8s.pod.cpu.node.utilization"] = true
@@ -846,18 +855,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Pod CPU request in cores", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.pod.cpu.request_utilization":
-					assert.False(t, validatedMetrics["k8s.pod.cpu.request_utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu.request_utilization")
-					validatedMetrics["k8s.pod.cpu.request_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's total container requests. If pod has no requests as introduced in k8s v1.34, the metric is not emitted.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -885,6 +882,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", ms.At(i).Description())
 					assert.Equal(t, "{cpu}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.pod.cpu_limit_utilization":
+					assert.False(t, validatedMetrics["k8s.pod.cpu_limit_utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu_limit_utilization")
+					validatedMetrics["k8s.pod.cpu_limit_utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's limits. If pod-level resources are present (k8s v1.34+), only pod-level limits are used. Otherwise, the sum of all container limits is used. If the selected source has no limit, the metric is not emitted.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.pod.cpu_request_utilization":
+					assert.False(t, validatedMetrics["k8s.pod.cpu_request_utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu_request_utilization")
+					validatedMetrics["k8s.pod.cpu_request_utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's requests. If pod-level resources are present (k8s v1.34+), only pod-level requests are used. Otherwise, the sum of all container requests is used. If the selected source has no request, the metric is not emitted.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -938,6 +959,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.memory.limit":
+					assert.False(t, validatedMetrics["k8s.pod.memory.limit"], "Found a duplicate in the metrics slice: k8s.pod.memory.limit")
+					validatedMetrics["k8s.pod.memory.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory limit in bytes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.pod.memory.major_page_faults":
 					assert.False(t, validatedMetrics["k8s.pod.memory.major_page_faults"], "Found a duplicate in the metrics slice: k8s.pod.memory.major_page_faults")
 					validatedMetrics["k8s.pod.memory.major_page_faults"] = true
@@ -969,6 +1002,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Pod memory page_faults", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.memory.request":
+					assert.False(t, validatedMetrics["k8s.pod.memory.request"], "Found a duplicate in the metrics slice: k8s.pod.memory.request")
+					validatedMetrics["k8s.pod.memory.request"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory request in bytes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

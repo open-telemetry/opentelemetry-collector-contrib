@@ -63,6 +63,8 @@ type MemoryMetrics struct {
 	WorkingSet         RecordIntDataPointFunc
 	PageFaults         RecordIntDataPointFunc
 	MajorPageFaults    RecordIntDataPointFunc
+	Limit              RecordIntDataPointFunc
+	Request            RecordIntDataPointFunc
 }
 
 var NodeMemoryMetrics = MemoryMetrics{
@@ -84,6 +86,8 @@ var PodMemoryMetrics = MemoryMetrics{
 	WorkingSet:         (*MetricsBuilder).RecordK8sPodMemoryWorkingSetDataPoint,
 	PageFaults:         (*MetricsBuilder).RecordK8sPodMemoryPageFaultsDataPoint,
 	MajorPageFaults:    (*MetricsBuilder).RecordK8sPodMemoryMajorPageFaultsDataPoint,
+	Limit:              (*MetricsBuilder).RecordK8sPodMemoryLimitDataPoint,
+	Request:            (*MetricsBuilder).RecordK8sPodMemoryRequestDataPoint,
 }
 
 var ContainerMemoryMetrics = MemoryMetrics{
@@ -96,6 +100,8 @@ var ContainerMemoryMetrics = MemoryMetrics{
 	WorkingSet:         (*MetricsBuilder).RecordContainerMemoryWorkingSetDataPoint,
 	PageFaults:         (*MetricsBuilder).RecordContainerMemoryPageFaultsDataPoint,
 	MajorPageFaults:    (*MetricsBuilder).RecordContainerMemoryMajorPageFaultsDataPoint,
+	Limit:              (*MetricsBuilder).RecordK8sContainerMemoryLimitDataPoint,
+	Request:            (*MetricsBuilder).RecordK8sContainerMemoryRequestDataPoint,
 }
 
 type FilesystemMetrics struct {

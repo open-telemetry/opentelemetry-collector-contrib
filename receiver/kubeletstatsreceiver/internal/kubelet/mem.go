@@ -32,9 +32,11 @@ func addMemoryMetrics(
 	if s.UsageBytes != nil {
 		if r.memoryLimit > 0 {
 			memoryMetrics.LimitUtilization(mb, currentTime, float64(*s.UsageBytes)/float64(r.memoryLimit))
+			memoryMetrics.Limit(mb, currentTime, r.memoryLimit)
 		}
 		if r.memoryRequest > 0 {
 			memoryMetrics.RequestUtilization(mb, currentTime, float64(*s.UsageBytes)/float64(r.memoryRequest))
+			memoryMetrics.Request(mb, currentTime, r.memoryRequest)
 		}
 		if nodeMemoryLimit > 0 {
 			memoryMetrics.NodeUtilization(mb, currentTime, float64(*s.UsageBytes)/nodeMemoryLimit)
