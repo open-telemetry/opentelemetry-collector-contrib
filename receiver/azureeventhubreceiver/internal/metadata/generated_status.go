@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("azure_event_hub")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+	Type           = component.MustNewType("azure_event_hub")
+	DeprecatedType = component.MustNewType("azureeventhub")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 )
 
 const (
