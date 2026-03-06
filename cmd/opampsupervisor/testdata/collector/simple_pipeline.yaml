@@ -20,3 +20,7 @@ service:
   telemetry:
     logs:
       level: debug
+    resource:
+      service.name: otelcontribcol
+      service.version: "1.0.0"
+      service.instance.id: "test-instance"

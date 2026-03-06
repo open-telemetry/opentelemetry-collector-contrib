@@ -321,6 +321,20 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		return true
 	})
 
+	// Ensure service.name and service.version are in resourceAttrs so that identifying
+	// attributes derived from resourceAttrs in createAgentDescription() have values.
+	// If not already present in resource attributes, use the calculated agentType and
+	// agentVersion as defaults.
+	if _, ok := resourceAttrs[string(conventions.ServiceNameKey)]; !ok {
+		resourceAttrs[string(conventions.ServiceNameKey)] = agentType
+	}
+	if _, ok := resourceAttrs[string(conventions.ServiceVersionKey)]; !ok {
+		resourceAttrs[string(conventions.ServiceVersionKey)] = agentVersion
+	}
+	if _, ok := resourceAttrs[string(conventions.ServiceInstanceIDKey)]; !ok {
+		resourceAttrs[string(conventions.ServiceInstanceIDKey)] = uid.String()
+	}
+
 	opampClient := cfg.Server.GetClient(set.Logger)
 	agent := &opampAgent{
 		cfg:                      cfg,
