@@ -80,7 +80,6 @@ body:
       - exporter/prometheusremotewrite
       - exporter/pulsar
       - exporter/rabbitmq
-      - exporter/sapm
       - exporter/sematext
       - exporter/sentry
       - exporter/signalfx
@@ -228,6 +227,7 @@ body:
       - processor/resourcedetection/internal/openstack/nova
       - processor/resourcedetection/internal/oraclecloud
       - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/tencent/cvm
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
       - processor/schema
@@ -298,7 +298,6 @@ body:
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents
-      - receiver/k8slog
       - receiver/k8sobjects
       - receiver/kafka
       - receiver/kafkametrics

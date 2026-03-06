@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,26 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["IisApplicationPoolState"] = mb.metricIisApplicationPoolState.config.AggregationStrategy
+			aggMap["IisApplicationPoolUptime"] = mb.metricIisApplicationPoolUptime.config.AggregationStrategy
+			aggMap["IisConnectionActive"] = mb.metricIisConnectionActive.config.AggregationStrategy
+			aggMap["IisConnectionAnonymous"] = mb.metricIisConnectionAnonymous.config.AggregationStrategy
+			aggMap["IisConnectionAttemptCount"] = mb.metricIisConnectionAttemptCount.config.AggregationStrategy
+			aggMap["IisNetworkBlocked"] = mb.metricIisNetworkBlocked.config.AggregationStrategy
+			aggMap["IisNetworkFileCount"] = mb.metricIisNetworkFileCount.config.AggregationStrategy
+			aggMap["IisNetworkIo"] = mb.metricIisNetworkIo.config.AggregationStrategy
+			aggMap["IisRequestCount"] = mb.metricIisRequestCount.config.AggregationStrategy
+			aggMap["IisRequestQueueAgeMax"] = mb.metricIisRequestQueueAgeMax.config.AggregationStrategy
+			aggMap["IisRequestQueueCount"] = mb.metricIisRequestQueueCount.config.AggregationStrategy
+			aggMap["IisRequestRejected"] = mb.metricIisRequestRejected.config.AggregationStrategy
+			aggMap["IisThreadActive"] = mb.metricIisThreadActive.config.AggregationStrategy
+			aggMap["IisUptime"] = mb.metricIisUptime.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -94,14 +117,23 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisNetworkFileCountDataPoint(ts, 1, AttributeDirectionSent)
+			if tt.name == "reaggregate_set" {
+				mb.RecordIisNetworkFileCountDataPoint(ts, 3, AttributeDirectionReceived)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisNetworkIoDataPoint(ts, 1, AttributeDirectionSent)
+			if tt.name == "reaggregate_set" {
+				mb.RecordIisNetworkIoDataPoint(ts, 3, AttributeDirectionReceived)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisRequestCountDataPoint(ts, 1, AttributeRequestDelete)
+			if tt.name == "reaggregate_set" {
+				mb.RecordIisRequestCountDataPoint(ts, 3, AttributeRequestGet)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -128,6 +160,11 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetIisSite("iis.site-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricIisNetworkFileCount.aggDataPoints)
+				assert.Empty(t, mb.metricIisNetworkIo.aggDataPoints)
+				assert.Empty(t, mb.metricIisRequestCount.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -229,56 +266,137 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "iis.network.file.count":
-					assert.False(t, validatedMetrics["iis.network.file.count"], "Found a duplicate in the metrics slice: iis.network.file.count")
-					validatedMetrics["iis.network.file.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of transmitted files.", ms.At(i).Description())
-					assert.Equal(t, "{files}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["iis.network.file.count"], "Found a duplicate in the metrics slice: iis.network.file.count")
+						validatedMetrics["iis.network.file.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of transmitted files.", ms.At(i).Description())
+						assert.Equal(t, "{files}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "sent", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["iis.network.file.count"], "Found a duplicate in the metrics slice: iis.network.file.count")
+						validatedMetrics["iis.network.file.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Number of transmitted files.", ms.At(i).Description())
+						assert.Equal(t, "{files}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["iis.network.file.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "iis.network.io":
-					assert.False(t, validatedMetrics["iis.network.io"], "Found a duplicate in the metrics slice: iis.network.io")
-					validatedMetrics["iis.network.io"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total amount of bytes sent and received.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["iis.network.io"], "Found a duplicate in the metrics slice: iis.network.io")
+						validatedMetrics["iis.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total amount of bytes sent and received.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "sent", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["iis.network.io"], "Found a duplicate in the metrics slice: iis.network.io")
+						validatedMetrics["iis.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total amount of bytes sent and received.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["iis.network.io"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "iis.request.count":
-					assert.False(t, validatedMetrics["iis.request.count"], "Found a duplicate in the metrics slice: iis.request.count")
-					validatedMetrics["iis.request.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of requests of a given type.", ms.At(i).Description())
-					assert.Equal(t, "{requests}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("request")
-					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["iis.request.count"], "Found a duplicate in the metrics slice: iis.request.count")
+						validatedMetrics["iis.request.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of requests of a given type.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("request")
+						assert.True(t, ok)
+						assert.Equal(t, "delete", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["iis.request.count"], "Found a duplicate in the metrics slice: iis.request.count")
+						validatedMetrics["iis.request.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of requests of a given type.", ms.At(i).Description())
+						assert.Equal(t, "{requests}", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["iis.request.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("request")
+						assert.False(t, ok)
+					}
 				case "iis.request.queue.age.max":
 					assert.False(t, validatedMetrics["iis.request.queue.age.max"], "Found a duplicate in the metrics slice: iis.request.queue.age.max")
 					validatedMetrics["iis.request.queue.age.max"] = true

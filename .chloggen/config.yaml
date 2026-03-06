@@ -66,7 +66,6 @@ components:
     - exporter/prometheusremotewrite
     - exporter/pulsar
     - exporter/rabbitmq
-    - exporter/sapm
     - exporter/sematext
     - exporter/sentry
     - exporter/signalfx
@@ -127,7 +126,6 @@ components:
     - internal/aws
     - internal/collectd
     - internal/common
-    - internal/coreinternal
     - internal/datadog
     - internal/datadog/e2e
     - internal/docker
@@ -150,6 +148,7 @@ components:
     - pkg/batchperresourceattr
     - pkg/batchpersignal
     - pkg/core/xidutils
+    - pkg/coreinternal
     - pkg/datadog
     - pkg/experimentalmetricmetadata
     - pkg/faro
@@ -176,10 +175,10 @@ components:
     - pkg/translator/signalfx
     - pkg/translator/skywalking
     - pkg/translator/splunk
-    - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
     - pkg/xstreamencoding
+    - pkg/zipkin
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
@@ -218,6 +217,7 @@ components:
     - processor/span
     - processor/sumologic
     - processor/tail_sampling
+    - processor/tencentcvmdetector
     - processor/transform
     - processor/unroll
     - processor/upclouddetector
@@ -275,7 +275,6 @@ components:
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events
-    - receiver/k8slog
     - receiver/k8sobjects
     - receiver/kafka
     - receiver/kafkametrics

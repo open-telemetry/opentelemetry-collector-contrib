@@ -12,6 +12,13 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
 var MetricsInfo = metricsInfo{
 	SystemCPULoadAverage15m: metricInfo{
 		Name: "system.cpu.load_average.15m",
