@@ -45,11 +45,16 @@ func (p metadataKeysPartitioner) MergeCtx(
 	m1 := client.FromContext(ctx1).Metadata
 
 	m := make(map[string][]string, len(p.keys))
+
 	for _, key := range p.keys {
+		v := m1.Get(key)
+		if len(v) == 0 {
+			continue
+		}
 		// We assume that both context's metadata will have the same
 		// value since we have defined the custom partitioner using
 		// the same keys.
-		m[key] = m1.Get(key)
+		m[key] = v
 	}
 	return client.NewContext(
 		context.Background(),

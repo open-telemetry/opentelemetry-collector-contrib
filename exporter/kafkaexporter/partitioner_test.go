@@ -113,6 +113,19 @@ func TestMergeCtx(t *testing.T) {
 			},
 			expectedAbsent: []string{"key1"},
 		},
+		{
+			name:         "keys with empty values are ignored",
+			metadataKeys: []string{"key1", "key2"},
+			ctx1Metadata: map[string][]string{
+				"key1": nil,
+				"key2": []string{},
+			},
+			ctx2Metadata: map[string][]string{
+				"key1": nil,
+				"key2": []string{},
+			},
+			expectedAbsent: []string{"key1", "key2"},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := metadataKeysPartitioner{keys: tc.metadataKeys}
@@ -131,7 +144,16 @@ func TestMergeCtx(t *testing.T) {
 				assert.Equal(t, expected, mergedMetadata.Get(key))
 			}
 			for _, key := range tc.expectedAbsent {
-				assert.Empty(t, mergedMetadata.Get(key))
+				for k := range mergedMetadata.Keys() {
+					if k == key {
+						assert.Failf(
+							t,
+							"failed to validate absent keys",
+							"key %s is expected to be absent from merged metadata",
+							key,
+						)
+					}
+				}
 			}
 		})
 	}
