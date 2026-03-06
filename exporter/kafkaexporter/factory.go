@@ -94,6 +94,7 @@ func createTracesExporter(
 		exporterhelperOptions(
 			oCfg,
 			xexporterhelper.NewTracesQueueBatchSettings(),
+			oCfg.Traces.TopicFromMetadataKey,
 			exp.Start, exp.Close,
 		)...,
 	)
@@ -114,6 +115,7 @@ func createMetricsExporter(
 		exporterhelperOptions(
 			oCfg,
 			xexporterhelper.NewMetricsQueueBatchSettings(),
+			oCfg.Metrics.TopicFromMetadataKey,
 			exp.Start, exp.Close,
 		)...,
 	)
@@ -134,6 +136,7 @@ func createLogsExporter(
 		exporterhelperOptions(
 			oCfg,
 			xexporterhelper.NewLogsQueueBatchSettings(),
+			oCfg.Logs.TopicFromMetadataKey,
 			exp.Start, exp.Close,
 		)...,
 	)
@@ -154,6 +157,7 @@ func createProfilesExporter(
 		exporterhelperOptions(
 			oCfg,
 			xexporterhelper.NewProfilesQueueBatchSettings(),
+			oCfg.Profiles.TopicFromMetadataKey,
 			exp.Start, exp.Close,
 		)...,
 	)
@@ -162,10 +166,11 @@ func createProfilesExporter(
 func exporterhelperOptions(
 	cfg Config,
 	qbs xexporterhelper.QueueBatchSettings,
+	topicFromMetadataKey string,
 	startFunc component.StartFunc,
 	shutdownFunc component.ShutdownFunc,
 ) []exporterhelper.Option {
-	partitionerKeys := partitionerKeysSet(cfg)
+	partitionerKeys := partitionerKeysSet(cfg.IncludeMetadataKeys, topicFromMetadataKey)
 	if len(partitionerKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: partitionerKeys}
 	}
@@ -181,19 +186,15 @@ func exporterhelperOptions(
 	}
 }
 
-func partitionerKeysSet(cfg Config) []string {
+func partitionerKeysSet(metadataKeys []string, topicFromMetadataKey string) []string {
 	var keys []string
 	seen := make(map[string]struct{})
 
-	allKeys := slices.Clone(cfg.IncludeMetadataKeys)
-	// All the topic from metadata keys are included as metadata keys so that
-	// topics can be deduced even after batching is performed.
-	allKeys = append(
-		allKeys,
-		cfg.Logs.TopicFromMetadataKey,
-		cfg.Metrics.TopicFromMetadataKey,
-		cfg.Traces.TopicFromMetadataKey,
-		cfg.Profiles.TopicFromMetadataKey,
+	// Include routing keys used by this exporter signal so topics can still be
+	// resolved after batching.
+	allKeys := append(
+		slices.Clone(metadataKeys),
+		topicFromMetadataKey,
 	)
 	for _, key := range allKeys {
 		if key == "" {

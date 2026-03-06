@@ -263,27 +263,47 @@ func TestPartitionerKeysSet(t *testing.T) {
 	t.Run("includes configured metadata keys", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.IncludeMetadataKeys = []string{"tenant_id", "request_id"}
-		cfg.Traces.TopicFromMetadataKey = "kafka_topic_traces"
 		cfg.Logs.TopicFromMetadataKey = "kafka_topic_logs"
 		cfg.Metrics.TopicFromMetadataKey = "kafka_topic_metrics"
+		cfg.Traces.TopicFromMetadataKey = "kafka_topic_traces"
 		cfg.Profiles.TopicFromMetadataKey = "kafka_topic_profiles"
 
 		assert.ElementsMatch(t, []string{
 			"tenant_id",
 			"request_id",
-			"kafka_topic_traces",
 			"kafka_topic_logs",
+		}, partitionerKeysSet(cfg.IncludeMetadataKeys, cfg.Logs.TopicFromMetadataKey))
+		assert.ElementsMatch(t, []string{
+			"tenant_id",
+			"request_id",
 			"kafka_topic_metrics",
+		}, partitionerKeysSet(cfg.IncludeMetadataKeys, cfg.Metrics.TopicFromMetadataKey))
+		assert.ElementsMatch(t, []string{
+			"tenant_id",
+			"request_id",
+			"kafka_topic_traces",
+		}, partitionerKeysSet(cfg.IncludeMetadataKeys, cfg.Traces.TopicFromMetadataKey))
+		assert.ElementsMatch(t, []string{
+			"tenant_id",
+			"request_id",
 			"kafka_topic_profiles",
-		}, partitionerKeysSet(*cfg))
+		}, partitionerKeysSet(cfg.IncludeMetadataKeys, cfg.Profiles.TopicFromMetadataKey))
 	})
 
 	t.Run("de-duplicates and drops empty keys", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.IncludeMetadataKeys = []string{"", "tenant_id", "tenant_id"}
-		cfg.Metrics.TopicFromMetadataKey = "tenant_id"
-		cfg.Traces.TopicFromMetadataKey = ""
 
-		assert.Equal(t, []string{"tenant_id"}, partitionerKeysSet(*cfg))
+		assert.Equal(t, []string{"tenant_id"}, partitionerKeysSet(cfg.IncludeMetadataKeys, "tenant_id"))
+	})
+
+	t.Run("does not include other signal topic metadata keys", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Logs.TopicFromMetadataKey = "logs_topic"
+		cfg.Metrics.TopicFromMetadataKey = "metrics_topic"
+		cfg.Traces.TopicFromMetadataKey = "traces_topic"
+		cfg.Profiles.TopicFromMetadataKey = "profiles_topic"
+
+		assert.Equal(t, []string{"traces_topic"}, partitionerKeysSet(cfg.IncludeMetadataKeys, "traces_topic"))
 	})
 }
