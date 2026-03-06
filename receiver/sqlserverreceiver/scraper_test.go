@@ -801,5 +801,4 @@ func TestSetupResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt.expectedHostName, hostName.AsString())
 		})
 	}
-
 }
