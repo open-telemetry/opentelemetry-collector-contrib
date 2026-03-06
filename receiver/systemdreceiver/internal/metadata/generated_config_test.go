@@ -31,11 +31,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{"cpu.mode"},
 					},
-					SystemdServiceRestarts: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					SystemdServiceRestarts: MetricConfig{Enabled: true},
 					SystemdUnitState: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -56,11 +52,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{"cpu.mode"},
 					},
-					SystemdServiceRestarts: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					SystemdServiceRestarts: MetricConfig{Enabled: false},
 					SystemdUnitState: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
