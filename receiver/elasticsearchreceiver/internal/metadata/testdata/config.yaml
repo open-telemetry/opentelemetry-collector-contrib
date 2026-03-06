@@ -12,28 +12,23 @@ all_set:
       attributes: ["name"]
     elasticsearch.cluster.data_nodes:
       enabled: true
-      attributes: []
     elasticsearch.cluster.health:
       enabled: true
       attributes: ["status"]
     elasticsearch.cluster.in_flight_fetch:
       enabled: true
-      attributes: []
     elasticsearch.cluster.indices.cache.evictions:
       enabled: true
       attributes: ["cache_name"]
     elasticsearch.cluster.nodes:
       enabled: true
-      attributes: []
     elasticsearch.cluster.pending_tasks:
       enabled: true
-      attributes: []
     elasticsearch.cluster.published_states.differences:
       enabled: true
       attributes: ["state"]
     elasticsearch.cluster.published_states.full:
       enabled: true
-      attributes: []
     elasticsearch.cluster.shards:
       enabled: true
       attributes: ["state"]
@@ -93,13 +88,10 @@ all_set:
       attributes: ["aggregation"]
     elasticsearch.indexing_pressure.memory.limit:
       enabled: true
-      attributes: []
     elasticsearch.indexing_pressure.memory.total.primary_rejections:
       enabled: true
-      attributes: []
     elasticsearch.indexing_pressure.memory.total.replica_rejections:
       enabled: true
-      attributes: []
     elasticsearch.memory.indexing_pressure:
       enabled: true
       attributes: ["stage"]
@@ -114,46 +106,34 @@ all_set:
       attributes: ["cache_name"]
     elasticsearch.node.cache.size:
       enabled: true
-      attributes: []
     elasticsearch.node.cluster.connections:
       enabled: true
-      attributes: []
     elasticsearch.node.cluster.io:
       enabled: true
       attributes: ["direction"]
     elasticsearch.node.disk.io.read:
       enabled: true
-      attributes: []
     elasticsearch.node.disk.io.write:
       enabled: true
-      attributes: []
     elasticsearch.node.documents:
       enabled: true
       attributes: ["state"]
     elasticsearch.node.fs.disk.available:
       enabled: true
-      attributes: []
     elasticsearch.node.fs.disk.free:
       enabled: true
-      attributes: []
     elasticsearch.node.fs.disk.total:
       enabled: true
-      attributes: []
     elasticsearch.node.http.connections:
       enabled: true
-      attributes: []
     elasticsearch.node.ingest.documents:
       enabled: true
-      attributes: []
     elasticsearch.node.ingest.documents.current:
       enabled: true
-      attributes: []
     elasticsearch.node.ingest.operations.failed:
       enabled: true
-      attributes: []
     elasticsearch.node.open_files:
       enabled: true
-      attributes: []
     elasticsearch.node.operations.completed:
       enabled: true
       attributes: ["operation"]
@@ -180,25 +160,19 @@ all_set:
       attributes: ["name"]
     elasticsearch.node.script.cache_evictions:
       enabled: true
-      attributes: []
     elasticsearch.node.script.compilation_limit_triggered:
       enabled: true
-      attributes: []
     elasticsearch.node.script.compilations:
       enabled: true
-      attributes: []
     elasticsearch.node.segments.memory:
       enabled: true
       attributes: ["object"]
     elasticsearch.node.shards.data_set.size:
       enabled: true
-      attributes: []
     elasticsearch.node.shards.reserved.size:
       enabled: true
-      attributes: []
     elasticsearch.node.shards.size:
       enabled: true
-      attributes: []
     elasticsearch.node.thread_pool.tasks.finished:
       enabled: true
       attributes: ["thread_pool_name","state"]
@@ -210,40 +184,29 @@ all_set:
       attributes: ["thread_pool_name","state"]
     elasticsearch.node.translog.operations:
       enabled: true
-      attributes: []
     elasticsearch.node.translog.size:
       enabled: true
-      attributes: []
     elasticsearch.node.translog.uncommitted.size:
       enabled: true
-      attributes: []
     elasticsearch.os.cpu.load_avg.15m:
       enabled: true
-      attributes: []
     elasticsearch.os.cpu.load_avg.1m:
       enabled: true
-      attributes: []
     elasticsearch.os.cpu.load_avg.5m:
       enabled: true
-      attributes: []
     elasticsearch.os.cpu.usage:
       enabled: true
-      attributes: []
     elasticsearch.os.memory:
       enabled: true
       attributes: ["state"]
     elasticsearch.process.cpu.time:
       enabled: true
-      attributes: []
     elasticsearch.process.cpu.usage:
       enabled: true
-      attributes: []
     elasticsearch.process.memory.virtual:
       enabled: true
-      attributes: []
     jvm.classes.loaded:
       enabled: true
-      attributes: []
     jvm.gc.collections.count:
       enabled: true
       attributes: ["name"]
@@ -252,22 +215,16 @@ all_set:
       attributes: ["name"]
     jvm.memory.heap.committed:
       enabled: true
-      attributes: []
     jvm.memory.heap.max:
       enabled: true
-      attributes: []
     jvm.memory.heap.used:
       enabled: true
-      attributes: []
     jvm.memory.heap.utilization:
       enabled: true
-      attributes: []
     jvm.memory.nonheap.committed:
       enabled: true
-      attributes: []
     jvm.memory.nonheap.used:
       enabled: true
-      attributes: []
     jvm.memory.pool.max:
       enabled: true
       attributes: ["name"]
@@ -276,7 +233,6 @@ all_set:
       attributes: ["name"]
     jvm.threads.count:
       enabled: true
-      attributes: []
   resource_attributes:
     elasticsearch.cluster.name:
       enabled: true
@@ -299,28 +255,23 @@ reaggregate_set:
       attributes: []
     elasticsearch.cluster.data_nodes:
       enabled: true
-      attributes: []
     elasticsearch.cluster.health:
       enabled: true
       attributes: []
     elasticsearch.cluster.in_flight_fetch:
       enabled: true
-      attributes: []
     elasticsearch.cluster.indices.cache.evictions:
       enabled: true
       attributes: []
     elasticsearch.cluster.nodes:
       enabled: true
-      attributes: []
     elasticsearch.cluster.pending_tasks:
       enabled: true
-      attributes: []
     elasticsearch.cluster.published_states.differences:
       enabled: true
       attributes: []
     elasticsearch.cluster.published_states.full:
       enabled: true
-      attributes: []
     elasticsearch.cluster.shards:
       enabled: true
       attributes: []
@@ -380,13 +331,10 @@ reaggregate_set:
       attributes: []
     elasticsearch.indexing_pressure.memory.limit:
       enabled: true
-      attributes: []
     elasticsearch.indexing_pressure.memory.total.primary_rejections:
       enabled: true
-      attributes: []
     elasticsearch.indexing_pressure.memory.total.replica_rejections:
       enabled: true
-      attributes: []
     elasticsearch.memory.indexing_pressure:
       enabled: true
       attributes: []
@@ -401,46 +349,34 @@ reaggregate_set:
       attributes: []
     elasticsearch.node.cache.size:
       enabled: true
-      attributes: []
     elasticsearch.node.cluster.connections:
       enabled: true
-      attributes: []
     elasticsearch.node.cluster.io:
       enabled: true
       attributes: []
     elasticsearch.node.disk.io.read:
       enabled: true
-      attributes: []
     elasticsearch.node.disk.io.write:
       enabled: true
-      attributes: []
     elasticsearch.node.documents:
       enabled: true
       attributes: []
     elasticsearch.node.fs.disk.available:
       enabled: true
-      attributes: []
     elasticsearch.node.fs.disk.free:
       enabled: true
-      attributes: []
     elasticsearch.node.fs.disk.total:
       enabled: true
-      attributes: []
     elasticsearch.node.http.connections:
       enabled: true
-      attributes: []
     elasticsearch.node.ingest.documents:
       enabled: true
-      attributes: []
     elasticsearch.node.ingest.documents.current:
       enabled: true
-      attributes: []
     elasticsearch.node.ingest.operations.failed:
       enabled: true
-      attributes: []
     elasticsearch.node.open_files:
       enabled: true
-      attributes: []
     elasticsearch.node.operations.completed:
       enabled: true
       attributes: []
@@ -467,25 +403,19 @@ reaggregate_set:
       attributes: []
     elasticsearch.node.script.cache_evictions:
       enabled: true
-      attributes: []
     elasticsearch.node.script.compilation_limit_triggered:
       enabled: true
-      attributes: []
     elasticsearch.node.script.compilations:
       enabled: true
-      attributes: []
     elasticsearch.node.segments.memory:
       enabled: true
       attributes: []
     elasticsearch.node.shards.data_set.size:
       enabled: true
-      attributes: []
     elasticsearch.node.shards.reserved.size:
       enabled: true
-      attributes: []
     elasticsearch.node.shards.size:
       enabled: true
-      attributes: []
     elasticsearch.node.thread_pool.tasks.finished:
       enabled: true
       attributes: []
@@ -497,40 +427,29 @@ reaggregate_set:
       attributes: []
     elasticsearch.node.translog.operations:
       enabled: true
-      attributes: []
     elasticsearch.node.translog.size:
       enabled: true
-      attributes: []
     elasticsearch.node.translog.uncommitted.size:
       enabled: true
-      attributes: []
     elasticsearch.os.cpu.load_avg.15m:
       enabled: true
-      attributes: []
     elasticsearch.os.cpu.load_avg.1m:
       enabled: true
-      attributes: []
     elasticsearch.os.cpu.load_avg.5m:
       enabled: true
-      attributes: []
     elasticsearch.os.cpu.usage:
       enabled: true
-      attributes: []
     elasticsearch.os.memory:
       enabled: true
       attributes: []
     elasticsearch.process.cpu.time:
       enabled: true
-      attributes: []
     elasticsearch.process.cpu.usage:
       enabled: true
-      attributes: []
     elasticsearch.process.memory.virtual:
       enabled: true
-      attributes: []
     jvm.classes.loaded:
       enabled: true
-      attributes: []
     jvm.gc.collections.count:
       enabled: true
       attributes: []
@@ -539,22 +458,16 @@ reaggregate_set:
       attributes: []
     jvm.memory.heap.committed:
       enabled: true
-      attributes: []
     jvm.memory.heap.max:
       enabled: true
-      attributes: []
     jvm.memory.heap.used:
       enabled: true
-      attributes: []
     jvm.memory.heap.utilization:
       enabled: true
-      attributes: []
     jvm.memory.nonheap.committed:
       enabled: true
-      attributes: []
     jvm.memory.nonheap.used:
       enabled: true
-      attributes: []
     jvm.memory.pool.max:
       enabled: true
       attributes: []
@@ -563,7 +476,6 @@ reaggregate_set:
       attributes: []
     jvm.threads.count:
       enabled: true
-      attributes: []
   resource_attributes:
     elasticsearch.cluster.name:
       enabled: true
@@ -586,28 +498,23 @@ none_set:
       attributes: ["name"]
     elasticsearch.cluster.data_nodes:
       enabled: false
-      attributes: []
     elasticsearch.cluster.health:
       enabled: false
       attributes: ["status"]
     elasticsearch.cluster.in_flight_fetch:
       enabled: false
-      attributes: []
     elasticsearch.cluster.indices.cache.evictions:
       enabled: false
       attributes: ["cache_name"]
     elasticsearch.cluster.nodes:
       enabled: false
-      attributes: []
     elasticsearch.cluster.pending_tasks:
       enabled: false
-      attributes: []
     elasticsearch.cluster.published_states.differences:
       enabled: false
       attributes: ["state"]
     elasticsearch.cluster.published_states.full:
       enabled: false
-      attributes: []
     elasticsearch.cluster.shards:
       enabled: false
       attributes: ["state"]
@@ -667,13 +574,10 @@ none_set:
       attributes: ["aggregation"]
     elasticsearch.indexing_pressure.memory.limit:
       enabled: false
-      attributes: []
     elasticsearch.indexing_pressure.memory.total.primary_rejections:
       enabled: false
-      attributes: []
     elasticsearch.indexing_pressure.memory.total.replica_rejections:
       enabled: false
-      attributes: []
     elasticsearch.memory.indexing_pressure:
       enabled: false
       attributes: ["stage"]
@@ -688,46 +592,34 @@ none_set:
       attributes: ["cache_name"]
     elasticsearch.node.cache.size:
       enabled: false
-      attributes: []
     elasticsearch.node.cluster.connections:
       enabled: false
-      attributes: []
     elasticsearch.node.cluster.io:
       enabled: false
       attributes: ["direction"]
     elasticsearch.node.disk.io.read:
       enabled: false
-      attributes: []
     elasticsearch.node.disk.io.write:
       enabled: false
-      attributes: []
     elasticsearch.node.documents:
       enabled: false
       attributes: ["state"]
     elasticsearch.node.fs.disk.available:
       enabled: false
-      attributes: []
     elasticsearch.node.fs.disk.free:
       enabled: false
-      attributes: []
     elasticsearch.node.fs.disk.total:
       enabled: false
-      attributes: []
     elasticsearch.node.http.connections:
       enabled: false
-      attributes: []
     elasticsearch.node.ingest.documents:
       enabled: false
-      attributes: []
     elasticsearch.node.ingest.documents.current:
       enabled: false
-      attributes: []
     elasticsearch.node.ingest.operations.failed:
       enabled: false
-      attributes: []
     elasticsearch.node.open_files:
       enabled: false
-      attributes: []
     elasticsearch.node.operations.completed:
       enabled: false
       attributes: ["operation"]
@@ -754,25 +646,19 @@ none_set:
       attributes: ["name"]
     elasticsearch.node.script.cache_evictions:
       enabled: false
-      attributes: []
     elasticsearch.node.script.compilation_limit_triggered:
       enabled: false
-      attributes: []
     elasticsearch.node.script.compilations:
       enabled: false
-      attributes: []
     elasticsearch.node.segments.memory:
       enabled: false
       attributes: ["object"]
     elasticsearch.node.shards.data_set.size:
       enabled: false
-      attributes: []
     elasticsearch.node.shards.reserved.size:
       enabled: false
-      attributes: []
     elasticsearch.node.shards.size:
       enabled: false
-      attributes: []
     elasticsearch.node.thread_pool.tasks.finished:
       enabled: false
       attributes: ["thread_pool_name","state"]
@@ -784,40 +670,29 @@ none_set:
       attributes: ["thread_pool_name","state"]
     elasticsearch.node.translog.operations:
       enabled: false
-      attributes: []
     elasticsearch.node.translog.size:
       enabled: false
-      attributes: []
     elasticsearch.node.translog.uncommitted.size:
       enabled: false
-      attributes: []
     elasticsearch.os.cpu.load_avg.15m:
       enabled: false
-      attributes: []
     elasticsearch.os.cpu.load_avg.1m:
       enabled: false
-      attributes: []
     elasticsearch.os.cpu.load_avg.5m:
       enabled: false
-      attributes: []
     elasticsearch.os.cpu.usage:
       enabled: false
-      attributes: []
     elasticsearch.os.memory:
       enabled: false
       attributes: ["state"]
     elasticsearch.process.cpu.time:
       enabled: false
-      attributes: []
     elasticsearch.process.cpu.usage:
       enabled: false
-      attributes: []
     elasticsearch.process.memory.virtual:
       enabled: false
-      attributes: []
     jvm.classes.loaded:
       enabled: false
-      attributes: []
     jvm.gc.collections.count:
       enabled: false
       attributes: ["name"]
@@ -826,22 +701,16 @@ none_set:
       attributes: ["name"]
     jvm.memory.heap.committed:
       enabled: false
-      attributes: []
     jvm.memory.heap.max:
       enabled: false
-      attributes: []
     jvm.memory.heap.used:
       enabled: false
-      attributes: []
     jvm.memory.heap.utilization:
       enabled: false
-      attributes: []
     jvm.memory.nonheap.committed:
       enabled: false
-      attributes: []
     jvm.memory.nonheap.used:
       enabled: false
-      attributes: []
     jvm.memory.pool.max:
       enabled: false
       attributes: ["name"]
@@ -850,7 +719,6 @@ none_set:
       attributes: ["name"]
     jvm.threads.count:
       enabled: false
-      attributes: []
   resource_attributes:
     elasticsearch.cluster.name:
       enabled: false
