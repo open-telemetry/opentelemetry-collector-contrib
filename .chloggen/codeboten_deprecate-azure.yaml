@@ -1,0 +1,4 @@
+change_type: 'deprecation'
+component: receiver/azureblob 
+note: Introduce new snake case compliant name `azure_blob``
+issues: []
