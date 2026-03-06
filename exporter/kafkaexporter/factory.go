@@ -186,7 +186,7 @@ func partitionerKeysSet(cfg Config) []string {
 	seen := make(map[string]struct{})
 
 	allKeys := slices.Clone(cfg.IncludeMetadataKeys)
-	// All the topic from attribute keys are included as metadata keys so that
+	// All the topic from metadata keys are included as metadata keys so that
 	// topics can be deduced even after batching is performed.
 	allKeys = append(
 		allKeys,
