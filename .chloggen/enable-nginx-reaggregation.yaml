@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receiver/nginx
+note: Enable metric reaggregation feature.
+issues: [46368]
