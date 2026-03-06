@@ -393,14 +393,15 @@ docker-golden:
 	cd cmd/golden && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t golden:latest .
 	rm cmd/golden/golden_*
 
+GITHUBGEN_ARGS ?= -skipgithub
 
 .PHONY: gengithub
 gengithub:
-	$(GITHUBGEN)
+	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
 .PHONY: gendistributions
 gendistributions:
-	$(GITHUBGEN) distributions
+	$(GITHUBGEN) $(GITHUBGEN_ARGS) distributions
 
 .PHONY: gencodecov
 gencodecov:
@@ -412,15 +413,15 @@ update-codeowners: generate gengithub
 
 .PHONY: gencodeowners
 gencodeowners:
-	$(GITHUBGEN) -skipgithub
+	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
 .PHONY: codeowners
 codeowners:
-	$(GITHUBGEN) codeowners
+	$(GITHUBGEN) $(GITHUBGEN_ARGS) codeowners
 
 .PHONY: generate-chloggen-components
 generate-chloggen-components:
-	$(GITHUBGEN) chloggen-components
+	$(GITHUBGEN) $(GITHUBGEN_ARGS) chloggen-components
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
