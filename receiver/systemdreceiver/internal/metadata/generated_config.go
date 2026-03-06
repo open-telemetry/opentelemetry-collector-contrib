@@ -54,11 +54,6 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
 // MetricsConfig provides config for systemd metrics.
 type MetricsConfig struct {
 	SystemdServiceCPUTime  MetricConfig `mapstructure:"systemd.service.cpu.time"`
