@@ -50,7 +50,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before making a sampling decision. 0s means disabled (only use `decision_wait`).
-- `sampling_strategy` (default = `full-trace-way-out`): Controls when a decision is made and what data is evaluated. Valid values are `full-trace-way-out`, `full-trace-way-in` and `root-span-only-way-in`. `full-trace-way-out` is classic tail sampling: spans are accumulated and evaluated after `decision_wait` (or earlier when `decision_wait_after_root_received` is configured). `full-trace-way-in` evaluates on ingest using only the incoming batch for each trace (without re-evaluating previously ingested spans) and finalizes immediately only for terminal outcomes (`sampled` or `dropped`); unresolved traces are cleanup-finalized as not sampled by the timer path without policy re-evaluation, and stateful policies are not supported in this mode. `root-span-only-way-in` evaluates immediately when the root span is received using root-span-only data; in this mode, `decision_wait` and `decision_wait_after_root_received` do not control decision timing, and policies that require non-root spans are not meaningful.
+- `sampling_strategy` (default = `full-trace-way-out`): Controls when a decision is made and what data is evaluated. Valid values are `full-trace-way-out`, `full-trace-way-in` and `root-span-only-way-in`. See [Sampling Strategies](#sampling-strategies) for detailed behavior, benefits, tradeoffs, and caveats for each mode.
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
@@ -68,6 +68,44 @@ The following configuration options can also be modified:
 - `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
   already ingested.
 - `maximum_trace_size_bytes`: The maximum size a trace can reach in bytes, traces larger than this size will be immediately dropped from the tail sampling processor in order to protect the system.
+
+## Sampling Strategies
+
+The `sampling_strategy` setting controls both decision timing and the data passed to policy evaluators.
+
+### full-trace-way-out
+
+- Decision timing/data model: default behavior. The processor accumulates trace data and evaluates policies on the timer path after `decision_wait` (or earlier when `decision_wait_after_root_received` is set and a root span arrives).
+- Benefits: highest policy flexibility because evaluators observe accumulated trace data at decision time.
+- Downsides/tradeoffs: higher memory/storage and deferred decisions, because spans are retained until decision timing is reached.
+- Caveats: evaluation depends on delayed decision timing rather than ingest-time finalization.
+
+### full-trace-way-in
+
+- Decision timing/data model: evaluates policies at ingest time for each incoming batch of a trace. It does not re-evaluate previously ingested spans. Terminal results (`sampled` or `dropped`) finalize immediately; otherwise the trace remains pending.
+- Benefits: earlier terminal outcomes and no repeated evaluation of old spans.
+- Downsides/tradeoffs: reduced policy compatibility compared to `full-trace-way-out`.
+- Caveats:
+  - pending traces are cleanup-finalized as `not sampled` on the timer cleanup path without policy re-evaluation.
+  - stateful policies are rejected for this mode.
+  - policies with semantics that assume complete traces can produce different outcomes than `full-trace-way-out`.
+
+### root-span-only-way-in
+
+- Decision timing/data model: evaluates when the root span is received, using root-span-only data.
+- Benefits: earliest possible decision timing for root-arrival workflows.
+- Downsides/tradeoffs: policies effectively operate on root span data only.
+- Caveats:
+  - `decision_wait` and `decision_wait_after_root_received` do not control decision timing in this mode.
+  - policies requiring non-root span data are not meaningful.
+  - stateful policies are rejected for this mode.
+
+### Strategy Comparison Notes
+
+- Policy compatibility: `full-trace-way-out` supports stateful policies; both way-in modes reject them.
+- Timer controls: `decision_wait` and `decision_wait_after_root_received` influence decision timing only in `full-trace-way-out`.
+- Late-span behavior: decision caches remain important in all modes to carry decisions for spans arriving after in-memory trace data is gone.
+- Terminal vs pending: way-in modes finalize on terminal outcomes immediately. `full-trace-way-in` keeps non-terminal outcomes pending until cleanup finalization; `root-span-only-way-in` evaluates on root arrival.
 
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
