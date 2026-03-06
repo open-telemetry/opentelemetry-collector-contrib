@@ -1115,6 +1115,117 @@ func TestFullTraceWayInEvaluatesOnlyIncomingBatch(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 }
 
+func TestFullTraceWayInRootFirstThenChild(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	controller := newTestTSPController()
+
+	mpe := &mockPolicyEvaluator{}
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyFullTraceWayIn,
+		Options: []Option{
+			withTestController(controller),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	traceID := uInt64ToTraceID(60)
+	rootSpanID := uInt64ToSpanID(1)
+	spanToTraces := func(spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(spanID)
+		if !parentID.IsEmpty() {
+			span.SetParentSpanID(parentID)
+		}
+		return traces
+	}
+
+	// Root first, non-terminal.
+	mpe.NextDecision = samplingpolicy.NotSampled
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(rootSpanID, pcommon.SpanID{})))
+	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
+	require.Equal(t, 0, nextConsumer.SpanCount())
+
+	// Child later, terminal sampled -> both spans released.
+	mpe.NextDecision = samplingpolicy.Sampled
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(uInt64ToSpanID(2), rootSpanID)))
+	require.Eventually(t, func() bool {
+		return mpe.EvaluationCount == 2 && nextConsumer.SpanCount() == 2
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestFullTraceWayInChildFirstThenRootPendingCleanup(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	controller := newTestTSPController()
+
+	mpe := &mockPolicyEvaluator{}
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyFullTraceWayIn,
+		DecisionCache: DecisionCacheConfig{
+			NonSampledCacheSize: 64,
+		},
+		Options: []Option{
+			withTestController(controller),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	traceID := uInt64ToTraceID(61)
+	rootSpanID := uInt64ToSpanID(1)
+	spanToTraces := func(spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(spanID)
+		if !parentID.IsEmpty() {
+			span.SetParentSpanID(parentID)
+		}
+		return traces
+	}
+
+	// Child then root, both non-terminal.
+	mpe.NextDecision = samplingpolicy.NotSampled
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(uInt64ToSpanID(2), rootSpanID)))
+	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(rootSpanID, pcommon.SpanID{})))
+	require.Eventually(t, func() bool { return mpe.EvaluationCount == 2 }, time.Second, 10*time.Millisecond)
+	require.Equal(t, 0, nextConsumer.SpanCount())
+
+	// Cleanup tick finalizes pending as not sampled without more evaluations.
+	controller.waitForTick()
+	controller.waitForTick()
+	require.Equal(t, 2, mpe.EvaluationCount)
+	require.Equal(t, 0, nextConsumer.SpanCount())
+	require.Eventually(t, func() bool {
+		return len(p.(*tailSamplingSpanProcessor).idToTrace) == 0
+	}, time.Second, 10*time.Millisecond)
+}
+
 func TestRateLimiter(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
 	controller := newTestTSPController()
