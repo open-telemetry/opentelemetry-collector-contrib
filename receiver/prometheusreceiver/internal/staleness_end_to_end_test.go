@@ -114,7 +114,7 @@ receivers:
             - targets: [%q]
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: %q
     tls:
       insecure: true
