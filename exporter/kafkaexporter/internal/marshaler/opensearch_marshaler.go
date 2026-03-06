@@ -12,7 +12,7 @@ import (
 )
 
 // OpenSearchLogsMarshaler marshals logs to OpenSearch SS4O JSON format.
-type OpenSearchLogsMarshaler struct{ unixTimestamps bool }
+type OpenSearchLogsMarshaler struct{ UnixTimestamps bool }
 
 func (m *OpenSearchLogsMarshaler) MarshalLogs(logs plog.Logs) ([]Message, error) {
 	var total int
@@ -82,7 +82,7 @@ func (m *OpenSearchLogsMarshaler) fmtTS(ts pcommon.Timestamp) string {
 	if ts == 0 {
 		return "null"
 	}
-	if m.unixTimestamps {
+	if m.UnixTimestamps {
 		return strconv.FormatInt(ts.AsTime().UnixMilli(), 10)
 	}
 	return strconv.Quote(ts.AsTime().Format(time.RFC3339Nano))
