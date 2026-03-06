@@ -6,10 +6,8 @@ all_set:
       attributes: ["protocol","state"]
     system.network.conntrack.count:
       enabled: true
-      attributes: []
     system.network.conntrack.max:
       enabled: true
-      attributes: []
     system.network.dropped:
       enabled: true
       attributes: ["device","direction"]
@@ -29,10 +27,8 @@ reaggregate_set:
       attributes: []
     system.network.conntrack.count:
       enabled: true
-      attributes: []
     system.network.conntrack.max:
       enabled: true
-      attributes: []
     system.network.dropped:
       enabled: true
       attributes: []
@@ -52,10 +48,8 @@ none_set:
       attributes: ["protocol","state"]
     system.network.conntrack.count:
       enabled: false
-      attributes: []
     system.network.conntrack.max:
       enabled: false
-      attributes: []
     system.network.dropped:
       enabled: false
       attributes: ["device","direction"]
