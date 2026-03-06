@@ -436,7 +436,7 @@ metrics:
     attributes: []
   k8s.pod.cpu_limit_utilization:
     enabled: false
-    description: "Pod cpu utilization as a ratio of the pod's limits. If pod-level resources are present (k8s v1.34+), only pod-level limits are used. Otherwise, the sum of all container limits is used. If the selected source has no limit, the metric is not emitted."
+    description: "Pod cpu utilization as a ratio of the pod's limits. If pod-level resources are present (k8s v1.34+), only pod-level limits are used. Otherwise, the sum of all container limits is used. If no pod-level limit is present and any container is missing a limit the metric is not emitted."
     unit: "1"
     stability: development
     gauge:
@@ -444,7 +444,7 @@ metrics:
     attributes: []
   k8s.pod.cpu_request_utilization:
     enabled: false
-    description: "Pod cpu utilization as a ratio of the pod's requests. If pod-level resources are present (k8s v1.34+), only pod-level requests are used. Otherwise, the sum of all container requests is used. If the selected source has no request, the metric is not emitted."
+    description: "Pod cpu utilization as a ratio of the pod's requests. If pod-level resources are present (k8s v1.34+), only pod-level requests are used. Otherwise, the sum of all container requests is used. If no pod-level request is present and any container is missing a request the metric is not emitted."
     unit: "1"
     stability: development
     gauge:
