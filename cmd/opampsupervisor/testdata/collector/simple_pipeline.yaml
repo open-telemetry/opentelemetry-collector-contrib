@@ -17,8 +17,3 @@ service:
     logs:
       receivers: [filelog]
       exporters: [file]
-  telemetry:
-    resource:
-      service.name: otelcontribcol
-      service.version: "1.0.0"
-      service.instance.id: "test-instance"
