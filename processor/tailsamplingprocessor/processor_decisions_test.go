@@ -933,26 +933,15 @@ func TestSampleOnRootSpanOnly(t *testing.T) {
 	traceID := uInt64ToTraceID(42)
 	rootSpanID := uInt64ToSpanID(1)
 
-	spanToTraces := func(spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
-		traces := ptrace.NewTraces()
-		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetTraceID(traceID)
-		span.SetSpanID(spanID)
-		if !parentID.IsEmpty() {
-			span.SetParentSpanID(parentID)
-		}
-		return traces
-	}
-
 	mpe.NextDecision = samplingpolicy.Sampled
 
 	// Send a child span first: no decision should be made yet.
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(uInt64ToSpanID(2), rootSpanID)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
 	require.Equal(t, 0, mpe.EvaluationCount)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Sending the root span should trigger immediate decision and release.
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(rootSpanID, pcommon.SpanID{})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 	require.Eventually(t, func() bool {
 		return mpe.EvaluationCount == 1 && nextConsumer.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
@@ -961,6 +950,59 @@ func TestSampleOnRootSpanOnly(t *testing.T) {
 	controller.waitForTick()
 	controller.waitForTick()
 	require.Equal(t, 1, mpe.EvaluationCount)
+}
+
+func TestSampleOnRootSpanOnlyFinalizesOnDroppedDecision(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	controller := newTestTSPController()
+
+	mpe := &mockPolicyEvaluator{}
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
+	cfg := Config{
+		DecisionWait:                  defaultTestDecisionWait,
+		NumTraces:                     defaultNumTraces,
+		SamplingStrategy:              samplingStrategyRootSpanOnlyWayIn,
+		DecisionWaitAfterRootReceived: time.Second,
+		DecisionCache: DecisionCacheConfig{
+			NonSampledCacheSize: 64,
+		},
+		Options: []Option{
+			withTestController(controller),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	traceID := uInt64ToTraceID(43)
+	rootSpanID := uInt64ToSpanID(1)
+
+	// Child-first should not evaluate.
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
+	require.Equal(t, 0, mpe.EvaluationCount)
+	require.Equal(t, 0, nextConsumer.SpanCount())
+
+	// Root arrival triggers immediate drop decision and finalization.
+	mpe.NextDecision = samplingpolicy.Dropped
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
+	require.Eventually(t, func() bool {
+		return mpe.EvaluationCount == 1 && nextConsumer.SpanCount() == 0
+	}, time.Second, 10*time.Millisecond)
+
+	// Late spans should use cached non-sampled decision and skip re-evaluation.
+	mpe.NextDecision = samplingpolicy.Sampled
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(3), rootSpanID)))
+	require.Eventually(t, func() bool {
+		return mpe.EvaluationCount == 1 && nextConsumer.SpanCount() == 0
+	}, time.Second, 10*time.Millisecond)
 }
 
 func TestFullTraceWayInEvaluatesOnIngestAndFinalizesOnTerminalDecision(t *testing.T) {
@@ -992,28 +1034,70 @@ func TestFullTraceWayInEvaluatesOnIngestAndFinalizesOnTerminalDecision(t *testin
 	traceID := uInt64ToTraceID(50)
 	rootSpanID := uInt64ToSpanID(1)
 
-	spanToTraces := func(spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
-		traces := ptrace.NewTraces()
-		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetTraceID(traceID)
-		span.SetSpanID(spanID)
-		if !parentID.IsEmpty() {
-			span.SetParentSpanID(parentID)
-		}
-		return traces
-	}
-
 	// First ingest path evaluation is non-terminal in way-in mode.
 	mpe.NextDecision = samplingpolicy.NotSampled
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(uInt64ToSpanID(2), rootSpanID)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
 	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Second ingest path evaluation returns terminal Sampled and releases both spans.
 	mpe.NextDecision = samplingpolicy.Sampled
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(rootSpanID, pcommon.SpanID{})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 	require.Eventually(t, func() bool {
 		return mpe.EvaluationCount == 2 && nextConsumer.SpanCount() == 2
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestFullTraceWayInFinalizesOnDroppedDecision(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	controller := newTestTSPController()
+
+	mpe := &mockPolicyEvaluator{}
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyFullTraceWayIn,
+		DecisionCache: DecisionCacheConfig{
+			NonSampledCacheSize: 64,
+		},
+		Options: []Option{
+			withTestController(controller),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	traceID := uInt64ToTraceID(51)
+	rootSpanID := uInt64ToSpanID(1)
+
+	// First ingest path evaluation is non-terminal in way-in mode.
+	mpe.NextDecision = samplingpolicy.NotSampled
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
+	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
+	require.Equal(t, 0, nextConsumer.SpanCount())
+
+	// Second ingest path evaluation returns terminal Dropped and finalizes trace.
+	mpe.NextDecision = samplingpolicy.Dropped
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
+	require.Eventually(t, func() bool {
+		return mpe.EvaluationCount == 2 && nextConsumer.SpanCount() == 0
+	}, time.Second, 10*time.Millisecond)
+
+	// Late spans should use cached non-sampled decision and skip re-evaluation.
+	mpe.NextDecision = samplingpolicy.Sampled
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(3), rootSpanID)))
+	require.Eventually(t, func() bool {
+		return mpe.EvaluationCount == 2 && nextConsumer.SpanCount() == 0
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -1092,19 +1176,9 @@ func TestFullTraceWayInEvaluatesOnlyIncomingBatch(t *testing.T) {
 
 	traceID := uInt64ToTraceID(55)
 	rootSpanID := uInt64ToSpanID(1)
-	spanToTraces := func(spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
-		traces := ptrace.NewTraces()
-		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetTraceID(traceID)
-		span.SetSpanID(spanID)
-		if !parentID.IsEmpty() {
-			span.SetParentSpanID(parentID)
-		}
-		return traces
-	}
 
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(uInt64ToSpanID(2), rootSpanID)))
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(rootSpanID, pcommon.SpanID{})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 
 	require.Eventually(t, func() bool {
 		return len(eval.evaluationBatches) == 2
@@ -1142,26 +1216,16 @@ func TestFullTraceWayInRootFirstThenChild(t *testing.T) {
 
 	traceID := uInt64ToTraceID(60)
 	rootSpanID := uInt64ToSpanID(1)
-	spanToTraces := func(spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
-		traces := ptrace.NewTraces()
-		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetTraceID(traceID)
-		span.SetSpanID(spanID)
-		if !parentID.IsEmpty() {
-			span.SetParentSpanID(parentID)
-		}
-		return traces
-	}
 
 	// Root first, non-terminal.
 	mpe.NextDecision = samplingpolicy.NotSampled
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(rootSpanID, pcommon.SpanID{})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Child later, terminal sampled -> both spans released.
 	mpe.NextDecision = samplingpolicy.Sampled
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(uInt64ToSpanID(2), rootSpanID)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
 	require.Eventually(t, func() bool {
 		return mpe.EvaluationCount == 2 && nextConsumer.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
@@ -1197,22 +1261,12 @@ func TestFullTraceWayInChildFirstThenRootPendingCleanup(t *testing.T) {
 
 	traceID := uInt64ToTraceID(61)
 	rootSpanID := uInt64ToSpanID(1)
-	spanToTraces := func(spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
-		traces := ptrace.NewTraces()
-		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetTraceID(traceID)
-		span.SetSpanID(spanID)
-		if !parentID.IsEmpty() {
-			span.SetParentSpanID(parentID)
-		}
-		return traces
-	}
 
 	// Child then root, both non-terminal.
 	mpe.NextDecision = samplingpolicy.NotSampled
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(uInt64ToSpanID(2), rootSpanID)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
 	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
-	require.NoError(t, p.ConsumeTraces(t.Context(), spanToTraces(rootSpanID, pcommon.SpanID{})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 	require.Eventually(t, func() bool { return mpe.EvaluationCount == 2 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
@@ -1278,4 +1332,15 @@ func TestRateLimiter(t *testing.T) {
 
 	require.LessOrEqual(t, len(sampledTraceIDs), 2)
 	require.GreaterOrEqual(t, len(sampledTraceIDs), 1)
+}
+
+func singleSpanTrace(traceID pcommon.TraceID, spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	if !parentID.IsEmpty() {
+		span.SetParentSpanID(parentID)
+	}
+	return traces
 }
