@@ -18,8 +18,6 @@ service:
       receivers: [filelog]
       exporters: [file]
   telemetry:
-    logs:
-      level: debug
     resource:
       service.name: otelcontribcol
       service.version: "1.0.0"
