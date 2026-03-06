@@ -141,8 +141,8 @@ components:
         - awss3
         - awsxray
         - azure_event_hub
+        - azure_monitor
         - azureblob
-        - azuremonitor
         - carbon
         - chrony
         - cloudflare
