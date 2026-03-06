@@ -34,7 +34,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260306010043-a44ab254898b // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.147.1-0.20260305023648-92d73035a497 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.147.1-0.20260306010043-a44ab254898b // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect

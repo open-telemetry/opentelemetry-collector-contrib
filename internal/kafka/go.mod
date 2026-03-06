@@ -12,7 +12,7 @@ require (
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/xdg-go/scram v1.2.0
 	go.opentelemetry.io/collector/component v1.53.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/component/componenttest v0.147.1-0.20260305023648-92d73035a497
+	go.opentelemetry.io/collector/component/componenttest v0.147.1-0.20260306010043-a44ab254898b
 	go.opentelemetry.io/collector/config/configcompression v1.53.1-0.20260306010043-a44ab254898b
 	go.opentelemetry.io/collector/config/configopaque v1.53.1-0.20260306010043-a44ab254898b
 	go.opentelemetry.io/collector/config/configtls v1.53.1-0.20260306010043-a44ab254898b
@@ -71,7 +71,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/confmap v1.53.1-0.20260306010043-a44ab254898b // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260305023648-92d73035a497 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260306010043-a44ab254898b // indirect
 	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260306010043-a44ab254898b // indirect
 	go.opentelemetry.io/collector/pdata v1.53.1-0.20260306010043-a44ab254898b // indirect
 	go.opentelemetry.io/otel v1.41.0 // indirect
