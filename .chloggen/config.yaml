@@ -238,8 +238,8 @@ components:
     - receiver/awss3
     - receiver/awsxray
     - receiver/azure_event_hub
+    - receiver/azure_monitor
     - receiver/azureblob
-    - receiver/azuremonitor
     - receiver/carbon
     - receiver/chrony
     - receiver/ciscoos
