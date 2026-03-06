@@ -156,7 +156,15 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			return
 		}
 		isAgentConnected.Store(false)
-		connectedChan <- false
+		// Guard against sending on a closed channel during test cleanup.
+		// The channel may have been closed if shutdown takes longer than the
+		// waitForSupervisorConnection timeout (5 seconds). Using a non-blocking
+		// send with a brief timeout prevents panic while still signaling disconnect.
+		select {
+		case connectedChan <- false:
+		case <-time.After(100 * time.Millisecond):
+			// Channel closed or already drained; this can happen during teardown
+		}
 		if onConnectionCloseFunc != nil {
 			onConnectionCloseFunc(conn)
 		}
@@ -174,6 +182,11 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 
 	shutdown := func() {
 		if !didShutdown.Load() {
+			// Set shutdown flag BEFORE closing channel to prevent OnConnectionClose
+			// from attempting to send on a closed channel. The flag is checked in the
+			// OnConnectionClose callback, so setting it here ensures any late-firing
+			// callbacks will see the flag and return early.
+			didShutdown.Store(true)
 			waitForSupervisorConnection(connectedChan, false)
 			t.Log("Shutting down")
 			err := s.Stop(t.Context())
@@ -186,7 +199,6 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			}
 			close(connectedChan)
 		}
-		didShutdown.Store(true)
 	}
 	send := func(msg *protobufs.ServerToAgent) {
 		if !isAgentConnected.Load() {
