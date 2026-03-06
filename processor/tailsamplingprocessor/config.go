@@ -58,6 +58,9 @@ const (
 	// samplingStrategyFullTraceWayOut keeps the current tail-sampling behavior:
 	// accumulate spans and decide on full trace data after decision timing.
 	samplingStrategyFullTraceWayOut samplingStrategy = "full-trace-way-out"
+	// samplingStrategyFullTraceWayIn evaluates the accumulated trace on ingest.
+	// Non-terminal outcomes remain pending until cleanup finalization.
+	samplingStrategyFullTraceWayIn samplingStrategy = "full-trace-way-in"
 	// samplingStrategyRootSpanOnlyWayIn makes a decision when the root span arrives,
 	// evaluating policies using only root span data.
 	samplingStrategyRootSpanOnlyWayIn samplingStrategy = "root-span-only-way-in"
@@ -339,6 +342,7 @@ type Config struct {
 	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
 	// SamplingStrategy controls how/when sampling decisions are made.
 	// "full-trace-way-out" (default) keeps classic tail sampling behavior.
+	// "full-trace-way-in" evaluates on ingest using accumulated trace data.
 	// "root-span-only-way-in" makes a decision when the root span arrives using root-only data.
 	SamplingStrategy samplingStrategy `mapstructure:"sampling_strategy"`
 	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
@@ -352,9 +356,15 @@ type Config struct {
 
 func (cfg *Config) Validate() error {
 	switch cfg.SamplingStrategy {
-	case samplingStrategyFullTraceWayOut, samplingStrategyRootSpanOnlyWayIn:
+	case samplingStrategyFullTraceWayOut, samplingStrategyFullTraceWayIn, samplingStrategyRootSpanOnlyWayIn:
 		return nil
 	default:
-		return fmt.Errorf("invalid sampling_strategy %q, expected one of %q or %q", cfg.SamplingStrategy, samplingStrategyFullTraceWayOut, samplingStrategyRootSpanOnlyWayIn)
+		return fmt.Errorf(
+			"invalid sampling_strategy %q, expected one of %q, %q or %q",
+			cfg.SamplingStrategy,
+			samplingStrategyFullTraceWayOut,
+			samplingStrategyFullTraceWayIn,
+			samplingStrategyRootSpanOnlyWayIn,
+		)
 	}
 }

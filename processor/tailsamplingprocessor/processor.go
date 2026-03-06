@@ -245,7 +245,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to create policy evaluator for %q: %w", cfg.Name, err)
 		}
-		if tsp.cfg.SamplingStrategy == samplingStrategyRootSpanOnlyWayIn && eval.IsStateful() {
+		if (tsp.cfg.SamplingStrategy == samplingStrategyRootSpanOnlyWayIn || tsp.cfg.SamplingStrategy == samplingStrategyFullTraceWayIn) && eval.IsStateful() {
 			return nil, fmt.Errorf("sampling_strategy %q requires all policies to be stateless, but policy %q is stateful", tsp.cfg.SamplingStrategy, cfg.Name)
 		}
 
@@ -609,6 +609,18 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			continue
 		}
 
+		// In full-trace-way-in mode, tick is a cleanup path only. Finalize any
+		// still-pending trace as implicit not sampled without policy evaluation.
+		if tsp.cfg.SamplingStrategy == samplingStrategyFullTraceWayIn {
+			trace.decisionTime = time.Now()
+			trace.FinalDecision = samplingpolicy.NotSampled
+			globalTracesSampledByDecision[samplingpolicy.NotSampled]++
+			metrics.decisionNotSampled++
+			tsp.releaseNotSampledTrace(id, trace)
+			trace.ReceivedBatches = ptrace.NewTraces()
+			continue
+		}
+
 		trace.decisionTime = time.Now()
 
 		decision, policyName := tsp.makeDecision(id, &trace.TraceData, metrics)
@@ -740,6 +752,38 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	return finalDecision, getPolicyName(sampledPolicy)
 }
 
+// makeDecisionOnTheWayIn is used by full-trace-way-in mode. It only returns
+// terminal decisions at ingest time. All other outcomes remain pending.
+func (tsp *tailSamplingSpanProcessor) makeDecisionOnTheWayIn(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyTickMetrics) (samplingpolicy.Decision, string) {
+	ctx := context.Background()
+	for i, p := range tsp.policies {
+		startTime := time.Now()
+		decision, err := p.evaluator.Evaluate(ctx, id, trace)
+		metrics.addDecisionTime(i, time.Since(startTime))
+
+		if err != nil {
+			metrics.evaluateErrorCount++
+			tsp.logger.Debug("Sampling policy error", zap.Error(err))
+			continue
+		}
+
+		metrics.addDecision(i, decision, trace.SpanCount)
+
+		if decision == samplingpolicy.Dropped {
+			metrics.decisionDropped++
+			return samplingpolicy.Dropped, p.name
+		}
+		if decision == samplingpolicy.Sampled {
+			metrics.decisionSampled++
+			if tsp.recordPolicy {
+				sampling.SetAttrOnScopeSpans(trace.ReceivedBatches, "tailsampling.policy", p.name)
+			}
+			return samplingpolicy.Sampled, p.name
+		}
+	}
+	return samplingpolicy.Pending, ""
+}
+
 func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
 	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
 	ilss := resourceSpans.ScopeSpans()
@@ -816,6 +860,27 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	}
 
 	if finalDecision == samplingpolicy.Unspecified {
+		if tsp.cfg.SamplingStrategy == samplingStrategyFullTraceWayIn {
+			actualData.decisionTime = time.Now()
+			wayInTraceData := traceDataWithCurrentBatch(rss, actualData.SpanCount)
+			decision, policyName := tsp.makeDecisionOnTheWayIn(id, &wayInTraceData, newPolicyTickMetrics(len(tsp.policies)))
+
+			// Store current batch after evaluation to avoid re-evaluating prior spans
+			// while still releasing full accumulated trace data on terminal outcomes.
+			appendToTraces(actualData.ReceivedBatches, rss)
+
+			if decision == samplingpolicy.Sampled || decision == samplingpolicy.Dropped {
+				actualData.FinalDecision = decision
+				actualData.PolicyName = policyName
+				if decision == samplingpolicy.Sampled {
+					tsp.releaseSampledTrace(tsp.ctx, id, actualData)
+				} else {
+					tsp.releaseNotSampledTrace(id, actualData)
+				}
+			}
+			return
+		}
+
 		// In root-only mode, evaluate as soon as the root span is seen and only
 		// use root span data for the sampling decision.
 		if tsp.cfg.SamplingStrategy == samplingStrategyRootSpanOnlyWayIn && containsRootSpan {
@@ -891,6 +956,16 @@ func traceDataWithRootSpanOnly(rss ptrace.ResourceSpans, rootSpan ptrace.Span) s
 	// Fallback in case the root span cannot be located in rss.
 	fallbackScopeSpans := rs.ScopeSpans().AppendEmpty()
 	rootSpan.CopyTo(fallbackScopeSpans.Spans().AppendEmpty())
+	return traceData
+}
+
+func traceDataWithCurrentBatch(rss ptrace.ResourceSpans, totalSpanCount int64) samplingpolicy.TraceData {
+	traceData := samplingpolicy.TraceData{
+		SpanCount:       totalSpanCount,
+		ReceivedBatches: ptrace.NewTraces(),
+	}
+	rs := traceData.ReceivedBatches.ResourceSpans().AppendEmpty()
+	rss.CopyTo(rs)
 	return traceData
 }
 

@@ -457,8 +457,9 @@ properties:
     description: Make decision as soon as a policy matches
     type: boolean
   sampling_strategy:
-    description: SamplingStrategy controls how/when sampling decisions are made. full-trace-way-out (default) keeps classic tail sampling behavior. root-span-only-way-in makes a decision when the root span arrives using root-only data; decision_wait and decision_wait_after_root_received do not drive sampling decisions in this mode.
+    description: SamplingStrategy controls how/when sampling decisions are made. full-trace-way-out (default) keeps classic tail sampling behavior. full-trace-way-in evaluates on ingest using only the incoming batch for each trace and does not re-evaluate previously ingested spans; unresolved traces are cleanup-finalized as not sampled without policy re-evaluation and stateful policies are not supported in this mode. root-span-only-way-in makes a decision when the root span arrives using root-only data.
     type: string
     enum:
       - full-trace-way-out
+      - full-trace-way-in
       - root-span-only-way-in
