@@ -4,6 +4,7 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"time"
@@ -280,11 +281,60 @@ func (e Correlation) asMap() map[string]any {
 }
 
 // unmarshalEventXML will unmarshal EventXML from xml bytes.
-func unmarshalEventXML(bytes []byte) (*EventXML, error) {
+// Illegal XML 1.0 characters (e.g. U+0001 found in some Sysmon events) are
+// stripped before parsing so that a single malformed event does not halt the
+// entire receiver.
+func unmarshalEventXML(data []byte) (*EventXML, error) {
+	sanitized := sanitizeXMLBytes(data)
 	var eventXML EventXML
-	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
+	if err := xml.Unmarshal(sanitized, &eventXML); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(sanitized))
 	}
-	eventXML.Original = string(bytes)
+	// The sanitized bytes are only required for XML unmarshalling - the original data is preserved.
+	eventXML.Original = string(data)
 	return &eventXML, nil
+}
+
+// sanitizeXMLBytes removes characters that are illegal in XML 1.0 documents.
+// XML 1.0 permits: #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
+// All other code points (e.g. U+0001–U+0008, U+000B, U+000C, U+000E–U+001F) are dropped.
+//
+// A zero-allocation pre-scan is performed first; if no illegal bytes are found
+// the original slice is returned unchanged, avoiding the bytes.Map allocation
+// on the common (clean) path.
+func sanitizeXMLBytes(data []byte) []byte {
+	if !hasIllegalXMLBytes(data) {
+		return data
+	}
+	return bytes.Map(func(r rune) rune {
+		if (r >= 0x20 && r <= 0xD7FF) || r == 0x09 || r == 0x0A || r == 0x0D ||
+			(r >= 0xE000 && r <= 0xFFFD) ||
+			r >= 0x10000 {
+			return r
+		}
+		return -1
+	}, data)
+}
+
+// hasIllegalXMLBytes reports whether data contains any character that is
+// illegal in an XML 1.0 document. It operates on raw bytes to avoid
+// allocation: single-byte control characters are caught by a simple range
+// check, and the only illegal multi-byte sequences handled explicitly are
+// U+FFFE (EF BF BE) and U+FFFF (EF BF BF).
+func hasIllegalXMLBytes(data []byte) bool {
+	for i := range len(data) {
+		b := data[i]
+		if b < 0x20 {
+			// 0x09 (tab), 0x0A (LF), 0x0D (CR) are the only legal control chars.
+			if b != 0x09 && b != 0x0A && b != 0x0D {
+				return true
+			}
+		} else if b == 0xEF && i+2 < len(data) {
+			// U+FFFE = EF BF BE, U+FFFF = EF BF BF — both illegal in XML 1.0.
+			if data[i+1] == 0xBF && (data[i+2] == 0xBE || data[i+2] == 0xBF) {
+				return true
+			}
+		}
+	}
+	return false
 }

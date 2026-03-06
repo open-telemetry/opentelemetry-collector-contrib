@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,15 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["SystemdServiceCPUTime"] = mb.metricSystemdServiceCPUTime.config.AggregationStrategy
+			aggMap["SystemdServiceRestarts"] = mb.metricSystemdServiceRestarts.config.AggregationStrategy
+			aggMap["SystemdUnitState"] = mb.metricSystemdUnitState.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,6 +82,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemdServiceCPUTimeDataPoint(ts, 1, AttributeCPUModeSystem)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemdServiceCPUTimeDataPoint(ts, 3, AttributeCPUModeUser)
+			}
 
 			allMetricsCount++
 			mb.RecordSystemdServiceRestartsDataPoint(ts, 1)
@@ -77,11 +92,18 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemdUnitStateDataPoint(ts, 1, AttributeSystemdUnitActiveStateActive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemdUnitStateDataPoint(ts, 3, AttributeSystemdUnitActiveStateReloading)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetSystemdUnitName("systemd.unit.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSystemdServiceCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricSystemdUnitState.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -103,22 +125,49 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "systemd.service.cpu.time":
-					assert.False(t, validatedMetrics["systemd.service.cpu.time"], "Found a duplicate in the metrics slice: systemd.service.cpu.time")
-					validatedMetrics["systemd.service.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total CPU time spent by this service.", ms.At(i).Description())
-					assert.Equal(t, "us", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("cpu.mode")
-					assert.True(t, ok)
-					assert.Equal(t, "system", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["systemd.service.cpu.time"], "Found a duplicate in the metrics slice: systemd.service.cpu.time")
+						validatedMetrics["systemd.service.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total CPU time spent by this service.", ms.At(i).Description())
+						assert.Equal(t, "us", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("cpu.mode")
+						assert.True(t, ok)
+						assert.Equal(t, "system", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["systemd.service.cpu.time"], "Found a duplicate in the metrics slice: systemd.service.cpu.time")
+						validatedMetrics["systemd.service.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "Total CPU time spent by this service.", ms.At(i).Description())
+						assert.Equal(t, "us", ms.At(i).Unit())
+						assert.True(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["systemd.service.cpu.time"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("cpu.mode")
+						assert.False(t, ok)
+					}
 				case "systemd.service.restarts":
 					assert.False(t, validatedMetrics["systemd.service.restarts"], "Found a duplicate in the metrics slice: systemd.service.restarts")
 					validatedMetrics["systemd.service.restarts"] = true
@@ -134,22 +183,49 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "systemd.unit.state":
-					assert.False(t, validatedMetrics["systemd.unit.state"], "Found a duplicate in the metrics slice: systemd.unit.state")
-					validatedMetrics["systemd.unit.state"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "1 if the check resulted in active_state matching the current state, otherwise 0.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("systemd.unit.active_state")
-					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["systemd.unit.state"], "Found a duplicate in the metrics slice: systemd.unit.state")
+						validatedMetrics["systemd.unit.state"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "1 if the check resulted in active_state matching the current state, otherwise 0.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("systemd.unit.active_state")
+						assert.True(t, ok)
+						assert.Equal(t, "active", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["systemd.unit.state"], "Found a duplicate in the metrics slice: systemd.unit.state")
+						validatedMetrics["systemd.unit.state"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+						assert.Equal(t, "1 if the check resulted in active_state matching the current state, otherwise 0.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						assert.False(t, ms.At(i).Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["systemd.unit.state"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("systemd.unit.active_state")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

@@ -1114,4 +1114,4 @@ The breaking changes between the 2 schemas are the following:
 - `k8s.namespace.annotations.<key>` -> `k8s.namespace.annotation.<key>`
 
 All attributes emitted through the `processor.k8sattributes.EmitV1K8sConventions` feature gate
-are currently in `alpha` stability and are actively moving towards `stable` stability.
+are currently in `beta` stability and are actively moving towards `stable` stability.

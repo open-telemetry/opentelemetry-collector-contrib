@@ -3,14 +3,21 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled             bool `mapstructure:"enabled"`
+	enabledSetByUser    bool
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []string `mapstructure:"attributes"`
+	definedAttributes   []string
+	requiredAttributes  []string
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -21,6 +28,26 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
+	}
+	if len(ms.definedAttributes) > 0 {
+		for _, val := range ms.EnabledAttributes {
+			if !slices.Contains(ms.definedAttributes, val) {
+				return fmt.Errorf("%v is not defined in metadata.yaml", val)
+			}
+		}
+
+		for _, val := range ms.requiredAttributes {
+			if !slices.Contains(ms.EnabledAttributes, val) {
+				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+			}
+		}
+
+		if ms.AggregationStrategy != AggregationStrategySum &&
+			ms.AggregationStrategy != AggregationStrategyAvg &&
+			ms.AggregationStrategy != AggregationStrategyMin &&
+			ms.AggregationStrategy != AggregationStrategyMax {
+			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		}
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
@@ -50,52 +77,97 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		KafkaBrokerLogRetentionPeriod: MetricConfig{
-			Enabled: false,
+			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"broker"},
+			EnabledAttributes:  []string{"broker"},
 		},
 		KafkaBrokers: MetricConfig{
 			Enabled: true,
 		},
 		KafkaConsumerGroupLag: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"group", "topic", "partition"},
+			EnabledAttributes:  []string{"group", "topic", "partition"},
 		},
 		KafkaConsumerGroupLagSum: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"group", "topic"},
+			EnabledAttributes:  []string{"group", "topic"},
 		},
 		KafkaConsumerGroupMembers: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"group"},
+			EnabledAttributes:  []string{"group"},
 		},
 		KafkaConsumerGroupOffset: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"group", "topic", "partition"},
+			EnabledAttributes:  []string{"group", "topic", "partition"},
 		},
 		KafkaConsumerGroupOffsetSum: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"group", "topic"},
+			EnabledAttributes:  []string{"group", "topic"},
 		},
 		KafkaPartitionCurrentOffset: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"topic", "partition"},
+			EnabledAttributes:  []string{"topic", "partition"},
 		},
 		KafkaPartitionOldestOffset: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"topic", "partition"},
+			EnabledAttributes:  []string{"topic", "partition"},
 		},
 		KafkaPartitionReplicas: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"topic", "partition"},
+			EnabledAttributes:  []string{"topic", "partition"},
 		},
 		KafkaPartitionReplicasInSync: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"topic", "partition"},
+			EnabledAttributes:  []string{"topic", "partition"},
 		},
 		KafkaTopicLogRetentionPeriod: MetricConfig{
-			Enabled: false,
+			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"topic"},
+			EnabledAttributes:  []string{"topic"},
 		},
 		KafkaTopicLogRetentionSize: MetricConfig{
-			Enabled: false,
+			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"topic"},
+			EnabledAttributes:  []string{"topic"},
 		},
 		KafkaTopicMinInsyncReplicas: MetricConfig{
-			Enabled: false,
+			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"topic"},
+			EnabledAttributes:  []string{"topic"},
 		},
 		KafkaTopicPartitions: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"topic"},
+			EnabledAttributes:  []string{"topic"},
 		},
 		KafkaTopicReplicationFactor: MetricConfig{
-			Enabled: false,
+			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"topic"},
+			EnabledAttributes:  []string{"topic"},
 		},
 	}
 }
