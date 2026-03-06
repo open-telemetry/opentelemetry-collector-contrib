@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -26,36 +27,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					AerospikeNamespaceDiskAvailable: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceGeojsonRegionQueryCells: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceGeojsonRegionQueryPoints: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceGeojsonRegionQueryRequests: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceMemoryFree: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					AerospikeNamespaceDiskAvailable:                   MetricConfig{Enabled: true},
+					AerospikeNamespaceGeojsonRegionQueryCells:         MetricConfig{Enabled: true},
+					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{Enabled: true},
+					AerospikeNamespaceGeojsonRegionQueryPoints:        MetricConfig{Enabled: true},
+					AerospikeNamespaceGeojsonRegionQueryRequests:      MetricConfig{Enabled: true},
+					AerospikeNamespaceMemoryFree:                      MetricConfig{Enabled: true},
 					AerospikeNamespaceMemoryUsage: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -86,16 +63,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{"type"},
 					},
-					AerospikeNodeMemoryFree: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNodeQueryTracked: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					AerospikeNodeMemoryFree:   MetricConfig{Enabled: true},
+					AerospikeNodeQueryTracked: MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					AerospikeNamespace: ResourceAttributeConfig{Enabled: true},
@@ -107,36 +76,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					AerospikeNamespaceDiskAvailable: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceGeojsonRegionQueryCells: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceGeojsonRegionQueryPoints: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceGeojsonRegionQueryRequests: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNamespaceMemoryFree: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
+					AerospikeNamespaceDiskAvailable:                   MetricConfig{Enabled: false},
+					AerospikeNamespaceGeojsonRegionQueryCells:         MetricConfig{Enabled: false},
+					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{Enabled: false},
+					AerospikeNamespaceGeojsonRegionQueryPoints:        MetricConfig{Enabled: false},
+					AerospikeNamespaceGeojsonRegionQueryRequests:      MetricConfig{Enabled: false},
+					AerospikeNamespaceMemoryFree:                      MetricConfig{Enabled: false},
 					AerospikeNamespaceMemoryUsage: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -167,16 +112,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{"type"},
 					},
-					AerospikeNodeMemoryFree: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					AerospikeNodeQueryTracked: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					AerospikeNodeMemoryFree:   MetricConfig{Enabled: false},
+					AerospikeNodeQueryTracked: MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					AerospikeNamespace: ResourceAttributeConfig{Enabled: false},

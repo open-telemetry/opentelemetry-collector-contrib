@@ -3,22 +3,16 @@ all_set:
   metrics:
     aerospike.namespace.disk.available:
       enabled: true
-      attributes: []
     aerospike.namespace.geojson.region_query_cells:
       enabled: true
-      attributes: []
     aerospike.namespace.geojson.region_query_false_positive:
       enabled: true
-      attributes: []
     aerospike.namespace.geojson.region_query_points:
       enabled: true
-      attributes: []
     aerospike.namespace.geojson.region_query_requests:
       enabled: true
-      attributes: []
     aerospike.namespace.memory.free:
       enabled: true
-      attributes: []
     aerospike.namespace.memory.usage:
       enabled: true
       attributes: ["component"]
@@ -39,10 +33,8 @@ all_set:
       attributes: ["type"]
     aerospike.node.memory.free:
       enabled: true
-      attributes: []
     aerospike.node.query.tracked:
       enabled: true
-      attributes: []
   resource_attributes:
     aerospike.namespace:
       enabled: true
@@ -52,22 +44,16 @@ reaggregate_set:
   metrics:
     aerospike.namespace.disk.available:
       enabled: true
-      attributes: []
     aerospike.namespace.geojson.region_query_cells:
       enabled: true
-      attributes: []
     aerospike.namespace.geojson.region_query_false_positive:
       enabled: true
-      attributes: []
     aerospike.namespace.geojson.region_query_points:
       enabled: true
-      attributes: []
     aerospike.namespace.geojson.region_query_requests:
       enabled: true
-      attributes: []
     aerospike.namespace.memory.free:
       enabled: true
-      attributes: []
     aerospike.namespace.memory.usage:
       enabled: true
       attributes: []
@@ -88,10 +74,8 @@ reaggregate_set:
       attributes: []
     aerospike.node.memory.free:
       enabled: true
-      attributes: []
     aerospike.node.query.tracked:
       enabled: true
-      attributes: []
   resource_attributes:
     aerospike.namespace:
       enabled: true
@@ -101,22 +85,16 @@ none_set:
   metrics:
     aerospike.namespace.disk.available:
       enabled: false
-      attributes: []
     aerospike.namespace.geojson.region_query_cells:
       enabled: false
-      attributes: []
     aerospike.namespace.geojson.region_query_false_positive:
       enabled: false
-      attributes: []
     aerospike.namespace.geojson.region_query_points:
       enabled: false
-      attributes: []
     aerospike.namespace.geojson.region_query_requests:
       enabled: false
-      attributes: []
     aerospike.namespace.memory.free:
       enabled: false
-      attributes: []
     aerospike.namespace.memory.usage:
       enabled: false
       attributes: ["component"]
@@ -137,10 +115,8 @@ none_set:
       attributes: ["type"]
     aerospike.node.memory.free:
       enabled: false
-      attributes: []
     aerospike.node.query.tracked:
       enabled: false
-      attributes: []
   resource_attributes:
     aerospike.namespace:
       enabled: false

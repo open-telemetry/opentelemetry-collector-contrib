@@ -93,44 +93,26 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, "1")
-			if tt.name == "reaggregate_set" {
-				mb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, "3")
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts, "1")
-			if tt.name == "reaggregate_set" {
-				mb.RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts, "3")
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts, "1")
-			if tt.name == "reaggregate_set" {
-				mb.RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts, "3")
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts, "1")
-			if tt.name == "reaggregate_set" {
-				mb.RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts, "3")
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts, "1")
-			if tt.name == "reaggregate_set" {
-				mb.RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts, "3")
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "1")
-			if tt.name == "reaggregate_set" {
-				mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "3")
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -177,16 +159,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "1")
-			if tt.name == "reaggregate_set" {
-				mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "3")
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "1")
-			if tt.name == "reaggregate_set" {
-				mb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "3")
-			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetAerospikeNamespace("aerospike.namespace-val")
@@ -194,20 +170,12 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
-				assert.Empty(t, mb.metricAerospikeNamespaceDiskAvailable.aggDataPoints)
-				assert.Empty(t, mb.metricAerospikeNamespaceGeojsonRegionQueryCells.aggDataPoints)
-				assert.Empty(t, mb.metricAerospikeNamespaceGeojsonRegionQueryFalsePositive.aggDataPoints)
-				assert.Empty(t, mb.metricAerospikeNamespaceGeojsonRegionQueryPoints.aggDataPoints)
-				assert.Empty(t, mb.metricAerospikeNamespaceGeojsonRegionQueryRequests.aggDataPoints)
-				assert.Empty(t, mb.metricAerospikeNamespaceMemoryFree.aggDataPoints)
 				assert.Empty(t, mb.metricAerospikeNamespaceMemoryUsage.aggDataPoints)
 				assert.Empty(t, mb.metricAerospikeNamespaceQueryCount.aggDataPoints)
 				assert.Empty(t, mb.metricAerospikeNamespaceScanCount.aggDataPoints)
 				assert.Empty(t, mb.metricAerospikeNamespaceTransactionCount.aggDataPoints)
 				assert.Empty(t, mb.metricAerospikeNodeConnectionCount.aggDataPoints)
 				assert.Empty(t, mb.metricAerospikeNodeConnectionOpen.aggDataPoints)
-				assert.Empty(t, mb.metricAerospikeNodeMemoryFree.aggDataPoints)
-				assert.Empty(t, mb.metricAerospikeNodeQueryTracked.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -230,231 +198,85 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "aerospike.namespace.disk.available":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["aerospike.namespace.disk.available"], "Found a duplicate in the metrics slice: aerospike.namespace.disk.available")
-						validatedMetrics["aerospike.namespace.disk.available"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Minimum percentage of contiguous disk space free to the namespace across all devices", ms.At(i).Description())
-						assert.Equal(t, "%", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["aerospike.namespace.disk.available"], "Found a duplicate in the metrics slice: aerospike.namespace.disk.available")
-						validatedMetrics["aerospike.namespace.disk.available"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Minimum percentage of contiguous disk space free to the namespace across all devices", ms.At(i).Description())
-						assert.Equal(t, "%", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["aerospike.namespace.disk.available"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["aerospike.namespace.disk.available"], "Found a duplicate in the metrics slice: aerospike.namespace.disk.available")
+					validatedMetrics["aerospike.namespace.disk.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Minimum percentage of contiguous disk space free to the namespace across all devices", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "aerospike.namespace.geojson.region_query_cells":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_cells"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_cells")
-						validatedMetrics["aerospike.namespace.geojson.region_query_cells"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of cell coverings for query region queried", ms.At(i).Description())
-						assert.Equal(t, "{cells}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_cells"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_cells")
-						validatedMetrics["aerospike.namespace.geojson.region_query_cells"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of cell coverings for query region queried", ms.At(i).Description())
-						assert.Equal(t, "{cells}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["aerospike.namespace.geojson.region_query_cells"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_cells"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_cells")
+					validatedMetrics["aerospike.namespace.geojson.region_query_cells"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of cell coverings for query region queried", ms.At(i).Description())
+					assert.Equal(t, "{cells}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "aerospike.namespace.geojson.region_query_false_positive":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_false_positive"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_false_positive")
-						validatedMetrics["aerospike.namespace.geojson.region_query_false_positive"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of points outside the region.", ms.At(i).Description())
-						assert.Equal(t, "{points}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_false_positive"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_false_positive")
-						validatedMetrics["aerospike.namespace.geojson.region_query_false_positive"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of points outside the region.", ms.At(i).Description())
-						assert.Equal(t, "{points}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["aerospike.namespace.geojson.region_query_false_positive"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_false_positive"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_false_positive")
+					validatedMetrics["aerospike.namespace.geojson.region_query_false_positive"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of points outside the region.", ms.At(i).Description())
+					assert.Equal(t, "{points}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "aerospike.namespace.geojson.region_query_points":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_points"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_points")
-						validatedMetrics["aerospike.namespace.geojson.region_query_points"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of points within the region.", ms.At(i).Description())
-						assert.Equal(t, "{points}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_points"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_points")
-						validatedMetrics["aerospike.namespace.geojson.region_query_points"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of points within the region.", ms.At(i).Description())
-						assert.Equal(t, "{points}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["aerospike.namespace.geojson.region_query_points"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_points"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_points")
+					validatedMetrics["aerospike.namespace.geojson.region_query_points"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of points within the region.", ms.At(i).Description())
+					assert.Equal(t, "{points}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "aerospike.namespace.geojson.region_query_requests":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_requests"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_requests")
-						validatedMetrics["aerospike.namespace.geojson.region_query_requests"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of geojson queries on the system since the uptime of the node.", ms.At(i).Description())
-						assert.Equal(t, "{queries}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_requests"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_requests")
-						validatedMetrics["aerospike.namespace.geojson.region_query_requests"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of geojson queries on the system since the uptime of the node.", ms.At(i).Description())
-						assert.Equal(t, "{queries}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["aerospike.namespace.geojson.region_query_requests"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["aerospike.namespace.geojson.region_query_requests"], "Found a duplicate in the metrics slice: aerospike.namespace.geojson.region_query_requests")
+					validatedMetrics["aerospike.namespace.geojson.region_query_requests"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of geojson queries on the system since the uptime of the node.", ms.At(i).Description())
+					assert.Equal(t, "{queries}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "aerospike.namespace.memory.free":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["aerospike.namespace.memory.free"], "Found a duplicate in the metrics slice: aerospike.namespace.memory.free")
-						validatedMetrics["aerospike.namespace.memory.free"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Percentage of the namespace's memory which is still free", ms.At(i).Description())
-						assert.Equal(t, "%", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["aerospike.namespace.memory.free"], "Found a duplicate in the metrics slice: aerospike.namespace.memory.free")
-						validatedMetrics["aerospike.namespace.memory.free"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Percentage of the namespace's memory which is still free", ms.At(i).Description())
-						assert.Equal(t, "%", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["aerospike.namespace.memory.free"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["aerospike.namespace.memory.free"], "Found a duplicate in the metrics slice: aerospike.namespace.memory.free")
+					validatedMetrics["aerospike.namespace.memory.free"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of the namespace's memory which is still free", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "aerospike.namespace.memory.usage":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["aerospike.namespace.memory.usage"], "Found a duplicate in the metrics slice: aerospike.namespace.memory.usage")
@@ -745,79 +567,31 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 					}
 				case "aerospike.node.memory.free":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["aerospike.node.memory.free"], "Found a duplicate in the metrics slice: aerospike.node.memory.free")
-						validatedMetrics["aerospike.node.memory.free"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Percentage of the node's memory which is still free", ms.At(i).Description())
-						assert.Equal(t, "%", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["aerospike.node.memory.free"], "Found a duplicate in the metrics slice: aerospike.node.memory.free")
-						validatedMetrics["aerospike.node.memory.free"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Percentage of the node's memory which is still free", ms.At(i).Description())
-						assert.Equal(t, "%", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["aerospike.node.memory.free"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["aerospike.node.memory.free"], "Found a duplicate in the metrics slice: aerospike.node.memory.free")
+					validatedMetrics["aerospike.node.memory.free"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of the node's memory which is still free", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "aerospike.node.query.tracked":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["aerospike.node.query.tracked"], "Found a duplicate in the metrics slice: aerospike.node.query.tracked")
-						validatedMetrics["aerospike.node.query.tracked"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of queries tracked by the system.", ms.At(i).Description())
-						assert.Equal(t, "{queries}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["aerospike.node.query.tracked"], "Found a duplicate in the metrics slice: aerospike.node.query.tracked")
-						validatedMetrics["aerospike.node.query.tracked"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of queries tracked by the system.", ms.At(i).Description())
-						assert.Equal(t, "{queries}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["aerospike.node.query.tracked"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["aerospike.node.query.tracked"], "Found a duplicate in the metrics slice: aerospike.node.query.tracked")
+					validatedMetrics["aerospike.node.query.tracked"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of queries tracked by the system.", ms.At(i).Description())
+					assert.Equal(t, "{queries}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				}
 			}
 		})
