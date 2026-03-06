@@ -187,10 +187,9 @@ func partitionerKeysSet(cfg Config) []string {
 
 	allKeys := slices.Clone(cfg.IncludeMetadataKeys)
 	// All the topic from attribute keys are included as metadata keys so that
-	// topics can be deduced even after batching is perfomed.
+	// topics can be deduced even after batching is performed.
 	allKeys = append(
 		allKeys,
-		cfg.TopicFromAttribute,
 		cfg.Logs.TopicFromMetadataKey,
 		cfg.Metrics.TopicFromMetadataKey,
 		cfg.Traces.TopicFromMetadataKey,

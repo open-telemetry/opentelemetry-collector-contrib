@@ -263,15 +263,18 @@ func TestPartitionerKeysSet(t *testing.T) {
 	t.Run("includes configured metadata keys", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.IncludeMetadataKeys = []string{"tenant_id", "request_id"}
-		cfg.Traces.TopicFromMetadataKey = "kafka_topic"
-		cfg.Logs.TopicFromMetadataKey = "kafka_topic"
-		cfg.TopicFromAttribute = "topic_attr"
+		cfg.Traces.TopicFromMetadataKey = "kafka_topic_traces"
+		cfg.Logs.TopicFromMetadataKey = "kafka_topic_logs"
+		cfg.Metrics.TopicFromMetadataKey = "kafka_topic_metrics"
+		cfg.Profiles.TopicFromMetadataKey = "kafka_topic_profiles"
 
 		assert.ElementsMatch(t, []string{
 			"tenant_id",
 			"request_id",
-			"kafka_topic",
-			"topic_attr",
+			"kafka_topic_traces",
+			"kafka_topic_logs",
+			"kafka_topic_metrics",
+			"kafka_topic_profiles",
 		}, partitionerKeysSet(*cfg))
 	})
 
