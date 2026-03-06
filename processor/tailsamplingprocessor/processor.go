@@ -473,6 +473,30 @@ func (m *policyTickMetrics) addDecisionTime(policyIndex int, decisionTime time.D
 	m.cumulativeExecutionTime[policyIndex] = perPolicyExecutionTime
 }
 
+func (tsp *tailSamplingSpanProcessor) recordPerPolicyEvaluationMetrics(metrics *policyTickMetrics) {
+	for i, p := range tsp.policies {
+		for decision, stats := range metrics.tracesSampledByPolicyDecision[i] {
+			tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(tsp.ctx, int64(stats.tracesSampled), p.attribute, decisionToAttributes[decision])
+			if telemetry.IsMetricStatCountSpansSampledEnabled() {
+				tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(tsp.ctx, stats.spansSampled, p.attribute, decisionToAttributes[decision])
+			}
+		}
+		tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutionTimeSum.Add(tsp.ctx, metrics.cumulativeExecutionTime[i].executionTime.Microseconds(), p.attribute)
+		tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutionCount.Add(tsp.ctx, metrics.cumulativeExecutionTime[i].executionCount, p.attribute)
+	}
+}
+
+func (tsp *tailSamplingSpanProcessor) recordImmediateDecisionMetrics(decision samplingpolicy.Decision, metrics *policyTickMetrics, evaluationLatency time.Duration) {
+	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, evaluationLatency.Milliseconds())
+	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
+
+	if attrs, ok := decisionToAttributes[decision]; ok {
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, attrs)
+	}
+
+	tsp.recordPerPolicyEvaluationMetrics(metrics)
+}
+
 func (tsp *tailSamplingSpanProcessor) loop() {
 	ticker := time.NewTicker(tsp.tickerFrequency)
 	defer ticker.Stop()
@@ -647,17 +671,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	for decision, count := range globalTracesSampledByDecision {
 		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, count, decisionToAttributes[decision])
 	}
-
-	for i, p := range tsp.policies {
-		for decision, stats := range metrics.tracesSampledByPolicyDecision[i] {
-			tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(tsp.ctx, int64(stats.tracesSampled), p.attribute, decisionToAttributes[decision])
-			if telemetry.IsMetricStatCountSpansSampledEnabled() {
-				tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(tsp.ctx, stats.spansSampled, p.attribute, decisionToAttributes[decision])
-			}
-		}
-		tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutionTimeSum.Add(tsp.ctx, metrics.cumulativeExecutionTime[i].executionTime.Microseconds(), p.attribute)
-		tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutionCount.Add(tsp.ctx, metrics.cumulativeExecutionTime[i].executionCount, p.attribute)
-	}
+	tsp.recordPerPolicyEvaluationMetrics(metrics)
 
 	tsp.logger.Debug("Sampling policy evaluation completed",
 		zap.Int("batch.len", batchLen),
@@ -861,9 +875,12 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 
 	if finalDecision == samplingpolicy.Unspecified {
 		if tsp.cfg.SamplingStrategy == samplingStrategyFullTraceWayIn {
-			actualData.decisionTime = time.Now()
+			metrics := newPolicyTickMetrics(len(tsp.policies))
+			evaluationStart := time.Now()
+			actualData.decisionTime = evaluationStart
 			wayInTraceData := traceDataWithCurrentBatch(rss, actualData.SpanCount)
-			decision, policyName := tsp.makeDecisionOnTheWayIn(id, &wayInTraceData, newPolicyTickMetrics(len(tsp.policies)))
+			decision, policyName := tsp.makeDecisionOnTheWayIn(id, &wayInTraceData, metrics)
+			tsp.recordImmediateDecisionMetrics(decision, metrics, time.Since(evaluationStart))
 
 			// Store current batch after evaluation to avoid re-evaluating prior spans
 			// while still releasing full accumulated trace data on terminal outcomes.
@@ -884,9 +901,12 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		// In root-only mode, evaluate as soon as the root span is seen and only
 		// use root span data for the sampling decision.
 		if tsp.cfg.SamplingStrategy == samplingStrategyRootSpanOnlyWayIn && containsRootSpan {
-			actualData.decisionTime = time.Now()
+			metrics := newPolicyTickMetrics(len(tsp.policies))
+			evaluationStart := time.Now()
+			actualData.decisionTime = evaluationStart
 			rootOnlyTraceData := traceDataWithRootSpanOnly(rss, *rootSpan)
-			decision, policyName := tsp.makeDecision(id, &rootOnlyTraceData, newPolicyTickMetrics(len(tsp.policies)))
+			decision, policyName := tsp.makeDecision(id, &rootOnlyTraceData, metrics)
+			tsp.recordImmediateDecisionMetrics(decision, metrics, time.Since(evaluationStart))
 
 			allSpans := actualData.ReceivedBatches
 			actualData.FinalDecision = decision
