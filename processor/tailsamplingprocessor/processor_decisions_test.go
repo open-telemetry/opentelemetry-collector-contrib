@@ -1334,7 +1334,7 @@ func TestRateLimiter(t *testing.T) {
 	require.GreaterOrEqual(t, len(sampledTraceIDs), 1)
 }
 
-func singleSpanTrace(traceID pcommon.TraceID, spanID pcommon.SpanID, parentID pcommon.SpanID) ptrace.Traces {
+func singleSpanTrace(traceID pcommon.TraceID, spanID, parentID pcommon.SpanID) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
