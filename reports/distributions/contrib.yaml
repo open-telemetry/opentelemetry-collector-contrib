@@ -230,6 +230,7 @@ components:
         - windowseventlog
         - windowsperfcounters
         - windowsservice
+        - yang_grpc
         - zipkin
         - zookeeper
     scraper:
