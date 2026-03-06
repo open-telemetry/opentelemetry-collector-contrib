@@ -53,11 +53,6 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
 // MetricsConfig provides config for load metrics.
 type MetricsConfig struct {
 	SystemCPULoadAverage15m MetricConfig `mapstructure:"system.cpu.load_average.15m"`
