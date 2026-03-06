@@ -196,8 +196,8 @@ components:
         - podman_stats
         - postgresql
         - prometheus
+        - prometheus_remote_write
         - prometheus_simple
-        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb
