@@ -143,7 +143,10 @@ func (dc *Client) FetchContainerStatsAsJSON(
 	ctx context.Context,
 	container Container,
 ) (*ctypes.StatsResponse, error) {
-	containerStats, err := dc.FetchContainerStats(ctx, container)
+	statsCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
+	defer cancel()
+
+	containerStats, err := dc.FetchContainerStats(statsCtx, container)
 	if err != nil {
 		return nil, err
 	}
@@ -163,9 +166,7 @@ func (dc *Client) FetchContainerStats(
 	container Container,
 ) (ctypes.StatsResponseReader, error) {
 	dc.logger.Debug("Fetching container stats.", zap.String("id", container.ID))
-	statsCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
-	containerStats, err := dc.client.ContainerStats(statsCtx, container.ID, false)
-	defer cancel()
+	containerStats, err := dc.client.ContainerStats(ctx, container.ID, false)
 	if err != nil {
 		if cerrdefs.IsNotFound(err) {
 			dc.logger.Debug(
