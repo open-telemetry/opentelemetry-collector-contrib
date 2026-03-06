@@ -123,7 +123,7 @@ Many parsers operators can be configured to embed certain followup operations su
 
 ### Time parameters
 
-All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `1m`. 
+All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `1m`.
 
 ### Log Rotation
 
@@ -250,7 +250,7 @@ Exactly how this information is serialized depends on the type of storage being 
 
 ### Archiving
 
-If `polls_to_archive` setting is used in conjunction with `storage` setting, file offsets older than three poll cycles are stored on disk rather than being discarded. This feature enables the receiver to remember file for a longer period and also aims to use limited amount of memory. 
+If `polls_to_archive` setting is used in conjunction with `storage` setting, file offsets older than three poll cycles are stored on disk rather than being discarded. This feature enables the receiver to remember file for a longer period and also aims to use limited amount of memory.
 
 This is useful when `exclude_older_than` setting is used and the user wants the receiver to remember offsets of files for longer period of times. This helps prevent duplication if a file is modified after the `exclude_older_than` duration has passed.
 
@@ -259,7 +259,7 @@ Note that if the `polls_to_archive` setting is used without specifying `storage`
 ## Troubleshooting
 
 ### Tracking symlinked files
-If the receiver is being used to track a symlinked file and the symlink target is expected to change frequently, make sure 
+If the receiver is being used to track a symlinked file and the symlink target is expected to change frequently, make sure
 to set the value of the `poll_interval` setting to something lower than the symlink update frequency.
 
 ### Telemetry metrics
@@ -283,7 +283,7 @@ To enable this feature gate, use the flag: `--feature-gates=filelog.protobufChec
 
 Schedule for this feature gate is:
 
-- Introduce as `Alpha` (disabled by default) in `v0.144.0`
+- Introduce as `Alpha` (disabled by default) in `v0.148.0`
 
 ### `filelog.decompressFingerprint`
 

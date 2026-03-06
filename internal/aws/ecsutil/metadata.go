@@ -5,18 +5,25 @@ package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-con
 
 // TaskMetadata defines task metadata for a task
 type TaskMetadata struct {
-	AvailabilityZone string              `json:"AvailabilityZone,omitempty"`
-	Cluster          string              `json:"Cluster,omitempty"`
-	Containers       []ContainerMetadata `json:"Containers,omitempty"`
-	Family           string              `json:"Family,omitempty"`
-	KnownStatus      string              `json:"KnownStatus,omitempty"`
-	LaunchType       string              `json:"LaunchType,omitempty"`
-	Limits           Limits              `json:"Limits,omitzero"`
-	PullStartedAt    string              `json:"PullStartedAt,omitempty"`
-	PullStoppedAt    string              `json:"PullStoppedAt,omitempty"`
-	Revision         string              `json:"Revision,omitempty"`
-	ServiceName      string              `json:"ServiceName,omitempty"`
-	TaskARN          string              `json:"TaskARN,omitempty"`
+	AvailabilityZone        string                   `json:"AvailabilityZone,omitempty"`
+	Cluster                 string                   `json:"Cluster,omitempty"`
+	Containers              []ContainerMetadata      `json:"Containers,omitempty"`
+	EphemeralStorageMetrics *EphemeralStorageMetrics `json:"EphemeralStorageMetrics,omitempty"`
+	Family                  string                   `json:"Family,omitempty"`
+	KnownStatus             string                   `json:"KnownStatus,omitempty"`
+	LaunchType              string                   `json:"LaunchType,omitempty"`
+	Limits                  Limits                   `json:"Limits,omitzero"`
+	PullStartedAt           string                   `json:"PullStartedAt,omitempty"`
+	PullStoppedAt           string                   `json:"PullStoppedAt,omitempty"`
+	Revision                string                   `json:"Revision,omitempty"`
+	ServiceName             string                   `json:"ServiceName,omitempty"`
+	TaskARN                 string                   `json:"TaskARN,omitempty"`
+}
+
+// EphemeralStorageMetrics defines ephemeral storage usage metrics for a Fargate task
+type EphemeralStorageMetrics struct {
+	Utilized int64 `json:"Utilized,omitempty"`
+	Reserved int64 `json:"Reserved,omitempty"`
 }
 
 // ContainerMetadata defines container metadata for a container
