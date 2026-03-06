@@ -79,15 +79,11 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemProcessesCreatedDataPoint(ts, 1)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSystemProcessesCreatedDataPoint(ts, 3)
-			}
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
 				assert.Empty(t, mb.metricSystemProcessesCount.aggDataPoints)
-				assert.Empty(t, mb.metricSystemProcessesCreated.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -154,44 +150,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 					}
 				case "system.processes.created":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["system.processes.created"], "Found a duplicate in the metrics slice: system.processes.created")
-						validatedMetrics["system.processes.created"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Total number of created processes.", ms.At(i).Description())
-						assert.Equal(t, "{processes}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-					} else {
-						assert.False(t, validatedMetrics["system.processes.created"], "Found a duplicate in the metrics slice: system.processes.created")
-						validatedMetrics["system.processes.created"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Total number of created processes.", ms.At(i).Description())
-						assert.Equal(t, "{processes}", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["system.processes.created"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-					}
+					assert.False(t, validatedMetrics["system.processes.created"], "Found a duplicate in the metrics slice: system.processes.created")
+					validatedMetrics["system.processes.created"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of created processes.", ms.At(i).Description())
+					assert.Equal(t, "{processes}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				}
 			}
 		})
