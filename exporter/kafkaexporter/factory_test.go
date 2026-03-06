@@ -258,3 +258,29 @@ func TestCreateProfileExporter(t *testing.T) {
 		})
 	}
 }
+
+func TestPartitionerKeysSet(t *testing.T) {
+	t.Run("includes configured metadata keys", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.IncludeMetadataKeys = []string{"tenant_id", "request_id"}
+		cfg.Traces.TopicFromMetadataKey = "kafka_topic"
+		cfg.Logs.TopicFromMetadataKey = "kafka_topic"
+		cfg.TopicFromAttribute = "topic_attr"
+
+		assert.ElementsMatch(t, []string{
+			"tenant_id",
+			"request_id",
+			"kafka_topic",
+			"topic_attr",
+		}, partitionerKeysSet(*cfg))
+	})
+
+	t.Run("de-duplicates and drops empty keys", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.IncludeMetadataKeys = []string{"", "tenant_id", "tenant_id"}
+		cfg.Metrics.TopicFromMetadataKey = "tenant_id"
+		cfg.Traces.TopicFromMetadataKey = ""
+
+		assert.Equal(t, []string{"tenant_id"}, partitionerKeysSet(*cfg))
+	})
+}

@@ -5,6 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -164,8 +165,9 @@ func exporterhelperOptions(
 	startFunc component.StartFunc,
 	shutdownFunc component.ShutdownFunc,
 ) []exporterhelper.Option {
-	if len(cfg.IncludeMetadataKeys) > 0 {
-		qbs.Partitioner = metadataKeysPartitioner{keys: cfg.IncludeMetadataKeys}
+	partitionerKeys := partitionerKeysSet(cfg)
+	if len(partitionerKeys) > 0 {
+		qbs.Partitioner = metadataKeysPartitioner{keys: partitionerKeys}
 	}
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -177,4 +179,32 @@ func exporterhelperOptions(
 		exporterhelper.WithStart(startFunc),
 		exporterhelper.WithShutdown(shutdownFunc),
 	}
+}
+
+func partitionerKeysSet(cfg Config) []string {
+	var keys []string
+	seen := make(map[string]struct{})
+
+	allKeys := slices.Clone(cfg.IncludeMetadataKeys)
+	// All the topic from attribute keys are included as metadata keys so that
+	// topics can be deduced even after batching is perfomed.
+	allKeys = append(
+		allKeys,
+		cfg.TopicFromAttribute,
+		cfg.Logs.TopicFromMetadataKey,
+		cfg.Metrics.TopicFromMetadataKey,
+		cfg.Traces.TopicFromMetadataKey,
+		cfg.Profiles.TopicFromMetadataKey,
+	)
+	for _, key := range allKeys {
+		if key == "" {
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		keys = append(keys, key)
+	}
+	return keys
 }
