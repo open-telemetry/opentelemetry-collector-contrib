@@ -4,6 +4,7 @@
 package checkpoint
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -162,4 +163,29 @@ func BenchmarkCheckpointRoundTrip(b *testing.B) {
 			}
 		})
 	}
+}
+
+func BenchmarkFingerprintConversion(b *testing.B) {
+	// Benchmark the JSON roundtrip vs direct Bytes() access
+	fp := fingerprint.New(make([]byte, fingerprint.DefaultSize))
+	for j := range fingerprint.DefaultSize {
+		fp.Bytes()[j] = byte(j % 256)
+	}
+
+	b.Run("json_roundtrip", func(b *testing.B) {
+		b.ReportAllocs()
+		for range b.N {
+			fpJSON, _ := json.Marshal(fp)
+			var fpMap map[string][]byte
+			_ = json.Unmarshal(fpJSON, &fpMap)
+			_ = fpMap["first_bytes"]
+		}
+	})
+
+	b.Run("direct_bytes", func(b *testing.B) {
+		b.ReportAllocs()
+		for range b.N {
+			_ = fp.Bytes()
+		}
+	})
 }

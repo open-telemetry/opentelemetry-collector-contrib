@@ -338,3 +338,21 @@ func TestCompressionFingerprint(t *testing.T) {
 	uncompressedFP := New(data)
 	uncompressedFP.Equal(compressedFP)
 }
+
+func TestFingerprint_Bytes(t *testing.T) {
+	data := []byte("hello world fingerprint")
+	fp := New(data)
+
+	got := fp.Bytes()
+	require.Equal(t, data, got)
+
+	// Verify it returns the same underlying slice (no copy)
+	require.Same(t, &got[0], &data[0],
+		"Bytes() should return the underlying slice without copying")
+}
+
+func TestFingerprint_Bytes_Empty(t *testing.T) {
+	fp := New([]byte{})
+	got := fp.Bytes()
+	require.Empty(t, got)
+}
