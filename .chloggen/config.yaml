@@ -281,7 +281,7 @@ components:
     - receiver/kubeletstats
     - receiver/libhoney
     - receiver/loki
-    - receiver/macosunifiedlogging
+    - receiver/macos_unified_logging
     - receiver/memcached
     - receiver/mongodb
     - receiver/mongodb_atlas
