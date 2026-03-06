@@ -22,7 +22,7 @@ components:
         - awskinesis
         - awss3
         - awsxray
-        - azureblob
+        - azure_blob
         - azuredataexplorer
         - azuremonitor
         - bmchelix
@@ -140,8 +140,8 @@ components:
         - awsfirehose
         - awss3
         - awsxray
+        - azure_blob
         - azure_event_hub
-        - azureblob
         - azuremonitor
         - carbon
         - chrony
