@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -622,6 +623,71 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 		pcommon.NewTimestampFromTime(time.UnixMilli(ctMs)),
 		mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).StartTimestamp(),
 	)
+}
+
+func TestAppendHistogramReturnsStableSeriesRef(t *testing.T) {
+	tr := newTxn(t, false)
+	lsA := labels.FromStrings(
+		model.InstanceLabel, "localhost:1234",
+		model.JobLabel, "job-a",
+		model.MetricNameLabel, "native_hist_test",
+		"foo", "bar",
+	)
+	lsB := labels.FromStrings(
+		model.InstanceLabel, "localhost:1234",
+		model.JobLabel, "job-a",
+		model.MetricNameLabel, "native_hist_test",
+		"foo", "baz",
+	)
+
+	refA, err := tr.AppendHistogram(0, lsA, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+	require.Equal(t, storage.SeriesRef(lsA.Hash()), refA)
+
+	refB, err := tr.AppendHistogram(0, lsB, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+	require.Equal(t, storage.SeriesRef(lsB.Hash()), refB)
+	require.NotEqual(t, refA, refB)
+}
+
+func TestAppendHistogramStableSeriesRefEnablesSeriesDisappearanceTracking(t *testing.T) {
+	lsA := labels.FromStrings(
+		model.InstanceLabel, "localhost:1234",
+		model.JobLabel, "job-a",
+		model.MetricNameLabel, "native_hist_test",
+		"foo", "bar",
+	)
+	lsB := labels.FromStrings(
+		model.InstanceLabel, "localhost:1234",
+		model.JobLabel, "job-a",
+		model.MetricNameLabel, "native_hist_test",
+		"foo", "baz",
+	)
+
+	// Scrape #1: both series are present.
+	tr1 := newTxn(t, false)
+	refA1, err := tr1.AppendHistogram(0, lsA, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+	refB1, err := tr1.AppendHistogram(0, lsB, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+
+	// Scrape #2: only series A is present.
+	tr2 := newTxn(t, false)
+	refA2, err := tr2.AppendHistogram(0, lsA, ts+interval, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+
+	prev := map[storage.SeriesRef]struct{}{refA1: {}, refB1: {}}
+	cur := map[storage.SeriesRef]struct{}{refA2: {}}
+
+	var missing []storage.SeriesRef
+	for ref := range prev {
+		if _, ok := cur[ref]; !ok {
+			missing = append(missing, ref)
+		}
+	}
+
+	require.Len(t, missing, 1)
+	require.Equal(t, refB1, missing[0])
 }
 
 func nopObsRecv(t *testing.T) *receiverhelper.ObsReport {
