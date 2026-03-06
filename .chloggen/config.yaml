@@ -126,7 +126,6 @@ components:
     - internal/aws
     - internal/collectd
     - internal/common
-    - internal/coreinternal
     - internal/datadog
     - internal/datadog/e2e
     - internal/docker
@@ -149,6 +148,7 @@ components:
     - pkg/batchperresourceattr
     - pkg/batchpersignal
     - pkg/core/xidutils
+    - pkg/coreinternal
     - pkg/datadog
     - pkg/experimentalmetricmetadata
     - pkg/faro
@@ -175,10 +175,10 @@ components:
     - pkg/translator/signalfx
     - pkg/translator/skywalking
     - pkg/translator/splunk
-    - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
     - pkg/xstreamencoding
+    - pkg/zipkin
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
