@@ -26,9 +26,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{Enabled: true},
-					SystemFilesystemUsage:       MetricConfig{Enabled: true},
-					SystemFilesystemUtilization: MetricConfig{Enabled: true},
+					SystemFilesystemInodesUsage: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+					},
+					SystemFilesystemUsage: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+					},
+					SystemFilesystemUtilization: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type"},
+					},
 				},
 			},
 		},
@@ -36,9 +48,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{Enabled: false},
-					SystemFilesystemUsage:       MetricConfig{Enabled: false},
-					SystemFilesystemUtilization: MetricConfig{Enabled: false},
+					SystemFilesystemInodesUsage: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+					},
+					SystemFilesystemUsage: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+					},
+					SystemFilesystemUtilization: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type"},
+					},
 				},
 			},
 		},

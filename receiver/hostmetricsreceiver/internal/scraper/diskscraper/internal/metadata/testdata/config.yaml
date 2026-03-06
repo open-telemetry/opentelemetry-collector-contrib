@@ -3,31 +3,68 @@ all_set:
   metrics:
     system.disk.io:
       enabled: true
+      attributes: ["device","direction"]
     system.disk.io_time:
       enabled: true
+      attributes: ["device"]
     system.disk.merged:
       enabled: true
+      attributes: ["device","direction"]
     system.disk.operation_time:
       enabled: true
+      attributes: ["device","direction"]
     system.disk.operations:
       enabled: true
+      attributes: ["device","direction"]
     system.disk.pending_operations:
       enabled: true
+      attributes: ["device"]
     system.disk.weighted_io_time:
       enabled: true
+      attributes: ["device"]
+reaggregate_set:
+  metrics:
+    system.disk.io:
+      enabled: true
+      attributes: []
+    system.disk.io_time:
+      enabled: true
+      attributes: []
+    system.disk.merged:
+      enabled: true
+      attributes: []
+    system.disk.operation_time:
+      enabled: true
+      attributes: []
+    system.disk.operations:
+      enabled: true
+      attributes: []
+    system.disk.pending_operations:
+      enabled: true
+      attributes: []
+    system.disk.weighted_io_time:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     system.disk.io:
       enabled: false
+      attributes: ["device","direction"]
     system.disk.io_time:
       enabled: false
+      attributes: ["device"]
     system.disk.merged:
       enabled: false
+      attributes: ["device","direction"]
     system.disk.operation_time:
       enabled: false
+      attributes: ["device","direction"]
     system.disk.operations:
       enabled: false
+      attributes: ["device","direction"]
     system.disk.pending_operations:
       enabled: false
+      attributes: ["device"]
     system.disk.weighted_io_time:
       enabled: false
+      attributes: ["device"]
