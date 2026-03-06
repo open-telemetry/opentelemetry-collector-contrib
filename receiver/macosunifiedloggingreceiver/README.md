@@ -11,7 +11,7 @@ supports both live system logs and archived log files (`.logarchive`).
 | Unsupported Platforms | linux, windows |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fmacosunifiedlogging%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fmacosunifiedlogging) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fmacosunifiedlogging%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fmacosunifiedlogging) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_macosunifiedlogging)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_macosunifiedlogging&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_macos_unified_logging)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_macos_unified_logging&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Caleb-Hurshman](https://www.github.com/Caleb-Hurshman), [@atoulme](https://www.github.com/atoulme) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -53,7 +53,7 @@ This approach minimizes both latency during active logging and resource usage du
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     max_poll_interval: 30s  # Maximum interval between polls (uses exponential backoff)
     max_log_age: 24h        # How far back to read on startup
 ```
@@ -62,7 +62,7 @@ receivers:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     archive_path: "/path/to/system_logs.logarchive"
     start_time: "2024-01-01 00:00:00"
     end_time: "2024-01-02 00:00:00"
@@ -72,7 +72,7 @@ receivers:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     archive_path: "/logs/**/*.logarchive"  # Matches all .logarchive directories recursively
     format: "ndjson"
 ```
@@ -82,7 +82,7 @@ receivers:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     archive_path: "./logs.logarchive"
     predicate: "subsystem == 'com.apple.systempreferences'"
 ```
@@ -91,7 +91,7 @@ receivers:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     format: ndjson             # Use structured JSON output
     max_poll_interval: 30s
     max_log_age: 24h
@@ -163,7 +163,7 @@ Complete example configuration:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     archive_path: "./system_logs.logarchive"
     predicate: "subsystem BEGINSWITH 'com.apple'"
     start_time: "2024-01-01 00:00:00"

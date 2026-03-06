@@ -180,7 +180,7 @@ components:
         - kubeletstats
         - libhoney
         - loki
-        - macosunifiedlogging
+        - macos_unified_logging
         - memcached
         - mongodb
         - mongodb_atlas
