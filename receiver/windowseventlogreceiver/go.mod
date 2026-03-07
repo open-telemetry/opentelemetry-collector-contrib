@@ -17,6 +17,7 @@ require (
 )
 
 require (
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	go.opentelemetry.io/collector/component/componenttest v0.147.1-0.20260306010043-a44ab254898b
 	go.opentelemetry.io/collector/consumer/consumertest v0.147.1-0.20260306010043-a44ab254898b
 	go.opentelemetry.io/collector/pdata v1.53.1-0.20260306010043-a44ab254898b
