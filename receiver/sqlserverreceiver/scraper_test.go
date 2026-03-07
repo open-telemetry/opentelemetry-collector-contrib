@@ -89,9 +89,11 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// cfg.QuerySample.Enabled = enabled
 }
 
-func enableLogResourceAttributesForGoldenTests(cfg *Config) {
-	cfg.LogsBuilderConfig.ResourceAttributes.SqlserverComputerName.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+func enableSQLServerResourceAttributesForTests(resourceAttributes *metadata.ResourceAttributesConfig) {
+	resourceAttributes.SqlserverComputerName.Enabled = true
+	resourceAttributes.SqlserverInstanceName.Enabled = true
+	resourceAttributes.ServerAddress.Enabled = true
+	resourceAttributes.ServerPort.Enabled = true
 }
 
 func TestEmptyScrape(t *testing.T) {
@@ -383,8 +385,7 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	enableLogResourceAttributesForGoldenTests(cfg)
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 	cfg.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
@@ -459,8 +460,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	enableLogResourceAttributesForGoldenTests(cfg)
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 	cfg.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
@@ -609,8 +609,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			cfg.Password = "password"
 			cfg.Port = 1433
 			cfg.Server = "0.0.0.0"
-			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-			enableLogResourceAttributesForGoldenTests(cfg)
+			enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 			assert.NoError(t, cfg.Validate())
 
 			configureAllScraperMetricsAndEvents(cfg, false)
@@ -645,9 +644,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
-	cfg.LogsBuilderConfig.ResourceAttributes.HostName.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 	cfg.Events.DbServerQuerySample.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
@@ -677,21 +674,19 @@ func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 	assert.True(t, exists)
 	assert.Equal(t, "datasource-host.example.com:1434", serviceInstanceID.AsString())
 
-	serverAddress, exists := resourceAttributes.Get("server.address")
+	computerName, exists := resourceAttributes.Get("sqlserver.computer.name")
 	assert.True(t, exists)
-	assert.Equal(t, "datasource-host.example.com", serverAddress.AsString())
+	assert.Equal(t, "DESKTOP-GHAEGRD", computerName.AsString())
 
-	serverPort, exists := resourceAttributes.Get("server.port")
+	instanceName, exists := resourceAttributes.Get("sqlserver.instance.name")
 	assert.True(t, exists)
-	assert.Equal(t, int64(1434), serverPort.Int())
+	assert.Equal(t, "sqlserver", instanceName.AsString())
 }
 
 func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
-	cfg.LogsBuilderConfig.ResourceAttributes.HostName.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 	cfg.Events.DbServerTopQuery.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
@@ -744,6 +739,63 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	serviceInstanceID, exists := resourceAttributes.Get("service.instance.id")
 	assert.True(t, exists)
 	assert.Equal(t, "datasource-host.example.com:1434", serviceInstanceID.AsString())
+
+	computerName, exists := resourceAttributes.Get("sqlserver.computer.name")
+	assert.True(t, exists)
+	assert.Equal(t, "DESKTOP-GHAEGRD", computerName.AsString())
+
+	instanceName, exists := resourceAttributes.Get("sqlserver.instance.name")
+	assert.True(t, exists)
+	assert.Equal(t, "sqlserver", instanceName.AsString())
+
+	serverAddress, exists := resourceAttributes.Get("server.address")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com", serverAddress.AsString())
+
+	serverPort, exists := resourceAttributes.Get("server.port")
+	assert.True(t, exists)
+	assert.Equal(t, int64(1434), serverPort.Int())
+}
+
+func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
+	enableSQLServerResourceAttributesForTests(&cfg.MetricsBuilderConfig.ResourceAttributes)
+	cfg.Metrics.SqlserverCPUCount.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Metrics.SqlserverCPUCount.Enabled = true
+
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.Len(t, scrapers, 1)
+
+	scraper := scrapers[0]
+	scraper.client = mockClient{
+		instanceName: scraper.config.InstanceName,
+		SQL:          scraper.sqlQuery,
+	}
+
+	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, actualMetrics.ResourceMetrics().Len())
+
+	resourceAttributes := actualMetrics.ResourceMetrics().At(0).Resource().Attributes()
+	hostName, exists := resourceAttributes.Get("host.name")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com", hostName.AsString())
+
+	serviceInstanceID, exists := resourceAttributes.Get("service.instance.id")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com:1434", serviceInstanceID.AsString())
+
+	computerName, exists := resourceAttributes.Get("sqlserver.computer.name")
+	assert.True(t, exists)
+	assert.Equal(t, "abcde", computerName.AsString())
+
+	instanceName, exists := resourceAttributes.Get("sqlserver.instance.name")
+	assert.True(t, exists)
+	assert.Equal(t, "ad8fb2b53dce", instanceName.AsString())
 
 	serverAddress, exists := resourceAttributes.Get("server.address")
 	assert.True(t, exists)
