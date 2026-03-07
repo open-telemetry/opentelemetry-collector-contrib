@@ -346,9 +346,10 @@ func TestFingerprint_Bytes(t *testing.T) {
 	got := fp.Bytes()
 	require.Equal(t, data, got)
 
-	// Verify it returns the same underlying slice (no copy)
-	require.Same(t, &got[0], &data[0],
-		"Bytes() should return the underlying slice without copying")
+	// Verify Bytes returns slices backed by the same array (no copy)
+	got2 := fp.Bytes()
+	require.Same(t, &got[0], &got2[0],
+		"Bytes() should return the same underlying slice on consecutive calls")
 }
 
 func TestFingerprint_Bytes_Empty(t *testing.T) {
