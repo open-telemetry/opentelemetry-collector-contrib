@@ -1,4 +1,11 @@
+display_name: Microsoft SQL Server Receiver
 type: sqlserver
+
+description: |
+  The `sqlserver` receiver grabs metrics/logs about a Microsoft SQL Server instance. The receiver works by either using the
+  Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
+  are only available when running on Windows.
+
 
 status:
   class: receiver
