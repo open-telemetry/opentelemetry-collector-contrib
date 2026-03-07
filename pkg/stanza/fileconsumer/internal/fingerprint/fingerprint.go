@@ -117,8 +117,9 @@ type marshal struct {
 	FirstBytes []byte `json:"first_bytes"`
 }
 
-// Bytes returns the raw fingerprint bytes.
-// The returned slice must not be modified by the caller.
+// Bytes returns the raw fingerprint bytes without copying.
+// The returned slice is backed by the fingerprint's internal storage
+// and must not be modified by the caller.
 func (f *Fingerprint) Bytes() []byte {
 	return f.firstBytes
 }

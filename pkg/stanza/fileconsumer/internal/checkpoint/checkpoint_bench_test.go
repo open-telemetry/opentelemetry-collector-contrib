@@ -165,6 +165,9 @@ func BenchmarkCheckpointRoundTrip(b *testing.B) {
 	}
 }
 
+// benchSink prevents the compiler from optimizing away benchmark results.
+var benchSink []byte
+
 func BenchmarkFingerprintConversion(b *testing.B) {
 	// Benchmark the JSON roundtrip vs direct Bytes() access
 	fpBytes := make([]byte, fingerprint.DefaultSize)
@@ -184,14 +187,14 @@ func BenchmarkFingerprintConversion(b *testing.B) {
 			if err := json.Unmarshal(fpJSON, &fpMap); err != nil {
 				b.Fatal(err)
 			}
-			_ = fpMap["first_bytes"]
+			benchSink = fpMap["first_bytes"]
 		}
 	})
 
 	b.Run("direct_bytes", func(b *testing.B) {
 		b.ReportAllocs()
 		for range b.N {
-			_ = fp.Bytes()
+			benchSink = fp.Bytes()
 		}
 	})
 }
