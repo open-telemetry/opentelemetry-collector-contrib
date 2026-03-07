@@ -167,17 +167,23 @@ func BenchmarkCheckpointRoundTrip(b *testing.B) {
 
 func BenchmarkFingerprintConversion(b *testing.B) {
 	// Benchmark the JSON roundtrip vs direct Bytes() access
-	fp := fingerprint.New(make([]byte, fingerprint.DefaultSize))
-	for j := range fingerprint.DefaultSize {
-		fp.Bytes()[j] = byte(j % 256)
+	fpBytes := make([]byte, fingerprint.DefaultSize)
+	for j := range fpBytes {
+		fpBytes[j] = byte(j % 256)
 	}
+	fp := fingerprint.New(fpBytes)
 
 	b.Run("json_roundtrip", func(b *testing.B) {
 		b.ReportAllocs()
 		for range b.N {
-			fpJSON, _ := json.Marshal(fp)
+			fpJSON, err := json.Marshal(fp)
+			if err != nil {
+				b.Fatal(err)
+			}
 			var fpMap map[string][]byte
-			_ = json.Unmarshal(fpJSON, &fpMap)
+			if err := json.Unmarshal(fpJSON, &fpMap); err != nil {
+				b.Fatal(err)
+			}
 			_ = fpMap["first_bytes"]
 		}
 	})
