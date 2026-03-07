@@ -1,5 +1,6 @@
 display_name: Prometheus Remote Write Receiver
-type: prometheusremotewrite
+type: prometheus_remote_write
+deprecated_type: prometheusremotewrite
 
 description: |
   This receiver implements the
