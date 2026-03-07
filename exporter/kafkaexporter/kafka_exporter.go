@@ -249,6 +249,9 @@ func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.
 			for _, resourceLogs := range ld.ResourceLogs().All() {
 				hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
 				resourceLogs.CopyTo(target)
+				// NOTE: The same plog.Logs instance (newLogs) is reused and mutated on each iteration.
+				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+				// the current callback/iteration, as its contents will be overwritten on the next yield.
 				if !yield(hash[:], newLogs) {
 					return
 				}
@@ -309,6 +312,9 @@ func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]by
 		for _, resourceMetrics := range md.ResourceMetrics().All() {
 			hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
 			resourceMetrics.CopyTo(target)
+			// NOTE: The same pmetric.Metrics instance (newMetrics) is reused and mutated on each iteration.
+			// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+			// the current callback/iteration, as its contents will be overwritten on the next yield.
 			if !yield(hash[:], newMetrics) {
 				return
 			}
