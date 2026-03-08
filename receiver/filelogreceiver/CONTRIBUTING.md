@@ -53,6 +53,6 @@ Before applying to become a code owner, we ask that you build a track record of 
 While being a code owner doesn't come with strict quotas or explicit time commitments, we are looking for folks who can sustainably dedicate a little time each week to participate in issue discussions and review PRs.
 To keep our community thriving, code owners may be asked to step down from the role if the component activity reports show little to no activity for a prolonged period.
 
-**Ready to apply?** Create a pull request to add yourself as a code owner for both `receiver/filelog` and `pkg/stanza/fileconsumer` (example [PR](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/38455/changes)). In the PR description, please highlight some of the meaningful contributions you've made recently.
+**Ready to apply?** Create a pull request to add yourself as a code owner for both `receiver/file_log` and `pkg/stanza/fileconsumer` (example [PR](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/38455/changes)). In the PR description, please highlight some of the meaningful contributions you've made recently.
 
 If you are unsure whether you are ready, there is absolutely nothing wrong with reaching out to the existing code owners on the CNCF Slack. We are always happy to chat privately and share our thoughts before you open a public PR!

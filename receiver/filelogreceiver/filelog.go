@@ -6,6 +6,7 @@ package filelogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -16,7 +17,9 @@ import (
 
 // NewFactory creates a factory for filelog receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 // ReceiverType implements stanza.LogReceiverType

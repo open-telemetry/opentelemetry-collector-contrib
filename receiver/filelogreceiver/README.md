@@ -9,7 +9,7 @@ This receiver tails and parses logs from files.
 | Stability     | [beta]: logs   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Ffilelog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Ffilelog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Ffilelog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Ffilelog) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_filelog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_filelog&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_file_log)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_file_log&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
@@ -158,7 +158,7 @@ After the original file is truncated, the receiver detects the fingerprint chang
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ /var/log/myservice/*.json ]
     operators:
       - type: json_parser
@@ -172,7 +172,7 @@ receivers:
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ /simple.log ]
     operators:
       - type: regex_parser
@@ -195,7 +195,7 @@ The above configuration will read logs from the "simple.log" file. Some examples
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include:
     - /var/log/example/multiline.log
     multiline:
@@ -220,7 +220,7 @@ Exception in thread 2 "main" java.lang.NullPointerException
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include:
     - /var/log/example/compressed.log.gz
     compression: gzip

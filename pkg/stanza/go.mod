@@ -27,6 +27,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.53.1-0.20260306010043-a44ab254898b
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.147.1-0.20260306010043-a44ab254898b
 	go.opentelemetry.io/collector/receiver/receivertest v0.147.1-0.20260306010043-a44ab254898b
+	go.opentelemetry.io/collector/receiver/xreceiver v0.147.1-0.20260306010043-a44ab254898b
 	go.opentelemetry.io/otel v1.41.0
 	go.opentelemetry.io/otel/metric v1.41.0
 	go.opentelemetry.io/otel/sdk/metric v1.41.0
@@ -76,7 +77,6 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.147.1-0.20260306010043-a44ab254898b // indirect
 	go.opentelemetry.io/collector/pipeline v1.53.1-0.20260306010043-a44ab254898b // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.1-0.20260306010043-a44ab254898b // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.147.1-0.20260306010043-a44ab254898b // indirect
 	go.opentelemetry.io/otel/sdk v1.41.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
