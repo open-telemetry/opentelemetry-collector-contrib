@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
 )
 
-// NewFactory creates a factory for filelog receiver
+// NewFactory creates a factory for file_log receiver
 func NewFactory() receiver.Factory {
 	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
 		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
@@ -51,7 +51,7 @@ func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*FileLogConfig).BaseConfig
 }
 
-// FileLogConfig defines configuration for the filelog receiver
+// FileLogConfig defines configuration for the file_log receiver
 type FileLogConfig struct {
 	InputConfig        file.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`

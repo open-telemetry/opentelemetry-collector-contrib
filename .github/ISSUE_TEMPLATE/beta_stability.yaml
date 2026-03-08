@@ -262,7 +262,7 @@ body:
       - receiver/envoyals
       - receiver/expvar
       - receiver/faro
-      - receiver/filelog
+      - receiver/file_log
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward

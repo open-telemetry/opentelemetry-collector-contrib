@@ -245,7 +245,7 @@ receiver/elasticsearchreceiver receiver/elasticsearch
 receiver/envoyalsreceiver receiver/envoyals
 receiver/expvarreceiver receiver/expvar
 receiver/faroreceiver receiver/faro
-receiver/filelogreceiver receiver/filelog
+receiver/filelogreceiver receiver/file_log
 receiver/filestatsreceiver receiver/filestats
 receiver/flinkmetricsreceiver receiver/flinkmetrics
 receiver/fluentforwardreceiver receiver/fluentforward
