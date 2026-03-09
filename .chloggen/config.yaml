@@ -36,7 +36,7 @@ components:
     - exporter/awskinesis
     - exporter/awss3
     - exporter/awsxray
-    - exporter/azureblob
+    - exporter/azure_blob
     - exporter/azuredataexplorer
     - exporter/azuremonitor
     - exporter/bmchelix
@@ -238,8 +238,8 @@ components:
     - receiver/awss3
     - receiver/awsxray
     - receiver/azure_event_hub
+    - receiver/azure_monitor
     - receiver/azureblob
-    - receiver/azuremonitor
     - receiver/carbon
     - receiver/chrony
     - receiver/ciscoos
@@ -281,7 +281,7 @@ components:
     - receiver/kubeletstats
     - receiver/libhoney
     - receiver/loki
-    - receiver/macosunifiedlogging
+    - receiver/macos_unified_logging
     - receiver/memcached
     - receiver/mongodb
     - receiver/mongodb_atlas
@@ -299,8 +299,8 @@ components:
     - receiver/postgresql
     - receiver/pprof
     - receiver/prometheus
+    - receiver/prometheus_remote_write
     - receiver/prometheus_simple
-    - receiver/prometheusremotewrite
     - receiver/pulsar
     - receiver/purefa
     - receiver/purefb
@@ -335,7 +335,7 @@ components:
     - receiver/windowseventlog
     - receiver/windowsperfcounters
     - receiver/windowsservice
-    - receiver/yanggrpc
+    - receiver/yang_grpc
     - receiver/zipkin
     - receiver/zookeeper
     - scraper/cpu
