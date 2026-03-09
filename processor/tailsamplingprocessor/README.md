@@ -48,9 +48,9 @@ Multiple policies exist today and it is straight forward to add more. These incl
   3. To ensure remaining capacity is filled use always_sample as one of the policies
 
 The following configuration options can also be modified:
-- `decision_wait` (default = 30s): Wait time since first-span arrival before timer handling. In `trace-complete`, this primarily controls decision timing. In `span-ingest`, this primarily controls pending-trace cleanup finalization timing.
-- `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before earlier timer handling. In `trace-complete`, this can make the sampling decision happen earlier. In `span-ingest`, this can make pending-trace cleanup finalization happen earlier. 0s means disabled (only use `decision_wait`).
 - `sampling_strategy` (default = `trace-complete`): Controls decision timing and evaluation scope. `trace-complete` evaluates accumulated trace data on timer handling; `span-ingest` evaluates each incoming batch on ingest, finalizing terminal outcomes immediately and non-terminal traces on cleanup. See [Sampling Strategies](#sampling-strategies) for details.
+- `decision_wait` (default = 30s): Time before timer handling for a trace. When `sampling_strategy` is `trace-complete`, this controls decision timing. When `sampling_strategy` is `span-ingest`, this controls pending cleanup finalization timing.
+- `decision_wait_after_root_received` (default = 0s): Additional root-span-based acceleration for timer handling. When `sampling_strategy` is `trace-complete`, this can make decisions earlier. When `sampling_strategy` is `span-ingest`, this can finalize pending traces earlier on cleanup. `0s` disables it.
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches

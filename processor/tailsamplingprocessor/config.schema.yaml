@@ -426,11 +426,11 @@ properties:
     description: DecisionCache holds configuration for the decision cache(s)
     $ref: decision_cache_config
   decision_wait:
-    description: DecisionWait is the desired wait time from first-span arrival until timer handling for that trace. In trace-complete, this is the primary decision timing. In span-ingest, this controls pending cleanup finalization timing.
+    description: DecisionWait is the time before timer handling for a trace. When sampling_strategy is "trace-complete", this controls decision timing. When sampling_strategy is "span-ingest", this controls pending cleanup finalization timing.
     type: string
     format: duration
   decision_wait_after_root_received:
-    description: DecisionWaitAfterRootReceived is the desired wait time from root-span arrival until earlier timer handling for that trace. In trace-complete, this can make sampling decisions happen earlier. In span-ingest, this can make pending cleanup finalization happen earlier.
+    description: DecisionWaitAfterRootReceived adds root-span-based acceleration for timer handling. When sampling_strategy is "trace-complete", this can make decisions earlier. When sampling_strategy is "span-ingest", this can finalize pending traces earlier on cleanup.
     type: string
     format: duration
   drop_pending_traces_on_shutdown:
