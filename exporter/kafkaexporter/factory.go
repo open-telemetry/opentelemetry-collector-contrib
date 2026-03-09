@@ -165,7 +165,9 @@ func exporterhelperOptions(
 	shutdownFunc component.ShutdownFunc,
 ) []exporterhelper.Option {
 	if len(cfg.IncludeMetadataKeys) > 0 {
-		qbs.Partitioner = metadataKeysPartitioner{keys: cfg.IncludeMetadataKeys}
+		partitioner := metadataKeysPartitioner{keys: cfg.IncludeMetadataKeys}
+		qbs.Partitioner = partitioner
+		qbs.MergeCtx = partitioner.MergeCtx
 	}
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),

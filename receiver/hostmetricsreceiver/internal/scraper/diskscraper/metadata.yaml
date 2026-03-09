@@ -8,16 +8,20 @@ status:
   codeowners:
     active: [dmitryax, braydonk]
 
+reaggregation_enabled: true
+
 sem_conv_version: 1.9.0
 
 attributes:
   device:
     description: Name of the disk.
     type: string
+    requirement_level: recommended
 
   direction:
     description: Direction of flow of bytes/operations (read or write).
     type: string
+    requirement_level: recommended
     enum: [read, write]
 
 metrics:

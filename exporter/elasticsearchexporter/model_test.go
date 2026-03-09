@@ -55,6 +55,78 @@ const expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
+func TestDynamicTemplateMode(t *testing.T) {
+	ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+
+	// Build the four metric + DataPoint fixtures once.
+	m := pmetric.NewMetric()
+	m.SetName("g")
+	gauge := m.SetEmptyGauge()
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(1.0)
+
+	m2 := pmetric.NewMetric()
+	m2.SetName("c")
+	sum := m2.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp2 := sum.DataPoints().AppendEmpty()
+	dp2.SetTimestamp(ts)
+	dp2.SetIntValue(2)
+
+	m3 := pmetric.NewMetric()
+	m3.SetName("h")
+	hist := m3.SetEmptyHistogram()
+	histDp := hist.DataPoints().AppendEmpty()
+	histDp.SetTimestamp(ts)
+	histDp.ExplicitBounds().FromRaw([]float64{1, 2})
+	histDp.BucketCounts().FromRaw([]uint64{1, 2, 3})
+
+	m4 := pmetric.NewMetric()
+	m4.SetName("s")
+	summaryDp := m4.SetEmptySummary().DataPoints().AppendEmpty()
+	summaryDp.SetTimestamp(ts)
+	summaryDp.SetSum(10)
+	summaryDp.SetCount(5)
+
+	metrics := []struct {
+		m  pmetric.Metric
+		dp datapoints.DataPoint
+	}{
+		{m, datapoints.NewNumber(m, dp)},
+		{m2, datapoints.NewNumber(m2, dp2)},
+		{m3, datapoints.NewHistogram(m3, histDp)},
+		{m4, datapoints.NewSummary(m4, summaryDp)},
+	}
+
+	tests := []struct {
+		name          string
+		mode          datapoints.DynamicTemplateMode
+		wantTemplates []string
+	}{
+		{
+			name:          "OTel",
+			mode:          datapoints.DynamicTemplateModeOTel,
+			wantTemplates: []string{"gauge_double", "counter_long", "histogram", "summary"},
+		},
+		{
+			name:          "ECS",
+			mode:          datapoints.DynamicTemplateModeECS,
+			wantTemplates: []string{"double_metrics", "double_metrics", "histogram_metrics", "summary_metrics"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for i, metric := range metrics {
+				got := metric.dp.DynamicTemplate(metric.m, tc.mode)
+				require.Equal(t, tc.wantTemplates[i], got)
+			}
+		})
+	}
+}
+
 func TestEncodeSpan(t *testing.T) {
 	t.Run("non data stream", func(t *testing.T) {
 		encoder, _ := newEncoder(MappingNone)

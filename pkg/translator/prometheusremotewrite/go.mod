@@ -5,14 +5,14 @@ go 1.25.0
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.146.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.146.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.147.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.147.0
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.309.2-0.20260113170727-c7bc56cf6c8f
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/pdata v1.52.1-0.20260227062254-168030d61d7d
-	go.opentelemetry.io/otel v1.40.0
+	go.opentelemetry.io/collector/pdata v1.53.1-0.20260306010043-a44ab254898b
+	go.opentelemetry.io/otel v1.41.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -70,12 +70,12 @@ require (
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/prometheus/sigv4 v0.3.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.52.1-0.20260227062254-168030d61d7d // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.146.2-0.20260227062254-168030d61d7d // indirect
+	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260306010043-a44ab254898b // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.147.1-0.20260306010043-a44ab254898b // indirect
 	go.opentelemetry.io/collector/semconv v0.128.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0 // indirect
-	go.opentelemetry.io/otel/metric v1.40.0 // indirect
-	go.opentelemetry.io/otel/trace v1.40.0 // indirect
+	go.opentelemetry.io/otel/metric v1.41.0 // indirect
+	go.opentelemetry.io/otel/trace v1.41.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/crypto v0.48.0 // indirect

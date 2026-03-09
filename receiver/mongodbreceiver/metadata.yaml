@@ -1,4 +1,10 @@
+display_name: MongoDB Receiver
 type: mongodb
+
+description: |
+  This receiver fetches stats from a MongoDB instance using the 
+  [golang mongo driver](https://github.com/mongodb/mongo-go-driver). Stats are collected via MongoDB's `dbStats` and
+  `serverStatus` commands.
 
 status:
   class: receiver
