@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/extension v1.53.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/extension/extensiontest v0.147.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/extension/xextension v0.147.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/pdata v1.53.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/otel v1.42.0
