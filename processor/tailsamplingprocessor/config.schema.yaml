@@ -430,7 +430,7 @@ properties:
     type: string
     format: duration
   decision_wait_after_root_received:
-    description: DecisionWaitAfterRootReceived is the desired wait time from the arrival of the root span of trace until the decision about sampling it or not is evaluated.
+    description: DecisionWaitAfterRootReceived is the desired wait time from root-span arrival until earlier timer handling for that trace. In trace-complete this can make the sampling decision happen earlier; in span-ingest this can make pending cleanup finalization happen earlier.
     type: string
     format: duration
   drop_pending_traces_on_shutdown:

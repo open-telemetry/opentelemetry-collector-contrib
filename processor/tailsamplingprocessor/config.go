@@ -316,8 +316,10 @@ type Config struct {
 	// DecisionWait is the desired wait time from the arrival of the first span of
 	// trace until the decision about sampling it or not is evaluated.
 	DecisionWait time.Duration `mapstructure:"decision_wait"`
-	// DecisionWaitAfterRootReceived is the desired wait time from the arrival of the root span of
-	// trace until the decision about sampling it or not is evaluated.
+	// DecisionWaitAfterRootReceived is the desired wait time from root-span arrival
+	// until earlier timer handling for that trace.
+	// In trace-complete, this can make sampling decisions happen earlier.
+	// In span-ingest, this can make pending cleanup finalization happen earlier.
 	DecisionWaitAfterRootReceived time.Duration `mapstructure:"decision_wait_after_root_received"`
 	// NumTraces is the number of traces kept on memory. Typically most of the data
 	// of a trace is released after a sampling decision is taken.
@@ -339,7 +341,8 @@ type Config struct {
 	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
 	// SamplingStrategy controls how/when sampling decisions are made.
 	// "trace-complete" (default) keeps classic tail sampling behavior.
-	// "span-ingest" evaluates on ingest using accumulated trace data.
+	// "span-ingest" evaluates each incoming batch on ingest and only terminal
+	// outcomes finalize immediately; non-terminal outcomes are cleanup-finalized.
 	SamplingStrategy samplingStrategy `mapstructure:"sampling_strategy"`
 	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
 	// wait when the processor is shutdown.
