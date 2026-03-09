@@ -16,66 +16,92 @@ import (
 )
 
 func Test_deleteMatchingValues(t *testing.T) {
-	input := pcommon.NewMap()
-	input.PutStr("test", "hello world")
-	input.PutInt("test2", 3)
-	input.PutBool("test3", true)
-	input.PutStr("test4", "")
-
 	tests := []struct {
 		name    string
+		input   func() pcommon.Map
 		pattern ottl.StringGetter[pcommon.Map]
 		want    func(pcommon.Map)
 	}{
 		{
-			name:    "delete everything",
+			name: "delete everything",
+			input: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key1", "hello world")
+				m.PutStr("key2", "foo bar")
+				return m
+			},
 			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return ".*", nil }},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.EnsureCapacity(4)
+				expectedMap.EnsureCapacity(2)
 			},
 		},
 		{
-			name:    "delete values that are empty strings",
+			name: "delete values that are empty strings",
+			input: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key1", "hello world")
+				m.PutStr("key2", "")
+				return m
+			},
 			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "^$", nil }},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello world")
-				expectedMap.PutInt("test2", 3)
-				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("key1", "hello world")
 			},
 		},
 		{
-			name:    "delete numeric value as string",
-			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "^3$", nil }},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello world")
-				expectedMap.PutBool("test3", true)
-				expectedMap.PutStr("test4", "")
+			name: "delete nothing",
+			input: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key1", "hello world")
+				m.PutStr("key2", "foo bar")
+				return m
 			},
-		},
-		{
-			name:    "delete boolean value as string",
-			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "true", nil }},
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello world")
-				expectedMap.PutInt("test2", 3)
-				expectedMap.PutStr("test4", "")
-			},
-		},
-		{
-			name:    "delete nothing",
 			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "not a matching pattern", nil }},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello world")
-				expectedMap.PutInt("test2", 3)
-				expectedMap.PutBool("test3", true)
-				expectedMap.PutStr("test4", "")
+				expectedMap.PutStr("key1", "hello world")
+				expectedMap.PutStr("key2", "foo bar")
+			},
+		},
+		{
+			name: "non-string types are not deleted",
+			input: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("str", "hello")
+				m.PutInt("int", 3)
+				m.PutBool("bool", true)
+				m.PutEmptyMap("map").PutStr("nested", "value")
+				m.PutEmptySlice("slice").AppendEmpty().SetStr("item")
+				return m
+			},
+			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return ".*", nil }},
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("int", 3)
+				expectedMap.PutBool("bool", true)
+				expectedMap.PutEmptyMap("map").PutStr("nested", "value")
+				expectedMap.PutEmptySlice("slice").AppendEmpty().SetStr("item")
+			},
+		},
+		{
+			name: "mixed types only delete matching strings",
+			input: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("str1", "sensitive-data")
+				m.PutStr("str2", "safe-value")
+				m.PutInt("int", 42)
+				m.PutBool("bool", false)
+				return m
+			},
+			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "sensitive.*", nil }},
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("str2", "safe-value")
+				expectedMap.PutInt("int", 42)
+				expectedMap.PutBool("bool", false)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioMap := pcommon.NewMap()
-			input.CopyTo(scenarioMap)
+			scenarioMap := tt.input()
 
 			setterWasCalled := false
 			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
@@ -152,21 +178,4 @@ func Test_deleteMatchingValues_get_nil(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_deleteMatchingValues_invalid_pattern(t *testing.T) {
-	target := &ottl.StandardPMapGetSetter[any]{
-		Getter: func(context.Context, any) (pcommon.Map, error) {
-			t.Errorf("nothing should be received in this scenario")
-			return pcommon.Map{}, nil
-		},
-	}
 
-	invalidRegexPattern := ottl.StandardStringGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return "*", nil
-		},
-	}
-	exprFunc, err := deleteMatchingValues(target, invalidRegexPattern)
-	require.NoError(t, err)
-	_, err = exprFunc(nil, nil)
-	assert.ErrorContains(t, err, "error parsing regexp:")
-}

@@ -129,11 +129,11 @@ Examples:
 
 `delete_matching_values(target, pattern)`
 
-The `delete_matching_values` function removes all keys from a `pcommon.Map` whose value matches a regex pattern. Non-string values are evaluated dynamically by converting them to strings before matching.
+The `delete_matching_values` function removes all keys from a `pcommon.Map` whose string value matches a regex pattern. Only string-typed values are matched; non-string types (int, bool, map, slice, etc.) are never deleted.
 
 `target` is a path expression to a `pcommon.Map` type field. `pattern` is a regex string.
 
-All keys whose value match the pattern will be deleted from the map.
+All keys whose values match the pattern will be deleted from the map.
 
 Examples:
 

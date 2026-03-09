@@ -46,7 +46,7 @@ func deleteMatchingValues[K any](target ottl.PMapGetSetter[K], pattern ottl.Stri
 			return nil, err
 		}
 		val.RemoveIf(func(_ string, value pcommon.Value) bool {
-			return cp.MatchString(value.AsString())
+			return value.Type() == pcommon.ValueTypeStr && cp.MatchString(value.Str())
 		})
 		return nil, target.Set(ctx, tCtx, val)
 	}, nil
