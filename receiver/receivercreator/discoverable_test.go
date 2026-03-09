@@ -71,7 +71,7 @@ func TestValidateEndpointConfig(t *testing.T) {
 			if rawCfg == nil {
 				rawCfg = map[string]any{"endpoint": tt.endpoint}
 			}
-			err := ValidateEndpointConfig(rawCfg, tt.discovered)
+			err := validateEndpointConfig(rawCfg, tt.discovered)
 			if tt.expectErr {
 				require.Error(t, err)
 			} else {

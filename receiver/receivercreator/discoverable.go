@@ -20,7 +20,7 @@ type Discoverable interface {
 // default validation for receivers that do not implement the Discoverable
 // interface. It can also be used by Discoverable implementations for
 // receivers with a simple "endpoint" configuration field.
-func ValidateEndpointConfig(rawCfg map[string]any, discoveredEndpoint string) error {
+func validateEndpointConfig(rawCfg map[string]any, discoveredEndpoint string) error {
 	endpoint, ok := rawCfg["endpoint"].(string)
 	if !ok || endpoint == "" {
 		return nil

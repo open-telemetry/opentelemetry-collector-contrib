@@ -163,7 +163,7 @@ func (run *receiverRunner) mergeTemplatedAndDiscoveredConfigs(factory rcvr.Facto
 		} else {
 			// Discovered receiver does not implement Discoverable interface.
 			run.logger.Warn("receiver does not implement the Discoverable interface")
-			if err := ValidateEndpointConfig(templated, targetEndpoint); err != nil {
+			if err := validateEndpointConfig(templated, targetEndpoint); err != nil {
 				return nil, targetEndpoint, fmt.Errorf("discovery validation failed: %w ", err)
 			}
 		}
