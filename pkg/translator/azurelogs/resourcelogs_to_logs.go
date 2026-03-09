@@ -110,7 +110,7 @@ type azureLogRecord struct {
 	Time              string          `json:"time"`
 	Timestamp         string          `json:"timeStamp"`
 	EventTimeString   string          `json:"EventTimeString"`
-	EventTimestamp    string          `json:"EventTimestamp"`	
+	EventTimestamp    string          `json:"EventTimestamp"`
 	StartTime         string          `json:"startTime"`
 	ResourceID        string          `json:"resourceId"`
 	TenantID          *string         `json:"tenantId"`
@@ -265,7 +265,7 @@ func getTimestamp(record *azureLogRecord, formats ...string) (pcommon.Timestamp,
 	case record.EventTimeString != "":
 		return asTimestamp(record.EventTimeString, formats...)
 	case record.EventTimestamp != "":
-		return asTimestamp(record.EventTimestamp, formats...)		
+		return asTimestamp(record.EventTimestamp, formats...)
 	case record.StartTime != "":
 		return asTimestamp(record.StartTime, formats...)
 	default:
