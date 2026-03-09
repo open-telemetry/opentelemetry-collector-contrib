@@ -26,11 +26,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RiakMemoryLimit: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					RiakMemoryLimit: MetricConfig{Enabled: true},
 					RiakNodeOperationCount: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -41,11 +37,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"request"},
 					},
-					RiakNodeReadRepairCount: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					RiakNodeReadRepairCount: MetricConfig{Enabled: true},
 					RiakVnodeIndexOperationCount: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -66,11 +58,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RiakMemoryLimit: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					RiakMemoryLimit: MetricConfig{Enabled: false},
 					RiakNodeOperationCount: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -81,11 +69,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"request"},
 					},
-					RiakNodeReadRepairCount: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					RiakNodeReadRepairCount: MetricConfig{Enabled: false},
 					RiakVnodeIndexOperationCount: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,

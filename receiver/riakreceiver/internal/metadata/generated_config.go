@@ -12,9 +12,8 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
+	Enabled             bool `mapstructure:"enabled"`
+	enabledSetByUser    bool
 	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []string `mapstructure:"attributes"`
 	definedAttributes   []string
@@ -30,32 +29,29 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	for _, val := range ms.EnabledAttributes {
-		if !slices.Contains(ms.definedAttributes, val) {
-			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+	if len(ms.definedAttributes) > 0 {
+		for _, val := range ms.EnabledAttributes {
+			if !slices.Contains(ms.definedAttributes, val) {
+				return fmt.Errorf("%v is not defined in metadata.yaml", val)
+			}
 		}
-	}
 
-	for _, val := range ms.requiredAttributes {
-		if !slices.Contains(ms.EnabledAttributes, val) {
-			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		for _, val := range ms.requiredAttributes {
+			if !slices.Contains(ms.EnabledAttributes, val) {
+				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+			}
 		}
-	}
 
-	if ms.AggregationStrategy != AggregationStrategySum &&
-		ms.AggregationStrategy != AggregationStrategyAvg &&
-		ms.AggregationStrategy != AggregationStrategyMin &&
-		ms.AggregationStrategy != AggregationStrategyMax {
-		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		if ms.AggregationStrategy != AggregationStrategySum &&
+			ms.AggregationStrategy != AggregationStrategyAvg &&
+			ms.AggregationStrategy != AggregationStrategyMin &&
+			ms.AggregationStrategy != AggregationStrategyMax {
+			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		}
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
-}
-
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for riak metrics.
@@ -72,51 +68,33 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		RiakMemoryLimit: MetricConfig{
 			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
 		},
 		RiakNodeOperationCount: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"request"},
-			EnabledAttributes:   []string{"request"},
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"request"},
+			EnabledAttributes:  []string{"request"},
 		},
 		RiakNodeOperationTimeMean: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"request"},
-			EnabledAttributes:   []string{"request"},
+			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"request"},
+			EnabledAttributes:  []string{"request"},
 		},
 		RiakNodeReadRepairCount: MetricConfig{
 			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
 		},
 		RiakVnodeIndexOperationCount: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"operation"},
-			EnabledAttributes:   []string{"operation"},
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"operation"},
+			EnabledAttributes:  []string{"operation"},
 		},
 		RiakVnodeOperationCount: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"request"},
-			EnabledAttributes:   []string{"request"},
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"request"},
+			EnabledAttributes:  []string{"request"},
 		},
 	}
 }

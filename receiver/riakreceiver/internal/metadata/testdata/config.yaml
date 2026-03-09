@@ -3,7 +3,6 @@ all_set:
   metrics:
     riak.memory.limit:
       enabled: true
-      attributes: []
     riak.node.operation.count:
       enabled: true
       attributes: ["request"]
@@ -12,7 +11,6 @@ all_set:
       attributes: ["request"]
     riak.node.read_repair.count:
       enabled: true
-      attributes: []
     riak.vnode.index.operation.count:
       enabled: true
       attributes: ["operation"]
@@ -26,7 +24,6 @@ reaggregate_set:
   metrics:
     riak.memory.limit:
       enabled: true
-      attributes: []
     riak.node.operation.count:
       enabled: true
       attributes: []
@@ -35,7 +32,6 @@ reaggregate_set:
       attributes: []
     riak.node.read_repair.count:
       enabled: true
-      attributes: []
     riak.vnode.index.operation.count:
       enabled: true
       attributes: []
@@ -49,7 +45,6 @@ none_set:
   metrics:
     riak.memory.limit:
       enabled: false
-      attributes: []
     riak.node.operation.count:
       enabled: false
       attributes: ["request"]
@@ -58,7 +53,6 @@ none_set:
       attributes: ["request"]
     riak.node.read_repair.count:
       enabled: false
-      attributes: []
     riak.vnode.index.operation.count:
       enabled: false
       attributes: ["operation"]
