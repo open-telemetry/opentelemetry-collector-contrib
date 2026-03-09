@@ -219,20 +219,20 @@ func TestTraceIntegrity(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	mpe1.NextDecision = samplingpolicy.Sampled
+	mpe1.SetDecision(samplingpolicy.Sampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Both policies should have been evaluated once
-	assert.Equal(t, 4, mpe1.EvaluationCount)
+	assert.Equal(t, 4, mpe1.EvaluationCount())
 
 	consumed := nextConsumer.AllTraces()
 	require.Len(t, consumed, 4)
@@ -1038,9 +1038,9 @@ func uInt64ToSpanID(id uint64) pcommon.SpanID {
 type mockPolicyEvaluator struct {
 	mu sync.Mutex
 
-	NextDecision    samplingpolicy.Decision
-	NextError       error
-	EvaluationCount int
+	nextDecision    samplingpolicy.Decision
+	nextError       error
+	evaluationCount int
 }
 
 var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
@@ -1049,30 +1049,30 @@ func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *sampli
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.EvaluationCount++
-	return m.NextDecision, m.NextError
+	m.evaluationCount++
+	return m.nextDecision, m.nextError
 }
 
 func (*mockPolicyEvaluator) IsStateful() bool {
 	return false
 }
 
-func (m *mockPolicyEvaluator) SetNextDecision(decision samplingpolicy.Decision) {
+func (m *mockPolicyEvaluator) SetDecision(decision samplingpolicy.Decision) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.NextDecision = decision
+	m.nextDecision = decision
 }
 
-func (m *mockPolicyEvaluator) SetNextError(nextError error) {
+func (m *mockPolicyEvaluator) SetError(nextError error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.NextError = nextError
+	m.nextError = nextError
 }
 
-func (m *mockPolicyEvaluator) GetEvaluationCount() int {
+func (m *mockPolicyEvaluator) EvaluationCount() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.EvaluationCount
+	return m.evaluationCount
 }
 
 type syncIDBatcher struct {

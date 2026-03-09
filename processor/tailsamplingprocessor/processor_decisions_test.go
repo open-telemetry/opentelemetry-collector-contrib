@@ -89,20 +89,20 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	mpe1.NextDecision = samplingpolicy.Sampled
+	mpe1.SetDecision(samplingpolicy.Sampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Both policies should have been evaluated once
-	require.Equal(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount())
 
 	// The final decision SHOULD be Sampled.
 	require.Equal(t, 1, nextConsumer.SpanCount())
@@ -136,20 +136,20 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	}()
 
 	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-	mpe1.NextDecision = samplingpolicy.InvertSampled
+	mpe1.SetDecision(samplingpolicy.InvertSampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Both policies should have been evaluated once
-	require.Equal(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount())
 
 	// The final decision SHOULD be Sampled.
 	require.Equal(t, 1, nextConsumer.SpanCount())
@@ -185,23 +185,23 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = samplingpolicy.Sampled
-	mpe2.NextDecision = samplingpolicy.Sampled
+	mpe1.SetDecision(samplingpolicy.Sampled)
+	mpe2.SetDecision(samplingpolicy.Sampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
-	require.Equal(t, 0, mpe2.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount())
+	require.Equal(t, 0, mpe2.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Both policies should have been evaluated once
-	require.Equal(t, 1, mpe1.EvaluationCount)
-	require.Equal(t, 1, mpe2.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount())
+	require.Equal(t, 1, mpe2.EvaluationCount())
 
 	// The final decision SHOULD be Sampled.
 	require.Equal(t, 1, nextConsumer.SpanCount())
@@ -237,8 +237,8 @@ func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
 	}()
 
 	// First policy takes precedence
-	mpe1.NextDecision = samplingpolicy.Sampled
-	mpe2.NextDecision = samplingpolicy.Sampled
+	mpe1.SetDecision(samplingpolicy.Sampled)
+	mpe2.SetDecision(samplingpolicy.Sampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -287,20 +287,20 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = samplingpolicy.NotSampled
+	mpe1.SetDecision(samplingpolicy.NotSampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Both policies should have been evaluated once
-	require.Equal(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount())
 
 	// The final decision SHOULD be NotSampled.
 	require.Equal(t, 0, nextConsumer.SpanCount())
@@ -334,7 +334,7 @@ func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
 	}()
 
 	// InvertNotSampled takes precedence
-	mpe1.NextDecision = samplingpolicy.NotSampled
+	mpe1.SetDecision(samplingpolicy.NotSampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -379,23 +379,23 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 
 	// InvertNotSampled takes precedence
 	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-	mpe1.NextDecision = samplingpolicy.InvertNotSampled
-	mpe2.NextDecision = samplingpolicy.Sampled
+	mpe1.SetDecision(samplingpolicy.InvertNotSampled)
+	mpe2.SetDecision(samplingpolicy.Sampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
-	require.Equal(t, 0, mpe2.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount())
+	require.Equal(t, 0, mpe2.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Both policies should have been evaluated once
-	require.Equal(t, 1, mpe1.EvaluationCount)
-	require.Equal(t, 1, mpe2.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount())
+	require.Equal(t, 1, mpe2.EvaluationCount())
 
 	// The final decision SHOULD be NotSampled.
 	require.Equal(t, 0, nextConsumer.SpanCount())
@@ -432,8 +432,8 @@ func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
 
 	// InvertNotSampled takes precedence
 	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-	mpe1.NextDecision = samplingpolicy.InvertNotSampled
-	mpe2.NextDecision = samplingpolicy.Sampled
+	mpe1.SetDecision(samplingpolicy.InvertNotSampled)
+	mpe2.SetDecision(samplingpolicy.Sampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -481,8 +481,8 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 
 	// The combined decision from the policies is NotSampled
 	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-	mpe1.NextDecision = samplingpolicy.InvertSampled
-	mpe2.NextDecision = samplingpolicy.NotSampled
+	mpe1.SetDecision(samplingpolicy.InvertSampled)
+	mpe2.SetDecision(samplingpolicy.NotSampled)
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -498,15 +498,15 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
-	require.Equal(t, 0, mpe2.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount())
+	require.Equal(t, 0, mpe2.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Both policies should have been evaluated once
-	require.Equal(t, 1, mpe1.EvaluationCount)
-	require.Equal(t, 1, mpe2.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount())
+	require.Equal(t, 1, mpe2.EvaluationCount())
 
 	// The final decision SHOULD be NotSampled.
 	require.Equal(t, 0, nextConsumer.SpanCount())
@@ -514,8 +514,8 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
 	require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(2)))
-	require.Equal(t, 1, mpe1.EvaluationCount)
-	require.Equal(t, 1, mpe2.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount())
+	require.Equal(t, 1, mpe2.EvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
 }
 
@@ -555,7 +555,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The first span will be sampled, this will later be set to not sampled, but the sampling decision will be cached
-	mpe.NextDecision = samplingpolicy.Sampled
+	mpe.SetDecision(samplingpolicy.Sampled)
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -571,13 +571,13 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe.EvaluationCount)
+	require.Equal(t, 0, mpe.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Policy should have been evaluated once
-	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 1, mpe.EvaluationCount())
 
 	// The final decision SHOULD be Sampled.
 	require.Equal(t, 1, nextConsumer.SpanCount())
@@ -591,7 +591,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	}(p)
 
 	// Set next decision to not sampled, ensuring the next decision is determined by the decision cache, not the policy
-	mpe.NextDecision = samplingpolicy.NotSampled
+	mpe.SetDecision(samplingpolicy.NotSampled)
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
@@ -599,7 +599,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	controller.waitForTick()
 
 	// Policy should still have been evaluated only once
-	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 1, mpe.EvaluationCount())
 	require.Equal(t, 2, nextConsumer.SpanCount(), "original final decision not honored")
 	allTraces := nextConsumer.AllTraces()
 	require.Len(t, allTraces, 2)
@@ -653,7 +653,7 @@ func TestLateArrivingSpanUsesDecisionCacheWhenDropped(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The first span will be sampled, this will later be set to not sampled, but the sampling decision will be cached
-	mpe.NextDecision = samplingpolicy.Dropped
+	mpe.SetDecision(samplingpolicy.Dropped)
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -669,13 +669,13 @@ func TestLateArrivingSpanUsesDecisionCacheWhenDropped(t *testing.T) {
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe.EvaluationCount)
+	require.Equal(t, 0, mpe.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Policy should have been evaluated once
-	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 1, mpe.EvaluationCount())
 
 	// The final decision SHOULD be Dropped.
 	require.Equal(t, 0, nextConsumer.SpanCount())
@@ -689,7 +689,7 @@ func TestLateArrivingSpanUsesDecisionCacheWhenDropped(t *testing.T) {
 	}(p)
 
 	// Set next decision to not sampled, ensuring the next decision is determined by the decision cache, not the policy
-	mpe.NextDecision = samplingpolicy.NotSampled
+	mpe.SetDecision(samplingpolicy.NotSampled)
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
@@ -697,7 +697,7 @@ func TestLateArrivingSpanUsesDecisionCacheWhenDropped(t *testing.T) {
 	controller.waitForTick()
 
 	// Policy should still have been evaluated only once
-	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 1, mpe.EvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
 	allTraces := nextConsumer.AllTraces()
 	require.Empty(t, allTraces)
@@ -738,7 +738,7 @@ func TestLateArrivingSpanWithoutCacheMetadata(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The first span will be sampled, this will later be set to not sampled, but the sampling decision will be cached
-	mpe.NextDecision = samplingpolicy.Sampled
+	mpe.SetDecision(samplingpolicy.Sampled)
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -761,7 +761,7 @@ func TestLateArrivingSpanWithoutCacheMetadata(t *testing.T) {
 	}(p)
 
 	// Set next decision to not sampled, ensuring the next decision is determined by the decision cache, not the policy
-	mpe.NextDecision = samplingpolicy.NotSampled
+	mpe.SetDecision(samplingpolicy.NotSampled)
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
@@ -769,7 +769,7 @@ func TestLateArrivingSpanWithoutCacheMetadata(t *testing.T) {
 	controller.waitForTick()
 
 	// Policy should never have been evaluated
-	require.Equal(t, 0, mpe.EvaluationCount)
+	require.Equal(t, 0, mpe.EvaluationCount())
 	require.Equal(t, 1, nextConsumer.SpanCount(), "original final decision not honored")
 	allTraces := nextConsumer.AllTraces()
 	require.Len(t, allTraces, 1)
@@ -817,7 +817,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	traceID := uInt64ToTraceID(1)
 
 	// The first span will be NOT sampled, this will later be set to sampled, but the sampling decision will be cached
-	mpe.NextDecision = samplingpolicy.NotSampled
+	mpe.SetDecision(samplingpolicy.NotSampled)
 
 	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
 	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
@@ -833,13 +833,13 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe.EvaluationCount)
+	require.Equal(t, 0, mpe.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Policy should have been evaluated once
-	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 1, mpe.EvaluationCount())
 
 	// The final decision SHOULD be NOT Sampled.
 	require.Equal(t, 0, nextConsumer.SpanCount())
@@ -853,7 +853,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	}(p)
 
 	// Set next decision to sampled, ensuring the next decision is determined by the decision cache, not the policy
-	mpe.NextDecision = samplingpolicy.Sampled
+	mpe.SetDecision(samplingpolicy.Sampled)
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 	// The policies should NOT be evaluated again.
@@ -861,7 +861,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	controller.waitForTick()
 
 	// Policy should still have been evaluated only once
-	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 1, mpe.EvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
 }
 
@@ -898,25 +898,25 @@ func TestSampleOnFirstMatch(t *testing.T) {
 	}(p)
 
 	// Second policy matches, last policy should not be evaluated
-	mpe1.NextDecision = samplingpolicy.NotSampled
-	mpe2.NextDecision = samplingpolicy.Sampled
+	mpe1.SetDecision(samplingpolicy.NotSampled)
+	mpe2.SetDecision(samplingpolicy.Sampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
-	require.Equal(t, 0, mpe2.EvaluationCount)
-	require.Equal(t, 0, mpe3.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount())
+	require.Equal(t, 0, mpe2.EvaluationCount())
+	require.Equal(t, 0, mpe3.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Only the first policy should have been evaluated
-	require.Equal(t, 1, mpe1.EvaluationCount)
-	require.Equal(t, 1, mpe2.EvaluationCount)
-	require.Equal(t, 0, mpe3.EvaluationCount)
+	require.Equal(t, 1, mpe1.EvaluationCount())
+	require.Equal(t, 1, mpe2.EvaluationCount())
+	require.Equal(t, 0, mpe3.EvaluationCount())
 
 	// The final decision SHOULD be Sampled.
 	require.Equal(t, 1, nextConsumer.SpanCount())
@@ -952,16 +952,16 @@ func TestSpanIngestEvaluatesOnIngestAndFinalizesOnTerminalDecision(t *testing.T)
 	rootSpanID := uInt64ToSpanID(1)
 
 	// First ingest path evaluation is non-terminal in span-ingest mode.
-	mpe.SetNextDecision(samplingpolicy.NotSampled)
+	mpe.SetDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
-	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.EvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Second ingest path evaluation returns terminal Sampled and releases both spans.
-	mpe.SetNextDecision(samplingpolicy.Sampled)
+	mpe.SetDecision(samplingpolicy.Sampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 	require.Eventually(t, func() bool {
-		return mpe.GetEvaluationCount() == 2 && nextConsumer.SpanCount() == 2
+		return mpe.EvaluationCount() == 2 && nextConsumer.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -998,23 +998,23 @@ func TestSpanIngestFinalizesOnDroppedDecision(t *testing.T) {
 	rootSpanID := uInt64ToSpanID(1)
 
 	// First ingest path evaluation is non-terminal in span-ingest mode.
-	mpe.SetNextDecision(samplingpolicy.NotSampled)
+	mpe.SetDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
-	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.EvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Second ingest path evaluation returns terminal Dropped and finalizes trace.
-	mpe.SetNextDecision(samplingpolicy.Dropped)
+	mpe.SetDecision(samplingpolicy.Dropped)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 	require.Eventually(t, func() bool {
-		return mpe.GetEvaluationCount() == 2 && nextConsumer.SpanCount() == 0
+		return mpe.EvaluationCount() == 2 && nextConsumer.SpanCount() == 0
 	}, time.Second, 10*time.Millisecond)
 
 	// Late spans should use cached non-sampled decision and skip re-evaluation.
-	mpe.SetNextDecision(samplingpolicy.Sampled)
+	mpe.SetDecision(samplingpolicy.Sampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(3), rootSpanID)))
 	require.Eventually(t, func() bool {
-		return mpe.GetEvaluationCount() == 2 && nextConsumer.SpanCount() == 0
+		return mpe.EvaluationCount() == 2 && nextConsumer.SpanCount() == 0
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -1048,15 +1048,15 @@ func TestSpanIngestTickCleansUpPendingWithoutPolicyEvaluation(t *testing.T) {
 	}(p)
 
 	// Non-terminal in span-ingest mode: pending in memory.
-	mpe.SetNextDecision(samplingpolicy.NotSampled)
+	mpe.SetDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
-	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.EvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Tick path cleans pending traces without evaluating policies in span-ingest mode.
 	controller.waitForTick()
 	controller.waitForTick()
-	require.Equal(t, 1, mpe.GetEvaluationCount())
+	require.Equal(t, 1, mpe.EvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount())
 	require.Eventually(t, func() bool {
 		return len(p.(*tailSamplingSpanProcessor).idToTrace) == 0
@@ -1135,16 +1135,16 @@ func TestSpanIngestRootFirstThenChild(t *testing.T) {
 	rootSpanID := uInt64ToSpanID(1)
 
 	// Root first, non-terminal.
-	mpe.SetNextDecision(samplingpolicy.NotSampled)
+	mpe.SetDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
-	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.EvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Child later, terminal sampled -> both spans released.
-	mpe.SetNextDecision(samplingpolicy.Sampled)
+	mpe.SetDecision(samplingpolicy.Sampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
 	require.Eventually(t, func() bool {
-		return mpe.GetEvaluationCount() == 2 && nextConsumer.SpanCount() == 2
+		return mpe.EvaluationCount() == 2 && nextConsumer.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -1180,17 +1180,17 @@ func TestSpanIngestChildFirstThenRootPendingCleanup(t *testing.T) {
 	rootSpanID := uInt64ToSpanID(1)
 
 	// Child then root, both non-terminal.
-	mpe.SetNextDecision(samplingpolicy.NotSampled)
+	mpe.SetDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
-	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.EvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
-	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 2 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.EvaluationCount() == 2 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Cleanup tick finalizes pending as not sampled without more evaluations.
 	controller.waitForTick()
 	controller.waitForTick()
-	require.Equal(t, 2, mpe.GetEvaluationCount())
+	require.Equal(t, 2, mpe.EvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount())
 	require.Eventually(t, func() bool {
 		return len(p.(*tailSamplingSpanProcessor).idToTrace) == 0
