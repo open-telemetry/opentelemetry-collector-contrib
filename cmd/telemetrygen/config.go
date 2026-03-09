@@ -52,7 +52,7 @@ var metricsCmd = &cobra.Command{
 // logsCmd is the command responsible for sending logs
 var logsCmd = &cobra.Command{
 	Use:     "logs",
-	Short:   "Simulates a client generating metrics. (Stability level: development)",
+	Short:   "Simulates a client generating logs. (Stability level: development)",
 	Example: "telemetrygen logs",
 	RunE: func(*cobra.Command, []string) error {
 		return logs.Start(logsCfg)
