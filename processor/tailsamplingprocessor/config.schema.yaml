@@ -426,7 +426,7 @@ properties:
     description: DecisionCache holds configuration for the decision cache(s)
     $ref: decision_cache_config
   decision_wait:
-    description: DecisionWait is the desired wait time from the arrival of the first span of trace until the decision about sampling it or not is evaluated.
+    description: DecisionWait is the desired wait time from first-span arrival until timer handling for that trace. In trace-complete this is the primary decision timing; in span-ingest this controls pending cleanup finalization timing.
     type: string
     format: duration
   decision_wait_after_root_received:

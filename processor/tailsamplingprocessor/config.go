@@ -313,8 +313,10 @@ type DecisionCacheConfig struct {
 
 // Config holds the configuration for tail-based sampling.
 type Config struct {
-	// DecisionWait is the desired wait time from the arrival of the first span of
-	// trace until the decision about sampling it or not is evaluated.
+	// DecisionWait is the desired wait time from first-span arrival until timer
+	// handling for that trace.
+	// In trace-complete, this is the primary decision timing.
+	// In span-ingest, this controls pending cleanup finalization timing.
 	DecisionWait time.Duration `mapstructure:"decision_wait"`
 	// DecisionWaitAfterRootReceived is the desired wait time from root-span arrival
 	// until earlier timer handling for that trace.
