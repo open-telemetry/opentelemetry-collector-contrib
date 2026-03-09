@@ -13,12 +13,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs/internal/metadata"
 )
 
 var testBuildInfo = component.BuildInfo{
@@ -880,238 +882,63 @@ func TestUnmarshalLogs_ResourceHealth(t *testing.T) {
 	}
 }
 
-func TestGetProperties(t *testing.T) {
-	tests := []struct {
-		name            string
-		properties      json.RawMessage
-		eventProperties json.RawMessage
-		expected        json.RawMessage
-	}{
-		{
-			name:            "properties set, eventProperties empty",
-			properties:      json.RawMessage(`{"key":"value"}`),
-			eventProperties: nil,
-			expected:        json.RawMessage(`{"key":"value"}`),
-		},
-		{
-			name:            "properties empty, eventProperties set",
-			properties:      nil,
-			eventProperties: json.RawMessage(`{"event":"data"}`),
-			expected:        json.RawMessage(`{"event":"data"}`),
-		},
-		{
-			name:            "both set, properties takes precedence",
-			properties:      json.RawMessage(`{"key":"value"}`),
-			eventProperties: json.RawMessage(`{"event":"data"}`),
-			expected:        json.RawMessage(`{"key":"value"}`),
-		},
-		{
-			name:            "both empty",
-			properties:      nil,
-			eventProperties: nil,
-			expected:        nil,
-		},
+func TestUnmarshalLogs_GateValidationError(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), false))
+	}()
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			record := &azureLogRecord{
-				Properties:      tt.properties,
-				EventProperties: tt.eventProperties,
-			}
-			result := record.getProperties()
-			assert.Equal(t, string(tt.expected), string(result))
-		})
-	}
+	data, err := os.ReadFile("testdata/cornercases/minimum.json")
+	require.NoError(t, err)
+
+	_, err = u.UnmarshalLogs(data)
+	require.ErrorContains(t, err, "pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
 }
 
-func TestGetTimestamp(t *testing.T) {
-	tests := []struct {
-		name        string
-		record      *azureLogRecord
-		formats     []string
-		expectError bool
+func TestUnmarshalLogs_StableGates(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.ID(), false))
+	}()
+
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
 	}{
-		{
-			name: "time field set",
-			record: &azureLogRecord{
-				Time: "2022-11-11T04:48:27.6767145Z",
-			},
-			expectError: false,
+		"app_logs": {
+			logFilename:      "testdata/appservicelog/appservice_applogs.json",
+			expectedFilename: "testdata/appservicelog/appservice_applogs_stable_expected.yaml",
 		},
-		{
-			name: "timestamp field set",
-			record: &azureLogRecord{
-				Timestamp: "2022-11-11T04:48:27.6767145Z",
-			},
-			expectError: false,
-		},
-		{
-			name: "EventTimeString field set",
-			record: &azureLogRecord{
-				EventTimeString: "2022-11-11T04:48:27.6767145Z",
-			},
-			expectError: false,
-		},
-		{
-			name: "time takes precedence over timestamp",
-			record: &azureLogRecord{
-				Time:      "2022-11-11T04:48:27.6767145Z",
-				Timestamp: "2023-01-01T00:00:00Z",
-			},
-			expectError: false,
-		},
-		{
-			name: "timestamp takes precedence over EventTimeString",
-			record: &azureLogRecord{
-				Timestamp:       "2022-11-11T04:48:27.6767145Z",
-				EventTimeString: "2023-01-01T00:00:00Z",
-			},
-			expectError: false,
-		},
-		{
-			name:        "all empty returns error",
-			record:      &azureLogRecord{},
-			expectError: true,
-		},
-		{
-			name: "EventTimeString with custom format",
-			record: &azureLogRecord{
-				EventTimeString: "11/20/2024 13:57:18",
-			},
-			formats:     []string{"01/02/2006 15:04:05"},
-			expectError: false,
-		},
-		{
-			name: "startTime field set",
-			record: &azureLogRecord{
-				StartTime: "2022-11-11T04:48:27.6767145Z",
-			},
-			expectError: false,
-		},
-		{
-			name: "EventTimeString takes precedence over startTime",
-			record: &azureLogRecord{
-				EventTimeString: "2022-11-11T04:48:27.6767145Z",
-				StartTime:       "2023-01-01T00:00:00Z",
-			},
-			expectError: false,
-		},
-		{
-			name: "EventTimestamp field set",
-			record: &azureLogRecord{
-				EventTimestamp: "2022-11-11T04:48:27.6767145Z",
-			},
-			expectError: false,
-		},
-		{
-			name: "EventTimestamp with custom format",
-			record: &azureLogRecord{
-				EventTimestamp: "11/20/2024 13:57:18",
-			},
-			formats:     []string{"01/02/2006 15:04:05"},
-			expectError: false,
-		},
-		{
-			name: "EventTimeString takes precedence over EventTimestamp",
-			record: &azureLogRecord{
-				EventTimeString: "2022-11-11T04:48:27.6767145Z",
-				EventTimestamp:  "2023-01-01T00:00:00Z",
-			},
-			expectError: false,
-		},
-		{
-			name: "EventTimestamp takes precedence over startTime",
-			record: &azureLogRecord{
-				EventTimestamp: "2022-11-11T04:48:27.6767145Z",
-				StartTime:      "2023-01-01T00:00:00Z",
-			},
-			expectError: false,
-		},
-		{
-			name: "startTime with custom format",
-			record: &azureLogRecord{
-				StartTime: "11/20/2024 13:57:18",
-			},
-			formats:     []string{"01/02/2006 15:04:05"},
-			expectError: false,
+		"minimum": {
+			logFilename:      "testdata/cornercases/minimum.json",
+			expectedFilename: "testdata/cornercases/minimum_stable_expected.yaml",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			nanos, err := getTimestamp(tt.record, tt.formats...)
-			if tt.expectError {
-				assert.Error(t, err)
-				assert.Equal(t, pcommon.Timestamp(0), nanos)
-			} else {
-				assert.NoError(t, err)
-				assert.Less(t, pcommon.Timestamp(0), nanos)
-			}
-		})
-	}
-}
-
-func TestExtractRawAttributes_EventProperties(t *testing.T) {
-	tests := []struct {
-		name     string
-		log      *azureLogRecord
-		expected map[string]any
-	}{
-		{
-			name: "uses EventProperties when Properties is nil",
-			log: &azureLogRecord{
-				OperationName:   "operation.name",
-				Category:        "category",
-				EventProperties: json.RawMessage(`{"a":1,"b":"two"}`),
-			},
-			expected: map[string]any{
-				azureOperationName: "operation.name",
-				azureCategory:      "category",
-				azureProperties: map[string]any{
-					"a": float64(1),
-					"b": "two",
-				},
-			},
-		},
-		{
-			name: "Properties takes precedence over EventProperties",
-			log: &azureLogRecord{
-				OperationName:   "operation.name",
-				Category:        "category",
-				Properties:      json.RawMessage(`{"from":"properties"}`),
-				EventProperties: json.RawMessage(`{"from":"eventproperties"}`),
-			},
-			expected: map[string]any{
-				azureOperationName: "operation.name",
-				azureCategory:      "category",
-				azureProperties: map[string]any{
-					"from": "properties",
-				},
-			},
-		},
-		{
-			name: "rawRecord preserved when no properties",
-			log: &azureLogRecord{
-				OperationName: "operation.name",
-				Category:      "category",
-			},
-			expected: map[string]any{
-				azureOperationName:     "operation.name",
-				azureCategory:          "category",
-				attributeEventOriginal: "{\n\t\"test\": true\n}",
-			},
-		},
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var rawRecord json.RawMessage
-			if tt.name == "rawRecord preserved when no properties" {
-				rawRecord = json.RawMessage(`{"test": true}`)
-			}
-			result := extractRawAttributes(tt.log, rawRecord)
-			assert.Equal(t, tt.expected, result)
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(test.logFilename)
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			// golden.WriteLogs(t, test.expectedFilename, logs)
+			expectedLogs, err := golden.ReadLogs(test.expectedFilename)
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
