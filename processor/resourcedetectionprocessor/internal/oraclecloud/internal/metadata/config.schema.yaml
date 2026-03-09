@@ -6,7 +6,7 @@ $defs:
       enabled:
         type: boolean
   resource_attributes_config:
-    description: ResourceAttributesConfig provides config for resourcedetectionprocessor/oraclecloud resource attributes.
+    description: ResourceAttributesConfig provides config for oracleclouddetector resource attributes.
     type: object
     properties:
       cloud.availability_zone:
@@ -24,4 +24,6 @@ $defs:
       host.type:
         $ref: resource_attribute_config
       k8s.cluster.name:
+        $ref: resource_attribute_config
+      oracle_cloud.realm:
         $ref: resource_attribute_config

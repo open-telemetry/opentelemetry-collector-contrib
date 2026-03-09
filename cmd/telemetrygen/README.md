@@ -96,10 +96,10 @@ Or, to generate a specific number of traces:
 telemetrygen traces --otlp-insecure --traces 1
 ```
 
-Or, to generate traces continuously every 10 seconds:
+Or, to generate traces continuously (use `--duration inf` with `--rate` for throttling):
 
 ```console
-telemetrygen traces --otlp-insecure --continuous --rate 0.1
+telemetrygen traces --otlp-insecure --duration inf --rate 0.1
 ```
 
 To send traces in secure connection, see [examples/secure-tracing](../../examples/secure-tracing/)
@@ -109,11 +109,43 @@ Check `telemetrygen traces --help` for all the options.
 ### Logs
 
 ```console
-telemetrygen logs --duration 5s --otlp-insecure
+telemetrygen logs --otlp-insecure --duration 5s
 ```
+
+Or, to generate a specific number of logs:
+
+```console
+telemetrygen logs --otlp-insecure --logs 1
+```
+
+Or, to generate logs continuously:
+
+```console
+telemetrygen logs --otlp-insecure --duration inf --rate 0.1
+```
+
+To send logs in secure connection, see [examples/secure-tracing](../../examples/secure-tracing/)
+
+Check `telemetrygen logs --help` for all the options.
 
 ### Metrics
 
 ```console
-telemetrygen metrics --duration 5s --otlp-insecure
+telemetrygen metrics --otlp-insecure --duration 5s
 ```
+
+Or, to generate a specific number of metrics:
+
+```console
+telemetrygen metrics --otlp-insecure --metrics 1
+```
+
+Or, to generate metrics continuously:
+
+```console
+telemetrygen metrics --otlp-insecure --duration inf --rate 0.1
+```
+
+To send metrics in secure connection, see [examples/secure-tracing](../../examples/secure-tracing/)
+
+Check `telemetrygen metrics --help` for all the options.

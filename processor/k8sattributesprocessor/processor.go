@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -184,7 +184,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 					attribute.String("pod_identifier", podIdentifierStr),
 					attribute.String("otelcol.signal", signalType),
 				)
-				kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, successAttr)
+				kp.telemetry.K8sPodAssociation.Add(ctx, 1, successAttr)
 			}
 
 			for key, val := range pod.Attributes {
@@ -200,7 +200,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 					attribute.String("pod_identifier", podIdentifierStr),
 					attribute.String("otelcol.signal", signalType),
 				)
-				kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, errorAttr)
+				kp.telemetry.K8sPodAssociation.Add(ctx, 1, errorAttr)
 			}
 		}
 	} else {
@@ -212,7 +212,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 				attribute.String("pod_identifier", podIdentifierStr),
 				attribute.String("otelcol.signal", signalType),
 			)
-			kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, errorAttr)
+			kp.telemetry.K8sPodAssociation.Add(ctx, 1, errorAttr)
 		}
 	}
 

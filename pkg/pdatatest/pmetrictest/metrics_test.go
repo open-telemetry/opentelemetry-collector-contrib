@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -479,4 +481,113 @@ func TestCompareMetrics(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCompareMetricsEntityRefs(t *testing.T) {
+	t.Run("equal-entity-refs", func(t *testing.T) {
+		expected := pmetric.NewMetrics()
+		actual := pmetric.NewMetrics()
+
+		eRes := expected.ResourceMetrics().AppendEmpty().Resource()
+		aRes := actual.ResourceMetrics().AppendEmpty().Resource()
+
+		eRef := entity.ResourceEntityRefs(eRes).AppendEmpty()
+		eRef.SetType("k8s.namespace")
+		eRef.IdKeys().Append("k8s.namespace.uid")
+		eRef.DescriptionKeys().Append("k8s.namespace.name")
+
+		aRef := entity.ResourceEntityRefs(aRes).AppendEmpty()
+		aRef.SetType("k8s.namespace")
+		aRef.IdKeys().Append("k8s.namespace.uid")
+		aRef.DescriptionKeys().Append("k8s.namespace.name")
+
+		assert.NoError(t, CompareMetrics(expected, actual))
+	})
+
+	t.Run("entity-ref-count-mismatch", func(t *testing.T) {
+		expected := pmetric.NewMetrics()
+		actual := pmetric.NewMetrics()
+
+		eRes := expected.ResourceMetrics().AppendEmpty().Resource()
+		actual.ResourceMetrics().AppendEmpty()
+
+		eRef := entity.ResourceEntityRefs(eRes).AppendEmpty()
+		eRef.SetType("k8s.namespace")
+
+		err := CompareMetrics(expected, actual)
+		assert.EqualError(t, err, `resource "map[]": number of entity refs doesn't match expected: 1, actual: 0`)
+	})
+
+	t.Run("entity-ref-type-mismatch", func(t *testing.T) {
+		expected := pmetric.NewMetrics()
+		actual := pmetric.NewMetrics()
+
+		eRes := expected.ResourceMetrics().AppendEmpty().Resource()
+		aRes := actual.ResourceMetrics().AppendEmpty().Resource()
+
+		eRef := entity.ResourceEntityRefs(eRes).AppendEmpty()
+		eRef.SetType("k8s.namespace")
+
+		aRef := entity.ResourceEntityRefs(aRes).AppendEmpty()
+		aRef.SetType("k8s.node")
+
+		err := CompareMetrics(expected, actual)
+		assert.EqualError(t, err, `resource "map[]": entity ref 0 type doesn't match expected: k8s.namespace, actual: k8s.node`)
+	})
+
+	t.Run("entity-ref-id-keys-mismatch", func(t *testing.T) {
+		expected := pmetric.NewMetrics()
+		actual := pmetric.NewMetrics()
+
+		eRes := expected.ResourceMetrics().AppendEmpty().Resource()
+		aRes := actual.ResourceMetrics().AppendEmpty().Resource()
+
+		eRef := entity.ResourceEntityRefs(eRes).AppendEmpty()
+		eRef.SetType("k8s.namespace")
+		eRef.IdKeys().Append("k8s.namespace.uid")
+
+		aRef := entity.ResourceEntityRefs(aRes).AppendEmpty()
+		aRef.SetType("k8s.namespace")
+		aRef.IdKeys().Append("k8s.namespace.name")
+
+		err := CompareMetrics(expected, actual)
+		assert.EqualError(t, err, `resource "map[]": entity ref 0 id keys don't match expected: [k8s.namespace.uid], actual: [k8s.namespace.name]`)
+	})
+
+	t.Run("entity-ref-description-keys-mismatch", func(t *testing.T) {
+		expected := pmetric.NewMetrics()
+		actual := pmetric.NewMetrics()
+
+		eRes := expected.ResourceMetrics().AppendEmpty().Resource()
+		aRes := actual.ResourceMetrics().AppendEmpty().Resource()
+
+		eRef := entity.ResourceEntityRefs(eRes).AppendEmpty()
+		eRef.SetType("k8s.namespace")
+		eRef.DescriptionKeys().Append("k8s.namespace.name")
+
+		aRef := entity.ResourceEntityRefs(aRes).AppendEmpty()
+		aRef.SetType("k8s.namespace")
+		aRef.DescriptionKeys().Append("other.key")
+
+		err := CompareMetrics(expected, actual)
+		assert.EqualError(t, err, `resource "map[]": entity ref 0 description keys don't match expected: [k8s.namespace.name], actual: [other.key]`)
+	})
+
+	t.Run("ignore-entity-refs", func(t *testing.T) {
+		expected := pmetric.NewMetrics()
+		actual := pmetric.NewMetrics()
+
+		eRes := expected.ResourceMetrics().AppendEmpty().Resource()
+		actual.ResourceMetrics().AppendEmpty()
+
+		eRef := entity.ResourceEntityRefs(eRes).AppendEmpty()
+		eRef.SetType("k8s.namespace")
+		eRef.IdKeys().Append("k8s.namespace.uid")
+
+		err := CompareMetrics(expected, actual)
+		assert.Error(t, err)
+
+		err = CompareMetrics(expected, actual, IgnoreResourceEntityRefs())
+		assert.NoError(t, err)
+	})
 }

@@ -1,4 +1,8 @@
+display_name: Google Pub/Sub Receiver
 type: googlecloudpubsub
+
+description: |
+  This receiver gets OTLP messages from a Google Cloud [Pubsub](https://cloud.google.com/pubsub) subscription.
 
 status:
   class: receiver
