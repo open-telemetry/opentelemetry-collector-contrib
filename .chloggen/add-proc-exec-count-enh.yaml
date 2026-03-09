@@ -5,7 +5,7 @@ change_type: enhancement
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: receiver/sqlserver
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add procedure execution count to the sqlserver receiver top_query collection.
+note: Add `sqlserver.procedure_execution_count` attribute to the Top-Query collection.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46486]
