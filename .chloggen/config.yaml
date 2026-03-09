@@ -202,8 +202,8 @@ components:
     - processor/logdedup
     - processor/logstransform
     - processor/lookup
+    - processor/metric_start_time
     - processor/metricsgeneration
-    - processor/metricstarttime
     - processor/metricstransform
     - processor/novadetector
     - processor/oracleclouddetector
