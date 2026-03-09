@@ -50,6 +50,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before making a sampling decision. 0s means disabled (only use `decision_wait`).
+- `sampling_strategy` (default = `trace-complete`): Controls when a decision is made and what data is evaluated. Valid values are `trace-complete` and `span-ingest`. See [Sampling Strategies](#sampling-strategies) for detailed behavior, benefits, tradeoffs, and caveats for each mode.
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
@@ -67,6 +68,34 @@ The following configuration options can also be modified:
 - `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
   already ingested.
 - `maximum_trace_size_bytes`: The maximum size a trace can reach in bytes, traces larger than this size will be immediately dropped from the tail sampling processor in order to protect the system.
+
+## Sampling Strategies
+
+The `sampling_strategy` setting controls both decision timing and the data passed to policy evaluators.
+
+### trace-complete
+
+- Decision timing/data model: default behavior. The processor accumulates trace data and evaluates policies on the timer path after `decision_wait` (or earlier when `decision_wait_after_root_received` is set and a root span arrives).
+- Benefits: highest policy flexibility because evaluators observe accumulated trace data at decision time.
+- Downsides/tradeoffs: higher memory/storage and deferred decisions, because spans are retained until decision timing is reached.
+- Caveats: evaluation depends on delayed decision timing rather than ingest-time finalization.
+
+### span-ingest
+
+- Decision timing/data model: evaluates policies at ingest time for each incoming batch of a trace. It does not re-evaluate previously ingested spans. Terminal results (`sampled` or `dropped`) finalize immediately; otherwise the trace remains pending.
+- Benefits: earlier terminal outcomes and no repeated evaluation of old spans.
+- Downsides/tradeoffs: reduced policy compatibility compared to `trace-complete`.
+- Caveats:
+  - pending traces are cleanup-finalized as `not sampled` on the timer cleanup path without policy re-evaluation.
+  - stateful policies are rejected for this mode.
+  - policies with semantics that assume complete traces can produce different outcomes than `trace-complete`.
+
+### Strategy Comparison Notes
+
+- Policy compatibility: `trace-complete` supports stateful policies; `span-ingest` rejects them.
+- Timer controls: `decision_wait` and `decision_wait_after_root_received` influence decision timing only in `trace-complete`.
+- Late-span behavior: decision caches remain important in all modes to carry decisions for spans arriving after in-memory trace data is gone.
+- Terminal vs pending: `span-ingest` finalizes on terminal outcomes immediately and keeps non-terminal outcomes pending until cleanup finalization.
 
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:

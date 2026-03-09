@@ -456,3 +456,9 @@ properties:
   sample_on_first_match:
     description: Make decision as soon as a policy matches
     type: boolean
+  sampling_strategy:
+    description: SamplingStrategy controls how/when sampling decisions are made. trace-complete (default) accumulates spans and makes a decision after decision_wait using full-trace context. span-ingest evaluates as spans arrive (in any order), finalizing terminal outcomes immediately and finalizing unresolved traces as not sampled during cleanup without policy re-evaluation; stateful policies are not supported in this mode.
+    type: string
+    enum:
+      - trace-complete
+      - span-ingest
