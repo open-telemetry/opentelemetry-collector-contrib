@@ -394,25 +394,9 @@ The time since the container started
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
 
-### k8s.container.cpu.limit
-
-Container CPU limit in cores
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
-
 ### k8s.container.cpu.node.utilization
 
 Container cpu utilization as a ratio of the node's capacity
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
-
-### k8s.container.cpu.request
-
-Container CPU request in cores
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -434,14 +418,6 @@ Container cpu utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
-### k8s.container.memory.limit
-
-Container memory limit in bytes
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
-
 ### k8s.container.memory.node.utilization
 
 Container memory utilization as a ratio of the node's capacity
@@ -449,14 +425,6 @@ Container memory utilization as a ratio of the node's capacity
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
-
-### k8s.container.memory.request
-
-Container memory request in bytes
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
 
 ### k8s.container.memory_limit_utilization
 
@@ -482,14 +450,6 @@ The time since the node started
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
 
-### k8s.pod.cpu.limit
-
-Pod CPU limit in cores
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
-
 ### k8s.pod.cpu.node.utilization
 
 Pod cpu utilization as a ratio of the node's capacity
@@ -498,17 +458,9 @@ Pod cpu utilization as a ratio of the node's capacity
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
-### k8s.pod.cpu.request
-
-Pod CPU request in cores
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
-
 ### k8s.pod.cpu_limit_utilization
 
-Pod cpu utilization as a ratio of the pod's limits. If pod-level resources are present (k8s v1.34+), only pod-level limits are used. Otherwise, the sum of all container limits is used. If the selected source has no limit, the metric is not emitted.
+Pod cpu utilization as a ratio of the pod's limits. If pod-level resources are present (k8s v1.34+), only pod-level limits are used. Otherwise, the sum of all container limits is used. The metric is not emitted when there are no pod-level limits and at least one of the pod's containers is missing the cpu limit spec.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -516,19 +468,11 @@ Pod cpu utilization as a ratio of the pod's limits. If pod-level resources are p
 
 ### k8s.pod.cpu_request_utilization
 
-Pod cpu utilization as a ratio of the pod's requests. If pod-level resources are present (k8s v1.34+), only pod-level requests are used. Otherwise, the sum of all container requests is used. If the selected source has no request, the metric is not emitted.
+Pod cpu utilization as a ratio of the pod's requests. If pod-level resources are present (k8s v1.34+), only pod-level requests are used. Otherwise, the sum of all container requests is used. The metric is not emitted when there are no pod-level requests and at least one of the pod's containers is missing the cpu request spec.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
-
-### k8s.pod.memory.limit
-
-Pod memory limit in bytes
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
 
 ### k8s.pod.memory.node.utilization
 
@@ -538,17 +482,9 @@ Pod memory utilization as a ratio of the node's capacity
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
-### k8s.pod.memory.request
-
-Pod memory request in bytes
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
-
 ### k8s.pod.memory_limit_utilization
 
-Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
+Pod memory utilization as a ratio of the pod's limits. If pod-level resources are present (k8s v1.34+), only pod-level limits are used. Otherwise, the sum of all container limits is used. The metric is not emitted when there are no pod-level limits and at least one of the pod's containers is missing the memory limit spec.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -556,7 +492,7 @@ Pod memory utilization as a ratio of the pod's total container limits. If any co
 
 ### k8s.pod.memory_request_utilization
 
-Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
+Pod memory utilization as a ratio of the pod's requests. If pod-level resources are present (k8s v1.34+), only pod-level requests are used. Otherwise, the sum of all container requests is used. The metric is not emitted when there are no pod-level requests and at least one of the pod's containers is missing the memory request spec.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
