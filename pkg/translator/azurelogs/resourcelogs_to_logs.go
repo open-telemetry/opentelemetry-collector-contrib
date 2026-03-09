@@ -201,10 +201,6 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 				fields = append(fields, zap.String("category", log.Category))
 			}
 			r.Logger.Warn("Unable to convert timestamp from log", fields...)
-			if rawRecord := getRawRecord(i); rawRecord != nil {
-				r.Logger.Debug("Raw record with unparseable timestamp", zap.ByteString("raw_record", rawRecord))
-			}
-
 			continue
 		}
 
