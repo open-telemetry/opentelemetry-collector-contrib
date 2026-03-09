@@ -49,7 +49,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
-- `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before making a sampling decision. 0s means disabled (only use `decision_wait`).
+- `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before earlier timer handling. In `trace-complete`, this can make the sampling decision happen earlier. In `span-ingest`, this can make pending-trace cleanup finalization happen earlier. 0s means disabled (only use `decision_wait`).
 - `sampling_strategy` (default = `trace-complete`): Controls when a decision is made and what data is evaluated. Valid values are `trace-complete` and `span-ingest`. See [Sampling Strategies](#sampling-strategies) for detailed behavior, benefits, tradeoffs, and caveats for each mode.
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
@@ -93,7 +93,7 @@ The `sampling_strategy` setting controls both decision timing and the data passe
 ### Strategy Comparison Notes
 
 - Policy compatibility: `trace-complete` supports stateful policies; `span-ingest` rejects them.
-- Timer controls: `decision_wait` and `decision_wait_after_root_received` influence decision timing only in `trace-complete`.
+- Timer controls: in `trace-complete`, `decision_wait` and `decision_wait_after_root_received` influence decision timing; in `span-ingest`, they influence pending cleanup/finalization timing.
 - Late-span behavior: decision caches remain important in all modes to carry decisions for spans arriving after in-memory trace data is gone.
 - Terminal vs pending: `span-ingest` finalizes on terminal outcomes immediately and keeps non-terminal outcomes pending until cleanup finalization.
 
