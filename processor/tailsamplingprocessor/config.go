@@ -342,9 +342,9 @@ type Config struct {
 	// Make decision as soon as a policy matches
 	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
 	// SamplingStrategy controls how/when sampling decisions are made.
-	// "trace-complete" (default) keeps classic tail sampling behavior.
-	// "span-ingest" evaluates each incoming batch on ingest and only terminal
-	// outcomes finalize immediately; non-terminal outcomes are cleanup-finalized.
+	// "trace-complete" (default) evaluates accumulated trace data on timer handling.
+	// "span-ingest" evaluates each incoming batch on ingest; terminal outcomes
+	// finalize immediately, and non-terminal traces are finalized on cleanup.
 	SamplingStrategy samplingStrategy `mapstructure:"sampling_strategy"`
 	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
 	// wait when the processor is shutdown.

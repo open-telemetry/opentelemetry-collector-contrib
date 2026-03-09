@@ -50,7 +50,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since first-span arrival before timer handling. In `trace-complete`, this primarily controls decision timing. In `span-ingest`, this primarily controls pending-trace cleanup finalization timing.
 - `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before earlier timer handling. In `trace-complete`, this can make the sampling decision happen earlier. In `span-ingest`, this can make pending-trace cleanup finalization happen earlier. 0s means disabled (only use `decision_wait`).
-- `sampling_strategy` (default = `trace-complete`): Controls when a decision is made and what data is evaluated. Valid values are `trace-complete` and `span-ingest`. See [Sampling Strategies](#sampling-strategies) for detailed behavior, benefits, tradeoffs, and caveats for each mode.
+- `sampling_strategy` (default = `trace-complete`): Controls decision timing and evaluation scope. `trace-complete` evaluates accumulated trace data on timer handling; `span-ingest` evaluates each incoming batch on ingest, finalizing terminal outcomes immediately and non-terminal traces on cleanup. See [Sampling Strategies](#sampling-strategies) for details.
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
