@@ -111,8 +111,8 @@ components:
         - isolationforest
         - k8s_attributes
         - logdedup
+        - metric_start_time
         - metricsgeneration
-        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
