@@ -8,7 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	sf "github.com/snowflakedb/gosnowflake"
+	sf "github.com/snowflakedb/gosnowflake/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )

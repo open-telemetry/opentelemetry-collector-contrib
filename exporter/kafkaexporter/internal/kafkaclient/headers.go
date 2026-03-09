@@ -17,10 +17,13 @@ func metadataToHeaders[H any](ctx context.Context, keys []string,
 		return nil
 	}
 	info := client.FromContext(ctx)
-	headers := make([]H, 0, len(keys))
+	var headers []H
 	for _, key := range keys {
 		valueSlice := info.Metadata.Get(key)
 		for _, v := range valueSlice {
+			if headers == nil {
+				headers = make([]H, 0, len(keys))
+			}
 			headers = append(headers, makeHeader(key, []byte(v)))
 		}
 	}

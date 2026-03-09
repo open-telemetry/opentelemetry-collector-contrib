@@ -60,6 +60,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSystemCPUFrequencyDataPoint(ts, 1, "cpu-val", "host.cpu.socket.id-val", "host.cpu.core.id-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemCPUFrequencyDataPoint(ts, 3, "cpu-val-2", "host.cpu.socket.id-val-2", "host.cpu.core.id-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSystemCPULogicalCountDataPoint(ts, 1)
@@ -70,12 +73,23 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle, "host.cpu.socket.id-val", "host.cpu.core.id-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemCPUTimeDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt, "host.cpu.socket.id-val-2", "host.cpu.core.id-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle, "host.cpu.socket.id-val", "host.cpu.core.id-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemCPUUtilizationDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt, "host.cpu.socket.id-val-2", "host.cpu.core.id-val-2")
+			}
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSystemCPUFrequency.aggDataPoints)
+				assert.Empty(t, mb.metricSystemCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricSystemCPUUtilization.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

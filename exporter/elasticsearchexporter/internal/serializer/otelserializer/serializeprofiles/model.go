@@ -111,7 +111,7 @@ func (h HostResourceData) MarshalJSON() ([]byte, error) {
 	}
 
 	// Marshal the combined map into JSON
-	return json.MarshalIndent(combinedData, "", "  ")
+	return json.Marshal(combinedData)
 }
 
 // Script written in Painless that will both create a new document (if DocID does not exist),

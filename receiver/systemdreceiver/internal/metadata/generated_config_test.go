@@ -26,9 +26,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdServiceCPUTime:  MetricConfig{Enabled: true},
+					SystemdServiceCPUTime: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"cpu.mode"},
+					},
 					SystemdServiceRestarts: MetricConfig{Enabled: true},
-					SystemdUnitState:       MetricConfig{Enabled: true},
+					SystemdUnitState: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"systemd.unit.active_state"},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SystemdUnitName: ResourceAttributeConfig{Enabled: true},
@@ -39,9 +47,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdServiceCPUTime:  MetricConfig{Enabled: false},
+					SystemdServiceCPUTime: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"cpu.mode"},
+					},
 					SystemdServiceRestarts: MetricConfig{Enabled: false},
-					SystemdUnitState:       MetricConfig{Enabled: false},
+					SystemdUnitState: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"systemd.unit.active_state"},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SystemdUnitName: ResourceAttributeConfig{Enabled: false},

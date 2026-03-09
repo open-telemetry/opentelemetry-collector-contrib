@@ -5,6 +5,7 @@ package sqlserverreceiver
 
 import (
 	"context"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -18,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -294,7 +296,10 @@ func TestSortRows(t *testing.T) {
 	}
 }
 
-var _ sqlquery.DbClient = (*mockClient)(nil)
+var (
+	_ sqlquery.DbClient = (*mockClient)(nil)
+	_ sqlquery.DbClient = (*mockMultiStatementProcClient)(nil)
+)
 
 type mockClient struct {
 	SQL                 string
@@ -306,6 +311,10 @@ type mockClient struct {
 }
 
 type mockInvalidClient struct {
+	mockClient
+}
+
+type mockMultiStatementProcClient struct {
 	mockClient
 }
 
@@ -368,6 +377,15 @@ func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.Strin
 		return nil, err
 	}
 	return queryResults, nil
+}
+
+func (mc mockMultiStatementProcClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
+	switch mc.SQL {
+	case getSQLServerQueryTextAndPlanQuery():
+		return readFile("queryTextAndPlanMultiStatementProcData.txt")
+	default:
+		return nil, errors.New("No valid query found")
+	}
 }
 
 func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testing.T) {
@@ -628,6 +646,159 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 			assert.Equal(t, "db.server.query_sample", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 			assert.NoError(t, errs)
+		})
+	}
+}
+
+// TestMultiStatementProcNoDuplicateRows validates that a stored procedure
+// containing multiple SELECT statements (each with a distinct query_hash /
+// query_plan_hash but sharing the same plan_handle) produces exactly one
+// log record per statement -- not duplicated rows caused by a 1:N join on
+// plan_handle alone.
+func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	assert.NotNil(t, scraper.cache)
+
+	// Seed the cache so that cacheAndDiff returns non-zero diffs (simulates a
+	// prior scrape). Use the hex-encoded query_hash values from the mock data.
+	stmt1Hash := hex.EncodeToString([]byte("0xAAAAAAAAAAAAAAAA"))
+	stmt1PlanHash := hex.EncodeToString([]byte("0xBBBBBBBBBBBBBBBB"))
+	stmt2Hash := hex.EncodeToString([]byte("0xCCCCCCCCCCCCCCCC"))
+	stmt2PlanHash := hex.EncodeToString([]byte("0xDDDDDDDDDDDDDDDD"))
+	procID := "1431676148"
+
+	for _, pair := range [][2]string{{stmt1Hash, stmt1PlanHash}, {stmt2Hash, stmt2PlanHash}} {
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "execution_count", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_elapsed_time", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_grant_kb", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_logical_reads", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_logical_writes", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_physical_reads", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_rows", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_worker_time", 1)
+	}
+
+	scraper.client = mockMultiStatementProcClient{
+		mockClient: mockClient{
+			instanceName:        scraper.config.InstanceName,
+			SQL:                 scraper.sqlQuery,
+			maxQuerySampleCount: 1000,
+			lookbackTime:        20,
+			topQueryCount:       200,
+		},
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	// The mock data contains exactly 2 rows (two distinct statements inside one
+	// stored procedure sharing a single plan_handle). Before the fix, a join on
+	// plan_handle alone would fan these into 4 rows. After the fix the join
+	// additionally matches on query_hash + query_plan_hash, keeping the count
+	// at 2. Verify we get exactly 2 log records.
+	assert.Equal(t, 2, actualLogs.LogRecordCount(),
+		"Expected exactly 2 log records for 2 distinct statements; duplicates indicate the plan_handle join is too broad")
+
+	// Verify both records are top_query events.
+	scopeLogs := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0)
+	for i := 0; i < scopeLogs.LogRecords().Len(); i++ {
+		assert.Equal(t, "db.server.top_query", scopeLogs.LogRecords().At(i).EventName())
+	}
+
+	// Collect query_hash attribute values and verify they are distinct.
+	seenHashes := make(map[string]bool)
+	for i := 0; i < scopeLogs.LogRecords().Len(); i++ {
+		qh, ok := scopeLogs.LogRecords().At(i).Attributes().Get("sqlserver.query_hash")
+		assert.True(t, ok)
+		seenHashes[qh.Str()] = true
+	}
+	assert.Len(t, seenHashes, 2,
+		"Expected 2 distinct query_hash values, got duplicates")
+}
+
+func TestSetupResourceBuilder(t *testing.T) {
+	tests := []struct {
+		name             string
+		config           *Config
+		expectedHostName string
+	}{
+		{
+			name: "with server configuration",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Server = "testserver.example.com"
+				cfg.Port = 1433
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName: "testserver.example.com",
+		},
+		{
+			name: "with datasource configuration",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName: "datasource-host.example.com",
+		},
+		{
+			name: "with datasource default port",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.DataSource = "sqlserver://testuser:testpass@datasource-host2.example.com?database=testdb"
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName: "datasource-host2.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			settings := receivertest.NewNopSettings(metadata.Type)
+			scraper := newSQLServerScraper(
+				settings.ID,
+				"SELECT 1",
+				sqlquery.TelemetryConfig{},
+				func() (*sql.DB, error) { return nil, nil },
+				func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
+					return nil
+				},
+				settings,
+				tt.config,
+				nil,
+			)
+			scraper.mb = metadata.NewMetricsBuilder(tt.config.MetricsBuilderConfig, settings)
+
+			row := sqlquery.StringMap{
+				computerNameKey: "test-computer",
+				instanceNameKey: "test-instance",
+			}
+
+			rb := scraper.setupResourceBuilder(row)
+			resource := rb.Emit()
+
+			hostName, exists := resource.Attributes().Get("host.name")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedHostName, hostName.AsString())
 		})
 	}
 }

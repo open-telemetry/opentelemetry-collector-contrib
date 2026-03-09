@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,54 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["OracledbConsistentGets"] = mb.metricOracledbConsistentGets.config.AggregationStrategy
+			aggMap["OracledbCPUTime"] = mb.metricOracledbCPUTime.config.AggregationStrategy
+			aggMap["OracledbDbBlockGets"] = mb.metricOracledbDbBlockGets.config.AggregationStrategy
+			aggMap["OracledbDdlStatementsParallelized"] = mb.metricOracledbDdlStatementsParallelized.config.AggregationStrategy
+			aggMap["OracledbDmlLocksLimit"] = mb.metricOracledbDmlLocksLimit.config.AggregationStrategy
+			aggMap["OracledbDmlLocksUsage"] = mb.metricOracledbDmlLocksUsage.config.AggregationStrategy
+			aggMap["OracledbDmlStatementsParallelized"] = mb.metricOracledbDmlStatementsParallelized.config.AggregationStrategy
+			aggMap["OracledbEnqueueDeadlocks"] = mb.metricOracledbEnqueueDeadlocks.config.AggregationStrategy
+			aggMap["OracledbEnqueueLocksLimit"] = mb.metricOracledbEnqueueLocksLimit.config.AggregationStrategy
+			aggMap["OracledbEnqueueLocksUsage"] = mb.metricOracledbEnqueueLocksUsage.config.AggregationStrategy
+			aggMap["OracledbEnqueueResourcesLimit"] = mb.metricOracledbEnqueueResourcesLimit.config.AggregationStrategy
+			aggMap["OracledbEnqueueResourcesUsage"] = mb.metricOracledbEnqueueResourcesUsage.config.AggregationStrategy
+			aggMap["OracledbExchangeDeadlocks"] = mb.metricOracledbExchangeDeadlocks.config.AggregationStrategy
+			aggMap["OracledbExecutions"] = mb.metricOracledbExecutions.config.AggregationStrategy
+			aggMap["OracledbHardParses"] = mb.metricOracledbHardParses.config.AggregationStrategy
+			aggMap["OracledbLogicalReads"] = mb.metricOracledbLogicalReads.config.AggregationStrategy
+			aggMap["OracledbLogons"] = mb.metricOracledbLogons.config.AggregationStrategy
+			aggMap["OracledbParallelOperationsDowngraded1To25Pct"] = mb.metricOracledbParallelOperationsDowngraded1To25Pct.config.AggregationStrategy
+			aggMap["OracledbParallelOperationsDowngraded25To50Pct"] = mb.metricOracledbParallelOperationsDowngraded25To50Pct.config.AggregationStrategy
+			aggMap["OracledbParallelOperationsDowngraded50To75Pct"] = mb.metricOracledbParallelOperationsDowngraded50To75Pct.config.AggregationStrategy
+			aggMap["OracledbParallelOperationsDowngraded75To99Pct"] = mb.metricOracledbParallelOperationsDowngraded75To99Pct.config.AggregationStrategy
+			aggMap["OracledbParallelOperationsDowngradedToSerial"] = mb.metricOracledbParallelOperationsDowngradedToSerial.config.AggregationStrategy
+			aggMap["OracledbParallelOperationsNotDowngraded"] = mb.metricOracledbParallelOperationsNotDowngraded.config.AggregationStrategy
+			aggMap["OracledbParseCalls"] = mb.metricOracledbParseCalls.config.AggregationStrategy
+			aggMap["OracledbPgaMemory"] = mb.metricOracledbPgaMemory.config.AggregationStrategy
+			aggMap["OracledbPhysicalReadIoRequests"] = mb.metricOracledbPhysicalReadIoRequests.config.AggregationStrategy
+			aggMap["OracledbPhysicalReads"] = mb.metricOracledbPhysicalReads.config.AggregationStrategy
+			aggMap["OracledbPhysicalReadsDirect"] = mb.metricOracledbPhysicalReadsDirect.config.AggregationStrategy
+			aggMap["OracledbPhysicalWriteIoRequests"] = mb.metricOracledbPhysicalWriteIoRequests.config.AggregationStrategy
+			aggMap["OracledbPhysicalWrites"] = mb.metricOracledbPhysicalWrites.config.AggregationStrategy
+			aggMap["OracledbPhysicalWritesDirect"] = mb.metricOracledbPhysicalWritesDirect.config.AggregationStrategy
+			aggMap["OracledbProcessesLimit"] = mb.metricOracledbProcessesLimit.config.AggregationStrategy
+			aggMap["OracledbProcessesUsage"] = mb.metricOracledbProcessesUsage.config.AggregationStrategy
+			aggMap["OracledbQueriesParallelized"] = mb.metricOracledbQueriesParallelized.config.AggregationStrategy
+			aggMap["OracledbSessionsLimit"] = mb.metricOracledbSessionsLimit.config.AggregationStrategy
+			aggMap["OracledbSessionsUsage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
+			aggMap["OracledbTablespaceSizeLimit"] = mb.metricOracledbTablespaceSizeLimit.config.AggregationStrategy
+			aggMap["OracledbTablespaceSizeUsage"] = mb.metricOracledbTablespaceSizeUsage.config.AggregationStrategy
+			aggMap["OracledbTransactionsLimit"] = mb.metricOracledbTransactionsLimit.config.AggregationStrategy
+			aggMap["OracledbTransactionsUsage"] = mb.metricOracledbTransactionsUsage.config.AggregationStrategy
+			aggMap["OracledbUserCommits"] = mb.metricOracledbUserCommits.config.AggregationStrategy
+			aggMap["OracledbUserRollbacks"] = mb.metricOracledbUserRollbacks.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -193,14 +244,23 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "session_type-val", "session_status-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbSessionsUsageDataPoint(ts, "3", "session_type-val-2", "session_status-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "tablespace_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 3, "tablespace_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 1, "tablespace_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 3, "tablespace_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -224,6 +284,11 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetServiceInstanceID("service.instance.id-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricOracledbSessionsUsage.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbTablespaceSizeLimit.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbTablespaceSizeUsage.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -717,53 +782,130 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.sessions.usage":
-					assert.False(t, validatedMetrics["oracledb.sessions.usage"], "Found a duplicate in the metrics slice: oracledb.sessions.usage")
-					validatedMetrics["oracledb.sessions.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Count of active sessions.", ms.At(i).Description())
-					assert.Equal(t, "{sessions}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("session_type")
-					assert.True(t, ok)
-					assert.Equal(t, "session_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("session_status")
-					assert.True(t, ok)
-					assert.Equal(t, "session_status-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.sessions.usage"], "Found a duplicate in the metrics slice: oracledb.sessions.usage")
+						validatedMetrics["oracledb.sessions.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Count of active sessions.", ms.At(i).Description())
+						assert.Equal(t, "{sessions}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("session_type")
+						assert.True(t, ok)
+						assert.Equal(t, "session_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("session_status")
+						assert.True(t, ok)
+						assert.Equal(t, "session_status-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.sessions.usage"], "Found a duplicate in the metrics slice: oracledb.sessions.usage")
+						validatedMetrics["oracledb.sessions.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Count of active sessions.", ms.At(i).Description())
+						assert.Equal(t, "{sessions}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.sessions.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("session_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("session_status")
+						assert.False(t, ok)
+					}
 				case "oracledb.tablespace_size.limit":
-					assert.False(t, validatedMetrics["oracledb.tablespace_size.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.limit")
-					validatedMetrics["oracledb.tablespace_size.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum size of tablespace in bytes, -1 if unlimited.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("tablespace_name")
-					assert.True(t, ok)
-					assert.Equal(t, "tablespace_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.tablespace_size.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.limit")
+						validatedMetrics["oracledb.tablespace_size.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Maximum size of tablespace in bytes, -1 if unlimited.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("tablespace_name")
+						assert.True(t, ok)
+						assert.Equal(t, "tablespace_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.tablespace_size.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.limit")
+						validatedMetrics["oracledb.tablespace_size.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Maximum size of tablespace in bytes, -1 if unlimited.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.tablespace_size.limit"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("tablespace_name")
+						assert.False(t, ok)
+					}
 				case "oracledb.tablespace_size.usage":
-					assert.False(t, validatedMetrics["oracledb.tablespace_size.usage"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.usage")
-					validatedMetrics["oracledb.tablespace_size.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Used tablespace in bytes.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("tablespace_name")
-					assert.True(t, ok)
-					assert.Equal(t, "tablespace_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.tablespace_size.usage"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.usage")
+						validatedMetrics["oracledb.tablespace_size.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Used tablespace in bytes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("tablespace_name")
+						assert.True(t, ok)
+						assert.Equal(t, "tablespace_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.tablespace_size.usage"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.usage")
+						validatedMetrics["oracledb.tablespace_size.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Used tablespace in bytes.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.tablespace_size.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("tablespace_name")
+						assert.False(t, ok)
+					}
 				case "oracledb.transactions.limit":
 					assert.False(t, validatedMetrics["oracledb.transactions.limit"], "Found a duplicate in the metrics slice: oracledb.transactions.limit")
 					validatedMetrics["oracledb.transactions.limit"] = true

@@ -90,6 +90,8 @@ Following list of Azure Logs Categories are supported as a Trace source:
 * [Dependencies](https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appdependencies)
 * [Requests](https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/apprequests)
 
+[Transformation rules form Azure Traces fields to OpenTelemetry](./internal/unmarshaler/traces/README.md)
+
 ***time_formats (Optional)***
 
 List of time formats that should be applied during Timestamp parsing of incoming traces records.
@@ -173,3 +175,34 @@ receivers:
     logs:
       encoding: azure_encoding
 ```
+
+### Log format identification
+
+All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the log family. This allows you to filter and route logs by Azure service while keeping the data model consistent at the family level.
+
+The pattern used is `azure.<format_name>`.
+
+Examples:
+
+- Application Gateway: `encoding.format:"azure.application_gateway"`
+- App Service: `encoding.format:"azure.appservice"`
+- Front Door: `encoding.format:"azure.frontdoor"`
+- Activity: `encoding.format:"azure.activity"`
+- Audit: `encoding.format:"azure.audit"`
+
+#### Format values
+
+The following format values are supported at the **log family** level:
+
+| **Azure log family** | **Format value** | **Description** |
+|----------------------|------------------|-----------------|
+| Activity | `azure.activity` | Azure activity logs (administrative, alert, policy, recommendation, security, etc.) |
+| Application Gateway | `azure.application_gateway` | Application Gateway logs (access, performance, firewall) |
+| App Service | `azure.appservice` | App Service logs (app, audit, HTTP, platform, etc.) |
+| CDN | `azure.cdn` | Azure CDN access logs |
+| Data Factory | `azure.datafactory` | Data Factory logs (activity, pipeline, trigger runs) |
+| Front Door | `azure.frontdoor` | Front Door logs (access, health probe, WAF) |
+| Function App | `azure.function_app` | Azure Functions application logs |
+| Messaging | `azure.messaging` | Event Hubs/Service Bus logs (operational, metrics, audit, etc.) |
+| Storage | `azure.storage` | Storage operation logs (read, write, delete) |
+| Generic | `azure.generic` | Generic parser applied |
