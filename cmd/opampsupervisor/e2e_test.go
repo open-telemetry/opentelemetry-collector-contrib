@@ -152,9 +152,6 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionClose
 	callbacks.OnConnectionClose = func(conn types.Connection) {
-		if didShutdown.Load() {
-			return
-		}
 		isAgentConnected.Store(false)
 		// Guard against sending on a closed channel during test cleanup.
 		// The channel may have been closed if shutdown takes longer than the
@@ -165,7 +162,8 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 		case <-time.After(100 * time.Millisecond):
 			// Channel closed or already drained; this can happen during teardown
 		}
-		if onConnectionCloseFunc != nil {
+		// Only call user callback if not shutting down (guard one-time execution)
+		if onConnectionCloseFunc != nil && !didShutdown.Load() {
 			onConnectionCloseFunc(conn)
 		}
 	}
