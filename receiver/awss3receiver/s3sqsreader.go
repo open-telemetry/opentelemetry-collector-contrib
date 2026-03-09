@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"go.uber.org/zap"
 )
@@ -56,14 +57,15 @@ type snsMessage struct {
 
 // s3SQSNotificationReader listens for SNS notifications about new S3 objects
 type s3SQSNotificationReader struct {
-	logger              *zap.Logger
-	s3Client            GetObjectAPI
-	sqsClient           sqsClient
-	queueURL            string
-	s3Bucket            string
-	s3Prefix            string
-	maxNumberOfMessages int32
-	waitTimeSeconds     int32
+	logger                     *zap.Logger
+	s3Client                   SingleObjectAPI
+	sqsClient                  sqsClient
+	queueURL                   string
+	s3Bucket                   string
+	s3Prefix                   string
+	maxNumberOfMessages        int32
+	waitTimeSeconds            int32
+	deleteObjectAfterIngestion bool
 }
 
 func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQSNotificationReader, error) {
@@ -93,14 +95,15 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 	}
 
 	return &s3SQSNotificationReader{
-		logger:              logger,
-		s3Client:            getObjectClient,
-		sqsClient:           sqsAPIClient,
-		queueURL:            cfg.SQS.QueueURL,
-		s3Bucket:            cfg.S3Downloader.S3Bucket,
-		s3Prefix:            cfg.S3Downloader.S3Prefix,
-		maxNumberOfMessages: maxMessages,
-		waitTimeSeconds:     waitTime,
+		logger:                     logger,
+		s3Client:                   getObjectClient,
+		sqsClient:                  sqsAPIClient,
+		queueURL:                   cfg.SQS.QueueURL,
+		s3Bucket:                   cfg.S3Downloader.S3Bucket,
+		s3Prefix:                   cfg.S3Downloader.S3Prefix,
+		maxNumberOfMessages:        maxMessages,
+		waitTimeSeconds:            waitTime,
+		deleteObjectAfterIngestion: cfg.S3Downloader.DeleteObjectAfterIngestion,
 	}, nil
 }
 
@@ -202,11 +205,16 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 					var content []byte
 					content, err = retrieveS3Object(ctx, r.s3Client, bucket, decodedKey)
 					if err != nil {
-						r.logger.Error("Failed to get S3 object",
+						r.logger.Warn("Failed to get S3 object",
 							zap.String("bucket", bucket),
 							zap.String("key", decodedKey),
 							zap.Error(err))
-						allRecordsSucceeded = false
+
+						var noSuchKey *types.NoSuchKey
+						if !errors.As(err, &noSuchKey) {
+							// Swallow not found errors as they can be processed and deleted in a previous attempt
+							allRecordsSucceeded = false
+						}
 						continue
 					}
 
@@ -217,6 +225,21 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 							zap.Error(err))
 						allRecordsSucceeded = false
 						continue
+					}
+
+					if r.deleteObjectAfterIngestion {
+						err = deleteS3Object(ctx, r.s3Client, bucket, decodedKey)
+						if err != nil {
+							r.logger.Warn("Failed to delete S3 object",
+								zap.String("bucket", bucket),
+								zap.String("key", decodedKey),
+								zap.Error(err))
+							// Don't mark as failed as the object was processed successfully
+						} else {
+							r.logger.Debug("Deleted S3 object",
+								zap.String("bucket", bucket),
+								zap.String("key", decodedKey))
+						}
 					}
 				}
 

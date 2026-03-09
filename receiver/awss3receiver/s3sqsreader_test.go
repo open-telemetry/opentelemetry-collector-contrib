@@ -14,6 +14,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/stretchr/testify/assert"
@@ -41,6 +42,14 @@ func (m *mockS3ClientSQS) GetObject(ctx context.Context, params *s3.GetObjectInp
 	return &s3.GetObjectOutput{
 		Body: io.NopCloser(strings.NewReader(string(content))),
 	}, args.Error(1)
+}
+
+func (m *mockS3ClientSQS) DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, _ ...func(*s3.Options)) (*s3.DeleteObjectOutput, error) {
+	args := m.Called(ctx, params)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*s3.DeleteObjectOutput), args.Error(1)
 }
 
 type mockSQSClient struct {
@@ -876,4 +885,241 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 	// Verify content for matched keys
 	assert.Equal(t, []byte("first-matching-content"), processedKeys["logs/matched-key-1"])
 	assert.Equal(t, []byte("second-matching-content"), processedKeys["logs/matched-key-2"])
+}
+
+func TestS3SQSReader_Delete(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		s3Records             []s3EventRecord
+		setupMocks            func(*mockS3ClientSQS, *mockSQSClient, map[string]bool)
+		expectedProcessedKeys map[string][]byte
+		expectedDeletedKeys   []string
+	}{
+		{
+			name: "single object",
+			s3Records: []s3EventRecord{
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "test-key"},
+					},
+				},
+			},
+			setupMocks: func(mockS3 *mockS3ClientSQS, mockSQS *mockSQSClient, deletedKeys map[string]bool) {
+				mockS3.On("GetObject", mock.Anything, mock.MatchedBy(func(input *s3.GetObjectInput) bool {
+					return *input.Bucket == "test-bucket" && *input.Key == "test-key"
+				})).Return([]byte("test-content"), nil)
+
+				mockS3.On("DeleteObject", mock.Anything, mock.MatchedBy(func(input *s3.DeleteObjectInput) bool {
+					return *input.Bucket == "test-bucket" && *input.Key == "test-key"
+				})).Run(func(args mock.Arguments) {
+					input := args.Get(1).(*s3.DeleteObjectInput)
+					deletedKeys[*input.Key] = true
+				}).Return(&s3.DeleteObjectOutput{}, nil)
+
+				// Mock successful message deletion
+				mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
+					return *input.QueueUrl == "test-queue-url" && *input.ReceiptHandle == "test-receipt-handle"
+				})).Return(&sqs.DeleteMessageOutput{}, nil)
+			},
+			expectedProcessedKeys: map[string][]byte{
+				"test-key": []byte("test-content"),
+			},
+			expectedDeletedKeys: []string{"test-key"},
+		},
+		{
+			name: "delete error",
+			s3Records: []s3EventRecord{
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "test-key"},
+					},
+				},
+			},
+			setupMocks: func(mockS3 *mockS3ClientSQS, mockSQS *mockSQSClient, _ map[string]bool) {
+				mockS3.On("GetObject", mock.Anything, mock.MatchedBy(func(input *s3.GetObjectInput) bool {
+					return *input.Bucket == "test-bucket" && *input.Key == "test-key"
+				})).Return([]byte("test-content"), nil)
+
+				// Mock delete failure
+				mockS3.On("DeleteObject", mock.Anything, mock.MatchedBy(func(input *s3.DeleteObjectInput) bool {
+					return *input.Bucket == "test-bucket" && *input.Key == "test-key"
+				})).Return((*s3.DeleteObjectOutput)(nil), errors.New("access denied"))
+
+				// Mock successful message deletion (should still delete message even if S3 delete fails)
+				mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
+					return *input.QueueUrl == "test-queue-url" && *input.ReceiptHandle == "test-receipt-handle"
+				})).Return(&sqs.DeleteMessageOutput{}, nil)
+			},
+			expectedProcessedKeys: map[string][]byte{
+				"test-key": []byte("test-content"),
+			},
+			expectedDeletedKeys: []string{},
+		},
+		{
+			name: "object not found",
+			s3Records: []s3EventRecord{
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "test-key"},
+					},
+				},
+			},
+			setupMocks: func(mockS3 *mockS3ClientSQS, mockSQS *mockSQSClient, _ map[string]bool) {
+				mockS3.On("GetObject", mock.Anything, mock.MatchedBy(func(input *s3.GetObjectInput) bool {
+					return *input.Bucket == "test-bucket" && *input.Key == "test-key"
+				})).Return([]byte(""), &s3types.NoSuchKey{Message: aws.String("The specified key does not exist.")})
+
+				mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
+					return *input.QueueUrl == "test-queue-url" && *input.ReceiptHandle == "test-receipt-handle"
+				})).Return(&sqs.DeleteMessageOutput{}, nil)
+			},
+			expectedProcessedKeys: map[string][]byte{},
+			expectedDeletedKeys:   []string{},
+		},
+		{
+			name: "multiple objects",
+			s3Records: []s3EventRecord{
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "key1"},
+					},
+				},
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "key2"},
+					},
+				},
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "key3"},
+					},
+				},
+			},
+			setupMocks: func(mockS3 *mockS3ClientSQS, mockSQS *mockSQSClient, deletedKeys map[string]bool) {
+				// Mock GetObject and DeleteObject for multiple keys
+				keys := []string{"key1", "key2", "key3"}
+				for _, key := range keys {
+					keyCopy := key // Capture key in closure
+					mockS3.On("GetObject", mock.Anything, mock.MatchedBy(func(input *s3.GetObjectInput) bool {
+						return *input.Bucket == "test-bucket" && *input.Key == keyCopy
+					})).Return([]byte("content-"+keyCopy), nil)
+
+					// Mock successful deletion for each key
+					mockS3.On("DeleteObject", mock.Anything, mock.MatchedBy(func(input *s3.DeleteObjectInput) bool {
+						return *input.Bucket == "test-bucket" && *input.Key == keyCopy
+					})).Run(func(args mock.Arguments) {
+						input := args.Get(1).(*s3.DeleteObjectInput)
+						deletedKeys[*input.Key] = true
+					}).Return(&s3.DeleteObjectOutput{}, nil)
+				}
+
+				// Mock successful message deletion
+				mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
+					return *input.QueueUrl == "test-queue-url" && *input.ReceiptHandle == "test-receipt-handle"
+				})).Return(&sqs.DeleteMessageOutput{}, nil)
+			},
+			expectedProcessedKeys: map[string][]byte{
+				"key1": []byte("content-key1"),
+				"key2": []byte("content-key2"),
+				"key3": []byte("content-key3"),
+			},
+			expectedDeletedKeys: []string{"key1", "key2", "key3"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mock clients
+			mockSQS := new(mockSQSClient)
+			mockS3 := new(mockS3ClientSQS)
+
+			// Track deleted objects
+			deletedKeys := make(map[string]bool)
+
+			// Create S3 event notification
+			s3Event := s3EventNotification{
+				Records: tc.s3Records,
+			}
+
+			s3EventJSON, err := json.Marshal(s3Event)
+			require.NoError(t, err)
+
+			receiptHandle := "test-receipt-handle"
+
+			// Mock SQS ReceiveMessage to return S3 event, then context timeout
+			mockSQS.On("ReceiveMessage", mock.Anything, mock.MatchedBy(func(input *sqs.ReceiveMessageInput) bool {
+				return *input.QueueUrl == "test-queue-url"
+			})).Return(&sqs.ReceiveMessageOutput{
+				Messages: []types.Message{
+					{
+						Body:          aws.String(string(s3EventJSON)),
+						ReceiptHandle: &receiptHandle,
+					},
+				},
+			}, nil).Once()
+
+			// Second call returns timeout to end the loop
+			mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+				(*sqs.ReceiveMessageOutput)(nil), context.DeadlineExceeded,
+			)
+
+			// Setup test-specific mocks
+			tc.setupMocks(mockS3, mockSQS, deletedKeys)
+
+			reader := &s3SQSNotificationReader{
+				logger:                     zap.NewNop(),
+				s3Client:                   mockS3,
+				sqsClient:                  mockSQS,
+				queueURL:                   "test-queue-url",
+				s3Bucket:                   "test-bucket",
+				s3Prefix:                   "",
+				maxNumberOfMessages:        10,
+				waitTimeSeconds:            20,
+				deleteObjectAfterIngestion: true, // Enable deletion
+			}
+
+			ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+			defer cancel()
+
+			processedKeys := make(map[string][]byte)
+			err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
+				processedKeys[key] = content
+				return nil
+			})
+
+			// Context deadline exceeded is expected
+			assert.Equal(t, context.DeadlineExceeded, err)
+
+			// Verify processed objects
+			assert.Equal(t, tc.expectedProcessedKeys, processedKeys)
+
+			// Verify deleted objects if needed
+			assert.Len(t, deletedKeys, len(tc.expectedDeletedKeys))
+			for _, key := range tc.expectedDeletedKeys {
+				assert.True(t, deletedKeys[key], "Object %s should be deleted", key)
+			}
+
+			// Verify all mock expectations were met
+			mockSQS.AssertExpectations(t)
+			mockS3.AssertExpectations(t)
+		})
+	}
 }
