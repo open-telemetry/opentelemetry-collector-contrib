@@ -5,6 +5,7 @@ package cgroupruntimeextension
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -42,6 +43,20 @@ func TestExtension(t *testing.T) {
 			},
 			expectedCalls: 0,
 		},
+		{
+			name: "memory limit with refresh interval",
+			config: &Config{
+				GoMaxProcs: GoMaxProcsConfig{
+					Enabled: false,
+				},
+				GoMemLimit: GoMemLimitConfig{
+					Enabled:         true,
+					Ratio:           0.8,
+					RefreshInterval: 15 * time.Second,
+				},
+			},
+			expectedCalls: 2,
+		},
 	}
 
 	for _, test := range tests {
@@ -53,7 +68,7 @@ func TestExtension(t *testing.T) {
 				return func() { allCalls++ }, _err
 			}
 			settings := extensiontest.NewNopSettings(extensiontest.NopType)
-			cg := newCgroupRuntime(test.config, settings.Logger, setterMock, func(_ float64) (undoFunc, error) { return setterMock() })
+			cg := newCgroupRuntime(test.config, settings.Logger, setterMock, func(_ float64, _ time.Duration) (undoFunc, error) { return setterMock() })
 			ctx := t.Context()
 
 			err := cg.Start(ctx, componenttest.NewNopHost())

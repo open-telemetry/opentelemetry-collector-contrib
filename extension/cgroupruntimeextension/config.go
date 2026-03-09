@@ -3,7 +3,10 @@
 
 package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension"
 
-import "errors" // Config contains the configuration for the cgroup runtime extension.
+import (
+	"errors" // Config contains the configuration for the cgroup runtime extension.
+	"time"
+)
 
 type Config struct {
 	GoMaxProcs GoMaxProcsConfig `mapstructure:"gomaxprocs"`
@@ -19,8 +22,9 @@ type GoMaxProcsConfig struct {
 }
 
 type GoMemLimitConfig struct {
-	Enabled bool    `mapstructure:"enabled"`
-	Ratio   float64 `mapstructure:"ratio"`
+	Enabled         bool          `mapstructure:"enabled"`
+	Ratio           float64       `mapstructure:"ratio"`
+	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

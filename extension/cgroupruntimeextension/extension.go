@@ -7,6 +7,7 @@ import (
 	"context"
 	"runtime"
 	"runtime/debug"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -15,7 +16,7 @@ import (
 type (
 	undoFunc            func()
 	maxProcsFn          func() (undoFunc, error)
-	memLimitWithRatioFn func(float64) (undoFunc, error)
+	memLimitWithRatioFn func(float64, time.Duration) (undoFunc, error)
 )
 
 type cgroupRuntimeExtension struct {
@@ -53,7 +54,7 @@ func (c *cgroupRuntimeExtension) Start(_ context.Context, _ component.Host) erro
 	}
 
 	if c.config.GoMemLimit.Enabled {
-		c.undoMemLimitFn, err = c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio)
+		c.undoMemLimitFn, err = c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio, c.config.GoMemLimit.RefreshInterval)
 		if err != nil {
 			return err
 		}
