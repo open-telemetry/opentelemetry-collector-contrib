@@ -6,9 +6,17 @@ properties:
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID
   namespaces:
-    description: List of ‘namespaces’ to collect events from.
+    description: List of 'namespaces' to collect events from.
     type: array
     items:
       type: string
+  persist_resource_version:
+    description: PersistResourceVersion enables persisting resourceVersion to avoid duplicate events on restart
+    type: boolean
+  storage:
+    description: Storage extension to use for persisting resourceVersion
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
 allOf:
   - $ref: /internal/k8sconfig.api_config

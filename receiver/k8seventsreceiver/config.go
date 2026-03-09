@@ -15,8 +15,14 @@ import (
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	// List of ‘namespaces’ to collect events from.
+	// List of 'namespaces' to collect events from.
 	Namespaces []string `mapstructure:"namespaces"`
+
+	// Storage extension to use for persisting resourceVersion
+	Storage *component.ID `mapstructure:"storage"`
+
+	// PersistResourceVersion enables persisting resourceVersion to avoid duplicate events on restart
+	PersistResourceVersion bool `mapstructure:"persist_resource_version"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 

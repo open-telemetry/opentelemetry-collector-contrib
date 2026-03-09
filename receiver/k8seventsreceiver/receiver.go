@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -24,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
@@ -36,6 +38,7 @@ type k8seventsReceiver struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
+	storageClient   storage.Client
 	mu              sync.Mutex
 	client          dynamic.Interface
 	wg              sync.WaitGroup
@@ -75,6 +78,19 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 		return err
 	}
 	kr.client = client
+
+	// Initialize storage client only if persistence is enabled
+	if kr.config.PersistResourceVersion {
+		if kr.config.Storage == nil {
+			kr.settings.Logger.Warn("persist_resource_version is enabled but no storage extension configured, persistence will not work")
+		} else {
+			storageClient, err := adapter.GetStorageClient(ctx, host, kr.config.Storage, kr.settings.ID)
+			if err != nil {
+				return fmt.Errorf("failed to get storage client: %w", err)
+			}
+			kr.storageClient = storageClient
+		}
+	}
 
 	if kr.config.K8sLeaderElector != nil {
 		k8sLeaderElector := host.GetExtensions()[*kr.config.K8sLeaderElector]
@@ -117,7 +133,7 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 	return nil
 }
 
-func (kr *k8seventsReceiver) Shutdown(context.Context) error {
+func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 	if kr.cancel != nil {
 		kr.cancel()
 	}
@@ -129,6 +145,14 @@ func (kr *k8seventsReceiver) Shutdown(context.Context) error {
 	kr.stopperChanList = nil
 	kr.mu.Unlock()
 	kr.wg.Wait()
+
+	// Close storage client if it exists
+	if kr.storageClient != nil {
+		if err := kr.storageClient.Close(ctx); err != nil {
+			kr.settings.Logger.Error("failed to close storage client", zap.Error(err))
+		}
+	}
+
 	return nil
 }
 
@@ -153,10 +177,12 @@ func (kr *k8seventsReceiver) startWatchers() {
 				Gvr:        eventsGVR,
 				Namespaces: namespaces,
 			},
-			IncludeInitialState: false,                                               // Don't send initial state, only new events
-			Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events (matches old Informer behavior)
+			IncludeInitialState:    false,                                               // Don't send initial state, only new events
+			PersistResourceVersion: kr.config.PersistResourceVersion,                   // Enable persistence if configured
+			Exclude:                map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events (matches old Informer behavior)
 		},
 		kr.settings.Logger,
+		kr.storageClient,
 		func(event *apiWatch.Event) {
 			// The k8sinventory watch observer uses dynamic client which returns unstructured objects
 			// We need to convert them to corev1.Event

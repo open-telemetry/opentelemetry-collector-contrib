@@ -10,7 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,6 +23,7 @@ import (
 	"k8s.io/client-go/dynamic/fake"
 	k8s_testing "k8s.io/client-go/testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 )
 
@@ -45,7 +48,7 @@ func TestObserver(t *testing.T) {
 
 	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
@@ -96,7 +99,7 @@ func TestObserverWithInitialState(t *testing.T) {
 
 	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
@@ -131,7 +134,7 @@ func TestObserverExcludeDelete(t *testing.T) {
 
 	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
@@ -172,7 +175,7 @@ func TestObserverEmptyNamespaces(t *testing.T) {
 
 	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
@@ -210,7 +213,7 @@ func TestObserverMultipleNamespaces(t *testing.T) {
 
 	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
@@ -252,7 +255,7 @@ func TestObserverWithSelectors(t *testing.T) {
 
 	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
@@ -297,7 +300,7 @@ func TestObserverInitialStateError(t *testing.T) {
 
 	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
@@ -339,7 +342,7 @@ func TestObserverInitialStateNoObjects(t *testing.T) {
 
 	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
@@ -430,6 +433,79 @@ func (c mockDynamicClient) deletePods(objects ...*unstructured.Unstructured) {
 	}
 }
 
+// setListResourceVersion creates a new mock client with a custom List reactor
+func (c *mockDynamicClient) setListResourceVersion(resourceVersion string) {
+	scheme := runtime.NewScheme()
+	gvrToListKind := map[schema.GroupVersionResource]string{
+		{Group: "", Version: "v1", Resource: "pods"}: "PodList",
+	}
+
+	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
+
+	// Add reactor to set resourceVersion on list operations
+	fakeClient.Fake.PrependReactor("list", "*", func(action k8s_testing.Action) (handled bool, ret runtime.Object, err error) {
+		// Don't handle, let default action occur
+		return false, nil, nil
+	})
+
+	fakeClient.Fake.PrependWatchReactor("*", func(action k8s_testing.Action) (handled bool, ret apiWatch.Interface, err error) {
+		// Don't handle, let default action occur
+		return false, nil, nil
+	})
+
+	// Wrap to intercept List calls
+	c.client = &listResourceVersionInterceptor{
+		Interface:       fakeClient,
+		resourceVersion: resourceVersion,
+	}
+}
+
+// listResourceVersionInterceptor wraps a dynamic client to set resourceVersion on List results
+type listResourceVersionInterceptor struct {
+	dynamic.Interface
+	resourceVersion string
+}
+
+func (l *listResourceVersionInterceptor) Resource(resource schema.GroupVersionResource) dynamic.NamespaceableResourceInterface {
+	return &namespacedResourceInterceptor{
+		NamespaceableResourceInterface: l.Interface.Resource(resource),
+		resourceVersion:                l.resourceVersion,
+	}
+}
+
+type namespacedResourceInterceptor struct {
+	dynamic.NamespaceableResourceInterface
+	resourceVersion string
+}
+
+func (n *namespacedResourceInterceptor) Namespace(ns string) dynamic.ResourceInterface {
+	return &resourceInterceptor{
+		ResourceInterface: n.NamespaceableResourceInterface.Namespace(ns),
+		resourceVersion:   n.resourceVersion,
+	}
+}
+
+func (n *namespacedResourceInterceptor) List(ctx context.Context, opts v1.ListOptions) (*unstructured.UnstructuredList, error) {
+	list, err := n.NamespaceableResourceInterface.List(ctx, opts)
+	if err == nil && list != nil {
+		list.SetResourceVersion(n.resourceVersion)
+	}
+	return list, err
+}
+
+type resourceInterceptor struct {
+	dynamic.ResourceInterface
+	resourceVersion string
+}
+
+func (r *resourceInterceptor) List(ctx context.Context, opts v1.ListOptions) (*unstructured.UnstructuredList, error) {
+	list, err := r.ResourceInterface.List(ctx, opts)
+	if err == nil && list != nil {
+		list.SetResourceVersion(r.resourceVersion)
+	}
+	return list, err
+}
+
 func generatePod(name, namespace string, labels map[string]any, resourceVersion string) *unstructured.Unstructured {
 	pod := unstructured.Unstructured{
 		Object: map[string]any{
@@ -445,4 +521,560 @@ func generatePod(name, namespace string, labels map[string]any, resourceVersion 
 
 	pod.SetResourceVersion(resourceVersion)
 	return &pod
+}
+
+func TestObserverWithPersistence(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces: []string{"default"},
+		},
+		PersistResourceVersion: true,
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event, 10)
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, obs.checkpointer)
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(context.Background(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	// Create a pod
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"env": "test"}, "100"),
+	)
+
+	// Wait for event
+	select {
+	case <-receivedEventsChan:
+		// success
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for event")
+	}
+
+	// Give time for persistence to complete
+	time.Sleep(time.Millisecond * 100)
+
+	// Verify resourceVersion was persisted
+	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	rv, err := checkpointer.GetResourceVersion(context.Background(), "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "100", rv)
+
+	close(stopChan)
+	wg.Wait()
+}
+
+func TestObserverWithoutPersistence(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces: []string{"default"},
+		},
+		PersistResourceVersion: false, // Disabled
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event, 10)
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+	assert.Nil(t, obs.checkpointer) // Should not be initialized
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(context.Background(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	// Create a pod
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"env": "test"}, "100"),
+	)
+
+	// Wait for event
+	select {
+	case <-receivedEventsChan:
+		// success
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for event")
+	}
+
+	time.Sleep(time.Millisecond * 100)
+
+	// Verify resourceVersion was NOT persisted
+	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	rv, err := checkpointer.GetResourceVersion(context.Background(), "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "", rv) // Should be empty
+
+	close(stopChan)
+	wg.Wait()
+}
+
+func TestObserverPersistenceNilStorage(t *testing.T) {
+	mockClient := newMockDynamicClient()
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces: []string{"default"},
+		},
+		PersistResourceVersion: true,
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event, 10)
+
+	// Pass nil storage client
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+	assert.Nil(t, obs.checkpointer) // Should not be initialized with nil storage
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(context.Background(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	// Create a pod
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"env": "test"}, "100"),
+	)
+
+	// Should still work without errors
+	select {
+	case <-receivedEventsChan:
+		// success
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for event")
+	}
+
+	close(stopChan)
+	wg.Wait()
+}
+
+func TestObserverPersistenceClusterWideWatch(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces: []string{}, // Empty - cluster-wide watch
+		},
+		PersistResourceVersion: true,
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event, 10)
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(context.Background(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	// Create pods in different namespaces
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"env": "test"}, "100"),
+		generatePod("pod2", "other", map[string]any{"env": "prod"}, "101"),
+	)
+
+	// Wait for events
+	for i := 0; i < 2; i++ {
+		select {
+		case <-receivedEventsChan:
+			// success
+		case <-time.After(2 * time.Second):
+			t.Fatalf("timeout waiting for event %d", i+1)
+		}
+	}
+
+	time.Sleep(time.Millisecond * 100)
+
+	// Verify single key for cluster-wide watch (no namespace suffix)
+	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	rv, err := checkpointer.GetResourceVersion(context.Background(), "", "pods")
+	require.NoError(t, err)
+	assert.NotEmpty(t, rv) // Should have a value
+
+	// Verify key format
+	key := checkpointer.getCheckpointKey("", "pods")
+	assert.Equal(t, "latestResourceVersion/pods", key)
+
+	close(stopChan)
+	wg.Wait()
+}
+
+func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces: []string{"default", "other"},
+		},
+		PersistResourceVersion: true,
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event, 10)
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(context.Background(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	// Create pods in different namespaces
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"env": "test"}, "100"),
+		generatePod("pod2", "other", map[string]any{"env": "prod"}, "200"),
+	)
+
+	// Wait for events
+	for i := 0; i < 2; i++ {
+		select {
+		case <-receivedEventsChan:
+			// success
+		case <-time.After(2 * time.Second):
+			t.Fatalf("timeout waiting for event %d", i+1)
+		}
+	}
+
+	time.Sleep(time.Millisecond * 100)
+
+	// Verify separate keys for each namespace
+	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+
+	rv1, err := checkpointer.GetResourceVersion(context.Background(), "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "100", rv1)
+
+	rv2, err := checkpointer.GetResourceVersion(context.Background(), "other", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "200", rv2)
+
+	// Verify key formats
+	key1 := checkpointer.getCheckpointKey("default", "pods")
+	assert.Equal(t, "latestResourceVersion/pods.default", key1)
+
+	key2 := checkpointer.getCheckpointKey("other", "pods")
+	assert.Equal(t, "latestResourceVersion/pods.other", key2)
+
+	close(stopChan)
+	wg.Wait()
+}
+
+func TestObserverResourceVersionPriority(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+
+	// Pre-populate storage with a persisted resourceVersion
+	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	err := checkpointer.SetResourceVersion(context.Background(), "default", "pods", "500")
+	require.NoError(t, err)
+
+	// Create a pod to set the List resourceVersion
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"env": "test"}, "100"),
+	)
+
+	tests := []struct {
+		name                  string
+		configResourceVersion string
+		expectUsedVersion     string // The version that should actually be used
+	}{
+		{
+			name:                  "config provided - used directly",
+			configResourceVersion: "999",
+			expectUsedVersion:     "999", // Config used directly
+		},
+		{
+			name:                  "no config - persisted higher than list",
+			configResourceVersion: "",
+			expectUsedVersion:     "500", // Persisted (500) > List (100)
+		},
+		{
+			name:                  "config lower than persisted - still uses config",
+			configResourceVersion: "50",
+			expectUsedVersion:     "50", // Config used directly, even if lower
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				Config: k8sinventory.Config{
+					Gvr: schema.GroupVersionResource{
+						Group:    "",
+						Version:  "v1",
+						Resource: "pods",
+					},
+					Namespaces:      []string{"default"},
+					ResourceVersion: tt.configResourceVersion,
+				},
+				PersistResourceVersion: true,
+			}
+
+			receivedEventsChan := make(chan *apiWatch.Event, 10)
+
+			obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, func(event *apiWatch.Event) {
+				receivedEventsChan <- event
+			})
+
+			require.NoError(t, err)
+
+			// Test getResourceVersion directly to verify the logic
+			resource := mockClient.Resource(cfg.Gvr)
+			version, err := obs.getResourceVersion(context.Background(), resource.Namespace("default"), "default")
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectUsedVersion, version, "getResourceVersion should return the highest version")
+
+			wg := sync.WaitGroup{}
+			stopChan := obs.Start(context.Background(), &wg)
+
+			time.Sleep(time.Millisecond * 200)
+
+			// The observer should start watching from the expected version
+			assert.NotNil(t, obs)
+
+			close(stopChan)
+			wg.Wait()
+		})
+	}
+}
+
+func TestGetResourceVersion(t *testing.T) {
+	tests := []struct {
+		name              string
+		configVersion     string
+		persistedVersion  string
+		listVersion       string
+		expectedVersion   string
+		enablePersistence bool
+	}{
+		{
+			name:            "list version only",
+			configVersion:   "",
+			persistedVersion: "",
+			listVersion:     "100",
+			expectedVersion: "100",
+		},
+		{
+			name:            "config provided - used directly",
+			configVersion:   "150",
+			persistedVersion: "",
+			listVersion:     "100",
+			expectedVersion: "150", // Config used directly
+		},
+		{
+			name:              "no config - persisted higher than list",
+			configVersion:     "",
+			persistedVersion:  "200",
+			listVersion:       "100",
+			expectedVersion:   "200", // Highest of list/persisted
+			enablePersistence: true,
+		},
+		{
+			name:              "config provided ignores persisted and list",
+			configVersion:     "50",
+			persistedVersion:  "200",
+			listVersion:       "100",
+			expectedVersion:   "50", // Config used directly, even if lower
+			enablePersistence: true,
+		},
+		{
+			name:              "no config - list higher than persisted",
+			configVersion:     "",
+			persistedVersion:  "100",
+			listVersion:       "300",
+			expectedVersion:   "300", // Highest of list/persisted
+			enablePersistence: true,
+		},
+		{
+			name:            "all empty uses default",
+			configVersion:   "",
+			persistedVersion: "",
+			listVersion:     "",
+			expectedVersion: "1", // defaultResourceVersion
+		},
+		{
+			name:            "zero values ignored",
+			configVersion:   "0",
+			persistedVersion: "",
+			listVersion:     "0",
+			expectedVersion: "1", // defaultResourceVersion
+		},
+		{
+			name:              "persistence disabled with config",
+			configVersion:     "100",
+			persistedVersion:  "999", // Won't be loaded since persistence disabled
+			listVersion:       "200",
+			expectedVersion:   "100", // Config used directly
+			enablePersistence: false,
+		},
+		{
+			name:              "persistence disabled without config",
+			configVersion:     "",
+			persistedVersion:  "999", // Won't be loaded since persistence disabled
+			listVersion:       "200",
+			expectedVersion:   "200", // List version used (persisted not loaded)
+			enablePersistence: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient := newMockDynamicClient()
+
+			// Set the list resourceVersion that will be returned by List operations
+			if tt.listVersion != "" {
+				mockClient.setListResourceVersion(tt.listVersion)
+			}
+
+			// Create pods if needed
+			if tt.listVersion != "" {
+				mockClient.createPods(
+					generatePod("pod1", "default", map[string]any{"env": "test"}, tt.listVersion),
+				)
+			}
+
+			cfg := Config{
+				Config: k8sinventory.Config{
+					Gvr: schema.GroupVersionResource{
+						Group:    "",
+						Version:  "v1",
+						Resource: "pods",
+					},
+					Namespaces:      []string{"default"},
+					ResourceVersion: tt.configVersion,
+				},
+				PersistResourceVersion: tt.enablePersistence,
+			}
+
+			var storageClient *storagetest.TestClient
+			if tt.enablePersistence {
+				storageClient = storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+
+				// Pre-populate persisted version if provided
+				if tt.persistedVersion != "" {
+					checkpointer := newCheckpointer(storageClient, zap.NewNop())
+					err := checkpointer.SetResourceVersion(context.Background(), "default", "pods", tt.persistedVersion)
+					require.NoError(t, err)
+				}
+			}
+
+			obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, nil)
+			require.NoError(t, err)
+
+			resource := mockClient.Resource(cfg.Gvr)
+			version, err := obs.getResourceVersion(context.Background(), resource.Namespace("default"), "default")
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedVersion, version)
+		})
+	}
+}
+
+func TestCompareResourceVersions(t *testing.T) {
+	tests := []struct {
+		name     string
+		a        string
+		b        string
+		expected int
+	}{
+		{
+			name:     "a less than b",
+			a:        "100",
+			b:        "200",
+			expected: -1,
+		},
+		{
+			name:     "a greater than b",
+			a:        "300",
+			b:        "200",
+			expected: 1,
+		},
+		{
+			name:     "a equals b",
+			a:        "200",
+			b:        "200",
+			expected: 0,
+		},
+		{
+			name:     "numeric comparison with different lengths",
+			a:        "9",
+			b:        "100",
+			expected: -1, // 9 < 100 numerically
+		},
+		{
+			name:     "large numbers",
+			a:        "999999999",
+			b:        "1000000000",
+			expected: -1,
+		},
+		{
+			name:     "non-numeric fallback to string comparison",
+			a:        "v1",
+			b:        "v2",
+			expected: -1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := compareResourceVersions(tt.a, tt.b)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

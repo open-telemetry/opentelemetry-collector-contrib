@@ -4,6 +4,7 @@
 package k8sobjectsreceiver
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
@@ -576,4 +578,179 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 	assert.Equal(t, 2, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
+}
+
+func TestReceiverStorageInitialization(t *testing.T) {
+	tests := []struct {
+		name                   string
+		persistResourceVersion bool
+		storageID              *component.ID
+		expectStorageClient    bool
+		expectWarning          bool
+	}{
+		{
+			name:                   "persistence enabled with storage",
+			persistResourceVersion: true,
+			storageID:              ptr(storagetest.NewStorageID("file_storage")),
+			expectStorageClient:    true,
+			expectWarning:          false,
+		},
+		{
+			name:                   "persistence disabled",
+			persistResourceVersion: false,
+			storageID:              ptr(storagetest.NewStorageID("file_storage")),
+			expectStorageClient:    false,
+			expectWarning:          false,
+		},
+		{
+			name:                   "persistence enabled without storage",
+			persistResourceVersion: true,
+			storageID:              nil,
+			expectStorageClient:    false,
+			expectWarning:          true,
+		},
+		{
+			name:                   "persistence disabled without storage",
+			persistResourceVersion: false,
+			storageID:              nil,
+			expectStorageClient:    false,
+			expectWarning:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient := newMockDynamicClient()
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+			rCfg.makeDiscoveryClient = getMockDiscoveryClient
+			rCfg.Storage = tt.storageID
+			rCfg.Objects = []*K8sObjectsConfig{
+				{
+					Name:                   "pods",
+					Mode:                   k8sinventory.WatchMode,
+					PersistResourceVersion: tt.persistResourceVersion,
+				},
+			}
+
+			r, err := newReceiver(
+				receivertest.NewNopSettings(metadata.Type),
+				rCfg,
+				consumertest.NewNop(),
+			)
+			require.NoError(t, err)
+			require.NotNil(t, r)
+
+			// Create host with storage extension if needed
+			host := componenttest.NewNopHost()
+			if tt.storageID != nil {
+				storageHost := storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
+				host = storageHost
+			}
+
+			err = r.Start(context.Background(), host)
+			require.NoError(t, err)
+
+			kr := r.(*k8sobjectsreceiver)
+
+			if tt.expectStorageClient {
+				assert.NotNil(t, kr.storageClient, "storage client should be initialized")
+			} else {
+				assert.Nil(t, kr.storageClient, "storage client should be nil")
+			}
+
+			err = r.Shutdown(context.Background())
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestReceiverMultipleObjectsPersistence(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name:                   "pods",
+			Mode:                   k8sinventory.WatchMode,
+			PersistResourceVersion: true, // Enabled
+		},
+		{
+			Name:                   "events",
+			Mode:                   k8sinventory.WatchMode,
+			PersistResourceVersion: false, // Disabled
+		},
+		{
+			Name: "myresources",
+			Mode: k8sinventory.WatchMode,
+			// Not set - defaults to false
+		},
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	host := storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
+
+	err = r.Start(context.Background(), host)
+	require.NoError(t, err)
+
+	kr := r.(*k8sobjectsreceiver)
+
+	// Storage client should be initialized because at least one object has persistence enabled
+	assert.NotNil(t, kr.storageClient)
+
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
+func TestReceiverNoObjectsWithPersistence(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name:                   "pods",
+			Mode:                   k8sinventory.WatchMode,
+			PersistResourceVersion: false, // All disabled
+		},
+		{
+			Name:                   "events",
+			Mode:                   k8sinventory.WatchMode,
+			PersistResourceVersion: false,
+		},
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	host := storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
+
+	err = r.Start(context.Background(), host)
+	require.NoError(t, err)
+
+	kr := r.(*k8sobjectsreceiver)
+
+	// Storage client should NOT be initialized because no object has persistence enabled
+	assert.Nil(t, kr.storageClient)
+
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
+// ptr is a helper to create a pointer to a value
+func ptr[T any](v T) *T {
+	return &v
 }

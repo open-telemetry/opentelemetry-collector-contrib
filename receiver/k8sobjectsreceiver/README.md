@@ -59,7 +59,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `field_selector`: select objects by field(s)
 - `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.
 - `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
-- `resource_version`: Allows watching resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
+- `resource_version`: allows watching resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
 - `exclude_namespaces`: allows excluding namespaces from being watched/pulled, (NOTE: if a new namespace that matches the regex is added, the collector will need to be restarted)
 - `group`: API group name. It is an optional config. When given resource object is present in multiple groups,
@@ -69,6 +69,8 @@ this case, it will select `v1` by default.
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs when watching or polling many resources simultaneously.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
+- `storage` (default: none): if specified, will enable the receiver to store the last resource version seen in a file. The resource version will be 
+persisted when the watch mode is configured for the given object.
 
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)

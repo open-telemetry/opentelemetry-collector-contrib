@@ -4,6 +4,7 @@
 package k8seventsreceiver
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
@@ -353,4 +355,131 @@ func TestStartWatchersMultipleNamespaces(t *testing.T) {
 	// Should have at least 1 watcher started
 	assert.GreaterOrEqual(t, watcherCount, 1)
 	require.NoError(t, r.Shutdown(t.Context()))
+}
+
+func TestK8sEventsReceiverStorageInitialization(t *testing.T) {
+	tests := []struct {
+		name                   string
+		persistResourceVersion bool
+		storageID              *component.ID
+		expectStorageClient    bool
+		expectWarning          bool
+	}{
+		{
+			name:                   "persistence enabled with storage",
+			persistResourceVersion: true,
+			storageID:              ptr(storagetest.NewStorageID("file_storage")),
+			expectStorageClient:    true,
+			expectWarning:          false,
+		},
+		{
+			name:                   "persistence disabled",
+			persistResourceVersion: false,
+			storageID:              ptr(storagetest.NewStorageID("file_storage")),
+			expectStorageClient:    false,
+			expectWarning:          false,
+		},
+		{
+			name:                   "persistence enabled without storage",
+			persistResourceVersion: true,
+			storageID:              nil,
+			expectStorageClient:    false,
+			expectWarning:          true,
+		},
+		{
+			name:                   "persistence disabled without storage",
+			persistResourceVersion: false,
+			storageID:              nil,
+			expectStorageClient:    false,
+			expectWarning:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Storage:                tt.storageID,
+				PersistResourceVersion: tt.persistResourceVersion,
+				Namespaces:             []string{"default"},
+			}
+
+			// Mock k8s clients
+			cfg.makeClient = func(_ k8sconfig.APIConfig) (k8s.Interface, error) {
+				return fake.NewClientset(), nil
+			}
+			cfg.makeDynamicClient = func(_ k8sconfig.APIConfig) (dynamic.Interface, error) {
+				scheme := runtime.NewScheme()
+				return dynamicfake.NewSimpleDynamicClient(scheme), nil
+			}
+
+			r, err := newReceiver(
+				receivertest.NewNopSettings(component.MustNewType("k8s_events")),
+				cfg,
+				consumertest.NewNop(),
+			)
+			require.NoError(t, err)
+			require.NotNil(t, r)
+
+			// Create host with storage extension if needed
+			host := componenttest.NewNopHost()
+			if tt.storageID != nil {
+				storageHost := storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
+				host = storageHost
+			}
+
+			err = r.Start(context.Background(), host)
+			require.NoError(t, err)
+
+			kr := r.(*k8seventsReceiver)
+
+			if tt.expectStorageClient {
+				assert.NotNil(t, kr.storageClient, "storage client should be initialized")
+			} else {
+				assert.Nil(t, kr.storageClient, "storage client should be nil")
+			}
+
+			err = r.Shutdown(context.Background())
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestK8sEventsReceiverPersistenceDefault(t *testing.T) {
+	cfg := &Config{
+		// Storage not set
+		// PersistResourceVersion defaults to false
+		Namespaces: []string{"default"},
+	}
+
+	// Mock k8s clients
+	cfg.makeClient = func(_ k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+	cfg.makeDynamicClient = func(_ k8sconfig.APIConfig) (dynamic.Interface, error) {
+		scheme := runtime.NewScheme()
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(component.MustNewType("k8s_events")),
+		cfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	err = r.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	kr := r.(*k8seventsReceiver)
+
+	// Storage client should be nil by default
+	assert.Nil(t, kr.storageClient)
+
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
+// ptr is a helper to create a pointer to a value
+func ptr[T any](v T) *T {
+	return &v
 }

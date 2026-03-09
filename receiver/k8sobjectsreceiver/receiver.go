@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -26,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/pull"
 	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
@@ -37,6 +39,7 @@ type k8sobjectsreceiver struct {
 	client          dynamic.Interface
 	consumer        consumer.Logs
 	obsrecv         *receiverhelper.ObsReport
+	storageClient   storage.Client
 	mu              sync.Mutex
 	cancel          context.CancelFunc
 	observerFunc    func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error)
@@ -120,10 +123,12 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 						FieldSelector:   object.FieldSelector,
 						ResourceVersion: object.ResourceVersion,
 					},
-					IncludeInitialState: kr.config.IncludeInitialState,
-					Exclude:             object.exclude,
+					IncludeInitialState:    kr.config.IncludeInitialState,
+					PersistResourceVersion: object.PersistResourceVersion,
+					Exclude:                object.exclude,
 				},
 				kr.setting.Logger,
+				kr.storageClient,
 				func(data *apiWatch.Event) {
 					logs, err := watchObjectsToLogData(data, time.Now(), object, kr.setting.BuildInfo.Version)
 					if err != nil {
@@ -146,6 +151,27 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 	kr.client = client
+
+	// Initialize storage client only if at least one object has persistence enabled
+	needsStorage := false
+	for _, obj := range kr.objects {
+		if obj.PersistResourceVersion {
+			needsStorage = true
+			break
+		}
+	}
+
+	if needsStorage {
+		if kr.config.Storage == nil {
+			kr.setting.Logger.Warn("persist_resource_version is enabled for one or more objects but no storage extension configured, persistence will not work")
+		} else {
+			storageClient, err := adapter.GetStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
+			if err != nil {
+				return fmt.Errorf("failed to get storage client: %w", err)
+			}
+			kr.storageClient = storageClient
+		}
+	}
 
 	// Validate objects against K8s API
 	validObjects, err := kr.config.getValidObjects()
@@ -232,12 +258,20 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
-func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
+func (kr *k8sobjectsreceiver) Shutdown(ctx context.Context) error {
 	kr.setting.Logger.Info("Object Receiver stopped")
 	if kr.cancel != nil {
 		kr.cancel()
 	}
 	kr.stopWatches()
+
+	// Close storage client if it exists
+	if kr.storageClient != nil {
+		if err := kr.storageClient.Close(ctx); err != nil {
+			kr.setting.Logger.Error("failed to close storage client", zap.Error(err))
+		}
+	}
+
 	return nil
 }
 
