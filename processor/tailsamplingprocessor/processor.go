@@ -873,7 +873,12 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 			metrics := newPolicyEvaluationMetrics(len(tsp.policies))
 			evaluationStart := time.Now()
 			actualData.decisionTime = evaluationStart
-			spanIngestTraceData := traceDataWithCurrentBatch(rss, actualData.SpanCount)
+			// Build an isolated one-batch trace view for ingest-time evaluation.
+			spanIngestTraceData := samplingpolicy.TraceData{
+				SpanCount:       actualData.SpanCount,
+				ReceivedBatches: ptrace.NewTraces(),
+			}
+			rss.CopyTo(spanIngestTraceData.ReceivedBatches.ResourceSpans().AppendEmpty())
 			decision, policyName := tsp.makeDecisionOnSpanIngest(id, &spanIngestTraceData, metrics)
 			tsp.recordImmediateDecisionMetrics(decision, metrics, time.Since(evaluationStart))
 
@@ -914,16 +919,6 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	if !actualData.decisionTime.IsZero() {
 		tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.decisionTime)/time.Second))
 	}
-}
-
-func traceDataWithCurrentBatch(rss ptrace.ResourceSpans, totalSpanCount int64) samplingpolicy.TraceData {
-	traceData := samplingpolicy.TraceData{
-		SpanCount:       totalSpanCount,
-		ReceivedBatches: ptrace.NewTraces(),
-	}
-	rs := traceData.ReceivedBatches.ResourceSpans().AppendEmpty()
-	rss.CopyTo(rs)
-	return traceData
 }
 
 func extensions(host component.Host) map[string]samplingpolicy.Extension {
