@@ -93,7 +93,7 @@ func BenchmarkCheckpointEncoding(b *testing.B) {
 // Toggle protobuf encoding: false = JSON (default), true = Protobuf
 func BenchmarkCheckpointDecoding(b *testing.B) {
 	// Toggle protobuf encoding: false = JSON (default), true = Protobuf
-	setProtobufEncoding(b, true)
+	setProtobufEncoding(b, false)
 
 	benchmarks := []struct {
 		name  string
@@ -132,7 +132,7 @@ func BenchmarkCheckpointDecoding(b *testing.B) {
 // Toggle protobuf encoding: false = JSON (default), true = Protobuf
 func BenchmarkCheckpointRoundTrip(b *testing.B) {
 	// Toggle protobuf encoding: false = JSON (default), true = Protobuf
-	setProtobufEncoding(b, true)
+	setProtobufEncoding(b, false)
 
 	benchmarks := []struct {
 		name  string
@@ -169,6 +169,9 @@ func BenchmarkCheckpointRoundTrip(b *testing.B) {
 var benchSink []byte
 
 func BenchmarkFingerprintConversion(b *testing.B) {
+	// Toggle protobuf encoding: false = JSON (default), true = Protobuf
+	setProtobufEncoding(b, false)
+
 	// Benchmark the JSON roundtrip vs direct Bytes() access
 	fpBytes := make([]byte, fingerprint.DefaultSize)
 	for j := range fpBytes {
