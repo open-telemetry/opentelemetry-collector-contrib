@@ -94,8 +94,8 @@ components:
     - extension/ecs_observer
     - extension/encoding
     - extension/file_storage
+    - extension/google_cloud_logentry_encoding
     - extension/googleclientauth
-    - extension/googlecloudlogentry_encoding
     - extension/headers_setter
     - extension/health_check
     - extension/healthcheckv2
