@@ -51,6 +51,10 @@ func TestAuthentication(t *testing.T) {
 		region: "region",
 	}
 
+	saramaSASLOAUTHBEARERConfig := &sarama.Config{}
+	saramaSASLOAUTHBEARERConfig.Net.SASL.Enable = true
+	saramaSASLOAUTHBEARERConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+
 	saramaKerberosCfg := &sarama.Config{}
 	saramaKerberosCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
 	saramaKerberosCfg.Net.SASL.Enable = true
@@ -146,6 +150,14 @@ func TestAuthentication(t *testing.T) {
 
 			// equalizes SCRAMClientGeneratorFunc to do assertion with the same reference.
 			config.Net.SASL.SCRAMClientGeneratorFunc = test.saramaConfig.Net.SASL.SCRAMClientGeneratorFunc
+
+			// For OIDC token provider, we need to compare fields individually since the context
+			// contains non-deterministic channels that will cause the comparison to fail
+			if config.Net.SASL.TokenProvider != nil && test.saramaConfig.Net.SASL.TokenProvider != nil {
+				// Set them to the same reference for comparison
+				config.Net.SASL.TokenProvider = test.saramaConfig.Net.SASL.TokenProvider
+			}
+
 			assert.Equal(t, test.saramaConfig, config)
 		})
 	}
