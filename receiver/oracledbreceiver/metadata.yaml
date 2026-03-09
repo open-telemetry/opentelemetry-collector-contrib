@@ -118,6 +118,9 @@ attributes:
   oracledb.plan_hash_value:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
+  oracledb.procedure_execution_count:
+    description: The number of times the stored procedure has been executed, derived from the maximum statement execution count across all statements in the procedure (reporting delta).
+    type: int
   oracledb.procedure_id:
     description: The identifier of the stored procedure or function being executed by the query.
     type: int
@@ -240,6 +243,7 @@ events:
       - oracledb.physical_write_requests
       - oracledb.rows_processed
       - oracledb.user_io_wait_time
+      - oracledb.procedure_execution_count
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
