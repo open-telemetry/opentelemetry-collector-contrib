@@ -105,7 +105,6 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	// plaintext fingerprint, but the file format has changed. Reusing the old FileType and old
 	// plaintext Offset with a gzip-compressed file causes ReadToEnd to seek to the wrong position
 	// and read raw compressed bytes as plaintext, producing corrupted log entries.
-	// The same applies in reverse (gzip → plaintext).
 	if f.Compression != "" {
 		var newFileType string
 		if compression.IsGzipFile(file, f.Logger) {
@@ -117,26 +116,17 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 				zap.String("new_file_type", newFileType),
 				zap.Int64("old_offset", m.Offset),
 			)
+			// Plaintext → gzip rotation: the old offset represents the number of
+			// decompressed bytes already consumed. Decompress the .gz
+			// from byte 0 and skip that many decompressed bytes so we only emit
+			// new lines.
 			if m.FileType == "" && newFileType == gzipExtension {
-				// Plaintext → gzip rotation: the old offset represents the number of
-				// decompressed bytes already consumed. Decompress the .gz
-				// from byte 0 and skip that many decompressed bytes so we only emit
-				// new lines.
 				r.decompressedBytesToSkip = m.Offset
-				// Zero the persisted offset so that if ReadToEnd is skipped (e.g. due to
-				// context cancellation) and Close() is called immediately, the saved
-				// metadata carries Offset=0 rather than the stale plaintext value. A
-				// non-zero Offset with FileType=".gz" on a subsequent poll would be
-				// treated as a compressed-file byte position and corrupt reads.
-				m.Offset = 0
-			} else {
-				// gzip → plaintext rotation: the old offset is a compressed-byte
-				// position within the previous .gz file. There is no safe way to map
-				// it to a byte offset in the new plaintext file (which is a different,
-				// rotated file). Reset to 0 and re-read from the beginning.
-				// NOTE: this may cause duplicate log entries.
-				m.Offset = 0
 			}
+			// Zero the persisted offset so that if ReadToEnd is skipped (e.g. due to
+			// context cancellation) and Close() is called immediately, the saved
+			// metadata carries Offset=0 rather than the stale plaintext value.
+			m.Offset = 0
 			m.FileType = newFileType
 		}
 	}

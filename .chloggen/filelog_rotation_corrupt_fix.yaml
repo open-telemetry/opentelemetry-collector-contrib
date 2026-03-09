@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/filelog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Fixed filelog receiver to handle log rotation without data corruption"
+note: "Fixed filelog receiver to handle log rotation with compression without data corruption"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46105]
@@ -16,7 +16,7 @@ issues: [46105]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This fix ensures that the filelog receiver can handle log rotation events without corrupting data, 
+  This fix ensures that the filelog receiver can handle log rotation with compression events without corrupting data, 
   maintaining log integrity and continuity.
 
 # If your change doesn't affect end users or the exported elements of any package,
