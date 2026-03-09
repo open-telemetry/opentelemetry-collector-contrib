@@ -139,6 +139,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 			s := &azureScraper{
 				cfg:                          tt.fields.cfg,
+				settings:                     settings.TelemetrySettings,
 				mb:                           metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
 				mutex:                        &sync.Mutex{},
 				time:                         getTimeMock(),
@@ -259,6 +260,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 		settings := receivertest.NewNopSettings(metadata.Type)
 		s := &azureScraper{
 			cfg:                          cfgLimitedMertics,
+			settings:                     settings.TelemetrySettings,
 			mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
 			mutex:                        &sync.Mutex{},
 			time:                         getTimeMock(),
@@ -335,7 +337,7 @@ func TestAzureScraperGetResources(t *testing.T) {
 	s.resources["subscriptionId1"] = map[string]*azureResource{}
 	s.subscriptions["subscriptionId1"] = &azureSubscription{}
 	s.cfg.CacheResources = 0
-	s.getResources(t.Context(), "subscriptionId1")
+	s.loadResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Len(t, s.resources["subscriptionId1"], 3)
 
@@ -353,7 +355,7 @@ func TestAzureScraperGetResources(t *testing.T) {
 		getMetricsValuesMockData(),
 		nil,
 	)
-	s.getResources(t.Context(), "subscriptionId1")
+	s.loadResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Empty(t, s.resources["subscriptionId1"])
 }

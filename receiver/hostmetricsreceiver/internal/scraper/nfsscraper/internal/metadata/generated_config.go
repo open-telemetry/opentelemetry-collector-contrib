@@ -3,13 +3,20 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled             bool `mapstructure:"enabled"`
+	enabledSetByUser    bool
+	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []string `mapstructure:"attributes"`
+	definedAttributes   []string
+	requiredAttributes  []string
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -20,6 +27,26 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
+	}
+	if len(ms.definedAttributes) > 0 {
+		for _, val := range ms.EnabledAttributes {
+			if !slices.Contains(ms.definedAttributes, val) {
+				return fmt.Errorf("%v is not defined in metadata.yaml", val)
+			}
+		}
+
+		for _, val := range ms.requiredAttributes {
+			if !slices.Contains(ms.EnabledAttributes, val) {
+				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+			}
+		}
+
+		if ms.AggregationStrategy != AggregationStrategySum &&
+			ms.AggregationStrategy != AggregationStrategyAvg &&
+			ms.AggregationStrategy != AggregationStrategyMin &&
+			ms.AggregationStrategy != AggregationStrategyMax {
+			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		}
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
@@ -49,16 +76,25 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		NfsClientNetCount: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"network.transport"},
+			EnabledAttributes:  []string{"network.transport"},
 		},
 		NfsClientNetTCPConnectionAccepted: MetricConfig{
 			Enabled: true,
 		},
 		NfsClientOperationCount: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"onc_rpc.version", "nfs.operation.name"},
+			EnabledAttributes:  []string{"onc_rpc.version", "nfs.operation.name"},
 		},
 		NfsClientProcedureCount: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"onc_rpc.version", "onc_rpc.procedure.name"},
+			EnabledAttributes:  []string{"onc_rpc.version", "onc_rpc.procedure.name"},
 		},
 		NfsClientRPCAuthrefreshCount: MetricConfig{
 			Enabled: true,
@@ -73,25 +109,43 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NfsServerIo: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"network.io.direction"},
+			EnabledAttributes:  []string{"network.io.direction"},
 		},
 		NfsServerNetCount: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"network.transport"},
+			EnabledAttributes:  []string{"network.transport"},
 		},
 		NfsServerNetTCPConnectionAccepted: MetricConfig{
 			Enabled: true,
 		},
 		NfsServerOperationCount: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"onc_rpc.version", "nfs.operation.name"},
+			EnabledAttributes:  []string{"onc_rpc.version", "nfs.operation.name"},
 		},
 		NfsServerProcedureCount: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"onc_rpc.version", "onc_rpc.procedure.name"},
+			EnabledAttributes:  []string{"onc_rpc.version", "onc_rpc.procedure.name"},
 		},
 		NfsServerRepcacheRequests: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"nfs.server.repcache.status"},
+			EnabledAttributes:  []string{"nfs.server.repcache.status"},
 		},
 		NfsServerRPCCount: MetricConfig{
-			Enabled: true,
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"error.type"},
+			EnabledAttributes:  []string{"error.type"},
 		},
 		NfsServerThreadCount: MetricConfig{
 			Enabled: true,
