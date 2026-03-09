@@ -401,7 +401,7 @@ gencodecov:
 # githubgen targets — use go.opentelemetry.io/build-tools/githubgen
 
 .PHONY: gengithub
-gengithub: # Regenerate all GitHub-managed files (labels, CODEOWNERS, workflows)
+gengithub: # Regenerate all GitHub-managed files (labels, CODEOWNERS, workflows); requires GITHUB_TOKEN
 	$(GITHUBGEN)
 
 .PHONY: gendistributions
