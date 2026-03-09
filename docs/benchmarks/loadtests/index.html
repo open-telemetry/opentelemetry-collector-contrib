@@ -79,6 +79,7 @@
       width: 100%;
       display: flex;
       flex-direction: column;
+      scroll-margin-top: 1rem;
     }
 
     .benchmark-title {
@@ -99,6 +100,21 @@
 
     .benchmark-chart {
       max-width: 1000px;
+    }
+
+    .chart-title {
+      scroll-margin-top: 1rem;
+    }
+
+    .anchor-link {
+      color: #3273dc;
+      font-weight: normal;
+      text-decoration: none;
+      margin-left: 0.25rem;
+    }
+
+    .anchor-link:hover {
+      text-decoration: underline;
     }
 
     header nav {
@@ -179,6 +195,10 @@
   <script id="main-script">
     'use strict';
     (function () {
+      function toAnchorId(name) {
+        return String(name).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section';
+      }
+
       const COLORS = [
         "#48aaf9",
         "#8a3ef2",
@@ -252,7 +272,15 @@
 
         function renderGraph(parent, name, commitIds, byName) {
           const chartTitle = document.createElement('h3');
+          chartTitle.className = 'chart-title';
+          chartTitle.id = toAnchorId(name);
           chartTitle.textContent = name;
+          const anchorLink = document.createElement('a');
+          anchorLink.href = '#' + toAnchorId(name);
+          anchorLink.className = 'anchor-link';
+          anchorLink.textContent = ' #';
+          anchorLink.title = 'Link to this section';
+          chartTitle.appendChild(anchorLink);
           parent.append(chartTitle);
 
           const canvas = document.createElement('canvas');
@@ -340,6 +368,7 @@
         function renderBenchSet(name, benchSet, main) {
           const setElem = document.createElement('div');
           setElem.className = 'benchmark-set';
+          setElem.id = toAnchorId(name);
           main.appendChild(setElem);
 
           const graphsElem = document.createElement('div');
