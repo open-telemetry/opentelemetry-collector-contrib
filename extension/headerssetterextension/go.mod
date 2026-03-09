@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/heade
 go 1.25.0
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.146.2-0.20260219223409-66996adfaaf7
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.53.1-0.20260306010043-a44ab254898b
 	go.opentelemetry.io/collector/component v1.53.1-0.20260306010043-a44ab254898b
@@ -22,6 +23,7 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
@@ -58,3 +60,5 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile => ../internal/credentialsfile

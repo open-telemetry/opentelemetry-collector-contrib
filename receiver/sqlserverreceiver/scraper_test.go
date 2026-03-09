@@ -303,7 +303,10 @@ func TestSortRows(t *testing.T) {
 	}
 }
 
-var _ sqlquery.DbClient = (*mockClient)(nil)
+var (
+	_ sqlquery.DbClient = (*mockClient)(nil)
+	_ sqlquery.DbClient = (*mockMultiStatementProcClient)(nil)
+)
 
 type mockClient struct {
 	SQL                 string
@@ -315,6 +318,10 @@ type mockClient struct {
 }
 
 type mockInvalidClient struct {
+	mockClient
+}
+
+type mockMultiStatementProcClient struct {
 	mockClient
 }
 
@@ -377,6 +384,15 @@ func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.Strin
 		return nil, err
 	}
 	return queryResults, nil
+}
+
+func (mc mockMultiStatementProcClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
+	switch mc.SQL {
+	case getSQLServerQueryTextAndPlanQuery():
+		return readFile("queryTextAndPlanMultiStatementProcData.txt")
+	default:
+		return nil, errors.New("No valid query found")
+	}
 }
 
 func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testing.T) {
@@ -755,6 +771,79 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	serverPort, exists := resourceAttributes.Get("server.port")
 	assert.True(t, exists)
 	assert.Equal(t, int64(1434), serverPort.Int())
+}
+
+// TestMultiStatementProcNoDuplicateRows validates that a stored procedure
+// containing multiple SELECT statements (each with a distinct query_hash /
+// query_plan_hash but sharing the same plan_handle) produces exactly one
+// log record per statement, without duplicate rows from a broad join.
+func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	cfg.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	assert.NotNil(t, scraper.cache)
+
+	// Seed the cache so cacheAndDiff returns non-zero diffs, simulating a prior scrape.
+	stmt1Hash := hex.EncodeToString([]byte("0xAAAAAAAAAAAAAAAA"))
+	stmt1PlanHash := hex.EncodeToString([]byte("0xBBBBBBBBBBBBBBBB"))
+	stmt2Hash := hex.EncodeToString([]byte("0xCCCCCCCCCCCCCCCC"))
+	stmt2PlanHash := hex.EncodeToString([]byte("0xDDDDDDDDDDDDDDDD"))
+	procID := "1431676148"
+
+	for _, pair := range [][2]string{{stmt1Hash, stmt1PlanHash}, {stmt2Hash, stmt2PlanHash}} {
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "execution_count", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_elapsed_time", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_grant_kb", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_logical_reads", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_logical_writes", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_physical_reads", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_rows", 1)
+		scraper.cacheAndDiff(pair[0], pair[1], procID, "total_worker_time", 1)
+	}
+
+	scraper.client = mockMultiStatementProcClient{
+		mockClient: mockClient{
+			instanceName:        scraper.config.InstanceName,
+			SQL:                 scraper.sqlQuery,
+			maxQuerySampleCount: 1000,
+			lookbackTime:        20,
+			topQueryCount:       200,
+		},
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	// Two distinct statements share one plan_handle in the mock data.
+	assert.Equal(t, 2, actualLogs.LogRecordCount(),
+		"expected exactly 2 log records for 2 distinct statements; duplicates indicate the plan_handle join is too broad")
+
+	scopeLogs := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0)
+	for i := 0; i < scopeLogs.LogRecords().Len(); i++ {
+		assert.Equal(t, "db.server.top_query", scopeLogs.LogRecords().At(i).EventName())
+	}
+
+	seenHashes := make(map[string]bool)
+	for i := 0; i < scopeLogs.LogRecords().Len(); i++ {
+		qh, ok := scopeLogs.LogRecords().At(i).Attributes().Get("sqlserver.query_hash")
+		assert.True(t, ok)
+		seenHashes[qh.Str()] = true
+	}
+	assert.Len(t, seenHashes, 2, "expected 2 distinct query_hash values")
 }
 
 func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) {

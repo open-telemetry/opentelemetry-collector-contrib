@@ -17,6 +17,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 )
@@ -42,6 +43,12 @@ type logsResourceAttributes struct {
 	Environment       string
 }
 
+// scopeKey keys ScopeLogs by resource attributes and encoding.format so each scope has a single format.
+type scopeKey struct {
+	Resource logsResourceAttributes
+	Format   constants.Format
+}
+
 // categoryHolder is a small helper struct to get `category`/`type` fields
 // from each Log Record
 type categoryHolder struct {
@@ -59,7 +66,7 @@ type ResourceLogsUnmarshaler struct {
 }
 
 func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	allResourceScopeLogs := map[logsResourceAttributes]plog.ScopeLogs{}
+	allResourceScopeLogs := map[scopeKey]plog.ScopeLogs{}
 
 	batchFormat, err := unmarshaler.DetectWrapperFormat(buf)
 	if err != nil {
@@ -109,7 +116,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	}
 
 	l := plog.NewLogs()
-	for resourceID, scopeLogs := range allResourceScopeLogs {
+	for key, scopeLogs := range allResourceScopeLogs {
 		rl := l.ResourceLogs().AppendEmpty()
 		ra := rl.Resource().Attributes()
 		ra.EnsureCapacity(10)
@@ -117,23 +124,23 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		unmarshaler.AttrPutStrIf(ra, string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 		unmarshaler.AttrPutStrIf(ra, string(conventions.CloudEventsEventSourceKey), attributeCloudEventSourceValue)
 		// Resource attributes parsed by Category Parser
-		unmarshaler.AttrPutStrIf(ra, string(conventions.CloudResourceIDKey), resourceID.ResourceID)
-		unmarshaler.AttrPutStrIf(ra, string(conventions.CloudRegionKey), resourceID.Location)
-		unmarshaler.AttrPutStrIf(ra, string(conventions.ServiceNamespaceKey), resourceID.SeviceNamespace)
-		unmarshaler.AttrPutStrIf(ra, string(conventions.ServiceNameKey), resourceID.ServiceName)
-		unmarshaler.AttrPutStrIf(ra, string(conventions.ServiceInstanceIDKey), resourceID.ServiceInstanceID)
-		unmarshaler.AttrPutStrIf(ra, string(conventions.DeploymentEnvironmentNameKey), resourceID.Environment)
-		unmarshaler.AttrPutStrIf(ra, attributeAzureTenantID, resourceID.TenantID)
+		unmarshaler.AttrPutStrIf(ra, string(conventions.CloudResourceIDKey), key.Resource.ResourceID)
+		unmarshaler.AttrPutStrIf(ra, string(conventions.CloudRegionKey), key.Resource.Location)
+		unmarshaler.AttrPutStrIf(ra, string(conventions.ServiceNamespaceKey), key.Resource.SeviceNamespace)
+		unmarshaler.AttrPutStrIf(ra, string(conventions.ServiceNameKey), key.Resource.ServiceName)
+		unmarshaler.AttrPutStrIf(ra, string(conventions.ServiceInstanceIDKey), key.Resource.ServiceInstanceID)
+		unmarshaler.AttrPutStrIf(ra, string(conventions.DeploymentEnvironmentNameKey), key.Resource.Environment)
+		unmarshaler.AttrPutStrIf(ra, attributeAzureTenantID, key.Resource.TenantID)
 		// In Azure - Subscription is the closes analog to the Account,
 		// so we'll transform SubscriptionID into `cloud.account.id`
-		unmarshaler.AttrPutStrIf(ra, string(conventions.CloudAccountIDKey), resourceID.SubscriptionID)
+		unmarshaler.AttrPutStrIf(ra, string(conventions.CloudAccountIDKey), key.Resource.SubscriptionID)
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 
 	return l, nil
 }
 
-func (r ResourceLogsUnmarshaler) unmarshalRecord(allResourceScopeLogs map[logsResourceAttributes]plog.ScopeLogs, record []byte) {
+func (r ResourceLogsUnmarshaler) unmarshalRecord(allResourceScopeLogs map[scopeKey]plog.ScopeLogs, record []byte) {
 	// Despite of the fact that official Azure documentation states that exists common Logs schema
 	// (see https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema),
 	// in reality - it's not true, some Resources exposing Logs in totally different formats.
@@ -206,7 +213,8 @@ func (r ResourceLogsUnmarshaler) unmarshalRecord(allResourceScopeLogs map[logsRe
 			zap.String("category", logCategory),
 		)
 	}
-	scopeLogs := r.getScopeLog(allResourceScopeLogs, rs)
+	format := constants.FormatForCategory(logCategory)
+	scopeLogs := r.getScopeLog(allResourceScopeLogs, rs, format)
 
 	lr := scopeLogs.LogRecords().AppendEmpty()
 	lr.SetTimestamp(nanos)
@@ -235,15 +243,16 @@ func (r ResourceLogsUnmarshaler) unmarshalRecord(allResourceScopeLogs map[logsRe
 	}
 }
 
-// getScopeLog gets current ScopeLog based on provided set of ResourceAttributes
-// If ScopeLog doesn't exists - create a new one and append to the list
-func (r ResourceLogsUnmarshaler) getScopeLog(allResourceScopeLogs map[logsResourceAttributes]plog.ScopeLogs, rs logsResourceAttributes) plog.ScopeLogs {
-	scopeLogs, found := allResourceScopeLogs[rs]
+// getScopeLog gets or creates ScopeLogs keyed by resource attributes and encoding.format (one format per scope).
+func (r ResourceLogsUnmarshaler) getScopeLog(allResourceScopeLogs map[scopeKey]plog.ScopeLogs, rs logsResourceAttributes, format constants.Format) plog.ScopeLogs {
+	key := scopeKey{Resource: rs, Format: format}
+	scopeLogs, found := allResourceScopeLogs[key]
 	if !found {
 		scopeLogs = plog.NewScopeLogs()
 		scopeLogs.Scope().SetName(metadata.ScopeName)
 		scopeLogs.Scope().SetVersion(r.buildInfo.Version)
-		allResourceScopeLogs[rs] = scopeLogs
+		scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, string(format))
+		allResourceScopeLogs[key] = scopeLogs
 	}
 
 	return scopeLogs
@@ -254,12 +263,12 @@ func (r ResourceLogsUnmarshaler) getScopeLog(allResourceScopeLogs map[logsResour
 // * In case when there is no "category" field
 // * In case when JSON unmarshaling failed
 // Stored record than can be used for debugging and fixing purposes
-func (r ResourceLogsUnmarshaler) storeRawLog(allResourceScopeLogs map[logsResourceAttributes]plog.ScopeLogs, record []byte) {
+func (r ResourceLogsUnmarshaler) storeRawLog(allResourceScopeLogs map[scopeKey]plog.ScopeLogs, record []byte) {
 	// We couldn't do any SemConv conversion as it's an unknown Log Schema for us,
 	// because it doesn't have a "category" field which we rely on
 	// So we will save incoming Log Record as a JSON string into Body just
 	// not to loose data
-	scopeLogs := r.getScopeLog(allResourceScopeLogs, logsResourceAttributes{})
+	scopeLogs := r.getScopeLog(allResourceScopeLogs, logsResourceAttributes{}, constants.FormatGeneric)
 	lr := scopeLogs.LogRecords().AppendEmpty()
 	// We couldn't get timestamp from incoming Record, so to keep the Log
 	// we will set timestamp to current time
