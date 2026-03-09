@@ -217,7 +217,7 @@ If data is sent to this processor before the metadata is synced, there will be n
 To wait for the metadata to be synced before the processor is ready, set the `wait_for_metadata` option to `true`.
 Then the processor will not be ready until the metadata is fully synced. As a result, the start-up of the Collector will be blocked. If the metadata cannot be synced, the Collector will ultimately fail to start.
 If a timeout is reached, the processor will fail to start and return an error, which will cause the collector to exit.
-The timeout defaults to 10s and can be configured with the `metadata_sync_timeout` option.
+The timeout defaults to 10s and can be configured with the `wait_for_metadata_timeout` option.
 
 example for setting the processor to wait for metadata to be synced before it is ready:
 
@@ -1114,4 +1114,4 @@ The breaking changes between the 2 schemas are the following:
 - `k8s.namespace.annotations.<key>` -> `k8s.namespace.annotation.<key>`
 
 All attributes emitted through the `processor.k8sattributes.EmitV1K8sConventions` feature gate
-are currently in `alpha` stability and are actively moving towards `stable` stability.
+are currently in `beta` stability and are actively moving towards `stable` stability.

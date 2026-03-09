@@ -1,4 +1,8 @@
+display_name: Named Pipe Receiver
 type: namedpipe
+
+description: |
+  This receiver supports opening a Unix Named Pipe (aka FIFO), and reading logs from it.
 
 status:
   class: receiver

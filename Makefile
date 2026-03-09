@@ -393,6 +393,7 @@ docker-golden:
 	cd cmd/golden && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t golden:latest .
 	rm cmd/golden/golden_*
 
+GITHUBGEN_ARGS ?= -skipgithub
 
 .PHONY: gencodecov
 gencodecov:
@@ -708,7 +709,7 @@ clean:
 generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
-SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
+SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*internal/metadata/*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
 
 .PHONY: generate-schemas
 generate-schemas:

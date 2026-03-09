@@ -49,7 +49,7 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 		},
 	}
 
-	u := vpcFlowLogUnmarshaler{
+	u := VPCFlowLogUnmarshaler{
 		cfg:       Config{FileFormat: constants.FileFormatPlainText},
 		buildInfo: component.BuildInfo{},
 		logger:    zap.NewNop(),
@@ -61,7 +61,7 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				_, err := u.unmarshalPlainTextLogs(bytes.NewReader(data))
+				_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
 				require.NoError(b, err)
 			}
 		})

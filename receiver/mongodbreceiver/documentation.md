@@ -34,6 +34,12 @@ The number of collections.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {collections} | Sum | Int | Cumulative | false | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of a database. | Any Str | Recommended |
+
 ### mongodb.connection.count
 
 The number of connections.
@@ -47,6 +53,7 @@ The number of connections.
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | type | The status of the connection. | Str: ``active``, ``available``, ``current`` | Recommended |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.cursor.count
 
@@ -72,6 +79,12 @@ The size of the collection. Data compression does not affect this value.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of a database. | Any Str | Recommended |
+
 ### mongodb.database.count
 
 The number of existing databases.
@@ -93,6 +106,7 @@ The number of document operations executed.
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.extent.count
 
@@ -101,6 +115,12 @@ The number of extents.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {extents} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.global_lock.time
 
@@ -123,6 +143,7 @@ The number of times an index has been accessed.
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | collection | The name of a collection. | Any Str | Recommended |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.index.count
 
@@ -132,6 +153,12 @@ The number of indexes.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {indexes} | Sum | Int | Cumulative | false | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of a database. | Any Str | Recommended |
+
 ### mongodb.index.size
 
 Sum of the space allocated to all indexes in the database, including free index space.
@@ -139,6 +166,12 @@ Sum of the space allocated to all indexes in the database, including free index 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.memory.usage
 
@@ -153,6 +186,7 @@ The amount of memory used.
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | type | The type of memory used. | Str: ``resident``, ``virtual`` | Recommended |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.network.io.receive
 
@@ -185,6 +219,12 @@ The number of objects.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {objects} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.operation.count
 
@@ -231,6 +271,12 @@ If collection data is compressed it reflects the compressed size.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ## Optional Metrics
 
@@ -322,6 +368,7 @@ Number of times the lock was acquired in the specified mode.
 | ---- | ----------- | ------ | -------- |
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.lock.acquire.time
 
@@ -337,6 +384,7 @@ Cumulative wait time for the lock acquisitions.
 | ---- | ----------- | ------ | -------- |
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.lock.acquire.wait_count
 
@@ -352,6 +400,7 @@ Number of times the lock acquisitions encountered waits because the locks were h
 | ---- | ----------- | ------ | -------- |
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.lock.deadlock.count
 
@@ -367,6 +416,7 @@ Number of times the lock acquisitions encountered deadlocks.
 | ---- | ----------- | ------ | -------- |
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.operation.latency.time
 
@@ -488,6 +538,6 @@ The number of bytes read into the WiredTiger cache.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| database | The name of a database. | Any Str | true |
 | server.address | The address of the MongoDB host. | Any Str | true |
 | server.port | The port of the MongoDB host. | Any Int | false |
+| service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true |
