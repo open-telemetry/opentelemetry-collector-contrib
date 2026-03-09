@@ -229,6 +229,7 @@ type ResourceAttributesConfig struct {
 	HaproxyAddr        ResourceAttributeConfig `mapstructure:"haproxy.addr"`
 	HaproxyProxyName   ResourceAttributeConfig `mapstructure:"haproxy.proxy_name"`
 	HaproxyServiceName ResourceAttributeConfig `mapstructure:"haproxy.service_name"`
+	HaproxyStatus      ResourceAttributeConfig `mapstructure:"haproxy.status"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -241,6 +242,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		HaproxyServiceName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		HaproxyStatus: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

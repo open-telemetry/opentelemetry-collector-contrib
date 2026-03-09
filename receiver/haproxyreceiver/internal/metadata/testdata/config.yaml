@@ -151,6 +151,8 @@ reaggregate_set:
       enabled: true
     haproxy.service_name:
       enabled: true
+    haproxy.status:
+      enabled: true
 none_set:
   metrics:
     haproxy.active:
@@ -227,6 +229,8 @@ none_set:
       enabled: false
     haproxy.service_name:
       enabled: false
+    haproxy.status:
+      enabled: false
 filter_set_include:
   resource_attributes:
     haproxy.addr:
@@ -238,6 +242,10 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     haproxy.service_name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    haproxy.status:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -255,3 +263,7 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "haproxy.service_name-val"
+    haproxy.status:
+      enabled: true
+      metrics_exclude:
+        - strict: "haproxy.status-val"

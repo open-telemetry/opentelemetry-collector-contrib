@@ -42,6 +42,13 @@ func (rb *ResourceBuilder) SetHaproxyServiceName(val string) {
 	}
 }
 
+// SetHaproxyStatus sets provided value as "haproxy.status" attribute.
+func (rb *ResourceBuilder) SetHaproxyStatus(val string) {
+	if rb.config.HaproxyStatus.Enabled {
+		rb.res.Attributes().PutStr("haproxy.status", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
