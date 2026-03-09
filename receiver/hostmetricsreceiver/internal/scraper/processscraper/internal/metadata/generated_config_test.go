@@ -27,47 +27,43 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					ProcessContextSwitches: MetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type"},
 					},
 					ProcessCPUTime: MetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"state"},
 					},
 					ProcessCPUUtilization: MetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"state"},
 					},
 					ProcessDiskIo: MetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
 					},
 					ProcessDiskOperations: MetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
 					},
-					ProcessHandles: MetricConfig{
-						Enabled: true,
-					},
-					ProcessMemoryUsage: MetricConfig{
-						Enabled: true,
-					},
-					ProcessMemoryUtilization: MetricConfig{
-						Enabled: true,
-					},
-					ProcessMemoryVirtual: MetricConfig{
-						Enabled: true,
-					},
-					ProcessOpenFileDescriptors: MetricConfig{
-						Enabled: true,
-					},
+					ProcessHandles:             MetricConfig{Enabled: true},
+					ProcessMemoryUsage:         MetricConfig{Enabled: true},
+					ProcessMemoryUtilization:   MetricConfig{Enabled: true},
+					ProcessMemoryVirtual:       MetricConfig{Enabled: true},
+					ProcessOpenFileDescriptors: MetricConfig{Enabled: true},
 					ProcessPagingFaults: MetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type"},
 					},
-					ProcessSignalsPending: MetricConfig{
-						Enabled: true,
-					},
-					ProcessThreads: MetricConfig{
-						Enabled: true,
-					},
-					ProcessUptime: MetricConfig{
-						Enabled: true,
-					},
+					ProcessSignalsPending: MetricConfig{Enabled: true},
+					ProcessThreads:        MetricConfig{Enabled: true},
+					ProcessUptime:         MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: true},
@@ -86,47 +82,43 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					ProcessContextSwitches: MetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type"},
 					},
 					ProcessCPUTime: MetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"state"},
 					},
 					ProcessCPUUtilization: MetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"state"},
 					},
 					ProcessDiskIo: MetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
 					},
 					ProcessDiskOperations: MetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"direction"},
 					},
-					ProcessHandles: MetricConfig{
-						Enabled: false,
-					},
-					ProcessMemoryUsage: MetricConfig{
-						Enabled: false,
-					},
-					ProcessMemoryUtilization: MetricConfig{
-						Enabled: false,
-					},
-					ProcessMemoryVirtual: MetricConfig{
-						Enabled: false,
-					},
-					ProcessOpenFileDescriptors: MetricConfig{
-						Enabled: false,
-					},
+					ProcessHandles:             MetricConfig{Enabled: false},
+					ProcessMemoryUsage:         MetricConfig{Enabled: false},
+					ProcessMemoryUtilization:   MetricConfig{Enabled: false},
+					ProcessMemoryVirtual:       MetricConfig{Enabled: false},
+					ProcessOpenFileDescriptors: MetricConfig{Enabled: false},
 					ProcessPagingFaults: MetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []string{"type"},
 					},
-					ProcessSignalsPending: MetricConfig{
-						Enabled: false,
-					},
-					ProcessThreads: MetricConfig{
-						Enabled: false,
-					},
-					ProcessUptime: MetricConfig{
-						Enabled: false,
-					},
+					ProcessSignalsPending: MetricConfig{Enabled: false},
+					ProcessThreads:        MetricConfig{Enabled: false},
+					ProcessUptime:         MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: false},
