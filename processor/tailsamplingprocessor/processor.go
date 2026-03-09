@@ -873,18 +873,19 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 			metrics := newPolicyEvaluationMetrics(len(tsp.policies))
 			evaluationStart := time.Now()
 			actualData.decisionTime = evaluationStart
-			// Build an isolated one-batch trace view for ingest-time evaluation.
+			// Build an isolated one-batch trace view for ingest-time evaluation
+			// using moves to avoid deep-copying span data.
 			spanIngestTraceData := samplingpolicy.TraceData{
 				SpanCount:       actualData.SpanCount,
 				ReceivedBatches: ptrace.NewTraces(),
 			}
-			rss.CopyTo(spanIngestTraceData.ReceivedBatches.ResourceSpans().AppendEmpty())
+			appendToTraces(spanIngestTraceData.ReceivedBatches, rss)
 			decision, policyName := tsp.makeDecisionOnSpanIngest(id, &spanIngestTraceData, metrics)
 			tsp.recordImmediateDecisionMetrics(decision, metrics, time.Since(evaluationStart))
 
 			// Store current batch after evaluation to avoid re-evaluating prior spans
 			// while still releasing full accumulated trace data on terminal outcomes.
-			appendToTraces(actualData.ReceivedBatches, rss)
+			appendToTraces(actualData.ReceivedBatches, spanIngestTraceData.ReceivedBatches.ResourceSpans().At(0))
 
 			if decision == samplingpolicy.Sampled || decision == samplingpolicy.Dropped {
 				actualData.FinalDecision = decision
