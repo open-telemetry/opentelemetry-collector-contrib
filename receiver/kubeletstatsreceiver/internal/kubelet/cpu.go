@@ -49,7 +49,7 @@ func addCPUUtilizationMetrics(
 }
 
 func addCPUTimeMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {
-	if mb == nil || recordDataPoint == nil || s == nil || s.UsageCoreNanoSeconds == nil {
+	if s.UsageCoreNanoSeconds == nil {
 		return
 	}
 	value := float64(*s.UsageCoreNanoSeconds) / 1_000_000_000
