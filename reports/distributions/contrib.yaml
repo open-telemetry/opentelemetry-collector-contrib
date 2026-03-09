@@ -22,7 +22,7 @@ components:
         - awskinesis
         - awss3
         - awsxray
-        - azureblob
+        - azure_blob
         - azuredataexplorer
         - azuremonitor
         - bmchelix
@@ -141,8 +141,8 @@ components:
         - awss3
         - awsxray
         - azure_event_hub
+        - azure_monitor
         - azureblob
-        - azuremonitor
         - carbon
         - chrony
         - cloudflare
@@ -180,7 +180,7 @@ components:
         - kubeletstats
         - libhoney
         - loki
-        - macosunifiedlogging
+        - macos_unified_logging
         - memcached
         - mongodb
         - mongodb_atlas
@@ -196,8 +196,8 @@ components:
         - podman_stats
         - postgresql
         - prometheus
+        - prometheus_remote_write
         - prometheus_simple
-        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb
@@ -230,6 +230,7 @@ components:
         - windowseventlog
         - windowsperfcounters
         - windowsservice
+        - yang_grpc
         - zipkin
         - zookeeper
     scraper:
