@@ -72,10 +72,10 @@ func TestConfigs(t *testing.T) {
 		name string
 	}{
 		{
-			"yanggrpc/production",
+			"yang_grpc/production",
 		},
 		{
-			"yanggrpc/default",
+			"yang_grpc/default",
 		},
 	} {
 		c, err := cm.Sub(test.name)

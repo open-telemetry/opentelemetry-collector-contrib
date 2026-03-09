@@ -183,6 +183,9 @@ The table below summarizes streaming support details for each log type, along wi
 
 | Log Type            | Sub Log Type/Source            | Offset Tracking             | Notes                                                                                                                 |
 |---------------------|--------------------------------|-----------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| CloudTrail          | Generic records                | Number of records processed | Number of records are used as CloudTrail logs arrives as a JSON. Streaming is done on internal `Records` array        |
+| CloudTrail          | CloudWatch trigger             | Number of bytes processed   | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| CloudTrail          | Digest record                  | Number of bytes processed   | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
 | ELB Access Logs     | ALB/NLB/CLB                    | Bytes processed             |                                                                                                                       |
 | Network Firewall    | Alert/Flow/TLS                 | Bytes processed             |                                                                                                                       |
 | S3 Access Logs      | -                              | Bytes processed             |                                                                                                                       |
