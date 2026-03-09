@@ -187,6 +187,10 @@ jobs:
         run: |
           make generate-schemas
           git diff --exit-code '*.schema.yaml' || (echo 'Config schemas are out of date, please run "make generate-schemas" and commit the changes in this PR.' && exit 1)
+      - name: generate-chloggen-components
+        run: |
+          make generate-chloggen-components
+          git diff --exit-code || (echo '.chloggen/config.yaml is out of date, please run "make generate-chloggen-components" and commit the changes.' && exit 1)
   unittest-matrix:
     strategy:
       fail-fast: false

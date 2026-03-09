@@ -53,11 +53,6 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
 // MetricsConfig provides config for windowsservice metrics.
 type MetricsConfig struct {
 	WindowsServiceStatus MetricConfig `mapstructure:"windows.service.status"`

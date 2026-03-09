@@ -54,11 +54,6 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
 // MetricsConfig provides config for snowflake metrics.
 type MetricsConfig struct {
 	SnowflakeBillingCloudServiceTotal              MetricConfig `mapstructure:"snowflake.billing.cloud_service.total"`
