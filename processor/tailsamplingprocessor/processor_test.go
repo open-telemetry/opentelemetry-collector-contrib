@@ -1036,6 +1036,8 @@ func uInt64ToSpanID(id uint64) pcommon.SpanID {
 }
 
 type mockPolicyEvaluator struct {
+	mu sync.Mutex
+
 	NextDecision    samplingpolicy.Decision
 	NextError       error
 	EvaluationCount int
@@ -1044,12 +1046,33 @@ type mockPolicyEvaluator struct {
 var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
 
 func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
 
 func (*mockPolicyEvaluator) IsStateful() bool {
 	return false
+}
+
+func (m *mockPolicyEvaluator) SetNextDecision(decision samplingpolicy.Decision) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.NextDecision = decision
+}
+
+func (m *mockPolicyEvaluator) SetNextError(nextError error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.NextError = nextError
+}
+
+func (m *mockPolicyEvaluator) GetEvaluationCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.EvaluationCount
 }
 
 type syncIDBatcher struct {

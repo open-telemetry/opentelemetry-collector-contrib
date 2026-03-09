@@ -5,6 +5,7 @@ package tailsamplingprocessor
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,11 +26,15 @@ import (
 )
 
 type batchSizeTrackingEvaluator struct {
+	mu                sync.Mutex
 	decisions         []samplingpolicy.Decision
 	evaluationBatches []int
 }
 
 func (e *batchSizeTrackingEvaluator) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
 	e.evaluationBatches = append(e.evaluationBatches, trace.ReceivedBatches.SpanCount())
 	if len(e.decisions) == 0 {
 		return samplingpolicy.NotSampled, nil
@@ -41,6 +46,20 @@ func (e *batchSizeTrackingEvaluator) Evaluate(_ context.Context, _ pcommon.Trace
 
 func (*batchSizeTrackingEvaluator) IsStateful() bool {
 	return false
+}
+
+func (e *batchSizeTrackingEvaluator) EvaluationCount() int {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return len(e.evaluationBatches)
+}
+
+func (e *batchSizeTrackingEvaluator) EvaluationBatches() []int {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	batches := make([]int, len(e.evaluationBatches))
+	copy(batches, e.evaluationBatches)
+	return batches
 }
 
 func TestSamplingPolicyTypicalPath(t *testing.T) {
@@ -933,16 +952,16 @@ func TestSpanIngestEvaluatesOnIngestAndFinalizesOnTerminalDecision(t *testing.T)
 	rootSpanID := uInt64ToSpanID(1)
 
 	// First ingest path evaluation is non-terminal in span-ingest mode.
-	mpe.NextDecision = samplingpolicy.NotSampled
+	mpe.SetNextDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
-	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Second ingest path evaluation returns terminal Sampled and releases both spans.
-	mpe.NextDecision = samplingpolicy.Sampled
+	mpe.SetNextDecision(samplingpolicy.Sampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 	require.Eventually(t, func() bool {
-		return mpe.EvaluationCount == 2 && nextConsumer.SpanCount() == 2
+		return mpe.GetEvaluationCount() == 2 && nextConsumer.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -979,23 +998,23 @@ func TestSpanIngestFinalizesOnDroppedDecision(t *testing.T) {
 	rootSpanID := uInt64ToSpanID(1)
 
 	// First ingest path evaluation is non-terminal in span-ingest mode.
-	mpe.NextDecision = samplingpolicy.NotSampled
+	mpe.SetNextDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
-	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Second ingest path evaluation returns terminal Dropped and finalizes trace.
-	mpe.NextDecision = samplingpolicy.Dropped
+	mpe.SetNextDecision(samplingpolicy.Dropped)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 	require.Eventually(t, func() bool {
-		return mpe.EvaluationCount == 2 && nextConsumer.SpanCount() == 0
+		return mpe.GetEvaluationCount() == 2 && nextConsumer.SpanCount() == 0
 	}, time.Second, 10*time.Millisecond)
 
 	// Late spans should use cached non-sampled decision and skip re-evaluation.
-	mpe.NextDecision = samplingpolicy.Sampled
+	mpe.SetNextDecision(samplingpolicy.Sampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(3), rootSpanID)))
 	require.Eventually(t, func() bool {
-		return mpe.EvaluationCount == 2 && nextConsumer.SpanCount() == 0
+		return mpe.GetEvaluationCount() == 2 && nextConsumer.SpanCount() == 0
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -1029,15 +1048,15 @@ func TestSpanIngestTickCleansUpPendingWithoutPolicyEvaluation(t *testing.T) {
 	}(p)
 
 	// Non-terminal in span-ingest mode: pending in memory.
-	mpe.NextDecision = samplingpolicy.NotSampled
+	mpe.SetNextDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
-	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Tick path cleans pending traces without evaluating policies in span-ingest mode.
 	controller.waitForTick()
 	controller.waitForTick()
-	require.Equal(t, 1, mpe.EvaluationCount)
+	require.Equal(t, 1, mpe.GetEvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount())
 	require.Eventually(t, func() bool {
 		return len(p.(*tailSamplingSpanProcessor).idToTrace) == 0
@@ -1079,9 +1098,9 @@ func TestSpanIngestEvaluatesOnlyIncomingBatch(t *testing.T) {
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
 
 	require.Eventually(t, func() bool {
-		return len(eval.evaluationBatches) == 2
+		return eval.EvaluationCount() == 2
 	}, time.Second, 10*time.Millisecond)
-	require.Equal(t, []int{1, 1}, eval.evaluationBatches)
+	require.Equal(t, []int{1, 1}, eval.EvaluationBatches())
 	require.Eventually(t, func() bool {
 		return nextConsumer.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
@@ -1116,16 +1135,16 @@ func TestSpanIngestRootFirstThenChild(t *testing.T) {
 	rootSpanID := uInt64ToSpanID(1)
 
 	// Root first, non-terminal.
-	mpe.NextDecision = samplingpolicy.NotSampled
+	mpe.SetNextDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
-	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Child later, terminal sampled -> both spans released.
-	mpe.NextDecision = samplingpolicy.Sampled
+	mpe.SetNextDecision(samplingpolicy.Sampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
 	require.Eventually(t, func() bool {
-		return mpe.EvaluationCount == 2 && nextConsumer.SpanCount() == 2
+		return mpe.GetEvaluationCount() == 2 && nextConsumer.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -1161,17 +1180,17 @@ func TestSpanIngestChildFirstThenRootPendingCleanup(t *testing.T) {
 	rootSpanID := uInt64ToSpanID(1)
 
 	// Child then root, both non-terminal.
-	mpe.NextDecision = samplingpolicy.NotSampled
+	mpe.SetNextDecision(samplingpolicy.NotSampled)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, uInt64ToSpanID(2), rootSpanID)))
-	require.Eventually(t, func() bool { return mpe.EvaluationCount == 1 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 1 }, time.Second, 10*time.Millisecond)
 	require.NoError(t, p.ConsumeTraces(t.Context(), singleSpanTrace(traceID, rootSpanID, pcommon.SpanID{})))
-	require.Eventually(t, func() bool { return mpe.EvaluationCount == 2 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return mpe.GetEvaluationCount() == 2 }, time.Second, 10*time.Millisecond)
 	require.Equal(t, 0, nextConsumer.SpanCount())
 
 	// Cleanup tick finalizes pending as not sampled without more evaluations.
 	controller.waitForTick()
 	controller.waitForTick()
-	require.Equal(t, 2, mpe.EvaluationCount)
+	require.Equal(t, 2, mpe.GetEvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount())
 	require.Eventually(t, func() bool {
 		return len(p.(*tailSamplingSpanProcessor).idToTrace) == 0
