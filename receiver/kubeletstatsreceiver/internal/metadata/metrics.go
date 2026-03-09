@@ -24,8 +24,6 @@ type CPUMetrics struct {
 	NodeUtilization    RecordDoubleDataPointFunc
 	LimitUtilization   RecordDoubleDataPointFunc
 	RequestUtilization RecordDoubleDataPointFunc
-	Limit              RecordDoubleDataPointFunc
-	Request            RecordDoubleDataPointFunc
 }
 
 var NodeCPUMetrics = CPUMetrics{
@@ -59,8 +57,6 @@ type MemoryMetrics struct {
 	WorkingSet         RecordIntDataPointFunc
 	PageFaults         RecordIntDataPointFunc
 	MajorPageFaults    RecordIntDataPointFunc
-	Limit              RecordIntDataPointFunc
-	Request            RecordIntDataPointFunc
 }
 
 var NodeMemoryMetrics = MemoryMetrics{
