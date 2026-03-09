@@ -64,6 +64,19 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
       - `names`: A list of full log stream names to filter the discovered log groups to collect from.
       - `prefixes`: A list of prefixes to filter the discovered log groups to collect from.
 
+### Metrics Parameters (GetMetricData / ListMetrics)
+
+The metrics path uses the collector's scraper pattern. Configure under `metrics`:
+
+| Parameter             | Type     | Default   | Description                                                                 |
+| --------------------- | -------- | --------- | --------------------------------------------------------------------------- |
+| `collection_interval` | Duration | 5 minutes | How often to scrape CloudWatch metrics.                                     |
+| `period`              | Duration | 300s      | CloudWatch metric period for each GetMetricData query.                      |
+| `metrics`             | List     | —         | Explicit list of metric queries (namespace, metric_name, dimensions, stat). |
+| `discovery`           | Optional | —         | Use ListMetrics to discover metrics (mutually exclusive with `metrics`).    |
+
+When using `discovery`, set `namespace`, optional `metric_name`, `limit`, and `stat`. When using an explicit `metrics` list, each entry must have `namespace` and `metric_name`; for EC2 metrics include the `InstanceId` dimension.
+
 #### Autodiscovery Example Configuration
 
 ```yaml

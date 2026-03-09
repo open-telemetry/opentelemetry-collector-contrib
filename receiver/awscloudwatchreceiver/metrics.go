@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -15,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -29,19 +27,13 @@ const (
 	namespaceDelimiter  = "/"
 )
 
-type metricsReceiver struct {
+type cloudWatchMetricsScraper struct {
 	settings     receiver.Settings
-	region       string
-	profile      string
-	imdsEndpoint string
-	pollInterval time.Duration
+	cfg          *Config
 	period       time.Duration
 	metrics      []MetricQuery           // explicit list when not using discovery
-	discovery    *MetricsDiscoveryConfig // when set, we call ListMetrics each poll
-	consumer     consumer.Metrics
+	discovery    *MetricsDiscoveryConfig // when set, we call ListMetrics each scrape
 	client       metricsClient
-	wg           sync.WaitGroup
-	doneChan     chan struct{}
 }
 
 type metricsClient interface {
@@ -49,14 +41,10 @@ type metricsClient interface {
 	GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error)
 }
 
-func newMetricsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.Metrics) *metricsReceiver {
+func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloudWatchMetricsScraper {
 	period := cfg.Metrics.Period
 	if period == 0 {
 		period = defaultMetricsPeriod
-	}
-	pollInterval := cfg.Metrics.PollInterval
-	if pollInterval == 0 {
-		pollInterval = defaultMetricsPoll
 	}
 	var discovery *MetricsDiscoveryConfig
 	if cfg.Metrics.Discovery != nil {
@@ -69,62 +57,60 @@ func newMetricsReceiver(cfg *Config, settings receiver.Settings, consumer consum
 		}
 		discovery = &d
 	}
-	return &metricsReceiver{
-		settings:     settings,
-		region:       cfg.Region,
-		profile:      cfg.Profile,
-		imdsEndpoint: cfg.IMDSEndpoint,
-		pollInterval: pollInterval,
-		period:       period,
-		metrics:      cfg.Metrics.Metrics,
-		discovery:    discovery,
-		consumer:     consumer,
-		doneChan:     make(chan struct{}),
+	return &cloudWatchMetricsScraper{
+		settings:  settings,
+		cfg:       cfg,
+		period:    period,
+		metrics:   cfg.Metrics.Metrics,
+		discovery: discovery,
 	}
 }
 
-func (m *metricsReceiver) Start(ctx context.Context, _ component.Host) error {
-	hasExplicit := len(m.metrics) > 0
-	hasDiscovery := m.discovery != nil
-	m.settings.Logger.Debug("metrics receiver Start() called",
-		zap.Int("configured_metrics", len(m.metrics)),
-		zap.Bool("discovery_enabled", hasDiscovery))
-	if !hasExplicit && !hasDiscovery {
-		m.settings.Logger.Info("no metrics or discovery configured, metrics poller will not run")
-		return nil
-	}
-	m.settings.Logger.Debug("starting CloudWatch metrics poller", zap.Duration("poll_interval", m.pollInterval))
-	m.wg.Add(1)
-	go m.pollLoop(ctx)
-	return nil
+func (s *cloudWatchMetricsScraper) start(ctx context.Context, host component.Host) error {
+	return s.ensureClient()
 }
 
-func (m *metricsReceiver) Shutdown(_ context.Context) error {
-	m.settings.Logger.Debug("shutting down metrics receiver")
-	close(m.doneChan)
-	m.wg.Wait()
-	return nil
-}
-
-func (m *metricsReceiver) pollLoop(ctx context.Context) {
-	defer m.wg.Done()
-	if err := m.poll(ctx); err != nil {
-		m.settings.Logger.Error("initial metrics poll failed", zap.Error(err))
+func (s *cloudWatchMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	s.settings.Logger.Debug("scraping CloudWatch metrics", zap.String("region", s.cfg.Region))
+	if err := s.ensureClient(); err != nil {
+		return pmetric.NewMetrics(), err
 	}
-	ticker := time.NewTicker(m.pollInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-m.doneChan:
-			return
-		case <-ticker.C:
-			if err := m.poll(ctx); err != nil {
-				m.settings.Logger.Error("metrics poll failed", zap.Error(err))
-			}
+
+	var metricsToScrape []MetricQuery
+	if s.discovery != nil {
+		discovered, err := s.listMetrics(ctx)
+		if err != nil {
+			return pmetric.NewMetrics(), fmt.Errorf("list metrics: %w", err)
 		}
+		metricsToScrape = discovered
+		s.settings.Logger.Debug("discovered metrics", zap.Int("count", len(metricsToScrape)))
+		if len(metricsToScrape) == 0 {
+			return pmetric.NewMetrics(), nil
+		}
+	} else {
+		metricsToScrape = s.metrics
 	}
+
+	periodSec := int64(s.period.Seconds())
+	now := time.Now().UTC()
+	endTime := alignTimeToPeriod(now, periodSec)
+	lookback := time.Duration(lookbackMultiplier) * s.period
+	startTime := alignTimeToPeriod(endTime.Add(-lookback), periodSec)
+
+	md := pmetric.NewMetrics()
+	for batchStart := 0; batchStart < len(metricsToScrape); batchStart += maxGetMetricDataQueries {
+		batchEnd := batchStart + maxGetMetricDataQueries
+		if batchEnd > len(metricsToScrape) {
+			batchEnd = len(metricsToScrape)
+		}
+		batch := metricsToScrape[batchStart:batchEnd]
+		batchMd, err := s.pollBatch(ctx, batch, startTime, endTime)
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
+		batchMd.ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+	}
+	return md, nil
 }
 
 // lookbackMultiplier is how many periods we look back. CloudWatch often has 2–5 minute
@@ -147,72 +133,30 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 	return time.Unix(aligned, 0).UTC()
 }
 
-func (m *metricsReceiver) poll(ctx context.Context) error {
-	m.settings.Logger.Debug("polling CloudWatch metrics", zap.String("region", m.region))
-	if err := m.ensureClient(); err != nil {
-		return err
-	}
-
-	var metricsToScrape []MetricQuery
-	if m.discovery != nil {
-		discovered, err := m.listMetrics(ctx)
-		if err != nil {
-			return fmt.Errorf("list metrics: %w", err)
-		}
-		metricsToScrape = discovered
-		m.settings.Logger.Debug("discovered metrics", zap.Int("count", len(metricsToScrape)))
-		if len(metricsToScrape) == 0 {
-			return nil
-		}
-	} else {
-		metricsToScrape = m.metrics
-	}
-
-	periodSec := int64(m.period.Seconds())
-	now := time.Now().UTC()
-	// Align EndTime to period boundary for better performance (GetMetricData docs).
-	endTime := alignTimeToPeriod(now, periodSec)
-	lookback := time.Duration(lookbackMultiplier) * m.period
-	startTime := alignTimeToPeriod(endTime.Add(-lookback), periodSec)
-
-	// GetMetricData allows up to 500 queries per request; batch if needed.
-	for batchStart := 0; batchStart < len(metricsToScrape); batchStart += maxGetMetricDataQueries {
-		batchEnd := batchStart + maxGetMetricDataQueries
-		if batchEnd > len(metricsToScrape) {
-			batchEnd = len(metricsToScrape)
-		}
-		batch := metricsToScrape[batchStart:batchEnd]
-		if err := m.pollBatch(ctx, batch, startTime, endTime); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // listMetrics discovers metrics via ListMetrics API, respecting discovery config (namespace, metric name, limit).
-func (m *metricsReceiver) listMetrics(ctx context.Context) ([]MetricQuery, error) {
-	limit := m.discovery.Limit
+func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
+	limit := s.discovery.Limit
 	if limit <= 0 {
 		limit = defaultMetricsDiscoverLimit
 	}
-	stat := m.discovery.Stat
+	stat := s.discovery.Stat
 	if stat == "" {
 		stat = defaultMetricsStat
 	}
 
 	input := &cloudwatch.ListMetricsInput{}
-	if m.discovery.Namespace != "" {
-		input.Namespace = aws.String(m.discovery.Namespace)
+	if s.discovery.Namespace != "" {
+		input.Namespace = aws.String(s.discovery.Namespace)
 	}
-	if m.discovery.MetricName != "" {
-		input.MetricName = aws.String(m.discovery.MetricName)
+	if s.discovery.MetricName != "" {
+		input.MetricName = aws.String(s.discovery.MetricName)
 	}
 
 	var out []MetricQuery
 	var nextToken *string
 	for {
 		input.NextToken = nextToken
-		resp, err := m.client.ListMetrics(ctx, input)
+		resp, err := s.client.ListMetrics(ctx, input)
 		if err != nil {
 			return nil, err
 		}
@@ -249,8 +193,8 @@ func dimensionsToMap(dims []types.Dimension) map[string]string {
 	return out
 }
 
-// pollBatch runs GetMetricData for a batch of metrics and sends the result to the consumer.
-func (m *metricsReceiver) pollBatch(ctx context.Context, batch []MetricQuery, startTime, endTime time.Time) error {
+// pollBatch runs GetMetricData for a batch of metrics and returns the converted pdata.Metrics.
+func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []MetricQuery, startTime, endTime time.Time) (pmetric.Metrics, error) {
 	queries := make([]types.MetricDataQuery, 0, len(batch))
 	for i, q := range batch {
 		stat := q.Stat
@@ -265,7 +209,7 @@ func (m *metricsReceiver) pollBatch(ctx context.Context, batch []MetricQuery, st
 					MetricName: aws.String(q.MetricName),
 					Dimensions: dimensionsFromMap(q.Dimensions),
 				},
-				Period: aws.Int32(int32(m.period.Seconds())),
+				Period: aws.Int32(int32(s.period.Seconds())),
 				Stat:   aws.String(stat),
 			},
 		}
@@ -278,9 +222,9 @@ func (m *metricsReceiver) pollBatch(ctx context.Context, batch []MetricQuery, st
 		MetricDataQueries: queries,
 	}
 
-	out, err := m.client.GetMetricData(ctx, input)
+	out, err := s.client.GetMetricData(ctx, input)
 	if err != nil {
-		return fmt.Errorf("GetMetricData: %w", err)
+		return pmetric.NewMetrics(), fmt.Errorf("GetMetricData: %w", err)
 	}
 
 	withData := 0
@@ -289,34 +233,22 @@ func (m *metricsReceiver) pollBatch(ctx context.Context, batch []MetricQuery, st
 			withData++
 		}
 	}
-	m.settings.Logger.Debug("GetMetricData response",
+	s.settings.Logger.Debug("GetMetricData response",
 		zap.Int("results", len(out.MetricDataResults)),
 		zap.Int("results_with_datapoints", withData),
 		zap.Time("start", startTime),
 		zap.Time("end", endTime))
 
-	md := m.convertGetMetricDataToPdata(out, batch, endTime)
-	if md.ResourceMetrics().Len() == 0 {
-		if withData == 0 && len(batch) > 0 {
-			m.settings.Logger.Debug("No metric data in response; CloudWatch often has 2-5 min delay",
-				zap.String("region", m.region))
-		}
-		return nil
+	md := s.convertGetMetricDataToPdata(out, batch, endTime)
+	if md.ResourceMetrics().Len() == 0 && withData > 0 {
+		s.settings.Logger.Warn("GetMetricData returned datapoints but conversion produced no resource metrics; check Id matching",
+			zap.String("region", s.cfg.Region))
 	}
-	totalDP := 0
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			sm := rm.ScopeMetrics().At(j)
-			for k := 0; k < sm.Metrics().Len(); k++ {
-				totalDP += sm.Metrics().At(k).Gauge().DataPoints().Len()
-			}
-		}
+	if md.ResourceMetrics().Len() == 0 && withData == 0 && len(batch) > 0 {
+		s.settings.Logger.Debug("No metric data in response; CloudWatch often has 2-5 min delay",
+			zap.String("region", s.cfg.Region))
 	}
-	m.settings.Logger.Debug("sending metrics to consumer",
-		zap.Int("resource_metrics", md.ResourceMetrics().Len()),
-		zap.Int("data_points", totalDP))
-	return m.consumer.ConsumeMetrics(ctx, md)
+	return md, nil
 }
 
 func dimensionsFromMap(d map[string]string) []types.Dimension {
@@ -342,10 +274,10 @@ func toServiceAttributes(namespace string) (serviceNamespace, serviceName string
 
 // setResourceAttributes sets resource attributes from namespace and dimensions, reusing the same
 // conventions (cloud.*, service.*, InstanceId -> service.instance.id).
-func (m *metricsReceiver) setResourceAttributes(resource pcommon.Resource, namespace string, dimensions map[string]string) {
+func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resource, namespace string, dimensions map[string]string) {
 	attrs := resource.Attributes()
 	attrs.PutStr(string(semconv.CloudProviderKey), semconv.CloudProviderAWS.Value.AsString())
-	attrs.PutStr(string(semconv.CloudRegionKey), m.region)
+	attrs.PutStr(string(semconv.CloudRegionKey), s.cfg.Region)
 	serviceNamespace, serviceName := toServiceAttributes(namespace)
 	if serviceNamespace != "" {
 		attrs.PutStr(string(semconv.ServiceNamespaceKey), serviceNamespace)
@@ -364,7 +296,7 @@ func (m *metricsReceiver) setResourceAttributes(resource pcommon.Resource, names
 // convertGetMetricDataToPdata converts GetMetricData API output to pdata.Metrics. Resource attributes follow the
 // same conventions (cloud.*, service.*, dimension mapping).
 // Results are matched to metricsList by query Id ("q0", "q1", ...).
-func (m *metricsReceiver) convertGetMetricDataToPdata(out *cloudwatch.GetMetricDataOutput, metricsList []MetricQuery, endTime time.Time) pmetric.Metrics {
+func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(out *cloudwatch.GetMetricDataOutput, metricsList []MetricQuery, endTime time.Time) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	for _, result := range out.MetricDataResults {
 		if len(result.Values) == 0 || result.Id == nil {
@@ -376,7 +308,7 @@ func (m *metricsReceiver) convertGetMetricDataToPdata(out *cloudwatch.GetMetricD
 		}
 		q := metricsList[idx]
 		rm := md.ResourceMetrics().AppendEmpty()
-		m.setResourceAttributes(rm.Resource(), q.Namespace, q.Dimensions)
+		s.setResourceAttributes(rm.Resource(), q.Namespace, q.Dimensions)
 
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("awscloudwatchreceiver")
@@ -397,23 +329,23 @@ func (m *metricsReceiver) convertGetMetricDataToPdata(out *cloudwatch.GetMetricD
 	return md
 }
 
-func (m *metricsReceiver) ensureClient() error {
-	m.settings.Logger.Debug("ensuring CloudWatch client", zap.String("region", m.region))
-	if m.client != nil {
+func (s *cloudWatchMetricsScraper) ensureClient() error {
+	s.settings.Logger.Debug("ensuring CloudWatch client", zap.String("region", s.cfg.Region))
+	if s.client != nil {
 		return nil
 	}
-	opts := []func(*config.LoadOptions) error{config.WithRegion(m.region)}
-	if m.imdsEndpoint != "" {
-		opts = append(opts, config.WithEC2IMDSEndpoint(m.imdsEndpoint))
+	opts := []func(*config.LoadOptions) error{config.WithRegion(s.cfg.Region)}
+	if s.cfg.IMDSEndpoint != "" {
+		opts = append(opts, config.WithEC2IMDSEndpoint(s.cfg.IMDSEndpoint))
 	}
-	if m.profile != "" {
-		opts = append(opts, config.WithSharedConfigProfile(m.profile))
+	if s.cfg.Profile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(s.cfg.Profile))
 	}
 	cfg, err := config.LoadDefaultConfig(context.Background(), opts...)
 	if err != nil {
 		return err
 	}
-	m.client = cloudwatch.NewFromConfig(cfg)
-	m.settings.Logger.Debug("CloudWatch client initialized", zap.String("region", m.region))
+	s.client = cloudwatch.NewFromConfig(cfg)
+	s.settings.Logger.Debug("CloudWatch client initialized", zap.String("region", s.cfg.Region))
 	return nil
 }

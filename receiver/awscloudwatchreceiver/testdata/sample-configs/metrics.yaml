@@ -3,7 +3,7 @@ receivers:
     region: us-west-2
     # profile: <your profile name>
     metrics:
-      poll_interval: 5m
+      collection_interval: 5m
       period: 300s
       discovery:
         namespace: AWS/EC2

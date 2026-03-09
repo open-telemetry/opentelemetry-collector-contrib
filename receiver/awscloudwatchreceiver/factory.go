@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
@@ -41,8 +43,17 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	rcvr := newMetricsReceiver(cfg, settings, consumer)
-	return rcvr, nil
+	scr := newCloudWatchMetricsScraper(cfg, settings)
+	ms, err := scraper.NewMetrics(scr.scrape, scraper.WithStart(scr.start))
+	if err != nil {
+		return nil, err
+	}
+	return scraperhelper.NewMetricsController(
+		&cfg.Metrics.ControllerConfig,
+		settings,
+		consumer,
+		scraperhelper.AddMetricsScraper(metadata.Type, ms),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -57,8 +68,8 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Metrics: MetricsConfig{
-			PollInterval: defaultMetricsPoll,
-			Period:       defaultMetricsPeriod,
+			ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: defaultMetricsCollectionInt},
+			Period:           defaultMetricsPeriod,
 		},
 	}
 }

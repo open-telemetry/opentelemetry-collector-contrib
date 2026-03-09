@@ -11,16 +11,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 var (
-	defaultPollInterval         = time.Minute
+	defaultPollInterval          = time.Minute
 	defaultEventLimit            = 1000
 	defaultLogGroupLimit         = 50
-	defaultMetricsPeriod        = 300 * time.Second
+	defaultMetricsPeriod         = 300 * time.Second
 	defaultMetricsStat           = "Average"
-	defaultMetricsPoll           = 5 * time.Minute
-	defaultMetricsDiscoverLimit = 100
+	defaultMetricsCollectionInt  = 5 * time.Minute
+	defaultMetricsDiscoverLimit  = 100
 )
 
 // Config is the overall config structure for the awscloudwatchreceiver
@@ -35,11 +36,12 @@ type Config struct {
 
 // MetricsConfig is the configuration for the metrics (GetMetricData) portion of this receiver.
 // Either Metrics (explicit list) or Discovery (ListMetrics-based) may be set, not both.
+// Collection interval and scraper behavior are controlled via the embedded ControllerConfig.
 type MetricsConfig struct {
-	PollInterval time.Duration            `mapstructure:"poll_interval"`
-	Period       time.Duration            `mapstructure:"period"`
-	Metrics      []MetricQuery            `mapstructure:"metrics"`
-	Discovery    *MetricsDiscoveryConfig `mapstructure:"discovery,omitempty"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Period                         time.Duration             `mapstructure:"period"`
+	Metrics                        []MetricQuery             `mapstructure:"metrics"`
+	Discovery                      *MetricsDiscoveryConfig  `mapstructure:"discovery,omitempty"`
 }
 
 // MetricsDiscoveryConfig configures automatic discovery of metrics via ListMetrics.
@@ -97,7 +99,7 @@ var (
 	errAutodiscoverAndNamedConfigured = errors.New("both autodiscover and named configs are configured, Only one or the other is permitted")
 	errPrefixAndPatternConfigured     = errors.New("cannot specify both prefix and pattern")
 	errInvalidMetricsPeriod           = errors.New("metrics period must be at least 1 second")
-	errInvalidMetricsPollInterval     = errors.New("metrics poll_interval must be at least 1 second")
+	errInvalidMetricsCollectionInterval = errors.New("metrics collection_interval must be at least 1 second")
 	errMetricMissingNamespace         = errors.New("metric must have namespace")
 	errMetricMissingName              = errors.New("metric must have metric_name")
 	errMetricsAndDiscoveryConfigured  = errors.New("metrics and discovery are mutually exclusive; set one or the other")
@@ -131,8 +133,8 @@ func (c *Config) validateMetricsConfig() error {
 		if c.Metrics.Discovery.Limit <= 0 {
 			return errInvalidDiscoveryLimit
 		}
-		if c.Metrics.PollInterval != 0 && c.Metrics.PollInterval < time.Second {
-			return errInvalidMetricsPollInterval
+		if c.Metrics.ControllerConfig.CollectionInterval != 0 && c.Metrics.ControllerConfig.CollectionInterval < time.Second {
+			return errInvalidMetricsCollectionInterval
 		}
 		if c.Metrics.Period != 0 && c.Metrics.Period < time.Second {
 			return errInvalidMetricsPeriod
@@ -142,8 +144,8 @@ func (c *Config) validateMetricsConfig() error {
 	if len(c.Metrics.Metrics) == 0 {
 		return nil
 	}
-	if c.Metrics.PollInterval < time.Second {
-		return errInvalidMetricsPollInterval
+	if c.Metrics.ControllerConfig.CollectionInterval != 0 && c.Metrics.ControllerConfig.CollectionInterval < time.Second {
+		return errInvalidMetricsCollectionInterval
 	}
 	if c.Metrics.Period < time.Second {
 		return errInvalidMetricsPeriod
