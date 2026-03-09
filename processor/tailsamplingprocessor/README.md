@@ -71,32 +71,18 @@ The following configuration options can also be modified:
 
 ## Sampling Strategies
 
-The `sampling_strategy` setting controls both decision timing and the data passed to policy evaluators.
+The `sampling_strategy` setting controls both decision timing and what data evaluators use:
 
-### trace-complete
+- `trace-complete` (default): evaluates on the timer path using accumulated trace data (after `decision_wait`, or earlier after root arrival when `decision_wait_after_root_received` is set). This is the most flexible mode for policies, but with later decisions and higher in-memory/storage pressure.
+- `span-ingest`: evaluates each incoming batch at ingest time without re-evaluating previously ingested batches. Terminal outcomes (`sampled`/`dropped`) finalize immediately; non-terminal outcomes stay pending and are finalized as `not sampled` during cleanup without policy re-evaluation.
 
-- Decision timing/data model: default behavior. The processor accumulates trace data and evaluates policies on the timer path after `decision_wait` (or earlier when `decision_wait_after_root_received` is set and a root span arrives).
-- Benefits: highest policy flexibility because evaluators observe accumulated trace data at decision time.
-- Downsides/tradeoffs: higher memory/storage and deferred decisions, because spans are retained until decision timing is reached.
-- Caveats: evaluation depends on delayed decision timing rather than ingest-time finalization.
-
-### span-ingest
-
-- Decision timing/data model: evaluates policies at ingest time for each incoming batch of a trace. It does not re-evaluate previously ingested spans. Terminal results (`sampled` or `dropped`) finalize immediately; otherwise the trace remains pending.
-- Benefits: earlier terminal outcomes and no repeated evaluation of old spans.
-- Downsides/tradeoffs: reduced policy compatibility compared to `trace-complete`.
-- Caveats:
-  - pending traces are cleanup-finalized as `not sampled` on the timer cleanup path without policy re-evaluation.
-  - stateful policies are rejected for this mode.
-  - policies with semantics that assume complete traces can produce different outcomes than `trace-complete`.
-
-### Strategy Comparison Notes
+Quick comparison:
 
 - Policy compatibility: `trace-complete` supports stateful policies; `span-ingest` rejects them.
-- Timer controls: in `trace-complete`, `decision_wait` and `decision_wait_after_root_received` influence decision timing; in `span-ingest`, they influence pending cleanup/finalization timing.
-- Late-span behavior: decision caches remain important in all modes to carry decisions for spans arriving after in-memory trace data is gone.
-- Terminal vs pending: `span-ingest` finalizes on terminal outcomes immediately and keeps non-terminal outcomes pending until cleanup finalization.
+- Timer controls: in `trace-complete`, `decision_wait` and `decision_wait_after_root_received` affect decision timing; in `span-ingest`, they affect pending cleanup/finalization timing.
+- Late spans: decision caches remain important in both modes for spans that arrive after in-memory trace data is gone.
 
+## Policy Decision Flow
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
