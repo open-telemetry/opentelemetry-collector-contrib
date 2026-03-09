@@ -421,7 +421,7 @@ generate-chloggen-components: # Regenerate component list tracked by chloggen
 	$(GITHUBGEN) chloggen-components
 
 .PHONY: update-codeowners
-update-codeowners: generate gengithub # Full regen of code + GitHub files + labels; requires GH_TOKEN
+update-codeowners: generate gengithub # Full regen of code + GitHub files + labels; requires GITHUB_TOKEN
 	$(MAKE) genlabels
 
 FILENAME?=$(shell git branch --show-current)
