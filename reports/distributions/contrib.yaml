@@ -140,9 +140,9 @@ components:
         - awsfirehose
         - awss3
         - awsxray
+        - azure_blob
         - azure_event_hub
         - azure_monitor
-        - azureblob
         - carbon
         - chrony
         - cloudflare

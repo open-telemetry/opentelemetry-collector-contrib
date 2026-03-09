@@ -1,7 +1,7 @@
 receivers:
-  azureblob:
+  azure_blob:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
-  azureblob/2:
+  azure_blob/2:
     auth: service_principal
     service_principal:
       tenant_id: mock-tenant-id
@@ -22,10 +22,10 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [azureblob]
+      receivers: [azure_blob]
       processors: [nop]
       exporters: [nop]
     logs:
-      receivers: [azureblob]
+      receivers: [azure_blob]
       processors: [nop]
       exporters: [nop]
