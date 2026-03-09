@@ -3,17 +3,17 @@ all_set:
   metrics:
     system.cpu.frequency:
       enabled: true
-      attributes: ["cpu"]
+      attributes: ["cpu","host.cpu.socket.id","host.cpu.core.id"]
     system.cpu.logical.count:
       enabled: true
     system.cpu.physical.count:
       enabled: true
     system.cpu.time:
       enabled: true
-      attributes: ["cpu","state"]
+      attributes: ["cpu","state","host.cpu.socket.id","host.cpu.core.id"]
     system.cpu.utilization:
       enabled: true
-      attributes: ["cpu","state"]
+      attributes: ["cpu","state","host.cpu.socket.id","host.cpu.core.id"]
 reaggregate_set:
   metrics:
     system.cpu.frequency:
@@ -33,14 +33,14 @@ none_set:
   metrics:
     system.cpu.frequency:
       enabled: false
-      attributes: ["cpu"]
+      attributes: ["cpu","host.cpu.socket.id","host.cpu.core.id"]
     system.cpu.logical.count:
       enabled: false
     system.cpu.physical.count:
       enabled: false
     system.cpu.time:
       enabled: false
-      attributes: ["cpu","state"]
+      attributes: ["cpu","state","host.cpu.socket.id","host.cpu.core.id"]
     system.cpu.utilization:
       enabled: false
-      attributes: ["cpu","state"]
+      attributes: ["cpu","state","host.cpu.socket.id","host.cpu.core.id"]

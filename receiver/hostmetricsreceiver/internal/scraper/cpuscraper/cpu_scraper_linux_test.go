@@ -99,6 +99,7 @@ func assertCPUFrequencyMetricValid(t *testing.T, metric pmetric.Metric) {
 func TestScrape_CpuTopologyAttributes(t *testing.T) {
 	cfg := metadata.DefaultMetricsBuilderConfig()
 	cfg.Metrics.SystemCPUTime.Enabled = true
+	cfg.Metrics.SystemCPUTime.EnabledAttributes = []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"}
 
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg})
@@ -129,12 +130,12 @@ func TestScrape_CpuTopologyAttributes(t *testing.T) {
 	for i := range metric.Sum().DataPoints().Len() {
 		dp := metric.Sum().DataPoints().At(i)
 
-		socketAttr, hasSocket := dp.Attributes().Get("socket")
-		require.True(t, hasSocket, "Data point should have 'socket' attribute")
+		socketAttr, hasSocket := dp.Attributes().Get("host.cpu.socket.id")
+		require.True(t, hasSocket, "Data point should have 'host.cpu.socket.id' attribute")
 		require.NotEmpty(t, socketAttr.Str(), "Socket attribute should not be empty")
 
-		coreAttr, hasCore := dp.Attributes().Get("core")
-		require.True(t, hasCore, "Data point should have 'core' attribute")
+		coreAttr, hasCore := dp.Attributes().Get("host.cpu.core.id")
+		require.True(t, hasCore, "Data point should have 'host.cpu.core.id' attribute")
 		require.NotEmpty(t, coreAttr.Str(), "Core attribute should not be empty")
 	}
 }

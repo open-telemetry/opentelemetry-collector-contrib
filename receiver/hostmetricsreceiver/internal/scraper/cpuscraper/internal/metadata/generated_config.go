@@ -67,7 +67,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUFrequency: MetricConfig{
 			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes: []string{},
-			definedAttributes:  []string{"cpu"},
+			definedAttributes:  []string{"cpu", "host.cpu.socket.id", "host.cpu.core.id"},
 			EnabledAttributes:  []string{"cpu"},
 		},
 		SystemCPULogicalCount: MetricConfig{
@@ -79,13 +79,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUTime: MetricConfig{
 			Enabled: true, AggregationStrategy: AggregationStrategySum,
 			requiredAttributes: []string{},
-			definedAttributes:  []string{"cpu", "state"},
+			definedAttributes:  []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
 			EnabledAttributes:  []string{"cpu", "state"},
 		},
 		SystemCPUUtilization: MetricConfig{
 			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes: []string{},
-			definedAttributes:  []string{"cpu", "state"},
+			definedAttributes:  []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
 			EnabledAttributes:  []string{"cpu", "state"},
 		},
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -29,19 +30,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUFrequency: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"cpu"},
+						EnabledAttributes:   []string{"cpu", "host.cpu.socket.id", "host.cpu.core.id"},
 					},
 					SystemCPULogicalCount:  MetricConfig{Enabled: true},
 					SystemCPUPhysicalCount: MetricConfig{Enabled: true},
 					SystemCPUTime: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"cpu", "state"},
+						EnabledAttributes:   []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
 					},
 					SystemCPUUtilization: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"cpu", "state"},
+						EnabledAttributes:   []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
 					},
 				},
 			},
@@ -53,19 +54,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUFrequency: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"cpu"},
+						EnabledAttributes:   []string{"cpu", "host.cpu.socket.id", "host.cpu.core.id"},
 					},
 					SystemCPULogicalCount:  MetricConfig{Enabled: false},
 					SystemCPUPhysicalCount: MetricConfig{Enabled: false},
 					SystemCPUTime: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"cpu", "state"},
+						EnabledAttributes:   []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
 					},
 					SystemCPUUtilization: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"cpu", "state"},
+						EnabledAttributes:   []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
 					},
 				},
 			},

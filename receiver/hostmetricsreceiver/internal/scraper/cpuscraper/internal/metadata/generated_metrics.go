@@ -128,6 +128,12 @@ func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts p
 	if slices.Contains(m.config.EnabledAttributes, "cpu") {
 		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	}
+	if slices.Contains(m.config.EnabledAttributes, "host.cpu.socket.id") {
+		dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "host.cpu.core.id") {
+		dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
+	}
 
 	var s string
 	dps := m.data.Gauge().DataPoints()
@@ -154,12 +160,6 @@ func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts p
 	}
 
 	dp.SetDoubleValue(val)
-	if slices.Contains(m.config.EnabledAttributes, "host.cpu.socket.id") {
-		dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, "host.cpu.core.id") {
-		dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
-	}
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
 }
@@ -332,6 +332,12 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	if slices.Contains(m.config.EnabledAttributes, "state") {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
+	if slices.Contains(m.config.EnabledAttributes, "host.cpu.socket.id") {
+		dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "host.cpu.core.id") {
+		dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
+	}
 
 	var s string
 	dps := m.data.Sum().DataPoints()
@@ -358,12 +364,6 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	}
 
 	dp.SetDoubleValue(val)
-	if slices.Contains(m.config.EnabledAttributes, "host.cpu.socket.id") {
-		dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, "host.cpu.core.id") {
-		dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
-	}
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
 }
@@ -430,6 +430,12 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	if slices.Contains(m.config.EnabledAttributes, "state") {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
+	if slices.Contains(m.config.EnabledAttributes, "host.cpu.socket.id") {
+		dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "host.cpu.core.id") {
+		dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
+	}
 
 	var s string
 	dps := m.data.Gauge().DataPoints()
@@ -456,12 +462,6 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	dp.SetDoubleValue(val)
-	if slices.Contains(m.config.EnabledAttributes, "host.cpu.socket.id") {
-		dp.Attributes().PutStr("host.cpu.socket.id", hostCPUSocketIDAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, "host.cpu.core.id") {
-		dp.Attributes().PutStr("host.cpu.core.id", hostCPUCoreIDAttributeValue)
-	}
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
 }
