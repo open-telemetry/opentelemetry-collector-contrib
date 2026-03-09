@@ -68,7 +68,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["SystemdServiceCPUTime"] = mb.metricSystemdServiceCPUTime.config.AggregationStrategy
-			aggMap["SystemdServiceRestarts"] = mb.metricSystemdServiceRestarts.config.AggregationStrategy
 			aggMap["SystemdUnitState"] = mb.metricSystemdUnitState.config.AggregationStrategy
 
 			expectedWarnings := 0

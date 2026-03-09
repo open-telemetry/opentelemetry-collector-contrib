@@ -57,8 +57,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
-			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["WindowsServiceStatus"] = mb.metricWindowsServiceStatus.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
