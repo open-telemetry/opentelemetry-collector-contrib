@@ -67,7 +67,7 @@ components:
         - awscloudwatchmetricstreams_encoding
         - awslogs_encoding
         - awsproxy
-        - azureauth
+        - azure_auth
         - basicauth
         - bearertokenauth
         - cgroupruntime
@@ -111,8 +111,8 @@ components:
         - isolationforest
         - k8s_attributes
         - logdedup
+        - metric_start_time
         - metricsgeneration
-        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -140,9 +140,9 @@ components:
         - awsfirehose
         - awss3
         - awsxray
+        - azure_blob
         - azure_event_hub
         - azure_monitor
-        - azureblob
         - carbon
         - chrony
         - cloudflare

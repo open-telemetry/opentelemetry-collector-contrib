@@ -61,6 +61,9 @@ resourceLogs:
               - key: db.system.name
                 value:
                   stringValue: microsoft.sql_server
+              - key: sqlserver.procedure_execution_count
+                value:
+                  intValue: "0"
               - key: sqlserver.procedure_id
                 value:
                   stringValue: "0"
