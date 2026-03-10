@@ -56,7 +56,7 @@ func BenchmarkGetMessageHeaderResourceAttributes(b *testing.B) {
 				key := fmt.Sprintf("header-%d", i)
 				kgoHeaders = append(kgoHeaders, kgo.RecordHeader{
 					Key:   key,
-					Value: []byte(fmt.Sprintf("value-%d", i)),
+					Value: fmt.Appendf(nil, "value-%d", i),
 				})
 				headerAttrKeys[key] = "kafka.header." + key
 			}
