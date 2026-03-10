@@ -174,10 +174,10 @@ receivers:
   azure_monitor:
     subscription_ids: ["${subscription_id}"]
     auth:
-      authenticator: azureauth
+      authenticator: azure_auth
 
 extensions:
-  azureauth:
+  azure_auth:
     managed_identity:
       client_id: ${client_id}
 ```
