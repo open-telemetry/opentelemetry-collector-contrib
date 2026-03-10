@@ -181,10 +181,12 @@ func TestLoadConfig(t *testing.T) {
 		expected.LogsBuilderConfig = metadata.LogsBuilderConfig{
 			Events: metadata.EventsConfig{
 				DbServerQuerySample: metadata.EventConfig{
-					Enabled: true,
+					CollectionInterval: 15 * time.Second,
+					Enabled:            true,
 				},
 				DbServerTopQuery: metadata.EventConfig{
-					Enabled: true,
+					CollectionInterval: 80 * time.Second,
+					Enabled:            true,
 				},
 			},
 			ResourceAttributes: metadata.ResourceAttributesConfig{
@@ -213,7 +215,8 @@ func TestLoadConfig(t *testing.T) {
 		expected.LookbackTime = 60 * time.Second
 		expected.TopQueryCount = 200
 		expected.MaxQuerySampleCount = 1000
-		expected.TopQueryCollection.CollectionInterval = 80 * time.Second
+		// TopQueryCollection.CollectionInterval not set in testdata (per-event interval used); default from createDefaultConfig
+		expected.TopQueryCollection.CollectionInterval = time.Minute
 
 		expected.QuerySample = QuerySample{
 			MaxRowsPerQuery: 1450,

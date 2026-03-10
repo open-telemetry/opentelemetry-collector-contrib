@@ -3,6 +3,8 @@
 package metadata
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
@@ -239,6 +241,8 @@ func DefaultMetricsConfig() MetricsConfig {
 // EventConfig provides common config for a particular event.
 type EventConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval overrides the global collection interval for this event. Zero means use the receiver default.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 
 	enabledSetByUser bool
 }
