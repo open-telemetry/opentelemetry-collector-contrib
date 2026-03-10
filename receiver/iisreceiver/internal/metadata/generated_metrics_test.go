@@ -67,20 +67,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["IisApplicationPoolState"] = mb.metricIisApplicationPoolState.config.AggregationStrategy
-			aggMap["IisApplicationPoolUptime"] = mb.metricIisApplicationPoolUptime.config.AggregationStrategy
-			aggMap["IisConnectionActive"] = mb.metricIisConnectionActive.config.AggregationStrategy
-			aggMap["IisConnectionAnonymous"] = mb.metricIisConnectionAnonymous.config.AggregationStrategy
-			aggMap["IisConnectionAttemptCount"] = mb.metricIisConnectionAttemptCount.config.AggregationStrategy
-			aggMap["IisNetworkBlocked"] = mb.metricIisNetworkBlocked.config.AggregationStrategy
 			aggMap["IisNetworkFileCount"] = mb.metricIisNetworkFileCount.config.AggregationStrategy
 			aggMap["IisNetworkIo"] = mb.metricIisNetworkIo.config.AggregationStrategy
 			aggMap["IisRequestCount"] = mb.metricIisRequestCount.config.AggregationStrategy
-			aggMap["IisRequestQueueAgeMax"] = mb.metricIisRequestQueueAgeMax.config.AggregationStrategy
-			aggMap["IisRequestQueueCount"] = mb.metricIisRequestQueueCount.config.AggregationStrategy
-			aggMap["IisRequestRejected"] = mb.metricIisRequestRejected.config.AggregationStrategy
-			aggMap["IisThreadActive"] = mb.metricIisThreadActive.config.AggregationStrategy
-			aggMap["IisUptime"] = mb.metricIisUptime.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
