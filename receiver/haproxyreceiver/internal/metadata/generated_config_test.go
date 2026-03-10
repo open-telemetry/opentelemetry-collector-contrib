@@ -131,8 +131,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					HaproxyAddr:        ResourceAttributeConfig{Enabled: true},
 					HaproxyProxyName:   ResourceAttributeConfig{Enabled: true},
+					HaproxyServerState: ResourceAttributeConfig{Enabled: true},
 					HaproxyServiceName: ResourceAttributeConfig{Enabled: true},
-					HaproxyStatus:      ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -245,8 +245,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					HaproxyAddr:        ResourceAttributeConfig{Enabled: false},
 					HaproxyProxyName:   ResourceAttributeConfig{Enabled: false},
+					HaproxyServerState: ResourceAttributeConfig{Enabled: false},
 					HaproxyServiceName: ResourceAttributeConfig{Enabled: false},
-					HaproxyStatus:      ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -284,8 +284,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				HaproxyAddr:        ResourceAttributeConfig{Enabled: true},
 				HaproxyProxyName:   ResourceAttributeConfig{Enabled: true},
+				HaproxyServerState: ResourceAttributeConfig{Enabled: true},
 				HaproxyServiceName: ResourceAttributeConfig{Enabled: true},
-				HaproxyStatus:      ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -293,8 +293,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				HaproxyAddr:        ResourceAttributeConfig{Enabled: false},
 				HaproxyProxyName:   ResourceAttributeConfig{Enabled: false},
+				HaproxyServerState: ResourceAttributeConfig{Enabled: false},
 				HaproxyServiceName: ResourceAttributeConfig{Enabled: false},
-				HaproxyStatus:      ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

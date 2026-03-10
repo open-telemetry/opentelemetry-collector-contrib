@@ -2053,17 +2053,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.HaproxyServerState.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["haproxy.server.state"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServerState.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.HaproxyServerState.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["haproxy.server.state"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServerState.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HaproxyServiceName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.HaproxyStatus.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["haproxy.status"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyStatus.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.HaproxyStatus.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["haproxy.status"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyStatus.MetricsExclude)
 	}
 
 	for _, op := range options {

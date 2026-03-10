@@ -73,6 +73,8 @@ all_set:
       enabled: true
     haproxy.proxy_name:
       enabled: true
+    haproxy.server.state:
+      enabled: true
     haproxy.service_name:
       enabled: true
 reaggregate_set:
@@ -149,9 +151,9 @@ reaggregate_set:
       enabled: true
     haproxy.proxy_name:
       enabled: true
-    haproxy.service_name:
+    haproxy.server.state:
       enabled: true
-    haproxy.status:
+    haproxy.service_name:
       enabled: true
 none_set:
   metrics:
@@ -227,9 +229,9 @@ none_set:
       enabled: false
     haproxy.proxy_name:
       enabled: false
-    haproxy.service_name:
+    haproxy.server.state:
       enabled: false
-    haproxy.status:
+    haproxy.service_name:
       enabled: false
 filter_set_include:
   resource_attributes:
@@ -241,11 +243,11 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
-    haproxy.service_name:
+    haproxy.server.state:
       enabled: true
       metrics_include:
         - regexp: ".*"
-    haproxy.status:
+    haproxy.service_name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -259,11 +261,11 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "haproxy.proxy_name-val"
+    haproxy.server.state:
+      enabled: true
+      metrics_exclude:
+        - strict: "haproxy.server.state-val"
     haproxy.service_name:
       enabled: true
       metrics_exclude:
         - strict: "haproxy.service_name-val"
-    haproxy.status:
-      enabled: true
-      metrics_exclude:
-        - strict: "haproxy.status-val"

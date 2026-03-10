@@ -199,8 +199,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb := mb.NewResourceBuilder()
 			rb.SetHaproxyAddr("haproxy.addr-val")
 			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
+			rb.SetHaproxyServerState("haproxy.server.state-val")
 			rb.SetHaproxyServiceName("haproxy.service_name-val")
-			rb.SetHaproxyStatus("haproxy.status-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {

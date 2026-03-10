@@ -15,8 +15,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb := NewResourceBuilder(cfg)
 			rb.SetHaproxyAddr("haproxy.addr-val")
 			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
+			rb.SetHaproxyServerState("haproxy.server.state-val")
 			rb.SetHaproxyServiceName("haproxy.service_name-val")
-			rb.SetHaproxyStatus("haproxy.status-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -43,15 +43,15 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "haproxy.proxy_name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("haproxy.server.state")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "haproxy.server.state-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("haproxy.service_name")
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "haproxy.service_name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("haproxy.status")
-			assert.Equal(t, tt == "all_set", ok)
-			if ok {
-				assert.Equal(t, "haproxy.status-val", val.Str())
 			}
 		})
 	}
