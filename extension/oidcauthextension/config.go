@@ -116,6 +116,10 @@ type ProviderCfg struct {
 	// Optional.
 	IgnoreAudience bool `mapstructure:"ignore_audience"`
 
+	// When true, this skips validating the issuer field.
+	// Optional.
+	IgnoreIssuer bool `mapstructure:"ignore_issuer"`
+
 	// The local path for the issuer CA's TLS server cert.
 	// Optional.
 	IssuerCAPath string `mapstructure:"issuer_ca_path"`
