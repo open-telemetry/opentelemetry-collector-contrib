@@ -55,8 +55,6 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.147.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.1-0.20260309153054-85fc1918516c // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/time v0.11.0 // indirect
