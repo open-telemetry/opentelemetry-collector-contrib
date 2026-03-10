@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -27,22 +26,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPUFrequency: MetricConfig{
+					SystemCPUFrequency: SystemCPUFrequencyConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"cpu", "host.cpu.socket.id", "host.cpu.core.id"},
+						EnabledAttributes:   []SystemCPUFrequencyAttributeKey{SystemCPUFrequencyAttributeKeyCpu, SystemCPUFrequencyAttributeKeyHostCPUSocketID, SystemCPUFrequencyAttributeKeyHostCPUCoreID},
 					},
-					SystemCPULogicalCount:  MetricConfig{Enabled: true},
-					SystemCPUPhysicalCount: MetricConfig{Enabled: true},
-					SystemCPUTime: MetricConfig{
+					SystemCPULogicalCount: SystemCPULogicalCountConfig{
+						Enabled: true,
+					},
+					SystemCPUPhysicalCount: SystemCPUPhysicalCountConfig{
+						Enabled: true,
+					},
+					SystemCPUTime: SystemCPUTimeConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
+						EnabledAttributes:   []SystemCPUTimeAttributeKey{SystemCPUTimeAttributeKeyCpu, SystemCPUTimeAttributeKeyState, SystemCPUTimeAttributeKeyHostCPUSocketID, SystemCPUTimeAttributeKeyHostCPUCoreID},
 					},
-					SystemCPUUtilization: MetricConfig{
+					SystemCPUUtilization: SystemCPUUtilizationConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
+						EnabledAttributes:   []SystemCPUUtilizationAttributeKey{SystemCPUUtilizationAttributeKeyCpu, SystemCPUUtilizationAttributeKeyState, SystemCPUUtilizationAttributeKeyHostCPUSocketID, SystemCPUUtilizationAttributeKeyHostCPUCoreID},
 					},
 				},
 			},
@@ -51,22 +54,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPUFrequency: MetricConfig{
+					SystemCPUFrequency: SystemCPUFrequencyConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"cpu", "host.cpu.socket.id", "host.cpu.core.id"},
+						EnabledAttributes:   []SystemCPUFrequencyAttributeKey{SystemCPUFrequencyAttributeKeyCpu, SystemCPUFrequencyAttributeKeyHostCPUSocketID, SystemCPUFrequencyAttributeKeyHostCPUCoreID},
 					},
-					SystemCPULogicalCount:  MetricConfig{Enabled: false},
-					SystemCPUPhysicalCount: MetricConfig{Enabled: false},
-					SystemCPUTime: MetricConfig{
+					SystemCPULogicalCount: SystemCPULogicalCountConfig{
+						Enabled: false,
+					},
+					SystemCPUPhysicalCount: SystemCPUPhysicalCountConfig{
+						Enabled: false,
+					},
+					SystemCPUTime: SystemCPUTimeConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
+						EnabledAttributes:   []SystemCPUTimeAttributeKey{SystemCPUTimeAttributeKeyCpu, SystemCPUTimeAttributeKeyState, SystemCPUTimeAttributeKeyHostCPUSocketID, SystemCPUTimeAttributeKeyHostCPUCoreID},
 					},
-					SystemCPUUtilization: MetricConfig{
+					SystemCPUUtilization: SystemCPUUtilizationConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"},
+						EnabledAttributes:   []SystemCPUUtilizationAttributeKey{SystemCPUUtilizationAttributeKeyCpu, SystemCPUUtilizationAttributeKeyState, SystemCPUUtilizationAttributeKeyHostCPUSocketID, SystemCPUUtilizationAttributeKeyHostCPUCoreID},
 					},
 				},
 			},
@@ -75,7 +82,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemCPUFrequencyConfig{}, SystemCPULogicalCountConfig{}, SystemCPUPhysicalCountConfig{}, SystemCPUTimeConfig{}, SystemCPUUtilizationConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

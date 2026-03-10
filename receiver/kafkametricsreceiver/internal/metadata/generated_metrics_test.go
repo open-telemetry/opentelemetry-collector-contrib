@@ -68,7 +68,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["KafkaBrokerLogRetentionPeriod"] = mb.metricKafkaBrokerLogRetentionPeriod.config.AggregationStrategy
-			aggMap["KafkaBrokers"] = mb.metricKafkaBrokers.config.AggregationStrategy
 			aggMap["KafkaConsumerGroupLag"] = mb.metricKafkaConsumerGroupLag.config.AggregationStrategy
 			aggMap["KafkaConsumerGroupLagSum"] = mb.metricKafkaConsumerGroupLagSum.config.AggregationStrategy
 			aggMap["KafkaConsumerGroupMembers"] = mb.metricKafkaConsumerGroupMembers.config.AggregationStrategy

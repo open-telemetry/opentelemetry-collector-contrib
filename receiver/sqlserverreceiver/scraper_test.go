@@ -415,6 +415,7 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	const physicalReads = "total_physical_reads"
 	const executionCount = "execution_count"
 	const totalGrant = "total_grant_kb"
+	const procedureExecutionCount = "procedure_execution_count"
 
 	scraper.client = mockClient{
 		instanceName:        scraper.config.InstanceName,
@@ -461,6 +462,10 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	tgValue, ok := scraper.cache.Get(keyPrefix + "-" + totalGrant)
 	assert.True(t, ok, "Expected to find totalGrant in cache right after the first collection")
 	assert.Equal(t, 3096, int(tgValue))
+
+	pecValue, ok := scraper.cache.Get(keyPrefix + "-" + procedureExecutionCount)
+	assert.True(t, ok, "Expected to find procedureExecutionCount in cache right after the first collection")
+	assert.Equal(t, 0, int(pecValue))
 }
 
 func TestQueryTextAndPlanQuery(t *testing.T) {
@@ -491,6 +496,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	const physicalReads = "total_physical_reads"
 	const executionCount = "execution_count"
 	const totalGrant = "total_grant_kb"
+	const procedureExecutionCount = "procedure_execution_count"
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
@@ -503,6 +509,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
 
 	scraper.client = mockClient{
 		instanceName:        scraper.config.InstanceName,
@@ -551,6 +558,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	const physicalReads = "total_physical_reads"
 	const executionCount = "execution_count"
 	const totalGrant = "total_grant_kb"
+	const procedureExecutionCount = "procedure_execution_count"
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
@@ -563,6 +571,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
 
 	scraper.client = mockInvalidClient{
 		mockClient: mockClient{
