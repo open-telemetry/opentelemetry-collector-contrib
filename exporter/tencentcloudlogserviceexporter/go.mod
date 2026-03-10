@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.147.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.11.1
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.51
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.53
 	go.opentelemetry.io/collector/component v1.53.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/component/componenttest v0.147.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/config/configopaque v1.53.1-0.20260309153054-85fc1918516c
@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.147.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/exporter/exportertest v0.147.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/pdata v1.53.1-0.20260309153054-85fc1918516c
-	go.opentelemetry.io/otel v1.41.0
+	go.opentelemetry.io/otel v1.42.0
 	go.uber.org/zap v1.27.1
 	google.golang.org/protobuf v1.36.11
 )
@@ -62,15 +62,15 @@ require (
 	go.opentelemetry.io/collector/receiver v1.53.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.147.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.1-0.20260309153054-85fc1918516c // indirect
-	go.opentelemetry.io/otel/metric v1.41.0 // indirect
+	go.opentelemetry.io/otel/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.41.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.41.0 // indirect
-	go.opentelemetry.io/otel/trace v1.41.0 // indirect
+	go.opentelemetry.io/otel/trace v1.42.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
-	google.golang.org/grpc v1.79.1 // indirect
+	google.golang.org/grpc v1.79.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

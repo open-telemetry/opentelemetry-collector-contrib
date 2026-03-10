@@ -26,10 +26,10 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.147.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.147.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/pdata v1.53.1-0.20260309153054-85fc1918516c
-	go.opentelemetry.io/otel v1.41.0
-	go.opentelemetry.io/otel/metric v1.41.0
+	go.opentelemetry.io/otel v1.42.0
+	go.opentelemetry.io/otel/metric v1.42.0
 	go.opentelemetry.io/otel/sdk/metric v1.41.0
-	go.opentelemetry.io/otel/trace v1.41.0
+	go.opentelemetry.io/otel/trace v1.42.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
@@ -38,7 +38,7 @@ require (
 	k8s.io/apimachinery v0.35.2
 	k8s.io/client-go v0.35.2
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
-	sigs.k8s.io/controller-runtime v0.23.1
+	sigs.k8s.io/controller-runtime v0.23.3
 )
 
 require (
