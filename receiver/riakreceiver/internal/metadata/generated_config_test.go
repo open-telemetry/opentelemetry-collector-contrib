@@ -26,12 +26,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RiakMemoryLimit:              MetricConfig{Enabled: true},
-					RiakNodeOperationCount:       MetricConfig{Enabled: true},
-					RiakNodeOperationTimeMean:    MetricConfig{Enabled: true},
-					RiakNodeReadRepairCount:      MetricConfig{Enabled: true},
-					RiakVnodeIndexOperationCount: MetricConfig{Enabled: true},
-					RiakVnodeOperationCount:      MetricConfig{Enabled: true},
+					RiakMemoryLimit: MetricConfig{
+						Enabled: true,
+					},
+					RiakNodeOperationCount: MetricConfig{
+						Enabled: true,
+					},
+					RiakNodeOperationTimeMean: MetricConfig{
+						Enabled: true,
+					},
+					RiakNodeReadRepairCount: MetricConfig{
+						Enabled: true,
+					},
+					RiakVnodeIndexOperationCount: MetricConfig{
+						Enabled: true,
+					},
+					RiakVnodeOperationCount: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					RiakNodeName: ResourceAttributeConfig{Enabled: true},
@@ -42,12 +54,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RiakMemoryLimit:              MetricConfig{Enabled: false},
-					RiakNodeOperationCount:       MetricConfig{Enabled: false},
-					RiakNodeOperationTimeMean:    MetricConfig{Enabled: false},
-					RiakNodeReadRepairCount:      MetricConfig{Enabled: false},
-					RiakVnodeIndexOperationCount: MetricConfig{Enabled: false},
-					RiakVnodeOperationCount:      MetricConfig{Enabled: false},
+					RiakMemoryLimit: MetricConfig{
+						Enabled: false,
+					},
+					RiakNodeOperationCount: MetricConfig{
+						Enabled: false,
+					},
+					RiakNodeOperationTimeMean: MetricConfig{
+						Enabled: false,
+					},
+					RiakNodeReadRepairCount: MetricConfig{
+						Enabled: false,
+					},
+					RiakVnodeIndexOperationCount: MetricConfig{
+						Enabled: false,
+					},
+					RiakVnodeOperationCount: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					RiakNodeName: ResourceAttributeConfig{Enabled: false},

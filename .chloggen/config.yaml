@@ -82,8 +82,8 @@ components:
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awslogs_encoding
     - extension/awsproxy
+    - extension/azure_auth
     - extension/azure_encoding
-    - extension/azureauth
     - extension/basicauth
     - extension/bearertokenauth
     - extension/cfgarden_observer
@@ -145,6 +145,7 @@ components:
     - internal/splunk
     - internal/sqlquery
     - internal/tools
+    - pkg/azurelogs
     - pkg/batchperresourceattr
     - pkg/batchpersignal
     - pkg/core/xidutils
@@ -166,7 +167,6 @@ components:
     - pkg/status
     - pkg/topic
     - pkg/translator/azure
-    - pkg/translator/azurelogs
     - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/pprof
@@ -202,8 +202,8 @@ components:
     - processor/logdedup
     - processor/logstransform
     - processor/lookup
+    - processor/metric_start_time
     - processor/metricsgeneration
-    - processor/metricstarttime
     - processor/metricstransform
     - processor/novadetector
     - processor/oracleclouddetector
@@ -237,9 +237,9 @@ components:
     - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
+    - receiver/azure_blob
     - receiver/azure_event_hub
     - receiver/azure_monitor
-    - receiver/azureblob
     - receiver/carbon
     - receiver/chrony
     - receiver/ciscoos

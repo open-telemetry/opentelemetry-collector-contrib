@@ -4,15 +4,15 @@ go 1.25.0
 
 require (
 	code.cloudfoundry.org/garden v0.0.0-20241023020423-a21e43a17f84
-	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-alpha.19
+	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-alpha.20
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.147.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.53.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/component/componenttest v0.147.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/confmap v1.53.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/extension v1.53.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/extension/extensiontest v0.147.1-0.20260306010043-a44ab254898b
+	go.opentelemetry.io/collector/component v1.53.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/component/componenttest v0.147.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/confmap v1.53.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/extension v1.53.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/extension/extensiontest v0.147.1-0.20260309153054-85fc1918516c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
@@ -48,9 +48,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/tedsuo/rata v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260306010043-a44ab254898b // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.147.1-0.20260306010043-a44ab254898b // indirect
-	go.opentelemetry.io/collector/pdata v1.53.1-0.20260306010043-a44ab254898b // indirect
+	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260309153054-85fc1918516c // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.147.1-0.20260309153054-85fc1918516c // indirect
+	go.opentelemetry.io/collector/pdata v1.53.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.opentelemetry.io/otel/metric v1.41.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.41.0 // indirect
