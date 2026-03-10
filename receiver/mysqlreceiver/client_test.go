@@ -89,6 +89,50 @@ func TestIsQueryExplainable(t *testing.T) {
 			input:    "/* a comment */ SELECT * FROM t",
 			expected: false,
 		},
+
+		// Additional test cases for comment handling
+		// Block comments
+		{
+			name:     "block comment",
+			input:    "/* ApplicationName=DBeaver */ SELECT * FROM t",
+			expected: true,
+		},
+		{
+			name:     "multiple block comments",
+			input:    "/* comment1 */ /* comment2 */ SELECT * FROM t",
+			expected: true,
+		},
+
+		// Line comments
+		{
+			name:     "line comment",
+			input:    "-- comment\nSELECT * FROM t",
+			expected: true,
+		},
+		{
+			name:     "multiple line comments",
+			input:    "-- comment line1\n-- comment line2\nSELECT * FROM t",
+			expected: true,
+		},
+
+		// Mixed comments
+		{
+			name:     "mixed comments",
+			input:    "/* block */ -- line\nSELECT * FROM t",
+			expected: true,
+		},
+
+		// Others
+		{
+			name:     "comment only",
+			input:    "-- just a comment",
+			expected: false,
+		},
+		{
+			name:     "unclosed block comment",
+			input:    "/* unclosed comment SELECT * FROM t",
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
