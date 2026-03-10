@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"github.com/containerd/cgroups/v3/cgroup2"
 	"github.com/stretchr/testify/assert"
@@ -357,4 +359,68 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 			assert.Equal(t, test.expectedGoMemLimit, debug.SetMemoryLimit(-1))
 		})
 	}
+}
+
+func TestDynamicMemoryLimitRefresh(t *testing.T) {
+	checkCgroupSystem(t)
+
+	cgroupPath, err := cgroup2.PidGroupPath(os.Getpid())
+	require.NoError(t, err)
+	manager, err := cgroup2.Load(cgroupPath)
+	require.NoError(t, err)
+
+	memoryCgroupCleanUp := setupMemoryCgroupCleanUp(t, manager, cgroupPath)
+	initialGoMem := debug.SetMemoryLimit(-1)
+
+	t.Cleanup(func() {
+		debug.SetMemoryLimit(initialGoMem)
+		memoryCgroupCleanUp()
+	})
+
+	synctest.Test(t, func(t *testing.T) {
+		var initialMem int64 = 4294967296 // 4GB
+		var updatedMem int64 = 2147483648 // 2GB
+		ratio := 0.8
+
+		refreshInterval := 10 * time.Minute
+
+		// Setting the initial cgroup memory limit
+		err = manager.Update(&cgroup2.Resources{
+			Memory: &cgroup2.Memory{
+				Max: pointerInt64(initialMem),
+			},
+		})
+		require.NoError(t, err)
+
+		config := &Config{
+			GoMaxProcs: GoMaxProcsConfig{Enabled: false},
+			GoMemLimit: GoMemLimitConfig{
+				Enabled:         true,
+				Ratio:           ratio,
+				RefreshInterval: refreshInterval,
+			},
+		}
+
+		startExtension(t, config)
+		synctest.Wait() // Wait for initial background goroutines to settle
+
+		// Initial verification
+		expectedInitialLimit := int64(float64(initialMem) * ratio)
+		assert.Equal(t, expectedInitialLimit, debug.SetMemoryLimit(-1))
+
+		err = manager.Update(&cgroup2.Resources{
+			Memory: &cgroup2.Memory{
+				Max: pointerInt64(updatedMem),
+			},
+		})
+		require.NoError(t, err)
+
+		time.Sleep(refreshInterval + time.Millisecond)
+
+		synctest.Wait()
+
+		// Verify GOMEMLIMIT updated automatically
+		expectedUpdatedLimit := int64(float64(updatedMem) * ratio)
+		assert.Equal(t, expectedUpdatedLimit, debug.SetMemoryLimit(-1))
+	})
 }
