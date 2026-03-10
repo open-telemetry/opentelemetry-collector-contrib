@@ -26,18 +26,42 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ChassisPowerstate:       MetricConfig{Enabled: true},
-					ChassisStatusHealth:     MetricConfig{Enabled: true},
-					ChassisStatusState:      MetricConfig{Enabled: true},
-					FanReading:              MetricConfig{Enabled: true},
-					FanStatusHealth:         MetricConfig{Enabled: true},
-					FanStatusState:          MetricConfig{Enabled: true},
-					SystemPowerstate:        MetricConfig{Enabled: true},
-					SystemStatusHealth:      MetricConfig{Enabled: true},
-					SystemStatusState:       MetricConfig{Enabled: true},
-					TemperatureReading:      MetricConfig{Enabled: true},
-					TemperatureStatusHealth: MetricConfig{Enabled: true},
-					TemperatureStatusState:  MetricConfig{Enabled: true},
+					ChassisPowerstate: MetricConfig{
+						Enabled: true,
+					},
+					ChassisStatusHealth: MetricConfig{
+						Enabled: true,
+					},
+					ChassisStatusState: MetricConfig{
+						Enabled: true,
+					},
+					FanReading: MetricConfig{
+						Enabled: true,
+					},
+					FanStatusHealth: MetricConfig{
+						Enabled: true,
+					},
+					FanStatusState: MetricConfig{
+						Enabled: true,
+					},
+					SystemPowerstate: MetricConfig{
+						Enabled: true,
+					},
+					SystemStatusHealth: MetricConfig{
+						Enabled: true,
+					},
+					SystemStatusState: MetricConfig{
+						Enabled: true,
+					},
+					TemperatureReading: MetricConfig{
+						Enabled: true,
+					},
+					TemperatureStatusHealth: MetricConfig{
+						Enabled: true,
+					},
+					TemperatureStatusState: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					BaseURL:        ResourceAttributeConfig{Enabled: true},
@@ -49,18 +73,42 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ChassisPowerstate:       MetricConfig{Enabled: false},
-					ChassisStatusHealth:     MetricConfig{Enabled: false},
-					ChassisStatusState:      MetricConfig{Enabled: false},
-					FanReading:              MetricConfig{Enabled: false},
-					FanStatusHealth:         MetricConfig{Enabled: false},
-					FanStatusState:          MetricConfig{Enabled: false},
-					SystemPowerstate:        MetricConfig{Enabled: false},
-					SystemStatusHealth:      MetricConfig{Enabled: false},
-					SystemStatusState:       MetricConfig{Enabled: false},
-					TemperatureReading:      MetricConfig{Enabled: false},
-					TemperatureStatusHealth: MetricConfig{Enabled: false},
-					TemperatureStatusState:  MetricConfig{Enabled: false},
+					ChassisPowerstate: MetricConfig{
+						Enabled: false,
+					},
+					ChassisStatusHealth: MetricConfig{
+						Enabled: false,
+					},
+					ChassisStatusState: MetricConfig{
+						Enabled: false,
+					},
+					FanReading: MetricConfig{
+						Enabled: false,
+					},
+					FanStatusHealth: MetricConfig{
+						Enabled: false,
+					},
+					FanStatusState: MetricConfig{
+						Enabled: false,
+					},
+					SystemPowerstate: MetricConfig{
+						Enabled: false,
+					},
+					SystemStatusHealth: MetricConfig{
+						Enabled: false,
+					},
+					SystemStatusState: MetricConfig{
+						Enabled: false,
+					},
+					TemperatureReading: MetricConfig{
+						Enabled: false,
+					},
+					TemperatureStatusHealth: MetricConfig{
+						Enabled: false,
+					},
+					TemperatureStatusState: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					BaseURL:        ResourceAttributeConfig{Enabled: false},

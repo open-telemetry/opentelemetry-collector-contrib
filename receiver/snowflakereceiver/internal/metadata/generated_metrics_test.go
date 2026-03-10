@@ -98,9 +98,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["SnowflakeRowsUnloadedAvg"] = mb.metricSnowflakeRowsUnloadedAvg.config.AggregationStrategy
 			aggMap["SnowflakeRowsUpdatedAvg"] = mb.metricSnowflakeRowsUpdatedAvg.config.AggregationStrategy
 			aggMap["SnowflakeSessionIDCount"] = mb.metricSnowflakeSessionIDCount.config.AggregationStrategy
-			aggMap["SnowflakeStorageFailsafeBytesTotal"] = mb.metricSnowflakeStorageFailsafeBytesTotal.config.AggregationStrategy
-			aggMap["SnowflakeStorageStageBytesTotal"] = mb.metricSnowflakeStorageStageBytesTotal.config.AggregationStrategy
-			aggMap["SnowflakeStorageStorageBytesTotal"] = mb.metricSnowflakeStorageStorageBytesTotal.config.AggregationStrategy
 			aggMap["SnowflakeTotalElapsedTimeAvg"] = mb.metricSnowflakeTotalElapsedTimeAvg.config.AggregationStrategy
 
 			expectedWarnings := 0
