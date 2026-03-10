@@ -28,12 +28,12 @@ dictionary:
 resourceProfiles:
   - resource:
       attributes:
-        - keyRef: 7
+        - keyStrindex: 7
           value:
-            stringValueRef: 3
-        - keyRef: 8
+            stringValueStrindex: 3
+        - keyStrindex: 8
           value:
-            stringValueRef: 4
+            stringValueStrindex: 4
     scopeProfiles:
       - profiles:
           - attributeIndices:
@@ -67,12 +67,12 @@ resourceProfiles:
         scope: {}
   - resource:
       attributes:
-        - keyRef: 7
+        - keyStrindex: 7
           value:
-            stringValueRef: 3
-        - keyRef: 8
+            stringValueStrindex: 3
+        - keyStrindex: 8
           value:
-            stringValueRef: 5
+            stringValueStrindex: 5
     scopeProfiles:
       - profiles:
           - attributeIndices:
@@ -106,9 +106,9 @@ resourceProfiles:
         scope: {}
   - resource:
       attributes:
-        - keyRef: 7
+        - keyStrindex: 7
           value:
-            stringValueRef: 6
+            stringValueStrindex: 6
     scopeProfiles:
       - profiles:
           - attributeIndices:
