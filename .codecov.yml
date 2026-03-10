@@ -249,10 +249,6 @@ component_management:
     name: exporter_rabbitmq
     paths:
     - exporter/rabbitmqexporter/**
-  - component_id: exporter_sapm
-    name: exporter_sapm
-    paths:
-    - exporter/sapmexporter/**
   - component_id: exporter_sematext
     name: exporter_sematext
     paths:
@@ -345,6 +341,10 @@ component_management:
     name: extension_httpforwarder
     paths:
     - extension/httpforwarderextension/**
+  - component_id: extension_internal_credentialsfile
+    name: extension_internal_credentialsfile
+    paths:
+    - extension/internal/credentialsfile/**
   - component_id: extension_jaegerremotesampling
     name: extension_jaegerremotesampling
     paths:
@@ -753,10 +753,6 @@ component_management:
     name: receiver_k8sevents
     paths:
     - receiver/k8seventsreceiver/**
-  - component_id: receiver_k8slog
-    name: receiver_k8slog
-    paths:
-    - receiver/k8slogreceiver/**
   - component_id: receiver_k8sobjects
     name: receiver_k8sobjects
     paths:

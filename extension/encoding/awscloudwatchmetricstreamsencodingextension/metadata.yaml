@@ -12,7 +12,7 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [axw, constanca-m]
+    active: [axw, constanca-m, Kavindu-Dodan]
 
 tests:
   config:

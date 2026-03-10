@@ -166,24 +166,25 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	} else {
 		endpoint = ts.URL
 	}
-	metricsettings := metadata.MetricsBuilderConfig{}
+	metricsCfg := metadata.DefaultMetricsBuilderConfig()
 	// in the future add more metrics
-	metricsettings.Metrics.SplunkIndexerThroughput.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedEventCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedRawSize.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
-	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
-	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
-	metricsettings.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
-	metricsettings.Metrics.SplunkIndexerCPUTime.Enabled = true
-	metricsettings.Metrics.SplunkIoAvgIops.Enabled = true
-	metricsettings.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
-	metricsettings.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
-	metricsettings.Metrics.SplunkLicenseIndexUsage.Enabled = true
+	metricsCfg.Metrics.SplunkHealth.Enabled = false
+	metricsCfg.Metrics.SplunkIndexerThroughput.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedEventCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedRawSize.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
+	metricsCfg.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
+	metricsCfg.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
+	metricsCfg.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
+	metricsCfg.Metrics.SplunkIndexerCPUTime.Enabled = true
+	metricsCfg.Metrics.SplunkIoAvgIops.Enabled = true
+	metricsCfg.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
+	metricsCfg.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
+	metricsCfg.Metrics.SplunkLicenseIndexUsage.Enabled = true
 	return &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
@@ -202,7 +203,7 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
 		},
-		MetricsBuilderConfig: metricsettings,
+		MetricsBuilderConfig: metricsCfg,
 		VersionInfo:          false,
 	}
 }

@@ -330,15 +330,17 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	// thus we don't check for them here as opposed to the Append function.
 
 	curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
+	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+	cacheRef := ls.Hash()
 
 	if h != nil && h.CounterResetHint == histogram.GaugeType || fh != nil && fh.CounterResetHint == histogram.GaugeType {
 		t.logger.Warn("dropping unsupported gauge histogram datapoint", zap.String("metric_name", metricName), zap.Any("labels", ls))
 	}
 
 	if schema == -53 {
-		err = curMF.addNHCBSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
+		err = curMF.addNHCBSeries(seriesRef, metricName, ls, atMs, h, fh)
 	} else {
-		err = curMF.addExponentialHistogramSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
+		err = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, h, fh)
 	}
 	if err != nil {
 		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
@@ -348,8 +350,8 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	}
 
 	// never return errors, as that fails the whole scrape
-	// return ref==1 indicating that the series was added and needs staleness tracking
-	return 1, nil
+	// return a stable ref so Prometheus can track series staleness
+	return storage.SeriesRef(cacheRef), nil
 }
 
 func (t *transaction) AppendSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {

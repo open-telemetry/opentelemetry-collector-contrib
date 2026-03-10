@@ -1,4 +1,4 @@
-azureblob/sp:
+azure_blob/sp:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "service_principal"
@@ -9,7 +9,7 @@ azureblob/sp:
     metrics: "test"
     logs: "test"
     traces: "test"
-azureblob/smi:
+azure_blob/smi:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "system_managed_identity"
@@ -18,7 +18,7 @@ azureblob/smi:
     metrics: "test"
     logs: "test"
     traces: "test"
-azureblob/umi:
+azure_blob/umi:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "user_managed_identity"
@@ -27,7 +27,7 @@ azureblob/umi:
     metrics: "test"
     logs: "test"
     traces: "test"
-azureblob/conn-string:
+azure_blob/conn-string:
   # for connection string auth, no need to specify url, because it's already included in connection string
   auth:
     type: "connection_string"
@@ -36,7 +36,7 @@ azureblob/conn-string:
     metrics: "test"
     logs: "test"
     traces: "test"
-azureblob/wif:
+azure_blob/wif:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "workload_identity"
@@ -47,28 +47,28 @@ azureblob/wif:
     metrics: "test"
     logs: "test"
     traces: "test"
-azureblob/err1:
+azure_blob/err1:
   auth:
     type: "system_managed_identity"
-azureblob/err2:
+azure_blob/err2:
   auth:
     type: "connection_string"
-azureblob/err3:
+azure_blob/err3:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "service_principal"
     client_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
     client_secret: "<client secret>"
-azureblob/err4:
+azure_blob/err4:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "user_managed_identity"
-azureblob/err5:
+azure_blob/err5:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "system_managed_identity"
   format: "custom"
-azureblob/err6:
+azure_blob/err6:
   url: "https://fakeaccount.blob.core.windows.net/"
   auth:
     type: "workload_identity"
