@@ -59,8 +59,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["SystemNetworkConnections"] = mb.metricSystemNetworkConnections.config.AggregationStrategy
-			aggMap["SystemNetworkConntrackCount"] = mb.metricSystemNetworkConntrackCount.config.AggregationStrategy
-			aggMap["SystemNetworkConntrackMax"] = mb.metricSystemNetworkConntrackMax.config.AggregationStrategy
 			aggMap["SystemNetworkDropped"] = mb.metricSystemNetworkDropped.config.AggregationStrategy
 			aggMap["SystemNetworkErrors"] = mb.metricSystemNetworkErrors.config.AggregationStrategy
 			aggMap["SystemNetworkIo"] = mb.metricSystemNetworkIo.config.AggregationStrategy
