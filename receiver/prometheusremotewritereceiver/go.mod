@@ -117,7 +117,6 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.53.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/collector/processor v1.53.1-0.20260309153054-85fc1918516c // indirect
-	go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.65.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.66.0 // indirect
 	go.opentelemetry.io/otel v1.41.0 // indirect

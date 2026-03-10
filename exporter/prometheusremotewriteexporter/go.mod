@@ -133,7 +133,6 @@ require (
 	go.opentelemetry.io/collector/receiver v1.53.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.147.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.1-0.20260309153054-85fc1918516c // indirect
-	go.opentelemetry.io/collector/semconv v0.128.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
