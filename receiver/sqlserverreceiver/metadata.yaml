@@ -141,6 +141,9 @@ attributes:
     description: Percentage of work completed.
     type: double
   # Stored Procedures
+  sqlserver.procedure_execution_count:
+    description: Number of times that the procedure has been executed since it was last compiled, reported in delta value.
+    type: int
   sqlserver.procedure_id:
     description: The SQL Server ID of the stored procedure, if any
     type: string
@@ -298,6 +301,7 @@ events:
       - server.address
       - server.port
       - db.system.name
+      - sqlserver.procedure_execution_count
       - sqlserver.procedure_id
       - sqlserver.procedure_name
 
