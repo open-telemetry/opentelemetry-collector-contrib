@@ -1,3 +1,5 @@
+type: azurelogs
+
 status:
   disable_codecov_badge: true
   class: "pkg"
@@ -5,3 +7,15 @@ status:
     active: [atoulme, cparkins, MikeGoldsmith, constanca-m]
   stability:
     development: [logs]
+
+feature_gates:
+  - id: pkg.translator.azurelogs.DontEmitV0LogConventions
+    stage: alpha
+    description: When enabled, v0 semconv attribute names are not emitted.
+    from_version: v0.147.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033
+  - id: pkg.translator.azurelogs.EmitV1LogConventions
+    stage: alpha
+    description: When enabled, v1 semconv attribute names are emitted.
+    from_version: v0.147.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033

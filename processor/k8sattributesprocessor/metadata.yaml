@@ -1,5 +1,6 @@
 display_name: Kubernetes Attributes Processor
 type: k8s_attributes
+deprecated_type: k8sattributes
 
 description: |
   The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
