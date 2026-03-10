@@ -1,6 +1,7 @@
 package semconvtest_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -69,7 +70,9 @@ func TestWeaverLogs(t *testing.T) {
 	err = weaver.Stop()
 	require.NoError(t, err)
 
-	outputFile, err := weaver.WaitForOutput(30 * time.Second)
+	waitCtx, waitCancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer waitCancel()
+	outputFile, err := weaver.WaitForOutput(waitCtx)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(outputFile)
@@ -122,7 +125,9 @@ func TestWeaverMetrics(t *testing.T) {
 	err = weaver.Stop()
 	require.NoError(t, err)
 
-	outputFile, err := weaver.WaitForOutput(30 * time.Second)
+	waitCtx, waitCancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer waitCancel()
+	outputFile, err := weaver.WaitForOutput(waitCtx)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(outputFile)
@@ -180,7 +185,9 @@ func TestWeaverTraces(t *testing.T) {
 	err = weaver.Stop()
 	require.NoError(t, err)
 
-	outputFile, err := weaver.WaitForOutput(30 * time.Second)
+	waitCtx, waitCancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer waitCancel()
+	outputFile, err := weaver.WaitForOutput(waitCtx)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(outputFile)

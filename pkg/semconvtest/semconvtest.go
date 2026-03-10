@@ -147,7 +147,7 @@ func (wc *WeaverContext) Stop() error {
 
 // WaitForOutput watches the output directory for the live_check.json file
 // to be created and returns its path. This should be called after Stop().
-func (wc *WeaverContext) WaitForOutput(timeout time.Duration) (string, error) {
+func (wc *WeaverContext) WaitForOutput(ctx context.Context) (string, error) {
 	if wc.outputDir == "" {
 		return "", errors.New("outputDir not configured")
 	}
@@ -169,9 +169,6 @@ func (wc *WeaverContext) WaitForOutput(timeout time.Duration) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to watch directory: %w", err)
 	}
-
-	ctx, cancel := context.WithTimeout(wc.ctx, timeout)
-	defer cancel()
 
 	fileCreated := false
 	for {
