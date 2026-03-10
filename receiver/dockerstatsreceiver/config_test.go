@@ -61,11 +61,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				ContainerLabelsToResourceAttributes: []LabelMatcher{
-					LabelMatcher{
+					{
 						MatchType: strictMatchType,
 						Include:   "my.container.label",
 					},
-					LabelMatcher{
+					{
 						MatchType: regexpMatchType,
 						Include:   "my.container.prefix.*",
 					},
