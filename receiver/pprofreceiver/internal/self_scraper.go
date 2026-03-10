@@ -17,7 +17,7 @@ import (
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 )
 
-var _ (xscraper.Profiles) = &SelfScraper{}
+var _ xscraper.Profiles = &SelfScraper{}
 
 type SelfScraper struct {
 	buf    *bytes.Buffer
@@ -31,7 +31,7 @@ func (hcs *SelfScraper) Start(_ context.Context, _ component.Host) error {
 	return err
 }
 
-func (hcs *SelfScraper) Shutdown(_ context.Context) error {
+func (_ *SelfScraper) Shutdown(_ context.Context) error {
 	pprof.StopCPUProfile()
 	return nil
 }
@@ -48,8 +48,8 @@ func (hcs *SelfScraper) ScrapeProfiles(_ context.Context) (pprofile.Profiles, er
 			return pprofile.Profiles{}, err
 		}
 		return *p, err
-	} else {
-		_ = pprof.StartCPUProfile(hcs.writer)
-		return pprofile.Profiles{}, parseErr
 	}
+
+	_ = pprof.StartCPUProfile(hcs.writer)
+	return pprofile.Profiles{}, parseErr
 }

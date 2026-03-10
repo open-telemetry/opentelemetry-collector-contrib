@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 )
 
-var _ (xscraper.Profiles) = &HTTPClientScraper{}
+var _ xscraper.Profiles = &HTTPClientScraper{}
 
 type HTTPClientScraper struct {
 	ClientConfig confighttp.ClientConfig
