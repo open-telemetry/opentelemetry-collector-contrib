@@ -15,14 +15,16 @@ import (
 type Histogram struct {
 	pmetric.HistogramDataPoint
 	elasticsearch.MappingHintGetter
-	metric pmetric.Metric
+	metric      pmetric.Metric
+	mappingMode string
 }
 
-func NewHistogram(metric pmetric.Metric, dp pmetric.HistogramDataPoint) Histogram {
+func NewHistogram(metric pmetric.Metric, dp pmetric.HistogramDataPoint, mappingMode string) Histogram {
 	return Histogram{
 		HistogramDataPoint: dp,
 		MappingHintGetter:  elasticsearch.NewMappingHintGetter(dp.Attributes()),
 		metric:             metric,
+		mappingMode:        mappingMode,
 	}
 }
 
@@ -34,7 +36,32 @@ func (dp Histogram) Value() (pcommon.Value, error) {
 		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 		return vm, nil
 	}
+	if dp.shouldPreserveAPMIntakeBounds() {
+		return apmIntakeHistogramToValue(dp.HistogramDataPoint, dp.metric)
+	}
 	return histogramToValue(dp.HistogramDataPoint, dp.metric)
+}
+
+// shouldPreserveAPMIntakeBounds reports whether the histogram data point
+// originated from APM intake and should preserve its original bounds.
+// APM intake histograms have a 1:1 mapping between bucket counts and explicit
+// bounds (no underflow/overflow buckets), unlike standard OTel histograms
+// which have n+1 bucket counts for n explicit bounds.
+// Detection requires all of: "ecs" mapping mode, a "processor.event"
+// attribute equal to "metric", and equal-length bucket counts and bounds.
+func (dp Histogram) shouldPreserveAPMIntakeBounds() bool {
+	if dp.mappingMode != "ecs" {
+		return false
+	}
+
+	processorEvent, exists := dp.Attributes().Get("processor.event")
+	if !exists || processorEvent.Str() != "metric" {
+		return false
+	}
+
+	bucketCounts := dp.BucketCounts()
+	explicitBounds := dp.ExplicitBounds()
+	return bucketCounts.Len() > 0 && bucketCounts.Len() == explicitBounds.Len()
 }
 
 func (dp Histogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTemplateMode) string {
@@ -44,7 +71,6 @@ func (dp Histogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTemplateMode) 
 		}
 		return "histogram_metrics"
 	}
-
 	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
 		return "summary"
 	}
@@ -113,5 +139,42 @@ func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric) (pco
 		values.AppendEmpty().SetDouble(value)
 	}
 
+	return vm, nil
+}
+
+// apmIntakeHistogramToValue converts an APM intake histogram data point into
+// an Elasticsearch histogram value. Unlike histogramToValue, explicit bounds
+// map 1:1 to bucket counts with no midpoint interpolation, preserving the
+// original bucket boundaries produced by APM intake.
+func apmIntakeHistogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric) (pcommon.Value, error) {
+	bucketCounts := dp.BucketCounts()
+	explicitBounds := dp.ExplicitBounds()
+	if bucketCounts.Len() > 0 && bucketCounts.Len() != explicitBounds.Len() {
+		return pcommon.Value{}, fmt.Errorf("invalid apm intake histogram data point %q", metric.Name())
+	}
+
+	vm := pcommon.NewValueMap()
+	m := vm.Map()
+	counts := m.PutEmptySlice("counts")
+	values := m.PutEmptySlice("values")
+
+	if explicitBounds.Len() == 0 {
+		// It is possible for explicit bounds to be nil. In this case create
+		// a bucket using the count and sum which are required to be present.
+		// See https://opentelemetry.io/docs/specs/otel/metrics/data-model/#histogram
+		if dp.Count() > 0 {
+			counts.AppendEmpty().SetInt(safeUint64ToInt64(dp.Count()))
+			values.AppendEmpty().SetDouble(dp.Sum() / float64(dp.Count()))
+		}
+
+		return vm, nil
+	}
+
+	counts.EnsureCapacity(bucketCounts.Len())
+	values.EnsureCapacity(explicitBounds.Len())
+	for i, count := range bucketCounts.All() {
+		counts.AppendEmpty().SetInt(safeUint64ToInt64(count))
+		values.AppendEmpty().SetDouble(explicitBounds.At(i))
+	}
 	return vm, nil
 }

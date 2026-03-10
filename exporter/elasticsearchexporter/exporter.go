@@ -289,7 +289,7 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 						continue
 					}
 					for _, dp := range metric.Histogram().DataPoints().All() {
-						if err := upsertDataPoint(datapoints.NewHistogram(metric, dp)); err != nil {
+						if err := upsertDataPoint(datapoints.NewHistogram(metric, dp, mappingMode.String())); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}

@@ -17,6 +17,8 @@ func TestHistogramValue(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
 		histogramDP pmetric.HistogramDataPoint
+		mappingMode string
+		wantErr     bool
 		expected    func(t *testing.T) pcommon.Value
 	}{
 		{
@@ -59,14 +61,79 @@ func TestHistogramValue(t *testing.T) {
 				return v
 			},
 		},
+		{
+			name: "default_midpoint_with_explicit_bounds",
+			histogramDP: func() pmetric.HistogramDataPoint {
+				now := time.Now()
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.ExplicitBounds().FromRaw([]float64{10, 20, 30})
+				dp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				return dp
+			}(),
+			expected: func(t *testing.T) pcommon.Value {
+				t.Helper()
+				v := pcommon.NewValueMap()
+				require.NoError(t, v.FromRaw(map[string]any{
+					"counts": []any{1, 2, 3, 4},
+					"values": []any{5.0, 15.0, 25.0, 30.0},
+				}))
+				return v
+			},
+		},
+		{
+			name: "preserve_intake_histogram_values",
+			histogramDP: func() pmetric.HistogramDataPoint {
+				now := time.Now()
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.SetCount(50)
+				dp.SetSum(3350)
+				dp.ExplicitBounds().FromRaw([]float64{10, 50, 100, 200})
+				dp.BucketCounts().FromRaw([]uint64{10, 25, 10, 5})
+				dp.Attributes().PutStr("processor.event", "metric")
+				return dp
+			}(),
+			mappingMode: "ecs",
+			expected: func(t *testing.T) pcommon.Value {
+				t.Helper()
+				v := pcommon.NewValueMap()
+				require.NoError(t, v.FromRaw(map[string]any{
+					"counts": []any{10, 25, 10, 5},
+					"values": []any{10.0, 50.0, 100.0, 200.0},
+				}))
+				return v
+			},
+		},
+		{
+			name: "preserve_intake_histogram_values_invalid_shape",
+			histogramDP: func() pmetric.HistogramDataPoint {
+				now := time.Now()
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.ExplicitBounds().FromRaw([]float64{10, 50})
+				dp.BucketCounts().FromRaw([]uint64{10, 25, 10, 5})
+				dp.Attributes().PutStr("processor.event", "metric")
+				return dp
+			}(),
+			mappingMode: "ecs",
+			wantErr:     true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := pmetric.NewMetric()
 			m.SetName("test")
 			tc.histogramDP.MoveTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
 
-			esHist := NewHistogram(m, m.Histogram().DataPoints().At(0))
+			esHist := NewHistogram(m, m.Histogram().DataPoints().At(0), tc.mappingMode)
 			actual, err := esHist.Value()
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
 			require.NoError(t, err)
 			assert.True(t, tc.expected(t).Equal(actual))
 		})

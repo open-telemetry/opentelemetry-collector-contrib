@@ -172,6 +172,10 @@ behaviours, which may be configured through the following settings:
   - `mode` (DEPRECATED): The mapping mode if supplied via config file is ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`.
   - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
 
+In ECS mapping mode, histogram data points that originated from APM intake are detected by heuristic and their original bucket boundaries are preserved. Detection requires the `processor.event` attribute to equal `"metric"` and `len(bucket_counts) == len(explicit_bounds)` (no underflow/overflow buckets). When these conditions are met, explicit bounds map 1:1 to bucket counts with no midpoint interpolation. Otherwise, the standard OTel conversion applies:
+- If `len(bucket_counts) == len(explicit_bounds) + 1`, the exporter applies midpoint interpolation for bucket values.
+- Any other non-empty shape is treated as invalid and the data point is dropped with a validation error.
+
 The mapping mode can be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
 e.g. via HTTP headers, gRPC metadata.
 
