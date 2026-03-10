@@ -26,5 +26,8 @@ func newScraper(cfg *Config, settings receiver.Settings) (xscraper.Profiles, err
 		return httpScraper, nil
 	}
 
-	return &internal.SelfScraper{}, nil
+	return &internal.SelfScraper{
+		BlockProfileFraction: cfg.BlockProfileFraction,
+		MutexProfileFraction: cfg.MutexProfileFraction,
+	}, nil
 }

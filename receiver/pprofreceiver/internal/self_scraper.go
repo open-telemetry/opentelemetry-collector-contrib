@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"runtime"
 	"runtime/pprof"
 
 	"github.com/google/pprof/profile"
@@ -20,18 +21,22 @@ import (
 var _ xscraper.Profiles = &SelfScraper{}
 
 type SelfScraper struct {
+	BlockProfileFraction int
+	MutexProfileFraction int
 	buf    *bytes.Buffer
 	writer *bufio.Writer
 }
 
 func (hcs *SelfScraper) Start(_ context.Context, _ component.Host) error {
+	runtime.SetBlockProfileRate(hcs.BlockProfileFraction)
+	runtime.SetMutexProfileFraction(hcs.MutexProfileFraction)
 	hcs.buf = bytes.NewBuffer(make([]byte, 0, 8096))
 	hcs.writer = bufio.NewWriter(hcs.buf)
 	err := pprof.StartCPUProfile(hcs.writer)
 	return err
 }
 
-func (_ *SelfScraper) Shutdown(_ context.Context) error {
+func (*SelfScraper) Shutdown(_ context.Context) error {
 	pprof.StopCPUProfile()
 	return nil
 }
