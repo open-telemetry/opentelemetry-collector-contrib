@@ -97,16 +97,16 @@ func (c *Config) Validate() error {
 	}
 
 	if err := validateTopicFromMetadataKey(c.Logs.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
-		return fmt.Errorf("logs.topic_from_metadata_key: %w", err)
+		return fmt.Errorf("logs::topic_from_metadata_key: %w", err)
 	}
 	if err := validateTopicFromMetadataKey(c.Metrics.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
-		return fmt.Errorf("metrics.topic_from_metadata_key: %w", err)
+		return fmt.Errorf("metrics::topic_from_metadata_key: %w", err)
 	}
 	if err := validateTopicFromMetadataKey(c.Traces.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
-		return fmt.Errorf("traces.topic_from_metadata_key: %w", err)
+		return fmt.Errorf("traces::topic_from_metadata_key: %w", err)
 	}
 	if err := validateTopicFromMetadataKey(c.Profiles.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
-		return fmt.Errorf("profiles.topic_from_metadata_key: %w", err)
+		return fmt.Errorf("profiles::topic_from_metadata_key: %w", err)
 	}
 	return nil
 }
