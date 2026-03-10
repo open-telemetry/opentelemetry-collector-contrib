@@ -92,8 +92,8 @@ $defs:
     description: ResourceAttributesConfig provides config for redfish resource attributes.
     type: object
     properties:
-      base_url:
-        description: ResourceAttributeConfig provides common config for a base_url resource attribute.
+      host.name:
+        description: ResourceAttributeConfig provides common config for a host.name resource attribute.
         type: object
         properties:
           enabled:
@@ -109,8 +109,8 @@ $defs:
             type: array
             items:
               $ref: go.opentelemetry.io/collector/filter.config
-      system.host_name:
-        description: ResourceAttributeConfig provides common config for a system.host_name resource attribute.
+      url.full:
+        description: ResourceAttributeConfig provides common config for a url.full resource attribute.
         type: object
         properties:
           enabled:
