@@ -34,9 +34,9 @@ type metricInfo struct {
 }
 
 type metricSystemUptime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric     // data buffer for generated metric.
+	config   SystemUptimeConfig // metric config provided by user.
+	capacity int                // max observed number of data points added to the metric.
 }
 
 // init fills system.uptime metric with initial data.
@@ -73,7 +73,7 @@ func (m *metricSystemUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemUptime(cfg MetricConfig) metricSystemUptime {
+func newMetricSystemUptime(cfg SystemUptimeConfig) metricSystemUptime {
 	m := metricSystemUptime{config: cfg}
 
 	if cfg.Enabled {
