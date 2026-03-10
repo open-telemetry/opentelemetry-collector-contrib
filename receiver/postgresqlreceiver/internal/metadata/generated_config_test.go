@@ -26,42 +26,114 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PostgresqlBackends:                 MetricConfig{Enabled: true},
-					PostgresqlBgwriterBuffersAllocated: MetricConfig{Enabled: true},
-					PostgresqlBgwriterBuffersWrites:    MetricConfig{Enabled: true},
-					PostgresqlBgwriterCheckpointCount:  MetricConfig{Enabled: true},
-					PostgresqlBgwriterDuration:         MetricConfig{Enabled: true},
-					PostgresqlBgwriterMaxwritten:       MetricConfig{Enabled: true},
-					PostgresqlBlksHit:                  MetricConfig{Enabled: true},
-					PostgresqlBlksRead:                 MetricConfig{Enabled: true},
-					PostgresqlBlocksRead:               MetricConfig{Enabled: true},
-					PostgresqlCommits:                  MetricConfig{Enabled: true},
-					PostgresqlConnectionMax:            MetricConfig{Enabled: true},
-					PostgresqlDatabaseCount:            MetricConfig{Enabled: true},
-					PostgresqlDatabaseLocks:            MetricConfig{Enabled: true},
-					PostgresqlDbSize:                   MetricConfig{Enabled: true},
-					PostgresqlDeadlocks:                MetricConfig{Enabled: true},
-					PostgresqlFunctionCalls:            MetricConfig{Enabled: true},
-					PostgresqlIndexScans:               MetricConfig{Enabled: true},
-					PostgresqlIndexSize:                MetricConfig{Enabled: true},
-					PostgresqlOperations:               MetricConfig{Enabled: true},
-					PostgresqlReplicationDataDelay:     MetricConfig{Enabled: true},
-					PostgresqlRollbacks:                MetricConfig{Enabled: true},
-					PostgresqlRows:                     MetricConfig{Enabled: true},
-					PostgresqlSequentialScans:          MetricConfig{Enabled: true},
-					PostgresqlTableCount:               MetricConfig{Enabled: true},
-					PostgresqlTableSize:                MetricConfig{Enabled: true},
-					PostgresqlTableVacuumCount:         MetricConfig{Enabled: true},
-					PostgresqlTempIo:                   MetricConfig{Enabled: true},
-					PostgresqlTempFiles:                MetricConfig{Enabled: true},
-					PostgresqlTupDeleted:               MetricConfig{Enabled: true},
-					PostgresqlTupFetched:               MetricConfig{Enabled: true},
-					PostgresqlTupInserted:              MetricConfig{Enabled: true},
-					PostgresqlTupReturned:              MetricConfig{Enabled: true},
-					PostgresqlTupUpdated:               MetricConfig{Enabled: true},
-					PostgresqlWalAge:                   MetricConfig{Enabled: true},
-					PostgresqlWalDelay:                 MetricConfig{Enabled: true},
-					PostgresqlWalLag:                   MetricConfig{Enabled: true},
+					PostgresqlBackends: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBgwriterBuffersAllocated: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBgwriterBuffersWrites: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBgwriterCheckpointCount: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBgwriterDuration: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBgwriterMaxwritten: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBlksHit: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBlksRead: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBlocksRead: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlCommits: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlConnectionMax: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlDatabaseCount: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlDatabaseLocks: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlDbSize: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlDeadlocks: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlFunctionCalls: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlIndexScans: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlIndexSize: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlOperations: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlReplicationDataDelay: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlRollbacks: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlRows: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlSequentialScans: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTableCount: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTableSize: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTableVacuumCount: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTempIo: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTempFiles: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupDeleted: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupFetched: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupInserted: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupReturned: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupUpdated: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlWalAge: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlWalDelay: MetricConfig{
+						Enabled: true,
+					},
+					PostgresqlWalLag: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
@@ -76,42 +148,114 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PostgresqlBackends:                 MetricConfig{Enabled: false},
-					PostgresqlBgwriterBuffersAllocated: MetricConfig{Enabled: false},
-					PostgresqlBgwriterBuffersWrites:    MetricConfig{Enabled: false},
-					PostgresqlBgwriterCheckpointCount:  MetricConfig{Enabled: false},
-					PostgresqlBgwriterDuration:         MetricConfig{Enabled: false},
-					PostgresqlBgwriterMaxwritten:       MetricConfig{Enabled: false},
-					PostgresqlBlksHit:                  MetricConfig{Enabled: false},
-					PostgresqlBlksRead:                 MetricConfig{Enabled: false},
-					PostgresqlBlocksRead:               MetricConfig{Enabled: false},
-					PostgresqlCommits:                  MetricConfig{Enabled: false},
-					PostgresqlConnectionMax:            MetricConfig{Enabled: false},
-					PostgresqlDatabaseCount:            MetricConfig{Enabled: false},
-					PostgresqlDatabaseLocks:            MetricConfig{Enabled: false},
-					PostgresqlDbSize:                   MetricConfig{Enabled: false},
-					PostgresqlDeadlocks:                MetricConfig{Enabled: false},
-					PostgresqlFunctionCalls:            MetricConfig{Enabled: false},
-					PostgresqlIndexScans:               MetricConfig{Enabled: false},
-					PostgresqlIndexSize:                MetricConfig{Enabled: false},
-					PostgresqlOperations:               MetricConfig{Enabled: false},
-					PostgresqlReplicationDataDelay:     MetricConfig{Enabled: false},
-					PostgresqlRollbacks:                MetricConfig{Enabled: false},
-					PostgresqlRows:                     MetricConfig{Enabled: false},
-					PostgresqlSequentialScans:          MetricConfig{Enabled: false},
-					PostgresqlTableCount:               MetricConfig{Enabled: false},
-					PostgresqlTableSize:                MetricConfig{Enabled: false},
-					PostgresqlTableVacuumCount:         MetricConfig{Enabled: false},
-					PostgresqlTempIo:                   MetricConfig{Enabled: false},
-					PostgresqlTempFiles:                MetricConfig{Enabled: false},
-					PostgresqlTupDeleted:               MetricConfig{Enabled: false},
-					PostgresqlTupFetched:               MetricConfig{Enabled: false},
-					PostgresqlTupInserted:              MetricConfig{Enabled: false},
-					PostgresqlTupReturned:              MetricConfig{Enabled: false},
-					PostgresqlTupUpdated:               MetricConfig{Enabled: false},
-					PostgresqlWalAge:                   MetricConfig{Enabled: false},
-					PostgresqlWalDelay:                 MetricConfig{Enabled: false},
-					PostgresqlWalLag:                   MetricConfig{Enabled: false},
+					PostgresqlBackends: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBgwriterBuffersAllocated: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBgwriterBuffersWrites: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBgwriterCheckpointCount: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBgwriterDuration: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBgwriterMaxwritten: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBlksHit: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBlksRead: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBlocksRead: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlCommits: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlConnectionMax: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlDatabaseCount: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlDatabaseLocks: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlDbSize: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlDeadlocks: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlFunctionCalls: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlIndexScans: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlIndexSize: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlOperations: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlReplicationDataDelay: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlRollbacks: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlRows: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlSequentialScans: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTableCount: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTableSize: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTableVacuumCount: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTempIo: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTempFiles: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupDeleted: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupFetched: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupInserted: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupReturned: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupUpdated: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlWalAge: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlWalDelay: MetricConfig{
+						Enabled: false,
+					},
+					PostgresqlWalLag: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},

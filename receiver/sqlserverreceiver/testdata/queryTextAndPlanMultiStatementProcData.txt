@@ -18,6 +18,7 @@
 		"query_plan": "<ShowPlanXML/>",
 		"procedure_id": "1431676148",
 		"procedure_name": "[dbo].[usp_MultiStatement]",
+		"procedure_execution_count": "5",
 		"last_elapsed_time": "500",
 		"last_execution_time": "2025-01-01 00:00:00.000"
 	},
@@ -40,6 +41,7 @@
 		"query_plan": "<ShowPlanXML/>",
 		"procedure_id": "1431676148",
 		"procedure_name": "[dbo].[usp_MultiStatement]",
+		"procedure_execution_count": "5",
 		"last_elapsed_time": "300",
 		"last_execution_time": "2025-01-01 00:00:00.000"
 	}
