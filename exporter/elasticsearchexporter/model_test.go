@@ -529,6 +529,8 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		"service.instance.id":         "23",
 		"service.name":                "some-service",
 		"service.version":             "env-version-1234",
+		"telemetry.sdk.version":       "1.2.3",
+		"telemetry.sdk.language":      "go",
 		"process.parent_pid":          "42",
 		"process.executable.name":     "node",
 		"client.address":              "12.53.12.1",
@@ -630,6 +632,10 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	  },
 	  "service": {
 		"environment": "BETA",
+		"language": {
+		  "name": "go",
+		  "version": "1.2.3"
+		},
 		"name": "some-service",
 		"node": {
 		  "name": "23"
@@ -791,6 +797,10 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"service": {
 		  "name": "foo.bar",
 		  "environment": "BETA",
+		  "language": {
+		    "name": "perl",
+		    "version": "7.9.12"
+		  },
 		  "version": "1.1.0",
 		  "node": {"name": "i-103de39e0a"},
 		  "runtime": {
