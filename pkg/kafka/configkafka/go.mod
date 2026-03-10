@@ -5,11 +5,11 @@ go 1.25.0
 require (
 	github.com/IBM/sarama v1.47.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.53.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/config/configcompression v1.53.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/config/configtls v1.53.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/confmap v1.53.1-0.20260306010043-a44ab254898b
-	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260306010043-a44ab254898b
+	go.opentelemetry.io/collector/component v1.53.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/config/configcompression v1.53.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/config/configtls v1.53.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/confmap v1.53.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260309153054-85fc1918516c
 	go.uber.org/goleak v1.3.0
 )
 
@@ -42,9 +42,9 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.53.1-0.20260306010043-a44ab254898b // indirect
-	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260306010043-a44ab254898b // indirect
-	go.opentelemetry.io/collector/pdata v1.53.1-0.20260306010043-a44ab254898b // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.53.1-0.20260309153054-85fc1918516c // indirect
+	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260309153054-85fc1918516c // indirect
+	go.opentelemetry.io/collector/pdata v1.53.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.opentelemetry.io/otel/metric v1.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect

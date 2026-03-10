@@ -57,10 +57,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := scrapertest.NewNopSettings(scrapertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
-			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemCPULoadAverage15m"] = mb.metricSystemCPULoadAverage15m.config.AggregationStrategy
-			aggMap["SystemCPULoadAverage1m"] = mb.metricSystemCPULoadAverage1m.config.AggregationStrategy
-			aggMap["SystemCPULoadAverage5m"] = mb.metricSystemCPULoadAverage5m.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
