@@ -40,6 +40,8 @@ func createMetricsReceiver(
 }
 
 // createLogsReceiver create a logs receiver based on provided config.
+// When events (db.server.top_query, db.server.query_sample) are enabled, each is collected
+// at its own collection_interval via WithLogsSchedules.
 func createLogsReceiver(
 	_ context.Context,
 	params receiver.Settings,
@@ -56,10 +58,14 @@ func createLogsReceiver(
 		return nil, err
 	}
 
-	logsControllerCfg := cfg.ControllerConfig
-	logsControllerCfg.CollectionInterval = cfg.EffectiveEventsCollectionInterval()
+	// Use per-event collection intervals when any event is enabled.
+	if cfg.Events.DbServerQuerySample.Enabled || cfg.Events.DbServerTopQuery.Enabled {
+		schedules := buildLogsSchedules(cfg, logsConsumer)
+		opts = append(opts, scraperhelper.WithLogsSchedules(schedules))
+	}
+
 	return scraperhelper.NewLogsController(
-		&logsControllerCfg,
+		&cfg.ControllerConfig,
 		params,
 		logsConsumer,
 		opts...,

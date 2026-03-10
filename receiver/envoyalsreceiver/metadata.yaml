@@ -1,4 +1,9 @@
+display_name: Envoy ALS (Access Log Service) Receiver
 type: envoyals
+
+description: |
+  This is a receiver for the [Envoy gRPC ALS](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/access_loggers/grpc/v3/als.proto#envoy-v3-api-msg-extensions-access-loggers-grpc-v3-httpgrpcaccesslogconfig)
+  sink.
 
 status:
   class: receiver

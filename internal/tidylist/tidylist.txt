@@ -248,7 +248,6 @@ receiver/awsxrayreceiver
 receiver/azureblobreceiver
 receiver/azureeventhubreceiver
 receiver/azuremonitorreceiver
-receiver/bigipreceiver
 receiver/chronyreceiver
 receiver/ciscoosreceiver
 receiver/cloudflarereceiver

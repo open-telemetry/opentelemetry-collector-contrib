@@ -224,7 +224,7 @@ processor/resourcedetectionprocessor/internal/digitalocean/      @open-telemetry
 processor/resourcedetectionprocessor/internal/dynatrace/         @open-telemetry/collector-contrib-approvers @bacherfl @evan-bradley
 processor/resourcedetectionprocessor/internal/hetzner/           @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/openstack/nova/    @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
-processor/resourcedetectionprocessor/internal/oraclecloud/       @open-telemetry/collector-contrib-approvers @dashpole
+processor/resourcedetectionprocessor/internal/oraclecloud/       @open-telemetry/collector-contrib-approvers @dashpole @geekdave
 processor/resourcedetectionprocessor/internal/scaleway/          @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/upcloud/           @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/vultr/             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
@@ -249,6 +249,7 @@ receiver/awsxrayreceiver/                                        @open-telemetry
 receiver/azureblobreceiver/                                      @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
 receiver/azureeventhubreceiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @cparkins @dyl10s
 receiver/azuremonitorreceiver/                                   @open-telemetry/collector-contrib-approvers @celian-garcia @ishleenk17
+receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers @atoulme
 receiver/chronyreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
 receiver/ciscoosreceiver/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/ciscoosreceiver/internal/scraper/interfacesscraper/     @open-telemetry/collector-contrib-approvers
@@ -326,7 +327,7 @@ receiver/purefareceiver/                                         @open-telemetry
 receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure
 receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers @VenuEmmadi
 receiver/receivercreator/                                        @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
-receiver/redfishreceiver/                                        @open-telemetry/collector-contrib-approvers @steven-freed
+receiver/redfishreceiver/                                        @open-telemetry/collector-contrib-approvers @steven-freed @khushijain21
 receiver/redisreceiver/                                          @open-telemetry/collector-contrib-approvers @dmitryax @hughesjj
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers @armstrmi
 receiver/saphanareceiver/                                        @open-telemetry/collector-contrib-approvers @dehaansa
@@ -389,8 +390,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 # Start unmaintained components list
 
 exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers
-receiver/bigipreceiver/                                          @open-telemetry/collector-contrib-approvers
-receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers
 receiver/k8slogreceiver/                                         @open-telemetry/collector-contrib-approvers
 
 # End unmaintained components list

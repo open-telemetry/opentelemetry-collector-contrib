@@ -10,7 +10,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"time"
@@ -49,23 +48,21 @@ var removeServerResourceAttributeFeatureGate = featuregate.GlobalRegistry().Must
 )
 
 type sqlServerScraperHelper struct {
-	id                                component.ID
-	config                            *Config
-	sqlQuery                          string
-	instanceName                      string
-	clientProviderFunc                sqlquery.ClientProviderFunc
-	dbProviderFunc                    sqlquery.DbProviderFunc
-	logger                            *zap.Logger
-	telemetry                         sqlquery.TelemetryConfig
-	client                            sqlquery.DbClient
-	db                                *sql.DB
-	mb                                *metadata.MetricsBuilder
-	lb                                *metadata.LogsBuilder
-	cache                             *lru.Cache[string, int64]
-	lastExecutionTimestamp            time.Time
-	lastQuerySampleExecutionTimestamp time.Time
-	obfuscator                        *obfuscator
-	serviceInstanceID                 string
+	id                 component.ID
+	config             *Config
+	sqlQuery           string
+	instanceName       string
+	clientProviderFunc sqlquery.ClientProviderFunc
+	dbProviderFunc     sqlquery.DbProviderFunc
+	logger             *zap.Logger
+	telemetry          sqlquery.TelemetryConfig
+	client             sqlquery.DbClient
+	db                 *sql.DB
+	mb                 *metadata.MetricsBuilder
+	lb                 *metadata.LogsBuilder
+	cache              *lru.Cache[string, int64]
+	obfuscator         *obfuscator
+	serviceInstanceID  string
 }
 
 var (
@@ -90,19 +87,18 @@ func newSQLServerScraper(id component.ID,
 	}
 
 	return &sqlServerScraperHelper{
-		id:                     id,
-		config:                 cfg,
-		sqlQuery:               query,
-		logger:                 params.Logger,
-		telemetry:              telemetry,
-		dbProviderFunc:         dbProviderFunc,
-		clientProviderFunc:     clientProviderFunc,
-		mb:                     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
-		cache:                  cache,
-		lastExecutionTimestamp: time.Unix(0, 0),
-		obfuscator:             newObfuscator(),
-		serviceInstanceID:      serviceInstanceID,
+		id:                 id,
+		config:             cfg,
+		sqlQuery:           query,
+		logger:             params.Logger,
+		telemetry:          telemetry,
+		dbProviderFunc:     dbProviderFunc,
+		clientProviderFunc: clientProviderFunc,
+		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		lb:                 metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
+		cache:              cache,
+		obfuscator:         newObfuscator(),
+		serviceInstanceID:  serviceInstanceID,
 	}
 }
 
@@ -123,7 +119,7 @@ func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
 
 func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	var err error
-
+	fmt.Println(time.Now().Format(time.RFC3339), ">>>>>>>> Metric")
 	switch s.sqlQuery {
 	case getSQLServerDatabaseIOQuery(s.config.InstanceName):
 		err = s.recordDatabaseIOMetrics(ctx)
@@ -149,18 +145,8 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var resources pcommon.Resource
 	switch s.sqlQuery {
 	case getSQLServerQueryTextAndPlanQuery():
-		interval := s.config.EffectiveTopQueryCollectionInterval()
-		if interval > 0 && int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(interval.Seconds()) {
-			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
-			return plog.NewLogs(), nil
-		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx)
 	case getSQLServerQuerySamplesQuery():
-		interval := s.config.EffectiveQuerySampleCollectionInterval()
-		if interval > 0 && int(math.Ceil(time.Since(s.lastQuerySampleExecutionTimestamp).Seconds())) < int(interval.Seconds()) {
-			s.logger.Debug("Skipping the collection of query samples because the current time has not yet exceeded the last execution time plus the specified collection interval")
-			return plog.NewLogs(), nil
-		}
 		resources, err = s.recordDatabaseSampleQuery(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
@@ -627,6 +613,8 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context) (pcommon.Resource, error) {
+
+	fmt.Println(time.Now().Format(time.RFC3339), ">>>>>>>> top query collection")
 	// Constants are the column names of the database status
 	const (
 		executionCount = "execution_count"
@@ -695,7 +683,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	resourcesAdded := false
 	now := time.Now()
 	timestamp := pcommon.NewTimestampFromTime(now)
-	s.lastExecutionTimestamp = now
 	for i, row := range rows {
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
@@ -915,6 +902,9 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
+
+	fmt.Println(time.Now().Format(time.RFC3339), ">>>>>>>> SAMPLES collection")
+
 	const blockingSessionID = "blocking_session_id"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
@@ -949,8 +939,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	// stored procedure columns
 	const storedProcedureID = "procedure_id"
 	const storedProcedureName = "procedure_name"
-
-	s.lastQuerySampleExecutionTimestamp = time.Now()
 
 	rows, err := s.client.QueryRows(
 		ctx,

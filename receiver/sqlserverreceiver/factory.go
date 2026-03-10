@@ -14,6 +14,7 @@ import (
 	_ "github.com/microsoft/go-mssqldb"                     // register Db driver
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -23,6 +24,23 @@ import (
 )
 
 var errConfigNotSQLServer = errors.New("config was not a sqlserver receiver config")
+
+// Logs event names; must match metadata (e.g. mapstructure "db.server.*", SetEventName in generated_logs).
+const (
+	logsEventQuerySample = "db.server.query_sample"
+	logsEventTopQuery    = "db.server.top_query"
+)
+
+// logsEventOrder defines the order of log events (scraper index = order here).
+// setupLogQueries and buildLogsSchedules both iterate this slice so order stays in sync.
+var logsEventOrder = []struct {
+	name    string
+	enabled func(*Config) bool
+	query   func() string
+}{
+	{logsEventQuerySample, func(c *Config) bool { return c.Events.DbServerQuerySample.Enabled }, getSQLServerQuerySamplesQuery},
+	{logsEventTopQuery, func(c *Config) bool { return c.Events.DbServerTopQuery.Enabled }, getSQLServerQueryTextAndPlanQuery},
+}
 
 // newCache creates a new cache with the given size.
 // If the size is less or equal to 0, it will be set to 1.
@@ -87,15 +105,11 @@ func setupQueries(cfg *Config) []string {
 
 func setupLogQueries(cfg *Config) []string {
 	var queries []string
-
-	if cfg.Events.DbServerQuerySample.Enabled {
-		queries = append(queries, getSQLServerQuerySamplesQuery())
+	for _, e := range logsEventOrder {
+		if e.enabled(cfg) {
+			queries = append(queries, e.query())
+		}
 	}
-
-	if cfg.Events.DbServerTopQuery.Enabled {
-		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
-	}
-
 	return queries
 }
 
@@ -218,9 +232,47 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Contr
 	return opts, nil
 }
 
-// Note: This method will fail silently if there is no work to do. This is an acceptable use case
-// as this receiver can still get information on Windows from performance counters without a direct
-// connection. Messages will be logged at the INFO level in such cases.
+// eventCollectionInterval returns the collection interval for an event.
+// Uses events.<event>.collection_interval first; if zero, falls back to legacy
+// top_query_collection/query_sample_collection.collection_interval, then receiver collection_interval.
+func eventCollectionInterval(cfg *Config, eventName string) time.Duration {
+	defaultInterval := cfg.ControllerConfig.CollectionInterval
+	switch eventName {
+	case logsEventQuerySample:
+		if cfg.Events.DbServerQuerySample.CollectionInterval > 0 {
+			return cfg.Events.DbServerQuerySample.CollectionInterval
+		}
+		return defaultInterval
+	case logsEventTopQuery:
+		if cfg.Events.DbServerTopQuery.CollectionInterval > 0 {
+			return cfg.Events.DbServerTopQuery.CollectionInterval
+		}
+		if cfg.TopQueryCollection.CollectionInterval > 0 {
+			return cfg.TopQueryCollection.CollectionInterval
+		}
+		return defaultInterval
+	default:
+		return defaultInterval
+	}
+}
+
+// buildLogsSchedules builds one schedule per enabled event, each with its own collection interval.
+func buildLogsSchedules(cfg *Config, nextConsumer consumer.Logs) []scraperhelper.LogsSchedule {
+	var schedules []scraperhelper.LogsSchedule
+	scraperIndex := 0
+	for _, e := range logsEventOrder {
+		if e.enabled(cfg) {
+			interval := eventCollectionInterval(cfg, e.name)
+			schedules = append(schedules, scraperhelper.NewLogsScheduleForScraper(scraperIndex, scraperhelper.ScheduleConfig{CollectionInterval: interval}, nextConsumer))
+			scraperIndex++
+		}
+	}
+	return schedules
+}
+
+// setupLogsScrapers sets up log scrapers and optionally per-event schedules.
+// When events are enabled, returns opts and schedules for WithLogsSchedules so each event
+// is collected at its own collection_interval.
 func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, error) {
 	sqlServerScrapers := setupSQLServerLogsScrapers(params, cfg)
 

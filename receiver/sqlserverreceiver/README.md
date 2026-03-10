@@ -47,7 +47,7 @@ information, please reference the following section.
 
 ```yaml
 sqlserver:
-  collection_interval: 10s                     # interval for overall collection
+  collection_interval: 10s                     # default interval for metrics and for events when not overridden
   instance_name: CustomInstance
   username: myusername
   password: mypassword
@@ -55,17 +55,18 @@ sqlserver:
   port: 1433
   events:
     db.server.query_sample:
+      collection_interval: 15s                # per-event interval (overrides default when set)
       enabled: true
       collection_interval: 60s              # optional: override for this event (default: global)
     db.server.top_query:
+      collection_interval: 60s                # per-event interval
       enabled: true
       collection_interval: 120s            # optional: override for this event (default: top_query_collection.collection_interval)
   top_query_collection:                        # this collection exports the most expensive queries as logs
     lookback_time: 60s                         # which time window should we look for the top queries
     max_query_sample_count: 1000               # maximum number query we store in cache for top queries.
     top_query_count: 250                       # The maximum number of active queries to report in a single run.
-    collection_interval: 60s                   # collection interval for top query collection specifically
-  query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
+  query_sample_collection:                     # this collection exports the currently executing queries as logs
     max_rows_per_query: 100                    # the maximum number of samples to return for one single query.
 ```
 
@@ -87,6 +88,10 @@ Note: it can't be used in conjunction with the `username`, `password`, `server` 
 Windows-specific options:
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.
   If specified, `instance_name` is also required to be defined. This option is ignored in non-Windows environments.
+
+Per-event collection interval (recommended): Set `collection_interval` under each event in `events` so each event runs on its own schedule:
+- `events.db.server.top_query.collection_interval`: Interval for top-query collection (e.g. `60s`). Zero means use receiver `collection_interval`.
+- `events.db.server.query_sample.collection_interval`: Interval for query-sample collection (e.g. `15s`). Zero means use receiver `collection_interval`.
 
 Top-Query collection specific options (only useful when top-query collection are enabled):
 - `lookback_time` (optional, example = `60s`, default = `2 * collection_interval`): The time window (in second) in which to query for top queries.
@@ -138,21 +143,27 @@ Example with named instance:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-Top query collection enabled:
+Top query and query sample collection enabled (with per-event collection intervals):
 ```yaml
     receivers:
       sqlserver:
-        collection_interval: 5s
+        collection_interval: 10s
         username: sa
         password: securepassword
         server: 0.0.0.0
         port: 1433
         top_query_collection:
-          lookback_time: 60s
           max_query_sample_count: 1000
           top_query_count: 200
         query_sample_collection:
-          max_rows_per_query: 1450
+          max_rows_per_query: 100
+        events:
+          db.server.top_query:
+            collection_interval: 60s
+            enabled: true
+          db.server.query_sample:
+            collection_interval: 15s
+            enabled: true
 ```
 
 ## Feature Gate

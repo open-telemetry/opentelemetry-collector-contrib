@@ -1,3 +1,4 @@
+display_name: AWS Container Insights Receiver
 type: awscontainerinsightreceiver
 
 status:

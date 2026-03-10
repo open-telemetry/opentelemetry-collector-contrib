@@ -144,7 +144,6 @@ components:
         - azure_event_hub
         - azureblob
         - azuremonitor
-        - bigip
         - carbon
         - chrony
         - cloudflare

@@ -58,7 +58,7 @@ jobs:
       - name: Run opampsupervisor e2e tests
         run: |
           cd cmd/opampsupervisor
-          go test -v --tags=e2e
+          make e2e-test
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   docker-build:
@@ -91,7 +91,6 @@ jobs:
       fail-fast: false
       matrix:
         k8s-version:
-          - "v1.32.8"
           - "v1.34.0"
           - "v1.35.0"
         component:
@@ -109,7 +108,7 @@ jobs:
         with:
           go-version: oldstable
       - name: Create kind cluster
-        uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
           node_image: kindest/node:${{ matrix.k8s-version }}
           kubectl_version: ${{ matrix.k8s-version }}

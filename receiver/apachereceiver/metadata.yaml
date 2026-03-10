@@ -1,4 +1,8 @@
+display_name: Apache Web Server Receiver
 type: apache
+
+description: |
+  The Apache Web Server Receiver fetches stats from an Apache Web Server instance using the `server-status?auto` endpoint.
 
 status:
   class: receiver

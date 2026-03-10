@@ -265,10 +265,10 @@ govulncheck:
 
 .PHONY: modernize
 modernize:
-	$(MODERNIZE) -fix -test -tags integration -v -any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr \
+	$(MODERNIZE) -fix -test -tags integration -v -any -fmtappendf -forvar -mapsloop -minmax -newexpr \
 		-omitzero -plusbuild \
 		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
-		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -waitgroup ./...
+		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -unsafefuncs -waitgroup ./...
 
 .PHONY: tidy
 tidy:

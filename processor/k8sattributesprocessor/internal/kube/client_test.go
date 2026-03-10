@@ -1300,6 +1300,36 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 	}
 }
 
+func TestRemoveUnnecessaryPodData_ClonesLabelsAndAnnotations(t *testing.T) {
+	rules := ExtractionRules{
+		Labels:      []FieldExtractionRule{{From: MetadataFromPod}},
+		Annotations: []FieldExtractionRule{{From: MetadataFromPod}},
+	}
+
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Labels: map[string]string{
+				"app": "web",
+			},
+			Annotations: map[string]string{
+				"anno": "value",
+			},
+		},
+	}
+
+	transformed := removeUnnecessaryPodData(pod, rules)
+
+	pod.Labels["new"] = "label"
+	pod.Annotations["new"] = "annotation"
+
+	_, ok := transformed.Labels["new"]
+	assert.False(t, ok)
+	_, ok = transformed.Annotations["new"]
+	assert.False(t, ok)
+	assert.Equal(t, "web", transformed.Labels["app"])
+	assert.Equal(t, "value", transformed.Annotations["anno"])
+}
+
 func TestNamespaceExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 

@@ -326,7 +326,7 @@ with detailed sample configurations in [testdata/config.yaml](./testdata/config.
 
 ### Role-based access control
 
-The Kubelet Stats Receiver needs `get` permissions on the `nodes/stats` resources. Additionally, when using `extra_metadata_labels` or any of the `{request|limit}_utilization` metrics the receiver also needs `get` permissions for `nodes/proxy` resources.
+The Kubelet Stats Receiver needs `get` permissions on the `nodes/stats` resources. Additionally, when using `extra_metadata_labels` or any of the `{request|limit}_utilization` metrics the receiver also needs `get` permissions for `nodes/pods` resources.
 
 When using `k8s_api_config` to collect detailed volume metadata from PersistentVolumeClaims (as described in [Collecting Additional Volume Metadata](#collecting-additional-volume-metadata)), the receiver also needs `get` permissions for `persistentvolumeclaims` and `persistentvolumes` resources.
 
@@ -343,7 +343,7 @@ rules:
   # Only needed if you are using extra_metadata_labels or
   # are collecting the request/limit utilization metrics
   - apiGroups: [""]
-    resources: ["nodes/proxy"]
+    resources: ["nodes/pods"]
     verbs: ["get"]
 
   # Only needed if you are using k8s_api_config to collect
