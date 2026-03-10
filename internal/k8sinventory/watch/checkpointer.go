@@ -23,13 +23,16 @@ func newCheckpointer(client storage.Client, logger *zap.Logger) *checkpointer {
 	}
 }
 
-func (c *checkpointer) GetResourceVersion(ctx context.Context,
+func (c *checkpointer) GetCheckpoint(ctx context.Context,
 	namespace, objectType string) (string, error) {
 	if c.client == nil {
 		return "", errors.New("storage client is nil")
 	}
 
 	checkPointKey := c.getCheckpointKey(namespace, objectType)
+	c.logger.Debug("Retrieving checkpoint, key: " + checkPointKey,
+		zap.String("namespace", namespace),
+		zap.String("objectType", objectType))
 	data, err := c.client.Get(ctx, checkPointKey)
 	if err != nil {
 		c.logger.Warn("Error retrieving checkpoint",
@@ -48,7 +51,7 @@ func (c *checkpointer) GetResourceVersion(ctx context.Context,
 	return string(data), nil
 }
 
-func (c *checkpointer) SetResourceVersion(
+func (c *checkpointer) SetCheckpoint(
 	ctx context.Context,
 	namespace, objectType, resourceVersion string) error {
 	if c.client == nil {
@@ -64,7 +67,32 @@ func (c *checkpointer) SetResourceVersion(
 		return fmt.Errorf("failed to store resourceVersion with key %s: %w", key, err)
 	}
 
-	c.logger.Debug("Checkpoint saved",
+	c.logger.Debug("Checkpoint saved with key: " + key + " value: " + resourceVersion,
+		zap.String("namespace", namespace),
+		zap.String("objectType", objectType))
+
+	return nil
+}
+
+// DeleteCheckpoint deletes the persisted checkpoint for a given namespace and object type.
+// This is used when the persisted resourceVersion is no longer valid (e.g., after a 410 Gone error).
+func (c *checkpointer) DeleteCheckpoint(
+	ctx context.Context,
+	namespace, objectType string) error {
+	if c.client == nil {
+		return errors.New("storage client is nil")
+	}
+
+	key := c.getCheckpointKey(namespace, objectType)
+	if key == "" {
+		return fmt.Errorf("checkpoint key is empty: %s, %s", namespace, objectType)
+	}
+
+	if err := c.client.Delete(ctx, key); err != nil {
+		return fmt.Errorf("failed to delete resourceVersion with key %s: %w", key, err)
+	}
+
+	c.logger.Debug("Checkpoint deleted with key: " + key,
 		zap.String("namespace", namespace),
 		zap.String("objectType", objectType))
 

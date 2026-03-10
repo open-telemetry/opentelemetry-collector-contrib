@@ -22,11 +22,11 @@ func TestCheckpointerGetAndSet(t *testing.T) {
 	ctx := context.Background()
 
 	// Test Set
-	err := checkpointer.SetResourceVersion(ctx, "default", "pods", "12345")
+	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "12345")
 	require.NoError(t, err)
 
 	// Test Get
-	rv, err := checkpointer.GetResourceVersion(ctx, "default", "pods")
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "12345", rv)
 }
@@ -84,11 +84,11 @@ func TestCheckpointerKeyFormat(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set the resourceVersion
-			err := checkpointer.SetResourceVersion(ctx, tt.namespace, tt.objectType, tt.resourceVersion)
+			err := checkpointer.SetCheckpoint(ctx, tt.namespace, tt.objectType, tt.resourceVersion)
 			require.NoError(t, err)
 
 			// Verify the key format by getting it back
-			rv, err := checkpointer.GetResourceVersion(ctx, tt.namespace, tt.objectType)
+			rv, err := checkpointer.GetCheckpoint(ctx, tt.namespace, tt.objectType)
 			require.NoError(t, err)
 			assert.Equal(t, tt.resourceVersion, rv)
 
@@ -106,7 +106,7 @@ func TestCheckpointerGetNonExistent(t *testing.T) {
 	ctx := context.Background()
 
 	// Get non-existent key
-	rv, err := checkpointer.GetResourceVersion(ctx, "default", "pods")
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "", rv)
 }
@@ -118,15 +118,15 @@ func TestCheckpointerUpdate(t *testing.T) {
 	ctx := context.Background()
 
 	// Set initial value
-	err := checkpointer.SetResourceVersion(ctx, "default", "pods", "100")
+	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
 	require.NoError(t, err)
 
 	// Update to new value
-	err = checkpointer.SetResourceVersion(ctx, "default", "pods", "200")
+	err = checkpointer.SetCheckpoint(ctx, "default", "pods", "200")
 	require.NoError(t, err)
 
 	// Verify updated value
-	rv, err := checkpointer.GetResourceVersion(ctx, "default", "pods")
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "200", rv)
 }
@@ -138,18 +138,18 @@ func TestCheckpointerMultipleNamespaces(t *testing.T) {
 	ctx := context.Background()
 
 	// Set different versions for different namespaces
-	err := checkpointer.SetResourceVersion(ctx, "default", "pods", "100")
+	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
 	require.NoError(t, err)
 
-	err = checkpointer.SetResourceVersion(ctx, "kube-system", "pods", "200")
+	err = checkpointer.SetCheckpoint(ctx, "kube-system", "pods", "200")
 	require.NoError(t, err)
 
 	// Verify they are independent
-	rv1, err := checkpointer.GetResourceVersion(ctx, "default", "pods")
+	rv1, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv1)
 
-	rv2, err := checkpointer.GetResourceVersion(ctx, "kube-system", "pods")
+	rv2, err := checkpointer.GetCheckpoint(ctx, "kube-system", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "200", rv2)
 }
@@ -160,12 +160,105 @@ func TestCheckpointerNilClient(t *testing.T) {
 	ctx := context.Background()
 
 	// Get with nil client should return error
-	_, err := checkpointer.GetResourceVersion(ctx, "default", "pods")
+	_, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "storage client is nil")
 
 	// Set with nil client should return error
-	err = checkpointer.SetResourceVersion(ctx, "default", "pods", "100")
+	err = checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "storage client is nil")
+
+	// Delete with nil client should return error
+	err = checkpointer.DeleteCheckpoint(ctx, "default", "pods")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "storage client is nil")
+}
+
+func TestCheckpointerDelete(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := newCheckpointer(client, zap.NewNop())
+
+	ctx := context.Background()
+
+	// Set a value
+	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "12345")
+	require.NoError(t, err)
+
+	// Verify it exists
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "12345", rv)
+
+	// Delete it
+	err = checkpointer.DeleteCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+
+	// Verify it's gone (Get should return empty string)
+	rv, err = checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "", rv)
+}
+
+func TestCheckpointerDeleteNonExistent(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := newCheckpointer(client, zap.NewNop())
+
+	ctx := context.Background()
+
+	// Delete non-existent key should not error
+	err := checkpointer.DeleteCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+}
+
+func TestCheckpointerDeleteMultipleNamespaces(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := newCheckpointer(client, zap.NewNop())
+
+	ctx := context.Background()
+
+	// Set values for different namespaces
+	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
+	require.NoError(t, err)
+
+	err = checkpointer.SetCheckpoint(ctx, "kube-system", "pods", "200")
+	require.NoError(t, err)
+
+	// Delete only one namespace
+	err = checkpointer.DeleteCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+
+	// Verify only default was deleted
+	rv1, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "", rv1) // Should be empty
+
+	rv2, err := checkpointer.GetCheckpoint(ctx, "kube-system", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "200", rv2) // Should still exist
+}
+
+func TestCheckpointerDeleteClusterWide(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := newCheckpointer(client, zap.NewNop())
+
+	ctx := context.Background()
+
+	// Set cluster-wide resource (empty namespace)
+	err := checkpointer.SetCheckpoint(ctx, "", "nodes", "500")
+	require.NoError(t, err)
+
+	// Verify it exists
+	rv, err := checkpointer.GetCheckpoint(ctx, "", "nodes")
+	require.NoError(t, err)
+	assert.Equal(t, "500", rv)
+
+	// Delete it
+	err = checkpointer.DeleteCheckpoint(ctx, "", "nodes")
+	require.NoError(t, err)
+
+	// Verify it's gone
+	rv, err = checkpointer.GetCheckpoint(ctx, "", "nodes")
+	require.NoError(t, err)
+	assert.Equal(t, "", rv)
 }

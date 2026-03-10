@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"go.opentelemetry.io/collector/extension/xextension/storage"
@@ -114,7 +113,19 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 		}
 
 		// need to restart with a fresh resource version
+		// Clear the config resourceVersion
 		o.config.ResourceVersion = ""
+
+		// Delete the persisted resourceVersion so we don't reuse the stale/expired value
+		// This handles 410 Gone errors where the persisted resourceVersion is too old
+		if o.checkpointer != nil {
+			if err := o.checkpointer.DeleteCheckpoint(context.Background(), namespace, o.config.Gvr.Resource); err != nil {
+				o.logger.Warn("failed to delete persisted resourceVersion after watch restart",
+					zap.String("namespace", namespace),
+					zap.String("resource", o.config.Gvr.Resource),
+					zap.Error(err))
+			}
+		}
 	}, 0)
 }
 
@@ -215,7 +226,7 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion string, namespac
 						checkpointNs := namespace
 
 						// Save synchronously to ensure persistence before processing next event
-						if err := o.checkpointer.SetResourceVersion(context.Background(), checkpointNs, o.config.Gvr.Resource, rv); err != nil {
+						if err := o.checkpointer.SetCheckpoint(context.Background(), checkpointNs, o.config.Gvr.Resource, rv); err != nil {
 							o.logger.Debug("failed to persist resourceVersion",
 								zap.String("namespace", checkpointNs),
 								zap.String("resource", o.config.Gvr.Resource),
@@ -233,82 +244,76 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion string, namespac
 	}
 }
 
-// getResourceVersion determines the optimal resourceVersion to start watching from.
-// If config resourceVersion is provided, it is used directly.
-// Otherwise, compares List and persisted versions and uses the highest to avoid 410 Gone errors.
-func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.ResourceInterface, namespace string) (string, error) {
-	resourceVersion := o.config.ResourceVersion
-
-	if resourceVersion == "" || resourceVersion == "0" {
-		// Proper use of the Kubernetes API Watch capability when no resourceVersion is supplied is to do a list first
-		// to get the initial state and a useable resourceVersion.
-		// See https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes for details.
-		objects, err := resource.List(ctx, metav1.ListOptions{
-			FieldSelector: o.config.FieldSelector,
-			LabelSelector: o.config.LabelSelector,
-		})
-		if err != nil {
-			return "", fmt.Errorf("could not perform initial list for watch on %v, %w", o.config.Gvr.String(), err)
-		}
-		if objects == nil {
-			return "", errors.New("nil objects returned, this is an error in the k8s observer")
-		}
-
-		resourceVersion = objects.GetResourceVersion()
-
-		// If we still don't have a resourceVersion we can try 1 as a last ditch effort.
-		// This also helps our unit tests since the fake client can't handle returning resource versions
-		// as part of a list of objects.
-		if resourceVersion == "" || resourceVersion == "0" {
-			resourceVersion = defaultResourceVersion
-		}
-
-		// Load persisted version if available and compare with list version
-		if o.checkpointer != nil {
-			persistedVersion, err := o.checkpointer.GetResourceVersion(ctx, namespace, o.config.Gvr.Resource)
-			o.logger.Debug("persisted resourceVersion ",
-				zap.String("resourceVersion", persistedVersion),
-				zap.String("namespace", namespace))
-			if err != nil {
-				o.logger.Warn("failed to load persisted resourceVersion",
-					zap.String("namespace", namespace),
-					zap.String("resource", o.config.Gvr.Resource),
-					zap.Error(err))
-			} else if persistedVersion != "" && persistedVersion != "0" {
-				// Use persisted version if it's higher than list version
-				if compareResourceVersions(persistedVersion, resourceVersion) > 0 {
-					resourceVersion = persistedVersion
-				}
-			}
-		}
+// fetchListResourceVersion performs a List operation and returns the latest resourceVersion.
+// Returns defaultResourceVersion if the API returns an empty or zero version.
+func (o *Observer) fetchListResourceVersion(ctx context.Context, resource dynamic.ResourceInterface, namespace string) (string, error) {
+	objects, err := resource.List(ctx, metav1.ListOptions{
+		FieldSelector: o.config.FieldSelector,
+		LabelSelector: o.config.LabelSelector,
+	})
+	if err != nil {
+		return "", fmt.Errorf("could not perform initial list for watch on %v, %w", o.config.Gvr.String(), err)
+	}
+	if objects == nil {
+		return "", errors.New("nil objects returned, this is an error in the k8s observer")
 	}
 
-	return resourceVersion, nil
+	listVersion := objects.GetResourceVersion()
+
+	// If we still don't have a resourceVersion, use default
+	if listVersion == "" || listVersion == "0" {
+		listVersion = defaultResourceVersion
+	}
+
+	return listVersion, nil
 }
 
-// compareResourceVersions compares two resourceVersion strings.
-// Returns: -1 if a < b, 0 if a == b, 1 if a > b
-// Kubernetes resourceVersions are monotonically increasing integers represented as strings.
-func compareResourceVersions(a, b string) int {
-	// Parse as unsigned 64-bit integers for proper numeric comparison
-	aInt, errA := strconv.ParseUint(a, 10, 64)
-	bInt, errB := strconv.ParseUint(b, 10, 64)
+// getResourceVersion determines the optimal resourceVersion to start watching from.
+// Priority order:
+// 1. Persisted resourceVersion (if checkpointer is not nil)
+// 2. Config resourceVersion (if checkpointer is nil)
+// 3. List resourceVersion (if no persisted/config version available)
+func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.ResourceInterface, namespace string) (string, error) {
+	// Priority 1: Check for persisted resourceVersion if checkpointer is available
+	if o.checkpointer != nil {
+		persistedVersion, err := o.checkpointer.GetCheckpoint(ctx, namespace, o.config.Gvr.Resource)
+		o.logger.Debug("loading persisted resourceVersion",
+			zap.String("resourceVersion", persistedVersion),
+			zap.String("namespace", namespace),
+			zap.Error(err))
 
-	// If both parse successfully, compare as numbers
-	if errA == nil && errB == nil {
-		if aInt < bInt {
-			return -1
-		} else if aInt > bInt {
-			return 1
+		// If persisted version exists and is valid, use it
+		if err == nil && persistedVersion != "" && persistedVersion != "0" {
+			return persistedVersion, nil
 		}
-		return 0
+
+		// No valid persisted version found - get from List and persist it
+		listVersion, err := o.fetchListResourceVersion(ctx, resource, namespace)
+		if err != nil {
+			return "", err
+		}
+
+		// Persist the list version for future use
+		if err := o.checkpointer.SetCheckpoint(ctx, namespace, o.config.Gvr.Resource, listVersion); err != nil {
+			o.logger.Warn("failed to persist initial resourceVersion",
+				zap.String("namespace", namespace),
+				zap.String("resource", o.config.Gvr.Resource),
+				zap.String("resourceVersion", listVersion),
+				zap.Error(err))
+		}
+
+		return listVersion, nil
 	}
 
-	// Fallback to string comparison if parsing fails
-	if a < b {
-		return -1
-	} else if a > b {
-		return 1
+	// Priority 2: No checkpointer - check config resourceVersion
+	configVersion := o.config.ResourceVersion
+	if configVersion != "" && configVersion != "0" {
+		return configVersion, nil
 	}
-	return 0
+	// Priority 3: No config version - perform List operation
+	listVersion, err := o.fetchListResourceVersion(ctx, resource, namespace)
+	if err != nil {
+		return "", err
+	}
+	return listVersion, nil
 }

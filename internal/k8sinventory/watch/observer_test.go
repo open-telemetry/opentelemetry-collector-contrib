@@ -572,7 +572,7 @@ func TestObserverWithPersistence(t *testing.T) {
 
 	// Verify resourceVersion was persisted
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	rv, err := checkpointer.GetResourceVersion(context.Background(), "default", "pods")
+	rv, err := checkpointer.GetCheckpoint(context.Background(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv)
 
@@ -628,7 +628,7 @@ func TestObserverWithoutPersistence(t *testing.T) {
 
 	// Verify resourceVersion was NOT persisted
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	rv, err := checkpointer.GetResourceVersion(context.Background(), "default", "pods")
+	rv, err := checkpointer.GetCheckpoint(context.Background(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "", rv) // Should be empty
 
@@ -734,7 +734,7 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 
 	// Verify single key for cluster-wide watch (no namespace suffix)
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	rv, err := checkpointer.GetResourceVersion(context.Background(), "", "pods")
+	rv, err := checkpointer.GetCheckpoint(context.Background(), "", "pods")
 	require.NoError(t, err)
 	assert.NotEmpty(t, rv) // Should have a value
 
@@ -797,11 +797,11 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	// Verify separate keys for each namespace
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
 
-	rv1, err := checkpointer.GetResourceVersion(context.Background(), "default", "pods")
+	rv1, err := checkpointer.GetCheckpoint(context.Background(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv1)
 
-	rv2, err := checkpointer.GetResourceVersion(context.Background(), "other", "pods")
+	rv2, err := checkpointer.GetCheckpoint(context.Background(), "other", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "200", rv2)
 
@@ -822,13 +822,11 @@ func TestObserverResourceVersionPriority(t *testing.T) {
 
 	// Pre-populate storage with a persisted resourceVersion
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	err := checkpointer.SetResourceVersion(context.Background(), "default", "pods", "500")
+	err := checkpointer.SetCheckpoint(context.Background(), "default", "pods", "500")
 	require.NoError(t, err)
 
-	// Create a pod to set the List resourceVersion
-	mockClient.createPods(
-		generatePod("pod1", "default", map[string]any{"env": "test"}, "100"),
-	)
+	// Set list resourceVersion
+	mockClient.setListResourceVersion("100")
 
 	tests := []struct {
 		name                  string
@@ -836,19 +834,19 @@ func TestObserverResourceVersionPriority(t *testing.T) {
 		expectUsedVersion     string // The version that should actually be used
 	}{
 		{
-			name:                  "config provided - used directly",
+			name:                  "config provided but persisted takes priority",
 			configResourceVersion: "999",
-			expectUsedVersion:     "999", // Config used directly
+			expectUsedVersion:     "500", // Persisted takes priority
 		},
 		{
-			name:                  "no config - persisted higher than list",
+			name:                  "no config - uses persisted",
 			configResourceVersion: "",
-			expectUsedVersion:     "500", // Persisted (500) > List (100)
+			expectUsedVersion:     "500", // Persisted version used
 		},
 		{
-			name:                  "config lower than persisted - still uses config",
+			name:                  "config lower than persisted - persisted still wins",
 			configResourceVersion: "50",
-			expectUsedVersion:     "50", // Config used directly, even if lower
+			expectUsedVersion:     "500", // Persisted takes priority over config
 		},
 	}
 
@@ -879,7 +877,7 @@ func TestObserverResourceVersionPriority(t *testing.T) {
 			resource := mockClient.Resource(cfg.Gvr)
 			version, err := obs.getResourceVersion(context.Background(), resource.Namespace("default"), "default")
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectUsedVersion, version, "getResourceVersion should return the highest version")
+			assert.Equal(t, tt.expectUsedVersion, version, "getResourceVersion should return persisted version when available")
 
 			wg := sync.WaitGroup{}
 			stopChan := obs.Start(context.Background(), &wg)
@@ -905,41 +903,41 @@ func TestGetResourceVersion(t *testing.T) {
 		enablePersistence bool
 	}{
 		{
-			name:            "list version only",
+			name:            "list version only (no persistence, no config)",
 			configVersion:   "",
 			persistedVersion: "",
 			listVersion:     "100",
 			expectedVersion: "100",
 		},
 		{
-			name:            "config provided - used directly",
+			name:            "config provided without persistence - config wins",
 			configVersion:   "150",
 			persistedVersion: "",
 			listVersion:     "100",
-			expectedVersion: "150", // Config used directly
+			expectedVersion: "150", // Config used when no persistence
 		},
 		{
-			name:              "no config - persisted higher than list",
-			configVersion:     "",
+			name:              "persisted exists - takes priority over everything",
+			configVersion:     "999",
 			persistedVersion:  "200",
 			listVersion:       "100",
-			expectedVersion:   "200", // Highest of list/persisted
+			expectedVersion:   "200", // Persisted takes priority
 			enablePersistence: true,
 		},
 		{
-			name:              "config provided ignores persisted and list",
+			name:              "config provided but persisted wins",
 			configVersion:     "50",
 			persistedVersion:  "200",
 			listVersion:       "100",
-			expectedVersion:   "50", // Config used directly, even if lower
+			expectedVersion:   "200", // Persisted takes priority over config
 			enablePersistence: true,
 		},
 		{
-			name:              "no config - list higher than persisted",
+			name:              "no persisted - list and persist it",
 			configVersion:     "",
-			persistedVersion:  "100",
+			persistedVersion:  "",
 			listVersion:       "300",
-			expectedVersion:   "300", // Highest of list/persisted
+			expectedVersion:   "300", // List version used and persisted
 			enablePersistence: true,
 		},
 		{
@@ -950,7 +948,7 @@ func TestGetResourceVersion(t *testing.T) {
 			expectedVersion: "1", // defaultResourceVersion
 		},
 		{
-			name:            "zero values ignored",
+			name:            "zero values ignored - falls back to default",
 			configVersion:   "0",
 			persistedVersion: "",
 			listVersion:     "0",
@@ -961,7 +959,7 @@ func TestGetResourceVersion(t *testing.T) {
 			configVersion:     "100",
 			persistedVersion:  "999", // Won't be loaded since persistence disabled
 			listVersion:       "200",
-			expectedVersion:   "100", // Config used directly
+			expectedVersion:   "100", // Config used when persistence disabled
 			enablePersistence: false,
 		},
 		{
@@ -972,6 +970,22 @@ func TestGetResourceVersion(t *testing.T) {
 			expectedVersion:   "200", // List version used (persisted not loaded)
 			enablePersistence: false,
 		},
+		{
+			name:              "persisted zero value - falls back to list",
+			configVersion:     "",
+			persistedVersion:  "0",
+			listVersion:       "250",
+			expectedVersion:   "250", // Persisted "0" is invalid, use list
+			enablePersistence: true,
+		},
+		{
+			name:              "persisted empty - falls back to list",
+			configVersion:     "",
+			persistedVersion:  "",
+			listVersion:       "350",
+			expectedVersion:   "350", // No persisted value, use list
+			enablePersistence: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -981,13 +995,6 @@ func TestGetResourceVersion(t *testing.T) {
 			// Set the list resourceVersion that will be returned by List operations
 			if tt.listVersion != "" {
 				mockClient.setListResourceVersion(tt.listVersion)
-			}
-
-			// Create pods if needed
-			if tt.listVersion != "" {
-				mockClient.createPods(
-					generatePod("pod1", "default", map[string]any{"env": "test"}, tt.listVersion),
-				)
 			}
 
 			cfg := Config{
@@ -1010,7 +1017,7 @@ func TestGetResourceVersion(t *testing.T) {
 				// Pre-populate persisted version if provided
 				if tt.persistedVersion != "" {
 					checkpointer := newCheckpointer(storageClient, zap.NewNop())
-					err := checkpointer.SetResourceVersion(context.Background(), "default", "pods", tt.persistedVersion)
+					err := checkpointer.SetCheckpoint(context.Background(), "default", "pods", tt.persistedVersion)
 					require.NoError(t, err)
 				}
 			}
@@ -1022,59 +1029,15 @@ func TestGetResourceVersion(t *testing.T) {
 			version, err := obs.getResourceVersion(context.Background(), resource.Namespace("default"), "default")
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedVersion, version)
+
+			// If persistence enabled and no initial persisted value, verify it was persisted
+			if tt.enablePersistence && tt.persistedVersion == "" && tt.listVersion != "" && tt.listVersion != "0" {
+				checkpointer := newCheckpointer(storageClient, zap.NewNop())
+				persistedAfter, err := checkpointer.GetCheckpoint(context.Background(), "default", "pods")
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedVersion, persistedAfter, "list version should have been persisted")
+			}
 		})
 	}
 }
 
-func TestCompareResourceVersions(t *testing.T) {
-	tests := []struct {
-		name     string
-		a        string
-		b        string
-		expected int
-	}{
-		{
-			name:     "a less than b",
-			a:        "100",
-			b:        "200",
-			expected: -1,
-		},
-		{
-			name:     "a greater than b",
-			a:        "300",
-			b:        "200",
-			expected: 1,
-		},
-		{
-			name:     "a equals b",
-			a:        "200",
-			b:        "200",
-			expected: 0,
-		},
-		{
-			name:     "numeric comparison with different lengths",
-			a:        "9",
-			b:        "100",
-			expected: -1, // 9 < 100 numerically
-		},
-		{
-			name:     "large numbers",
-			a:        "999999999",
-			b:        "1000000000",
-			expected: -1,
-		},
-		{
-			name:     "non-numeric fallback to string comparison",
-			a:        "v1",
-			b:        "v2",
-			expected: -1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := compareResourceVersions(tt.a, tt.b)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
