@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/heade
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.146.2-0.20260219223409-66996adfaaf7
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.147.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.53.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/component v1.53.1-0.20260309153054-85fc1918516c
@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.147.1-0.20260309153054-85fc1918516c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
-	google.golang.org/grpc v1.79.1
+	google.golang.org/grpc v1.79.2
 )
 
 require (
