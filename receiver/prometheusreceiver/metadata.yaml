@@ -67,7 +67,7 @@ feature_gates:
     stage: stable
     description: >-
       When enabled, the Prometheus receiver will leave the start time unset.
-      Use the metricstarttime processor instead if you need this functionality.
+      Use the metric_start_time processor instead if you need this functionality.
     from_version: v0.121.0
     to_version: v0.142.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36364

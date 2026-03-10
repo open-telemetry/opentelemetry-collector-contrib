@@ -4,188 +4,188 @@ $defs:
     description: MetricsConfig provides config for expvar metrics.
     type: object
     properties:
-    process.runtime.memstats.buck_hash_sys:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.frees:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.gc_cpu_fraction:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.gc_sys:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.heap_alloc:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.heap_idle:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.heap_inuse:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.heap_objects:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.heap_released:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.heap_sys:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.last_pause:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.lookups:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.runtime.memstats.mallocs:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.mcache_inuse:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.mcache_sys:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.mspan_inuse:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.mspan_sys:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.next_gc:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.num_forced_gc:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.num_gc:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.other_sys:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.pause_total:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.stack_inuse:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.stack_sys:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.sys:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.runtime.memstats.total_alloc:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
+      process.runtime.memstats.buck_hash_sys:
+        description: "ProcessRuntimeMemstatsBuckHashSysConfig provides config for the process.runtime.memstats.buck_hash_sys metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.frees:
+        description: "ProcessRuntimeMemstatsFreesConfig provides config for the process.runtime.memstats.frees metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.gc_cpu_fraction:
+        description: "ProcessRuntimeMemstatsGcCPUFractionConfig provides config for the process.runtime.memstats.gc_cpu_fraction metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.gc_sys:
+        description: "ProcessRuntimeMemstatsGcSysConfig provides config for the process.runtime.memstats.gc_sys metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.heap_alloc:
+        description: "ProcessRuntimeMemstatsHeapAllocConfig provides config for the process.runtime.memstats.heap_alloc metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.heap_idle:
+        description: "ProcessRuntimeMemstatsHeapIdleConfig provides config for the process.runtime.memstats.heap_idle metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.heap_inuse:
+        description: "ProcessRuntimeMemstatsHeapInuseConfig provides config for the process.runtime.memstats.heap_inuse metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.heap_objects:
+        description: "ProcessRuntimeMemstatsHeapObjectsConfig provides config for the process.runtime.memstats.heap_objects metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.heap_released:
+        description: "ProcessRuntimeMemstatsHeapReleasedConfig provides config for the process.runtime.memstats.heap_released metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.heap_sys:
+        description: "ProcessRuntimeMemstatsHeapSysConfig provides config for the process.runtime.memstats.heap_sys metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.last_pause:
+        description: "ProcessRuntimeMemstatsLastPauseConfig provides config for the process.runtime.memstats.last_pause metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.lookups:
+        description: "ProcessRuntimeMemstatsLookupsConfig provides config for the process.runtime.memstats.lookups metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.runtime.memstats.mallocs:
+        description: "ProcessRuntimeMemstatsMallocsConfig provides config for the process.runtime.memstats.mallocs metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.mcache_inuse:
+        description: "ProcessRuntimeMemstatsMcacheInuseConfig provides config for the process.runtime.memstats.mcache_inuse metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.mcache_sys:
+        description: "ProcessRuntimeMemstatsMcacheSysConfig provides config for the process.runtime.memstats.mcache_sys metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.mspan_inuse:
+        description: "ProcessRuntimeMemstatsMspanInuseConfig provides config for the process.runtime.memstats.mspan_inuse metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.mspan_sys:
+        description: "ProcessRuntimeMemstatsMspanSysConfig provides config for the process.runtime.memstats.mspan_sys metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.next_gc:
+        description: "ProcessRuntimeMemstatsNextGcConfig provides config for the process.runtime.memstats.next_gc metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.num_forced_gc:
+        description: "ProcessRuntimeMemstatsNumForcedGcConfig provides config for the process.runtime.memstats.num_forced_gc metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.num_gc:
+        description: "ProcessRuntimeMemstatsNumGcConfig provides config for the process.runtime.memstats.num_gc metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.other_sys:
+        description: "ProcessRuntimeMemstatsOtherSysConfig provides config for the process.runtime.memstats.other_sys metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.pause_total:
+        description: "ProcessRuntimeMemstatsPauseTotalConfig provides config for the process.runtime.memstats.pause_total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.stack_inuse:
+        description: "ProcessRuntimeMemstatsStackInuseConfig provides config for the process.runtime.memstats.stack_inuse metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.stack_sys:
+        description: "ProcessRuntimeMemstatsStackSysConfig provides config for the process.runtime.memstats.stack_sys metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.sys:
+        description: "ProcessRuntimeMemstatsSysConfig provides config for the process.runtime.memstats.sys metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.runtime.memstats.total_alloc:
+        description: "ProcessRuntimeMemstatsTotalAllocConfig provides config for the process.runtime.memstats.total_alloc metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for expvar metrics builder.
     type: object

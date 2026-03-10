@@ -4,23 +4,18 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled             bool `mapstructure:"enabled"`
-	enabledSetByUser    bool
-	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []string `mapstructure:"attributes"`
-	definedAttributes   []string
-	requiredAttributes  []string
+// RiakMemoryLimitConfig provides config for the riak.memory.limit metric.
+type RiakMemoryLimitConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RiakMemoryLimitConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,72 +24,260 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	if len(ms.definedAttributes) > 0 {
-		for _, val := range ms.EnabledAttributes {
-			if !slices.Contains(ms.definedAttributes, val) {
-				return fmt.Errorf("%v is not defined in metadata.yaml", val)
-			}
-		}
 
-		for _, val := range ms.requiredAttributes {
-			if !slices.Contains(ms.EnabledAttributes, val) {
-				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-			}
-		}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
-		if ms.AggregationStrategy != AggregationStrategySum &&
-			ms.AggregationStrategy != AggregationStrategyAvg &&
-			ms.AggregationStrategy != AggregationStrategyMin &&
-			ms.AggregationStrategy != AggregationStrategyMax {
-			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
-		}
+// RiakNodeOperationCountAttributeKey specifies the key of an attribute for the riak.node.operation.count metric.
+type RiakNodeOperationCountAttributeKey string
+
+const (
+	RiakNodeOperationCountAttributeKeyRequest RiakNodeOperationCountAttributeKey = "request"
+)
+
+// RiakNodeOperationCountConfig provides config for the riak.node.operation.count metric.
+type RiakNodeOperationCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RiakNodeOperationCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RiakNodeOperationCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
+func (ms *RiakNodeOperationCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RiakNodeOperationCountAttributeKeyRequest:
+		default:
+			return fmt.Errorf("metric riak.node.operation.count doesn't have an attribute %v, valid attributes: [request]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RiakNodeOperationTimeMeanAttributeKey specifies the key of an attribute for the riak.node.operation.time.mean metric.
+type RiakNodeOperationTimeMeanAttributeKey string
+
+const (
+	RiakNodeOperationTimeMeanAttributeKeyRequest RiakNodeOperationTimeMeanAttributeKey = "request"
+)
+
+// RiakNodeOperationTimeMeanConfig provides config for the riak.node.operation.time.mean metric.
+type RiakNodeOperationTimeMeanConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RiakNodeOperationTimeMeanAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RiakNodeOperationTimeMeanConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RiakNodeOperationTimeMeanConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RiakNodeOperationTimeMeanAttributeKeyRequest:
+		default:
+			return fmt.Errorf("metric riak.node.operation.time.mean doesn't have an attribute %v, valid attributes: [request]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RiakNodeReadRepairCountConfig provides config for the riak.node.read_repair.count metric.
+type RiakNodeReadRepairCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RiakNodeReadRepairCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RiakVnodeIndexOperationCountAttributeKey specifies the key of an attribute for the riak.vnode.index.operation.count metric.
+type RiakVnodeIndexOperationCountAttributeKey string
+
+const (
+	RiakVnodeIndexOperationCountAttributeKeyOperation RiakVnodeIndexOperationCountAttributeKey = "operation"
+)
+
+// RiakVnodeIndexOperationCountConfig provides config for the riak.vnode.index.operation.count metric.
+type RiakVnodeIndexOperationCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RiakVnodeIndexOperationCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RiakVnodeIndexOperationCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RiakVnodeIndexOperationCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RiakVnodeIndexOperationCountAttributeKeyOperation:
+		default:
+			return fmt.Errorf("metric riak.vnode.index.operation.count doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RiakVnodeOperationCountAttributeKey specifies the key of an attribute for the riak.vnode.operation.count metric.
+type RiakVnodeOperationCountAttributeKey string
+
+const (
+	RiakVnodeOperationCountAttributeKeyRequest RiakVnodeOperationCountAttributeKey = "request"
+)
+
+// RiakVnodeOperationCountConfig provides config for the riak.vnode.operation.count metric.
+type RiakVnodeOperationCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RiakVnodeOperationCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RiakVnodeOperationCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RiakVnodeOperationCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RiakVnodeOperationCountAttributeKeyRequest:
+		default:
+			return fmt.Errorf("metric riak.vnode.operation.count doesn't have an attribute %v, valid attributes: [request]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for riak metrics.
 type MetricsConfig struct {
-	RiakMemoryLimit              MetricConfig `mapstructure:"riak.memory.limit"`
-	RiakNodeOperationCount       MetricConfig `mapstructure:"riak.node.operation.count"`
-	RiakNodeOperationTimeMean    MetricConfig `mapstructure:"riak.node.operation.time.mean"`
-	RiakNodeReadRepairCount      MetricConfig `mapstructure:"riak.node.read_repair.count"`
-	RiakVnodeIndexOperationCount MetricConfig `mapstructure:"riak.vnode.index.operation.count"`
-	RiakVnodeOperationCount      MetricConfig `mapstructure:"riak.vnode.operation.count"`
+	RiakMemoryLimit              RiakMemoryLimitConfig              `mapstructure:"riak.memory.limit"`
+	RiakNodeOperationCount       RiakNodeOperationCountConfig       `mapstructure:"riak.node.operation.count"`
+	RiakNodeOperationTimeMean    RiakNodeOperationTimeMeanConfig    `mapstructure:"riak.node.operation.time.mean"`
+	RiakNodeReadRepairCount      RiakNodeReadRepairCountConfig      `mapstructure:"riak.node.read_repair.count"`
+	RiakVnodeIndexOperationCount RiakVnodeIndexOperationCountConfig `mapstructure:"riak.vnode.index.operation.count"`
+	RiakVnodeOperationCount      RiakVnodeOperationCountConfig      `mapstructure:"riak.vnode.operation.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		RiakMemoryLimit: MetricConfig{
+		RiakMemoryLimit: RiakMemoryLimitConfig{
 			Enabled: true,
 		},
-		RiakNodeOperationCount: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"request"},
-			EnabledAttributes:  []string{"request"},
+		RiakNodeOperationCount: RiakNodeOperationCountConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RiakNodeOperationCountAttributeKey{RiakNodeOperationCountAttributeKeyRequest},
 		},
-		RiakNodeOperationTimeMean: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"request"},
-			EnabledAttributes:  []string{"request"},
+		RiakNodeOperationTimeMean: RiakNodeOperationTimeMeanConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []RiakNodeOperationTimeMeanAttributeKey{RiakNodeOperationTimeMeanAttributeKeyRequest},
 		},
-		RiakNodeReadRepairCount: MetricConfig{
+		RiakNodeReadRepairCount: RiakNodeReadRepairCountConfig{
 			Enabled: true,
 		},
-		RiakVnodeIndexOperationCount: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"operation"},
-			EnabledAttributes:  []string{"operation"},
+		RiakVnodeIndexOperationCount: RiakVnodeIndexOperationCountConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RiakVnodeIndexOperationCountAttributeKey{RiakVnodeIndexOperationCountAttributeKeyOperation},
 		},
-		RiakVnodeOperationCount: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"request"},
-			EnabledAttributes:  []string{"request"},
+		RiakVnodeOperationCount: RiakVnodeOperationCountConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RiakVnodeOperationCountAttributeKey{RiakVnodeOperationCountAttributeKeyRequest},
 		},
 	}
 }

@@ -67,10 +67,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["RiakMemoryLimit"] = mb.metricRiakMemoryLimit.config.AggregationStrategy
 			aggMap["RiakNodeOperationCount"] = mb.metricRiakNodeOperationCount.config.AggregationStrategy
 			aggMap["RiakNodeOperationTimeMean"] = mb.metricRiakNodeOperationTimeMean.config.AggregationStrategy
-			aggMap["RiakNodeReadRepairCount"] = mb.metricRiakNodeReadRepairCount.config.AggregationStrategy
 			aggMap["RiakVnodeIndexOperationCount"] = mb.metricRiakVnodeIndexOperationCount.config.AggregationStrategy
 			aggMap["RiakVnodeOperationCount"] = mb.metricRiakVnodeOperationCount.config.AggregationStrategy
 
