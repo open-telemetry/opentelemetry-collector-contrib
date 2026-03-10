@@ -99,7 +99,12 @@ func assertCPUFrequencyMetricValid(t *testing.T, metric pmetric.Metric) {
 func TestScrape_CpuTopologyAttributes(t *testing.T) {
 	cfg := metadata.DefaultMetricsBuilderConfig()
 	cfg.Metrics.SystemCPUTime.Enabled = true
-	cfg.Metrics.SystemCPUTime.EnabledAttributes = []string{"cpu", "state", "host.cpu.socket.id", "host.cpu.core.id"}
+	cfg.Metrics.SystemCPUTime.EnabledAttributes = []metadata.SystemCPUTimeAttributeKey{
+		metadata.SystemCPUTimeAttributeKeyCpu,
+		metadata.SystemCPUTimeAttributeKeyState,
+		metadata.SystemCPUTimeAttributeKeyHostCPUSocketID,
+		metadata.SystemCPUTimeAttributeKeyHostCPUCoreID,
+	}
 
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg})
