@@ -1,4 +1,7 @@
+display_name: TCP Check Receiver
 type: tcpcheck
+
+description: This receiver creates stats by connecting to an TCP server.
 
 status:
   class: receiver
