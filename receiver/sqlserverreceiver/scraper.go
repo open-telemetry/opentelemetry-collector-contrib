@@ -174,12 +174,28 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(row sqlquery.StringMap) *m
 	rb := s.mb.NewResourceBuilder()
 	rb.SetSqlserverComputerName(row[computerNameKey])
 	rb.SetSqlserverInstanceName(row[instanceNameKey])
-	rb.SetHostName(s.config.Server)
+
+	hostName := s.config.Server
+	serverAddress := s.config.Server
+	serverPort := int64(s.config.Port)
+
+	if s.config.DataSource != "" {
+		host, port, err := parseDataSource(s.config.DataSource)
+		if err != nil {
+			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
+		} else {
+			hostName = host
+			serverAddress = host
+			serverPort = int64(port)
+		}
+	}
+
+	rb.SetHostName(hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 
 	if !removeServerResourceAttributeFeatureGate.IsEnabled() {
-		rb.SetServerAddress(s.config.Server)
-		rb.SetServerPort(int64(s.config.Port))
+		rb.SetServerAddress(serverAddress)
+		rb.SetServerPort(serverPort)
 	}
 
 	return rb
@@ -640,8 +656,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		dbSystemNameVal = "microsoft.sql_server"
 
 		// stored procedure columns
-		storedProcedureID   = "procedure_id"
-		storedProcedureName = "procedure_name"
+		storedProcedureID             = "procedure_id"
+		storedProcedureName           = "procedure_name"
+		storedProcedureExecutionCount = "procedure_execution_count"
 	)
 
 	resources := pcommon.NewResource()
@@ -755,6 +772,12 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			totalWorkerTimeInSecVal = float64(totalWorkerTimeVal.(int64)) / 1_000_000
 		}
 
+		procExecCountVal := s.retrieveValue(row, storedProcedureExecutionCount, &errs, retrieveInt)
+		cached, procExecCountVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, storedProcedureExecutionCount, procExecCountVal.(int64))
+		if !cached {
+			procExecCountVal = int64(0)
+		}
+
 		totalElapsedTimeVal := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
 		if count, ok := executionCountVal.(int64); !ok || count == 0 || totalElapsedTimeVal == 0 {
 			continue
@@ -789,6 +812,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			s.config.Server,
 			int64(s.config.Port),
 			dbSystemNameVal,
+			procExecCountVal.(int64),
 			row[storedProcedureID],
 			row[storedProcedureName],
 		)

@@ -26,17 +26,39 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoServiceBytesRecursiveRead:  MetricConfig{Enabled: true},
-					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{Enabled: true},
-					ContainerCPUPercent:                          MetricConfig{Enabled: true},
-					ContainerCPUUsagePercpu:                      MetricConfig{Enabled: true},
-					ContainerCPUUsageSystem:                      MetricConfig{Enabled: true},
-					ContainerCPUUsageTotal:                       MetricConfig{Enabled: true},
-					ContainerMemoryPercent:                       MetricConfig{Enabled: true},
-					ContainerMemoryUsageLimit:                    MetricConfig{Enabled: true},
-					ContainerMemoryUsageTotal:                    MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageRxBytes:               MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageTxBytes:               MetricConfig{Enabled: true},
+					ContainerBlockioIoServiceBytesRecursiveRead: MetricConfig{
+						Enabled: true,
+					},
+					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{
+						Enabled: true,
+					},
+					ContainerCPUPercent: MetricConfig{
+						Enabled: true,
+					},
+					ContainerCPUUsagePercpu: MetricConfig{
+						Enabled: true,
+					},
+					ContainerCPUUsageSystem: MetricConfig{
+						Enabled: true,
+					},
+					ContainerCPUUsageTotal: MetricConfig{
+						Enabled: true,
+					},
+					ContainerMemoryPercent: MetricConfig{
+						Enabled: true,
+					},
+					ContainerMemoryUsageLimit: MetricConfig{
+						Enabled: true,
+					},
+					ContainerMemoryUsageTotal: MetricConfig{
+						Enabled: true,
+					},
+					ContainerNetworkIoUsageRxBytes: MetricConfig{
+						Enabled: true,
+					},
+					ContainerNetworkIoUsageTxBytes: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerID:        ResourceAttributeConfig{Enabled: true},
@@ -50,17 +72,39 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoServiceBytesRecursiveRead:  MetricConfig{Enabled: false},
-					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{Enabled: false},
-					ContainerCPUPercent:                          MetricConfig{Enabled: false},
-					ContainerCPUUsagePercpu:                      MetricConfig{Enabled: false},
-					ContainerCPUUsageSystem:                      MetricConfig{Enabled: false},
-					ContainerCPUUsageTotal:                       MetricConfig{Enabled: false},
-					ContainerMemoryPercent:                       MetricConfig{Enabled: false},
-					ContainerMemoryUsageLimit:                    MetricConfig{Enabled: false},
-					ContainerMemoryUsageTotal:                    MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageRxBytes:               MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageTxBytes:               MetricConfig{Enabled: false},
+					ContainerBlockioIoServiceBytesRecursiveRead: MetricConfig{
+						Enabled: false,
+					},
+					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{
+						Enabled: false,
+					},
+					ContainerCPUPercent: MetricConfig{
+						Enabled: false,
+					},
+					ContainerCPUUsagePercpu: MetricConfig{
+						Enabled: false,
+					},
+					ContainerCPUUsageSystem: MetricConfig{
+						Enabled: false,
+					},
+					ContainerCPUUsageTotal: MetricConfig{
+						Enabled: false,
+					},
+					ContainerMemoryPercent: MetricConfig{
+						Enabled: false,
+					},
+					ContainerMemoryUsageLimit: MetricConfig{
+						Enabled: false,
+					},
+					ContainerMemoryUsageTotal: MetricConfig{
+						Enabled: false,
+					},
+					ContainerNetworkIoUsageRxBytes: MetricConfig{
+						Enabled: false,
+					},
+					ContainerNetworkIoUsageTxBytes: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerID:        ResourceAttributeConfig{Enabled: false},

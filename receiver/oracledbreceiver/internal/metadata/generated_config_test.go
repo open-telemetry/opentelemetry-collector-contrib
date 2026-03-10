@@ -26,215 +26,137 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					OracledbConsistentGets: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbConsistentGets: OracledbConsistentGetsConfig{
+						Enabled: true,
 					},
-					OracledbCPUTime: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbCPUTime: OracledbCPUTimeConfig{
+						Enabled: true,
 					},
-					OracledbDbBlockGets: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbDbBlockGets: OracledbDbBlockGetsConfig{
+						Enabled: true,
 					},
-					OracledbDdlStatementsParallelized: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbDdlStatementsParallelized: OracledbDdlStatementsParallelizedConfig{
+						Enabled: true,
 					},
-					OracledbDmlLocksLimit: MetricConfig{
+					OracledbDmlLocksLimit: OracledbDmlLocksLimitConfig{
+						Enabled: true,
+					},
+					OracledbDmlLocksUsage: OracledbDmlLocksUsageConfig{
+						Enabled: true,
+					},
+					OracledbDmlStatementsParallelized: OracledbDmlStatementsParallelizedConfig{
+						Enabled: true,
+					},
+					OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksConfig{
+						Enabled: true,
+					},
+					OracledbEnqueueLocksLimit: OracledbEnqueueLocksLimitConfig{
+						Enabled: true,
+					},
+					OracledbEnqueueLocksUsage: OracledbEnqueueLocksUsageConfig{
+						Enabled: true,
+					},
+					OracledbEnqueueResourcesLimit: OracledbEnqueueResourcesLimitConfig{
+						Enabled: true,
+					},
+					OracledbEnqueueResourcesUsage: OracledbEnqueueResourcesUsageConfig{
+						Enabled: true,
+					},
+					OracledbExchangeDeadlocks: OracledbExchangeDeadlocksConfig{
+						Enabled: true,
+					},
+					OracledbExecutions: OracledbExecutionsConfig{
+						Enabled: true,
+					},
+					OracledbHardParses: OracledbHardParsesConfig{
+						Enabled: true,
+					},
+					OracledbLogicalReads: OracledbLogicalReadsConfig{
+						Enabled: true,
+					},
+					OracledbLogons: OracledbLogonsConfig{
+						Enabled: true,
+					},
+					OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctConfig{
+						Enabled: true,
+					},
+					OracledbParallelOperationsDowngraded25To50Pct: OracledbParallelOperationsDowngraded25To50PctConfig{
+						Enabled: true,
+					},
+					OracledbParallelOperationsDowngraded50To75Pct: OracledbParallelOperationsDowngraded50To75PctConfig{
+						Enabled: true,
+					},
+					OracledbParallelOperationsDowngraded75To99Pct: OracledbParallelOperationsDowngraded75To99PctConfig{
+						Enabled: true,
+					},
+					OracledbParallelOperationsDowngradedToSerial: OracledbParallelOperationsDowngradedToSerialConfig{
+						Enabled: true,
+					},
+					OracledbParallelOperationsNotDowngraded: OracledbParallelOperationsNotDowngradedConfig{
+						Enabled: true,
+					},
+					OracledbParseCalls: OracledbParseCallsConfig{
+						Enabled: true,
+					},
+					OracledbPgaMemory: OracledbPgaMemoryConfig{
+						Enabled: true,
+					},
+					OracledbPhysicalReadIoRequests: OracledbPhysicalReadIoRequestsConfig{
+						Enabled: true,
+					},
+					OracledbPhysicalReads: OracledbPhysicalReadsConfig{
+						Enabled: true,
+					},
+					OracledbPhysicalReadsDirect: OracledbPhysicalReadsDirectConfig{
+						Enabled: true,
+					},
+					OracledbPhysicalWriteIoRequests: OracledbPhysicalWriteIoRequestsConfig{
+						Enabled: true,
+					},
+					OracledbPhysicalWrites: OracledbPhysicalWritesConfig{
+						Enabled: true,
+					},
+					OracledbPhysicalWritesDirect: OracledbPhysicalWritesDirectConfig{
+						Enabled: true,
+					},
+					OracledbProcessesLimit: OracledbProcessesLimitConfig{
+						Enabled: true,
+					},
+					OracledbProcessesUsage: OracledbProcessesUsageConfig{
+						Enabled: true,
+					},
+					OracledbQueriesParallelized: OracledbQueriesParallelizedConfig{
+						Enabled: true,
+					},
+					OracledbSessionsLimit: OracledbSessionsLimitConfig{
+						Enabled: true,
+					},
+					OracledbSessionsUsage: OracledbSessionsUsageConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []OracledbSessionsUsageAttributeKey{OracledbSessionsUsageAttributeKeySessionType, OracledbSessionsUsageAttributeKeySessionStatus},
 					},
-					OracledbDmlLocksUsage: MetricConfig{
+					OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []OracledbTablespaceSizeLimitAttributeKey{OracledbTablespaceSizeLimitAttributeKeyTablespaceName},
 					},
-					OracledbDmlStatementsParallelized: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbEnqueueDeadlocks: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbEnqueueLocksLimit: MetricConfig{
+					OracledbTablespaceSizeUsage: OracledbTablespaceSizeUsageConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []OracledbTablespaceSizeUsageAttributeKey{OracledbTablespaceSizeUsageAttributeKeyTablespaceName},
 					},
-					OracledbEnqueueLocksUsage: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					OracledbTransactionsLimit: OracledbTransactionsLimitConfig{
+						Enabled: true,
 					},
-					OracledbEnqueueResourcesLimit: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					OracledbTransactionsUsage: OracledbTransactionsUsageConfig{
+						Enabled: true,
 					},
-					OracledbEnqueueResourcesUsage: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					OracledbUserCommits: OracledbUserCommitsConfig{
+						Enabled: true,
 					},
-					OracledbExchangeDeadlocks: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbExecutions: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbHardParses: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbLogicalReads: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbLogons: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngraded1To25Pct: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngraded25To50Pct: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngraded50To75Pct: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngraded75To99Pct: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngradedToSerial: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsNotDowngraded: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParseCalls: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPgaMemory: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalReadIoRequests: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalReads: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalReadsDirect: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalWriteIoRequests: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalWrites: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalWritesDirect: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbProcessesLimit: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbProcessesUsage: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbQueriesParallelized: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbSessionsLimit: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbSessionsUsage: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"session_type", "session_status"},
-					},
-					OracledbTablespaceSizeLimit: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"tablespace_name"},
-					},
-					OracledbTablespaceSizeUsage: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"tablespace_name"},
-					},
-					OracledbTransactionsLimit: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbTransactionsUsage: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbUserCommits: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbUserRollbacks: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbUserRollbacks: OracledbUserRollbacksConfig{
+						Enabled: true,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -248,215 +170,137 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					OracledbConsistentGets: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbConsistentGets: OracledbConsistentGetsConfig{
+						Enabled: false,
 					},
-					OracledbCPUTime: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbCPUTime: OracledbCPUTimeConfig{
+						Enabled: false,
 					},
-					OracledbDbBlockGets: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbDbBlockGets: OracledbDbBlockGetsConfig{
+						Enabled: false,
 					},
-					OracledbDdlStatementsParallelized: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbDdlStatementsParallelized: OracledbDdlStatementsParallelizedConfig{
+						Enabled: false,
 					},
-					OracledbDmlLocksLimit: MetricConfig{
+					OracledbDmlLocksLimit: OracledbDmlLocksLimitConfig{
+						Enabled: false,
+					},
+					OracledbDmlLocksUsage: OracledbDmlLocksUsageConfig{
+						Enabled: false,
+					},
+					OracledbDmlStatementsParallelized: OracledbDmlStatementsParallelizedConfig{
+						Enabled: false,
+					},
+					OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksConfig{
+						Enabled: false,
+					},
+					OracledbEnqueueLocksLimit: OracledbEnqueueLocksLimitConfig{
+						Enabled: false,
+					},
+					OracledbEnqueueLocksUsage: OracledbEnqueueLocksUsageConfig{
+						Enabled: false,
+					},
+					OracledbEnqueueResourcesLimit: OracledbEnqueueResourcesLimitConfig{
+						Enabled: false,
+					},
+					OracledbEnqueueResourcesUsage: OracledbEnqueueResourcesUsageConfig{
+						Enabled: false,
+					},
+					OracledbExchangeDeadlocks: OracledbExchangeDeadlocksConfig{
+						Enabled: false,
+					},
+					OracledbExecutions: OracledbExecutionsConfig{
+						Enabled: false,
+					},
+					OracledbHardParses: OracledbHardParsesConfig{
+						Enabled: false,
+					},
+					OracledbLogicalReads: OracledbLogicalReadsConfig{
+						Enabled: false,
+					},
+					OracledbLogons: OracledbLogonsConfig{
+						Enabled: false,
+					},
+					OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctConfig{
+						Enabled: false,
+					},
+					OracledbParallelOperationsDowngraded25To50Pct: OracledbParallelOperationsDowngraded25To50PctConfig{
+						Enabled: false,
+					},
+					OracledbParallelOperationsDowngraded50To75Pct: OracledbParallelOperationsDowngraded50To75PctConfig{
+						Enabled: false,
+					},
+					OracledbParallelOperationsDowngraded75To99Pct: OracledbParallelOperationsDowngraded75To99PctConfig{
+						Enabled: false,
+					},
+					OracledbParallelOperationsDowngradedToSerial: OracledbParallelOperationsDowngradedToSerialConfig{
+						Enabled: false,
+					},
+					OracledbParallelOperationsNotDowngraded: OracledbParallelOperationsNotDowngradedConfig{
+						Enabled: false,
+					},
+					OracledbParseCalls: OracledbParseCallsConfig{
+						Enabled: false,
+					},
+					OracledbPgaMemory: OracledbPgaMemoryConfig{
+						Enabled: false,
+					},
+					OracledbPhysicalReadIoRequests: OracledbPhysicalReadIoRequestsConfig{
+						Enabled: false,
+					},
+					OracledbPhysicalReads: OracledbPhysicalReadsConfig{
+						Enabled: false,
+					},
+					OracledbPhysicalReadsDirect: OracledbPhysicalReadsDirectConfig{
+						Enabled: false,
+					},
+					OracledbPhysicalWriteIoRequests: OracledbPhysicalWriteIoRequestsConfig{
+						Enabled: false,
+					},
+					OracledbPhysicalWrites: OracledbPhysicalWritesConfig{
+						Enabled: false,
+					},
+					OracledbPhysicalWritesDirect: OracledbPhysicalWritesDirectConfig{
+						Enabled: false,
+					},
+					OracledbProcessesLimit: OracledbProcessesLimitConfig{
+						Enabled: false,
+					},
+					OracledbProcessesUsage: OracledbProcessesUsageConfig{
+						Enabled: false,
+					},
+					OracledbQueriesParallelized: OracledbQueriesParallelizedConfig{
+						Enabled: false,
+					},
+					OracledbSessionsLimit: OracledbSessionsLimitConfig{
+						Enabled: false,
+					},
+					OracledbSessionsUsage: OracledbSessionsUsageConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []OracledbSessionsUsageAttributeKey{OracledbSessionsUsageAttributeKeySessionType, OracledbSessionsUsageAttributeKeySessionStatus},
 					},
-					OracledbDmlLocksUsage: MetricConfig{
+					OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []OracledbTablespaceSizeLimitAttributeKey{OracledbTablespaceSizeLimitAttributeKeyTablespaceName},
 					},
-					OracledbDmlStatementsParallelized: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbEnqueueDeadlocks: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbEnqueueLocksLimit: MetricConfig{
+					OracledbTablespaceSizeUsage: OracledbTablespaceSizeUsageConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []OracledbTablespaceSizeUsageAttributeKey{OracledbTablespaceSizeUsageAttributeKeyTablespaceName},
 					},
-					OracledbEnqueueLocksUsage: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					OracledbTransactionsLimit: OracledbTransactionsLimitConfig{
+						Enabled: false,
 					},
-					OracledbEnqueueResourcesLimit: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					OracledbTransactionsUsage: OracledbTransactionsUsageConfig{
+						Enabled: false,
 					},
-					OracledbEnqueueResourcesUsage: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					OracledbUserCommits: OracledbUserCommitsConfig{
+						Enabled: false,
 					},
-					OracledbExchangeDeadlocks: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbExecutions: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbHardParses: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbLogicalReads: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbLogons: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngraded1To25Pct: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngraded25To50Pct: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngraded50To75Pct: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngraded75To99Pct: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsDowngradedToSerial: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParallelOperationsNotDowngraded: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbParseCalls: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPgaMemory: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalReadIoRequests: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalReads: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalReadsDirect: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalWriteIoRequests: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalWrites: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbPhysicalWritesDirect: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbProcessesLimit: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbProcessesUsage: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbQueriesParallelized: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbSessionsLimit: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbSessionsUsage: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"session_type", "session_status"},
-					},
-					OracledbTablespaceSizeLimit: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"tablespace_name"},
-					},
-					OracledbTablespaceSizeUsage: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"tablespace_name"},
-					},
-					OracledbTransactionsLimit: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbTransactionsUsage: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					OracledbUserCommits: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					OracledbUserRollbacks: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					OracledbUserRollbacks: OracledbUserRollbacksConfig{
+						Enabled: false,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -470,7 +314,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(OracledbConsistentGetsConfig{}, OracledbCPUTimeConfig{}, OracledbDbBlockGetsConfig{}, OracledbDdlStatementsParallelizedConfig{}, OracledbDmlLocksLimitConfig{}, OracledbDmlLocksUsageConfig{}, OracledbDmlStatementsParallelizedConfig{}, OracledbEnqueueDeadlocksConfig{}, OracledbEnqueueLocksLimitConfig{}, OracledbEnqueueLocksUsageConfig{}, OracledbEnqueueResourcesLimitConfig{}, OracledbEnqueueResourcesUsageConfig{}, OracledbExchangeDeadlocksConfig{}, OracledbExecutionsConfig{}, OracledbHardParsesConfig{}, OracledbLogicalReadsConfig{}, OracledbLogonsConfig{}, OracledbParallelOperationsDowngraded1To25PctConfig{}, OracledbParallelOperationsDowngraded25To50PctConfig{}, OracledbParallelOperationsDowngraded50To75PctConfig{}, OracledbParallelOperationsDowngraded75To99PctConfig{}, OracledbParallelOperationsDowngradedToSerialConfig{}, OracledbParallelOperationsNotDowngradedConfig{}, OracledbParseCallsConfig{}, OracledbPgaMemoryConfig{}, OracledbPhysicalReadIoRequestsConfig{}, OracledbPhysicalReadsConfig{}, OracledbPhysicalReadsDirectConfig{}, OracledbPhysicalWriteIoRequestsConfig{}, OracledbPhysicalWritesConfig{}, OracledbPhysicalWritesDirectConfig{}, OracledbProcessesLimitConfig{}, OracledbProcessesUsageConfig{}, OracledbQueriesParallelizedConfig{}, OracledbSessionsLimitConfig{}, OracledbSessionsUsageConfig{}, OracledbTablespaceSizeLimitConfig{}, OracledbTablespaceSizeUsageConfig{}, OracledbTransactionsLimitConfig{}, OracledbTransactionsUsageConfig{}, OracledbUserCommitsConfig{}, OracledbUserRollbacksConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
