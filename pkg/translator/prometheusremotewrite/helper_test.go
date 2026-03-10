@@ -391,7 +391,7 @@ func Test_createLabelSet(t *testing.T) {
 			labelNamer := otlptranslator.LabelNamer{
 				UnderscoreLabelSanitization: tt.underscoreLabelSanitization,
 			}
-			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, tt.extras...)
+			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, false, tt.extras...)
 			if tt.expectErr {
 				require.Error(t, err)
 				return
@@ -416,7 +416,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 
 	for b.Loop() {
 		//nolint:errcheck
-		createAttributes(r, m, pcommon.NewInstrumentationScope(), ext, nil, true, otlptranslator.LabelNamer{})
+		createAttributes(r, m, pcommon.NewInstrumentationScope(), ext, nil, true, otlptranslator.LabelNamer{}, false)
 	}
 }
 
@@ -1125,4 +1125,92 @@ func TestCreateLabels(t *testing.T) {
 			assert.Equal(t, tc.expected, lbls)
 		})
 	}
+}
+
+func TestScopeAttributesExported(t *testing.T) {
+	// Create a metric with scope attributes
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	// Set resource attributes just to be sure
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	scope := sm.Scope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("scope.attr", "scope-value")
+
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge()
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp.SetIntValue(1)
+
+	// Convert to Prometheus Remote Write format
+	tsMap, err := FromMetrics(md, Settings{})
+	require.NoError(t, err)
+	require.NotEmpty(t, tsMap)
+
+	// Verify labels
+	// We expect one time series
+	require.Len(t, tsMap, 1)
+
+	// Get the first time series (key is "0")
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
+
+	labels := make(map[string]string)
+	for _, l := range ts.Labels {
+		labels[l.Name] = l.Value
+	}
+
+	// Check for scope attributes
+	assert.Equal(t, "test-scope", labels["otel_scope_name"], "otel_scope_name should be present")
+	assert.Equal(t, "1.0.0", labels["otel_scope_version"], "otel_scope_version should be present")
+	assert.Equal(t, "scope-value", labels["otel_scope_scope_attr"], "scope attribute should be present with prefix")
+}
+
+func TestDisableScopeInfo(t *testing.T) {
+	// Create a metric with scope attributes
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	// Set resource attributes just to be sure
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	scope := sm.Scope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("scope.attr", "scope-value")
+
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge()
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp.SetIntValue(1)
+
+	// Convert to Prometheus Remote Write format with DisableScopeInfo = true
+	tsMap, err := FromMetrics(md, Settings{DisableScopeInfo: true})
+	require.NoError(t, err)
+	require.NotEmpty(t, tsMap)
+
+	// Verify labels
+	// We expect one time series
+	require.Len(t, tsMap, 1)
+
+	// Get the first time series (key is "0")
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
+
+	labels := make(map[string]string)
+	for _, l := range ts.Labels {
+		labels[l.Name] = l.Value
+	}
+
+	// Check that scope attributes are NOT present
+	assert.NotContains(t, labels, "otel_scope_name")
+	assert.NotContains(t, labels, "otel_scope_version")
+	assert.NotContains(t, labels, "otel_scope_scope_attr")
 }

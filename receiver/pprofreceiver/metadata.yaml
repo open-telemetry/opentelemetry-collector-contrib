@@ -1,4 +1,8 @@
+display_name: Pprof Receiver
 type: pprof
+
+description: |
+  The Pprof Receiver collects profiles from files specified with a glob pattern.
 
 status:
   class: receiver

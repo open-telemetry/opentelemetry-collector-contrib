@@ -41,6 +41,22 @@ func maskTracesResourceAttributeValue(traces ptrace.Traces, attributeName string
 	}
 }
 
+// IgnoreResourceEntityRefs is a CompareTracesOption that clears entity references
+// on all resources.
+func IgnoreResourceEntityRefs() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		maskTracesResourceEntityRefs(expected)
+		maskTracesResourceEntityRefs(actual)
+	})
+}
+
+func maskTracesResourceEntityRefs(traces ptrace.Traces) {
+	rss := traces.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		internal.MaskResourceEntityRefs(rss.At(i).Resource())
+	}
+}
+
 // IgnoreResourceSpansOrder is a CompareTracesOption that ignores the order of resource traces/metrics/logs.
 func IgnoreResourceSpansOrder() CompareTracesOption {
 	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
