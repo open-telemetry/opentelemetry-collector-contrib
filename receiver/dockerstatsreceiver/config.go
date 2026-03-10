@@ -4,8 +4,10 @@
 package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -58,13 +60,7 @@ const (
 var matchTypes = []matchType{strictMatchType, regexpMatchType}
 
 func (mt matchType) isValid() bool {
-	for _, matchType := range matchTypes {
-		if mt == matchType {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(matchTypes, mt)
 }
 
 // LabelMatcher represents a matcher for container label values.
@@ -85,11 +81,11 @@ func (config Config) Validate() error {
 			_, compileErr := regexp.Compile(lm.Include)
 			switch {
 			case lm.MatchType == "":
-				return fmt.Errorf("match_type is required for container_labels_to_resource_attributes entries")
+				return errors.New("match_type is required for container_labels_to_resource_attributes entries")
 			case !lm.MatchType.isValid():
-				return fmt.Errorf("match_type must be one of 'strict' or 'regex' for container_labels_to_resource_attributes entries")
+				return errors.New("match_type must be one of 'strict' or 'regex' for container_labels_to_resource_attributes entries")
 			case lm.Include == "":
-				return fmt.Errorf("include is required for container_labels_to_resource_attributes entries")
+				return errors.New("include is required for container_labels_to_resource_attributes entries")
 			case lm.MatchType == regexpMatchType && compileErr != nil:
 				return fmt.Errorf("include regex for container_labels_to_resource_attributes entries can not be compiled: %w", compileErr)
 			}
