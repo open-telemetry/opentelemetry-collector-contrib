@@ -4,76 +4,76 @@ $defs:
     description: MetricsConfig provides config for github metrics.
     type: object
     properties:
-    vcs.change.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    vcs.change.duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    vcs.change.time_to_approval:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    vcs.change.time_to_merge:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    vcs.contributor.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    vcs.ref.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    vcs.ref.lines_delta:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    vcs.ref.revisions_delta:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    vcs.ref.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    vcs.repository.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      vcs.change.count:
+        description: "VcsChangeCountConfig provides config for the vcs.change.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      vcs.change.duration:
+        description: "VcsChangeDurationConfig provides config for the vcs.change.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      vcs.change.time_to_approval:
+        description: "VcsChangeTimeToApprovalConfig provides config for the vcs.change.time_to_approval metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      vcs.change.time_to_merge:
+        description: "VcsChangeTimeToMergeConfig provides config for the vcs.change.time_to_merge metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      vcs.contributor.count:
+        description: "VcsContributorCountConfig provides config for the vcs.contributor.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      vcs.ref.count:
+        description: "VcsRefCountConfig provides config for the vcs.ref.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      vcs.ref.lines_delta:
+        description: "VcsRefLinesDeltaConfig provides config for the vcs.ref.lines_delta metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      vcs.ref.revisions_delta:
+        description: "VcsRefRevisionsDeltaConfig provides config for the vcs.ref.revisions_delta metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      vcs.ref.time:
+        description: "VcsRefTimeConfig provides config for the vcs.ref.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      vcs.repository.count:
+        description: "VcsRepositoryCountConfig provides config for the vcs.repository.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for github resource attributes.
     type: object
