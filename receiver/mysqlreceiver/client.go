@@ -848,24 +848,24 @@ func isQueryExplainable(query string) bool {
 // and line comments (-- ...) from a query.
 func stripLeadingSQLComments(query string) string {
 	for {
-		if strings.HasPrefix(query, "/*") {
+		switch {
+		case strings.HasPrefix(query, "/*"):
 			end := strings.Index(query, "*/")
 			if end == -1 {
-				break
+				return query
 			}
 			query = strings.TrimSpace(query[end+2:])
-		} else if strings.HasPrefix(query, "--") {
+		case strings.HasPrefix(query, "--"):
 			end := strings.Index(query, "\n")
 			if end == -1 {
 				// remaining text is a comment
 				return ""
 			}
 			query = strings.TrimSpace(query[end+1:])
-		} else {
-			break
+		default:
+			return query
 		}
 	}
-	return query
 }
 
 func query(c mySQLClient, query string) (map[string]string, error) {
