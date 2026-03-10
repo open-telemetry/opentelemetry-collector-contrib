@@ -173,7 +173,7 @@ func TestLoadConfigFailed(t *testing.T) {
 		},
 		{
 			id:            component.NewIDWithName(metadata.Type, ""),
-			errorContains: `logs.topic_from_metadata_key: topic_from_metadata_key must be present in include_metadata_keys: "missing_metadata_key" not found in include_metadata_keys=[]`,
+			errorContains: `logs::topic_from_metadata_key: topic_from_metadata_key must be present in include_metadata_keys: "missing_metadata_key" not found in include_metadata_keys=[]`,
 			configFile:    "config-topic-from-metadata-failed.yaml",
 		},
 	}
