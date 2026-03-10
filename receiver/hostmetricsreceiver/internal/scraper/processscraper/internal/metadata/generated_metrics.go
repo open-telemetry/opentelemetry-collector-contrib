@@ -196,10 +196,10 @@ type metricInfo struct {
 }
 
 type metricProcessContextSwitches struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        ProcessContextSwitchesMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills process.context_switches metric with initial data.
@@ -222,7 +222,7 @@ func (m *metricProcessContextSwitches) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "type") {
+	if slices.Contains(m.config.EnabledAttributes, ProcessContextSwitchesMetricAttributeKeyContextSwitchType) {
 		dp.Attributes().PutStr("type", contextSwitchTypeAttributeValue)
 	}
 
@@ -276,7 +276,7 @@ func (m *metricProcessContextSwitches) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessContextSwitches(cfg MetricConfig) metricProcessContextSwitches {
+func newMetricProcessContextSwitches(cfg ProcessContextSwitchesMetricConfig) metricProcessContextSwitches {
 	m := metricProcessContextSwitches{config: cfg}
 
 	if cfg.Enabled {
@@ -287,10 +287,10 @@ func newMetricProcessContextSwitches(cfg MetricConfig) metricProcessContextSwitc
 }
 
 type metricProcessCPUTime struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        ProcessCPUTimeMetricConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills process.cpu.time metric with initial data.
@@ -313,7 +313,7 @@ func (m *metricProcessCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "state") {
+	if slices.Contains(m.config.EnabledAttributes, ProcessCPUTimeMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -367,7 +367,7 @@ func (m *metricProcessCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessCPUTime(cfg MetricConfig) metricProcessCPUTime {
+func newMetricProcessCPUTime(cfg ProcessCPUTimeMetricConfig) metricProcessCPUTime {
 	m := metricProcessCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -378,10 +378,10 @@ func newMetricProcessCPUTime(cfg MetricConfig) metricProcessCPUTime {
 }
 
 type metricProcessCPUUtilization struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        ProcessCPUUtilizationMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills process.cpu.utilization metric with initial data.
@@ -402,7 +402,7 @@ func (m *metricProcessCPUUtilization) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "state") {
+	if slices.Contains(m.config.EnabledAttributes, ProcessCPUUtilizationMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -456,7 +456,7 @@ func (m *metricProcessCPUUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessCPUUtilization(cfg MetricConfig) metricProcessCPUUtilization {
+func newMetricProcessCPUUtilization(cfg ProcessCPUUtilizationMetricConfig) metricProcessCPUUtilization {
 	m := metricProcessCPUUtilization{config: cfg}
 
 	if cfg.Enabled {
@@ -467,10 +467,10 @@ func newMetricProcessCPUUtilization(cfg MetricConfig) metricProcessCPUUtilizatio
 }
 
 type metricProcessDiskIo struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric            // data buffer for generated metric.
+	config        ProcessDiskIoMetricConfig // metric config provided by user.
+	capacity      int                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills process.disk.io metric with initial data.
@@ -493,7 +493,7 @@ func (m *metricProcessDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, ProcessDiskIoMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -547,7 +547,7 @@ func (m *metricProcessDiskIo) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessDiskIo(cfg MetricConfig) metricProcessDiskIo {
+func newMetricProcessDiskIo(cfg ProcessDiskIoMetricConfig) metricProcessDiskIo {
 	m := metricProcessDiskIo{config: cfg}
 
 	if cfg.Enabled {
@@ -558,10 +558,10 @@ func newMetricProcessDiskIo(cfg MetricConfig) metricProcessDiskIo {
 }
 
 type metricProcessDiskOperations struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        ProcessDiskOperationsMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills process.disk.operations metric with initial data.
@@ -584,7 +584,7 @@ func (m *metricProcessDiskOperations) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, ProcessDiskOperationsMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -638,7 +638,7 @@ func (m *metricProcessDiskOperations) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessDiskOperations(cfg MetricConfig) metricProcessDiskOperations {
+func newMetricProcessDiskOperations(cfg ProcessDiskOperationsMetricConfig) metricProcessDiskOperations {
 	m := metricProcessDiskOperations{config: cfg}
 
 	if cfg.Enabled {
@@ -649,9 +649,9 @@ func newMetricProcessDiskOperations(cfg MetricConfig) metricProcessDiskOperation
 }
 
 type metricProcessHandles struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   ProcessHandlesMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
 }
 
 // init fills process.handles metric with initial data.
@@ -690,7 +690,7 @@ func (m *metricProcessHandles) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessHandles(cfg MetricConfig) metricProcessHandles {
+func newMetricProcessHandles(cfg ProcessHandlesMetricConfig) metricProcessHandles {
 	m := metricProcessHandles{config: cfg}
 
 	if cfg.Enabled {
@@ -701,9 +701,9 @@ func newMetricProcessHandles(cfg MetricConfig) metricProcessHandles {
 }
 
 type metricProcessMemoryUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   ProcessMemoryUsageMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills process.memory.usage metric with initial data.
@@ -742,7 +742,7 @@ func (m *metricProcessMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessMemoryUsage(cfg MetricConfig) metricProcessMemoryUsage {
+func newMetricProcessMemoryUsage(cfg ProcessMemoryUsageMetricConfig) metricProcessMemoryUsage {
 	m := metricProcessMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -753,9 +753,9 @@ func newMetricProcessMemoryUsage(cfg MetricConfig) metricProcessMemoryUsage {
 }
 
 type metricProcessMemoryUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   ProcessMemoryUtilizationMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills process.memory.utilization metric with initial data.
@@ -792,7 +792,7 @@ func (m *metricProcessMemoryUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessMemoryUtilization(cfg MetricConfig) metricProcessMemoryUtilization {
+func newMetricProcessMemoryUtilization(cfg ProcessMemoryUtilizationMetricConfig) metricProcessMemoryUtilization {
 	m := metricProcessMemoryUtilization{config: cfg}
 
 	if cfg.Enabled {
@@ -803,9 +803,9 @@ func newMetricProcessMemoryUtilization(cfg MetricConfig) metricProcessMemoryUtil
 }
 
 type metricProcessMemoryVirtual struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   ProcessMemoryVirtualMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills process.memory.virtual metric with initial data.
@@ -844,7 +844,7 @@ func (m *metricProcessMemoryVirtual) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessMemoryVirtual(cfg MetricConfig) metricProcessMemoryVirtual {
+func newMetricProcessMemoryVirtual(cfg ProcessMemoryVirtualMetricConfig) metricProcessMemoryVirtual {
 	m := metricProcessMemoryVirtual{config: cfg}
 
 	if cfg.Enabled {
@@ -855,9 +855,9 @@ func newMetricProcessMemoryVirtual(cfg MetricConfig) metricProcessMemoryVirtual 
 }
 
 type metricProcessOpenFileDescriptors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   ProcessOpenFileDescriptorsMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills process.open_file_descriptors metric with initial data.
@@ -896,7 +896,7 @@ func (m *metricProcessOpenFileDescriptors) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessOpenFileDescriptors(cfg MetricConfig) metricProcessOpenFileDescriptors {
+func newMetricProcessOpenFileDescriptors(cfg ProcessOpenFileDescriptorsMetricConfig) metricProcessOpenFileDescriptors {
 	m := metricProcessOpenFileDescriptors{config: cfg}
 
 	if cfg.Enabled {
@@ -907,10 +907,10 @@ func newMetricProcessOpenFileDescriptors(cfg MetricConfig) metricProcessOpenFile
 }
 
 type metricProcessPagingFaults struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        ProcessPagingFaultsMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills process.paging.faults metric with initial data.
@@ -933,7 +933,7 @@ func (m *metricProcessPagingFaults) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "type") {
+	if slices.Contains(m.config.EnabledAttributes, ProcessPagingFaultsMetricAttributeKeyPagingFaultType) {
 		dp.Attributes().PutStr("type", pagingFaultTypeAttributeValue)
 	}
 
@@ -987,7 +987,7 @@ func (m *metricProcessPagingFaults) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessPagingFaults(cfg MetricConfig) metricProcessPagingFaults {
+func newMetricProcessPagingFaults(cfg ProcessPagingFaultsMetricConfig) metricProcessPagingFaults {
 	m := metricProcessPagingFaults{config: cfg}
 
 	if cfg.Enabled {
@@ -998,9 +998,9 @@ func newMetricProcessPagingFaults(cfg MetricConfig) metricProcessPagingFaults {
 }
 
 type metricProcessSignalsPending struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   ProcessSignalsPendingMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills process.signals_pending metric with initial data.
@@ -1039,7 +1039,7 @@ func (m *metricProcessSignalsPending) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessSignalsPending(cfg MetricConfig) metricProcessSignalsPending {
+func newMetricProcessSignalsPending(cfg ProcessSignalsPendingMetricConfig) metricProcessSignalsPending {
 	m := metricProcessSignalsPending{config: cfg}
 
 	if cfg.Enabled {
@@ -1050,9 +1050,9 @@ func newMetricProcessSignalsPending(cfg MetricConfig) metricProcessSignalsPendin
 }
 
 type metricProcessThreads struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   ProcessThreadsMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
 }
 
 // init fills process.threads metric with initial data.
@@ -1091,7 +1091,7 @@ func (m *metricProcessThreads) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessThreads(cfg MetricConfig) metricProcessThreads {
+func newMetricProcessThreads(cfg ProcessThreadsMetricConfig) metricProcessThreads {
 	m := metricProcessThreads{config: cfg}
 
 	if cfg.Enabled {
@@ -1102,9 +1102,9 @@ func newMetricProcessThreads(cfg MetricConfig) metricProcessThreads {
 }
 
 type metricProcessUptime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   ProcessUptimeMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills process.uptime metric with initial data.
@@ -1141,7 +1141,7 @@ func (m *metricProcessUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessUptime(cfg MetricConfig) metricProcessUptime {
+func newMetricProcessUptime(cfg ProcessUptimeMetricConfig) metricProcessUptime {
 	m := metricProcessUptime{config: cfg}
 
 	if cfg.Enabled {

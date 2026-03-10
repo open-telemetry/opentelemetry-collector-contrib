@@ -26,44 +26,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ProcessContextSwitches: MetricConfig{
+					ProcessContextSwitches: ProcessContextSwitchesMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []ProcessContextSwitchesMetricAttributeKey{ProcessContextSwitchesMetricAttributeKeyContextSwitchType},
 					},
-					ProcessCPUTime: MetricConfig{
+					ProcessCPUTime: ProcessCPUTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"state"},
+						EnabledAttributes:   []ProcessCPUTimeMetricAttributeKey{ProcessCPUTimeMetricAttributeKeyState},
 					},
-					ProcessCPUUtilization: MetricConfig{
+					ProcessCPUUtilization: ProcessCPUUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"state"},
+						EnabledAttributes:   []ProcessCPUUtilizationMetricAttributeKey{ProcessCPUUtilizationMetricAttributeKeyState},
 					},
-					ProcessDiskIo: MetricConfig{
+					ProcessDiskIo: ProcessDiskIoMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction"},
+						EnabledAttributes:   []ProcessDiskIoMetricAttributeKey{ProcessDiskIoMetricAttributeKeyDirection},
 					},
-					ProcessDiskOperations: MetricConfig{
+					ProcessDiskOperations: ProcessDiskOperationsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction"},
+						EnabledAttributes:   []ProcessDiskOperationsMetricAttributeKey{ProcessDiskOperationsMetricAttributeKeyDirection},
 					},
-					ProcessHandles:             MetricConfig{Enabled: true},
-					ProcessMemoryUsage:         MetricConfig{Enabled: true},
-					ProcessMemoryUtilization:   MetricConfig{Enabled: true},
-					ProcessMemoryVirtual:       MetricConfig{Enabled: true},
-					ProcessOpenFileDescriptors: MetricConfig{Enabled: true},
-					ProcessPagingFaults: MetricConfig{
+					ProcessHandles: ProcessHandlesMetricConfig{
+						Enabled: true,
+					},
+					ProcessMemoryUsage: ProcessMemoryUsageMetricConfig{
+						Enabled: true,
+					},
+					ProcessMemoryUtilization: ProcessMemoryUtilizationMetricConfig{
+						Enabled: true,
+					},
+					ProcessMemoryVirtual: ProcessMemoryVirtualMetricConfig{
+						Enabled: true,
+					},
+					ProcessOpenFileDescriptors: ProcessOpenFileDescriptorsMetricConfig{
+						Enabled: true,
+					},
+					ProcessPagingFaults: ProcessPagingFaultsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []ProcessPagingFaultsMetricAttributeKey{ProcessPagingFaultsMetricAttributeKeyPagingFaultType},
 					},
-					ProcessSignalsPending: MetricConfig{Enabled: true},
-					ProcessThreads:        MetricConfig{Enabled: true},
-					ProcessUptime:         MetricConfig{Enabled: true},
+					ProcessSignalsPending: ProcessSignalsPendingMetricConfig{
+						Enabled: true,
+					},
+					ProcessThreads: ProcessThreadsMetricConfig{
+						Enabled: true,
+					},
+					ProcessUptime: ProcessUptimeMetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: true},
@@ -81,44 +97,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ProcessContextSwitches: MetricConfig{
+					ProcessContextSwitches: ProcessContextSwitchesMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []ProcessContextSwitchesMetricAttributeKey{ProcessContextSwitchesMetricAttributeKeyContextSwitchType},
 					},
-					ProcessCPUTime: MetricConfig{
+					ProcessCPUTime: ProcessCPUTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"state"},
+						EnabledAttributes:   []ProcessCPUTimeMetricAttributeKey{ProcessCPUTimeMetricAttributeKeyState},
 					},
-					ProcessCPUUtilization: MetricConfig{
+					ProcessCPUUtilization: ProcessCPUUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"state"},
+						EnabledAttributes:   []ProcessCPUUtilizationMetricAttributeKey{ProcessCPUUtilizationMetricAttributeKeyState},
 					},
-					ProcessDiskIo: MetricConfig{
+					ProcessDiskIo: ProcessDiskIoMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction"},
+						EnabledAttributes:   []ProcessDiskIoMetricAttributeKey{ProcessDiskIoMetricAttributeKeyDirection},
 					},
-					ProcessDiskOperations: MetricConfig{
+					ProcessDiskOperations: ProcessDiskOperationsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction"},
+						EnabledAttributes:   []ProcessDiskOperationsMetricAttributeKey{ProcessDiskOperationsMetricAttributeKeyDirection},
 					},
-					ProcessHandles:             MetricConfig{Enabled: false},
-					ProcessMemoryUsage:         MetricConfig{Enabled: false},
-					ProcessMemoryUtilization:   MetricConfig{Enabled: false},
-					ProcessMemoryVirtual:       MetricConfig{Enabled: false},
-					ProcessOpenFileDescriptors: MetricConfig{Enabled: false},
-					ProcessPagingFaults: MetricConfig{
+					ProcessHandles: ProcessHandlesMetricConfig{
+						Enabled: false,
+					},
+					ProcessMemoryUsage: ProcessMemoryUsageMetricConfig{
+						Enabled: false,
+					},
+					ProcessMemoryUtilization: ProcessMemoryUtilizationMetricConfig{
+						Enabled: false,
+					},
+					ProcessMemoryVirtual: ProcessMemoryVirtualMetricConfig{
+						Enabled: false,
+					},
+					ProcessOpenFileDescriptors: ProcessOpenFileDescriptorsMetricConfig{
+						Enabled: false,
+					},
+					ProcessPagingFaults: ProcessPagingFaultsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []ProcessPagingFaultsMetricAttributeKey{ProcessPagingFaultsMetricAttributeKeyPagingFaultType},
 					},
-					ProcessSignalsPending: MetricConfig{Enabled: false},
-					ProcessThreads:        MetricConfig{Enabled: false},
-					ProcessUptime:         MetricConfig{Enabled: false},
+					ProcessSignalsPending: ProcessSignalsPendingMetricConfig{
+						Enabled: false,
+					},
+					ProcessThreads: ProcessThreadsMetricConfig{
+						Enabled: false,
+					},
+					ProcessUptime: ProcessUptimeMetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: false},
@@ -136,7 +168,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ProcessContextSwitchesMetricConfig{}, ProcessCPUTimeMetricConfig{}, ProcessCPUUtilizationMetricConfig{}, ProcessDiskIoMetricConfig{}, ProcessDiskOperationsMetricConfig{}, ProcessHandlesMetricConfig{}, ProcessMemoryUsageMetricConfig{}, ProcessMemoryUtilizationMetricConfig{}, ProcessMemoryVirtualMetricConfig{}, ProcessOpenFileDescriptorsMetricConfig{}, ProcessPagingFaultsMetricConfig{}, ProcessSignalsPendingMetricConfig{}, ProcessThreadsMetricConfig{}, ProcessUptimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
