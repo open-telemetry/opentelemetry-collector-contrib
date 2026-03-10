@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
+	gitlab.com/gitlab-org/api/client-go v1.46.0
 	go.opentelemetry.io/collector/component v1.53.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/component/componenttest v0.147.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/config/confighttp v0.147.1-0.20260309153054-85fc1918516c
@@ -126,7 +127,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	gitlab.com/gitlab-org/api/client-go v1.46.0
+	gitlab.com/gitlab-org/api/client-go/v2 v2.5.0
 	go.opentelemetry.io/collector/client v1.53.1-0.20260309153054-85fc1918516c // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.147.1-0.20260309153054-85fc1918516c
 	go.opentelemetry.io/collector/config/configauth v1.53.1-0.20260309153054-85fc1918516c // indirect
