@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
-var typ = component.MustNewType("azureauth")
+var typ = component.MustNewType("azure_auth")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

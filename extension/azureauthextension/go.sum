@@ -89,6 +89,8 @@ go.opentelemetry.io/collector/extension/extensionauth v1.53.1-0.20260306010043-a
 go.opentelemetry.io/collector/extension/extensionauth v1.53.1-0.20260306010043-a44ab254898b/go.mod h1:xZVclEW3nnh1U+eu7apnt9KI+nf3MalpL40dhUeUtZQ=
 go.opentelemetry.io/collector/extension/extensiontest v0.147.1-0.20260306010043-a44ab254898b h1:7QB4aTEoPvmxLVzLr9X3E41PkIPcVhTVH01yyDfm0Vc=
 go.opentelemetry.io/collector/extension/extensiontest v0.147.1-0.20260306010043-a44ab254898b/go.mod h1:RPY6Odd01nJr3bERxqDZq/7uxdpn/g7G0R8iKk7yTOk=
+go.opentelemetry.io/collector/extension/xextension v0.147.1-0.20260306010043-a44ab254898b h1:AOxLUopfqDamAgcOVJqYi4lmsdEo88yfYP0qhPFERrI=
+go.opentelemetry.io/collector/extension/xextension v0.147.1-0.20260306010043-a44ab254898b/go.mod h1:+D9ZkloMIsa8s5GTNogAUXE8K1kfHvwYImaLveAnxpE=
 go.opentelemetry.io/collector/featuregate v1.53.1-0.20260306010043-a44ab254898b h1:CW/NxVbK16cV0M2d9JQjApCFyh2LPUO06sa0W2gc5Qk=
 go.opentelemetry.io/collector/featuregate v1.53.1-0.20260306010043-a44ab254898b/go.mod h1:PS7zY/zaCb28EqciePVwRHVhc3oKortTFXsi3I6ee4g=
 go.opentelemetry.io/collector/internal/componentalias v0.147.1-0.20260306010043-a44ab254898b h1:d6fxt2MlL/nqtlZ+fTpdLTh4ZAaDTY5Ejzo6ChvoA4c=
