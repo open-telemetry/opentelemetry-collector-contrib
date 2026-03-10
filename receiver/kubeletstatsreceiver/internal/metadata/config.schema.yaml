@@ -214,6 +214,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+                - "direction"
+            default:
+              - "interface"
+              - "direction"
       k8s.node.network.io:
         description: "K8sNodeNetworkIoMetricConfig provides config for the k8s.node.network.io metric."
         type: object
@@ -221,6 +239,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+                - "direction"
+            default:
+              - "interface"
+              - "direction"
       k8s.node.uptime:
         description: "K8sNodeUptimeMetricConfig provides config for the k8s.node.uptime metric."
         type: object
@@ -354,6 +390,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+                - "direction"
+            default:
+              - "interface"
+              - "direction"
       k8s.pod.network.io:
         description: "K8sPodNetworkIoMetricConfig provides config for the k8s.pod.network.io metric."
         type: object
@@ -361,6 +415,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+                - "direction"
+            default:
+              - "interface"
+              - "direction"
       k8s.pod.uptime:
         description: "K8sPodUptimeMetricConfig provides config for the k8s.pod.uptime metric."
         type: object
