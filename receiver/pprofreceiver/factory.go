@@ -48,12 +48,11 @@ func createProfilesReceiver(
 		metadata.Type,
 		func() component.Config { return &Config{} },
 		xscraper.WithProfiles(func(_ context.Context, set scraper.Settings, _ component.Config) (xscraper.Profiles, error) {
-			ps := newScraper(rCfg, receiver.Settings{
+			return newScraper(rCfg, receiver.Settings{
 				ID:                set.ID,
 				TelemetrySettings: set.TelemetrySettings,
 				BuildInfo:         settings.BuildInfo,
 			})
-			return xscraper.NewProfiles(ps.scrape, xscraper.WithStart(ps.start))
 		}, metadata.ProfilesStability),
 	)
 
