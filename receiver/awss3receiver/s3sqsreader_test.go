@@ -417,14 +417,15 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 
 		// Create reader with mocks
 		reader := &s3SQSNotificationReader{
-			logger:              logger,
-			s3Client:            mockS3,
-			sqsClient:           mockSQS,
-			queueURL:            cfg.SQS.QueueURL,
-			s3Bucket:            cfg.S3Downloader.S3Bucket,
-			s3Prefix:            cfg.S3Downloader.S3Prefix,
-			maxNumberOfMessages: 10,
-			waitTimeSeconds:     20,
+			logger:                     logger,
+			s3Client:                   mockS3,
+			sqsClient:                  mockSQS,
+			queueURL:                   cfg.SQS.QueueURL,
+			s3Bucket:                   cfg.S3Downloader.S3Bucket,
+			s3Prefix:                   cfg.S3Downloader.S3Prefix,
+			maxNumberOfMessages:        10,
+			waitTimeSeconds:            20,
+			deleteObjectAfterIngestion: true,
 		}
 
 		// Mock error during receive messages
@@ -441,20 +442,21 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		assert.Equal(t, context.Canceled, err)
 	})
 
-	t.Run("does not delete message on S3 retrieval error", func(t *testing.T) {
+	t.Run("does not delete message or object on S3 retrieval error", func(t *testing.T) {
 		mockS3 := new(mockS3ClientSQS)
 		mockSQS := new(mockSQSClient)
 
 		// Create reader with mocks
 		reader := &s3SQSNotificationReader{
-			logger:              logger,
-			s3Client:            mockS3,
-			sqsClient:           mockSQS,
-			queueURL:            cfg.SQS.QueueURL,
-			s3Bucket:            cfg.S3Downloader.S3Bucket,
-			s3Prefix:            cfg.S3Downloader.S3Prefix,
-			maxNumberOfMessages: 10,
-			waitTimeSeconds:     20,
+			logger:                     logger,
+			s3Client:                   mockS3,
+			sqsClient:                  mockSQS,
+			queueURL:                   cfg.SQS.QueueURL,
+			s3Bucket:                   cfg.S3Downloader.S3Bucket,
+			s3Prefix:                   cfg.S3Downloader.S3Prefix,
+			maxNumberOfMessages:        10,
+			waitTimeSeconds:            20,
+			deleteObjectAfterIngestion: true,
 		}
 
 		// Create S3 event notification
@@ -528,21 +530,23 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		mockS3.AssertExpectations(t)
 		mockSQS.AssertExpectations(t)
 		mockSQS.AssertNotCalled(t, "DeleteMessage", mock.Anything, mock.Anything)
+		mockS3.AssertNotCalled(t, "DeleteObject", mock.Anything, mock.Anything)
 	})
 
-	t.Run("does not delete message on partial failure", func(t *testing.T) {
+	t.Run("does not delete message or object on partial failure", func(t *testing.T) {
 		mockS3 := new(mockS3ClientSQS)
 		mockSQS := new(mockSQSClient)
 
 		reader := &s3SQSNotificationReader{
-			logger:              logger,
-			s3Client:            mockS3,
-			sqsClient:           mockSQS,
-			queueURL:            cfg.SQS.QueueURL,
-			s3Bucket:            cfg.S3Downloader.S3Bucket,
-			s3Prefix:            cfg.S3Downloader.S3Prefix,
-			maxNumberOfMessages: 10,
-			waitTimeSeconds:     20,
+			logger:                     logger,
+			s3Client:                   mockS3,
+			sqsClient:                  mockSQS,
+			queueURL:                   cfg.SQS.QueueURL,
+			s3Bucket:                   cfg.S3Downloader.S3Bucket,
+			s3Prefix:                   cfg.S3Downloader.S3Prefix,
+			maxNumberOfMessages:        10,
+			waitTimeSeconds:            20,
+			deleteObjectAfterIngestion: true,
 		}
 
 		// Create S3 event notification with THREE objects:
@@ -606,6 +610,10 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 			Bucket: aws.String("test-bucket"),
 			Key:    aws.String("success-key"),
 		}).Return([]byte("success-content"), nil)
+		mockS3.On("DeleteObject", mock.Anything, &s3.DeleteObjectInput{
+			Bucket: aws.String("test-bucket"),
+			Key:    aws.String("success-key"),
+		}).Return(nil, nil)
 
 		// Second S3 object FAILS to retrieve.
 		mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
@@ -647,21 +655,30 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		mockSQS.AssertExpectations(t)
 		// Verify DeleteMessage was never called - message should remain for retry.
 		mockSQS.AssertNotCalled(t, "DeleteMessage", mock.Anything, mock.Anything)
+		mockS3.AssertNotCalled(t, "DeleteObject", mock.Anything, &s3.DeleteObjectInput{
+			Bucket: aws.String("test-bucket"),
+			Key:    aws.String("s3-failure-key"),
+		})
+		mockS3.AssertNotCalled(t, "DeleteObject", mock.Anything, &s3.DeleteObjectInput{
+			Bucket: aws.String("test-bucket"),
+			Key:    aws.String("callback-failure-key"),
+		})
 	})
 
-	t.Run("does not delete message on callback error", func(t *testing.T) {
+	t.Run("does not delete message or object on callback error", func(t *testing.T) {
 		mockS3 := new(mockS3ClientSQS)
 		mockSQS := new(mockSQSClient)
 
 		reader := &s3SQSNotificationReader{
-			logger:              logger,
-			s3Client:            mockS3,
-			sqsClient:           mockSQS,
-			queueURL:            cfg.SQS.QueueURL,
-			s3Bucket:            cfg.S3Downloader.S3Bucket,
-			s3Prefix:            cfg.S3Downloader.S3Prefix,
-			maxNumberOfMessages: 10,
-			waitTimeSeconds:     20,
+			logger:                     logger,
+			s3Client:                   mockS3,
+			sqsClient:                  mockSQS,
+			queueURL:                   cfg.SQS.QueueURL,
+			s3Bucket:                   cfg.S3Downloader.S3Bucket,
+			s3Prefix:                   cfg.S3Downloader.S3Prefix,
+			maxNumberOfMessages:        10,
+			waitTimeSeconds:            20,
+			deleteObjectAfterIngestion: true,
 		}
 
 		s3Event := s3EventNotification{
@@ -725,6 +742,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		mockSQS.AssertExpectations(t)
 		// Verify DeleteMessage was never called - message should remain for retry.
 		mockSQS.AssertNotCalled(t, "DeleteMessage", mock.Anything, mock.Anything)
+		mockS3.AssertNotCalled(t, "DeleteObject", mock.Anything, mock.Anything)
 	})
 }
 

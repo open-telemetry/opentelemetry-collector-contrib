@@ -51,7 +51,7 @@ The following exporter configuration parameters are supported.
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
 | `notifications:`        |                                                                                                                                            |             |          |
 | `opampextension`        | Name of the OpAMP Extension to use to send ingest progress notifications.                                                                  |             |          |
-| `delete_object_after_ingestion`        | If enabled the receiver will attempt to delete the object after ingesting it.                                                                  | false       | Optional |
+| `delete_object_after_ingestion`        | If enabled the receiver will attempt to delete the object after successfully ingesting it.                                                                  | false       | Optional |
 
 There are two modes of operation:
 
