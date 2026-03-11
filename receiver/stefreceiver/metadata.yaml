@@ -2,7 +2,7 @@ display_name: STEF Receiver
 type: stef
 
 description: |
-  Receives data via gRPC in OTel/STEF format. OTel/STEF is a compact and fast telemetry format.
+  Receives data via gRPC in OTel/STEF format.
 
 status:
   class: receiver
