@@ -26,6 +26,7 @@ The following is example configuration
 ```yaml
   k8sobjects:
     auth_type: serviceAccount
+    storage: file_storage
     k8s_leader_elector: k8s_leader_elector
     objects:
       - name: pods
@@ -39,6 +40,7 @@ The following is example configuration
         mode: watch
         group: events.k8s.io
         namespaces: [default]
+        persist_resource_version: true
 ```
 
 Brief description of configuration properties:
@@ -69,8 +71,8 @@ this case, it will select `v1` by default.
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs when watching or polling many resources simultaneously.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
-- `storage` (default: none): if specified, will enable the receiver to store the last resource version seen in a file. The resource version will be 
-persisted when the watch mode is configured for the given object.
+- `storage` (default: none): specifies the storage extension to use for persisting resourceVersions. Required when `persist_resource_version` is enabled.
+- `persist_resource_version` (default: `false`): when set to `true` (watch-mode only), the receiver persists the resourceVersion after processing each event. On restart, the receiver resumes watching from the persisted resourceVersion, preventing duplicate events. Requires a `storage` extension to be configured.
 
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
@@ -114,13 +116,21 @@ metadata:
     app: otelcontribcol
 data:
   config.yaml: |
+    extensions:
+      file_storage:
+        directory: /var/lib/otelcol/storage
+
     receivers:
       k8sobjects:
+        auth_type: serviceAccount
+        storage: file_storage
         objects:
           - name: pods
             mode: pull
           - name: events
             mode: watch
+            persist_resource_version: true
+
     exporters:
       otlp_grpc:
         endpoint: <OTLP_ENDPOINT>
@@ -128,6 +138,7 @@ data:
           insecure: true
 
     service:
+      extensions: [file_storage]
       pipelines:
         logs:
           receivers: [k8sobjects]
@@ -241,11 +252,15 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/config
+        - name: storage
+          mountPath: /var/lib/otelcol/storage
         imagePullPolicy: IfNotPresent
       volumes:
         - name: config
           configMap:
             name: otelcontribcol
+        - name: storage
+          emptyDir: {}
 EOF
 ```
 
