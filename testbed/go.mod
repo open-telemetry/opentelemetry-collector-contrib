@@ -70,7 +70,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/text v0.34.0
-	google.golang.org/grpc v1.79.1
+	google.golang.org/grpc v1.79.2
 )
 
 require (
@@ -103,7 +103,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.77.0-devel.0.20260213154712-e02b9359151a // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.55.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.56.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.3 // indirect
 	github.com/DataDog/go-sqllexer v0.1.12 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
