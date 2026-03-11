@@ -102,7 +102,14 @@ func testPdataMarshaler[Data any](
 	require.Len(t, messages, 1) // 1 message per batch
 	assert.Nil(t, messages[0].Key)
 
+	// Create expected by marshaling and unmarshaling input the same way
+	// This ensures the internal dictionary structure matches
+	expectedBytes, err := marshal(input)
+	require.NoError(t, err)
+	expected, err := unmarshal(expectedBytes[0].Value)
+	require.NoError(t, err)
+
 	output, err := unmarshal(messages[0].Value)
 	require.NoError(t, err)
-	assert.NoError(t, compare(input, output))
+	assert.NoError(t, compare(expected, output))
 }

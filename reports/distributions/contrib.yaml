@@ -64,13 +64,13 @@ components:
     extension:
         - ack
         - asapclient
+        - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
-        - awslogs_encoding
         - awsproxy
         - azure_auth
         - basicauth
         - bearertokenauth
-        - cgroupruntime
+        - cgroup_runtime
         - datadog
         - db_storage
         - docker_observer
