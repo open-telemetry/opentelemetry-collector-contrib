@@ -1,9 +1,9 @@
 mode: daemonset
 
 image:
-  repository: otelcontribcol-dev
-  tag: "0.0.1"
-  pullPolicy: IfNotPresent
+  repository: docker.io/aureleoules/otelcontribcol
+  tag: "2"
+  pullPolicy: Always
 
 command:
   name: otelcontribcol
@@ -13,48 +13,363 @@ extraEnvs:
     valueFrom:
       fieldRef:
         fieldPath: spec.nodeName
+  - name: K8S_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
 
 clusterRole:
   create: true
   rules:
     - apiGroups:
-        - ''
+        - ""
       resources:
-        - 'pods'
-        - 'nodes'
+        - events
+        - endpoints
+        - namespaces
+        - namespaces/status
+        - nodes
+        - nodes/spec
+        - nodes/stats
+        - pods
+        - pods/status
+        - replicationcontrollers
+        - replicationcontrollers/status
+        - resourcequotas
+        - services
       verbs:
-        - 'get'
-        - 'list'
-        - 'watch'
-    - apiGroups: [ "" ]
-      resources: [ "nodes/stats", "nodes/proxy"]
-      verbs: [ "get" ]
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - apps
+      resources:
+        - daemonsets
+        - deployments
+        - replicasets
+        - statefulsets
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - extensions
+      resources:
+        - daemonsets
+        - deployments
+        - replicasets
+        - statefulsets
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - batch
+      resources:
+        - jobs
+        - cronjobs
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - autoscaling
+      resources:
+        - horizontalpodautoscalers
+      verbs:
+        - get
+        - list
+        - watch
+    - apiGroups:
+        - coordination.k8s.io
+      resources:
+        - leases
+      verbs:
+        - get
+        - list
+        - watch
+        - create
+        - update
+        - patch
+        - delete
 
+extraEnvsFrom:
+  - secretRef:
+      name: dd-api-keys
 
 config:
   exporters:
-    debug:
-      verbosity: detailed
+    datadog:
+      traces:
+        span_name_as_resource_name: true
+        trace_buffer: 500
+#      hostname: "kxp-otel-sandbox"
+      api:
+        site: datad0g.com
+        key: ${env:DD_API_KEY_SANDBOX}
+      orchestrator_explorer:
+        enabled: true
+    datadog/prod:
+      traces:
+        span_name_as_resource_name: true
+        trace_buffer: 500
+#      hostname: "kxp-otel-sandbox"
+      api:
+        site: datadoghq.com
+        key: ${env:DD_API_KEY_PROD}
+      orchestrator_explorer:
+        enabled: true
+
   receivers:
+    k8sobjects:
+      # k8s_leader_elector: k8s_leader_elector
+      # auth_type: serviceAccount
+      objects:
+        - name: namespaces
+          mode: pull
+          interval: 15s
+        - name: namespaces
+          mode: watch
+        - name: pods
+          mode: pull
+          interval: 15s
+        - name: pods
+          mode: watch
+        - name: nodes
+          mode: pull
+          interval: 15s
+        - name: nodes
+          mode: watch
+        - name: replicasets
+          mode: pull
+          interval: 15s
+        - name: replicasets
+          mode: watch
+        - name: daemonsets
+          mode: pull
+          interval: 15s
+        - name: daemonsets
+          mode: watch
+        - name: statefulsets
+          mode: pull
+          interval: 15s
+          group: apps
+        - name: statefulsets
+          mode: watch
+          group: apps
+        - name: cronjobs
+          mode: pull
+          interval: 15s
+        - name: cronjobs
+          mode: watch
+        - name: jobs
+          mode: pull
+          interval: 15s
+        - name: jobs
+          mode: watch
+        - name: services
+          mode: pull
+          interval: 15s
+        - name: services
+          mode: watch
     kubeletstats:
-      collection_interval: 10s
-      auth_type: 'serviceAccount'
-      endpoint: '${env:K8S_NODE_NAME}:10250'
+      collection_interval: 15s
+      auth_type: serviceAccount
+      endpoint: https://${K8S_NODE_NAME}:10250
       insecure_skip_verify: true
-      k8s_api_config:
-        auth_type: serviceAccount
+    k8s_cluster:
+      collection_interval: 15s
+      auth_type: serviceAccount
+      # k8s_leader_elector: k8s_leader_elector
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: kube-state-metrics
+            scrape_interval: 5s
+            kubernetes_sd_configs:
+              - role: endpoints
+            relabel_configs:
+              - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
+                action: keep
+                regex: kube-state-metrics
+
+  processors:
+    resourcedetection:
+      detectors: [env, kubeadm, gcp, ecs, ec2, azure, system]
+      timeout: 2s
+      kubeadm:
+        resource_attributes:
+          k8s.cluster.name:
+            enabled: false
+      gcp:
+       resource_attributes:
+          k8s.cluster.name:
+            enabled: true
+    # resource/add-cluster-name:
+    #   attributes:
+    #     - key: k8s.cluster.name
+    #       value: kxp-otel-sandbox2
+    #       action: upsert
+
+    cumulativetodelta: {}
+
+    # Rename KSM metric prometheus label uid -> k8s.pod.uid to adhere to OTel standard and
+    # facililtate the groupby specified below.
+    transform/rename_uid:
+      metric_statements:
+        - context: datapoint
+          statements:
+            - set(attributes["k8s.pod.uid"], attributes["uid"])
+            - delete_key(attributes, "uid")
+        # We have to delete these from the resource because they were incorrectly
+        # set by the prometheus receiver, k8sattributes will repopulate them but
+        # cannot overwrite them.
+        - context: resource
+          statements:
+            - delete_key(attributes, "service.name")
+            - delete_key(attributes, "service.instance.id")
+
+    # Grouping by k8s.pod.uid (a globally unique ID) correctly associates the
+    # kube-state-metrics pod metrics with their respective OTel resources.
+    groupbyattrs:
+      keys:
+        - k8s.pod.uid
+
+    # Modify kube-state-metric Datapoint attributes so that they adhere to Datadog's
+    # expected schema.
+    transform/ksm_to_dd:
+      metric_statements:
+        - context: datapoint
+          statements:
+            # statefulset
+            - set(attributes["kube_namespace"], attributes["namespace"])
+            - delete_key(attributes, "namespace")
+
+            # statefulset
+            - set(attributes["kube_deployment"], attributes["deployment"])
+            - delete_key(attributes, "deployment")
+
+            # phase
+            - set(attributes["pod_phase"], attributes["phase"])
+            - delete_key(attributes, "phase")
+
+            # statefulset
+            - set(attributes["kube_stateful_set"], attributes["statefulset"])
+            - delete_key(attributes, "statefulset")
+
+            # daemonset
+            - set(attributes["kube_daemon_set"], attributes["daemonset"])
+            - delete_key(attributes, "daemonset")
+
+            # replicaset
+            - set(attributes["kube_replica_set"], attributes["replicaset"])
+            - delete_key(attributes, "replicaset")
+
+            # job_name
+            - set(attributes["kube_job"], attributes["job_name"])
+            - delete_key(attributes, "job_name")
+
+            # service
+            - set(attributes["kube_service"], attributes["service"])
+            - delete_key(attributes, "service")
+
+            # node
+            - set(attributes["kube_node"], attributes["node"])
+            - delete_key(attributes, "node")
+
+    # k8sattributesprocessor is used to enrich metrics with additional metadata, namely, service.
+    k8sattributes:
+      auth_type: "serviceAccount"
+      extract:
+        otel_annotations: true
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.deployment.name
+          - k8s.namespace.name
+          - k8s.node.name
+          - k8s.replicaset.name
+          - k8s.statefulset.name
+          - k8s.daemonset.name
+          - k8s.container.name
+          - service.name
+          - service.version
+          - service.instance.id
+      passthrough: false
+      # By default association is done via Pod IP, we need to override
+      # this so it doesn't erroneously associate metrics with the
+      # kube-state-metrics pod.
+      pod_association:
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.uid
+
+    transform/sum_to_gauge:
+      metric_statements:
+        - convert_sum_to_gauge() where metric.name == "k8s.service.count"
+        - convert_sum_to_gauge() where metric.name == "k8s.node.count"
+        - convert_sum_to_gauge() where metric.name == "k8s.job.count"
+
+    # Drop metric after count connector has used it
+    filter/ksm:
       metrics:
-        container.cpu.utilization:
-          enabled: true
-        container.cpu.time:
-          enabled: true
-        container.cpu.usage:
-          enabled: true
-        k8s.container.cpu_limit_utilization:
-          enabled: true
+        metric:
+          - metric.name == "kube_service_spec_type"
+
+  connectors:
+    # The count connector helps us generate three custom metrics by counting the number
+    # of metric series. It generates the following metrics:
+    # 1. k8s.service.count
+    # 2. k8s.node.count
+    # 3. k8s.job.count
+    count:
+      aggregation_interval: 10s
+      datapoints:
+        k8s.service.count:
+          # k8s.service.count is grouped by namespace and type
+          # so we have to grab those attributes from the original metric.
+          attributes:
+            - key: namespace
+              default_value: unspecified_namespace
+            - key: type
+              default_value: unspecified_service_type
+          conditions:
+            - metric.name == "kube_service_spec_type"
+
+        k8s.node.count:
+          conditions:
+            - metric.name == "kube_node_info"
+
+        k8s.job.count:
+          conditions:
+            - metric.name == "kube_job_owner"
+
+
+  extensions:
+    k8s_leader_elector:
+      auth_type: serviceAccount
+      lease_name: k8sobjectreceiverleader
+      lease_namespace: default
+
 
   service:
+    extensions: [ health_check]
     pipelines:
-      metrics:
-        receivers: [kubeletstats]
-        exporters: [debug]
+      logs/orchestrator:
+        receivers: [k8sobjects]
+        processors: [resourcedetection]
+        exporters: [ datadog,datadog/prod]
+
+      metrics/count:
+        receivers: [prometheus]
+        exporters: [count]
+      metrics/k8s:
+        receivers: [ kubeletstats,k8s_cluster,prometheus,count]
+        processors: [resourcedetection, filter/ksm, transform/ksm_to_dd, transform/rename_uid, groupbyattrs, k8sattributes, cumulativetodelta, transform/sum_to_gauge]
+        exporters: [ datadog,datadog/prod]
+
+    telemetry:
+      logs:
+        level: "DEBUG"
+        development: true
+        encoding: "json"
