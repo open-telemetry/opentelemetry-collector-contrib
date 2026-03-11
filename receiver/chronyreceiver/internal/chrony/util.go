@@ -13,15 +13,23 @@ import (
 
 var ErrInvalidNetwork = errors.New("invalid network format")
 
-// SplitNetworkEndpoint takes in a URL like string of the format: [network type]://[network endpoint]
-// and then will return the network and the endpoint for the client to use for connection.
-func SplitNetworkEndpoint(addr string) (network, endpoint string, err error) {
+// splitSchemeEndpoint splits addr on "://" and returns the scheme and path.
+func splitSchemeEndpoint(addr string) (scheme, endpoint string, err error) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("address %s missing '://' to separate networks: %w", addr, ErrInvalidNetwork)
 	}
+	return parts[0], parts[1], nil
+}
 
-	network, endpoint = parts[0], parts[1]
+// SplitNetworkEndpoint takes in a URL like string of the format: [network type]://[network endpoint]
+// and then will return the network and the endpoint for the client to use for connection.
+func SplitNetworkEndpoint(addr string) (network, endpoint string, err error) {
+	network, endpoint, err = splitSchemeEndpoint(addr)
+	if err != nil {
+		return "", "", err
+	}
+
 	switch network {
 	case "udp":
 		host, _, err := net.SplitHostPort(endpoint)
@@ -40,6 +48,28 @@ func SplitNetworkEndpoint(addr string) (network, endpoint string, err error) {
 		network = "unixgram"
 	default:
 		return "", "", fmt.Errorf("unknown network %s: %w", network, ErrInvalidNetwork)
+	}
+
+	return network, endpoint, nil
+}
+
+// ParseEndpointPath parses a unix:// or unixgram:// URI into network and path
+// without validating that the path exists on disk. Use for addresses where the
+// socket file will be created at runtime (e.g., local_endpoint).
+func ParseEndpointPath(addr string) (network, endpoint string, err error) {
+	network, endpoint, err = splitSchemeEndpoint(addr)
+	if err != nil {
+		return "", "", err
+	}
+
+	switch network {
+	case "unix", "unixgram":
+		network = "unixgram"
+		if endpoint == "" {
+			return "", "", fmt.Errorf("empty path in %s endpoint: %w", network, ErrInvalidNetwork)
+		}
+	default:
+		return "", "", fmt.Errorf("only unix or unixgram networks are supported, got %s: %w", network, ErrInvalidNetwork)
 	}
 
 	return network, endpoint, nil
