@@ -42,6 +42,11 @@ The following options can be customised:
     - `unix:///path/to/chrony.sock` (Please note the triple slash)
     - `unixgram:///path/to/chrony/sock`
   - The network type `unix` will be converted to `unixgram` but both are permissible
+- local_endpoint (optional) - the local socket address to bind for Unix datagram connections
+  - Required when the collector and chronyd run in separate network namespaces (e.g., different containers) sharing a filesystem volume
+  - When empty (default), Go's abstract socket autobind is used, which only works within the same network namespace
+  - The allowed formats are `unix:///path/to/socket` or `unixgram:///path/to/socket`
+  - The parent directory of the socket path must exist
 - timeout (optional) - The total amount of time allowed to read and process the data from chronyd
   - Recommendation: This value should be set above 1s to allow `chronyd` time to respond
 - collection_interval (optional) - how frequent this receiver should poll [chrony]
@@ -64,6 +69,25 @@ receivers:
       ntp.stratum:
         enabled: true
 ```
+
+### Cross-Container Deployment
+
+When the collector and chronyd run in separate containers with different Linux network namespaces
+but share a filesystem volume for the Unix socket, Go's default abstract socket autobind fails
+because abstract sockets are namespace-scoped. Use `local_endpoint` to bind the client socket to
+a filesystem path on the shared volume:
+
+```yaml
+receivers:
+  chrony:
+    endpoint: unix:///run/chrony/chronyd.sock
+    local_endpoint: unix:///run/chrony/otel-reply.sock
+    timeout: 10s
+    collection_interval: 10s
+```
+
+The socket file at `local_endpoint` is automatically cleaned up before each request and after
+the response is received.
 
 The complete list of metrics emitted by this receiver is found in the [documentation].
 
