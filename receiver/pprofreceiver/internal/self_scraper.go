@@ -23,8 +23,8 @@ var _ xscraper.Profiles = &SelfScraper{}
 type SelfScraper struct {
 	BlockProfileFraction int
 	MutexProfileFraction int
-	buf    *bytes.Buffer
-	writer *bufio.Writer
+	buf                  *bytes.Buffer
+	writer               *bufio.Writer
 }
 
 func (hcs *SelfScraper) Start(_ context.Context, _ component.Host) error {
