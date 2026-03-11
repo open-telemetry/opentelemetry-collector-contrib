@@ -73,7 +73,7 @@ func (r ResourceMetricsUnmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metric
 	switch batchFormat {
 	// ND JSON is a specific case...
 	// We will use bufio.Scanner trick to read it line by line
-	// as unmarshal each line as a Log Record
+	// as unmarshal each line as a Metric Record
 	case unmarshaler.FormatNDJSON:
 		scanner := bufio.NewScanner(bytes.NewReader(buf))
 		for scanner.Scan() {
@@ -83,12 +83,12 @@ func (r ResourceMetricsUnmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metric
 	// `gojson.Path.Extract` is a bit faster and use ~25% less bytes per operation
 	// comparing to unmarshaling to intermediate structure (e.g. using `var recordsHolder []json.RawMessage`)
 	case unmarshaler.FormatObjectRecords, unmarshaler.FormatJSONArray:
-		jsonPath := unmarshaler.JSONPathEventHubLogRecords
+		jsonPath := unmarshaler.JSONPathEventHubRecords
 		if batchFormat == unmarshaler.FormatJSONArray {
-			jsonPath = unmarshaler.JSONPathBlobStorageLogRecords
+			jsonPath = unmarshaler.JSONPathBlobStorageRecords
 		}
 
-		// This will allow us to parse Azure Log Records in both formats:
+		// This will allow us to parse Azure Metric Records in both formats:
 		// 1) As exported to Azure Event Hub, e.g. `{"records": [ {...}, {...} ]}`
 		// 2) As exported to Azure Blob Storage, e.g. `[ {...}, {...} ]`
 		rootPath, err := gojson.CreatePath(jsonPath)
@@ -106,7 +106,7 @@ func (r ResourceMetricsUnmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metric
 		for _, record := range records {
 			r.unmarshalRecord(allResourceScopeMetrics, record)
 		}
-	// This is happened on empty input
+	// This happens on empty input
 	case unmarshaler.FormatUnknown:
 		return pmetric.NewMetrics(), nil
 	default:
