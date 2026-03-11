@@ -64,8 +64,8 @@ components:
     extension:
         - ack
         - asapclient
+        - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
-        - awslogs_encoding
         - awsproxy
         - azure_auth
         - basicauth
