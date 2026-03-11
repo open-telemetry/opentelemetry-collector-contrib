@@ -451,6 +451,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.application_wait_time | The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta). | Any Double |
 | oracledb.buffer_gets | Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta). | Any Int |
 | oracledb.cluster_wait_time | Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta). | Any Double |
+| oracledb.command_type | Command type of the query. | Any Int |
 | oracledb.concurrency_wait_time | Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta). | Any Double |
 | oracledb.cpu_time | Total time (in seconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta). | Any Double |
 | oracledb.direct_reads | The number of direct path reads performed by a query — i.e., data blocks read directly from disk into the session’s memory (reporting delta). | Any Int |

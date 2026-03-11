@@ -69,6 +69,9 @@ attributes:
   oracledb.cluster_wait_time:
     description: Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta).
     type: double
+  oracledb.command_type:
+    description: Command type of the query.
+    type: int
   oracledb.concurrency_wait_time:
     description: Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta).
     type: double
@@ -230,6 +233,7 @@ events:
       - oracledb.application_wait_time
       - oracledb.buffer_gets
       - oracledb.cluster_wait_time
+      - oracledb.command_type
       - oracledb.concurrency_wait_time
       - oracledb.cpu_time
       - oracledb.direct_reads
