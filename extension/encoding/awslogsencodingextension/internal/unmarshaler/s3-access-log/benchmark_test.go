@@ -47,7 +47,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		},
 	}
 
-	u := s3AccessLogUnmarshaler{buildInfo: component.BuildInfo{}}
+	u := S3AccessLogUnmarshaler{buildInfo: component.BuildInfo{}}
 	for name, benchmark := range benchmarks {
 		logs := newLogFileContent(b, benchmark.nLogs)
 		b.Run(name, func(b *testing.B) {

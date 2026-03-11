@@ -1,10 +1,11 @@
-type: yanggrpc
+type: yang_grpc
+deprecated_type: yanggrpc
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: []
+  distributions: [contrib]
   codeowners:
     active: [atoulme]
 

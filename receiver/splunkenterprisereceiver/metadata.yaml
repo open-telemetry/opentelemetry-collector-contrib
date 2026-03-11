@@ -1,4 +1,12 @@
+display_name: Splunk Enterprise Receiver
 type: splunkenterprise
+
+description: |
+  The Splunk Enterprise Receiver is a pull based tool which enables the ingestion of performance metrics describing the operational status of a user's Splunk Enterprise deployment to an appropriate observability tool.
+  It is designed to leverage several different data sources to gather these metrics including the [introspection api endpoint](https://help.splunk.com/en/splunk-enterprise/leverage-rest-apis/rest-api-reference/9.1/introspection-endpoints/introspection-endpoint-descriptions) and serializing
+  results from ad-hoc searches. Because of this, care must be taken by users when enabling metrics as running searches can effect your Splunk Enterprise Deployment and introspection may fail to report for Splunk
+  Cloud deployments. The primary purpose of this receiver is to empower those tasked with the maintenance and care of a Splunk Enterprise deployment to leverage opentelemetry and their observability toolset in their
+  jobs.
 
 status:
   class: receiver
@@ -8,68 +16,88 @@ status:
   codeowners:
     active: [shalper2, MovieStoreGuy, greatestusername]
 
+reaggregation_enabled: true
 attributes:
   splunk.bucket.dir:
     description: The bucket super-directory (home, cold, thawed) for each index
     type: string
+    requirement_level: recommended
   splunk.feature:
     description: The Feature name from the Splunk Health Introspection Endpoint
     type: string
+    requirement_level: recommended
   splunk.feature.health:
     description: The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint
     type: string
+    requirement_level: recommended
   splunk.host:
     description: The name of the splunk host
     type: string
+    requirement_level: recommended
   splunk.index.name:
     description: The name of the index reporting a specific KPI
     type: string
+    requirement_level: recommended
   splunk.indexer.searchable:
     description: The searchability status reported for a specific object
     type: string
+    requirement_level: recommended
   splunk.indexer.status:
     description: The status message reported for a specific object
     type: string
+    requirement_level: recommended
   splunk.kvstore.external:
     description: Value denoting if the KV store is using an external service
     type: string
+    requirement_level: recommended
   splunk.kvstore.status.value:
     description: The string value of the status returned when reporting on KV store using the introspection endpoint
     type: string
+    requirement_level: recommended
   splunk.kvstore.storage.engine:
     description: The backend storage used by the KV store
     type: string
+    requirement_level: recommended
   splunk.license.label:
     description: The label of the license.
     type: string
+    requirement_level: recommended
   splunk.license.status:
     description: The status of the license.
     type: string
+    requirement_level: recommended
   splunk.license.type:
     description: The type of license.
     type: string
-
+    requirement_level: recommended
   splunk.queue.name:
     description: The name of the queue reporting a specific KPI
     type: string
+    requirement_level: recommended
   splunk.rollingorrestart:
     description: Boolean that indicates if there is a rolling restart or rolling upgrade in progress.
     type: bool
+    requirement_level: recommended
   splunk.search.state:
     description: The dispatch state of the search
     type: string
+    requirement_level: recommended
   splunk.searchable.restart:
     description: Boolean that indicates if a searchable rolling restart/upgrade in progress.t
     type: bool
+    requirement_level: recommended
   splunk.searchartifacts.cache.type:
     description: The search artifacts cache type
     type: string
+    requirement_level: recommended
   splunk.splunkd.build:
     description: The build number for this Splunk instance version
     type: string
+    requirement_level: recommended
   splunk.splunkd.version:
     description: The splunkd version number
     type: string
+    requirement_level: recommended
 
 metrics:
   splunk.aggregation.queue.ratio:

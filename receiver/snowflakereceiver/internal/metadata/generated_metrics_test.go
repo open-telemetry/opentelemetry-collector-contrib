@@ -98,9 +98,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["SnowflakeRowsUnloadedAvg"] = mb.metricSnowflakeRowsUnloadedAvg.config.AggregationStrategy
 			aggMap["SnowflakeRowsUpdatedAvg"] = mb.metricSnowflakeRowsUpdatedAvg.config.AggregationStrategy
 			aggMap["SnowflakeSessionIDCount"] = mb.metricSnowflakeSessionIDCount.config.AggregationStrategy
-			aggMap["SnowflakeStorageFailsafeBytesTotal"] = mb.metricSnowflakeStorageFailsafeBytesTotal.config.AggregationStrategy
-			aggMap["SnowflakeStorageStageBytesTotal"] = mb.metricSnowflakeStorageStageBytesTotal.config.AggregationStrategy
-			aggMap["SnowflakeStorageStorageBytesTotal"] = mb.metricSnowflakeStorageStorageBytesTotal.config.AggregationStrategy
 			aggMap["SnowflakeTotalElapsedTimeAvg"] = mb.metricSnowflakeTotalElapsedTimeAvg.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -312,23 +309,14 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 1)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 3)
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 1)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 3)
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 1)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 3)
-			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -373,9 +361,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSnowflakeRowsUnloadedAvg.aggDataPoints)
 				assert.Empty(t, mb.metricSnowflakeRowsUpdatedAvg.aggDataPoints)
 				assert.Empty(t, mb.metricSnowflakeSessionIDCount.aggDataPoints)
-				assert.Empty(t, mb.metricSnowflakeStorageFailsafeBytesTotal.aggDataPoints)
-				assert.Empty(t, mb.metricSnowflakeStorageStageBytesTotal.aggDataPoints)
-				assert.Empty(t, mb.metricSnowflakeStorageStorageBytesTotal.aggDataPoints)
 				assert.Empty(t, mb.metricSnowflakeTotalElapsedTimeAvg.aggDataPoints)
 			}
 
@@ -2189,110 +2174,41 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 					}
 				case "snowflake.storage.failsafe_bytes.total":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["snowflake.storage.failsafe_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.failsafe_bytes.total")
-						validatedMetrics["snowflake.storage.failsafe_bytes.total"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of bytes of data in Fail-safe.", ms.At(i).Description())
-						assert.Equal(t, "By", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					} else {
-						assert.False(t, validatedMetrics["snowflake.storage.failsafe_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.failsafe_bytes.total")
-						validatedMetrics["snowflake.storage.failsafe_bytes.total"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of bytes of data in Fail-safe.", ms.At(i).Description())
-						assert.Equal(t, "By", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["snowflake.storage.failsafe_bytes.total"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-					}
+					assert.False(t, validatedMetrics["snowflake.storage.failsafe_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.failsafe_bytes.total")
+					validatedMetrics["snowflake.storage.failsafe_bytes.total"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of bytes of data in Fail-safe.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "snowflake.storage.stage_bytes.total":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["snowflake.storage.stage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.stage_bytes.total")
-						validatedMetrics["snowflake.storage.stage_bytes.total"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of bytes of stage storage used by files in all internal stages (named, table, user).", ms.At(i).Description())
-						assert.Equal(t, "By", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					} else {
-						assert.False(t, validatedMetrics["snowflake.storage.stage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.stage_bytes.total")
-						validatedMetrics["snowflake.storage.stage_bytes.total"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of bytes of stage storage used by files in all internal stages (named, table, user).", ms.At(i).Description())
-						assert.Equal(t, "By", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["snowflake.storage.stage_bytes.total"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-					}
+					assert.False(t, validatedMetrics["snowflake.storage.stage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.stage_bytes.total")
+					validatedMetrics["snowflake.storage.stage_bytes.total"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of bytes of stage storage used by files in all internal stages (named, table, user).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "snowflake.storage.storage_bytes.total":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["snowflake.storage.storage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.storage_bytes.total")
-						validatedMetrics["snowflake.storage.storage_bytes.total"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of bytes of table storage used, including bytes for data currently in Time Travel.", ms.At(i).Description())
-						assert.Equal(t, "By", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					} else {
-						assert.False(t, validatedMetrics["snowflake.storage.storage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.storage_bytes.total")
-						validatedMetrics["snowflake.storage.storage_bytes.total"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of bytes of table storage used, including bytes for data currently in Time Travel.", ms.At(i).Description())
-						assert.Equal(t, "By", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["snowflake.storage.storage_bytes.total"] {
-						case "sum":
-							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
-						case "avg":
-							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
-						case "min":
-							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						case "max":
-							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-					}
+					assert.False(t, validatedMetrics["snowflake.storage.storage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.storage_bytes.total")
+					validatedMetrics["snowflake.storage.storage_bytes.total"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of bytes of table storage used, including bytes for data currently in Time Travel.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "snowflake.total_elapsed_time.avg":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["snowflake.total_elapsed_time.avg"], "Found a duplicate in the metrics slice: snowflake.total_elapsed_time.avg")

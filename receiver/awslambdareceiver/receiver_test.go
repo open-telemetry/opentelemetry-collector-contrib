@@ -29,7 +29,7 @@ func TestCreateLogs(t *testing.T) {
 	// Create receiver using factory with S3 encoding config.
 	// Note: The S3Encoding value must match the component ID used when registering the extension.
 
-	s3Encoding := "awslogs_encoding"
+	s3Encoding := "aws_logs_encoding"
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)

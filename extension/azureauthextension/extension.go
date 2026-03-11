@@ -264,7 +264,7 @@ func (r *roundTripper) RoundTrip(request *http.Request) (*http.Response, error) 
 
 	token, err := r.auth.getTokenForHost(req.Context(), host)
 	if err != nil {
-		return nil, fmt.Errorf("azureauth: failed to get token: %w", err)
+		return nil, fmt.Errorf("azure_auth: failed to get token: %w", err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 

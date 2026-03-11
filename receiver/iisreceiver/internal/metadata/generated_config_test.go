@@ -26,20 +26,54 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					IisApplicationPoolState:   MetricConfig{Enabled: true},
-					IisApplicationPoolUptime:  MetricConfig{Enabled: true},
-					IisConnectionActive:       MetricConfig{Enabled: true},
-					IisConnectionAnonymous:    MetricConfig{Enabled: true},
-					IisConnectionAttemptCount: MetricConfig{Enabled: true},
-					IisNetworkBlocked:         MetricConfig{Enabled: true},
-					IisNetworkFileCount:       MetricConfig{Enabled: true},
-					IisNetworkIo:              MetricConfig{Enabled: true},
-					IisRequestCount:           MetricConfig{Enabled: true},
-					IisRequestQueueAgeMax:     MetricConfig{Enabled: true},
-					IisRequestQueueCount:      MetricConfig{Enabled: true},
-					IisRequestRejected:        MetricConfig{Enabled: true},
-					IisThreadActive:           MetricConfig{Enabled: true},
-					IisUptime:                 MetricConfig{Enabled: true},
+					IisApplicationPoolState: IisApplicationPoolStateConfig{
+						Enabled: true,
+					},
+					IisApplicationPoolUptime: IisApplicationPoolUptimeConfig{
+						Enabled: true,
+					},
+					IisConnectionActive: IisConnectionActiveConfig{
+						Enabled: true,
+					},
+					IisConnectionAnonymous: IisConnectionAnonymousConfig{
+						Enabled: true,
+					},
+					IisConnectionAttemptCount: IisConnectionAttemptCountConfig{
+						Enabled: true,
+					},
+					IisNetworkBlocked: IisNetworkBlockedConfig{
+						Enabled: true,
+					},
+					IisNetworkFileCount: IisNetworkFileCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []IisNetworkFileCountAttributeKey{IisNetworkFileCountAttributeKeyDirection},
+					},
+					IisNetworkIo: IisNetworkIoConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []IisNetworkIoAttributeKey{IisNetworkIoAttributeKeyDirection},
+					},
+					IisRequestCount: IisRequestCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []IisRequestCountAttributeKey{IisRequestCountAttributeKeyRequest},
+					},
+					IisRequestQueueAgeMax: IisRequestQueueAgeMaxConfig{
+						Enabled: true,
+					},
+					IisRequestQueueCount: IisRequestQueueCountConfig{
+						Enabled: true,
+					},
+					IisRequestRejected: IisRequestRejectedConfig{
+						Enabled: true,
+					},
+					IisThreadActive: IisThreadActiveConfig{
+						Enabled: true,
+					},
+					IisUptime: IisUptimeConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					IisApplicationPool: ResourceAttributeConfig{Enabled: true},
@@ -51,20 +85,54 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					IisApplicationPoolState:   MetricConfig{Enabled: false},
-					IisApplicationPoolUptime:  MetricConfig{Enabled: false},
-					IisConnectionActive:       MetricConfig{Enabled: false},
-					IisConnectionAnonymous:    MetricConfig{Enabled: false},
-					IisConnectionAttemptCount: MetricConfig{Enabled: false},
-					IisNetworkBlocked:         MetricConfig{Enabled: false},
-					IisNetworkFileCount:       MetricConfig{Enabled: false},
-					IisNetworkIo:              MetricConfig{Enabled: false},
-					IisRequestCount:           MetricConfig{Enabled: false},
-					IisRequestQueueAgeMax:     MetricConfig{Enabled: false},
-					IisRequestQueueCount:      MetricConfig{Enabled: false},
-					IisRequestRejected:        MetricConfig{Enabled: false},
-					IisThreadActive:           MetricConfig{Enabled: false},
-					IisUptime:                 MetricConfig{Enabled: false},
+					IisApplicationPoolState: IisApplicationPoolStateConfig{
+						Enabled: false,
+					},
+					IisApplicationPoolUptime: IisApplicationPoolUptimeConfig{
+						Enabled: false,
+					},
+					IisConnectionActive: IisConnectionActiveConfig{
+						Enabled: false,
+					},
+					IisConnectionAnonymous: IisConnectionAnonymousConfig{
+						Enabled: false,
+					},
+					IisConnectionAttemptCount: IisConnectionAttemptCountConfig{
+						Enabled: false,
+					},
+					IisNetworkBlocked: IisNetworkBlockedConfig{
+						Enabled: false,
+					},
+					IisNetworkFileCount: IisNetworkFileCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []IisNetworkFileCountAttributeKey{IisNetworkFileCountAttributeKeyDirection},
+					},
+					IisNetworkIo: IisNetworkIoConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []IisNetworkIoAttributeKey{IisNetworkIoAttributeKeyDirection},
+					},
+					IisRequestCount: IisRequestCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []IisRequestCountAttributeKey{IisRequestCountAttributeKeyRequest},
+					},
+					IisRequestQueueAgeMax: IisRequestQueueAgeMaxConfig{
+						Enabled: false,
+					},
+					IisRequestQueueCount: IisRequestQueueCountConfig{
+						Enabled: false,
+					},
+					IisRequestRejected: IisRequestRejectedConfig{
+						Enabled: false,
+					},
+					IisThreadActive: IisThreadActiveConfig{
+						Enabled: false,
+					},
+					IisUptime: IisUptimeConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					IisApplicationPool: ResourceAttributeConfig{Enabled: false},
@@ -76,7 +144,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(IisApplicationPoolStateConfig{}, IisApplicationPoolUptimeConfig{}, IisConnectionActiveConfig{}, IisConnectionAnonymousConfig{}, IisConnectionAttemptCountConfig{}, IisNetworkBlockedConfig{}, IisNetworkFileCountConfig{}, IisNetworkIoConfig{}, IisRequestCountConfig{}, IisRequestQueueAgeMaxConfig{}, IisRequestQueueCountConfig{}, IisRequestRejectedConfig{}, IisThreadActiveConfig{}, IisUptimeConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

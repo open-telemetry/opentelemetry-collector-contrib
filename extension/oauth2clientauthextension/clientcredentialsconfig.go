@@ -111,7 +111,7 @@ func (c *clientCredentialsConfig) createConfig() (*clientcredentials.Config, err
 }
 
 func (c *clientCredentialsConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
-	return oauth2.ReuseTokenSourceWithExpiry(nil, clientCredentialsTokenSource{ctx: ctx, config: c}, c.ExpiryBuffer)
+	return clientCredentialsTokenSource{ctx: ctx, config: c}
 }
 
 func (c *clientCredentialsConfig) TokenEndpoint() string {
