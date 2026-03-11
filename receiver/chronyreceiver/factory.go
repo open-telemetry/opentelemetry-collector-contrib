@@ -39,7 +39,17 @@ func newMetricsReceiver(
 	s := newScraper(ctx, cfg, set)
 	sc, err := scraper.NewMetrics(s.scrape,
 		scraper.WithStart(func(_ context.Context, _ component.Host) error {
-			chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
+			var chronyc chrony.Client
+			var err error
+			if cfg.LocalEndpoint != "" {
+				_, localPath, parseErr := chrony.ParseEndpointPath(cfg.LocalEndpoint)
+				if parseErr != nil {
+					return parseErr
+				}
+				chronyc, err = chrony.New(cfg.Endpoint, cfg.Timeout, chrony.WithLocalAddress(localPath))
+			} else {
+				chronyc, err = chrony.New(cfg.Endpoint, cfg.Timeout)
+			}
 			s.client = chronyc
 			return err
 		}),
