@@ -17,7 +17,7 @@ func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
 		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		xexporter.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
