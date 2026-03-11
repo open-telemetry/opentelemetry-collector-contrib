@@ -4,55 +4,55 @@ $defs:
     description: MetricsConfig provides config for nsxt metrics.
     type: object
     properties:
-    nsxt.node.cpu.utilization:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    nsxt.node.filesystem.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    nsxt.node.filesystem.utilization:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    nsxt.node.memory.cache.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    nsxt.node.memory.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    nsxt.node.network.io:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    nsxt.node.network.packet.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      nsxt.node.cpu.utilization:
+        description: "NsxtNodeCPUUtilizationConfig provides config for the nsxt.node.cpu.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      nsxt.node.filesystem.usage:
+        description: "NsxtNodeFilesystemUsageConfig provides config for the nsxt.node.filesystem.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      nsxt.node.filesystem.utilization:
+        description: "NsxtNodeFilesystemUtilizationConfig provides config for the nsxt.node.filesystem.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      nsxt.node.memory.cache.usage:
+        description: "NsxtNodeMemoryCacheUsageConfig provides config for the nsxt.node.memory.cache.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      nsxt.node.memory.usage:
+        description: "NsxtNodeMemoryUsageConfig provides config for the nsxt.node.memory.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      nsxt.node.network.io:
+        description: "NsxtNodeNetworkIoConfig provides config for the nsxt.node.network.io metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      nsxt.node.network.packet.count:
+        description: "NsxtNodeNetworkPacketCountConfig provides config for the nsxt.node.network.packet.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for nsxt resource attributes.
     type: object

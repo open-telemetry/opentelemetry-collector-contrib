@@ -116,8 +116,8 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordTemperatureStatusStateDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 
 			rb := mb.NewResourceBuilder()
-			rb.SetBaseURL("base_url-val")
-			rb.SetSystemHostName("system.host_name-val")
+			rb.SetHostName("host.name-val")
+			rb.SetURLFull("url.full-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

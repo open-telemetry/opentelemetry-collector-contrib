@@ -59,8 +59,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["SystemCPUFrequency"] = mb.metricSystemCPUFrequency.config.AggregationStrategy
-			aggMap["SystemCPULogicalCount"] = mb.metricSystemCPULogicalCount.config.AggregationStrategy
-			aggMap["SystemCPUPhysicalCount"] = mb.metricSystemCPUPhysicalCount.config.AggregationStrategy
 			aggMap["SystemCPUTime"] = mb.metricSystemCPUTime.config.AggregationStrategy
 			aggMap["SystemCPUUtilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
 

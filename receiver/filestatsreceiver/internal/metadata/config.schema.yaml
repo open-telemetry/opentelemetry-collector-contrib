@@ -4,41 +4,41 @@ $defs:
     description: MetricsConfig provides config for filestats metrics.
     type: object
     properties:
-    file.atime:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    file.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    file.ctime:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    file.mtime:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    file.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      file.atime:
+        description: "FileAtimeConfig provides config for the file.atime metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      file.count:
+        description: "FileCountConfig provides config for the file.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      file.ctime:
+        description: "FileCtimeConfig provides config for the file.ctime metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      file.mtime:
+        description: "FileMtimeConfig provides config for the file.mtime metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      file.size:
+        description: "FileSizeConfig provides config for the file.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for filestats resource attributes.
     type: object

@@ -58,17 +58,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemLinuxMemoryAvailable"] = mb.metricSystemLinuxMemoryAvailable.config.AggregationStrategy
-			aggMap["SystemLinuxMemoryDirty"] = mb.metricSystemLinuxMemoryDirty.config.AggregationStrategy
-			aggMap["SystemMemoryLimit"] = mb.metricSystemMemoryLimit.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxHugepagesLimit"] = mb.metricSystemMemoryLinuxHugepagesLimit.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxHugepagesPageSize"] = mb.metricSystemMemoryLinuxHugepagesPageSize.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxHugepagesReserved"] = mb.metricSystemMemoryLinuxHugepagesReserved.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxHugepagesSurplus"] = mb.metricSystemMemoryLinuxHugepagesSurplus.config.AggregationStrategy
 			aggMap["SystemMemoryLinuxHugepagesUsage"] = mb.metricSystemMemoryLinuxHugepagesUsage.config.AggregationStrategy
 			aggMap["SystemMemoryLinuxHugepagesUtilization"] = mb.metricSystemMemoryLinuxHugepagesUtilization.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxShared"] = mb.metricSystemMemoryLinuxShared.config.AggregationStrategy
-			aggMap["SystemMemoryPageSize"] = mb.metricSystemMemoryPageSize.config.AggregationStrategy
 			aggMap["SystemMemoryUsage"] = mb.metricSystemMemoryUsage.config.AggregationStrategy
 			aggMap["SystemMemoryUtilization"] = mb.metricSystemMemoryUtilization.config.AggregationStrategy
 
