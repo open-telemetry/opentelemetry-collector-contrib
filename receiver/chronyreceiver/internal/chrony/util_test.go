@@ -108,7 +108,7 @@ func TestParseEndpointPath(t *testing.T) {
 		{
 			scenario: "Invalid UDP scheme",
 			in:       "udp://localhost:323",
-			err: ErrInvalidNetwork,
+			err:      ErrInvalidNetwork,
 		},
 		{
 			scenario: "Missing separator",

@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -139,11 +140,11 @@ func createStaleSocket(t *testing.T, path string) {
 func TestLocalAddrSocketCleanup(t *testing.T) {
 	t.Parallel()
 
-	// Use /tmp for a short path; t.TempDir() resolves to /private/var/folders/...
-	// which exceeds macOS's 104-byte sun_path limit for Unix sockets.
-	sockDir, err := os.MkdirTemp("/tmp", "chrony-test-")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(sockDir) })
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping UDS test on windows")
+	}
+
+	sockDir := t.TempDir()
 	localAddr := filepath.Join(sockDir, "r.sock")
 
 	// Create a real stale Unix socket to simulate crash recovery
@@ -162,8 +163,8 @@ func TestLocalAddrSocketCleanup(t *testing.T) {
 				conn := newMockConn(t,
 					nil, // default: reads requestTrackingContent from pipe
 					func(conn net.Conn) error {
-						_, err := conn.Write(tracking)
-						return err
+						_, writeErr := conn.Write(tracking)
+						return writeErr
 					},
 				)
 				return conn, nil
@@ -187,7 +188,7 @@ func TestLocalAddrRejectsNonSocket(t *testing.T) {
 	localAddr := filepath.Join(sockDir, "otel-reply.sock")
 
 	// Create a regular file at the local_endpoint path
-	require.NoError(t, os.WriteFile(localAddr, []byte("not a socket"), 0600))
+	require.NoError(t, os.WriteFile(localAddr, []byte("not a socket"), 0o600))
 
 	c, err := New("unix://"+sockDir, 10*time.Second,
 		WithLocalAddress(localAddr),

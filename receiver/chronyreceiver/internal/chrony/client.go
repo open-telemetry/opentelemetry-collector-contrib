@@ -25,7 +25,8 @@ type Client interface {
 	GetTrackingData(ctx context.Context) (*Tracking, error)
 }
 
-type clientOption func(c *client)
+// ClientOption configures the chrony client.
+type ClientOption func(c *client)
 
 // client is a partial rewrite of the client provided by
 // github.com/facebook/time/ntp/chrony
@@ -42,14 +43,14 @@ type client struct {
 // WithLocalAddress sets a filesystem-based local socket address for unixgram
 // connections. Required when the collector and chronyd run in separate network
 // namespaces sharing a filesystem volume.
-func WithLocalAddress(addr string) clientOption {
+func WithLocalAddress(addr string) ClientOption {
 	return func(c *client) {
 		c.localAddr = addr
 	}
 }
 
 // New creates a client ready to use with chronyd
-func New(addr string, timeout time.Duration, opts ...clientOption) (Client, error) {
+func New(addr string, timeout time.Duration, opts ...ClientOption) (Client, error) {
 	network, endpoint, err := SplitNetworkEndpoint(addr)
 	if err != nil {
 		return nil, err
