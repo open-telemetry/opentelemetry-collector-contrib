@@ -4,11 +4,13 @@
 package chrony
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -78,6 +80,91 @@ func TestNew(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWithLocalAddress(t *testing.T) {
+	t.Parallel()
+
+	sockDir := t.TempDir()
+	localAddr := filepath.Join(sockDir, "otel-reply.sock")
+
+	c, err := New("unix://"+sockDir, 10*time.Second, WithLocalAddress(localAddr))
+	require.NoError(t, err, "Must not error when creating client")
+
+	cl, ok := c.(*client)
+	require.True(t, ok, "Must be a *client")
+	assert.Equal(t, localAddr, cl.localAddr, "Must set the local address")
+}
+
+func newTrackingPayload(t *testing.T) []byte {
+	t.Helper()
+	type response struct {
+		ReplyHead
+		replyTrackingContent
+	}
+	resp := &response{
+		ReplyHead: ReplyHead{
+			Version: 6,
+			Status:  successfulRequest,
+			Reply:   replyTrackingCode,
+		},
+		replyTrackingContent: replyTrackingContent{
+			RefID: 100,
+			IPAddr: ipAddr{
+				IP:     [16]uint8{127, 0, 0, 1},
+				Family: ipAddrInet4,
+			},
+			Stratum: 10,
+		},
+	}
+	w := &bytes.Buffer{}
+	require.NoError(t, binary.Write(w, binary.BigEndian, resp))
+	buf := w.Bytes()
+	// Pad to 1024 bytes to match client read buffer
+	if len(buf) < 1024 {
+		buf = append(buf, make([]byte, 1024-len(buf))...)
+	}
+	return buf
+}
+
+func TestLocalAddrSocketCleanup(t *testing.T) {
+	t.Parallel()
+
+	sockDir := t.TempDir()
+	localAddr := filepath.Join(sockDir, "otel-reply.sock")
+
+	// Create a stale socket file to simulate crash recovery
+	require.NoError(t, os.WriteFile(localAddr, []byte("stale"), 0600), "Must create stale socket file")
+
+	tracking := newTrackingPayload(t)
+
+	c, err := New("unix://"+sockDir, 10*time.Second,
+		WithLocalAddress(localAddr),
+		func(c *client) {
+			c.dialer = func(context.Context, string, string) (net.Conn, error) {
+				// Verify stale file was removed before dial
+				_, statErr := os.Stat(localAddr)
+				assert.ErrorIs(t, statErr, os.ErrNotExist, "Must remove stale socket before dial")
+
+				conn := newMockConn(t,
+					nil, // default: reads requestTrackingContent from pipe
+					func(conn net.Conn) error {
+						_, err := conn.Write(tracking)
+						return err
+					},
+				)
+				return conn, nil
+			}
+		},
+	)
+	require.NoError(t, err, "Must not error when creating client")
+
+	_, err = c.GetTrackingData(t.Context())
+	require.NoError(t, err, "Must not error when getting tracking data")
+
+	// Verify socket file cleaned up after close
+	_, err = os.Stat(localAddr)
+	assert.ErrorIs(t, err, os.ErrNotExist, "Must remove local socket after GetTrackingData")
 }
 
 func TestGettingTrackingData(t *testing.T) {

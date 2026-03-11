@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"net"
+	"os"
 	"time"
 
 	"github.com/facebook/time/ntp/chrony"
@@ -32,8 +33,18 @@ type clientOption func(c *client)
 // client uses logrus' global instance within the main code path.
 type client struct {
 	proto, addr string
+	localAddr   string
 	timeout     time.Duration
 	dialer      func(ctx context.Context, network, addr string) (net.Conn, error)
+}
+
+// WithLocalAddress sets a filesystem-based local socket address for unixgram
+// connections. Required when the collector and chronyd run in separate network
+// namespaces sharing a filesystem volume.
+func WithLocalAddress(addr string) clientOption {
+	return func(c *client) {
+		c.localAddr = addr
+	}
 }
 
 // New creates a client ready to use with chronyd
@@ -43,24 +54,36 @@ func New(addr string, timeout time.Duration, opts ...clientOption) (Client, erro
 		return nil, err
 	}
 
-	var d net.Dialer
-
 	c := &client{
 		proto:   network,
 		addr:    endpoint,
 		timeout: timeout,
-		dialer:  d.DialContext,
 	}
 	for _, opt := range opts {
 		opt(c)
 	}
 
+	if c.dialer == nil {
+		d := net.Dialer{}
+		if c.localAddr != "" && c.proto == "unixgram" {
+			d.LocalAddr = &net.UnixAddr{Name: c.localAddr, Net: "unixgram"}
+		}
+		c.dialer = d.DialContext
+	}
+
 	return c, nil
 }
 
+// GetTrackingData is not safe for concurrent use when localAddr is set;
+// the scraper framework serializes calls so this is not an issue in practice.
 func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	ctx, cancel := c.getContext(ctx)
 	defer cancel()
+
+	if c.localAddr != "" && c.proto == "unixgram" {
+		_ = os.Remove(c.localAddr) // remove stale socket; error is safe to ignore (file may not exist)
+		defer func() { _ = os.Remove(c.localAddr) }() // best-effort cleanup; non-fatal if already removed
+	}
 
 	sock, err := c.dialer(ctx, c.proto, c.addr)
 	if err != nil {
