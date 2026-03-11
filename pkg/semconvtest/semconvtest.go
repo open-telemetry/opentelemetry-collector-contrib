@@ -1,4 +1,7 @@
-package semconvtest
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package semconvtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest"
 
 import (
 	"bufio"
