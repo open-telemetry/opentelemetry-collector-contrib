@@ -126,7 +126,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.147.0 // indirect
 	github.com/open-telemetry/otel-arrow/go v0.46.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
-	github.com/pierrec/lz4/v4 v4.1.25 // indirect
+	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
@@ -210,10 +210,10 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.147.1-0.20260311121824-c85224ac4dc8 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.1-0.20260311121824-c85224ac4dc8 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.147.1-0.20260311121824-c85224ac4dc8 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.66.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.67.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.42.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.66.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.67.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.18.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.18.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.42.0 // indirect

@@ -34,7 +34,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.2 // indirect
+	github.com/knadh/koanf/v2 v2.3.3 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -57,8 +57,8 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.53.1-0.20260311121824-c85224ac4dc8 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.1-0.20260311121824-c85224ac4dc8 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.1-0.20260311121824-c85224ac4dc8 // indirect
-	go.opentelemetry.io/otel/sdk v1.41.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.41.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.42.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.42.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -75,7 +75,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.147.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.147.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.147.0
-	github.com/pierrec/lz4/v4 v4.1.25 // indirect
+	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/collector/client v1.53.1-0.20260311121824-c85224ac4dc8 // indirect
 	go.opentelemetry.io/collector/component v1.53.1-0.20260311121824-c85224ac4dc8
@@ -89,7 +89,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.147.1-0.20260311121824-c85224ac4dc8 // indirect
 	go.opentelemetry.io/collector/pdata v1.53.1-0.20260311121824-c85224ac4dc8
 	go.opentelemetry.io/collector/receiver v1.53.1-0.20260311121824-c85224ac4dc8
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.66.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.67.0 // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/trace v1.42.0 // indirect
@@ -99,7 +99,7 @@ require (
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
-	google.golang.org/grpc v1.79.1 // indirect
+	google.golang.org/grpc v1.79.2 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
