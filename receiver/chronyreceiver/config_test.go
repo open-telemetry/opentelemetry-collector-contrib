@@ -111,6 +111,58 @@ func TestValidate(t *testing.T) {
 			err: os.ErrNotExist,
 		},
 		{
+			scenario: "Valid local_endpoint",
+			conf: Config{
+				Endpoint: "unix://" + t.TempDir(),
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            10 * time.Second,
+				},
+				LocalEndpoint: "unix://" + t.TempDir() + "/otel-reply.sock",
+			},
+			err: nil,
+		},
+		{
+			scenario: "Local_endpoint invalid scheme",
+			conf: Config{
+				Endpoint: "unix://" + t.TempDir(),
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            10 * time.Second,
+				},
+				LocalEndpoint: "udp://localhost:323",
+			},
+			err: chrony.ErrInvalidNetwork,
+		},
+		{
+			scenario: "Local_endpoint with non-unix endpoint",
+			conf: Config{
+				Endpoint: "udp://localhost:323",
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            10 * time.Second,
+				},
+				LocalEndpoint: "unix:///tmp/otel-reply.sock",
+			},
+			err: errInvalidValue,
+		},
+		{
+			scenario: "Local_endpoint missing parent directory",
+			conf: Config{
+				Endpoint: "unix://" + t.TempDir(),
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            10 * time.Second,
+				},
+				LocalEndpoint: "unix:///nonexistent/dir/otel-reply.sock",
+			},
+			err: os.ErrNotExist,
+		},
+		{
 			scenario: "Invalid timeout set",
 			conf: Config{
 				Endpoint: "unix://no/dir/to/socket",
