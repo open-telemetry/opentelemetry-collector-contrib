@@ -352,7 +352,7 @@ func (*profilesHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBu
 	return telBldr.KafkaReceiverUnmarshalFailedProfiles
 }
 
-// processMessage is a generic function that processes any KafkaMessage using a messageHandler
+// processMessage is a generic function that processes a Kafka record (*kgo.Record) using a messageHandler
 func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Profiles](
 	ctx context.Context,
 	record *kgo.Record,
