@@ -5,6 +5,8 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -17,7 +19,10 @@ import (
 
 var _ component.Config = (*Config)(nil)
 
-var errLogsPartitionExclusive = errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
+var errLogsPartitionExclusive = errors.New(
+	"partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled",
+)
+var errTopicMetadataKeyNotIncluded = errors.New("topic_from_metadata_key must be present in include_metadata_keys")
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
@@ -86,11 +91,38 @@ type Config struct {
 	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
 }
 
-func (c *Config) Validate() (err error) {
+func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
 	}
-	return err
+
+	if err := validateTopicFromMetadataKey(c.Logs.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
+		return fmt.Errorf("logs::topic_from_metadata_key: %w", err)
+	}
+	if err := validateTopicFromMetadataKey(c.Metrics.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
+		return fmt.Errorf("metrics::topic_from_metadata_key: %w", err)
+	}
+	if err := validateTopicFromMetadataKey(c.Traces.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
+		return fmt.Errorf("traces::topic_from_metadata_key: %w", err)
+	}
+	if err := validateTopicFromMetadataKey(c.Profiles.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
+		return fmt.Errorf("profiles::topic_from_metadata_key: %w", err)
+	}
+	return nil
+}
+
+func validateTopicFromMetadataKey(topicFromMetadataKey string, includeMetadataKeys []string) error {
+	if topicFromMetadataKey == "" {
+		return nil
+	}
+	if slices.Contains(includeMetadataKeys, topicFromMetadataKey) {
+		return nil
+	}
+	return fmt.Errorf("%w: %q not found in include_metadata_keys=%v",
+		errTopicMetadataKeyNotIncluded,
+		topicFromMetadataKey,
+		includeMetadataKeys,
+	)
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
