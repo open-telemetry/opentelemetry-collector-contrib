@@ -393,8 +393,8 @@ func setupKWOKCluster(t *testing.T, numPods int) (kubeconfigPath, podUID string,
 // TestMetricK8sAttributesProcessor tests the k8sattributes processor's
 // performance and resource utilization when the component
 // is used to collect k8s metadata from a test k8s cluster
-// with 100 number of nodes, N number of Pods controlled by
-// each own Deployment/Replicaset, while there are also N number of Namespaces
+// with 100 number of nodes, N number of Pods each controlled by
+// its own Deployment/Replicaset, while there are also N number of Namespaces
 func TestMetricK8sAttributesProcessor(t *testing.T) {
 	tests := getK8sAttributesProcessorTestCases()
 
