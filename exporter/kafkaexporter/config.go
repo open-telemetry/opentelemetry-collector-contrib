@@ -22,9 +22,12 @@ var _ component.Config = (*Config)(nil)
 var errLogsPartitionExclusive = errors.New(
 	"partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled",
 )
-var errTopicMetadataKeyNotIncluded = errors.New("topic_from_metadata_key must be present in include_metadata_keys")
-var errBatchPartitionMetadataKeysRequired = errors.New("sending_queue::batch::partition::metadata_keys must be configured when include_metadata_keys is set and batching is enabled")
-var errIncludeMetadataKeysNotPartitioned = errors.New("sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values")
+
+var (
+	errTopicMetadataKeyNotIncluded        = errors.New("topic_from_metadata_key must be present in include_metadata_keys")
+	errBatchPartitionMetadataKeysRequired = errors.New("sending_queue::batch::partition::metadata_keys must be configured when include_metadata_keys is set and batching is enabled")
+	errIncludeMetadataKeysNotPartitioned  = errors.New("sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values")
+)
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
