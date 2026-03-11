@@ -26,32 +26,36 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemNetworkConnections: MetricConfig{
+					SystemNetworkConnections: SystemNetworkConnectionsConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"protocol", "state"},
+						EnabledAttributes:   []SystemNetworkConnectionsAttributeKey{SystemNetworkConnectionsAttributeKeyProtocol, SystemNetworkConnectionsAttributeKeyState},
 					},
-					SystemNetworkConntrackCount: MetricConfig{Enabled: true},
-					SystemNetworkConntrackMax:   MetricConfig{Enabled: true},
-					SystemNetworkDropped: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+					SystemNetworkConntrackCount: SystemNetworkConntrackCountConfig{
+						Enabled: true,
 					},
-					SystemNetworkErrors: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+					SystemNetworkConntrackMax: SystemNetworkConntrackMaxConfig{
+						Enabled: true,
 					},
-					SystemNetworkIo: MetricConfig{
+					SystemNetworkDropped: SystemNetworkDroppedConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemNetworkDroppedAttributeKey{SystemNetworkDroppedAttributeKeyDevice, SystemNetworkDroppedAttributeKeyDirection},
 					},
-					SystemNetworkPackets: MetricConfig{
+					SystemNetworkErrors: SystemNetworkErrorsConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemNetworkErrorsAttributeKey{SystemNetworkErrorsAttributeKeyDevice, SystemNetworkErrorsAttributeKeyDirection},
+					},
+					SystemNetworkIo: SystemNetworkIoConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkIoAttributeKey{SystemNetworkIoAttributeKeyDevice, SystemNetworkIoAttributeKeyDirection},
+					},
+					SystemNetworkPackets: SystemNetworkPacketsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkPacketsAttributeKey{SystemNetworkPacketsAttributeKeyDevice, SystemNetworkPacketsAttributeKeyDirection},
 					},
 				},
 			},
@@ -60,32 +64,36 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemNetworkConnections: MetricConfig{
+					SystemNetworkConnections: SystemNetworkConnectionsConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"protocol", "state"},
+						EnabledAttributes:   []SystemNetworkConnectionsAttributeKey{SystemNetworkConnectionsAttributeKeyProtocol, SystemNetworkConnectionsAttributeKeyState},
 					},
-					SystemNetworkConntrackCount: MetricConfig{Enabled: false},
-					SystemNetworkConntrackMax:   MetricConfig{Enabled: false},
-					SystemNetworkDropped: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+					SystemNetworkConntrackCount: SystemNetworkConntrackCountConfig{
+						Enabled: false,
 					},
-					SystemNetworkErrors: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+					SystemNetworkConntrackMax: SystemNetworkConntrackMaxConfig{
+						Enabled: false,
 					},
-					SystemNetworkIo: MetricConfig{
+					SystemNetworkDropped: SystemNetworkDroppedConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemNetworkDroppedAttributeKey{SystemNetworkDroppedAttributeKeyDevice, SystemNetworkDroppedAttributeKeyDirection},
 					},
-					SystemNetworkPackets: MetricConfig{
+					SystemNetworkErrors: SystemNetworkErrorsConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemNetworkErrorsAttributeKey{SystemNetworkErrorsAttributeKeyDevice, SystemNetworkErrorsAttributeKeyDirection},
+					},
+					SystemNetworkIo: SystemNetworkIoConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkIoAttributeKey{SystemNetworkIoAttributeKeyDevice, SystemNetworkIoAttributeKeyDirection},
+					},
+					SystemNetworkPackets: SystemNetworkPacketsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkPacketsAttributeKey{SystemNetworkPacketsAttributeKeyDevice, SystemNetworkPacketsAttributeKeyDirection},
 					},
 				},
 			},
@@ -94,7 +102,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemNetworkConnectionsConfig{}, SystemNetworkConntrackCountConfig{}, SystemNetworkConntrackMaxConfig{}, SystemNetworkDroppedConfig{}, SystemNetworkErrorsConfig{}, SystemNetworkIoConfig{}, SystemNetworkPacketsConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

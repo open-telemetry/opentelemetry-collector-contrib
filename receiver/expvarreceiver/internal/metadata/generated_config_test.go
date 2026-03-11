@@ -26,32 +26,84 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ProcessRuntimeMemstatsBuckHashSys:   MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsFrees:         MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsGcCPUFraction: MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsGcSys:         MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsHeapAlloc:     MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsHeapIdle:      MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsHeapInuse:     MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsHeapObjects:   MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsHeapReleased:  MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsHeapSys:       MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsLastPause:     MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsLookups:       MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsMallocs:       MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsMcacheInuse:   MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsMcacheSys:     MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsMspanInuse:    MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsMspanSys:      MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsNextGc:        MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsNumForcedGc:   MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsNumGc:         MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsOtherSys:      MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsPauseTotal:    MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsStackInuse:    MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsStackSys:      MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsSys:           MetricConfig{Enabled: true},
-					ProcessRuntimeMemstatsTotalAlloc:    MetricConfig{Enabled: true},
+					ProcessRuntimeMemstatsBuckHashSys: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsFrees: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsGcCPUFraction: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsGcSys: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsHeapAlloc: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsHeapIdle: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsHeapInuse: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsHeapObjects: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsHeapReleased: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsHeapSys: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsLastPause: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsLookups: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsMallocs: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsMcacheInuse: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsMcacheSys: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsMspanInuse: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsMspanSys: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsNextGc: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsNumForcedGc: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsNumGc: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsOtherSys: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsPauseTotal: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsStackInuse: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsStackSys: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsSys: MetricConfig{
+						Enabled: true,
+					},
+					ProcessRuntimeMemstatsTotalAlloc: MetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -59,32 +111,84 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ProcessRuntimeMemstatsBuckHashSys:   MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsFrees:         MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsGcCPUFraction: MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsGcSys:         MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsHeapAlloc:     MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsHeapIdle:      MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsHeapInuse:     MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsHeapObjects:   MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsHeapReleased:  MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsHeapSys:       MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsLastPause:     MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsLookups:       MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsMallocs:       MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsMcacheInuse:   MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsMcacheSys:     MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsMspanInuse:    MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsMspanSys:      MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsNextGc:        MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsNumForcedGc:   MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsNumGc:         MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsOtherSys:      MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsPauseTotal:    MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsStackInuse:    MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsStackSys:      MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsSys:           MetricConfig{Enabled: false},
-					ProcessRuntimeMemstatsTotalAlloc:    MetricConfig{Enabled: false},
+					ProcessRuntimeMemstatsBuckHashSys: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsFrees: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsGcCPUFraction: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsGcSys: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsHeapAlloc: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsHeapIdle: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsHeapInuse: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsHeapObjects: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsHeapReleased: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsHeapSys: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsLastPause: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsLookups: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsMallocs: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsMcacheInuse: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsMcacheSys: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsMspanInuse: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsMspanSys: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsNextGc: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsNumForcedGc: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsNumGc: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsOtherSys: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsPauseTotal: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsStackInuse: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsStackSys: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsSys: MetricConfig{
+						Enabled: false,
+					},
+					ProcessRuntimeMemstatsTotalAlloc: MetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},

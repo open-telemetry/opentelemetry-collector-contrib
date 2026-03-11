@@ -91,10 +91,10 @@ receivers:
     event_hub:
       name: hubName
       namespace: namespace.servicebus.windows.net
-    auth: azureauth
+    auth: azure_auth
 
 extensions:
-  azureauth:
+  azure_auth:
     service_principal:
       client_id: ${env:AZURE_CLIENT_ID}
       client_secret: ${env:AZURE_CLIENT_SECRET}

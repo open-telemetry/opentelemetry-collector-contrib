@@ -68,17 +68,8 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["ApacheConnectionsAsync"] = mb.metricApacheConnectionsAsync.config.AggregationStrategy
-			aggMap["ApacheCPULoad"] = mb.metricApacheCPULoad.config.AggregationStrategy
 			aggMap["ApacheCPUTime"] = mb.metricApacheCPUTime.config.AggregationStrategy
-			aggMap["ApacheCurrentConnections"] = mb.metricApacheCurrentConnections.config.AggregationStrategy
-			aggMap["ApacheLoad1"] = mb.metricApacheLoad1.config.AggregationStrategy
-			aggMap["ApacheLoad15"] = mb.metricApacheLoad15.config.AggregationStrategy
-			aggMap["ApacheLoad5"] = mb.metricApacheLoad5.config.AggregationStrategy
-			aggMap["ApacheRequestTime"] = mb.metricApacheRequestTime.config.AggregationStrategy
-			aggMap["ApacheRequests"] = mb.metricApacheRequests.config.AggregationStrategy
 			aggMap["ApacheScoreboard"] = mb.metricApacheScoreboard.config.AggregationStrategy
-			aggMap["ApacheTraffic"] = mb.metricApacheTraffic.config.AggregationStrategy
-			aggMap["ApacheUptime"] = mb.metricApacheUptime.config.AggregationStrategy
 			aggMap["ApacheWorkers"] = mb.metricApacheWorkers.config.AggregationStrategy
 
 			expectedWarnings := 0
