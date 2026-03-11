@@ -34,9 +34,7 @@ const (
 	containerOutputDir            = "/output"
 )
 
-var (
-	ErrOptionValidation = errors.New("weaver options failed validation")
-)
+var ErrOptionValidation = errors.New("weaver options failed validation")
 
 type WeaverContext struct {
 	ctx             context.Context
@@ -127,7 +125,7 @@ func (wc *WeaverContext) ContainerLogs() ([]string, error) {
 // Stop sends a POST request to Weaver's /stop endpoint to stop the listener
 // and trigger writing of the output file.
 func (wc *WeaverContext) Stop() error {
-	req, err := http.NewRequestWithContext(wc.ctx, http.MethodPost, wc.stopEndpoint, nil)
+	req, err := http.NewRequestWithContext(wc.ctx, http.MethodPost, wc.stopEndpoint, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("failed to create stop request: %w", err)
 	}
@@ -240,7 +238,7 @@ func NewDefaultWeaverOptions() *WeaverOptions {
 // valid options.
 //
 // TODO: This is currently not used, validation logic is not there yet
-func (opts *WeaverOptions) validate() error {
+func (opts *WeaverOptions) validate() error { //nolint:revive // receiver will be used when validation logic is added
 	errs := []error{}
 
 	if err := errors.Join(errs...); err != nil {
