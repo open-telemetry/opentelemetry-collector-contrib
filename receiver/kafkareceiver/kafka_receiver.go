@@ -76,6 +76,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 			return nil, err
 		}
 
+		headerAttrKeys := buildHeaderAttrKeys(config)
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
 				&logsHandler{
@@ -85,6 +86,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 					encoding:    config.Logs.Encoding,
 				},
 				attrs,
+				headerAttrKeys,
 			)
 		}, nil
 	}
@@ -101,6 +103,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 			return nil, err
 		}
 
+		headerAttrKeys := buildHeaderAttrKeys(config)
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
 				&metricsHandler{
@@ -110,6 +113,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 					encoding:    config.Metrics.Encoding,
 				},
 				attrs,
+				headerAttrKeys,
 			)
 		}, nil
 	}
@@ -126,6 +130,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 			return nil, err
 		}
 
+		headerAttrKeys := buildHeaderAttrKeys(config)
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
 				&tracesHandler{
@@ -135,6 +140,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 					encoding:    config.Traces.Encoding,
 				},
 				attrs,
+				headerAttrKeys,
 			)
 		}, nil
 	}
@@ -151,6 +157,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 			return nil, err
 		}
 
+		headerAttrKeys := buildHeaderAttrKeys(config)
 		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
 			return processMessage(ctx, message, config, set.Logger, telBldr,
 				&profilesHandler{
@@ -160,6 +167,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 					encoding:    config.Profiles.Encoding,
 				},
 				attrs,
+				headerAttrKeys,
 			)
 		}, nil
 	}
@@ -352,6 +360,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	telBldr *metadata.TelemetryBuilder,
 	handler messageHandler[T],
 	attrs attribute.Set,
+	headerAttrKeys map[string]string,
 ) error {
 	if logger.Core().Enabled(zap.DebugLevel) {
 		logger.Debug("kafka message received",
@@ -378,7 +387,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	// Add resource attributes from headers if configured
 	if config.HeaderExtraction.ExtractHeaders {
 		for key, value := range getMessageHeaderResourceAttributes(
-			message.headers(), config.HeaderExtraction.Headers,
+			message.headers(), headerAttrKeys,
 		) {
 			for resource := range handler.getResources(data) {
 				resource.Attributes().PutStr(key, value)
@@ -391,18 +400,32 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	return err
 }
 
-func getMessageHeaderResourceAttributes(h messageHeaders, resHeaders []string) iter.Seq2[string, string] {
+func getMessageHeaderResourceAttributes(h messageHeaders, headerKeys map[string]string) iter.Seq2[string, string] {
 	return func(yield func(string, string) bool) {
-		for _, resHeader := range resHeaders {
-			value, ok := h.get(resHeader)
+		for rawKey, attrKey := range headerKeys {
+			value, ok := h.get(rawKey)
 			if !ok {
 				continue
 			}
-			if !yield("kafka.header."+resHeader, value) {
+			if !yield(attrKey, value) {
 				return
 			}
 		}
 	}
+}
+
+// buildHeaderAttrKeys pre-computes the mapping from raw header names to their
+// "kafka.header." prefixed attribute keys. Returns nil when header extraction
+// is disabled.
+func buildHeaderAttrKeys(config *Config) map[string]string {
+	if !config.HeaderExtraction.ExtractHeaders {
+		return nil
+	}
+	m := make(map[string]string, len(config.HeaderExtraction.Headers))
+	for _, h := range config.HeaderExtraction.Headers {
+		m[h] = "kafka.header." + h
+	}
+	return m
 }
 
 func newExponentialBackOff(config configretry.BackOffConfig) *backoff.ExponentialBackOff {

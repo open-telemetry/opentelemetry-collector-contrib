@@ -1,5 +1,6 @@
 display_name: AWS Logs Encoding Extension
-type: awslogs_encoding
+type: aws_logs_encoding
+deprecated_type: awslogs_encoding
 
 description: This extension unmarshalls logs encoded in formats produced by AWS services.
 

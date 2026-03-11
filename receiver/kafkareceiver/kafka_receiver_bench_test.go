@@ -4,6 +4,7 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -40,6 +41,38 @@ func BenchmarkContextWithHeaders(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			for b.Loop() {
 				_ = contextWithHeaders(baseCtx, tt.headers)
+			}
+		})
+	}
+}
+
+func BenchmarkGetMessageHeaderResourceAttributes(b *testing.B) {
+	for _, numHeaders := range []int{1, 4, 8, 16, 32, 64, 128} {
+		b.Run(fmt.Sprintf("headers=%d", numHeaders), func(b *testing.B) {
+			// Build message headers: numHeaders matching + 1 unrelated.
+			kgoHeaders := make([]kgo.RecordHeader, 0, numHeaders+1)
+			headerAttrKeys := make(map[string]string, numHeaders)
+			for i := range numHeaders {
+				key := fmt.Sprintf("header-%d", i)
+				kgoHeaders = append(kgoHeaders, kgo.RecordHeader{
+					Key:   key,
+					Value: fmt.Appendf(nil, "value-%d", i),
+				})
+				headerAttrKeys[key] = "kafka.header." + key
+			}
+			kgoHeaders = append(kgoHeaders, kgo.RecordHeader{
+				Key:   "unrelated",
+				Value: []byte("ignored"),
+			})
+			headers := franzHeaders{headers: kgoHeaders}
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				for k, v := range getMessageHeaderResourceAttributes(headers, headerAttrKeys) {
+					_ = k
+					_ = v
+				}
 			}
 		})
 	}
