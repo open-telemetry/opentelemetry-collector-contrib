@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.147.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.147.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/config/configtls v1.53.1-0.20260309153054-85fc1918516c
+	go.opentelemetry.io/collector/config/configtls v1.53.1-0.20260311121824-c85224ac4dc8
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	k8s.io/client-go v0.35.2
@@ -34,7 +34,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.2 // indirect
+	github.com/knadh/koanf/v2 v2.3.3 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -46,10 +46,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.53.1-0.20260309153054-85fc1918516c // indirect
-	go.opentelemetry.io/collector/confmap v1.53.1-0.20260309153054-85fc1918516c // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260309153054-85fc1918516c // indirect
-	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260309153054-85fc1918516c // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.53.1-0.20260311121824-c85224ac4dc8 // indirect
+	go.opentelemetry.io/collector/confmap v1.53.1-0.20260311121824-c85224ac4dc8 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260311121824-c85224ac4dc8 // indirect
+	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260311121824-c85224ac4dc8 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
