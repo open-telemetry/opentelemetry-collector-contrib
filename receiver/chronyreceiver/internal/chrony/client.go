@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"time"
@@ -81,8 +82,10 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	defer cancel()
 
 	if c.localAddr != "" && c.proto == "unixgram" {
-		_ = os.Remove(c.localAddr) // remove stale socket; error is safe to ignore (file may not exist)
-		defer func() { _ = os.Remove(c.localAddr) }() // best-effort cleanup; non-fatal if already removed
+		if err := removeIfSocket(c.localAddr); err != nil {
+			return nil, err
+		}
+		defer func() { _ = removeIfSocket(c.localAddr) }()
 	}
 
 	sock, err := c.dialer(ctx, c.proto, c.addr)
@@ -121,4 +124,21 @@ func (c *client) getContext(ctx context.Context) (context.Context, context.Cance
 	}
 
 	return context.WithTimeout(ctx, c.timeout)
+}
+
+// removeIfSocket removes the file at path only if it is a Unix socket.
+// Returns nil if the file does not exist. Returns an error if the path
+// exists but is not a socket, preventing accidental deletion of regular files.
+func removeIfSocket(path string) error {
+	fi, err := os.Lstat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if fi.Mode().Type()&os.ModeSocket == 0 {
+		return fmt.Errorf("local_endpoint path %q exists but is not a socket", path)
+	}
+	return os.Remove(path)
 }
