@@ -79,8 +79,8 @@ components:
     - extension/ack
     - extension/asapclient
     - extension/avro_log_encoding
+    - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
-    - extension/awslogs_encoding
     - extension/awsproxy
     - extension/azure_auth
     - extension/azure_encoding
