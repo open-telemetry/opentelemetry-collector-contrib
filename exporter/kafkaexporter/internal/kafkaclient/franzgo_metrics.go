@@ -37,11 +37,11 @@ func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.
 	fpm.tb.KafkaBrokerConnects.Add(
 		context.Background(),
 		1,
-		metric.WithAttributes(
+		metric.WithAttributeSet(attribute.NewSet(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("server.address", meta.Host),
 			attribute.String("outcome", outcome),
-		),
+		)),
 	)
 }
 
@@ -51,32 +51,30 @@ func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ ne
 	fpm.tb.KafkaBrokerClosed.Add(
 		context.Background(),
 		1,
-		metric.WithAttributes(
+		metric.WithAttributeSet(attribute.NewSet(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("server.address", meta.Host),
-		),
+		)),
 	)
 }
 
 var _ kgo.HookBrokerThrottle = FranzProducerMetrics{}
 
 func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
+	attrs := attribute.NewSet(
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		attribute.String("server.address", meta.Host),
+	)
 	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
 	fpm.tb.KafkaBrokerThrottlingDuration.Record(
 		context.Background(),
 		throttleInterval.Milliseconds(),
-		metric.WithAttributes(
-			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-			attribute.String("server.address", meta.Host),
-		),
+		metric.WithAttributeSet(attrs),
 	)
 	fpm.tb.KafkaBrokerThrottlingLatency.Record(
 		context.Background(),
 		throttleInterval.Seconds(),
-		metric.WithAttributes(
-			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-			attribute.String("server.address", meta.Host),
-		),
+		metric.WithAttributeSet(attrs),
 	)
 }
 
@@ -92,24 +90,21 @@ func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, key int16, 
 	if e2e.Err() != nil {
 		outcome = "failure"
 	}
+	attrs := attribute.NewSet(
+		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		attribute.String("server.address", meta.Host),
+		attribute.String("outcome", outcome),
+	)
 	// KafkaExporterLatency is deprecated in favor of KafkaExporterWriteLatency.
 	fpm.tb.KafkaExporterLatency.Record(
 		context.Background(),
 		e2e.DurationE2E().Milliseconds()+e2e.WriteWait.Milliseconds(),
-		metric.WithAttributes(
-			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-			attribute.String("server.address", meta.Host),
-			attribute.String("outcome", outcome),
-		),
+		metric.WithAttributeSet(attrs),
 	)
 	fpm.tb.KafkaExporterWriteLatency.Record(
 		context.Background(),
 		e2e.DurationE2E().Seconds()+e2e.WriteWait.Seconds(),
-		metric.WithAttributes(
-			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-			attribute.String("server.address", meta.Host),
-			attribute.String("outcome", outcome),
-		),
+		metric.WithAttributeSet(attrs),
 	)
 }
 
@@ -118,34 +113,35 @@ var _ kgo.HookProduceBatchWritten = FranzProducerMetrics{}
 // OnProduceBatchWritten is called when a batch has been produced.
 // https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookProduceBatchWritten
 func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, topic string, partition int32, m kgo.ProduceBatchMetrics) {
-	attrs := []attribute.KeyValue{
+	attrs := attribute.NewSet(
 		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		attribute.String("server.address", meta.Host),
 		attribute.String("topic", topic),
 		attribute.Int64("partition", int64(partition)),
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
 		attribute.String("outcome", "success"),
-	}
+	)
+	opt := metric.WithAttributeSet(attrs)
 	// KafkaExporterMessages is deprecated in favor of KafkaExporterRecords.
 	fpm.tb.KafkaExporterMessages.Add(
 		context.Background(),
 		int64(m.NumRecords),
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 	fpm.tb.KafkaExporterRecords.Add(
 		context.Background(),
 		int64(m.NumRecords),
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 	fpm.tb.KafkaExporterBytes.Add(
 		context.Background(),
 		int64(m.CompressedBytes),
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 	fpm.tb.KafkaExporterBytesUncompressed.Add(
 		context.Background(),
 		int64(m.UncompressedBytes),
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 }
 
@@ -159,21 +155,21 @@ func (fpm FranzProducerMetrics) OnProduceRecordUnbuffered(r *kgo.Record, err err
 	if err == nil {
 		return // Covered by OnProduceBatchWritten.
 	}
-	attrs := []attribute.KeyValue{
+	opt := metric.WithAttributeSet(attribute.NewSet(
 		attribute.String("topic", r.Topic),
 		attribute.Int64("partition", int64(r.Partition)),
 		attribute.String("outcome", "failure"),
-	}
+	))
 	// KafkaExporterMessages is deprecated in favor of KafkaExporterRecords.
 	fpm.tb.KafkaExporterMessages.Add(
 		context.Background(),
 		1,
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 	fpm.tb.KafkaExporterRecords.Add(
 		context.Background(),
 		1,
-		metric.WithAttributes(attrs...),
+		opt,
 	)
 }
 

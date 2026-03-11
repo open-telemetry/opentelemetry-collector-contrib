@@ -3,17 +3,687 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// HaproxyActiveConfig provides config for the haproxy.active metric.
+type HaproxyActiveConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *HaproxyActiveConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyBackupConfig provides config for the haproxy.backup metric.
+type HaproxyBackupConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyBackupConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyBytesInputConfig provides config for the haproxy.bytes.input metric.
+type HaproxyBytesInputConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyBytesInputConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyBytesOutputConfig provides config for the haproxy.bytes.output metric.
+type HaproxyBytesOutputConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyBytesOutputConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyClientsCanceledConfig provides config for the haproxy.clients.canceled metric.
+type HaproxyClientsCanceledConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyClientsCanceledConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyCompressionBypassConfig provides config for the haproxy.compression.bypass metric.
+type HaproxyCompressionBypassConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyCompressionBypassConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyCompressionCountConfig provides config for the haproxy.compression.count metric.
+type HaproxyCompressionCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyCompressionCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyCompressionInputConfig provides config for the haproxy.compression.input metric.
+type HaproxyCompressionInputConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyCompressionInputConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyCompressionOutputConfig provides config for the haproxy.compression.output metric.
+type HaproxyCompressionOutputConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyCompressionOutputConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyConnectionsAverageTimeConfig provides config for the haproxy.connections.average_time metric.
+type HaproxyConnectionsAverageTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyConnectionsAverageTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyConnectionsErrorsConfig provides config for the haproxy.connections.errors metric.
+type HaproxyConnectionsErrorsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyConnectionsErrorsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyConnectionsRateConfig provides config for the haproxy.connections.rate metric.
+type HaproxyConnectionsRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyConnectionsRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyConnectionsRetriesConfig provides config for the haproxy.connections.retries metric.
+type HaproxyConnectionsRetriesConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyConnectionsRetriesConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyConnectionsTotalConfig provides config for the haproxy.connections.total metric.
+type HaproxyConnectionsTotalConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyConnectionsTotalConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyDowntimeConfig provides config for the haproxy.downtime metric.
+type HaproxyDowntimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyDowntimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyFailedChecksConfig provides config for the haproxy.failed_checks metric.
+type HaproxyFailedChecksConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyFailedChecksConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyRequestsAverageTimeConfig provides config for the haproxy.requests.average_time metric.
+type HaproxyRequestsAverageTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyRequestsAverageTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyRequestsDeniedConfig provides config for the haproxy.requests.denied metric.
+type HaproxyRequestsDeniedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyRequestsDeniedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyRequestsErrorsConfig provides config for the haproxy.requests.errors metric.
+type HaproxyRequestsErrorsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyRequestsErrorsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyRequestsQueuedConfig provides config for the haproxy.requests.queued metric.
+type HaproxyRequestsQueuedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyRequestsQueuedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyRequestsRateConfig provides config for the haproxy.requests.rate metric.
+type HaproxyRequestsRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyRequestsRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyRequestsRedispatchedConfig provides config for the haproxy.requests.redispatched metric.
+type HaproxyRequestsRedispatchedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyRequestsRedispatchedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyRequestsTotalAttributeKey specifies the key of an attribute for the haproxy.requests.total metric.
+type HaproxyRequestsTotalAttributeKey string
+
+const (
+	HaproxyRequestsTotalAttributeKeyStatusCode HaproxyRequestsTotalAttributeKey = "status_code"
+)
+
+// HaproxyRequestsTotalConfig provides config for the haproxy.requests.total metric.
+type HaproxyRequestsTotalConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HaproxyRequestsTotalAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HaproxyRequestsTotalConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HaproxyRequestsTotalConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HaproxyRequestsTotalAttributeKeyStatusCode:
+		default:
+			return fmt.Errorf("metric haproxy.requests.total doesn't have an attribute %v, valid attributes: [status_code]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HaproxyResponsesAverageTimeConfig provides config for the haproxy.responses.average_time metric.
+type HaproxyResponsesAverageTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyResponsesAverageTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyResponsesDeniedConfig provides config for the haproxy.responses.denied metric.
+type HaproxyResponsesDeniedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyResponsesDeniedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyResponsesErrorsConfig provides config for the haproxy.responses.errors metric.
+type HaproxyResponsesErrorsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyResponsesErrorsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyServerSelectedTotalConfig provides config for the haproxy.server_selected.total metric.
+type HaproxyServerSelectedTotalConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyServerSelectedTotalConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxySessionsAverageConfig provides config for the haproxy.sessions.average metric.
+type HaproxySessionsAverageConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxySessionsAverageConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxySessionsCountConfig provides config for the haproxy.sessions.count metric.
+type HaproxySessionsCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxySessionsCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxySessionsLimitConfig provides config for the haproxy.sessions.limit metric.
+type HaproxySessionsLimitConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxySessionsLimitConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxySessionsRateConfig provides config for the haproxy.sessions.rate metric.
+type HaproxySessionsRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxySessionsRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxySessionsTotalConfig provides config for the haproxy.sessions.total metric.
+type HaproxySessionsTotalConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxySessionsTotalConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HaproxyWeightConfig provides config for the haproxy.weight metric.
+type HaproxyWeightConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *HaproxyWeightConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,140 +699,142 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for haproxy metrics.
 type MetricsConfig struct {
-	HaproxyActive                 MetricConfig `mapstructure:"haproxy.active"`
-	HaproxyBackup                 MetricConfig `mapstructure:"haproxy.backup"`
-	HaproxyBytesInput             MetricConfig `mapstructure:"haproxy.bytes.input"`
-	HaproxyBytesOutput            MetricConfig `mapstructure:"haproxy.bytes.output"`
-	HaproxyClientsCanceled        MetricConfig `mapstructure:"haproxy.clients.canceled"`
-	HaproxyCompressionBypass      MetricConfig `mapstructure:"haproxy.compression.bypass"`
-	HaproxyCompressionCount       MetricConfig `mapstructure:"haproxy.compression.count"`
-	HaproxyCompressionInput       MetricConfig `mapstructure:"haproxy.compression.input"`
-	HaproxyCompressionOutput      MetricConfig `mapstructure:"haproxy.compression.output"`
-	HaproxyConnectionsAverageTime MetricConfig `mapstructure:"haproxy.connections.average_time"`
-	HaproxyConnectionsErrors      MetricConfig `mapstructure:"haproxy.connections.errors"`
-	HaproxyConnectionsRate        MetricConfig `mapstructure:"haproxy.connections.rate"`
-	HaproxyConnectionsRetries     MetricConfig `mapstructure:"haproxy.connections.retries"`
-	HaproxyConnectionsTotal       MetricConfig `mapstructure:"haproxy.connections.total"`
-	HaproxyDowntime               MetricConfig `mapstructure:"haproxy.downtime"`
-	HaproxyFailedChecks           MetricConfig `mapstructure:"haproxy.failed_checks"`
-	HaproxyRequestsAverageTime    MetricConfig `mapstructure:"haproxy.requests.average_time"`
-	HaproxyRequestsDenied         MetricConfig `mapstructure:"haproxy.requests.denied"`
-	HaproxyRequestsErrors         MetricConfig `mapstructure:"haproxy.requests.errors"`
-	HaproxyRequestsQueued         MetricConfig `mapstructure:"haproxy.requests.queued"`
-	HaproxyRequestsRate           MetricConfig `mapstructure:"haproxy.requests.rate"`
-	HaproxyRequestsRedispatched   MetricConfig `mapstructure:"haproxy.requests.redispatched"`
-	HaproxyRequestsTotal          MetricConfig `mapstructure:"haproxy.requests.total"`
-	HaproxyResponsesAverageTime   MetricConfig `mapstructure:"haproxy.responses.average_time"`
-	HaproxyResponsesDenied        MetricConfig `mapstructure:"haproxy.responses.denied"`
-	HaproxyResponsesErrors        MetricConfig `mapstructure:"haproxy.responses.errors"`
-	HaproxyServerSelectedTotal    MetricConfig `mapstructure:"haproxy.server_selected.total"`
-	HaproxySessionsAverage        MetricConfig `mapstructure:"haproxy.sessions.average"`
-	HaproxySessionsCount          MetricConfig `mapstructure:"haproxy.sessions.count"`
-	HaproxySessionsLimit          MetricConfig `mapstructure:"haproxy.sessions.limit"`
-	HaproxySessionsRate           MetricConfig `mapstructure:"haproxy.sessions.rate"`
-	HaproxySessionsTotal          MetricConfig `mapstructure:"haproxy.sessions.total"`
-	HaproxyWeight                 MetricConfig `mapstructure:"haproxy.weight"`
+	HaproxyActive                 HaproxyActiveConfig                 `mapstructure:"haproxy.active"`
+	HaproxyBackup                 HaproxyBackupConfig                 `mapstructure:"haproxy.backup"`
+	HaproxyBytesInput             HaproxyBytesInputConfig             `mapstructure:"haproxy.bytes.input"`
+	HaproxyBytesOutput            HaproxyBytesOutputConfig            `mapstructure:"haproxy.bytes.output"`
+	HaproxyClientsCanceled        HaproxyClientsCanceledConfig        `mapstructure:"haproxy.clients.canceled"`
+	HaproxyCompressionBypass      HaproxyCompressionBypassConfig      `mapstructure:"haproxy.compression.bypass"`
+	HaproxyCompressionCount       HaproxyCompressionCountConfig       `mapstructure:"haproxy.compression.count"`
+	HaproxyCompressionInput       HaproxyCompressionInputConfig       `mapstructure:"haproxy.compression.input"`
+	HaproxyCompressionOutput      HaproxyCompressionOutputConfig      `mapstructure:"haproxy.compression.output"`
+	HaproxyConnectionsAverageTime HaproxyConnectionsAverageTimeConfig `mapstructure:"haproxy.connections.average_time"`
+	HaproxyConnectionsErrors      HaproxyConnectionsErrorsConfig      `mapstructure:"haproxy.connections.errors"`
+	HaproxyConnectionsRate        HaproxyConnectionsRateConfig        `mapstructure:"haproxy.connections.rate"`
+	HaproxyConnectionsRetries     HaproxyConnectionsRetriesConfig     `mapstructure:"haproxy.connections.retries"`
+	HaproxyConnectionsTotal       HaproxyConnectionsTotalConfig       `mapstructure:"haproxy.connections.total"`
+	HaproxyDowntime               HaproxyDowntimeConfig               `mapstructure:"haproxy.downtime"`
+	HaproxyFailedChecks           HaproxyFailedChecksConfig           `mapstructure:"haproxy.failed_checks"`
+	HaproxyRequestsAverageTime    HaproxyRequestsAverageTimeConfig    `mapstructure:"haproxy.requests.average_time"`
+	HaproxyRequestsDenied         HaproxyRequestsDeniedConfig         `mapstructure:"haproxy.requests.denied"`
+	HaproxyRequestsErrors         HaproxyRequestsErrorsConfig         `mapstructure:"haproxy.requests.errors"`
+	HaproxyRequestsQueued         HaproxyRequestsQueuedConfig         `mapstructure:"haproxy.requests.queued"`
+	HaproxyRequestsRate           HaproxyRequestsRateConfig           `mapstructure:"haproxy.requests.rate"`
+	HaproxyRequestsRedispatched   HaproxyRequestsRedispatchedConfig   `mapstructure:"haproxy.requests.redispatched"`
+	HaproxyRequestsTotal          HaproxyRequestsTotalConfig          `mapstructure:"haproxy.requests.total"`
+	HaproxyResponsesAverageTime   HaproxyResponsesAverageTimeConfig   `mapstructure:"haproxy.responses.average_time"`
+	HaproxyResponsesDenied        HaproxyResponsesDeniedConfig        `mapstructure:"haproxy.responses.denied"`
+	HaproxyResponsesErrors        HaproxyResponsesErrorsConfig        `mapstructure:"haproxy.responses.errors"`
+	HaproxyServerSelectedTotal    HaproxyServerSelectedTotalConfig    `mapstructure:"haproxy.server_selected.total"`
+	HaproxySessionsAverage        HaproxySessionsAverageConfig        `mapstructure:"haproxy.sessions.average"`
+	HaproxySessionsCount          HaproxySessionsCountConfig          `mapstructure:"haproxy.sessions.count"`
+	HaproxySessionsLimit          HaproxySessionsLimitConfig          `mapstructure:"haproxy.sessions.limit"`
+	HaproxySessionsRate           HaproxySessionsRateConfig           `mapstructure:"haproxy.sessions.rate"`
+	HaproxySessionsTotal          HaproxySessionsTotalConfig          `mapstructure:"haproxy.sessions.total"`
+	HaproxyWeight                 HaproxyWeightConfig                 `mapstructure:"haproxy.weight"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		HaproxyActive: MetricConfig{
+		HaproxyActive: HaproxyActiveConfig{
 			Enabled: false,
 		},
-		HaproxyBackup: MetricConfig{
+		HaproxyBackup: HaproxyBackupConfig{
 			Enabled: false,
 		},
-		HaproxyBytesInput: MetricConfig{
+		HaproxyBytesInput: HaproxyBytesInputConfig{
 			Enabled: true,
 		},
-		HaproxyBytesOutput: MetricConfig{
+		HaproxyBytesOutput: HaproxyBytesOutputConfig{
 			Enabled: true,
 		},
-		HaproxyClientsCanceled: MetricConfig{
+		HaproxyClientsCanceled: HaproxyClientsCanceledConfig{
 			Enabled: false,
 		},
-		HaproxyCompressionBypass: MetricConfig{
+		HaproxyCompressionBypass: HaproxyCompressionBypassConfig{
 			Enabled: false,
 		},
-		HaproxyCompressionCount: MetricConfig{
+		HaproxyCompressionCount: HaproxyCompressionCountConfig{
 			Enabled: false,
 		},
-		HaproxyCompressionInput: MetricConfig{
+		HaproxyCompressionInput: HaproxyCompressionInputConfig{
 			Enabled: false,
 		},
-		HaproxyCompressionOutput: MetricConfig{
+		HaproxyCompressionOutput: HaproxyCompressionOutputConfig{
 			Enabled: false,
 		},
-		HaproxyConnectionsAverageTime: MetricConfig{
+		HaproxyConnectionsAverageTime: HaproxyConnectionsAverageTimeConfig{
 			Enabled: false,
 		},
-		HaproxyConnectionsErrors: MetricConfig{
+		HaproxyConnectionsErrors: HaproxyConnectionsErrorsConfig{
 			Enabled: true,
 		},
-		HaproxyConnectionsRate: MetricConfig{
+		HaproxyConnectionsRate: HaproxyConnectionsRateConfig{
 			Enabled: true,
 		},
-		HaproxyConnectionsRetries: MetricConfig{
+		HaproxyConnectionsRetries: HaproxyConnectionsRetriesConfig{
 			Enabled: true,
 		},
-		HaproxyConnectionsTotal: MetricConfig{
+		HaproxyConnectionsTotal: HaproxyConnectionsTotalConfig{
 			Enabled: false,
 		},
-		HaproxyDowntime: MetricConfig{
+		HaproxyDowntime: HaproxyDowntimeConfig{
 			Enabled: false,
 		},
-		HaproxyFailedChecks: MetricConfig{
+		HaproxyFailedChecks: HaproxyFailedChecksConfig{
 			Enabled: false,
 		},
-		HaproxyRequestsAverageTime: MetricConfig{
+		HaproxyRequestsAverageTime: HaproxyRequestsAverageTimeConfig{
 			Enabled: false,
 		},
-		HaproxyRequestsDenied: MetricConfig{
+		HaproxyRequestsDenied: HaproxyRequestsDeniedConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsErrors: MetricConfig{
+		HaproxyRequestsErrors: HaproxyRequestsErrorsConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsQueued: MetricConfig{
+		HaproxyRequestsQueued: HaproxyRequestsQueuedConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsRate: MetricConfig{
+		HaproxyRequestsRate: HaproxyRequestsRateConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsRedispatched: MetricConfig{
+		HaproxyRequestsRedispatched: HaproxyRequestsRedispatchedConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsTotal: MetricConfig{
-			Enabled: true,
+		HaproxyRequestsTotal: HaproxyRequestsTotalConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []HaproxyRequestsTotalAttributeKey{HaproxyRequestsTotalAttributeKeyStatusCode},
 		},
-		HaproxyResponsesAverageTime: MetricConfig{
+		HaproxyResponsesAverageTime: HaproxyResponsesAverageTimeConfig{
 			Enabled: false,
 		},
-		HaproxyResponsesDenied: MetricConfig{
+		HaproxyResponsesDenied: HaproxyResponsesDeniedConfig{
 			Enabled: true,
 		},
-		HaproxyResponsesErrors: MetricConfig{
+		HaproxyResponsesErrors: HaproxyResponsesErrorsConfig{
 			Enabled: true,
 		},
-		HaproxyServerSelectedTotal: MetricConfig{
+		HaproxyServerSelectedTotal: HaproxyServerSelectedTotalConfig{
 			Enabled: true,
 		},
-		HaproxySessionsAverage: MetricConfig{
+		HaproxySessionsAverage: HaproxySessionsAverageConfig{
 			Enabled: true,
 		},
-		HaproxySessionsCount: MetricConfig{
+		HaproxySessionsCount: HaproxySessionsCountConfig{
 			Enabled: true,
 		},
-		HaproxySessionsLimit: MetricConfig{
+		HaproxySessionsLimit: HaproxySessionsLimitConfig{
 			Enabled: false,
 		},
-		HaproxySessionsRate: MetricConfig{
+		HaproxySessionsRate: HaproxySessionsRateConfig{
 			Enabled: true,
 		},
-		HaproxySessionsTotal: MetricConfig{
+		HaproxySessionsTotal: HaproxySessionsTotalConfig{
 			Enabled: false,
 		},
-		HaproxyWeight: MetricConfig{
+		HaproxyWeight: HaproxyWeightConfig{
 			Enabled: false,
 		},
 	}

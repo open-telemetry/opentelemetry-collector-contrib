@@ -1,0 +1,4 @@
+change_type: enhancement
+component: extension/oidc
+note: Add logging for failed authentication attempts with client IP and username.
+issues: [46482]
