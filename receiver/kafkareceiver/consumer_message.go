@@ -30,6 +30,7 @@ type header struct {
 type messageHeaders interface {
 	get(key string) (string, bool)
 	all() iter.Seq[header]
+	len() int
 }
 
 type franzMessage struct {
@@ -85,4 +86,8 @@ func (h franzHeaders) all() iter.Seq[header] {
 			}
 		}
 	}
+}
+
+func (h franzHeaders) len() int {
+	return len(h.headers)
 }
