@@ -2,7 +2,7 @@ $defs:
   resolver:
     type: object
     properties:
-      include_file_mode:
+      include_file_permissions:
         type: boolean
       include_file_name:
         type: boolean

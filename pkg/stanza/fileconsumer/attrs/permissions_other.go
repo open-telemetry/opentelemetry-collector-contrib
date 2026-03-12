@@ -33,14 +33,10 @@ func (r *Resolver) addPermissionInfo(file *os.File, attributes map[string]any) e
 		}
 		attributes[LogFileOwnerGroupName] = fileGroup.Name
 	}
-	if r.IncludeFileMode {
-		fileInfo, errFileInfo := file.Stat()
-		if errFileInfo != nil {
-			return fmt.Errorf("resolve file stat: %w", errFileInfo)
-		}
+	if r.IncludeFilePermissions {
 		// Format the file mode as a 3-digit octal string (e.g., "755")
-		mode := fmt.Sprintf("%03o", fileInfo.Mode().Perm())
-		attributes[LogFileMode] = mode
+		perms := fmt.Sprintf("%03o", fileInfo.Mode().Perm())
+		attributes[LogFilePermissions] = perms
 	}
 	return nil
 }
