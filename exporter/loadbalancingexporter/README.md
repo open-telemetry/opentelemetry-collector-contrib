@@ -18,7 +18,7 @@
 
 This is an exporter that will consistently export spans and metrics depending on the `routing_key` configured. Logs are exported based on the `traceID` (if it's present) or an auto-generated `traceID`. Therefore setting the `routing_key` for logs does not have any effect.
 
-The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`.
+The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`, `attributes`.
 
 | routing_key | can be used for      |
 | ----------- | -------------------- |
@@ -120,8 +120,9 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `service`: Routes values based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate.
   * `attributes`: Routes based on values in attributes. This is similar to service, but useful for situations in which a single service overwhelms any given instance of the collector, and should be split over multiple collectors. For traces, resource / scope / span attributes plus `span.kind` and `span.name` (top-level span fields) are supported. For metrics, resource / scope / datapoint attributes are supported.
   * `traceID`: Routes spans based on their `traceID`. Invalid for metrics.
+  * `resource`: Routes metrics based on a hash of all resource attributes. All metrics sharing the exact same set of resource attributes will be routed to the same backend. This is more granular than `service`, which only considers `service.name`, but less granular than `streamID`, which also considers scope and datapoint attributes. Invalid for spans.
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
-  * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data
+  * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data.
 * loadbalancing exporter supports set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disable by default to maintain compatibility
 * The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`.
 
