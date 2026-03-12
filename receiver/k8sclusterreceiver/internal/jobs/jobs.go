@@ -13,22 +13,22 @@ import (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, j *batchv1.Job, ts pcommon.Timestamp) {
-	mb.RecordK8sJobActivePodsDataPoint(ts, int64(j.Status.Active))
-	mb.RecordK8sJobFailedPodsDataPoint(ts, int64(j.Status.Failed))
-	mb.RecordK8sJobSuccessfulPodsDataPoint(ts, int64(j.Status.Succeeded))
+	mb.RecordK8sJobActivePodsDataPoint(ts, int64(j.Status.Active))        //nolint:staticcheck
+	mb.RecordK8sJobFailedPodsDataPoint(ts, int64(j.Status.Failed))        //nolint:staticcheck
+	mb.RecordK8sJobSuccessfulPodsDataPoint(ts, int64(j.Status.Succeeded)) //nolint:staticcheck
 
 	if j.Spec.Completions != nil {
-		mb.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, int64(*j.Spec.Completions))
+		mb.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, int64(*j.Spec.Completions)) //nolint:staticcheck
 	}
 	if j.Spec.Parallelism != nil {
-		mb.RecordK8sJobMaxParallelPodsDataPoint(ts, int64(*j.Spec.Parallelism))
+		mb.RecordK8sJobMaxParallelPodsDataPoint(ts, int64(*j.Spec.Parallelism)) //nolint:staticcheck
 	}
 
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(j.Namespace)
 	rb.SetK8sJobName(j.Name)
 	rb.SetK8sJobUID(string(j.UID))
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
 }
 
 // Transform transforms the job to remove the fields that we don't use to reduce RAM utilization.

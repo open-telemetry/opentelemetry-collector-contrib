@@ -26,24 +26,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ActiveDirectoryDsBindRate:                                  MetricConfig{Enabled: true},
-					ActiveDirectoryDsLdapBindLastSuccessfulTime:                MetricConfig{Enabled: true},
-					ActiveDirectoryDsLdapBindRate:                              MetricConfig{Enabled: true},
-					ActiveDirectoryDsLdapClientSessionCount:                    MetricConfig{Enabled: true},
-					ActiveDirectoryDsLdapSearchRate:                            MetricConfig{Enabled: true},
-					ActiveDirectoryDsNameCacheHitRate:                          MetricConfig{Enabled: true},
-					ActiveDirectoryDsNotificationQueued:                        MetricConfig{Enabled: true},
-					ActiveDirectoryDsOperationRate:                             MetricConfig{Enabled: true},
-					ActiveDirectoryDsReplicationNetworkIo:                      MetricConfig{Enabled: true},
-					ActiveDirectoryDsReplicationObjectRate:                     MetricConfig{Enabled: true},
-					ActiveDirectoryDsReplicationOperationPending:               MetricConfig{Enabled: true},
-					ActiveDirectoryDsReplicationPropertyRate:                   MetricConfig{Enabled: true},
-					ActiveDirectoryDsReplicationSyncObjectPending:              MetricConfig{Enabled: true},
-					ActiveDirectoryDsReplicationSyncRequestCount:               MetricConfig{Enabled: true},
-					ActiveDirectoryDsReplicationValueRate:                      MetricConfig{Enabled: true},
-					ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricConfig{Enabled: true},
-					ActiveDirectoryDsSuboperationRate:                          MetricConfig{Enabled: true},
-					ActiveDirectoryDsThreadCount:                               MetricConfig{Enabled: true},
+					ActiveDirectoryDsBindRate: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsLdapBindLastSuccessfulTime: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsLdapBindRate: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsLdapClientSessionCount: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsLdapSearchRate: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsNameCacheHitRate: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsNotificationQueued: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsOperationRate: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsReplicationNetworkIo: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsReplicationObjectRate: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsReplicationOperationPending: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsReplicationPropertyRate: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsReplicationSyncObjectPending: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsReplicationSyncRequestCount: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsReplicationValueRate: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsSuboperationRate: MetricConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsThreadCount: MetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -51,24 +87,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ActiveDirectoryDsBindRate:                                  MetricConfig{Enabled: false},
-					ActiveDirectoryDsLdapBindLastSuccessfulTime:                MetricConfig{Enabled: false},
-					ActiveDirectoryDsLdapBindRate:                              MetricConfig{Enabled: false},
-					ActiveDirectoryDsLdapClientSessionCount:                    MetricConfig{Enabled: false},
-					ActiveDirectoryDsLdapSearchRate:                            MetricConfig{Enabled: false},
-					ActiveDirectoryDsNameCacheHitRate:                          MetricConfig{Enabled: false},
-					ActiveDirectoryDsNotificationQueued:                        MetricConfig{Enabled: false},
-					ActiveDirectoryDsOperationRate:                             MetricConfig{Enabled: false},
-					ActiveDirectoryDsReplicationNetworkIo:                      MetricConfig{Enabled: false},
-					ActiveDirectoryDsReplicationObjectRate:                     MetricConfig{Enabled: false},
-					ActiveDirectoryDsReplicationOperationPending:               MetricConfig{Enabled: false},
-					ActiveDirectoryDsReplicationPropertyRate:                   MetricConfig{Enabled: false},
-					ActiveDirectoryDsReplicationSyncObjectPending:              MetricConfig{Enabled: false},
-					ActiveDirectoryDsReplicationSyncRequestCount:               MetricConfig{Enabled: false},
-					ActiveDirectoryDsReplicationValueRate:                      MetricConfig{Enabled: false},
-					ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricConfig{Enabled: false},
-					ActiveDirectoryDsSuboperationRate:                          MetricConfig{Enabled: false},
-					ActiveDirectoryDsThreadCount:                               MetricConfig{Enabled: false},
+					ActiveDirectoryDsBindRate: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsLdapBindLastSuccessfulTime: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsLdapBindRate: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsLdapClientSessionCount: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsLdapSearchRate: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsNameCacheHitRate: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsNotificationQueued: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsOperationRate: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsReplicationNetworkIo: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsReplicationObjectRate: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsReplicationOperationPending: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsReplicationPropertyRate: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsReplicationSyncObjectPending: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsReplicationSyncRequestCount: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsReplicationValueRate: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsSuboperationRate: MetricConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsThreadCount: MetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},

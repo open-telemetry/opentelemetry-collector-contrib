@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("cgroupruntime")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension"
+	Type           = component.MustNewType("cgroup_runtime")
+	DeprecatedType = component.MustNewType("cgroupruntime")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension"
 )
 
 const (
