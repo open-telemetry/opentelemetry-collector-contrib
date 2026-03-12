@@ -27,6 +27,7 @@ import (
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/util/teststorage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -967,7 +968,8 @@ func initPrometheusManagers(ctx context.Context, t *testing.T) (*scrape.Manager,
 	discoveryManager := discovery.NewManager(ctx, logger, reg, sdMetrics)
 	require.NotNil(t, discoveryManager)
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, nil, reg)
+	store := teststorage.New(t)
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, store, nil, reg)
 	require.NoError(t, err)
 	return scrapeManager, discoveryManager
 }
