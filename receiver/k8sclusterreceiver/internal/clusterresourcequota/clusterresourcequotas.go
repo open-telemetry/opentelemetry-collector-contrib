@@ -17,30 +17,30 @@ import (
 func RecordMetrics(mb *metadata.MetricsBuilder, crq *quotav1.ClusterResourceQuota, ts pcommon.Timestamp) {
 	for k, v := range crq.Status.Total.Hard {
 		val := extractValue(k, v)
-		mb.RecordOpenshiftClusterquotaLimitDataPoint(ts, val, string(k))
+		mb.RecordOpenshiftClusterquotaLimitDataPoint(ts, val, string(k)) //nolint:staticcheck
 	}
 
 	for k, v := range crq.Status.Total.Used {
 		val := extractValue(k, v)
-		mb.RecordOpenshiftClusterquotaUsedDataPoint(ts, val, string(k))
+		mb.RecordOpenshiftClusterquotaUsedDataPoint(ts, val, string(k)) //nolint:staticcheck
 	}
 
 	for _, ns := range crq.Status.Namespaces {
 		for k, v := range ns.Status.Hard {
 			val := extractValue(k, v)
-			mb.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, val, ns.Namespace, string(k))
+			mb.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, val, ns.Namespace, string(k)) //nolint:staticcheck
 		}
 
 		for k, v := range ns.Status.Used {
 			val := extractValue(k, v)
-			mb.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, val, ns.Namespace, string(k))
+			mb.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, val, ns.Namespace, string(k)) //nolint:staticcheck
 		}
 	}
 
 	rb := mb.NewResourceBuilder()
 	rb.SetOpenshiftClusterquotaName(crq.Name)
 	rb.SetOpenshiftClusterquotaUID(string(crq.UID))
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
 }
 
 func extractValue(k v1.ResourceName, v resource.Quantity) int64 {
