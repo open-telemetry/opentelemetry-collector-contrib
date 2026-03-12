@@ -84,6 +84,10 @@ Consider following notes on default behaviors:
 - When `cloudwatch::encoding` is not specified, the receiver defaults to parsing CloudWatch Logs messages to OpenTelemetry log records.
 - For metrics, the default behavior is to decode using `awscloudwatchmetricstreams_encoding` extension.
 
+> [!NOTE]
+> The receiver supports end to end streaming utilizing encoding extension streaming capabilities.
+> For extensions that does not support streaming, xstreamencoding wrapper will be used where full payload get processed at once.
+
 Given below are example configurations for various use cases.
 
 ### Example 1: VPC Flow Logs from S3
