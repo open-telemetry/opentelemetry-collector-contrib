@@ -261,7 +261,7 @@ func TestBulkIndexerLogsStatusCode(t *testing.T) {
 
 func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
+	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline&pretty=false&require_data_stream=true"}
 
 	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
 	require.NoError(t, err)
@@ -269,6 +269,7 @@ func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 	bi := bulkIndexerConfig(client, cfg, true, zaptest.NewLogger(t))
 	require.Equal(t, map[string][]string{
 		"pipeline": {"test-pipeline"},
+		"pretty":   {"false"},
 	}, bi.QueryParams)
 }
 
@@ -355,4 +356,95 @@ func TestGetErrorHint(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+// BenchmarkRequireDataStreamPayloadOverhead benchmarks the payload size
+// overhead of encoding require_data_stream at the document level vs
+// omitting it.
+func BenchmarkRequireDataStreamPayloadOverhead(b *testing.B) {
+	for _, tc := range []struct {
+		name              string
+		requireDataStream bool
+		numItems          int
+	}{
+		{name: "without_rds/10_items", requireDataStream: false, numItems: 10},
+		{name: "with_rds/10_items", requireDataStream: true, numItems: 10},
+		{name: "without_rds/100_items", requireDataStream: false, numItems: 100},
+		{name: "with_rds/100_items", requireDataStream: true, numItems: 100},
+		{name: "without_rds/1000_items", requireDataStream: false, numItems: 1000},
+		{name: "with_rds/1000_items", requireDataStream: true, numItems: 1000},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				biCfg := newBenchBulkIndexerConfig(b)
+				bi, err := docappender.NewBulkIndexer(biCfg)
+				require.NoError(b, err)
+				for i := 0; i < tc.numItems; i++ {
+					doc := strings.NewReader(`{"@timestamp":"2024-01-01T00:00:00Z","message":"test log message with some realistic content"}`)
+					err := bi.Add(docappender.BulkIndexerItem{
+						Index:             "logs-generic-default",
+						Body:              doc,
+						Action:            "create",
+						RequireDataStream: tc.requireDataStream,
+					})
+					require.NoError(b, err)
+				}
+				b.ReportMetric(float64(bi.Len()), "payload_bytes")
+			}
+		})
+	}
+}
+
+// TestRequireDataStreamPayloadSizeImpact measures the byte overhead of
+// require_data_stream encoded on the action line.
+func TestRequireDataStreamPayloadSizeImpact(t *testing.T) {
+	buildPayload := func(requireDataStream bool, numItems int) int {
+		biCfg := newBenchBulkIndexerConfig(t)
+		bi, err := docappender.NewBulkIndexer(biCfg)
+		require.NoError(t, err)
+		for i := 0; i < numItems; i++ {
+			doc := strings.NewReader(`{"@timestamp":"2024-01-01T00:00:00Z","message":"test log message"}`)
+			err := bi.Add(docappender.BulkIndexerItem{
+				Index:             "logs-generic-default",
+				Body:              doc,
+				Action:            "create",
+				RequireDataStream: requireDataStream,
+			})
+			require.NoError(t, err)
+		}
+		return bi.Len()
+	}
+
+	for _, numItems := range []int{1, 10, 100, 1000} {
+		withoutRDS := buildPayload(false, numItems)
+		withRDS := buildPayload(true, numItems)
+
+		overhead := withRDS - withoutRDS
+		overheadPercent := float64(overhead) / float64(withoutRDS) * 100
+
+		t.Logf("Items: %4d | Without RDS: %6d bytes | With RDS: %6d bytes | Overhead: %4d bytes (%.2f%%)",
+			numItems, withoutRDS, withRDS, overhead, overheadPercent)
+
+		assert.Less(t, overheadPercent, 30.0,
+			"require_data_stream overhead should be less than 30%% for %d items", numItems)
+	}
+}
+
+func newBenchBulkIndexerConfig(tb testing.TB) docappender.BulkIndexerConfig {
+	tb.Helper()
+	client, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body:       io.NopCloser(strings.NewReader(`{"items":[]}`)),
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+		},
+	})
+	require.NoError(tb, err)
+	return docappender.BulkIndexerConfig{Client: client}
 }

@@ -1,0 +1,8 @@
+# Use this file to generate a changelog entry.
+# For more information see: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-changelog
+
+change_type: enhancement
+component: exporter/elasticsearch
+note: "Encode `require_data_stream` in Elasticsearch bulk action metadata instead of the bulk request query string."
+issues: [46022]
+subtext: "This preserves existing endpoint query parameters while moving `require_data_stream` to the per-document action line expected by newer bulk workflows."
