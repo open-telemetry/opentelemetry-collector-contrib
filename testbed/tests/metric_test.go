@@ -20,8 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-// skipTestMetric10kDPS temporarily disabled for CI debugging - rename to TestMetric10kDPS to re-enable.
-func skipTestMetric10kDPS(t *testing.T) {
+func TestMetric10kDPS(t *testing.T) {
 	tests := []struct {
 		name         string
 		sender       testbed.DataSender
@@ -97,8 +96,7 @@ func skipTestMetric10kDPS(t *testing.T) {
 	}
 }
 
-// skipTestMetricsFromFile temporarily disabled for CI debugging - rename to TestMetricsFromFile to re-enable.
-func skipTestMetricsFromFile(t *testing.T) {
+func TestMetricsFromFile(t *testing.T) {
 	// This test demonstrates usage of NewFileDataProvider to generate load using
 	// previously recorded data.
 

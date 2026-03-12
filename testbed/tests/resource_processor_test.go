@@ -95,8 +95,7 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 	return tests
 }
 
-// skipTestMetricResourceProcessor temporarily disabled for CI debugging - rename to TestMetricResourceProcessor to re-enable.
-func skipTestMetricResourceProcessor(t *testing.T) {
+func TestMetricResourceProcessor(t *testing.T) {
 	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 

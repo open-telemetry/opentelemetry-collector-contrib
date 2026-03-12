@@ -29,8 +29,7 @@ type expectedDataType struct {
 	attributes     map[string]any
 }
 
-// skipTestSyslogComplementaryRFC5424 temporarily disabled for CI debugging - rename to TestSyslogComplementaryRFC5424 to re-enable.
-func skipTestSyslogComplementaryRFC5424(t *testing.T) {
+func TestSyslogComplementaryRFC5424(t *testing.T) {
 	expectedData := []expectedDataType{
 		{
 			message:        "<165>1 2003-10-11T22:14:15.003Z mymachine.example.com eventslog - ID47 [exampleSDID@32473 iut=\"3\"] Some message",
@@ -70,8 +69,7 @@ func skipTestSyslogComplementaryRFC5424(t *testing.T) {
 	complementaryTest(t, "rfc5424", expectedData)
 }
 
-// skipTestSyslogComplementaryRFC3164 temporarily disabled for CI debugging - rename to TestSyslogComplementaryRFC3164 to re-enable.
-func skipTestSyslogComplementaryRFC3164(t *testing.T) {
+func TestSyslogComplementaryRFC3164(t *testing.T) {
 	expectedData := []expectedDataType{
 		{
 			message:        "<34>Oct 11 2023 22:14:15 mymachine su: 'su root' failed for lonvick on /dev/pts/8",
