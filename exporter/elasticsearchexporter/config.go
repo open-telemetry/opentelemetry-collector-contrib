@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"slices"
 	"strings"
 	"time"
 
@@ -257,7 +256,7 @@ type RetrySettings struct {
 }
 
 type MappingsSettings struct {
-	// Mode configures the default document mapping mode.
+	// Deprecated: [v0.145.0] Mode is ignored. The default mapping mode is "otel".
 	//
 	// The mode may be overridden in two ways:
 	//  - by the client metadata key X-Elastic-Mapping-Mode, if specified
@@ -352,9 +351,6 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("unknown allowed mapping mode name %q", name)
 		}
 		canonicalAllowedModes[i] = canonicalName
-	}
-	if !slices.Contains(canonicalAllowedModes, canonicalMappingModeName(cfg.Mapping.Mode)) {
-		return fmt.Errorf("invalid or disallowed default mapping mode %q", cfg.Mapping.Mode)
 	}
 
 	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
@@ -502,7 +498,7 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
 	}
 	if canonicalMappingModeName(cfg.Mapping.Mode) != MappingOTel.String() {
-		logger.Warn("mapping::mode config option is now deprecated and will soon be ignored. Use the `elastic.mapping.mode` scope attribute instead. See the README for migration instructions.")
+		logger.Warn("mapping::mode config option is deprecated and ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. See the README for migration instructions.")
 	}
 	if cfg.LogsDynamicIndex.Enabled {
 		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")

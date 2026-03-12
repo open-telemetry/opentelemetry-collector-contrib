@@ -21,6 +21,8 @@ kafka:
     max_elapsed_time: 10m
 kafka/legacy_topic:
   topic: legacy_topic
+  include_metadata_keys:
+    - metadata_key
   metrics:
     topic: metrics_topic
   logs:

@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("azureblob")
-	ScopeName = "otelcol/azureblobexporter"
+	Type           = component.MustNewType("azure_blob")
+	DeprecatedType = component.MustNewType("azureblob")
+	ScopeName      = "otelcol/azureblobexporter"
 )
 
 const (

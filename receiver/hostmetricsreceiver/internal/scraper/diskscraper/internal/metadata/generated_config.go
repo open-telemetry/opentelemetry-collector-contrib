@@ -3,16 +3,29 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// SystemDiskIoAttributeKey specifies the key of an attribute for the system.disk.io metric.
+type SystemDiskIoAttributeKey string
+
+const (
+	SystemDiskIoAttributeKeyDevice    SystemDiskIoAttributeKey = "device"
+	SystemDiskIoAttributeKeyDirection SystemDiskIoAttributeKey = "direction"
+)
+
+// SystemDiskIoConfig provides config for the system.disk.io metric.
+type SystemDiskIoConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemDiskIoAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemDiskIoConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -26,39 +39,362 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *SystemDiskIoConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemDiskIoAttributeKeyDevice, SystemDiskIoAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric system.disk.io doesn't have an attribute %v, valid attributes: [device, direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemDiskIoTimeAttributeKey specifies the key of an attribute for the system.disk.io_time metric.
+type SystemDiskIoTimeAttributeKey string
+
+const (
+	SystemDiskIoTimeAttributeKeyDevice SystemDiskIoTimeAttributeKey = "device"
+)
+
+// SystemDiskIoTimeConfig provides config for the system.disk.io_time metric.
+type SystemDiskIoTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemDiskIoTimeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemDiskIoTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemDiskIoTimeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemDiskIoTimeAttributeKeyDevice:
+		default:
+			return fmt.Errorf("metric system.disk.io_time doesn't have an attribute %v, valid attributes: [device]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemDiskMergedAttributeKey specifies the key of an attribute for the system.disk.merged metric.
+type SystemDiskMergedAttributeKey string
+
+const (
+	SystemDiskMergedAttributeKeyDevice    SystemDiskMergedAttributeKey = "device"
+	SystemDiskMergedAttributeKeyDirection SystemDiskMergedAttributeKey = "direction"
+)
+
+// SystemDiskMergedConfig provides config for the system.disk.merged metric.
+type SystemDiskMergedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemDiskMergedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemDiskMergedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemDiskMergedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemDiskMergedAttributeKeyDevice, SystemDiskMergedAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric system.disk.merged doesn't have an attribute %v, valid attributes: [device, direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemDiskOperationTimeAttributeKey specifies the key of an attribute for the system.disk.operation_time metric.
+type SystemDiskOperationTimeAttributeKey string
+
+const (
+	SystemDiskOperationTimeAttributeKeyDevice    SystemDiskOperationTimeAttributeKey = "device"
+	SystemDiskOperationTimeAttributeKeyDirection SystemDiskOperationTimeAttributeKey = "direction"
+)
+
+// SystemDiskOperationTimeConfig provides config for the system.disk.operation_time metric.
+type SystemDiskOperationTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemDiskOperationTimeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemDiskOperationTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemDiskOperationTimeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemDiskOperationTimeAttributeKeyDevice, SystemDiskOperationTimeAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric system.disk.operation_time doesn't have an attribute %v, valid attributes: [device, direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemDiskOperationsAttributeKey specifies the key of an attribute for the system.disk.operations metric.
+type SystemDiskOperationsAttributeKey string
+
+const (
+	SystemDiskOperationsAttributeKeyDevice    SystemDiskOperationsAttributeKey = "device"
+	SystemDiskOperationsAttributeKeyDirection SystemDiskOperationsAttributeKey = "direction"
+)
+
+// SystemDiskOperationsConfig provides config for the system.disk.operations metric.
+type SystemDiskOperationsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemDiskOperationsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemDiskOperationsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemDiskOperationsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemDiskOperationsAttributeKeyDevice, SystemDiskOperationsAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric system.disk.operations doesn't have an attribute %v, valid attributes: [device, direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemDiskPendingOperationsAttributeKey specifies the key of an attribute for the system.disk.pending_operations metric.
+type SystemDiskPendingOperationsAttributeKey string
+
+const (
+	SystemDiskPendingOperationsAttributeKeyDevice SystemDiskPendingOperationsAttributeKey = "device"
+)
+
+// SystemDiskPendingOperationsConfig provides config for the system.disk.pending_operations metric.
+type SystemDiskPendingOperationsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemDiskPendingOperationsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemDiskPendingOperationsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemDiskPendingOperationsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemDiskPendingOperationsAttributeKeyDevice:
+		default:
+			return fmt.Errorf("metric system.disk.pending_operations doesn't have an attribute %v, valid attributes: [device]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemDiskWeightedIoTimeAttributeKey specifies the key of an attribute for the system.disk.weighted_io_time metric.
+type SystemDiskWeightedIoTimeAttributeKey string
+
+const (
+	SystemDiskWeightedIoTimeAttributeKeyDevice SystemDiskWeightedIoTimeAttributeKey = "device"
+)
+
+// SystemDiskWeightedIoTimeConfig provides config for the system.disk.weighted_io_time metric.
+type SystemDiskWeightedIoTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemDiskWeightedIoTimeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemDiskWeightedIoTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemDiskWeightedIoTimeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemDiskWeightedIoTimeAttributeKeyDevice:
+		default:
+			return fmt.Errorf("metric system.disk.weighted_io_time doesn't have an attribute %v, valid attributes: [device]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for disk metrics.
 type MetricsConfig struct {
-	SystemDiskIo                MetricConfig `mapstructure:"system.disk.io"`
-	SystemDiskIoTime            MetricConfig `mapstructure:"system.disk.io_time"`
-	SystemDiskMerged            MetricConfig `mapstructure:"system.disk.merged"`
-	SystemDiskOperationTime     MetricConfig `mapstructure:"system.disk.operation_time"`
-	SystemDiskOperations        MetricConfig `mapstructure:"system.disk.operations"`
-	SystemDiskPendingOperations MetricConfig `mapstructure:"system.disk.pending_operations"`
-	SystemDiskWeightedIoTime    MetricConfig `mapstructure:"system.disk.weighted_io_time"`
+	SystemDiskIo                SystemDiskIoConfig                `mapstructure:"system.disk.io"`
+	SystemDiskIoTime            SystemDiskIoTimeConfig            `mapstructure:"system.disk.io_time"`
+	SystemDiskMerged            SystemDiskMergedConfig            `mapstructure:"system.disk.merged"`
+	SystemDiskOperationTime     SystemDiskOperationTimeConfig     `mapstructure:"system.disk.operation_time"`
+	SystemDiskOperations        SystemDiskOperationsConfig        `mapstructure:"system.disk.operations"`
+	SystemDiskPendingOperations SystemDiskPendingOperationsConfig `mapstructure:"system.disk.pending_operations"`
+	SystemDiskWeightedIoTime    SystemDiskWeightedIoTimeConfig    `mapstructure:"system.disk.weighted_io_time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemDiskIo: MetricConfig{
-			Enabled: true,
+		SystemDiskIo: SystemDiskIoConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemDiskIoAttributeKey{SystemDiskIoAttributeKeyDevice, SystemDiskIoAttributeKeyDirection},
 		},
-		SystemDiskIoTime: MetricConfig{
-			Enabled: true,
+		SystemDiskIoTime: SystemDiskIoTimeConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemDiskIoTimeAttributeKey{SystemDiskIoTimeAttributeKeyDevice},
 		},
-		SystemDiskMerged: MetricConfig{
-			Enabled: true,
+		SystemDiskMerged: SystemDiskMergedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemDiskMergedAttributeKey{SystemDiskMergedAttributeKeyDevice, SystemDiskMergedAttributeKeyDirection},
 		},
-		SystemDiskOperationTime: MetricConfig{
-			Enabled: true,
+		SystemDiskOperationTime: SystemDiskOperationTimeConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemDiskOperationTimeAttributeKey{SystemDiskOperationTimeAttributeKeyDevice, SystemDiskOperationTimeAttributeKeyDirection},
 		},
-		SystemDiskOperations: MetricConfig{
-			Enabled: true,
+		SystemDiskOperations: SystemDiskOperationsConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemDiskOperationsAttributeKey{SystemDiskOperationsAttributeKeyDevice, SystemDiskOperationsAttributeKeyDirection},
 		},
-		SystemDiskPendingOperations: MetricConfig{
-			Enabled: true,
+		SystemDiskPendingOperations: SystemDiskPendingOperationsConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemDiskPendingOperationsAttributeKey{SystemDiskPendingOperationsAttributeKeyDevice},
 		},
-		SystemDiskWeightedIoTime: MetricConfig{
-			Enabled: true,
+		SystemDiskWeightedIoTime: SystemDiskWeightedIoTimeConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemDiskWeightedIoTimeAttributeKey{SystemDiskWeightedIoTimeAttributeKeyDevice},
 		},
 	}
 }

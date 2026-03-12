@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
@@ -162,12 +163,13 @@ func (s *diskScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				s.mb.RecordSystemDiskOperationsDataPoint(now, values[i], instance, metadata.AttributeDirectionRead)
 			case writesPerSec:
 				s.mb.RecordSystemDiskOperationsDataPoint(now, values[i], instance, metadata.AttributeDirectionWrite)
+			// NOTE: int64-to-uint64 cast is safe because perf counter values are non-negative.
 			case idleTime:
-				s.mb.RecordSystemDiskIoTimeDataPoint(now, float64(now-s.startTime)/1e9-float64(values[i])/1e7, instance)
+				s.mb.RecordSystemDiskIoTimeDataPoint(now, precision.Scale(uint64(now-s.startTime), time.Nanosecond)-precision.Scale(uint64(values[i]), time.Nanosecond*100), instance)
 			case avgDiskSecsPerRead:
-				s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(values[i])/1e7, instance, metadata.AttributeDirectionRead)
+				s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.Scale(uint64(values[i]), time.Nanosecond*100), instance, metadata.AttributeDirectionRead)
 			case avgDiskSecsPerWrite:
-				s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(values[i])/1e7, instance, metadata.AttributeDirectionWrite)
+				s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.Scale(uint64(values[i]), time.Nanosecond*100), instance, metadata.AttributeDirectionWrite)
 			case queueLength:
 				s.mb.RecordSystemDiskPendingOperationsDataPoint(now, values[i], instance)
 			default:

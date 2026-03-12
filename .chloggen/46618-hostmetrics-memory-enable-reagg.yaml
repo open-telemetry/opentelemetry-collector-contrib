@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/hostmetrics
+note: Enable re-aggregation feature for the memory scraper to support dynamic metric attribute configuration at runtime.
+issues: [46618]
+subtext:
+change_logs: [user]

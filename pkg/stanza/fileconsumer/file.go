@@ -58,16 +58,12 @@ func (m *Manager) Start(persister operator.Persister) error {
 	// initialize runtime-only tracking of unreadable paths
 	m.unreadable = make(map[string]struct{})
 
-	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.set.Logger.Warn("finding files", zap.Error(err))
-	}
-
 	// instantiate the tracker
 	m.instantiateTracker(ctx, persister)
 
 	if persister != nil {
 		m.persister = persister
-		offsets, err := checkpoint.Load(ctx, m.persister)
+		offsets, err := checkpoint.Load(ctx, m.persister, m.set.Logger)
 		if err != nil {
 			return fmt.Errorf("read known files from database: %w", err)
 		}

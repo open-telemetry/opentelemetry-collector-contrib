@@ -78,6 +78,7 @@ type span struct {
 	statusCode ptrace.StatusCode
 	traceID    [16]byte
 	spanID     [8]byte
+	tracestate string
 }
 
 // verifyDisabledHistogram expects that histograms are disabled.
@@ -374,6 +375,9 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 			mID.statusCode = v.Str()
 		case otelStatusCodeKey:
 			mID.otelStatusCode = v.Str()
+		case metricAttrSamplingMethod:
+			// sampling.method attribute is always present, verify it's either "counted" or "extrapolated"
+			assert.Contains(tb, []string{"counted", "extrapolated"}, v.Str())
 		case notInSpanAttrName1:
 			assert.Fail(tb, notInSpanAttrName1+" should not be in this metric")
 		default:
@@ -496,6 +500,10 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetTraceID(span.traceID)
 	s.SetSpanID(span.spanID)
 
+	if span.tracestate != "" {
+		s.TraceState().FromRaw(span.tracestate)
+	}
+
 	e := s.Events().AppendEmpty()
 	e.SetName("exception")
 	e.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
@@ -552,7 +560,7 @@ func disabledHistogramsConfig() HistogramConfig {
 	}
 }
 
-func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig func() EventsConfig, temporality string, expiration time.Duration, resourceMetricsKeyAttributes []string, deltaTimestampCacheSize int, clock clockwork.Clock, excludedDimensions ...string) (*connectorImp, error) {
+func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig func() EventsConfig, temporality string, expiration time.Duration, resourceMetricsKeyAttributes []string, deltaTimestampCacheSize int, clock clockwork.Clock, enableMetricsSamplingMethod bool, excludedDimensions ...string) (*connectorImp, error) {
 	cfg := &Config{
 		AggregationTemporality:       temporality,
 		Histogram:                    histogramConfig(),
@@ -560,6 +568,7 @@ func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramC
 		ExcludeDimensions:            excludedDimensions,
 		ResourceMetricsCacheSize:     resourceMetricsCacheSize,
 		ResourceMetricsKeyAttributes: resourceMetricsKeyAttributes,
+		EnableMetricsSamplingMethod:  enableMetricsSamplingMethod,
 		Dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{Name: stringAttrName, Default: nil},
@@ -602,11 +611,11 @@ func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	k0 := c.buildKey("ab", span0, nil, pcommon.NewMap())
+	k0 := c.buildKey("ab", span0, nil, pcommon.NewMap(), false)
 
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	k1 := c.buildKey("a", span1, nil, pcommon.NewMap())
+	k1 := c.buildKey("a", span1, nil, pcommon.NewMap(), false)
 
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metrics.Key("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
@@ -622,7 +631,7 @@ func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("spanName")
-	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
+	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap(), false)
 	assert.Equal(t, metrics.Key(""), k0)
 }
 
@@ -635,7 +644,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("spanName")
-	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
+	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap(), false)
 	assert.Equal(t, metrics.Key("serviceName"), k0)
 }
 
@@ -711,7 +720,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
-			key := c.buildKey("ab", span0, tc.optionalDims, resAttr)
+			key := c.buildKey("ab", span0, tc.optionalDims, resAttr, false)
 			assert.Equal(t, metrics.Key(tc.wantKey), key)
 		})
 	}
@@ -738,7 +747,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 
 	// Test
-	p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+	p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(t, err)
 	// Override the default no-op consumer and logger for testing.
 	p.metricsConsumer = new(consumertest.MetricsSink)
@@ -817,7 +826,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 
 	var wg sync.WaitGroup
 	mockClock := clockwork.NewFakeClock()
-	p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock)
+	p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
 	require.NoError(t, err)
 	// Override the default no-op consumer and logger for testing.
 	p.metricsConsumer = &errConsumer{
@@ -997,7 +1006,7 @@ func TestConsumeTraces(t *testing.T) {
 
 			mcon := &consumertest.MetricsSink{}
 			mockClock := clockwork.NewFakeClock()
-			p, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{}, 1000, mockClock)
+			p, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{}, 1000, mockClock, false)
 			require.NoError(t, err)
 			// Override the default no-op consumer with metrics sink for testing.
 			p.metricsConsumer = mcon
@@ -1034,7 +1043,7 @@ func TestConsumeTraces(t *testing.T) {
 func TestCallsMetricsInitialise(t *testing.T) {
 	traces := buildSampleTrace()
 
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(t, err)
 
 	ctx := metadata.NewIncomingContext(t.Context(), nil)
@@ -1068,7 +1077,7 @@ func TestCallsMetricsInitialise(t *testing.T) {
 }
 
 func TestResourceMetricsCache(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(t, err)
 
 	// Test
@@ -1105,7 +1114,7 @@ func TestResourceMetricsCache(t *testing.T) {
 }
 
 func TestResourceMetricsExpiration(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{}, 1000, clockwork.NewFakeClock())
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(t, err)
 
 	// Test
@@ -1130,7 +1139,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 		"service.name",
 	}
 
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes, 1000, clockwork.NewFakeClock())
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(t, err)
 
 	// Test
@@ -1272,7 +1281,7 @@ func TestAddResourceAttributesConfig(t *testing.T) {
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	// Prepare
-	conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+	conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(b, err)
 
 	traces := buildSampleTrace()
@@ -1309,7 +1318,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 				require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), previousValue))
 			}()
 
-			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), excludeDimensions...)
+			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false, excludeDimensions...)
 			require.NoError(t, err)
 			traces := buildSampleTrace()
 
@@ -1433,7 +1442,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 
 	// Note: default dimension key cache size is 2.
 	mockClock := clockwork.NewFakeClock()
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock)
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
@@ -1520,7 +1529,7 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 
 	// Creating a connector with a very short metricsTTL to ensure that the metrics are expired.
 	mockClock := clockwork.NewFakeClock()
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{}, 1000, mockClock)
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{}, 1000, mockClock, false)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
@@ -1796,7 +1805,7 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, clockwork.NewFakeClock())
+			p, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 			p.metricsConsumer = &consumertest.MetricsSink{}
 			require.NoError(t, err)
 
@@ -1930,7 +1939,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.temporality, func(t *testing.T) {
 			mockClock := newAlwaysIncreasingClock()
-			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, mockClock)
+			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, mockClock, false)
 			require.NoError(t, err)
 			p.metricsConsumer = &consumertest.MetricsSink{}
 
@@ -2025,7 +2034,7 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start, t
 func TestDeltaTimestampCacheExpiry(t *testing.T) {
 	timestampCacheSize := 1
 	mockClock := newAlwaysIncreasingClock()
-	p, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, timestampCacheSize, mockClock)
+	p, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, timestampCacheSize, mockClock, false)
 	require.NoError(t, err)
 	p.metricsConsumer = &consumertest.MetricsSink{}
 
@@ -2166,6 +2175,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			}(),
 			config: Config{
 				IncludeInstrumentationScope: []string{"express"},
+				EnableMetricsSamplingMethod: true,
 			},
 			want: map[string]string{
 				serviceNameKey:                 "test_service",
@@ -2184,7 +2194,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 				scope.SetVersion("1.0.0")
 				return scope
 			}(),
-			config: Config{},
+			config: Config{EnableMetricsSamplingMethod: true},
 			want: map[string]string{
 				serviceNameKey: "test_service",
 				spanNameKey:    "test_span",
@@ -2201,6 +2211,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			}(),
 			config: Config{
 				IncludeInstrumentationScope: []string{"express"},
+				EnableMetricsSamplingMethod: true,
 			},
 			want: map[string]string{
 				serviceNameKey: "test_service",
@@ -2219,6 +2230,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			}(),
 			config: Config{
 				IncludeInstrumentationScope: []string{"express"},
+				EnableMetricsSamplingMethod: true,
 			},
 			want: map[string]string{
 				serviceNameKey:              "test_service",
@@ -2238,14 +2250,19 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
 
-			assert.Equal(t, len(tt.want), attrs.Len())
+			// +1 for the sampling.method attribute when enabled
+			assert.Equal(t, len(tt.want)+1, attrs.Len())
 			for k, v := range tt.want {
 				val, ok := attrs.Get(k)
 				assert.True(t, ok)
 				assert.Equal(t, v, val.Str())
 			}
+			// Verify sampling.method attribute is present
+			samplingMethod, ok := attrs.Get(metricAttrSamplingMethod)
+			assert.True(t, ok)
+			assert.Equal(t, "counted", samplingMethod.Str())
 		})
 	}
 }
@@ -2497,6 +2514,7 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 			}(),
 			config: Config{
 				IncludeInstrumentationScope: []string{"express"},
+				EnableMetricsSamplingMethod: true,
 			},
 			want: map[string]string{
 				serviceNameKey:                 "test_service",
@@ -2517,6 +2535,7 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 			}(),
 			config: Config{
 				IncludeInstrumentationScope: []string{"express"},
+				EnableMetricsSamplingMethod: true,
 			},
 			want: map[string]string{
 				serviceNameKey:                 "test_service",
@@ -2545,14 +2564,941 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
 
-			assert.Equal(t, len(tt.want), attrs.Len())
+			// +1 for the sampling.method attribute that's always added
+			assert.Equal(t, len(tt.want)+1, attrs.Len())
 			for k, v := range tt.want {
 				val, ok := attrs.Get(k)
 				assert.True(t, ok)
 				assert.Equal(t, v, val.Str())
 			}
+			// Verify sampling.method attribute is present
+			samplingMethod, ok := attrs.Get(metricAttrSamplingMethod)
+			assert.True(t, ok)
+			assert.Equal(t, "counted", samplingMethod.Str())
 		})
 	}
+}
+
+func TestBuildAttributes_AdjustedCount(t *testing.T) {
+	tests := []struct {
+		name                 string
+		enableSamplingMethod bool
+		isAdjustedCount      bool
+		expectAttribute      bool
+		expectValue          string
+	}{
+		{
+			name:                 "enabled and adjusted - attribute extrapolated",
+			enableSamplingMethod: true,
+			isAdjustedCount:      true,
+			expectAttribute:      true,
+			expectValue:          "extrapolated",
+		},
+		{
+			name:                 "enabled and not adjusted - attribute counted",
+			enableSamplingMethod: true,
+			isAdjustedCount:      false,
+			expectAttribute:      true,
+			expectValue:          "counted",
+		},
+		{
+			name:                 "disabled - attribute not present",
+			enableSamplingMethod: false,
+			isAdjustedCount:      false,
+			expectAttribute:      false,
+			expectValue:          "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &connectorImp{config: Config{EnableMetricsSamplingMethod: tt.enableSamplingMethod}}
+
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(ptrace.SpanKindInternal)
+
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
+
+			val, ok := attrs.Get(metricAttrSamplingMethod)
+			assert.Equal(t, tt.expectAttribute, ok, "sampling.method attribute presence")
+			if tt.expectAttribute {
+				assert.Equal(t, tt.expectValue, val.Str(), "sampling.method value")
+			}
+		})
+	}
+}
+
+func TestAdjustedCountAttribute_Integration(t *testing.T) {
+	// Test that spans with valid tracestate produce metrics with adjusted_count attribute
+	// and spans without tracestate do not have the attribute
+
+	tests := []struct {
+		name           string
+		tracestate     string
+		expectAdjusted bool
+	}{
+		{
+			name:           "span with valid tracestate th:c (25% sampling)",
+			tracestate:     "ot=th:c",
+			expectAdjusted: true,
+		},
+		{
+			name:           "span with valid tracestate th:8 (50% sampling)",
+			tracestate:     "ot=th:8",
+			expectAdjusted: true,
+		},
+		{
+			name:           "span without tracestate",
+			tracestate:     "",
+			expectAdjusted: false,
+		},
+		{
+			name:           "span with tracestate but no th field",
+			tracestate:     "ot=rv:abcdabcdabcdff",
+			expectAdjusted: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), true)
+			require.NoError(t, err)
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			err = p.Start(ctx, componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+			traces := buildSampleTraceWithTracestate(tt.tracestate)
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			// First call buildMetrics() emits zero value, second call emits actual value
+			_ = p.buildMetrics()
+			receivedMetrics := p.buildMetrics()
+
+			require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+			// Find the sum metric (calls)
+			found := false
+			for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+				rm := receivedMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						if m.Name() == metricNameCalls {
+							require.Equal(t, pmetric.MetricTypeSum, m.Type())
+							dps := m.Sum().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+
+								assert.True(t, hasAttr, "sampling.method attribute should always be present")
+								if tt.expectAdjusted {
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated for valid tracestate")
+								} else {
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted for invalid/missing tracestate")
+								}
+								found = true
+							}
+						}
+					}
+				}
+			}
+			assert.True(t, found, "should have found calls metric")
+		})
+	}
+}
+
+func TestAdjustedCountAttribute_Histogram(t *testing.T) {
+	// Test that histogram metrics also have the adjusted_count attribute when appropriate
+
+	tests := []struct {
+		name           string
+		tracestate     string
+		expectAdjusted bool
+	}{
+		{
+			name:           "histogram with valid tracestate",
+			tracestate:     "ot=th:8",
+			expectAdjusted: true,
+		},
+		{
+			name:           "histogram without tracestate",
+			tracestate:     "",
+			expectAdjusted: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), true)
+			require.NoError(t, err)
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			err = p.Start(ctx, componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+			traces := buildSampleTraceWithTracestate(tt.tracestate)
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			// Build metrics twice to get actual values
+			_ = p.buildMetrics()
+			receivedMetrics := p.buildMetrics()
+
+			require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+			// Find the histogram metric (duration)
+			found := false
+			for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+				rm := receivedMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						if m.Name() == metricNameDuration {
+							require.Equal(t, pmetric.MetricTypeHistogram, m.Type())
+							dps := m.Histogram().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+
+								assert.True(t, hasAttr, "sampling.method attribute should always be present")
+								if tt.expectAdjusted {
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated for histogram with valid tracestate")
+								} else {
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted for histogram without tracestate")
+								}
+								found = true
+							}
+						}
+					}
+				}
+			}
+			assert.True(t, found, "should have found duration histogram metric")
+		})
+	}
+}
+
+func TestAdjustedCountAttribute_Events(t *testing.T) {
+	// Test that event metrics also have the adjusted_count attribute when appropriate
+
+	tests := []struct {
+		name           string
+		tracestate     string
+		expectAdjusted bool
+	}{
+		{
+			name:           "events with valid tracestate",
+			tracestate:     "ot=th:8",
+			expectAdjusted: true,
+		},
+		{
+			name:           "events without tracestate",
+			tracestate:     "",
+			expectAdjusted: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := newConnectorImp(nil, disabledHistogramsConfig, disabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), true)
+			require.NoError(t, err)
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			err = p.Start(ctx, componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+			// buildSampleTraceWithTracestate creates spans with events via initSpan
+			traces := buildSampleTraceWithTracestate(tt.tracestate)
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			// Build metrics twice to get actual values
+			_ = p.buildMetrics()
+			receivedMetrics := p.buildMetrics()
+
+			require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+			// Find the events metric
+			found := false
+			for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+				rm := receivedMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						if m.Name() == metricNameEvents {
+							require.Equal(t, pmetric.MetricTypeSum, m.Type())
+							dps := m.Sum().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+
+								assert.True(t, hasAttr, "sampling.method attribute should always be present")
+								if tt.expectAdjusted {
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated for events with valid tracestate")
+								} else {
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted for events without tracestate")
+								}
+								found = true
+							}
+						}
+					}
+				}
+			}
+			assert.True(t, found, "should have found events metric")
+		})
+	}
+}
+
+func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
+	// Test that metric values are correctly extrapolated based on tracestate sampling probability.
+	// This is a functional test that verifies the actual numeric values of metrics.
+	//
+	// buildSampleTraceWithTracestate creates:
+	// - service-a: 2 spans (1 server kind, 1 client kind) - each has 1 event
+	// - service-b: 1 span (server kind with error status) - has 1 event
+	//
+	// For th:8 (50% sampling), adjusted count = 2, so each span contributes 2 to metrics.
+
+	tests := []struct {
+		name                  string
+		tracestate            string
+		expectedAdjustedCount int64 // expected count per span (1 for no extrapolation, 2 for 50%, 4 for 25%)
+		expectExtrapolated    bool  // whether metrics should have is_extrapolated attribute
+	}{
+		{
+			name:                  "th:8 (50% sampling) - adjusted count 2",
+			tracestate:            "ot=th:8",
+			expectedAdjustedCount: 2,
+			expectExtrapolated:    true,
+		},
+		{
+			name:                  "th:c (25% sampling) - adjusted count 4",
+			tracestate:            "ot=th:c",
+			expectedAdjustedCount: 4,
+			expectExtrapolated:    true,
+		},
+		{
+			name:                  "no tracestate - no extrapolation",
+			tracestate:            "",
+			expectedAdjustedCount: 1,
+			expectExtrapolated:    false,
+		},
+		{
+			name:                  "tracestate without th field - no extrapolation",
+			tracestate:            "ot=rv:abcdabcdabcdff",
+			expectedAdjustedCount: 1,
+			expectExtrapolated:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Use explicit histograms and events enabled to test all metric types
+			p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), true)
+			require.NoError(t, err)
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			err = p.Start(ctx, componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+			traces := buildSampleTraceWithTracestate(tt.tracestate)
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			// First call buildMetrics() emits zero value, second call emits actual value
+			_ = p.buildMetrics()
+			receivedMetrics := p.buildMetrics()
+
+			require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+			// Track totals across all services for verification
+			var totalCalls int64
+			var totalHistogramCount uint64
+			var totalEvents int64
+
+			for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+				rm := receivedMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						switch m.Name() {
+						case metricNameCalls:
+							require.Equal(t, pmetric.MetricTypeSum, m.Type())
+							dps := m.Sum().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								totalCalls += dp.IntValue()
+
+								// Verify sampling.method attribute
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+								assert.True(t, hasAttr, "calls metric should always have sampling.method attribute")
+								if tt.expectExtrapolated {
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated")
+								} else {
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted")
+								}
+							}
+
+						case metricNameDuration:
+							require.Equal(t, pmetric.MetricTypeHistogram, m.Type())
+							dps := m.Histogram().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								totalHistogramCount += dp.Count()
+
+								// Verify sampling.method attribute
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+								assert.True(t, hasAttr, "histogram metric should always have sampling.method attribute")
+								if tt.expectExtrapolated {
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated")
+								} else {
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted")
+								}
+							}
+
+						case metricNameEvents:
+							require.Equal(t, pmetric.MetricTypeSum, m.Type())
+							dps := m.Sum().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								totalEvents += dp.IntValue()
+
+								// Verify sampling.method attribute
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+								assert.True(t, hasAttr, "events metric should always have sampling.method attribute")
+								if tt.expectExtrapolated {
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated")
+								} else {
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted")
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// buildSampleTraceWithTracestate creates 3 spans total (2 in service-a, 1 in service-b)
+			// Each span should contribute expectedAdjustedCount to the total
+			expectedTotalSpans := int64(3)
+			expectedTotalCalls := expectedTotalSpans * tt.expectedAdjustedCount
+			expectedTotalHistogramCount := uint64(expectedTotalSpans) * uint64(tt.expectedAdjustedCount)
+
+			// Each span has 1 event (added by initSpan), so events = spans * adjustedCount
+			expectedTotalEvents := expectedTotalSpans * tt.expectedAdjustedCount
+
+			assert.Equal(t, expectedTotalCalls, totalCalls,
+				"total calls should be %d spans × %d adjusted count = %d",
+				expectedTotalSpans, tt.expectedAdjustedCount, expectedTotalCalls)
+
+			assert.Equal(t, expectedTotalHistogramCount, totalHistogramCount,
+				"total histogram count should be %d spans × %d adjusted count = %d",
+				expectedTotalSpans, tt.expectedAdjustedCount, expectedTotalHistogramCount)
+
+			assert.Equal(t, expectedTotalEvents, totalEvents,
+				"total events should be %d spans × %d adjusted count = %d (each span has 1 event)",
+				expectedTotalSpans, tt.expectedAdjustedCount, expectedTotalEvents)
+		})
+	}
+}
+
+func TestConsumeTracesWithMixedTracestate_DistinctMetrics(t *testing.T) {
+	// Test that spans with mixed tracestate (some with "ot=th:" key, some without) generate
+	// two distinct metrics when enable_metrics_sampling_method is true.
+	// Spans are identical in all other aspects: same service, name, kind, status.
+	traces := buildSampleTraceWithMixedTracestate()
+
+	p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), true)
+	require.NoError(t, err)
+
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
+	err = p.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+	err = p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+
+	_ = p.buildMetrics()
+	receivedMetrics := p.buildMetrics()
+
+	require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+	// Count data points by sampling.method for calls, duration, and events metrics
+	var extrapolatedCalls, countedCalls int
+	var extrapolatedHistogram, countedHistogram int
+	var extrapolatedEvents, countedEvents int
+
+	for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+		rm := receivedMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				switch m.Name() {
+				case metricNameCalls:
+					dps := m.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+						require.True(t, hasAttr, "calls metric should have sampling.method attribute")
+						switch val.Str() {
+						case "extrapolated":
+							extrapolatedCalls++
+						case "counted":
+							countedCalls++
+						}
+					}
+				case metricNameDuration:
+					dps := m.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+						require.True(t, hasAttr, "histogram metric should have sampling.method attribute")
+						switch val.Str() {
+						case "extrapolated":
+							extrapolatedHistogram++
+						case "counted":
+							countedHistogram++
+						}
+					}
+				case metricNameEvents:
+					dps := m.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+						require.True(t, hasAttr, "events metric should have sampling.method attribute")
+						switch val.Str() {
+						case "extrapolated":
+							extrapolatedEvents++
+						case "counted":
+							countedEvents++
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Should have exactly one metric for each sampling method (two distinct metrics)
+	assert.Equal(t, 1, extrapolatedCalls, "should have one calls metric with sampling.method=extrapolated")
+	assert.Equal(t, 1, countedCalls, "should have one calls metric with sampling.method=counted")
+	assert.Equal(t, 1, extrapolatedHistogram, "should have one duration metric with sampling.method=extrapolated")
+	assert.Equal(t, 1, countedHistogram, "should have one duration metric with sampling.method=counted")
+	assert.Equal(t, 1, extrapolatedEvents, "should have one events metric with sampling.method=extrapolated")
+	assert.Equal(t, 1, countedEvents, "should have one events metric with sampling.method=counted")
+}
+
+func TestConsumeTracesWithMixedTracestate_SingleMetric(t *testing.T) {
+	// Same setup as TestConsumeTracesWithMixedTracestate_DistinctMetrics, but with
+	// enable_metrics_sampling_method set to false. All spans aggregate into a single metric.
+	traces := buildSampleTraceWithMixedTracestate()
+
+	p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+	require.NoError(t, err)
+
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
+	err = p.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+	err = p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+
+	_ = p.buildMetrics()
+	receivedMetrics := p.buildMetrics()
+
+	require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+	var callsDataPoints, histogramDataPoints, eventsDataPoints int
+	samplingMethodFound := false
+
+	for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+		rm := receivedMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				switch m.Name() {
+				case metricNameCalls:
+					dps := m.Sum().DataPoints()
+					callsDataPoints = dps.Len()
+					for l := 0; l < dps.Len(); l++ {
+						_, ok := dps.At(l).Attributes().Get(metricAttrSamplingMethod)
+						samplingMethodFound = samplingMethodFound || ok
+					}
+				case metricNameDuration:
+					dps := m.Histogram().DataPoints()
+					histogramDataPoints = dps.Len()
+					for l := 0; l < dps.Len(); l++ {
+						_, ok := dps.At(l).Attributes().Get(metricAttrSamplingMethod)
+						samplingMethodFound = samplingMethodFound || ok
+					}
+				case metricNameEvents:
+					dps := m.Sum().DataPoints()
+					eventsDataPoints = dps.Len()
+					for l := 0; l < dps.Len(); l++ {
+						_, ok := dps.At(l).Attributes().Get(metricAttrSamplingMethod)
+						samplingMethodFound = samplingMethodFound || ok
+					}
+				}
+			}
+		}
+	}
+
+	assert.Equal(t, 1, callsDataPoints, "should have single calls metric (all spans aggregated)")
+	assert.Equal(t, 1, histogramDataPoints, "should have single duration metric (all spans aggregated)")
+	assert.Equal(t, 1, eventsDataPoints, "should have single events metric (all spans aggregated)")
+	assert.False(t, samplingMethodFound, "should not have sampling.method attribute when enable_metrics_sampling_method is false")
+}
+
+// buildSampleTraceWithMixedTracestate builds a trace with three spans that are identical in all aspects
+// (service, name, kind, status) except tracestate: one has "ot=th:8" (50% sampling), one has none, one has "invalid-state".
+func buildSampleTraceWithMixedTracestate() ptrace.Traces {
+	traces := ptrace.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+					tracestate: "ot=th:8",
+				},
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20},
+					tracestate: "",
+				},
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28},
+					tracestate: "invalid-state",
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
+	return traces
+}
+
+// buildSampleTraceWithTracestate builds a sample trace similar to buildSampleTrace,
+// but with the specified tracestate set on all spans.
+func buildSampleTraceWithTracestate(tracestate string) ptrace.Traces {
+	traces := ptrace.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+					tracestate: tracestate,
+				},
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindClient,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
+					tracestate: tracestate,
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+					traceID:    [16]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+					tracestate: tracestate,
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
+	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
+	return traces
+}
+
+// buildLargeSampleTraceWithTracestate builds a larger trace with many spans for more realistic benchmarks.
+func buildLargeSampleTraceWithTracestate(numSpans int, tracestate string) ptrace.Traces {
+	traces := ptrace.NewTraces()
+
+	spans := make([]span, numSpans)
+	kinds := []ptrace.SpanKind{ptrace.SpanKindServer, ptrace.SpanKindClient, ptrace.SpanKindInternal}
+	statuses := []ptrace.StatusCode{ptrace.StatusCodeOk, ptrace.StatusCodeError, ptrace.StatusCodeUnset}
+
+	for i := range numSpans {
+		spans[i] = span{
+			name:       fmt.Sprintf("/endpoint-%d", i%10),
+			kind:       kinds[i%len(kinds)],
+			statusCode: statuses[i%len(statuses)],
+			traceID:    [16]byte{byte(i), 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+			spanID:     [8]byte{byte(i), 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+			tracestate: tracestate,
+		}
+	}
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans:       spans,
+		}, traces.ResourceSpans().AppendEmpty())
+
+	return traces
+}
+
+// BenchmarkConnectorConsumeTraces_WithTracestate benchmarks ConsumeTraces with ot.th tracestate values.
+func BenchmarkConnectorConsumeTraces_WithTracestate(b *testing.B) {
+	benchmarks := []struct {
+		name       string
+		tracestate string
+	}{
+		{
+			name:       "NoTracestate",
+			tracestate: "",
+		},
+		{
+			name:       "Tracestate_th_8_50pct_sampling",
+			tracestate: "ot=th:8",
+		},
+		{
+			name:       "Tracestate_th_c_25pct_sampling",
+			tracestate: "ot=th:c",
+		},
+		{
+			name:       "Tracestate_th_1_6pct_sampling",
+			tracestate: "ot=th:1",
+		},
+		{
+			name:       "Tracestate_no_th_field",
+			tracestate: "ot=rv:abcdabcdabcdff",
+		},
+		{
+			name:       "Tracestate_complex",
+			tracestate: "ot=th:c;rv:abcdabcdabcdff,vendor1=value1",
+		},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+			require.NoError(b, err)
+
+			traces := buildSampleTraceWithTracestate(bm.tracestate)
+			ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+			b.ResetTimer()
+			for b.Loop() {
+				_ = conn.ConsumeTraces(ctx, traces)
+			}
+		})
+	}
+}
+
+// BenchmarkConnectorConsumeTraces_WithTracestate_LargeTrace benchmarks ConsumeTraces with larger traces.
+func BenchmarkConnectorConsumeTraces_WithTracestate_LargeTrace(b *testing.B) {
+	spanCounts := []int{10, 100, 500}
+	tracestates := []struct {
+		name  string
+		value string
+	}{
+		{"NoTracestate", ""},
+		{"Tracestate_th_8", "ot=th:8"},
+	}
+
+	for _, sc := range spanCounts {
+		for _, ts := range tracestates {
+			b.Run(fmt.Sprintf("Spans_%d/%s", sc, ts.name), func(b *testing.B) {
+				conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+				require.NoError(b, err)
+
+				traces := buildLargeSampleTraceWithTracestate(sc, ts.value)
+				ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+				b.ResetTimer()
+				for b.Loop() {
+					_ = conn.ConsumeTraces(ctx, traces)
+				}
+			})
+		}
+	}
+}
+
+// BenchmarkConnectorConsumeTraces_WithTracestate_Parallel benchmarks parallel ConsumeTraces calls.
+func BenchmarkConnectorConsumeTraces_WithTracestate_Parallel(b *testing.B) {
+	benchmarks := []struct {
+		name       string
+		tracestate string
+	}{
+		{
+			name:       "NoTracestate",
+			tracestate: "",
+		},
+		{
+			name:       "Tracestate_th_8",
+			tracestate: "ot=th:8",
+		},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+			require.NoError(b, err)
+
+			ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+			b.ResetTimer()
+			b.RunParallel(func(pb *testing.PB) {
+				// Each goroutine gets its own trace to avoid contention
+				traces := buildSampleTraceWithTracestate(bm.tracestate)
+				for pb.Next() {
+					_ = conn.ConsumeTraces(ctx, traces)
+				}
+			})
+		})
+	}
+}
+
+// BenchmarkConnectorConsumeTraces_WithTracestate_ExponentialHistogram benchmarks with exponential histograms.
+func BenchmarkConnectorConsumeTraces_WithTracestate_ExponentialHistogram(b *testing.B) {
+	benchmarks := []struct {
+		name       string
+		tracestate string
+	}{
+		{
+			name:       "NoTracestate",
+			tracestate: "",
+		},
+		{
+			name:       "Tracestate_th_8",
+			tracestate: "ot=th:8",
+		},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			conn, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+			require.NoError(b, err)
+
+			traces := buildSampleTraceWithTracestate(bm.tracestate)
+			ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+			b.ResetTimer()
+			for b.Loop() {
+				_ = conn.ConsumeTraces(ctx, traces)
+			}
+		})
+	}
+}
+
+// buildTraceWithDifferentTracestates builds a trace with 3 spans, each with a different tracestate.
+// This creates a worst-case scenario for the adjusted count cache (all cache misses).
+func buildTraceWithDifferentTracestates() ptrace.Traces {
+	traces := ptrace.NewTraces()
+
+	// Service A: 2 spans with different tracestates
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+					tracestate: "ot=th:8;rv:abcd01", // Different rv value
+				},
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindClient,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
+					tracestate: "ot=th:8;rv:abcd02", // Different rv value
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
+
+	// Service B: 1 span with yet another different tracestate
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+					traceID:    [16]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+					tracestate: "ot=th:8;rv:abcd03", // Different rv value
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
+
+	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
+	return traces
+}
+
+// BenchmarkConnectorConsumeTraces_AdjustedCountCache compares ConsumeTraces performance
+// with adjusted count cache hits for traces with the same tracestate and misses for traces with different tracestates.
+func BenchmarkConnectorConsumeTraces_AdjustedCountCache(b *testing.B) {
+	b.Run("CacheHit", func(b *testing.B) {
+		conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+		require.NoError(b, err)
+
+		traces := buildSampleTraceWithTracestate("ot=th:8;rv:abcd01")
+		ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+		b.ReportAllocs()
+		b.ResetTimer()
+		for b.Loop() {
+			_ = conn.ConsumeTraces(ctx, traces)
+		}
+	})
+
+	b.Run("CacheMiss", func(b *testing.B) {
+		conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+		require.NoError(b, err)
+
+		traces := buildTraceWithDifferentTracestates()
+		ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+		b.ReportAllocs()
+		b.ResetTimer()
+		for b.Loop() {
+			_ = conn.ConsumeTraces(ctx, traces)
+		}
+	})
 }

@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
@@ -31,7 +32,8 @@ func (ReceiverType) Type() component.Type {
 func (ReceiverType) CreateDefaultConfig() component.Config {
 	return &TCPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			Operators: []operator.Config{},
+			Operators:      []operator.Config{},
+			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
 		InputConfig: *tcp.NewConfig(),
 	}

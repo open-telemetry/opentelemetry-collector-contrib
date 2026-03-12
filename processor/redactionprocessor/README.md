@@ -165,11 +165,111 @@ The value is then masked according to the configuration.
 `hash_function` defines the function for hashing values of matched keys or matches in values
 instead of masking them with a fixed string. By default, no hash function is used
 and masking with a fixed string is performed. The supported hash functions
-are `md5`, `sha1` and `sha3` (SHA-256).
+are `md5`, `sha1`, `sha3` (SHA-256), `hmac-sha256`, and `hmac-sha512`.
+
+### HMAC Hash Functions
+
+For enhanced security, especially when dealing with low-entropy data like IP addresses, HMAC (Hash-based Message Authentication Code) hash functions are recommended over simple hash functions like MD5, SHA1, or SHA3.
+
+#### Configuration Example
+
+```yaml
+processors:
+  redaction:
+    allow_all_keys: true
+    blocked_values:
+      - "(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"  # IPv4 addresses
+      - "(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}"  # IPv6 addresses
+    hash_function: hmac-sha256  # or hmac-sha512
+    hmac_key: "${env:REDACTION_SECRET_KEY}"  # Load from environment variable
+    summary: silent
+```
+
+## Audit Trail
+
+When `summary` is set to `debug` or `info`, the processor appends diagnostic
+attributes to each span, log record, or metric datapoint describing the actions
+it took. Setting `summary: silent` suppresses all audit attributes.
+
+### Attribute-level audit (spans, logs, metric datapoints)
+
+These attributes are added to the record's attribute map:
+
+| Attribute | `info` | `debug` | Description |
+|---|:---:|:---:|---|
+| `redaction.redacted.keys` | | ✓ | Comma-separated list of attribute keys removed because they were not in `allowed_keys` |
+| `redaction.redacted.count` | ✓ | ✓ | Number of attributes removed |
+| `redaction.masked.keys` | | ✓ | Comma-separated list of attribute keys whose values matched a `blocked_values` pattern and were masked |
+| `redaction.masked.count` | ✓ | ✓ | Number of attribute values masked |
+| `redaction.allowed.keys` | | ✓ | Comma-separated list of attribute keys that passed through |
+| `redaction.allowed.count` | ✓ | ✓ | Number of attributes allowed through |
+| `redaction.ignored.count` | ✓ | ✓ | Number of attributes skipped due to `ignored_keys` or `ignored_key_patterns` |
+
+### Log body audit
+
+For log records whose body is a map, the processor additionally appends audit
+attributes into the body map itself:
+
+| Attribute | `info` | `debug` | Description |
+|---|:---:|:---:|---|
+| `redaction.body.redacted.keys` | | ✓ | Comma-separated list of body map keys removed |
+| `redaction.body.redacted.count` | ✓ | ✓ | Number of body map keys removed |
+| `redaction.body.masked.keys` | | ✓ | Comma-separated list of body map keys whose values were masked |
+| `redaction.body.masked.count` | ✓ | ✓ | Number of body map values masked |
+| `redaction.body.allowed.keys` | | ✓ | Comma-separated list of body map keys permitted |
+| `redaction.body.allowed.count` | ✓ | ✓ | Number of body map keys allowed through |
+| `redaction.body.ignored.count` | ✓ | ✓ | Number of body map keys ignored |
+
+### Example
+
+Given this configuration:
+
+```yaml
+processors:
+  redaction:
+    allowed_keys:
+      - description
+      - email
+    blocked_values:
+      - "4[0-9]{12}(?:[0-9]{3})?"  ## Visa credit card number
+    summary: debug
+```
+
+A span arriving with these attributes:
+
+| Key | Value |
+|---|---|
+| `description` | `"payment processed"` |
+| `email` | `"user@example.com"` |
+| `credit_card` | `"4111111111111111"` |
+| `internal_id` | `"abc-123"` |
+
+Would be emitted with:
+
+| Key | Value |
+|---|---|
+| `description` | `"payment processed"` |
+| `email` | `"user@example.com"` |
+| `redaction.redacted.keys` | `"credit_card,internal_id"` |
+| `redaction.redacted.count` | `2` |
+| `redaction.allowed.keys` | `"description,email"` |
+| `redaction.allowed.count` | `2` |
+
+Note that `credit_card` was **removed** (not masked) because it was not in
+`allowed_keys` — its value never reached the `blocked_values` check. If
+`credit_card` had been in `allowed_keys`, its value `4111111111111111` would
+have matched the Visa pattern and `redaction.masked.keys` would show
+`"credit_card"` instead.
+
+Attributes with a zero count (e.g. `redaction.masked.count`, `redaction.ignored.count`) are
+**not emitted** — the processor only writes audit attributes when at least one relevant
+action occurred.
+
+## URL Sanitization
 
 The `url_sanitizer` configuration enables sanitization of URLs in specified attributes by removing potentially sensitive information like UUIDs, timestamps, and other non-essential path segments. This is particularly useful for reducing cardinality in telemetry data while preserving the essential parts of URLs for troubleshooting.
 
-### Span Name Sanitization
+## Span Name Sanitization
 
 By default, when URL sanitization is enabled, span names for client and server span types that contain "/" characters are automatically sanitized. This helps reduce cardinality issues caused by high-variability URL paths in span names while preserving essential routing information.
 
@@ -201,7 +301,7 @@ Example configuration with database sanitization:
 processors:
   redaction:
     # ... other redaction settings ...
-    
+
     # Database sanitization configuration
     db_sanitizer:
       # sanitize_span_name controls whether span names should be sanitized for database queries (default: true)
@@ -216,7 +316,7 @@ processors:
         attributes: ["db.statement", "redis.command"]
       memcached:
         enabled: true
-        attributes: ["db.statement", "memcached.command"] 
+        attributes: ["db.statement", "memcached.command"]
       mongo:
         enabled: true
         attributes: ["db.statement", "mongodb.query"]
