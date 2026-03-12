@@ -238,6 +238,9 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 
 		route.statementContext = item.Context
 		if item.Context == "request" {
+			r.logger.Warn("The 'request' context is deprecated. Use 'otelcol.client.metadata[\"key\"][0]' "+
+				"(HTTP/client metadata) or 'otelcol.grpc.metadata[\"key\"][0]' (gRPC metadata) instead.",
+				zap.String("condition", item.Condition))
 			route.requestCondition, err = parseRequestCondition(item.Condition)
 			if err != nil {
 				return err

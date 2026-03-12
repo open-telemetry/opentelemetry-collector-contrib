@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestContextInference(t *testing.T) {
@@ -142,6 +144,81 @@ func TestContextInference(t *testing.T) {
 			assert.Equal(t, tc.expectedContext, actualContext)
 		})
 	}
+}
+
+func TestRequestContextCannotBeInferred(t *testing.T) {
+	// The `request` context uses a special grammar (`request["key"] == "value"`) that
+	// is not valid OTTL syntax. It cannot be inferred from a condition; it must be
+	// specified explicitly via the context field. This test enforces that invariant:
+	// omitting context with a request-style condition must produce a parse error.
+	routeTable := []RoutingTableItem{{
+		Context:   "",
+		Condition: `request["X-Tenant"] == "acme"`,
+		Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalLogs, "test")},
+	}}
+	sink := new(consumertest.LogsSink)
+	_, err := newRouter(routeTable, nil,
+		func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
+		componenttest.NewNopTelemetrySettings())
+	require.Error(t, err)
+}
+
+func TestOtelcolPathsParseWithExplicitContext(t *testing.T) {
+	// otelcol.* paths require explicit context — verify they parse correctly.
+	// Context inference does not work for otelcol.* paths (the OTTL inferrer
+	// sees "otelcol" as a context prefix but it is not a registered context).
+	testCases := []struct {
+		name      string
+		condition string
+	}{
+		{
+			name:      "otelcol.client.metadata",
+			condition: `otelcol.client.metadata["X-Tenant"][0] == "acme"`,
+		},
+		{
+			name:      "otelcol.grpc.metadata",
+			condition: `otelcol.grpc.metadata["x-tenant"][0] == "acme"`,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			routeTable := []RoutingTableItem{{
+				Context:   "resource",
+				Condition: tc.condition,
+				Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalLogs, "test")},
+			}}
+			sink := new(consumertest.LogsSink)
+			router, err := newRouter(routeTable, nil,
+				func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
+				componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			require.Len(t, router.routeSlice, 1)
+			assert.Equal(t, "resource", router.routeSlice[0].statementContext)
+		})
+	}
+}
+
+func TestRequestContextDeprecationWarning(t *testing.T) {
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(observedZapCore)
+
+	routeTable := []RoutingTableItem{{
+		Context:   "request",
+		Condition: `request["X-Tenant"] == "acme"`,
+		Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalLogs, "test")},
+	}}
+	sink := new(consumertest.LogsSink)
+	_, err := newRouter(routeTable, nil,
+		func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
+		settings)
+	require.NoError(t, err)
+
+	require.Equal(t, 1, observedLogs.Len())
+	logEntry := observedLogs.All()[0]
+	assert.Equal(t, zap.WarnLevel, logEntry.Level)
+	assert.Contains(t, logEntry.Message, "deprecated")
+	assert.Equal(t, `request["X-Tenant"] == "acme"`, logEntry.ContextMap()["condition"])
 }
 
 func TestMixedContextsInRoutingTable(t *testing.T) {

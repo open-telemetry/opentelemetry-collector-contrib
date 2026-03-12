@@ -1002,6 +1002,84 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			),
 			expectSinkD: plog.Logs{},
 		},
+		// otelcol.client.metadata routes (HTTP client metadata; requires explicit context since
+		// otelcol.* paths cannot be inferred — use context: "resource" explicitly)
+		{
+			name: "otelcol_client_metadata/http_match",
+			cfg: testConfig(
+				withRoute("resource", `otelcol.client.metadata["X-Tenant"][0] == "acme"`, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "otelcol_client_metadata/http_no_match",
+			cfg: testConfig(
+				withRoute("resource", `otelcol.client.metadata["X-Tenant"][0] == "acme"`, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"other"}}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "EF"),
+		},
+		{
+			name: "otelcol_client_metadata/no_metadata",
+			cfg: testConfig(
+				withRoute("resource", `otelcol.client.metadata["X-Tenant"][0] == "acme"`, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         t.Context(),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "EF"),
+		},
+		// otelcol.[0] only checks the first value — unlike legacy request context which
+		// checks ALL values. This documents the behavioral difference for migrating users.
+		{
+			name: "otelcol_client_metadata/http_value_not_at_index0",
+			cfg: testConfig(
+				withRoute("resource", `otelcol.client.metadata["X-Tenant"][0] == "acme"`, idSink0),
+				withDefault(idSinkD),
+			),
+			// "acme" is at index 1 — otelcol.[0] only checks first value, so no match
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"other", "acme"}}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "EF"),
+		},
+		// otelcol.grpc.metadata routes (gRPC metadata; gRPC lowercases keys)
+		{
+			name: "otelcol_grpc_metadata/grpc_match",
+			cfg: testConfig(
+				withRoute("resource", `otelcol.grpc.metadata["x-tenant"][0] == "acme"`, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"x-tenant": "acme"}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "otelcol_grpc_metadata/grpc_no_match",
+			cfg: testConfig(
+				withRoute("resource", `otelcol.grpc.metadata["x-tenant"][0] == "acme"`, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"x-tenant": "other"}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "EF"),
+		},
 	}
 
 	for _, tt := range testCases {

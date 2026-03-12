@@ -69,6 +69,9 @@ This approach makes it immediately clear which attributes you're accessing witho
 | Log | `log.` | `log.body`, `log.attributes["level"]` |
 | Metric | `metric.` | `metric.name` |
 | Datapoint | `datapoint.` | `datapoint.attributes["host"]` |
+| Any (requires explicit context) | `otelcol.` | `otelcol.client.metadata["X-Tenant"][0]`, `otelcol.grpc.metadata["x-tenant"][0]` |
+
+The `otelcol.client.metadata` and `otelcol.grpc.metadata` paths provide access to incoming HTTP and gRPC request metadata respectively, and are valid in all signal contexts. **Important:** Context inference does not work for `otelcol.*` paths — you must set the `context` field explicitly (e.g., `context: resource`). Note that gRPC lowercases all metadata keys.
 
 **Using explicit context:** If you prefer, you can still set the `context` field explicitly. This can be useful when working with unqualified paths:
 
@@ -83,7 +86,7 @@ This approach makes it immediately clear which attributes you're accessing witho
 
 ### Limitations
 
-- The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`. (In the future, this grammar may be expanded to support more complex conditions.)
+- **Deprecated:** The `request` context is deprecated. Use `otelcol.client.metadata["key"][0]` (HTTP/client metadata) or `otelcol.grpc.metadata["key"][0]` (gRPC metadata) instead. These OTTL paths are supported in all signal contexts and work with context inference. A warning will be logged when the `request` context is used. The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`.
 - When using context inference without an explicit `context` field, the inferred context must be compatible with the pipeline signal type (e.g., `span` context can only be used in traces pipelines).
 
 ### Supported [OTTL] functions
@@ -163,12 +166,19 @@ connectors:
   routing:
     default_pipelines: [logs/other]
     table:
-      - context: request
-        condition: request["X-Tenant"] == "acme"
+      # Modern form: use otelcol.client.metadata for HTTP or otelcol.grpc.metadata for gRPC.
+      # Note: explicit context is required (otelcol.* paths cannot be inferred).
+      # Note: gRPC lowercases all metadata keys.
+      - context: resource
+        condition: otelcol.client.metadata["X-Tenant"][0] == "acme"
         pipelines: [logs/acme]
-      - context: request
-        condition: request["X-Tenant"] == "ecorp"
+      - context: resource
+        condition: otelcol.client.metadata["X-Tenant"][0] == "ecorp"
         pipelines: [logs/ecorp]
+      # Deprecated form (still works but a warning will be logged):
+      # - context: request
+      #   condition: request["X-Tenant"] == "acme"
+      #   pipelines: [logs/acme]
 
 service:
   pipelines:
@@ -290,11 +300,13 @@ connectors:
       - context: log
         condition: severity_number < SEVERITY_NUMBER_ERROR
         pipelines: [logs/cheap]
-      - context: request
-        condition: request["X-Tenant"] == "acme"
+      # Modern form using otelcol.client.metadata (works for HTTP; use otelcol.grpc.metadata for gRPC).
+      # Explicit context is required for otelcol.* paths.
+      - context: resource
+        condition: otelcol.client.metadata["X-Tenant"][0] == "acme"
         pipelines: [logs/acme]
-      - context: request
-        condition: request["X-Tenant"] == "ecorp"
+      - context: resource
+        condition: otelcol.client.metadata["X-Tenant"][0] == "ecorp"
         pipelines: [logs/ecorp]
 
 service:
