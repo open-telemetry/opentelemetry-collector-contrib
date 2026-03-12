@@ -30,6 +30,7 @@ resourceMetrics:
                     - key: profile.foo
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:
@@ -50,6 +51,7 @@ resourceMetrics:
               aggregationTemporality: 1
               dataPoints:
                 - asInt: "3"
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:

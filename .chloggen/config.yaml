@@ -87,7 +87,7 @@ components:
     - extension/basicauth
     - extension/bearertokenauth
     - extension/cfgarden_observer
-    - extension/cgroupruntime
+    - extension/cgroup_runtime
     - extension/datadog
     - extension/db_storage
     - extension/docker_observer
