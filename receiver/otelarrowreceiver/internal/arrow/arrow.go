@@ -297,6 +297,27 @@ var (
 	arrowLogsMethod    = gRPCName(arrowpb.ArrowLogsService_ServiceDesc)
 )
 
+type signalType int
+
+const (
+	signalTraces signalType = iota + 1
+	signalMetrics
+	signalLogs
+)
+
+func signalTypeFromMethod(method string) signalType {
+	switch method {
+	case arrowTracesMethod:
+		return signalTraces
+	case arrowMetricsMethod:
+		return signalMetrics
+	case arrowLogsMethod:
+		return signalLogs
+	default:
+		return 0
+	}
+}
+
 func (r *Receiver) ArrowTraces(serverStream arrowpb.ArrowTracesService_ArrowTracesServer) error {
 	return r.anyStream(serverStream, arrowTracesMethod)
 }
@@ -600,7 +621,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		}
 	}
 
-	data, numItems, uncompSize, consumeErr := r.consumeBatch(ac, req)
+	data, numItems, uncompSize, consumeErr := r.consumeBatch(ac, req, signalTypeFromMethod(method))
 
 	if consumeErr != nil {
 		if errors.Is(consumeErr, arrowRecord.ErrConsumerMemoryLimit) {
@@ -749,14 +770,14 @@ func (r *receiverStream) srvSendLoop(ctx context.Context, serverStream anyStream
 // consumeBatch applies the batch to the Arrow Consumer, returns a
 // slice of pdata objects of the corresponding data type as `any`.
 // along with the number of items and true uncompressed size.
-func (r *Receiver) consumeBatch(arrowConsumer arrowRecord.ConsumerAPI, records *arrowpb.BatchArrowRecords) (retData any, numItems int, uncompSize int64, retErr error) {
-	payloads := records.GetArrowPayloads()
-	if len(payloads) == 0 {
-		return nil, 0, 0, nil
-	}
-
-	switch payloads[0].Type {
-	case arrowpb.ArrowPayloadType_UNIVARIATE_METRICS:
+//
+// The signal type is determined by the gRPC service method (e.g.,
+// ArrowTraces, ArrowLogs, ArrowMetrics) rather than by inspecting
+// payload positions. This ensures correct behavior regardless of
+// payload ordering within the batch.
+func (r *Receiver) consumeBatch(arrowConsumer arrowRecord.ConsumerAPI, records *arrowpb.BatchArrowRecords, sig signalType) (retData any, numItems int, uncompSize int64, retErr error) {
+	switch sig {
+	case signalMetrics:
 		if r.Metrics() == nil {
 			return nil, 0, 0, status.Error(codes.Unimplemented, "metrics service not available")
 		}
@@ -772,7 +793,7 @@ func (r *Receiver) consumeBatch(arrowConsumer arrowRecord.ConsumerAPI, records *
 		retData = data
 		retErr = err
 
-	case arrowpb.ArrowPayloadType_LOGS:
+	case signalLogs:
 		if r.Logs() == nil {
 			return nil, 0, 0, status.Error(codes.Unimplemented, "logs service not available")
 		}
@@ -788,7 +809,7 @@ func (r *Receiver) consumeBatch(arrowConsumer arrowRecord.ConsumerAPI, records *
 		retData = data
 		retErr = err
 
-	case arrowpb.ArrowPayloadType_SPANS:
+	case signalTraces:
 		if r.Traces() == nil {
 			return nil, 0, 0, status.Error(codes.Unimplemented, "traces service not available")
 		}

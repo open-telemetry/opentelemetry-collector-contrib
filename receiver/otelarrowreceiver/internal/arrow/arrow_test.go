@@ -400,6 +400,39 @@ func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq 
 	}()
 }
 
+func (ctc *commonTestCase) startWithMethod(method string, newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *extensionauth.Server)) {
+	var authServer extensionauth.Server
+	var gsettings configgrpc.ServerConfig
+	for _, gf := range opts {
+		gf(&gsettings, &authServer)
+	}
+	rc := receiver.Settings{
+		TelemetrySettings: ctc.telset,
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.NewID(component.MustNewType("arrowtest")),
+		Transport:              "grpc",
+		ReceiverCreateSettings: rc,
+	})
+	require.NoError(ctc.T, err)
+
+	rcvr, err := New(
+		ctc.consumers,
+		rc,
+		obsrecv,
+		gsettings,
+		authServer,
+		newConsumer,
+		bq,
+		netstats.Noop{},
+	)
+	require.NoError(ctc.T, err)
+	go func() {
+		ctc.streamErr <- rcvr.anyStream(ctc.stream, method)
+	}()
+}
+
 func requireCanceledStatus(t *testing.T, err error) {
 	requireStatus(t, codes.Canceled, err)
 }
@@ -536,7 +569,7 @@ func TestReceiverLogs(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
 
-	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.startWithMethod(arrowLogsMethod, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.Equal(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
@@ -556,7 +589,7 @@ func TestReceiverMetrics(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
 
-	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.startWithMethod(arrowMetricsMethod, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	otelAssert.Equiv(stdTesting, []json.Marshaler{
@@ -591,7 +624,7 @@ func TestReceiverSendError(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(status.Errorf(codes.Unavailable, "test send error"))
 
-	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.startWithMethod(arrowLogsMethod, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.EqualValues(t, ld, (<-ctc.consume).Data)
@@ -638,7 +671,7 @@ func TestReceiverTimeoutError(t *testing.T) {
 	batch.Headers = make([]byte, hpb.Len())
 	copy(batch.Headers, hpb.Bytes())
 
-	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.startWithMethod(arrowLogsMethod, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.EqualValues(t, ld, (<-ctc.consume).Data)
@@ -659,19 +692,23 @@ func TestReceiverTimeoutError(t *testing.T) {
 func TestReceiverConsumeError(t *testing.T) {
 	stdTesting := otelAssert.NewStdUnitTest(t)
 
-	data := []any{
-		testdata.GenerateTraces(2),
-		testdata.GenerateMetrics(2),
-		testdata.GenerateLogs(2),
+	type testItem struct {
+		data   any
+		method string
+	}
+	items := []testItem{
+		{data: testdata.GenerateTraces(2), method: arrowTracesMethod},
+		{data: testdata.GenerateMetrics(2), method: arrowMetricsMethod},
+		{data: testdata.GenerateLogs(2), method: arrowLogsMethod},
 	}
 
-	for _, item := range data {
+	for _, item := range items {
 		tc := newUnhealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
 		var err error
-		switch input := item.(type) {
+		switch input := item.data.(type) {
 		case ptrace.Traces:
 			batch, err = ctc.testProducer.BatchArrowRecordsFromTraces(input)
 		case plog.Logs:
@@ -687,11 +724,11 @@ func TestReceiverConsumeError(t *testing.T) {
 
 		ctc.stream.EXPECT().Send(statusUnavailableFor(batch.BatchId, "consumer unhealthy")).Times(1).Return(nil)
 
-		ctc.start(ctc.newRealConsumer, defaultBQ())
+		ctc.startWithMethod(item.method, ctc.newRealConsumer, defaultBQ())
 
 		ctc.putBatch(batch, nil)
 
-		switch input := item.(type) {
+		switch input := item.data.(type) {
 		case ptrace.Traces:
 			otelAssert.Equiv(stdTesting, []json.Marshaler{
 				compareJSONTraces{input},
@@ -718,19 +755,23 @@ func TestReceiverConsumeError(t *testing.T) {
 }
 
 func TestReceiverInvalidData(t *testing.T) {
-	data := []any{
-		testdata.GenerateTraces(2),
-		testdata.GenerateMetrics(2),
-		testdata.GenerateLogs(2),
+	type testItem struct {
+		data   any
+		method string
+	}
+	items := []testItem{
+		{data: testdata.GenerateTraces(2), method: arrowTracesMethod},
+		{data: testdata.GenerateMetrics(2), method: arrowMetricsMethod},
+		{data: testdata.GenerateLogs(2), method: arrowLogsMethod},
 	}
 
-	for _, item := range data {
+	for _, item := range items {
 		tc := newHealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
 		var err error
-		switch input := item.(type) {
+		switch input := item.data.(type) {
 		case ptrace.Traces:
 			batch, err = ctc.testProducer.BatchArrowRecordsFromTraces(input)
 		case plog.Logs:
@@ -745,7 +786,7 @@ func TestReceiverInvalidData(t *testing.T) {
 		batch = copyBatch(batch)
 
 		// newErrorConsumer determines the internal error in decoding above
-		ctc.start(ctc.newErrorConsumer, defaultBQ())
+		ctc.startWithMethod(item.method, ctc.newErrorConsumer, defaultBQ())
 		ctc.putBatch(batch, nil)
 
 		err = ctc.wait()
@@ -754,19 +795,23 @@ func TestReceiverInvalidData(t *testing.T) {
 }
 
 func TestReceiverMemoryLimit(t *testing.T) {
-	data := []any{
-		testdata.GenerateTraces(2),
-		testdata.GenerateMetrics(2),
-		testdata.GenerateLogs(2),
+	type testItem struct {
+		data   any
+		method string
+	}
+	items := []testItem{
+		{data: testdata.GenerateTraces(2), method: arrowTracesMethod},
+		{data: testdata.GenerateMetrics(2), method: arrowMetricsMethod},
+		{data: testdata.GenerateLogs(2), method: arrowLogsMethod},
 	}
 
-	for _, item := range data {
+	for _, item := range items {
 		tc := newHealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
 		var err error
-		switch input := item.(type) {
+		switch input := item.data.(type) {
 		case ptrace.Traces:
 			batch, err = ctc.testProducer.BatchArrowRecordsFromTraces(input)
 		case plog.Logs:
@@ -782,12 +827,57 @@ func TestReceiverMemoryLimit(t *testing.T) {
 
 		// The Recv() returns an error, there are no Send() calls.
 
-		ctc.start(ctc.newOOMConsumer, defaultBQ())
+		ctc.startWithMethod(item.method, ctc.newOOMConsumer, defaultBQ())
 		ctc.putBatch(batch, nil)
 
 		err = ctc.wait()
 		requireExhaustedStatus(t, err)
 	}
+}
+
+// TestReceiverPayloadPositionIndependent verifies that the receiver
+// correctly processes data based on the gRPC service method rather than
+// the ArrowPayload.Type field at position 0. This reproduces the bug
+// where a Rust OTAP producer sends payloads with the root payload type
+// not at index 0, causing ErrUnrecognizedPayload with the old logic.
+//
+// The batch payloads are reversed so the root type (e.g. SPANS) is no
+// longer at position 0. The Arrow consumer still decodes correctly
+// because it routes each payload by its own Type field internally.
+func TestReceiverPayloadPositionIndependent(t *testing.T) {
+	stdTesting := otelAssert.NewStdUnitTest(t)
+	tc := newHealthyTestChannel(t)
+	ctc := newCommonTestCase(t, tc)
+
+	td := testdata.GenerateTraces(2)
+	batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
+	require.NoError(t, err)
+
+	batch = copyBatch(batch)
+
+	// Reverse the payload order so that the root payload type (SPANS)
+	// is no longer at position 0. With the old payloads[0].Type logic,
+	// the receiver would see a non-root type (e.g. RESOURCE_ATTRS) at
+	// position 0 and return ErrUnrecognizedPayload.
+	payloads := batch.ArrowPayloads
+	require.Greater(t, len(payloads), 1, "need multiple payloads to test reordering")
+	for i, j := 0, len(payloads)-1; i < j; i, j = i+1, j-1 {
+		payloads[i], payloads[j] = payloads[j], payloads[i]
+	}
+
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+
+	ctc.startWithMethod(arrowTracesMethod, ctc.newRealConsumer, defaultBQ())
+	ctc.putBatch(batch, nil)
+
+	otelAssert.Equiv(stdTesting, []json.Marshaler{
+		compareJSONTraces{td},
+	}, []json.Marshaler{
+		compareJSONTraces{(<-ctc.consume).Data.(ptrace.Traces)},
+	})
+
+	err = ctc.cancelAndWait()
+	requireCanceledStatus(t, err)
 }
 
 func copyBatch(in *arrowpb.BatchArrowRecords) *arrowpb.BatchArrowRecords {
