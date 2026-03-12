@@ -13,8 +13,8 @@ import (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, j *batchv1.Job, ts pcommon.Timestamp) {
-	mb.RecordK8sJobActivePodsDataPoint(ts, int64(j.Status.Active))      //nolint:staticcheck
-	mb.RecordK8sJobFailedPodsDataPoint(ts, int64(j.Status.Failed))      //nolint:staticcheck
+	mb.RecordK8sJobActivePodsDataPoint(ts, int64(j.Status.Active))        //nolint:staticcheck
+	mb.RecordK8sJobFailedPodsDataPoint(ts, int64(j.Status.Failed))        //nolint:staticcheck
 	mb.RecordK8sJobSuccessfulPodsDataPoint(ts, int64(j.Status.Succeeded)) //nolint:staticcheck
 
 	if j.Spec.Completions != nil {

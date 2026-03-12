@@ -28,7 +28,7 @@ func Transform(rs *appsv1.ReplicaSet) *appsv1.ReplicaSet {
 
 func RecordMetrics(mb *metadata.MetricsBuilder, rs *appsv1.ReplicaSet, ts pcommon.Timestamp) {
 	if rs.Spec.Replicas != nil {
-		mb.RecordK8sReplicasetDesiredDataPoint(ts, int64(*rs.Spec.Replicas))           //nolint:staticcheck
+		mb.RecordK8sReplicasetDesiredDataPoint(ts, int64(*rs.Spec.Replicas))             //nolint:staticcheck
 		mb.RecordK8sReplicasetAvailableDataPoint(ts, int64(rs.Status.AvailableReplicas)) //nolint:staticcheck
 	}
 

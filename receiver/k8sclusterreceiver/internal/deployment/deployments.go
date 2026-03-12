@@ -28,7 +28,7 @@ func Transform(deployment *appsv1.Deployment) *appsv1.Deployment {
 }
 
 func RecordMetrics(mb *metadata.MetricsBuilder, dep *appsv1.Deployment, ts pcommon.Timestamp) {
-	mb.RecordK8sDeploymentDesiredDataPoint(ts, int64(*dep.Spec.Replicas))          //nolint:staticcheck
+	mb.RecordK8sDeploymentDesiredDataPoint(ts, int64(*dep.Spec.Replicas))             //nolint:staticcheck
 	mb.RecordK8sDeploymentAvailableDataPoint(ts, int64(dep.Status.AvailableReplicas)) //nolint:staticcheck
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sDeploymentName(dep.Name)

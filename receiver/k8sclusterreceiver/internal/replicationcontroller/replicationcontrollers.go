@@ -14,7 +14,7 @@ import (
 
 func RecordMetrics(mb *metadata.MetricsBuilder, rc *corev1.ReplicationController, ts pcommon.Timestamp) {
 	if rc.Spec.Replicas != nil {
-		mb.RecordK8sReplicationControllerDesiredDataPoint(ts, int64(*rc.Spec.Replicas))           //nolint:staticcheck
+		mb.RecordK8sReplicationControllerDesiredDataPoint(ts, int64(*rc.Spec.Replicas))             //nolint:staticcheck
 		mb.RecordK8sReplicationControllerAvailableDataPoint(ts, int64(rc.Status.AvailableReplicas)) //nolint:staticcheck
 	}
 

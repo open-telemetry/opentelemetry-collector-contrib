@@ -12,10 +12,10 @@ import (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, hpa *autoscalingv2.HorizontalPodAutoscaler, ts pcommon.Timestamp) {
-	mb.RecordK8sHpaMaxReplicasDataPoint(ts, int64(hpa.Spec.MaxReplicas))         //nolint:staticcheck
-	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))        //nolint:staticcheck
+	mb.RecordK8sHpaMaxReplicasDataPoint(ts, int64(hpa.Spec.MaxReplicas))           //nolint:staticcheck
+	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))          //nolint:staticcheck
 	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas)) //nolint:staticcheck
-	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas))  //nolint:staticcheck
+	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas)) //nolint:staticcheck
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sHpaUID(string(hpa.UID))
 	rb.SetK8sHpaName(hpa.Name)

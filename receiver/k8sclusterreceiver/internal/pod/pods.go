@@ -74,7 +74,7 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 }
 
 func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
-	mb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))       //nolint:staticcheck
+	mb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))          //nolint:staticcheck
 	mb.RecordK8sPodStatusReasonDataPoint(ts, int64(reasonToInt(pod.Status.Reason))) //nolint:staticcheck
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(pod.Namespace)
