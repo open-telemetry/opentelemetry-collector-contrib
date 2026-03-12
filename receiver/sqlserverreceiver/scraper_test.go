@@ -193,59 +193,6 @@ func TestSuccessfulScrape(t *testing.T) {
 	}
 }
 
-func TestResourceAttributesOverride(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Username = "sa"
-	cfg.Password = "password"
-	cfg.Port = 1433
-	cfg.Server = "0.0.0.0"
-	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.ResourceAttributesOverride = map[string]string{
-		"service.instance.id": "my-custom-instance",
-		"host.name":           "override-host",
-		"custom.attribute":    "custom-value",
-	}
-	assert.NoError(t, cfg.Validate())
-
-	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.Metrics.SqlserverDatabaseIo.Enabled = true
-
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
-	assert.NotEmpty(t, scrapers)
-
-	scraper := scrapers[0]
-	err := scraper.Start(t.Context(), componenttest.NewNopHost())
-	assert.NoError(t, err)
-	defer func() { assert.NoError(t, scraper.Shutdown(t.Context())) }()
-
-	scraper.client = mockClient{
-		instanceName: scraper.config.InstanceName,
-		SQL:          scraper.sqlQuery,
-	}
-
-	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
-	assert.NoError(t, err)
-
-	rm := actualMetrics.ResourceMetrics()
-	assert.Positive(t, rm.Len())
-
-	for i := 0; i < rm.Len(); i++ {
-		attrs := rm.At(i).Resource().Attributes()
-
-		val, ok := attrs.Get("service.instance.id")
-		assert.True(t, ok)
-		assert.Equal(t, "my-custom-instance", val.Str())
-
-		val, ok = attrs.Get("host.name")
-		assert.True(t, ok)
-		assert.Equal(t, "override-host", val.Str())
-
-		val, ok = attrs.Get("custom.attribute")
-		assert.True(t, ok)
-		assert.Equal(t, "custom-value", val.Str())
-	}
-}
-
 func TestScrapeInvalidQuery(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"

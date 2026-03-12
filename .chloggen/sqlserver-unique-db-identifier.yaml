@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/sqlserver
 
 # A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add resource_attributes_override configuration option to allow setting custom resource attributes for unique database identification
+note: Add service.name as a default-enabled resource attribute for unique database identification
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46176]
@@ -16,10 +16,9 @@ issues: [46176]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This enhancement adds a `resource_attributes_override` configuration option that allows users to override
-  any resource attribute. This is particularly useful for setting `service.instance.id`, `service.name`, and
-  `service.namespace` to uniquely identify database instances across environments, as per the OpenTelemetry
-  semantic conventions for database resources.
+  The receiver now emits `service.name` as a default resource attribute with the value `microsoft.sql_server`,
+  aligning with OpenTelemetry semantic conventions for database resources. This helps uniquely identify
+  database instances across environments.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -190,26 +190,6 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	return rb
 }
 
-// applyResourceOverrides emits metrics for a resource, applying any user-defined
-// resource attribute overrides after all auto-generated values have been set.
-// Overrides are applied on the final Resource so they cannot be clobbered.
-func (s *sqlServerScraperHelper) applyResourceOverrides(rb *metadata.ResourceBuilder) {
-	res := rb.Emit()
-	for key, value := range s.config.ResourceAttributesOverride {
-		res.Attributes().PutStr(key, value)
-	}
-	s.mb.EmitForResource(metadata.WithResource(res))
-}
-
-// applyResourceOverridesToResource applies user-defined resource attribute overrides
-// directly to a pcommon.Resource. Used for logs paths where the ResourceBuilder has
-// already been emitted.
-func (s *sqlServerScraperHelper) applyResourceOverridesToResource(res pcommon.Resource) {
-	for key, value := range s.config.ResourceAttributesOverride {
-		res.Attributes().PutStr(key, value)
-	}
-}
-
 func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) error {
 	const physicalFilenameKey = "physical_filename"
 	const logicalFilenameKey = "logical_filename"
@@ -258,7 +238,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 			s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[readBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead),
 			s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[writeBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
 
-		s.applyResourceOverrides(rb)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	if len(rows) == 0 {
@@ -560,7 +540,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			}
 		}
 
-		s.applyResourceOverrides(rb)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	return errors.Join(errs...)
@@ -601,7 +581,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 			s.mb.RecordSqlserverComputerUptimeDataPoint(now, row[computerUptime]),
 		)
 
-		s.applyResourceOverrides(rb)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	return errors.Join(errs...)
@@ -638,7 +618,7 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 			s.mb.RecordSqlserverOsWaitDurationDataPoint(now, val.(float64)/1e3, row[waitCategory], row[waitType])
 		}
 
-		s.applyResourceOverrides(rb)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	return errors.Join(errs...)
@@ -796,7 +776,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		if !resourcesAdded {
 			resources = s.setupResourceBuilder(s.lb.NewResourceBuilder(), row).Emit()
-			s.applyResourceOverridesToResource(resources)
 			resourcesAdded = true
 		}
 		s.lb.RecordDbServerTopQueryEvent(
@@ -1087,7 +1066,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		if !resourcesAdded {
 			resources = s.setupResourceBuilder(s.lb.NewResourceBuilder(), row).Emit()
-			s.applyResourceOverridesToResource(resources)
 			resourcesAdded = true
 		}
 	}
