@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
@@ -222,20 +223,10 @@ func (ms *SaphanaConnectionCountConfig) Validate() error {
 	return nil
 }
 
-// SaphanaCPUUsedAttributeKey specifies the key of an attribute for the saphana.cpu.used metric.
-type SaphanaCPUUsedAttributeKey string
-
-const (
-	SaphanaCPUUsedAttributeKeyCPUType SaphanaCPUUsedAttributeKey = "type"
-)
-
 // SaphanaCPUUsedConfig provides config for the saphana.cpu.used metric.
 type SaphanaCPUUsedConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SaphanaCPUUsedAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SaphanaCPUUsedConfig) Unmarshal(parser *confmap.Conf) error {
@@ -249,24 +240,6 @@ func (ms *SaphanaCPUUsedConfig) Unmarshal(parser *confmap.Conf) error {
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SaphanaCPUUsedConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SaphanaCPUUsedAttributeKeyCPUType:
-		default:
-			return fmt.Errorf("metric saphana.cpu.used doesn't have an attribute %v, valid attributes: [type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -309,6 +282,12 @@ func (ms *SaphanaDiskSizeCurrentConfig) Validate() error {
 		default:
 			return fmt.Errorf("metric saphana.disk.size.current doesn't have an attribute %v, valid attributes: [path, usage_type, state]", val)
 		}
+	}
+	if !slices.Contains(ms.EnabledAttributes, SaphanaDiskSizeCurrentAttributeKeyPath) {
+		return fmt.Errorf("path is a required attribute for saphana.disk.size.current metric and must be included")
+	}
+	if !slices.Contains(ms.EnabledAttributes, SaphanaDiskSizeCurrentAttributeKeyDiskUsageType) {
+		return fmt.Errorf("usage_type is a required attribute for saphana.disk.size.current metric and must be included")
 	}
 
 	switch ms.AggregationStrategy {
@@ -739,20 +718,10 @@ func (ms *SaphanaNetworkRequestCountConfig) Validate() error {
 	return nil
 }
 
-// SaphanaNetworkRequestFinishedCountAttributeKey specifies the key of an attribute for the saphana.network.request.finished.count metric.
-type SaphanaNetworkRequestFinishedCountAttributeKey string
-
-const (
-	SaphanaNetworkRequestFinishedCountAttributeKeyInternalExternalRequestType SaphanaNetworkRequestFinishedCountAttributeKey = "type"
-)
-
 // SaphanaNetworkRequestFinishedCountConfig provides config for the saphana.network.request.finished.count metric.
 type SaphanaNetworkRequestFinishedCountConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SaphanaNetworkRequestFinishedCountAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SaphanaNetworkRequestFinishedCountConfig) Unmarshal(parser *confmap.Conf) error {
@@ -766,24 +735,6 @@ func (ms *SaphanaNetworkRequestFinishedCountConfig) Unmarshal(parser *confmap.Co
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SaphanaNetworkRequestFinishedCountConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SaphanaNetworkRequestFinishedCountAttributeKeyInternalExternalRequestType:
-		default:
-			return fmt.Errorf("metric saphana.network.request.finished.count doesn't have an attribute %v, valid attributes: [type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -1027,6 +978,9 @@ func (ms *SaphanaSchemaMemoryUsedCurrentConfig) Validate() error {
 			return fmt.Errorf("metric saphana.schema.memory.used.current doesn't have an attribute %v, valid attributes: [schema, type]", val)
 		}
 	}
+	if !slices.Contains(ms.EnabledAttributes, SaphanaSchemaMemoryUsedCurrentAttributeKeySchema) {
+		return fmt.Errorf("schema is a required attribute for saphana.schema.memory.used.current metric and must be included")
+	}
 
 	switch ms.AggregationStrategy {
 	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
@@ -1037,20 +991,10 @@ func (ms *SaphanaSchemaMemoryUsedCurrentConfig) Validate() error {
 	return nil
 }
 
-// SaphanaSchemaMemoryUsedMaxAttributeKey specifies the key of an attribute for the saphana.schema.memory.used.max metric.
-type SaphanaSchemaMemoryUsedMaxAttributeKey string
-
-const (
-	SaphanaSchemaMemoryUsedMaxAttributeKeySchema SaphanaSchemaMemoryUsedMaxAttributeKey = "schema"
-)
-
 // SaphanaSchemaMemoryUsedMaxConfig provides config for the saphana.schema.memory.used.max metric.
 type SaphanaSchemaMemoryUsedMaxConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SaphanaSchemaMemoryUsedMaxAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SaphanaSchemaMemoryUsedMaxConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1067,39 +1011,10 @@ func (ms *SaphanaSchemaMemoryUsedMaxConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *SaphanaSchemaMemoryUsedMaxConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SaphanaSchemaMemoryUsedMaxAttributeKeySchema:
-		default:
-			return fmt.Errorf("metric saphana.schema.memory.used.max doesn't have an attribute %v, valid attributes: [schema]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SaphanaSchemaOperationCountAttributeKey specifies the key of an attribute for the saphana.schema.operation.count metric.
-type SaphanaSchemaOperationCountAttributeKey string
-
-const (
-	SaphanaSchemaOperationCountAttributeKeySchema              SaphanaSchemaOperationCountAttributeKey = "schema"
-	SaphanaSchemaOperationCountAttributeKeySchemaOperationType SaphanaSchemaOperationCountAttributeKey = "type"
-)
-
 // SaphanaSchemaOperationCountConfig provides config for the saphana.schema.operation.count metric.
 type SaphanaSchemaOperationCountConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SaphanaSchemaOperationCountAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SaphanaSchemaOperationCountConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1116,38 +1031,10 @@ func (ms *SaphanaSchemaOperationCountConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *SaphanaSchemaOperationCountConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SaphanaSchemaOperationCountAttributeKeySchema, SaphanaSchemaOperationCountAttributeKeySchemaOperationType:
-		default:
-			return fmt.Errorf("metric saphana.schema.operation.count doesn't have an attribute %v, valid attributes: [schema, type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SaphanaSchemaRecordCompressedCountAttributeKey specifies the key of an attribute for the saphana.schema.record.compressed.count metric.
-type SaphanaSchemaRecordCompressedCountAttributeKey string
-
-const (
-	SaphanaSchemaRecordCompressedCountAttributeKeySchema SaphanaSchemaRecordCompressedCountAttributeKey = "schema"
-)
-
 // SaphanaSchemaRecordCompressedCountConfig provides config for the saphana.schema.record.compressed.count metric.
 type SaphanaSchemaRecordCompressedCountConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SaphanaSchemaRecordCompressedCountAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SaphanaSchemaRecordCompressedCountConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1161,24 +1048,6 @@ func (ms *SaphanaSchemaRecordCompressedCountConfig) Unmarshal(parser *confmap.Co
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SaphanaSchemaRecordCompressedCountConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SaphanaSchemaRecordCompressedCountAttributeKeySchema:
-		default:
-			return fmt.Errorf("metric saphana.schema.record.compressed.count doesn't have an attribute %v, valid attributes: [schema]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -1220,6 +1089,9 @@ func (ms *SaphanaSchemaRecordCountConfig) Validate() error {
 		default:
 			return fmt.Errorf("metric saphana.schema.record.count doesn't have an attribute %v, valid attributes: [schema, type]", val)
 		}
+	}
+	if !slices.Contains(ms.EnabledAttributes, SaphanaSchemaRecordCountAttributeKeySchema) {
+		return fmt.Errorf("schema is a required attribute for saphana.schema.record.count metric and must be included")
 	}
 
 	switch ms.AggregationStrategy {
@@ -1782,20 +1654,10 @@ func (ms *SaphanaTransactionBlockedConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// SaphanaTransactionCountAttributeKey specifies the key of an attribute for the saphana.transaction.count metric.
-type SaphanaTransactionCountAttributeKey string
-
-const (
-	SaphanaTransactionCountAttributeKeyTransactionType SaphanaTransactionCountAttributeKey = "type"
-)
-
 // SaphanaTransactionCountConfig provides config for the saphana.transaction.count metric.
 type SaphanaTransactionCountConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SaphanaTransactionCountAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SaphanaTransactionCountConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1809,24 +1671,6 @@ func (ms *SaphanaTransactionCountConfig) Unmarshal(parser *confmap.Conf) error {
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SaphanaTransactionCountConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SaphanaTransactionCountAttributeKeyTransactionType:
-		default:
-			return fmt.Errorf("metric saphana.transaction.count doesn't have an attribute %v, valid attributes: [type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -1879,22 +1723,10 @@ func (ms *SaphanaUptimeConfig) Validate() error {
 	return nil
 }
 
-// SaphanaVolumeOperationCountAttributeKey specifies the key of an attribute for the saphana.volume.operation.count metric.
-type SaphanaVolumeOperationCountAttributeKey string
-
-const (
-	SaphanaVolumeOperationCountAttributeKeyPath                SaphanaVolumeOperationCountAttributeKey = "path"
-	SaphanaVolumeOperationCountAttributeKeyDiskUsageType       SaphanaVolumeOperationCountAttributeKey = "usage_type"
-	SaphanaVolumeOperationCountAttributeKeyVolumeOperationType SaphanaVolumeOperationCountAttributeKey = "type"
-)
-
 // SaphanaVolumeOperationCountConfig provides config for the saphana.volume.operation.count metric.
 type SaphanaVolumeOperationCountConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SaphanaVolumeOperationCountAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SaphanaVolumeOperationCountConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1911,40 +1743,10 @@ func (ms *SaphanaVolumeOperationCountConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *SaphanaVolumeOperationCountConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SaphanaVolumeOperationCountAttributeKeyPath, SaphanaVolumeOperationCountAttributeKeyDiskUsageType, SaphanaVolumeOperationCountAttributeKeyVolumeOperationType:
-		default:
-			return fmt.Errorf("metric saphana.volume.operation.count doesn't have an attribute %v, valid attributes: [path, usage_type, type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SaphanaVolumeOperationSizeAttributeKey specifies the key of an attribute for the saphana.volume.operation.size metric.
-type SaphanaVolumeOperationSizeAttributeKey string
-
-const (
-	SaphanaVolumeOperationSizeAttributeKeyPath                SaphanaVolumeOperationSizeAttributeKey = "path"
-	SaphanaVolumeOperationSizeAttributeKeyDiskUsageType       SaphanaVolumeOperationSizeAttributeKey = "usage_type"
-	SaphanaVolumeOperationSizeAttributeKeyVolumeOperationType SaphanaVolumeOperationSizeAttributeKey = "type"
-)
-
 // SaphanaVolumeOperationSizeConfig provides config for the saphana.volume.operation.size metric.
 type SaphanaVolumeOperationSizeConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SaphanaVolumeOperationSizeAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SaphanaVolumeOperationSizeConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1961,40 +1763,10 @@ func (ms *SaphanaVolumeOperationSizeConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *SaphanaVolumeOperationSizeConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SaphanaVolumeOperationSizeAttributeKeyPath, SaphanaVolumeOperationSizeAttributeKeyDiskUsageType, SaphanaVolumeOperationSizeAttributeKeyVolumeOperationType:
-		default:
-			return fmt.Errorf("metric saphana.volume.operation.size doesn't have an attribute %v, valid attributes: [path, usage_type, type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// SaphanaVolumeOperationTimeAttributeKey specifies the key of an attribute for the saphana.volume.operation.time metric.
-type SaphanaVolumeOperationTimeAttributeKey string
-
-const (
-	SaphanaVolumeOperationTimeAttributeKeyPath                SaphanaVolumeOperationTimeAttributeKey = "path"
-	SaphanaVolumeOperationTimeAttributeKeyDiskUsageType       SaphanaVolumeOperationTimeAttributeKey = "usage_type"
-	SaphanaVolumeOperationTimeAttributeKeyVolumeOperationType SaphanaVolumeOperationTimeAttributeKey = "type"
-)
-
 // SaphanaVolumeOperationTimeConfig provides config for the saphana.volume.operation.time metric.
 type SaphanaVolumeOperationTimeConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SaphanaVolumeOperationTimeAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SaphanaVolumeOperationTimeConfig) Unmarshal(parser *confmap.Conf) error {
@@ -2008,24 +1780,6 @@ func (ms *SaphanaVolumeOperationTimeConfig) Unmarshal(parser *confmap.Conf) erro
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SaphanaVolumeOperationTimeConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SaphanaVolumeOperationTimeAttributeKeyPath, SaphanaVolumeOperationTimeAttributeKeyDiskUsageType, SaphanaVolumeOperationTimeAttributeKeyVolumeOperationType:
-		default:
-			return fmt.Errorf("metric saphana.volume.operation.time doesn't have an attribute %v, valid attributes: [path, usage_type, type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -2104,9 +1858,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []SaphanaConnectionCountAttributeKey{SaphanaConnectionCountAttributeKeyConnectionStatus},
 		},
 		SaphanaCPUUsed: SaphanaCPUUsedConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SaphanaCPUUsedAttributeKey{SaphanaCPUUsedAttributeKeyCPUType},
+			Enabled: true,
 		},
 		SaphanaDiskSizeCurrent: SaphanaDiskSizeCurrentConfig{
 			Enabled:             true,
@@ -2161,9 +1913,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []SaphanaNetworkRequestCountAttributeKey{SaphanaNetworkRequestCountAttributeKeyActivePendingRequestState},
 		},
 		SaphanaNetworkRequestFinishedCount: SaphanaNetworkRequestFinishedCountConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SaphanaNetworkRequestFinishedCountAttributeKey{SaphanaNetworkRequestFinishedCountAttributeKeyInternalExternalRequestType},
+			Enabled: true,
 		},
 		SaphanaReplicationAverageTime: SaphanaReplicationAverageTimeConfig{
 			Enabled:             true,
@@ -2191,19 +1941,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []SaphanaSchemaMemoryUsedCurrentAttributeKey{SaphanaSchemaMemoryUsedCurrentAttributeKeySchema, SaphanaSchemaMemoryUsedCurrentAttributeKeySchemaMemoryType},
 		},
 		SaphanaSchemaMemoryUsedMax: SaphanaSchemaMemoryUsedMaxConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SaphanaSchemaMemoryUsedMaxAttributeKey{SaphanaSchemaMemoryUsedMaxAttributeKeySchema},
+			Enabled: true,
 		},
 		SaphanaSchemaOperationCount: SaphanaSchemaOperationCountConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SaphanaSchemaOperationCountAttributeKey{SaphanaSchemaOperationCountAttributeKeySchema, SaphanaSchemaOperationCountAttributeKeySchemaOperationType},
+			Enabled: true,
 		},
 		SaphanaSchemaRecordCompressedCount: SaphanaSchemaRecordCompressedCountConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SaphanaSchemaRecordCompressedCountAttributeKey{SaphanaSchemaRecordCompressedCountAttributeKeySchema},
+			Enabled: true,
 		},
 		SaphanaSchemaRecordCount: SaphanaSchemaRecordCountConfig{
 			Enabled:             true,
@@ -2269,9 +2013,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		SaphanaTransactionCount: SaphanaTransactionCountConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SaphanaTransactionCountAttributeKey{SaphanaTransactionCountAttributeKeyTransactionType},
+			Enabled: true,
 		},
 		SaphanaUptime: SaphanaUptimeConfig{
 			Enabled:             true,
@@ -2279,19 +2021,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []SaphanaUptimeAttributeKey{SaphanaUptimeAttributeKeySystem, SaphanaUptimeAttributeKeyDatabase},
 		},
 		SaphanaVolumeOperationCount: SaphanaVolumeOperationCountConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SaphanaVolumeOperationCountAttributeKey{SaphanaVolumeOperationCountAttributeKeyPath, SaphanaVolumeOperationCountAttributeKeyDiskUsageType, SaphanaVolumeOperationCountAttributeKeyVolumeOperationType},
+			Enabled: true,
 		},
 		SaphanaVolumeOperationSize: SaphanaVolumeOperationSizeConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SaphanaVolumeOperationSizeAttributeKey{SaphanaVolumeOperationSizeAttributeKeyPath, SaphanaVolumeOperationSizeAttributeKeyDiskUsageType, SaphanaVolumeOperationSizeAttributeKeyVolumeOperationType},
+			Enabled: true,
 		},
 		SaphanaVolumeOperationTime: SaphanaVolumeOperationTimeConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SaphanaVolumeOperationTimeAttributeKey{SaphanaVolumeOperationTimeAttributeKeyPath, SaphanaVolumeOperationTimeAttributeKeyDiskUsageType, SaphanaVolumeOperationTimeAttributeKeyVolumeOperationType},
+			Enabled: true,
 		},
 	}
 }

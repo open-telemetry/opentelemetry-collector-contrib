@@ -17,7 +17,6 @@ all_set:
       attributes: ["status"]
     saphana.cpu.used:
       enabled: true
-      attributes: ["type"]
     saphana.disk.size.current:
       enabled: true
       attributes: ["path","usage_type","state"]
@@ -52,7 +51,6 @@ all_set:
       attributes: ["state"]
     saphana.network.request.finished.count:
       enabled: true
-      attributes: ["type"]
     saphana.replication.average_time:
       enabled: true
       attributes: ["primary","secondary","port","mode"]
@@ -70,13 +68,10 @@ all_set:
       attributes: ["schema","type"]
     saphana.schema.memory.used.max:
       enabled: true
-      attributes: ["schema"]
     saphana.schema.operation.count:
       enabled: true
-      attributes: ["schema","type"]
     saphana.schema.record.compressed.count:
       enabled: true
-      attributes: ["schema"]
     saphana.schema.record.count:
       enabled: true
       attributes: ["schema","type"]
@@ -117,19 +112,15 @@ all_set:
       enabled: true
     saphana.transaction.count:
       enabled: true
-      attributes: ["type"]
     saphana.uptime:
       enabled: true
       attributes: ["system","database"]
     saphana.volume.operation.count:
       enabled: true
-      attributes: ["path","usage_type","type"]
     saphana.volume.operation.size:
       enabled: true
-      attributes: ["path","usage_type","type"]
     saphana.volume.operation.time:
       enabled: true
-      attributes: ["path","usage_type","type"]
   resource_attributes:
     db.system:
       enabled: true
@@ -153,10 +144,9 @@ reaggregate_set:
       attributes: []
     saphana.cpu.used:
       enabled: true
-      attributes: []
     saphana.disk.size.current:
       enabled: true
-      attributes: []
+      attributes: ["path","usage_type"]
     saphana.host.memory.current:
       enabled: true
       attributes: []
@@ -188,7 +178,6 @@ reaggregate_set:
       attributes: []
     saphana.network.request.finished.count:
       enabled: true
-      attributes: []
     saphana.replication.average_time:
       enabled: true
       attributes: []
@@ -203,19 +192,16 @@ reaggregate_set:
       attributes: []
     saphana.schema.memory.used.current:
       enabled: true
-      attributes: []
+      attributes: ["schema"]
     saphana.schema.memory.used.max:
       enabled: true
-      attributes: []
     saphana.schema.operation.count:
       enabled: true
-      attributes: []
     saphana.schema.record.compressed.count:
       enabled: true
-      attributes: []
     saphana.schema.record.count:
       enabled: true
-      attributes: []
+      attributes: ["schema"]
     saphana.service.code_size:
       enabled: true
       attributes: []
@@ -253,19 +239,15 @@ reaggregate_set:
       enabled: true
     saphana.transaction.count:
       enabled: true
-      attributes: []
     saphana.uptime:
       enabled: true
       attributes: []
     saphana.volume.operation.count:
       enabled: true
-      attributes: []
     saphana.volume.operation.size:
       enabled: true
-      attributes: []
     saphana.volume.operation.time:
       enabled: true
-      attributes: []
   resource_attributes:
     db.system:
       enabled: true
@@ -289,7 +271,6 @@ none_set:
       attributes: ["status"]
     saphana.cpu.used:
       enabled: false
-      attributes: ["type"]
     saphana.disk.size.current:
       enabled: false
       attributes: ["path","usage_type","state"]
@@ -324,7 +305,6 @@ none_set:
       attributes: ["state"]
     saphana.network.request.finished.count:
       enabled: false
-      attributes: ["type"]
     saphana.replication.average_time:
       enabled: false
       attributes: ["primary","secondary","port","mode"]
@@ -342,13 +322,10 @@ none_set:
       attributes: ["schema","type"]
     saphana.schema.memory.used.max:
       enabled: false
-      attributes: ["schema"]
     saphana.schema.operation.count:
       enabled: false
-      attributes: ["schema","type"]
     saphana.schema.record.compressed.count:
       enabled: false
-      attributes: ["schema"]
     saphana.schema.record.count:
       enabled: false
       attributes: ["schema","type"]
@@ -389,19 +366,15 @@ none_set:
       enabled: false
     saphana.transaction.count:
       enabled: false
-      attributes: ["type"]
     saphana.uptime:
       enabled: false
       attributes: ["system","database"]
     saphana.volume.operation.count:
       enabled: false
-      attributes: ["path","usage_type","type"]
     saphana.volume.operation.size:
       enabled: false
-      attributes: ["path","usage_type","type"]
     saphana.volume.operation.time:
       enabled: false
-      attributes: ["path","usage_type","type"]
   resource_attributes:
     db.system:
       enabled: false

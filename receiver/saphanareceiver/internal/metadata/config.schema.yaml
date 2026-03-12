@@ -112,22 +112,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "type"
-            default:
-              - "type"
       saphana.disk.size.current:
         description: "SaphanaDiskSizeCurrentConfig provides config for the saphana.disk.size.current metric."
         type: object
@@ -357,22 +341,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "type"
-            default:
-              - "type"
       saphana.replication.average_time:
         description: "SaphanaReplicationAverageTimeConfig provides config for the saphana.replication.average_time metric."
         type: object
@@ -515,22 +483,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "schema"
-            default:
-              - "schema"
       saphana.schema.operation.count:
         description: "SaphanaSchemaOperationCountConfig provides config for the saphana.schema.operation.count metric."
         type: object
@@ -538,24 +490,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "schema"
-                - "type"
-            default:
-              - "schema"
-              - "type"
       saphana.schema.record.compressed.count:
         description: "SaphanaSchemaRecordCompressedCountConfig provides config for the saphana.schema.record.compressed.count metric."
         type: object
@@ -563,22 +497,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "schema"
-            default:
-              - "schema"
       saphana.schema.record.count:
         description: "SaphanaSchemaRecordCountConfig provides config for the saphana.schema.record.count metric."
         type: object
@@ -877,22 +795,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "type"
-            default:
-              - "type"
       saphana.uptime:
         description: "SaphanaUptimeConfig provides config for the saphana.uptime metric."
         type: object
@@ -925,26 +827,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "path"
-                - "usage_type"
-                - "type"
-            default:
-              - "path"
-              - "usage_type"
-              - "type"
       saphana.volume.operation.size:
         description: "SaphanaVolumeOperationSizeConfig provides config for the saphana.volume.operation.size metric."
         type: object
@@ -952,26 +834,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "path"
-                - "usage_type"
-                - "type"
-            default:
-              - "path"
-              - "usage_type"
-              - "type"
       saphana.volume.operation.time:
         description: "SaphanaVolumeOperationTimeConfig provides config for the saphana.volume.operation.time metric."
         type: object
@@ -979,26 +841,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "path"
-                - "usage_type"
-                - "type"
-            default:
-              - "path"
-              - "usage_type"
-              - "type"
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for saphana resource attributes.
     type: object

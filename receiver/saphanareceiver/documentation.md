@@ -89,7 +89,7 @@ Total CPU time spent.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of cpu. | Str: ``user``, ``system``, ``io_wait``, ``idle`` | Recommended |
+| type | The type of cpu. | Str: ``user``, ``system``, ``io_wait``, ``idle`` | Required |
 
 ### saphana.disk.size.current
 
@@ -103,8 +103,8 @@ The disk size.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| path | The SAP HANA disk path. | Any Str | Recommended |
-| usage_type | The SAP HANA disk & volume usage type. | Any Str | Recommended |
+| path | The SAP HANA disk path. | Any Str | Required |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str | Required |
 | state | The state of the disk storage. | Str: ``used``, ``free`` | Recommended |
 
 ### saphana.host.memory.current
@@ -252,7 +252,7 @@ The number of service requests that have completed.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The type of network request. | Str: ``internal``, ``external`` | Recommended |
+| type | The type of network request. | Str: ``internal``, ``external`` | Required |
 
 ### saphana.replication.average_time
 
@@ -331,7 +331,7 @@ The memory size for all tables in schema.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
 | type | The type of schema memory. | Str: ``main``, ``delta``, ``history_main``, ``history_delta`` | Recommended |
 
 ### saphana.schema.memory.used.max
@@ -346,7 +346,7 @@ The estimated maximum memory consumption for all fully loaded tables in schema (
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
 
 ### saphana.schema.operation.count
 
@@ -360,8 +360,8 @@ The number of operations done on all tables in schema.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
-| type | The type of operation. | Str: ``read``, ``write``, ``merge`` | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
+| type | The type of operation. | Str: ``read``, ``write``, ``merge`` | Required |
 
 ### saphana.schema.record.compressed.count
 
@@ -375,7 +375,7 @@ The number of entries in main during the last optimize compression run for all t
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
 
 ### saphana.schema.record.count
 
@@ -389,7 +389,7 @@ The number of records for all tables in schema.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| schema | The SAP HANA schema. | Any Str | Recommended |
+| schema | The SAP HANA schema. | Any Str | Required |
 | type | The type of schema record. | Str: ``main``, ``delta``, ``history_main``, ``history_delta`` | Recommended |
 
 ### saphana.service.code_size
@@ -569,7 +569,7 @@ The number of transactions.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| type | The transaction type. | Str: ``update``, ``commit``, ``rollback`` | Recommended |
+| type | The transaction type. | Str: ``update``, ``commit``, ``rollback`` | Required |
 
 ### saphana.uptime
 
@@ -598,9 +598,9 @@ The number of operations executed.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| path | The SAP HANA disk path. | Any Str | Recommended |
-| usage_type | The SAP HANA disk & volume usage type. | Any Str | Recommended |
-| type | The type of operation. | Str: ``read``, ``write`` | Recommended |
+| path | The SAP HANA disk path. | Any Str | Required |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str | Required |
+| type | The type of operation. | Str: ``read``, ``write`` | Required |
 
 ### saphana.volume.operation.size
 
@@ -614,9 +614,9 @@ The size of operations executed.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| path | The SAP HANA disk path. | Any Str | Recommended |
-| usage_type | The SAP HANA disk & volume usage type. | Any Str | Recommended |
-| type | The type of operation. | Str: ``read``, ``write`` | Recommended |
+| path | The SAP HANA disk path. | Any Str | Required |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str | Required |
+| type | The type of operation. | Str: ``read``, ``write`` | Required |
 
 ### saphana.volume.operation.time
 
@@ -630,9 +630,9 @@ The time spent executing operations.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| path | The SAP HANA disk path. | Any Str | Recommended |
-| usage_type | The SAP HANA disk & volume usage type. | Any Str | Recommended |
-| type | The type of operation. | Str: ``read``, ``write`` | Recommended |
+| path | The SAP HANA disk path. | Any Str | Required |
+| usage_type | The SAP HANA disk & volume usage type. | Any Str | Required |
+| type | The type of operation. | Str: ``read``, ``write`` | Required |
 
 ## Resource Attributes
 

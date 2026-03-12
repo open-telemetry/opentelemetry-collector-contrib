@@ -50,9 +50,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SaphanaConnectionCountAttributeKey{SaphanaConnectionCountAttributeKeyConnectionStatus},
 					},
 					SaphanaCPUUsed: SaphanaCPUUsedConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaCPUUsedAttributeKey{SaphanaCPUUsedAttributeKeyCPUType},
+						Enabled: true,
 					},
 					SaphanaDiskSizeCurrent: SaphanaDiskSizeCurrentConfig{
 						Enabled:             true,
@@ -107,9 +105,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SaphanaNetworkRequestCountAttributeKey{SaphanaNetworkRequestCountAttributeKeyActivePendingRequestState},
 					},
 					SaphanaNetworkRequestFinishedCount: SaphanaNetworkRequestFinishedCountConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaNetworkRequestFinishedCountAttributeKey{SaphanaNetworkRequestFinishedCountAttributeKeyInternalExternalRequestType},
+						Enabled: true,
 					},
 					SaphanaReplicationAverageTime: SaphanaReplicationAverageTimeConfig{
 						Enabled:             true,
@@ -137,19 +133,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SaphanaSchemaMemoryUsedCurrentAttributeKey{SaphanaSchemaMemoryUsedCurrentAttributeKeySchema, SaphanaSchemaMemoryUsedCurrentAttributeKeySchemaMemoryType},
 					},
 					SaphanaSchemaMemoryUsedMax: SaphanaSchemaMemoryUsedMaxConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaSchemaMemoryUsedMaxAttributeKey{SaphanaSchemaMemoryUsedMaxAttributeKeySchema},
+						Enabled: true,
 					},
 					SaphanaSchemaOperationCount: SaphanaSchemaOperationCountConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaSchemaOperationCountAttributeKey{SaphanaSchemaOperationCountAttributeKeySchema, SaphanaSchemaOperationCountAttributeKeySchemaOperationType},
+						Enabled: true,
 					},
 					SaphanaSchemaRecordCompressedCount: SaphanaSchemaRecordCompressedCountConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaSchemaRecordCompressedCountAttributeKey{SaphanaSchemaRecordCompressedCountAttributeKeySchema},
+						Enabled: true,
 					},
 					SaphanaSchemaRecordCount: SaphanaSchemaRecordCountConfig{
 						Enabled:             true,
@@ -215,9 +205,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					SaphanaTransactionCount: SaphanaTransactionCountConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaTransactionCountAttributeKey{SaphanaTransactionCountAttributeKeyTransactionType},
+						Enabled: true,
 					},
 					SaphanaUptime: SaphanaUptimeConfig{
 						Enabled:             true,
@@ -225,19 +213,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SaphanaUptimeAttributeKey{SaphanaUptimeAttributeKeySystem, SaphanaUptimeAttributeKeyDatabase},
 					},
 					SaphanaVolumeOperationCount: SaphanaVolumeOperationCountConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaVolumeOperationCountAttributeKey{SaphanaVolumeOperationCountAttributeKeyPath, SaphanaVolumeOperationCountAttributeKeyDiskUsageType, SaphanaVolumeOperationCountAttributeKeyVolumeOperationType},
+						Enabled: true,
 					},
 					SaphanaVolumeOperationSize: SaphanaVolumeOperationSizeConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaVolumeOperationSizeAttributeKey{SaphanaVolumeOperationSizeAttributeKeyPath, SaphanaVolumeOperationSizeAttributeKeyDiskUsageType, SaphanaVolumeOperationSizeAttributeKeyVolumeOperationType},
+						Enabled: true,
 					},
 					SaphanaVolumeOperationTime: SaphanaVolumeOperationTimeConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaVolumeOperationTimeAttributeKey{SaphanaVolumeOperationTimeAttributeKeyPath, SaphanaVolumeOperationTimeAttributeKeyDiskUsageType, SaphanaVolumeOperationTimeAttributeKeyVolumeOperationType},
+						Enabled: true,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -274,9 +256,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SaphanaConnectionCountAttributeKey{SaphanaConnectionCountAttributeKeyConnectionStatus},
 					},
 					SaphanaCPUUsed: SaphanaCPUUsedConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaCPUUsedAttributeKey{SaphanaCPUUsedAttributeKeyCPUType},
+						Enabled: false,
 					},
 					SaphanaDiskSizeCurrent: SaphanaDiskSizeCurrentConfig{
 						Enabled:             false,
@@ -331,9 +311,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SaphanaNetworkRequestCountAttributeKey{SaphanaNetworkRequestCountAttributeKeyActivePendingRequestState},
 					},
 					SaphanaNetworkRequestFinishedCount: SaphanaNetworkRequestFinishedCountConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaNetworkRequestFinishedCountAttributeKey{SaphanaNetworkRequestFinishedCountAttributeKeyInternalExternalRequestType},
+						Enabled: false,
 					},
 					SaphanaReplicationAverageTime: SaphanaReplicationAverageTimeConfig{
 						Enabled:             false,
@@ -361,19 +339,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SaphanaSchemaMemoryUsedCurrentAttributeKey{SaphanaSchemaMemoryUsedCurrentAttributeKeySchema, SaphanaSchemaMemoryUsedCurrentAttributeKeySchemaMemoryType},
 					},
 					SaphanaSchemaMemoryUsedMax: SaphanaSchemaMemoryUsedMaxConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaSchemaMemoryUsedMaxAttributeKey{SaphanaSchemaMemoryUsedMaxAttributeKeySchema},
+						Enabled: false,
 					},
 					SaphanaSchemaOperationCount: SaphanaSchemaOperationCountConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaSchemaOperationCountAttributeKey{SaphanaSchemaOperationCountAttributeKeySchema, SaphanaSchemaOperationCountAttributeKeySchemaOperationType},
+						Enabled: false,
 					},
 					SaphanaSchemaRecordCompressedCount: SaphanaSchemaRecordCompressedCountConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaSchemaRecordCompressedCountAttributeKey{SaphanaSchemaRecordCompressedCountAttributeKeySchema},
+						Enabled: false,
 					},
 					SaphanaSchemaRecordCount: SaphanaSchemaRecordCountConfig{
 						Enabled:             false,
@@ -439,9 +411,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					SaphanaTransactionCount: SaphanaTransactionCountConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaTransactionCountAttributeKey{SaphanaTransactionCountAttributeKeyTransactionType},
+						Enabled: false,
 					},
 					SaphanaUptime: SaphanaUptimeConfig{
 						Enabled:             false,
@@ -449,19 +419,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SaphanaUptimeAttributeKey{SaphanaUptimeAttributeKeySystem, SaphanaUptimeAttributeKeyDatabase},
 					},
 					SaphanaVolumeOperationCount: SaphanaVolumeOperationCountConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaVolumeOperationCountAttributeKey{SaphanaVolumeOperationCountAttributeKeyPath, SaphanaVolumeOperationCountAttributeKeyDiskUsageType, SaphanaVolumeOperationCountAttributeKeyVolumeOperationType},
+						Enabled: false,
 					},
 					SaphanaVolumeOperationSize: SaphanaVolumeOperationSizeConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaVolumeOperationSizeAttributeKey{SaphanaVolumeOperationSizeAttributeKeyPath, SaphanaVolumeOperationSizeAttributeKeyDiskUsageType, SaphanaVolumeOperationSizeAttributeKeyVolumeOperationType},
+						Enabled: false,
 					},
 					SaphanaVolumeOperationTime: SaphanaVolumeOperationTimeConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SaphanaVolumeOperationTimeAttributeKey{SaphanaVolumeOperationTimeAttributeKeyPath, SaphanaVolumeOperationTimeAttributeKeyDiskUsageType, SaphanaVolumeOperationTimeAttributeKeyVolumeOperationType},
+						Enabled: false,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{

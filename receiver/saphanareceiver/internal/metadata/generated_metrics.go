@@ -1142,10 +1142,9 @@ func newMetricSaphanaConnectionCount(cfg SaphanaConnectionCountConfig) metricSap
 }
 
 type metricSaphanaCPUUsed struct {
-	data          pmetric.Metric       // data buffer for generated metric.
-	config        SaphanaCPUUsedConfig // metric config provided by user.
-	capacity      int                  // max observed number of data points added to the metric.
-	aggDataPoints []int64              // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric       // data buffer for generated metric.
+	config   SaphanaCPUUsedConfig // metric config provided by user.
+	capacity int                  // max observed number of data points added to the metric.
 }
 
 // init fills saphana.cpu.used metric with initial data.
@@ -1157,48 +1156,17 @@ func (m *metricSaphanaCPUUsed) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSaphanaCPUUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SaphanaCPUUsedAttributeKeyCPUType) {
-		dp.Attributes().PutStr("type", cpuTypeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("type", cpuTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1211,11 +1179,6 @@ func (m *metricSaphanaCPUUsed) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaCPUUsed) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2180,10 +2143,9 @@ func newMetricSaphanaNetworkRequestCount(cfg SaphanaNetworkRequestCountConfig) m
 }
 
 type metricSaphanaNetworkRequestFinishedCount struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SaphanaNetworkRequestFinishedCountConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   SaphanaNetworkRequestFinishedCountConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills saphana.network.request.finished.count metric with initial data.
@@ -2195,48 +2157,17 @@ func (m *metricSaphanaNetworkRequestFinishedCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSaphanaNetworkRequestFinishedCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, internalExternalRequestTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SaphanaNetworkRequestFinishedCountAttributeKeyInternalExternalRequestType) {
-		dp.Attributes().PutStr("type", internalExternalRequestTypeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("type", internalExternalRequestTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2249,11 +2180,6 @@ func (m *metricSaphanaNetworkRequestFinishedCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaNetworkRequestFinishedCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2754,10 +2680,9 @@ func newMetricSaphanaSchemaMemoryUsedCurrent(cfg SaphanaSchemaMemoryUsedCurrentC
 }
 
 type metricSaphanaSchemaMemoryUsedMax struct {
-	data          pmetric.Metric                   // data buffer for generated metric.
-	config        SaphanaSchemaMemoryUsedMaxConfig // metric config provided by user.
-	capacity      int                              // max observed number of data points added to the metric.
-	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   SaphanaSchemaMemoryUsedMaxConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills saphana.schema.memory.used.max metric with initial data.
@@ -2769,48 +2694,17 @@ func (m *metricSaphanaSchemaMemoryUsedMax) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSaphanaSchemaMemoryUsedMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SaphanaSchemaMemoryUsedMaxAttributeKeySchema) {
-		dp.Attributes().PutStr("schema", schemaAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2823,11 +2717,6 @@ func (m *metricSaphanaSchemaMemoryUsedMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaSchemaMemoryUsedMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2845,10 +2734,9 @@ func newMetricSaphanaSchemaMemoryUsedMax(cfg SaphanaSchemaMemoryUsedMaxConfig) m
 }
 
 type metricSaphanaSchemaOperationCount struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        SaphanaSchemaOperationCountConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   SaphanaSchemaOperationCountConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills saphana.schema.operation.count metric with initial data.
@@ -2860,51 +2748,18 @@ func (m *metricSaphanaSchemaOperationCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSaphanaSchemaOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, schemaOperationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SaphanaSchemaOperationCountAttributeKeySchema) {
-		dp.Attributes().PutStr("schema", schemaAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SaphanaSchemaOperationCountAttributeKeySchemaOperationType) {
-		dp.Attributes().PutStr("type", schemaOperationTypeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+	dp.Attributes().PutStr("type", schemaOperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2917,11 +2772,6 @@ func (m *metricSaphanaSchemaOperationCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaSchemaOperationCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2939,10 +2789,9 @@ func newMetricSaphanaSchemaOperationCount(cfg SaphanaSchemaOperationCountConfig)
 }
 
 type metricSaphanaSchemaRecordCompressedCount struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SaphanaSchemaRecordCompressedCountConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   SaphanaSchemaRecordCompressedCountConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills saphana.schema.record.compressed.count metric with initial data.
@@ -2954,48 +2803,17 @@ func (m *metricSaphanaSchemaRecordCompressedCount) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSaphanaSchemaRecordCompressedCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SaphanaSchemaRecordCompressedCountAttributeKeySchema) {
-		dp.Attributes().PutStr("schema", schemaAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3008,11 +2826,6 @@ func (m *metricSaphanaSchemaRecordCompressedCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaSchemaRecordCompressedCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -4186,10 +3999,9 @@ func newMetricSaphanaTransactionBlocked(cfg SaphanaTransactionBlockedConfig) met
 }
 
 type metricSaphanaTransactionCount struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        SaphanaTransactionCountConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   SaphanaTransactionCountConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills saphana.transaction.count metric with initial data.
@@ -4201,48 +4013,17 @@ func (m *metricSaphanaTransactionCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSaphanaTransactionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, transactionTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SaphanaTransactionCountAttributeKeyTransactionType) {
-		dp.Attributes().PutStr("type", transactionTypeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("type", transactionTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4255,11 +4036,6 @@ func (m *metricSaphanaTransactionCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaTransactionCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -4371,10 +4147,9 @@ func newMetricSaphanaUptime(cfg SaphanaUptimeConfig) metricSaphanaUptime {
 }
 
 type metricSaphanaVolumeOperationCount struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        SaphanaVolumeOperationCountConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   SaphanaVolumeOperationCountConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills saphana.volume.operation.count metric with initial data.
@@ -4386,54 +4161,19 @@ func (m *metricSaphanaVolumeOperationCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSaphanaVolumeOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SaphanaVolumeOperationCountAttributeKeyPath) {
-		dp.Attributes().PutStr("path", pathAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SaphanaVolumeOperationCountAttributeKeyDiskUsageType) {
-		dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SaphanaVolumeOperationCountAttributeKeyVolumeOperationType) {
-		dp.Attributes().PutStr("type", volumeOperationTypeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("path", pathAttributeValue)
+	dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
+	dp.Attributes().PutStr("type", volumeOperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4446,11 +4186,6 @@ func (m *metricSaphanaVolumeOperationCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaVolumeOperationCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -4468,10 +4203,9 @@ func newMetricSaphanaVolumeOperationCount(cfg SaphanaVolumeOperationCountConfig)
 }
 
 type metricSaphanaVolumeOperationSize struct {
-	data          pmetric.Metric                   // data buffer for generated metric.
-	config        SaphanaVolumeOperationSizeConfig // metric config provided by user.
-	capacity      int                              // max observed number of data points added to the metric.
-	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   SaphanaVolumeOperationSizeConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills saphana.volume.operation.size metric with initial data.
@@ -4483,54 +4217,19 @@ func (m *metricSaphanaVolumeOperationSize) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSaphanaVolumeOperationSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SaphanaVolumeOperationSizeAttributeKeyPath) {
-		dp.Attributes().PutStr("path", pathAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SaphanaVolumeOperationSizeAttributeKeyDiskUsageType) {
-		dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SaphanaVolumeOperationSizeAttributeKeyVolumeOperationType) {
-		dp.Attributes().PutStr("type", volumeOperationTypeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("path", pathAttributeValue)
+	dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
+	dp.Attributes().PutStr("type", volumeOperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4543,11 +4242,6 @@ func (m *metricSaphanaVolumeOperationSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaVolumeOperationSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -4565,10 +4259,9 @@ func newMetricSaphanaVolumeOperationSize(cfg SaphanaVolumeOperationSizeConfig) m
 }
 
 type metricSaphanaVolumeOperationTime struct {
-	data          pmetric.Metric                   // data buffer for generated metric.
-	config        SaphanaVolumeOperationTimeConfig // metric config provided by user.
-	capacity      int                              // max observed number of data points added to the metric.
-	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   SaphanaVolumeOperationTimeConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills saphana.volume.operation.time metric with initial data.
@@ -4580,54 +4273,19 @@ func (m *metricSaphanaVolumeOperationTime) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSaphanaVolumeOperationTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SaphanaVolumeOperationTimeAttributeKeyPath) {
-		dp.Attributes().PutStr("path", pathAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SaphanaVolumeOperationTimeAttributeKeyDiskUsageType) {
-		dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SaphanaVolumeOperationTimeAttributeKeyVolumeOperationType) {
-		dp.Attributes().PutStr("type", volumeOperationTypeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("path", pathAttributeValue)
+	dp.Attributes().PutStr("usage_type", diskUsageTypeAttributeValue)
+	dp.Attributes().PutStr("type", volumeOperationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4640,11 +4298,6 @@ func (m *metricSaphanaVolumeOperationTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaVolumeOperationTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()

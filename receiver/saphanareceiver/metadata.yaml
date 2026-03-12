@@ -80,7 +80,7 @@ attributes:
     name_override: type
     description: The type of cpu.
     type: string
-    requirement_level: recommended
+    requirement_level: required
     enum:
       - user
       - system
@@ -102,7 +102,7 @@ attributes:
     name_override: usage_type
     description: The SAP HANA disk & volume usage type.
     type: string
-    requirement_level: recommended
+    requirement_level: required
   host_swap_state:
     name_override: state
     description: The state of swap data.
@@ -115,7 +115,7 @@ attributes:
     name_override: type
     description: The type of network request.
     type: string
-    requirement_level: recommended
+    requirement_level: required
     enum:
       - internal
       - external
@@ -131,7 +131,7 @@ attributes:
   path:
     description: The SAP HANA disk path.
     type: string
-    requirement_level: recommended
+    requirement_level: required
   port:
     description: The SAP HANA port.
     type: string
@@ -161,7 +161,7 @@ attributes:
   schema:
     description: The SAP HANA schema.
     type: string
-    requirement_level: recommended
+    requirement_level: required
   schema_memory_type:
     name_override: type
     description: The type of schema memory.
@@ -176,7 +176,7 @@ attributes:
     name_override: type
     description: The type of operation.
     type: string
-    requirement_level: recommended
+    requirement_level: required
     enum:
       - read
       - write
@@ -232,7 +232,7 @@ attributes:
     name_override: type
     description: The transaction type.
     type: string
-    requirement_level: recommended
+    requirement_level: required
     enum:
       - update
       - commit
@@ -241,7 +241,7 @@ attributes:
     name_override: type
     description: The type of operation.
     type: string
-    requirement_level: recommended
+    requirement_level: required
     enum:
       - read
       - write
