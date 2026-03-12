@@ -19,6 +19,10 @@ The Pprof Receiver collects profiles from files specified with a glob pattern, f
 - `include` (required): The glob path for files to watch
 - `collection_interval` (default = `1m`): The interval at which metrics are emitted by this receiver.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `block_profile_fraction` (default = `1`): (self scraper only) Fraction of blocking events that are profiled.
+  A value <= 0 disables profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.
+- `mutex_profile_fraction` (default = `1`): (self scraper only) Fraction of mutex contention events that are profiled.
+  A value <= 0 disables profiling. See https://golang.org/pkg/runtime/#SetMutexProfileFraction for details.
 
 ### Example
 

@@ -31,8 +31,10 @@ func createDefaultConfig() component.Config {
 	scraperCfg.CollectionInterval = 10 * time.Second
 
 	return &Config{
-		ControllerConfig: scraperCfg,
-		Include:          "",
+		ControllerConfig:     scraperCfg,
+		Include:              "",
+		BlockProfileFraction: 1,
+		MutexProfileFraction: 1,
 	}
 }
 
