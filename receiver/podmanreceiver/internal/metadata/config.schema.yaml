@@ -32,6 +32,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "core"
+            default:
+              - "core"
       container.cpu.usage.system:
         description: "ContainerCPUUsageSystemConfig provides config for the container.cpu.usage.system metric."
         type: object

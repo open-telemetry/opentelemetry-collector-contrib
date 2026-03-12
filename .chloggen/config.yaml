@@ -79,15 +79,15 @@ components:
     - extension/ack
     - extension/asapclient
     - extension/avro_log_encoding
+    - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
-    - extension/awslogs_encoding
     - extension/awsproxy
     - extension/azure_auth
     - extension/azure_encoding
     - extension/basicauth
     - extension/bearertokenauth
     - extension/cfgarden_observer
-    - extension/cgroupruntime
+    - extension/cgroup_runtime
     - extension/datadog
     - extension/db_storage
     - extension/docker_observer
