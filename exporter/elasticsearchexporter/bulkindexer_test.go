@@ -380,7 +380,7 @@ func BenchmarkRequireDataStreamPayloadOverhead(b *testing.B) {
 				biCfg := newBenchBulkIndexerConfig(b)
 				bi, err := docappender.NewBulkIndexer(biCfg)
 				require.NoError(b, err)
-				for i := 0; i < tc.numItems; i++ {
+				for range tc.numItems {
 					doc := strings.NewReader(`{"@timestamp":"2024-01-01T00:00:00Z","message":"test log message with some realistic content"}`)
 					err := bi.Add(docappender.BulkIndexerItem{
 						Index:             "logs-generic-default",
@@ -403,7 +403,7 @@ func TestRequireDataStreamPayloadSizeImpact(t *testing.T) {
 		biCfg := newBenchBulkIndexerConfig(t)
 		bi, err := docappender.NewBulkIndexer(biCfg)
 		require.NoError(t, err)
-		for i := 0; i < numItems; i++ {
+		for range numItems {
 			doc := strings.NewReader(`{"@timestamp":"2024-01-01T00:00:00Z","message":"test log message"}`)
 			err := bi.Add(docappender.BulkIndexerItem{
 				Index:             "logs-generic-default",
