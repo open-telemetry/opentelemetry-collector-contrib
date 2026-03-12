@@ -161,6 +161,9 @@ func TestLoadConfig(t *testing.T) {
 				HostName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
+				ServiceName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
 				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
@@ -189,6 +192,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 			ResourceAttributes: metadata.ResourceAttributesConfig{
 				HostName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				ServiceName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
 				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
