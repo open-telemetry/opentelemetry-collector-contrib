@@ -11,6 +11,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+            default:
+              - "status"
       mysql.buffer_pool.limit:
         description: "MysqlBufferPoolLimitConfig provides config for the mysql.buffer_pool.limit metric."
         type: object
@@ -25,6 +41,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       mysql.buffer_pool.page_flushes:
         description: "MysqlBufferPoolPageFlushesConfig provides config for the mysql.buffer_pool.page_flushes metric."
         type: object
@@ -39,6 +71,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.buffer_pool.usage:
         description: "MysqlBufferPoolUsageConfig provides config for the mysql.buffer_pool.usage metric."
         type: object
@@ -46,6 +94,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+            default:
+              - "status"
       mysql.client.network.io:
         description: "MysqlClientNetworkIoConfig provides config for the mysql.client.network.io metric."
         type: object
@@ -53,6 +117,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.commands:
         description: "MysqlCommandsConfig provides config for the mysql.commands metric."
         type: object
@@ -60,6 +140,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "command"
+            default:
+              - "command"
       mysql.connection.count:
         description: "MysqlConnectionCountConfig provides config for the mysql.connection.count metric."
         type: object
@@ -74,6 +170,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "error"
+            default:
+              - "error"
       mysql.double_writes:
         description: "MysqlDoubleWritesConfig provides config for the mysql.double_writes metric."
         type: object
@@ -81,6 +193,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.handlers:
         description: "MysqlHandlersConfig provides config for the mysql.handlers metric."
         type: object
@@ -88,6 +216,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.index.io.wait.count:
         description: "MysqlIndexIoWaitCountConfig provides config for the mysql.index.io.wait.count metric."
         type: object
@@ -95,6 +239,28 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "table"
+                - "schema"
+                - "index"
+            default:
+              - "operation"
+              - "table"
+              - "schema"
+              - "index"
       mysql.index.io.wait.time:
         description: "MysqlIndexIoWaitTimeConfig provides config for the mysql.index.io.wait.time metric."
         type: object
@@ -102,6 +268,28 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "table"
+                - "schema"
+                - "index"
+            default:
+              - "operation"
+              - "table"
+              - "schema"
+              - "index"
       mysql.joins:
         description: "MysqlJoinsConfig provides config for the mysql.joins metric."
         type: object
@@ -109,6 +297,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.locks:
         description: "MysqlLocksConfig provides config for the mysql.locks metric."
         type: object
@@ -116,6 +320,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.log_operations:
         description: "MysqlLogOperationsConfig provides config for the mysql.log_operations metric."
         type: object
@@ -123,6 +343,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       mysql.max_used_connections:
         description: "MysqlMaxUsedConnectionsConfig provides config for the mysql.max_used_connections metric."
         type: object
@@ -137,6 +373,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+            default:
+              - "status"
       mysql.mysqlx_worker_threads:
         description: "MysqlMysqlxWorkerThreadsConfig provides config for the mysql.mysqlx_worker_threads metric."
         type: object
@@ -144,6 +396,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.opened_resources:
         description: "MysqlOpenedResourcesConfig provides config for the mysql.opened_resources metric."
         type: object
@@ -151,6 +419,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.operations:
         description: "MysqlOperationsConfig provides config for the mysql.operations metric."
         type: object
@@ -158,6 +442,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       mysql.page_operations:
         description: "MysqlPageOperationsConfig provides config for the mysql.page_operations metric."
         type: object
@@ -165,6 +465,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       mysql.page_size:
         description: "MysqlPageSizeConfig provides config for the mysql.page_size metric."
         type: object
@@ -179,6 +495,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "command"
+            default:
+              - "command"
       mysql.query.client.count:
         description: "MysqlQueryClientCountConfig provides config for the mysql.query.client.count metric."
         type: object
@@ -221,6 +553,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.row_operations:
         description: "MysqlRowOperationsConfig provides config for the mysql.row_operations metric."
         type: object
@@ -228,6 +576,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       mysql.sorts:
         description: "MysqlSortsConfig provides config for the mysql.sorts metric."
         type: object
@@ -235,6 +599,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.statement_event.count:
         description: "MysqlStatementEventCountConfig provides config for the mysql.statement_event.count metric."
         type: object
@@ -242,6 +622,28 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "schema"
+                - "digest"
+                - "digest_text"
+                - "kind"
+            default:
+              - "schema"
+              - "digest"
+              - "digest_text"
+              - "kind"
       mysql.statement_event.wait.time:
         description: "MysqlStatementEventWaitTimeConfig provides config for the mysql.statement_event.wait.time metric."
         type: object
@@ -249,6 +651,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "schema"
+                - "digest"
+                - "digest_text"
+            default:
+              - "schema"
+              - "digest"
+              - "digest_text"
       mysql.table.average_row_length:
         description: "MysqlTableAverageRowLengthConfig provides config for the mysql.table.average_row_length metric."
         type: object
@@ -256,6 +678,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "table"
+                - "schema"
+            default:
+              - "table"
+              - "schema"
       mysql.table.io.wait.count:
         description: "MysqlTableIoWaitCountConfig provides config for the mysql.table.io.wait.count metric."
         type: object
@@ -263,6 +703,26 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "table"
+                - "schema"
+            default:
+              - "operation"
+              - "table"
+              - "schema"
       mysql.table.io.wait.time:
         description: "MysqlTableIoWaitTimeConfig provides config for the mysql.table.io.wait.time metric."
         type: object
@@ -270,6 +730,26 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "table"
+                - "schema"
+            default:
+              - "operation"
+              - "table"
+              - "schema"
       mysql.table.lock_wait.read.count:
         description: "MysqlTableLockWaitReadCountConfig provides config for the mysql.table.lock_wait.read.count metric."
         type: object
@@ -277,6 +757,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "schema"
+                - "table"
+                - "kind"
+            default:
+              - "schema"
+              - "table"
+              - "kind"
       mysql.table.lock_wait.read.time:
         description: "MysqlTableLockWaitReadTimeConfig provides config for the mysql.table.lock_wait.read.time metric."
         type: object
@@ -284,6 +784,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "schema"
+                - "table"
+                - "kind"
+            default:
+              - "schema"
+              - "table"
+              - "kind"
       mysql.table.lock_wait.write.count:
         description: "MysqlTableLockWaitWriteCountConfig provides config for the mysql.table.lock_wait.write.count metric."
         type: object
@@ -291,6 +811,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "schema"
+                - "table"
+                - "kind"
+            default:
+              - "schema"
+              - "table"
+              - "kind"
       mysql.table.lock_wait.write.time:
         description: "MysqlTableLockWaitWriteTimeConfig provides config for the mysql.table.lock_wait.write.time metric."
         type: object
@@ -298,6 +838,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "schema"
+                - "table"
+                - "kind"
+            default:
+              - "schema"
+              - "table"
+              - "kind"
       mysql.table.rows:
         description: "MysqlTableRowsConfig provides config for the mysql.table.rows metric."
         type: object
@@ -305,6 +865,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "table"
+                - "schema"
+            default:
+              - "table"
+              - "schema"
       mysql.table.size:
         description: "MysqlTableSizeConfig provides config for the mysql.table.size metric."
         type: object
@@ -312,6 +890,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "table"
+                - "schema"
+                - "kind"
+            default:
+              - "table"
+              - "schema"
+              - "kind"
       mysql.table_open_cache:
         description: "MysqlTableOpenCacheConfig provides config for the mysql.table_open_cache metric."
         type: object
@@ -319,6 +917,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+            default:
+              - "status"
       mysql.threads:
         description: "MysqlThreadsConfig provides config for the mysql.threads metric."
         type: object
@@ -326,6 +940,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "kind"
+            default:
+              - "kind"
       mysql.tmp_resources:
         description: "MysqlTmpResourcesConfig provides config for the mysql.tmp_resources metric."
         type: object
@@ -333,6 +963,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "resource"
+            default:
+              - "resource"
       mysql.uptime:
         description: "MysqlUptimeConfig provides config for the mysql.uptime metric."
         type: object
