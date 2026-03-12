@@ -12,10 +12,10 @@ import (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, hpa *autoscalingv2.HorizontalPodAutoscaler, ts pcommon.Timestamp) {
-	mb.RecordK8sHpaMaxReplicasDataPoint(ts, int64(hpa.Spec.MaxReplicas))
-	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))
-	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas))
-	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas))
+	mb.RecordK8sHpaMaxReplicasDataPoint(ts, int64(hpa.Spec.MaxReplicas))           //nolint:staticcheck
+	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))          //nolint:staticcheck
+	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas)) //nolint:staticcheck
+	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas)) //nolint:staticcheck
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sHpaUID(string(hpa.UID))
 	rb.SetK8sHpaName(hpa.Name)
@@ -23,7 +23,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, hpa *autoscalingv2.HorizontalPod
 	rb.SetK8sHpaScaletargetrefApiversion(hpa.Spec.ScaleTargetRef.APIVersion)
 	rb.SetK8sHpaScaletargetrefKind(hpa.Spec.ScaleTargetRef.Kind)
 	rb.SetK8sHpaScaletargetrefName(hpa.Spec.ScaleTargetRef.Name)
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
 }
 
 func GetMetadata(hpa *autoscalingv2.HorizontalPodAutoscaler) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

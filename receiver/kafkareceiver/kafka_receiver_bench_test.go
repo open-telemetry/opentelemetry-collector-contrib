@@ -14,27 +14,27 @@ func BenchmarkContextWithHeaders(b *testing.B) {
 	baseCtx := b.Context()
 	tests := []struct {
 		name    string
-		headers messageHeaders
+		headers []kgo.RecordHeader
 	}{
 		{
 			name:    "no headers",
-			headers: franzHeaders{headers: nil},
+			headers: nil,
 		},
 		{
 			name: "1 header",
-			headers: franzHeaders{headers: []kgo.RecordHeader{
+			headers: []kgo.RecordHeader{
 				{Key: "trace-id", Value: []byte("abc123")},
-			}},
+			},
 		},
 		{
 			name: "5 headers",
-			headers: franzHeaders{headers: []kgo.RecordHeader{
+			headers: []kgo.RecordHeader{
 				{Key: "trace-id", Value: []byte("abc123")},
 				{Key: "span-id", Value: []byte("def456")},
 				{Key: "tenant", Value: []byte("acme")},
 				{Key: "source", Value: []byte("app1")},
 				{Key: "env", Value: []byte("prod")},
-			}},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -64,12 +64,10 @@ func BenchmarkGetMessageHeaderResourceAttributes(b *testing.B) {
 				Key:   "unrelated",
 				Value: []byte("ignored"),
 			})
-			headers := franzHeaders{headers: kgoHeaders}
-
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				for k, v := range getMessageHeaderResourceAttributes(headers, headerAttrKeys) {
+				for k, v := range getMessageHeaderResourceAttributes(kgoHeaders, headerAttrKeys) {
 					_ = k
 					_ = v
 				}
