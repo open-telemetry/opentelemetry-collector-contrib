@@ -773,9 +773,7 @@ func (r *receiverStream) srvSendLoop(ctx context.Context, serverStream anyStream
 // along with the number of items and true uncompressed size.
 //
 // The signal type is determined by the gRPC service method (e.g.,
-// ArrowTraces, ArrowLogs, ArrowMetrics) rather than by inspecting
-// payload positions. This ensures correct behavior regardless of
-// payload ordering within the batch.
+// ArrowTraces, ArrowLogs, ArrowMetrics)
 func (r *Receiver) consumeBatch(arrowConsumer arrowRecord.ConsumerAPI, records *arrowpb.BatchArrowRecords, sig signalType) (retData any, numItems int, uncompSize int64, retErr error) {
 	switch sig {
 	case signalMetrics:
