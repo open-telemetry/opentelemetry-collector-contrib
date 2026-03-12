@@ -368,39 +368,10 @@ func (ctc *commonTestCase) newOOMConsumer() arrowRecord.ConsumerAPI {
 }
 
 func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *extensionauth.Server)) {
-	var authServer extensionauth.Server
-	var gsettings configgrpc.ServerConfig
-	for _, gf := range opts {
-		gf(&gsettings, &authServer)
-	}
-	rc := receiver.Settings{
-		TelemetrySettings: ctc.telset,
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             component.NewID(component.MustNewType("arrowtest")),
-		Transport:              "grpc",
-		ReceiverCreateSettings: rc,
-	})
-	require.NoError(ctc.T, err)
-
-	rcvr, err := New(
-		ctc.consumers,
-		rc,
-		obsrecv,
-		gsettings,
-		authServer,
-		newConsumer,
-		bq,
-		netstats.Noop{},
-	)
-	require.NoError(ctc.T, err)
-	go func() {
-		ctc.streamErr <- rcvr.ArrowTraces(ctc.stream)
-	}()
+	ctc.startWithSignal(signalTraces, newConsumer, bq, opts...)
 }
 
-func (ctc *commonTestCase) startWithMethod(method string, newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *extensionauth.Server)) {
+func (ctc *commonTestCase) startWithSignal(sig signalType, newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *extensionauth.Server)) {
 	var authServer extensionauth.Server
 	var gsettings configgrpc.ServerConfig
 	for _, gf := range opts {
@@ -429,7 +400,7 @@ func (ctc *commonTestCase) startWithMethod(method string, newConsumer func() arr
 	)
 	require.NoError(ctc.T, err)
 	go func() {
-		ctc.streamErr <- rcvr.anyStream(ctc.stream, method)
+		ctc.streamErr <- rcvr.anyStream(ctc.stream, sig)
 	}()
 }
 
@@ -569,7 +540,7 @@ func TestReceiverLogs(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
 
-	ctc.startWithMethod(arrowLogsMethod, ctc.newRealConsumer, defaultBQ())
+	ctc.startWithSignal(signalLogs, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.Equal(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
@@ -589,7 +560,7 @@ func TestReceiverMetrics(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
 
-	ctc.startWithMethod(arrowMetricsMethod, ctc.newRealConsumer, defaultBQ())
+	ctc.startWithSignal(signalMetrics, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	otelAssert.Equiv(stdTesting, []json.Marshaler{
@@ -624,7 +595,7 @@ func TestReceiverSendError(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(status.Errorf(codes.Unavailable, "test send error"))
 
-	ctc.startWithMethod(arrowLogsMethod, ctc.newRealConsumer, defaultBQ())
+	ctc.startWithSignal(signalLogs, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.EqualValues(t, ld, (<-ctc.consume).Data)
@@ -671,7 +642,7 @@ func TestReceiverTimeoutError(t *testing.T) {
 	batch.Headers = make([]byte, hpb.Len())
 	copy(batch.Headers, hpb.Bytes())
 
-	ctc.startWithMethod(arrowLogsMethod, ctc.newRealConsumer, defaultBQ())
+	ctc.startWithSignal(signalLogs, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.EqualValues(t, ld, (<-ctc.consume).Data)
@@ -693,13 +664,13 @@ func TestReceiverConsumeError(t *testing.T) {
 	stdTesting := otelAssert.NewStdUnitTest(t)
 
 	type testItem struct {
-		data   any
-		method string
+		data any
+		sig  signalType
 	}
 	items := []testItem{
-		{data: testdata.GenerateTraces(2), method: arrowTracesMethod},
-		{data: testdata.GenerateMetrics(2), method: arrowMetricsMethod},
-		{data: testdata.GenerateLogs(2), method: arrowLogsMethod},
+		{data: testdata.GenerateTraces(2), sig: signalTraces},
+		{data: testdata.GenerateMetrics(2), sig: signalMetrics},
+		{data: testdata.GenerateLogs(2), sig: signalLogs},
 	}
 
 	for _, item := range items {
@@ -724,7 +695,7 @@ func TestReceiverConsumeError(t *testing.T) {
 
 		ctc.stream.EXPECT().Send(statusUnavailableFor(batch.BatchId, "consumer unhealthy")).Times(1).Return(nil)
 
-		ctc.startWithMethod(item.method, ctc.newRealConsumer, defaultBQ())
+		ctc.startWithSignal(item.sig, ctc.newRealConsumer, defaultBQ())
 
 		ctc.putBatch(batch, nil)
 
@@ -756,13 +727,13 @@ func TestReceiverConsumeError(t *testing.T) {
 
 func TestReceiverInvalidData(t *testing.T) {
 	type testItem struct {
-		data   any
-		method string
+		data any
+		sig  signalType
 	}
 	items := []testItem{
-		{data: testdata.GenerateTraces(2), method: arrowTracesMethod},
-		{data: testdata.GenerateMetrics(2), method: arrowMetricsMethod},
-		{data: testdata.GenerateLogs(2), method: arrowLogsMethod},
+		{data: testdata.GenerateTraces(2), sig: signalTraces},
+		{data: testdata.GenerateMetrics(2), sig: signalMetrics},
+		{data: testdata.GenerateLogs(2), sig: signalLogs},
 	}
 
 	for _, item := range items {
@@ -786,7 +757,7 @@ func TestReceiverInvalidData(t *testing.T) {
 		batch = copyBatch(batch)
 
 		// newErrorConsumer determines the internal error in decoding above
-		ctc.startWithMethod(item.method, ctc.newErrorConsumer, defaultBQ())
+		ctc.startWithSignal(item.sig, ctc.newErrorConsumer, defaultBQ())
 		ctc.putBatch(batch, nil)
 
 		err = ctc.wait()
@@ -796,13 +767,13 @@ func TestReceiverInvalidData(t *testing.T) {
 
 func TestReceiverMemoryLimit(t *testing.T) {
 	type testItem struct {
-		data   any
-		method string
+		data any
+		sig  signalType
 	}
 	items := []testItem{
-		{data: testdata.GenerateTraces(2), method: arrowTracesMethod},
-		{data: testdata.GenerateMetrics(2), method: arrowMetricsMethod},
-		{data: testdata.GenerateLogs(2), method: arrowLogsMethod},
+		{data: testdata.GenerateTraces(2), sig: signalTraces},
+		{data: testdata.GenerateMetrics(2), sig: signalMetrics},
+		{data: testdata.GenerateLogs(2), sig: signalLogs},
 	}
 
 	for _, item := range items {
@@ -827,7 +798,7 @@ func TestReceiverMemoryLimit(t *testing.T) {
 
 		// The Recv() returns an error, there are no Send() calls.
 
-		ctc.startWithMethod(item.method, ctc.newOOMConsumer, defaultBQ())
+		ctc.startWithSignal(item.sig, ctc.newOOMConsumer, defaultBQ())
 		ctc.putBatch(batch, nil)
 
 		err = ctc.wait()
@@ -867,7 +838,7 @@ func TestReceiverPayloadPositionIndependent(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
 
-	ctc.startWithMethod(arrowTracesMethod, ctc.newRealConsumer, defaultBQ())
+	ctc.startWithSignal(signalTraces, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	otelAssert.Equiv(stdTesting, []json.Marshaler{

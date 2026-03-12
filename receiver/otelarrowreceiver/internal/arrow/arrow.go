@@ -305,29 +305,30 @@ const (
 	signalLogs
 )
 
-func signalTypeFromMethod(method string) signalType {
-	switch method {
-	case arrowTracesMethod:
-		return signalTraces
-	case arrowMetricsMethod:
-		return signalMetrics
-	case arrowLogsMethod:
-		return signalLogs
+// method returns the gRPC method name for netstats reporting.
+func (s signalType) method() string {
+	switch s {
+	case signalTraces:
+		return arrowTracesMethod
+	case signalMetrics:
+		return arrowMetricsMethod
+	case signalLogs:
+		return arrowLogsMethod
 	default:
-		return 0
+		return ""
 	}
 }
 
 func (r *Receiver) ArrowTraces(serverStream arrowpb.ArrowTracesService_ArrowTracesServer) error {
-	return r.anyStream(serverStream, arrowTracesMethod)
+	return r.anyStream(serverStream, signalTraces)
 }
 
 func (r *Receiver) ArrowLogs(serverStream arrowpb.ArrowLogsService_ArrowLogsServer) error {
-	return r.anyStream(serverStream, arrowLogsMethod)
+	return r.anyStream(serverStream, signalLogs)
 }
 
 func (r *Receiver) ArrowMetrics(serverStream arrowpb.ArrowMetricsService_ArrowMetricsServer) error {
-	return r.anyStream(serverStream, arrowMetricsMethod)
+	return r.anyStream(serverStream, signalMetrics)
 }
 
 type anyStreamServer interface {
@@ -354,7 +355,7 @@ func (r *Receiver) recoverErr(retErr *error) {
 	}
 }
 
-func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retErr error) {
+func (r *Receiver) anyStream(serverStream anyStreamServer, sig signalType) (retErr error) {
 	streamCtx := serverStream.Context()
 	ac := r.newConsumer()
 
@@ -394,7 +395,7 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 		var err error
 		defer recvWG.Done()
 		defer r.recoverErr(&err)
-		err = rstream.srvReceiveLoop(doneCtx, serverStream, pendingCh, method, ac)
+		err = rstream.srvReceiveLoop(doneCtx, serverStream, pendingCh, sig, ac)
 		recvErrCh <- err
 	}()
 
@@ -433,13 +434,13 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	}
 }
 
-func (r *receiverStream) newInFlightData(ctx context.Context, method string, batchID int64, pendingCh chan<- batchResp) *inFlightData {
+func (r *receiverStream) newInFlightData(ctx context.Context, sig signalType, batchID int64, pendingCh chan<- batchResp) *inFlightData {
 	_, span := r.tracer.Start(ctx, "otel_arrow_stream_inflight")
 
 	r.inFlightWG.Add(1)
 	id := &inFlightData{
 		receiverStream: r,
-		method:         method,
+		sig:            sig,
 		batchID:        batchID,
 		pendingCh:      pendingCh,
 		span:           span,
@@ -453,7 +454,7 @@ type inFlightData struct {
 	// Receiver is the owner of the resources held by this object.
 	*receiverStream
 
-	method    string
+	sig       signalType
 	batchID   int64
 	pendingCh chan<- batchResp
 	span      trace.Span
@@ -523,7 +524,7 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 	// directly here.  Only the primary direction of transport
 	// is instrumented this way.
 	var sized netstats.SizesStruct
-	sized.Method = id.method
+	sized.Method = id.sig.method()
 	sized.Length = id.uncompSize
 	id.netReporter.CountReceive(ctx, sized)
 
@@ -547,7 +548,7 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 // This handles constructing an inFlightData object, which itself
 // tracks everything that needs to be used by instrumentation when the
 // batch finishes.
-func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStreamServer, hrcv *headerReceiver, pendingCh chan<- batchResp, method string, ac arrowRecord.ConsumerAPI) (retErr error) {
+func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStreamServer, hrcv *headerReceiver, pendingCh chan<- batchResp, sig signalType, ac arrowRecord.ConsumerAPI) (retErr error) {
 	// Receive a batch corresponding with one ptrace.Traces, pmetric.Metrics,
 	// or plog.Logs item.
 	req, recvErr := serverStream.Recv()
@@ -556,7 +557,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// carries a span covering sequential stream-processing work.  the context
 	// is severed at this point, with flight.span a contextless child that will be
 	// finished in recvDone().
-	flight := r.newInFlightData(streamCtx, method, req.GetBatchId(), pendingCh)
+	flight := r.newInFlightData(streamCtx, sig, req.GetBatchId(), pendingCh)
 
 	// inflightCtx is carried through into consumeAndProcess on the success path.
 	// this inherits the stream context so that its auth headers are present
@@ -621,7 +622,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		}
 	}
 
-	data, numItems, uncompSize, consumeErr := r.consumeBatch(ac, req, signalTypeFromMethod(method))
+	data, numItems, uncompSize, consumeErr := r.consumeBatch(ac, req, sig)
 
 	if consumeErr != nil {
 		if errors.Is(consumeErr, arrowRecord.ErrConsumerMemoryLimit) {
@@ -675,14 +676,14 @@ func (r *Receiver) consumeAndRespond(ctx, streamCtx context.Context, data any, f
 }
 
 // srvReceiveLoop repeatedly receives one batch of data.
-func (r *receiverStream) srvReceiveLoop(ctx context.Context, serverStream anyStreamServer, pendingCh chan<- batchResp, method string, ac arrowRecord.ConsumerAPI) (retErr error) {
+func (r *receiverStream) srvReceiveLoop(ctx context.Context, serverStream anyStreamServer, pendingCh chan<- batchResp, sig signalType, ac arrowRecord.ConsumerAPI) (retErr error) {
 	hrcv := newHeaderReceiver(ctx, r.authServer, r.gsettings.IncludeMetadata)
 	for {
 		select {
 		case <-ctx.Done():
 			return status.Error(codes.Canceled, "server stream shutdown")
 		default:
-			if err := r.recvOne(ctx, serverStream, hrcv, pendingCh, method, ac); err != nil {
+			if err := r.recvOne(ctx, serverStream, hrcv, pendingCh, sig, ac); err != nil {
 				return err
 			}
 		}
