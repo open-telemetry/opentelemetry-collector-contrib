@@ -19,7 +19,7 @@ properties:
     description: 'Encoding holds the encoding of Kafka message values. Encoding has no default. If explicitly specified, it will take precedence over the default values of logs::encoding, metrics::encoding, and traces::encoding. Deprecated [v0.124.0]: use logs::encoding, metrics::encoding, and traces::encoding instead.'
     type: string
   include_metadata_keys:
-    description: IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers. When `sending_queue::batch` is enabled, `sending_queue::batch::partition::metadata_keys` must be configured and include all values set in IncludeMetadataKeys.
+    description: IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers.
     type: array
     items:
       type: string
