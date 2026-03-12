@@ -19,6 +19,8 @@ import (
 type client interface {
 	Get(path string) ([]byte, error)
 	GetStats(nodeName string) (map[string]any, error)
+	GetNodeInfo(nodeName string) (map[string]any, error)
+	GetRootInfo() (map[string]any, error)
 }
 
 var _ client = (*couchDBClient)(nil)
@@ -91,6 +93,37 @@ func (c *couchDBClient) GetStats(nodeName string) (map[string]any, error) {
 	}
 
 	return stats, nil
+}
+
+func (c *couchDBClient) GetNodeInfo(nodeName string) (map[string]any, error) {
+	path := fmt.Sprintf("/_node/%s/", nodeName)
+	body, err := c.Get(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var obj map[string]any
+	err = json.Unmarshal(body, &obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return obj, nil
+}
+
+func (c *couchDBClient) GetRootInfo() (map[string]any, error) {
+	body, err := c.Get("/")
+	if err != nil {
+		return nil, err
+	}
+
+	var obj map[string]any
+	err = json.Unmarshal(body, &obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return obj, nil
 }
 
 func (c *couchDBClient) buildReq(path string) (*http.Request, error) {

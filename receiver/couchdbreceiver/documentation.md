@@ -104,4 +104,7 @@ The number of views read.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| couchdb.node.name | The name of the node. | Any Str | true |
+| couchdb.node.name | The name of the configured endpoint. | Any Str | true |
+| couchdb.version | The reported version of CouchDB. | Any Str | false |
+| service.instance.id | The GUID of the CouchDB instance. | Any Str | true |
+| service.name | The reported name of the CouchDB instance. | Any Str | true |

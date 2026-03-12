@@ -38,6 +38,8 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape from couchdb version 2.31", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
+		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
 
@@ -55,6 +57,8 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_3.12.json"))
+		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
 
@@ -72,6 +76,8 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape returns nothing", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(map[string]any{}, nil)
+		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
 
@@ -98,6 +104,8 @@ func TestScrape(t *testing.T) {
 		settings.Logger = zap.New(obs)
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats(""))
+		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 		scraper := newCouchdbScraper(settings, cfg)
 		scraper.client = mockClient
 
@@ -113,6 +121,36 @@ func TestScrape(t *testing.T) {
 				},
 			},
 		}, logs.AllUntimed())
+	})
+
+	t.Run("scrape resource attributes", func(t *testing.T) {
+		// NOTE: Depends on .start too
+
+		cfgAll := f.CreateDefaultConfig().(*Config)
+		cfgAll.Username = "otelu"
+		cfgAll.Password = "otelp"
+		// Enable disabled-by-default ResourceAttributes
+		cfgAll.ResourceAttributes.CouchdbVersion.Enabled = true
+		require.NoError(t, xconfmap.Validate(cfgAll))
+
+		mockClient := new(mockClient)
+		mockClient.On("GetStats", "_local").Return(getStats("response_3.12.json"))
+		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
+		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfgAll)
+		scraper.client = mockClient
+
+		expectedResourceAttributes := map[string]any{
+			"couchdb.node.name":   "http://localhost:5984",
+			"couchdb.version":     "3.5.0",
+			"service.instance.id": "1234-5678-9012",
+			"service.name":        "couchdb@1.2.3.4",
+		}
+
+		actualMetrics, err := scraper.scrape(t.Context())
+		require.NoError(t, err)
+
+		require.Equal(t, expectedResourceAttributes, actualMetrics.ResourceMetrics().At(0).Resource().Attributes().AsRaw())
 	})
 }
 
@@ -145,6 +183,8 @@ func TestStart(t *testing.T) {
 func TestMetricSettings(t *testing.T) {
 	mockClient := new(mockClient)
 	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
+	mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+	mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 	mbc := metadata.DefaultMetricsBuilderConfig()
 	mbc.Metrics = metadata.MetricsConfig{
 		CouchdbAverageRequestTime: metadata.MetricConfig{Enabled: false},
@@ -238,6 +278,48 @@ func (_m *mockClient) GetStats(nodeName string) (map[string]any, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(nodeName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetNodeInfo provides a mock function with given fields: nodeName
+func (_m *mockClient) GetNodeInfo(nodeName string) (map[string]any, error) {
+	ret := _m.Called(nodeName)
+
+	var r0 map[string]any
+	if rf, ok := ret.Get(0).(func(string) map[string]any); ok {
+		r0 = rf(nodeName)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(map[string]any)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(nodeName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRootInfo provides a mock function with no given fields
+func (_m *mockClient) GetRootInfo() (map[string]any, error) {
+	ret := _m.Called()
+
+	var r0 map[string]any
+	if rf, ok := ret.Get(0).(func() map[string]any); ok {
+		r0 = rf()
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(map[string]any)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}

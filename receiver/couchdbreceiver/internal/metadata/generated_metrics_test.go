@@ -101,6 +101,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetCouchdbNodeName("couchdb.node.name-val")
+			rb.SetCouchdbVersion("couchdb.version-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

@@ -52,7 +52,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					CouchdbNodeName: ResourceAttributeConfig{Enabled: true},
+					CouchdbNodeName:   ResourceAttributeConfig{Enabled: true},
+					CouchdbVersion:    ResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+					ServiceName:       ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -86,7 +89,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					CouchdbNodeName: ResourceAttributeConfig{Enabled: false},
+					CouchdbNodeName:   ResourceAttributeConfig{Enabled: false},
+					CouchdbVersion:    ResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
+					ServiceName:       ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -122,13 +128,19 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				CouchdbNodeName: ResourceAttributeConfig{Enabled: true},
+				CouchdbNodeName:   ResourceAttributeConfig{Enabled: true},
+				CouchdbVersion:    ResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+				ServiceName:       ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				CouchdbNodeName: ResourceAttributeConfig{Enabled: false},
+				CouchdbNodeName:   ResourceAttributeConfig{Enabled: false},
+				CouchdbVersion:    ResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
+				ServiceName:       ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

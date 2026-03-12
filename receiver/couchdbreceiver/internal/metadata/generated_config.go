@@ -96,12 +96,24 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for couchdb resource attributes.
 type ResourceAttributesConfig struct {
-	CouchdbNodeName ResourceAttributeConfig `mapstructure:"couchdb.node.name"`
+	CouchdbNodeName   ResourceAttributeConfig `mapstructure:"couchdb.node.name"`
+	CouchdbVersion    ResourceAttributeConfig `mapstructure:"couchdb.version"`
+	ServiceInstanceID ResourceAttributeConfig `mapstructure:"service.instance.id"`
+	ServiceName       ResourceAttributeConfig `mapstructure:"service.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		CouchdbNodeName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CouchdbVersion: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceInstanceID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServiceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
