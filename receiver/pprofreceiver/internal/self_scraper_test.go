@@ -22,5 +22,5 @@ func TestScrapeSelf(t *testing.T) {
 	}()
 	p, err := s.ScrapeProfiles(t.Context())
 	require.NoError(t, err)
-	require.NotEqual(t, 0, p.ResourceProfiles().Len())
+	require.NotEqual(t, 0, p.ProfileCount())
 }
