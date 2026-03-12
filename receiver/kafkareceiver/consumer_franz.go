@@ -316,7 +316,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 					c.client.MarkCommitRecords(msg)
 				}
 				c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
-				if err := c.handleMessage(pc, wrapFranzMsg(msg)); err != nil {
+				if err := c.handleMessage(pc, msg); err != nil {
 					pc.logger.Error("unable to process message",
 						zap.Error(err),
 						zap.Int64("offset", msg.Offset),
@@ -507,13 +507,13 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 }
 
 // handleMessage is called on a per-partition basis.
-func (c *franzConsumer) handleMessage(pc *pc, msg kafkaMessage) error {
+func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 	if pc.backOff != nil {
 		defer pc.backOff.Reset()
 	}
 
 	for {
-		err := c.consumeMessage(pc.ctx, msg, pc.attrs)
+		err := c.consumeMessage(pc.ctx, record, pc.attrs)
 		if err == nil {
 			return nil // Successfully processed.
 		}
@@ -554,7 +554,7 @@ func (c *franzConsumer) handleMessage(pc *pc, msg kafkaMessage) error {
 		}
 		pc.logger.Error("failed to consume message, skipping due to message_marking config",
 			zap.Error(err),
-			zap.Int64("offset", msg.offset()),
+			zap.Int64("offset", record.Offset),
 		)
 		return nil
 	}

@@ -36,6 +36,8 @@ Currently supported following Azure Metrics export formats:
 * export via Diagnostic Settings ([multi-dimensional metrics are not supported](https://learn.microsoft.com/en-us/azure/azure-monitor/platform/diagnostic-settings?tabs=portal#metrics-limitations))
 * export via Data Collection Rules (DCRs) ([dimensions and metric filtering are supported](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-overview))
 
+[Transformation rules form Azure Metric fields to OpenTelemetry](./internal/unmarshaler/metrics/README.md)
+
 ***time_formats (Optional)***
 
 List of time formats that should be applied during Timestamp parsing of incoming metrics records.
@@ -48,7 +50,7 @@ Default: (unset), parse provided timestamp using default ISO8601
 
 ***aggregations (Optional)***
 
-List of Azure Metrics aggregations that should be exposed as a metrics.
+List of Azure Metrics aggregations that should be exposed as a metrics, see [Metrics transformation](./internal/unmarshaler/metrics/README.md)
 
 Supported list of aggregations:
 
