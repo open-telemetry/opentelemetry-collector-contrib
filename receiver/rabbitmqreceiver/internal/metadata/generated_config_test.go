@@ -26,244 +26,246 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RabbitmqConsumerCount: MetricConfig{
+					RabbitmqConsumerCount: RabbitmqConsumerCountConfig{
 						Enabled: true,
 					},
-					RabbitmqMessageAcknowledged: MetricConfig{
+					RabbitmqMessageAcknowledged: RabbitmqMessageAcknowledgedConfig{
 						Enabled: true,
 					},
-					RabbitmqMessageCurrent: MetricConfig{
-						Enabled: true,
+					RabbitmqMessageCurrent: RabbitmqMessageCurrentConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RabbitmqMessageCurrentAttributeKey{RabbitmqMessageCurrentAttributeKeyMessageState},
 					},
-					RabbitmqMessageDelivered: MetricConfig{
+					RabbitmqMessageDelivered: RabbitmqMessageDeliveredConfig{
 						Enabled: true,
 					},
-					RabbitmqMessageDropped: MetricConfig{
+					RabbitmqMessageDropped: RabbitmqMessageDroppedConfig{
 						Enabled: true,
 					},
-					RabbitmqMessagePublished: MetricConfig{
+					RabbitmqMessagePublished: RabbitmqMessagePublishedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeChannelClosed: MetricConfig{
+					RabbitmqNodeChannelClosed: RabbitmqNodeChannelClosedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeChannelClosedDetailsRate: MetricConfig{
+					RabbitmqNodeChannelClosedDetailsRate: RabbitmqNodeChannelClosedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeChannelCreated: MetricConfig{
+					RabbitmqNodeChannelCreated: RabbitmqNodeChannelCreatedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeChannelCreatedDetailsRate: MetricConfig{
+					RabbitmqNodeChannelCreatedDetailsRate: RabbitmqNodeChannelCreatedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeConnectionClosed: MetricConfig{
+					RabbitmqNodeConnectionClosed: RabbitmqNodeConnectionClosedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeConnectionClosedDetailsRate: MetricConfig{
+					RabbitmqNodeConnectionClosedDetailsRate: RabbitmqNodeConnectionClosedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeConnectionCreated: MetricConfig{
+					RabbitmqNodeConnectionCreated: RabbitmqNodeConnectionCreatedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeConnectionCreatedDetailsRate: MetricConfig{
+					RabbitmqNodeConnectionCreatedDetailsRate: RabbitmqNodeConnectionCreatedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeContextSwitches: MetricConfig{
+					RabbitmqNodeContextSwitches: RabbitmqNodeContextSwitchesConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeContextSwitchesDetailsRate: MetricConfig{
+					RabbitmqNodeContextSwitchesDetailsRate: RabbitmqNodeContextSwitchesDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeDiskFree: MetricConfig{
+					RabbitmqNodeDiskFree: RabbitmqNodeDiskFreeConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeDiskFreeAlarm: MetricConfig{
+					RabbitmqNodeDiskFreeAlarm: RabbitmqNodeDiskFreeAlarmConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeDiskFreeDetailsRate: MetricConfig{
+					RabbitmqNodeDiskFreeDetailsRate: RabbitmqNodeDiskFreeDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeDiskFreeLimit: MetricConfig{
+					RabbitmqNodeDiskFreeLimit: RabbitmqNodeDiskFreeLimitConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeFdTotal: MetricConfig{
+					RabbitmqNodeFdTotal: RabbitmqNodeFdTotalConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeFdUsed: MetricConfig{
+					RabbitmqNodeFdUsed: RabbitmqNodeFdUsedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeFdUsedDetailsRate: MetricConfig{
+					RabbitmqNodeFdUsedDetailsRate: RabbitmqNodeFdUsedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeGcBytesReclaimed: MetricConfig{
+					RabbitmqNodeGcBytesReclaimed: RabbitmqNodeGcBytesReclaimedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeGcBytesReclaimedDetailsRate: MetricConfig{
+					RabbitmqNodeGcBytesReclaimedDetailsRate: RabbitmqNodeGcBytesReclaimedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeGcNum: MetricConfig{
+					RabbitmqNodeGcNum: RabbitmqNodeGcNumConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeGcNumDetailsRate: MetricConfig{
+					RabbitmqNodeGcNumDetailsRate: RabbitmqNodeGcNumDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoReadAvgTime: MetricConfig{
+					RabbitmqNodeIoReadAvgTime: RabbitmqNodeIoReadAvgTimeConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoReadAvgTimeDetailsRate: MetricConfig{
+					RabbitmqNodeIoReadAvgTimeDetailsRate: RabbitmqNodeIoReadAvgTimeDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoReadBytes: MetricConfig{
+					RabbitmqNodeIoReadBytes: RabbitmqNodeIoReadBytesConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoReadBytesDetailsRate: MetricConfig{
+					RabbitmqNodeIoReadBytesDetailsRate: RabbitmqNodeIoReadBytesDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoReadCount: MetricConfig{
+					RabbitmqNodeIoReadCount: RabbitmqNodeIoReadCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoReadCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoReadCountDetailsRate: RabbitmqNodeIoReadCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoReopenCount: MetricConfig{
+					RabbitmqNodeIoReopenCount: RabbitmqNodeIoReopenCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoReopenCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoReopenCountDetailsRate: RabbitmqNodeIoReopenCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoSeekAvgTime: MetricConfig{
+					RabbitmqNodeIoSeekAvgTime: RabbitmqNodeIoSeekAvgTimeConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoSeekAvgTimeDetailsRate: MetricConfig{
+					RabbitmqNodeIoSeekAvgTimeDetailsRate: RabbitmqNodeIoSeekAvgTimeDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoSeekCount: MetricConfig{
+					RabbitmqNodeIoSeekCount: RabbitmqNodeIoSeekCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoSeekCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoSeekCountDetailsRate: RabbitmqNodeIoSeekCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoSyncAvgTime: MetricConfig{
+					RabbitmqNodeIoSyncAvgTime: RabbitmqNodeIoSyncAvgTimeConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoSyncAvgTimeDetailsRate: MetricConfig{
+					RabbitmqNodeIoSyncAvgTimeDetailsRate: RabbitmqNodeIoSyncAvgTimeDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoSyncCount: MetricConfig{
+					RabbitmqNodeIoSyncCount: RabbitmqNodeIoSyncCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoSyncCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoSyncCountDetailsRate: RabbitmqNodeIoSyncCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoWriteAvgTime: MetricConfig{
+					RabbitmqNodeIoWriteAvgTime: RabbitmqNodeIoWriteAvgTimeConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoWriteAvgTimeDetailsRate: MetricConfig{
+					RabbitmqNodeIoWriteAvgTimeDetailsRate: RabbitmqNodeIoWriteAvgTimeDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoWriteBytes: MetricConfig{
+					RabbitmqNodeIoWriteBytes: RabbitmqNodeIoWriteBytesConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoWriteBytesDetailsRate: MetricConfig{
+					RabbitmqNodeIoWriteBytesDetailsRate: RabbitmqNodeIoWriteBytesDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoWriteCount: MetricConfig{
+					RabbitmqNodeIoWriteCount: RabbitmqNodeIoWriteCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeIoWriteCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoWriteCountDetailsRate: RabbitmqNodeIoWriteCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMemAlarm: MetricConfig{
+					RabbitmqNodeMemAlarm: RabbitmqNodeMemAlarmConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMemLimit: MetricConfig{
+					RabbitmqNodeMemLimit: RabbitmqNodeMemLimitConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMemUsed: MetricConfig{
+					RabbitmqNodeMemUsed: RabbitmqNodeMemUsedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMemUsedDetailsRate: MetricConfig{
+					RabbitmqNodeMemUsedDetailsRate: RabbitmqNodeMemUsedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMnesiaDiskTxCount: MetricConfig{
+					RabbitmqNodeMnesiaDiskTxCount: RabbitmqNodeMnesiaDiskTxCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMnesiaDiskTxCountDetailsRate: MetricConfig{
+					RabbitmqNodeMnesiaDiskTxCountDetailsRate: RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMnesiaRAMTxCount: MetricConfig{
+					RabbitmqNodeMnesiaRAMTxCount: RabbitmqNodeMnesiaRAMTxCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMnesiaRAMTxCountDetailsRate: MetricConfig{
+					RabbitmqNodeMnesiaRAMTxCountDetailsRate: RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMsgStoreReadCount: MetricConfig{
+					RabbitmqNodeMsgStoreReadCount: RabbitmqNodeMsgStoreReadCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMsgStoreReadCountDetailsRate: MetricConfig{
+					RabbitmqNodeMsgStoreReadCountDetailsRate: RabbitmqNodeMsgStoreReadCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMsgStoreWriteCount: MetricConfig{
+					RabbitmqNodeMsgStoreWriteCount: RabbitmqNodeMsgStoreWriteCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeMsgStoreWriteCountDetailsRate: MetricConfig{
+					RabbitmqNodeMsgStoreWriteCountDetailsRate: RabbitmqNodeMsgStoreWriteCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeProcTotal: MetricConfig{
+					RabbitmqNodeProcTotal: RabbitmqNodeProcTotalConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeProcUsed: MetricConfig{
+					RabbitmqNodeProcUsed: RabbitmqNodeProcUsedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeProcUsedDetailsRate: MetricConfig{
+					RabbitmqNodeProcUsedDetailsRate: RabbitmqNodeProcUsedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeProcessors: MetricConfig{
+					RabbitmqNodeProcessors: RabbitmqNodeProcessorsConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueCreated: MetricConfig{
+					RabbitmqNodeQueueCreated: RabbitmqNodeQueueCreatedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueCreatedDetailsRate: MetricConfig{
+					RabbitmqNodeQueueCreatedDetailsRate: RabbitmqNodeQueueCreatedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueDeclared: MetricConfig{
+					RabbitmqNodeQueueDeclared: RabbitmqNodeQueueDeclaredConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueDeclaredDetailsRate: MetricConfig{
+					RabbitmqNodeQueueDeclaredDetailsRate: RabbitmqNodeQueueDeclaredDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueDeleted: MetricConfig{
+					RabbitmqNodeQueueDeleted: RabbitmqNodeQueueDeletedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueDeletedDetailsRate: MetricConfig{
+					RabbitmqNodeQueueDeletedDetailsRate: RabbitmqNodeQueueDeletedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueIndexReadCount: MetricConfig{
+					RabbitmqNodeQueueIndexReadCount: RabbitmqNodeQueueIndexReadCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueIndexReadCountDetailsRate: MetricConfig{
+					RabbitmqNodeQueueIndexReadCountDetailsRate: RabbitmqNodeQueueIndexReadCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueIndexWriteCount: MetricConfig{
+					RabbitmqNodeQueueIndexWriteCount: RabbitmqNodeQueueIndexWriteCountConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeQueueIndexWriteCountDetailsRate: MetricConfig{
+					RabbitmqNodeQueueIndexWriteCountDetailsRate: RabbitmqNodeQueueIndexWriteCountDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeRunQueue: MetricConfig{
+					RabbitmqNodeRunQueue: RabbitmqNodeRunQueueConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeSocketsTotal: MetricConfig{
+					RabbitmqNodeSocketsTotal: RabbitmqNodeSocketsTotalConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeSocketsUsed: MetricConfig{
+					RabbitmqNodeSocketsUsed: RabbitmqNodeSocketsUsedConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeSocketsUsedDetailsRate: MetricConfig{
+					RabbitmqNodeSocketsUsedDetailsRate: RabbitmqNodeSocketsUsedDetailsRateConfig{
 						Enabled: true,
 					},
-					RabbitmqNodeUptime: MetricConfig{
+					RabbitmqNodeUptime: RabbitmqNodeUptimeConfig{
 						Enabled: true,
 					},
 				},
@@ -278,244 +280,246 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RabbitmqConsumerCount: MetricConfig{
+					RabbitmqConsumerCount: RabbitmqConsumerCountConfig{
 						Enabled: false,
 					},
-					RabbitmqMessageAcknowledged: MetricConfig{
+					RabbitmqMessageAcknowledged: RabbitmqMessageAcknowledgedConfig{
 						Enabled: false,
 					},
-					RabbitmqMessageCurrent: MetricConfig{
-						Enabled: false,
+					RabbitmqMessageCurrent: RabbitmqMessageCurrentConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RabbitmqMessageCurrentAttributeKey{RabbitmqMessageCurrentAttributeKeyMessageState},
 					},
-					RabbitmqMessageDelivered: MetricConfig{
+					RabbitmqMessageDelivered: RabbitmqMessageDeliveredConfig{
 						Enabled: false,
 					},
-					RabbitmqMessageDropped: MetricConfig{
+					RabbitmqMessageDropped: RabbitmqMessageDroppedConfig{
 						Enabled: false,
 					},
-					RabbitmqMessagePublished: MetricConfig{
+					RabbitmqMessagePublished: RabbitmqMessagePublishedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeChannelClosed: MetricConfig{
+					RabbitmqNodeChannelClosed: RabbitmqNodeChannelClosedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeChannelClosedDetailsRate: MetricConfig{
+					RabbitmqNodeChannelClosedDetailsRate: RabbitmqNodeChannelClosedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeChannelCreated: MetricConfig{
+					RabbitmqNodeChannelCreated: RabbitmqNodeChannelCreatedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeChannelCreatedDetailsRate: MetricConfig{
+					RabbitmqNodeChannelCreatedDetailsRate: RabbitmqNodeChannelCreatedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeConnectionClosed: MetricConfig{
+					RabbitmqNodeConnectionClosed: RabbitmqNodeConnectionClosedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeConnectionClosedDetailsRate: MetricConfig{
+					RabbitmqNodeConnectionClosedDetailsRate: RabbitmqNodeConnectionClosedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeConnectionCreated: MetricConfig{
+					RabbitmqNodeConnectionCreated: RabbitmqNodeConnectionCreatedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeConnectionCreatedDetailsRate: MetricConfig{
+					RabbitmqNodeConnectionCreatedDetailsRate: RabbitmqNodeConnectionCreatedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeContextSwitches: MetricConfig{
+					RabbitmqNodeContextSwitches: RabbitmqNodeContextSwitchesConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeContextSwitchesDetailsRate: MetricConfig{
+					RabbitmqNodeContextSwitchesDetailsRate: RabbitmqNodeContextSwitchesDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeDiskFree: MetricConfig{
+					RabbitmqNodeDiskFree: RabbitmqNodeDiskFreeConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeDiskFreeAlarm: MetricConfig{
+					RabbitmqNodeDiskFreeAlarm: RabbitmqNodeDiskFreeAlarmConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeDiskFreeDetailsRate: MetricConfig{
+					RabbitmqNodeDiskFreeDetailsRate: RabbitmqNodeDiskFreeDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeDiskFreeLimit: MetricConfig{
+					RabbitmqNodeDiskFreeLimit: RabbitmqNodeDiskFreeLimitConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeFdTotal: MetricConfig{
+					RabbitmqNodeFdTotal: RabbitmqNodeFdTotalConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeFdUsed: MetricConfig{
+					RabbitmqNodeFdUsed: RabbitmqNodeFdUsedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeFdUsedDetailsRate: MetricConfig{
+					RabbitmqNodeFdUsedDetailsRate: RabbitmqNodeFdUsedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeGcBytesReclaimed: MetricConfig{
+					RabbitmqNodeGcBytesReclaimed: RabbitmqNodeGcBytesReclaimedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeGcBytesReclaimedDetailsRate: MetricConfig{
+					RabbitmqNodeGcBytesReclaimedDetailsRate: RabbitmqNodeGcBytesReclaimedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeGcNum: MetricConfig{
+					RabbitmqNodeGcNum: RabbitmqNodeGcNumConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeGcNumDetailsRate: MetricConfig{
+					RabbitmqNodeGcNumDetailsRate: RabbitmqNodeGcNumDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoReadAvgTime: MetricConfig{
+					RabbitmqNodeIoReadAvgTime: RabbitmqNodeIoReadAvgTimeConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoReadAvgTimeDetailsRate: MetricConfig{
+					RabbitmqNodeIoReadAvgTimeDetailsRate: RabbitmqNodeIoReadAvgTimeDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoReadBytes: MetricConfig{
+					RabbitmqNodeIoReadBytes: RabbitmqNodeIoReadBytesConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoReadBytesDetailsRate: MetricConfig{
+					RabbitmqNodeIoReadBytesDetailsRate: RabbitmqNodeIoReadBytesDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoReadCount: MetricConfig{
+					RabbitmqNodeIoReadCount: RabbitmqNodeIoReadCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoReadCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoReadCountDetailsRate: RabbitmqNodeIoReadCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoReopenCount: MetricConfig{
+					RabbitmqNodeIoReopenCount: RabbitmqNodeIoReopenCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoReopenCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoReopenCountDetailsRate: RabbitmqNodeIoReopenCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoSeekAvgTime: MetricConfig{
+					RabbitmqNodeIoSeekAvgTime: RabbitmqNodeIoSeekAvgTimeConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoSeekAvgTimeDetailsRate: MetricConfig{
+					RabbitmqNodeIoSeekAvgTimeDetailsRate: RabbitmqNodeIoSeekAvgTimeDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoSeekCount: MetricConfig{
+					RabbitmqNodeIoSeekCount: RabbitmqNodeIoSeekCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoSeekCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoSeekCountDetailsRate: RabbitmqNodeIoSeekCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoSyncAvgTime: MetricConfig{
+					RabbitmqNodeIoSyncAvgTime: RabbitmqNodeIoSyncAvgTimeConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoSyncAvgTimeDetailsRate: MetricConfig{
+					RabbitmqNodeIoSyncAvgTimeDetailsRate: RabbitmqNodeIoSyncAvgTimeDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoSyncCount: MetricConfig{
+					RabbitmqNodeIoSyncCount: RabbitmqNodeIoSyncCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoSyncCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoSyncCountDetailsRate: RabbitmqNodeIoSyncCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoWriteAvgTime: MetricConfig{
+					RabbitmqNodeIoWriteAvgTime: RabbitmqNodeIoWriteAvgTimeConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoWriteAvgTimeDetailsRate: MetricConfig{
+					RabbitmqNodeIoWriteAvgTimeDetailsRate: RabbitmqNodeIoWriteAvgTimeDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoWriteBytes: MetricConfig{
+					RabbitmqNodeIoWriteBytes: RabbitmqNodeIoWriteBytesConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoWriteBytesDetailsRate: MetricConfig{
+					RabbitmqNodeIoWriteBytesDetailsRate: RabbitmqNodeIoWriteBytesDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoWriteCount: MetricConfig{
+					RabbitmqNodeIoWriteCount: RabbitmqNodeIoWriteCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeIoWriteCountDetailsRate: MetricConfig{
+					RabbitmqNodeIoWriteCountDetailsRate: RabbitmqNodeIoWriteCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMemAlarm: MetricConfig{
+					RabbitmqNodeMemAlarm: RabbitmqNodeMemAlarmConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMemLimit: MetricConfig{
+					RabbitmqNodeMemLimit: RabbitmqNodeMemLimitConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMemUsed: MetricConfig{
+					RabbitmqNodeMemUsed: RabbitmqNodeMemUsedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMemUsedDetailsRate: MetricConfig{
+					RabbitmqNodeMemUsedDetailsRate: RabbitmqNodeMemUsedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMnesiaDiskTxCount: MetricConfig{
+					RabbitmqNodeMnesiaDiskTxCount: RabbitmqNodeMnesiaDiskTxCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMnesiaDiskTxCountDetailsRate: MetricConfig{
+					RabbitmqNodeMnesiaDiskTxCountDetailsRate: RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMnesiaRAMTxCount: MetricConfig{
+					RabbitmqNodeMnesiaRAMTxCount: RabbitmqNodeMnesiaRAMTxCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMnesiaRAMTxCountDetailsRate: MetricConfig{
+					RabbitmqNodeMnesiaRAMTxCountDetailsRate: RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMsgStoreReadCount: MetricConfig{
+					RabbitmqNodeMsgStoreReadCount: RabbitmqNodeMsgStoreReadCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMsgStoreReadCountDetailsRate: MetricConfig{
+					RabbitmqNodeMsgStoreReadCountDetailsRate: RabbitmqNodeMsgStoreReadCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMsgStoreWriteCount: MetricConfig{
+					RabbitmqNodeMsgStoreWriteCount: RabbitmqNodeMsgStoreWriteCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeMsgStoreWriteCountDetailsRate: MetricConfig{
+					RabbitmqNodeMsgStoreWriteCountDetailsRate: RabbitmqNodeMsgStoreWriteCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeProcTotal: MetricConfig{
+					RabbitmqNodeProcTotal: RabbitmqNodeProcTotalConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeProcUsed: MetricConfig{
+					RabbitmqNodeProcUsed: RabbitmqNodeProcUsedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeProcUsedDetailsRate: MetricConfig{
+					RabbitmqNodeProcUsedDetailsRate: RabbitmqNodeProcUsedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeProcessors: MetricConfig{
+					RabbitmqNodeProcessors: RabbitmqNodeProcessorsConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueCreated: MetricConfig{
+					RabbitmqNodeQueueCreated: RabbitmqNodeQueueCreatedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueCreatedDetailsRate: MetricConfig{
+					RabbitmqNodeQueueCreatedDetailsRate: RabbitmqNodeQueueCreatedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueDeclared: MetricConfig{
+					RabbitmqNodeQueueDeclared: RabbitmqNodeQueueDeclaredConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueDeclaredDetailsRate: MetricConfig{
+					RabbitmqNodeQueueDeclaredDetailsRate: RabbitmqNodeQueueDeclaredDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueDeleted: MetricConfig{
+					RabbitmqNodeQueueDeleted: RabbitmqNodeQueueDeletedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueDeletedDetailsRate: MetricConfig{
+					RabbitmqNodeQueueDeletedDetailsRate: RabbitmqNodeQueueDeletedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueIndexReadCount: MetricConfig{
+					RabbitmqNodeQueueIndexReadCount: RabbitmqNodeQueueIndexReadCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueIndexReadCountDetailsRate: MetricConfig{
+					RabbitmqNodeQueueIndexReadCountDetailsRate: RabbitmqNodeQueueIndexReadCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueIndexWriteCount: MetricConfig{
+					RabbitmqNodeQueueIndexWriteCount: RabbitmqNodeQueueIndexWriteCountConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeQueueIndexWriteCountDetailsRate: MetricConfig{
+					RabbitmqNodeQueueIndexWriteCountDetailsRate: RabbitmqNodeQueueIndexWriteCountDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeRunQueue: MetricConfig{
+					RabbitmqNodeRunQueue: RabbitmqNodeRunQueueConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeSocketsTotal: MetricConfig{
+					RabbitmqNodeSocketsTotal: RabbitmqNodeSocketsTotalConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeSocketsUsed: MetricConfig{
+					RabbitmqNodeSocketsUsed: RabbitmqNodeSocketsUsedConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeSocketsUsedDetailsRate: MetricConfig{
+					RabbitmqNodeSocketsUsedDetailsRate: RabbitmqNodeSocketsUsedDetailsRateConfig{
 						Enabled: false,
 					},
-					RabbitmqNodeUptime: MetricConfig{
+					RabbitmqNodeUptime: RabbitmqNodeUptimeConfig{
 						Enabled: false,
 					},
 				},
@@ -530,7 +534,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RabbitmqConsumerCountConfig{}, RabbitmqMessageAcknowledgedConfig{}, RabbitmqMessageCurrentConfig{}, RabbitmqMessageDeliveredConfig{}, RabbitmqMessageDroppedConfig{}, RabbitmqMessagePublishedConfig{}, RabbitmqNodeChannelClosedConfig{}, RabbitmqNodeChannelClosedDetailsRateConfig{}, RabbitmqNodeChannelCreatedConfig{}, RabbitmqNodeChannelCreatedDetailsRateConfig{}, RabbitmqNodeConnectionClosedConfig{}, RabbitmqNodeConnectionClosedDetailsRateConfig{}, RabbitmqNodeConnectionCreatedConfig{}, RabbitmqNodeConnectionCreatedDetailsRateConfig{}, RabbitmqNodeContextSwitchesConfig{}, RabbitmqNodeContextSwitchesDetailsRateConfig{}, RabbitmqNodeDiskFreeConfig{}, RabbitmqNodeDiskFreeAlarmConfig{}, RabbitmqNodeDiskFreeDetailsRateConfig{}, RabbitmqNodeDiskFreeLimitConfig{}, RabbitmqNodeFdTotalConfig{}, RabbitmqNodeFdUsedConfig{}, RabbitmqNodeFdUsedDetailsRateConfig{}, RabbitmqNodeGcBytesReclaimedConfig{}, RabbitmqNodeGcBytesReclaimedDetailsRateConfig{}, RabbitmqNodeGcNumConfig{}, RabbitmqNodeGcNumDetailsRateConfig{}, RabbitmqNodeIoReadAvgTimeConfig{}, RabbitmqNodeIoReadAvgTimeDetailsRateConfig{}, RabbitmqNodeIoReadBytesConfig{}, RabbitmqNodeIoReadBytesDetailsRateConfig{}, RabbitmqNodeIoReadCountConfig{}, RabbitmqNodeIoReadCountDetailsRateConfig{}, RabbitmqNodeIoReopenCountConfig{}, RabbitmqNodeIoReopenCountDetailsRateConfig{}, RabbitmqNodeIoSeekAvgTimeConfig{}, RabbitmqNodeIoSeekAvgTimeDetailsRateConfig{}, RabbitmqNodeIoSeekCountConfig{}, RabbitmqNodeIoSeekCountDetailsRateConfig{}, RabbitmqNodeIoSyncAvgTimeConfig{}, RabbitmqNodeIoSyncAvgTimeDetailsRateConfig{}, RabbitmqNodeIoSyncCountConfig{}, RabbitmqNodeIoSyncCountDetailsRateConfig{}, RabbitmqNodeIoWriteAvgTimeConfig{}, RabbitmqNodeIoWriteAvgTimeDetailsRateConfig{}, RabbitmqNodeIoWriteBytesConfig{}, RabbitmqNodeIoWriteBytesDetailsRateConfig{}, RabbitmqNodeIoWriteCountConfig{}, RabbitmqNodeIoWriteCountDetailsRateConfig{}, RabbitmqNodeMemAlarmConfig{}, RabbitmqNodeMemLimitConfig{}, RabbitmqNodeMemUsedConfig{}, RabbitmqNodeMemUsedDetailsRateConfig{}, RabbitmqNodeMnesiaDiskTxCountConfig{}, RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig{}, RabbitmqNodeMnesiaRAMTxCountConfig{}, RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig{}, RabbitmqNodeMsgStoreReadCountConfig{}, RabbitmqNodeMsgStoreReadCountDetailsRateConfig{}, RabbitmqNodeMsgStoreWriteCountConfig{}, RabbitmqNodeMsgStoreWriteCountDetailsRateConfig{}, RabbitmqNodeProcTotalConfig{}, RabbitmqNodeProcUsedConfig{}, RabbitmqNodeProcUsedDetailsRateConfig{}, RabbitmqNodeProcessorsConfig{}, RabbitmqNodeQueueCreatedConfig{}, RabbitmqNodeQueueCreatedDetailsRateConfig{}, RabbitmqNodeQueueDeclaredConfig{}, RabbitmqNodeQueueDeclaredDetailsRateConfig{}, RabbitmqNodeQueueDeletedConfig{}, RabbitmqNodeQueueDeletedDetailsRateConfig{}, RabbitmqNodeQueueIndexReadCountConfig{}, RabbitmqNodeQueueIndexReadCountDetailsRateConfig{}, RabbitmqNodeQueueIndexWriteCountConfig{}, RabbitmqNodeQueueIndexWriteCountDetailsRateConfig{}, RabbitmqNodeRunQueueConfig{}, RabbitmqNodeSocketsTotalConfig{}, RabbitmqNodeSocketsUsedConfig{}, RabbitmqNodeSocketsUsedDetailsRateConfig{}, RabbitmqNodeUptimeConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
