@@ -1119,7 +1119,7 @@ are currently in `beta` stability and are actively moving towards `stable` stabi
 ## Available Benchmarks
 
 The component is tested as part of the project's load tests, with the results being publicly
-available at benchmarks' 
+available at the benchmarks 
 [page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests).
 In that page, users can find details such as 
 [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#metrick8sattributesprocessor-5k-workload-cluster-ram-mib)
