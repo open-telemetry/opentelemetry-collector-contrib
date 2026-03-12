@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -96,7 +95,10 @@ func TestLoadConfig(t *testing.T) {
 	expected.Password = "password"
 	expected.CollectionInterval = 2 * time.Minute
 
-	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+	diff := cmp.Diff(expected, cfg, cmp.FilterPath(func(p cmp.Path) bool {
+		return p.Last().String() == ".enabledSetByUser"
+	}, cmp.Ignore()))
+	if diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
 }
