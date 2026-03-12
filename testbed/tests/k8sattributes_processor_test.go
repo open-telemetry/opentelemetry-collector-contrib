@@ -111,7 +111,7 @@ type k8sAttributesProcessorTestCase struct {
 	k8sAttributesConfig   string
 	mockedConsumedMetrics pmetric.Metrics
 	expectedResourceAttrs map[string]any // assert these resource attributes are present (nil = presence only)
-	numPods               int            // pods to create; each in its own namespace and deployment (1 replica)
+	numPods               int            // pods and namespaces to create; each pod in its own deployment (1 replica)
 }
 
 func getK8sAttributesProcessorTestCases() []k8sAttributesProcessorTestCase {
@@ -141,21 +141,21 @@ func getK8sAttributesProcessorTestCases() []k8sAttributesProcessorTestCase {
 	}
 	return []k8sAttributesProcessorTestCase{
 		{
-			name:                  "110_pods_cluster",
+			name:                  "110_workload_cluster",
 			k8sAttributesConfig:   kwokConfig,
 			mockedConsumedMetrics: mockedConsumedMetricsForK8s,
 			expectedResourceAttrs: expectedAttrs,
 			numPods:               110,
 		},
 		{
-			name:                  "1000_pods_cluster",
+			name:                  "1K_workload_cluster",
 			k8sAttributesConfig:   kwokConfig,
 			mockedConsumedMetrics: mockedConsumedMetricsForK8s,
 			expectedResourceAttrs: expectedAttrs,
 			numPods:               1000,
 		},
 		{
-			name:                  "5000_pods_cluster",
+			name:                  "5K_workload_cluster",
 			k8sAttributesConfig:   kwokConfig,
 			mockedConsumedMetrics: mockedConsumedMetricsForK8s,
 			expectedResourceAttrs: expectedAttrs,
