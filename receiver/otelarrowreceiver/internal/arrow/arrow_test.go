@@ -808,13 +808,9 @@ func TestReceiverMemoryLimit(t *testing.T) {
 
 // TestReceiverPayloadPositionIndependent verifies that the receiver
 // correctly processes data based on the gRPC service method rather than
-// the ArrowPayload.Type field at position 0. This reproduces the bug
-// where a Rust OTAP producer sends payloads with the root payload type
-// not at index 0, causing ErrUnrecognizedPayload with the old logic.
+// the ArrowPayload.Type field at position 0.
 //
-// The batch payloads are reversed so the root type (e.g. SPANS) is no
-// longer at position 0. The Arrow consumer still decodes correctly
-// because it routes each payload by its own Type field internally.
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46878
 func TestReceiverPayloadPositionIndependent(t *testing.T) {
 	stdTesting := otelAssert.NewStdUnitTest(t)
 	tc := newHealthyTestChannel(t)
@@ -827,9 +823,7 @@ func TestReceiverPayloadPositionIndependent(t *testing.T) {
 	batch = copyBatch(batch)
 
 	// Reverse the payload order so that the root payload type (SPANS)
-	// is no longer at position 0. With the old payloads[0].Type logic,
-	// the receiver would see a non-root type (e.g. RESOURCE_ATTRS) at
-	// position 0 and return ErrUnrecognizedPayload.
+	// is no longer at position 0.
 	payloads := batch.ArrowPayloads
 	require.Greater(t, len(payloads), 1, "need multiple payloads to test reordering")
 	for i, j := 0, len(payloads)-1; i < j; i, j = i+1, j-1 {
