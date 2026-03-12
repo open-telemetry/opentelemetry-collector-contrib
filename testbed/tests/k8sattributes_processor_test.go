@@ -240,7 +240,7 @@ func logKWOKClusterState(ctx context.Context, t *testing.T, clientset *kubernete
 		t.Logf("[kwok debug] events in %q (%d):", nsName, len(evList.Items))
 		for j := range evList.Items {
 			ev := &evList.Items[j]
-			t.Logf("[kwok debug]   %s %s %s/%s: %s", ev.LastTimestamp.Time.Format("15:04:05"), ev.Reason, ev.InvolvedObject.Kind, ev.InvolvedObject.Name, ev.Message)
+			t.Logf("[kwok debug]   %s %s %s/%s: %s", ev.LastTimestamp.Format("15:04:05"), ev.Reason, ev.InvolvedObject.Kind, ev.InvolvedObject.Name, ev.Message)
 		}
 	}
 	// Control plane logs (binaries: use kwokctl logs).
@@ -249,11 +249,12 @@ func logKWOKClusterState(ctx context.Context, t *testing.T, clientset *kubernete
 		cmd := exec.Command("kwokctl", "logs", component, "--name", clusterName)
 		out, err := cmd.CombinedOutput()
 		text := strings.TrimSpace(string(out))
-		if err != nil {
+		switch {
+		case err != nil:
 			t.Logf("[kwok debug] kwokctl logs %s: %v\n%s", component, err, text)
-		} else if text != "" {
+		case text != "":
 			t.Logf("[kwok debug] kwokctl logs %s:\n%s", component, text)
-		} else {
+		default:
 			t.Logf("[kwok debug] kwokctl logs %s: (no output)", component)
 		}
 	}
