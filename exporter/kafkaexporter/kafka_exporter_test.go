@@ -1063,6 +1063,74 @@ func TestPartitionData_TopicFromAttributeSplitsLogs(t *testing.T) {
 	require.Equal(t, 2, count, "should yield one chunk per resource")
 }
 
+func TestPartitionData_TopicFromAttributeSplitsTraces(t *testing.T) {
+	cfg := Config{TopicFromAttribute: "k8s.namespace.name"}
+	e := &kafkaTracesMessenger{config: cfg}
+
+	td := ptrace.NewTraces()
+	r1 := td.ResourceSpans().AppendEmpty()
+	r1.Resource().Attributes().PutStr("k8s.namespace.name", "ns-alpha")
+	r1.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	r2 := td.ResourceSpans().AppendEmpty()
+	r2.Resource().Attributes().PutStr("k8s.namespace.name", "ns-beta")
+	r2.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	var chunks []ptrace.Traces
+	var keys [][]byte
+	for key, data := range e.partitionData(td) {
+		clone := ptrace.NewTraces()
+		data.CopyTo(clone)
+		chunks = append(chunks, clone)
+		keys = append(keys, key)
+	}
+
+	require.Len(t, chunks, 2, "should yield one chunk per resource")
+	require.Nil(t, keys[0], "key should be nil (no explicit partitioning)")
+	require.Nil(t, keys[1], "key should be nil (no explicit partitioning)")
+
+	require.Equal(t, 1, chunks[0].ResourceSpans().Len())
+	require.Equal(t, 1, chunks[1].ResourceSpans().Len())
+
+	v0, _ := chunks[0].ResourceSpans().At(0).Resource().Attributes().Get("k8s.namespace.name")
+	v1, _ := chunks[1].ResourceSpans().At(0).Resource().Attributes().Get("k8s.namespace.name")
+	require.Equal(t, "ns-alpha", v0.Str())
+	require.Equal(t, "ns-beta", v1.Str())
+}
+
+func TestPartitionData_TopicFromAttributeSplitsProfiles(t *testing.T) {
+	cfg := Config{TopicFromAttribute: "k8s.namespace.name"}
+	e := &kafkaProfilesMessenger{config: cfg}
+
+	pd := pprofile.NewProfiles()
+	r1 := pd.ResourceProfiles().AppendEmpty()
+	r1.Resource().Attributes().PutStr("k8s.namespace.name", "ns-alpha")
+	r1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	r2 := pd.ResourceProfiles().AppendEmpty()
+	r2.Resource().Attributes().PutStr("k8s.namespace.name", "ns-beta")
+	r2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+
+	var chunks []pprofile.Profiles
+	var keys [][]byte
+	for key, data := range e.partitionData(pd) {
+		clone := pprofile.NewProfiles()
+		data.CopyTo(clone)
+		chunks = append(chunks, clone)
+		keys = append(keys, key)
+	}
+
+	require.Len(t, chunks, 2, "should yield one chunk per resource")
+	require.Nil(t, keys[0], "key should be nil (no explicit partitioning)")
+	require.Nil(t, keys[1], "key should be nil (no explicit partitioning)")
+
+	require.Equal(t, 1, chunks[0].ResourceProfiles().Len())
+	require.Equal(t, 1, chunks[1].ResourceProfiles().Len())
+
+	v0, _ := chunks[0].ResourceProfiles().At(0).Resource().Attributes().Get("k8s.namespace.name")
+	v1, _ := chunks[1].ResourceProfiles().At(0).Resource().Attributes().Get("k8s.namespace.name")
+	require.Equal(t, "ns-alpha", v0.Str())
+	require.Equal(t, "ns-beta", v1.Str())
+}
+
 func TestPartitionData_NoSplitWithoutTopicFromAttribute(t *testing.T) {
 	cfg := Config{} // no TopicFromAttribute, no partitioning
 	e := &kafkaMetricsMessenger{config: cfg}

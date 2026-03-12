@@ -216,6 +216,9 @@ func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte,
 			target := newTraces.ResourceSpans().AppendEmpty()
 			for _, resourceSpans := range td.ResourceSpans().All() {
 				resourceSpans.CopyTo(target)
+				// NOTE: The same ptrace.Traces instance (newTraces) is reused and mutated on each iteration.
+				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+				// the current callback/iteration, as its contents will be overwritten on the next yield.
 				if !yield(nil, newTraces) {
 					return
 				}
@@ -378,6 +381,9 @@ func (e *kafkaProfilesMessenger) partitionData(pd pprofile.Profiles) iter.Seq2[[
 			target := newProfiles.ResourceProfiles().AppendEmpty()
 			for _, resourceProfiles := range pd.ResourceProfiles().All() {
 				resourceProfiles.CopyTo(target)
+				// NOTE: The same pprofile.Profiles instance (newProfiles) is reused and mutated on each iteration.
+				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+				// the current callback/iteration, as its contents will be overwritten on the next yield.
 				if !yield(nil, newProfiles) {
 					return
 				}
