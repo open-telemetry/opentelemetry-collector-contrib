@@ -1,0 +1,9 @@
+change_type: enhancement
+component: exporter/elasticsearch
+note: populate _doc_count field in ECS mapping mode
+issues: [46936]
+subtext: |
+  _doc_count is a special metadata field in Elasticsearch used when a document represents pre-aggregated data (like histograms or aggregate metrics).
+  Currently, elasticsearchexporter only populates this field for otel mapping mode (native otel field structure). This change
+  adds support for ECS mapping mode (native ECS field structure) so that we have consistent behavior for both mapping modes.
+change_logs: [user]
