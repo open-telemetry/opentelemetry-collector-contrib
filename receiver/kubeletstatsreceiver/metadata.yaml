@@ -96,7 +96,7 @@ resource_attributes:
   partition:
     description: "[DEPRECATED] The partition in the Volume"
     enabled: true
-    requirement_level: opt_in
+    requirement_level: recommended
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
@@ -105,7 +105,7 @@ attributes:
     description: Direction of flow of bytes/operations (receive or transmit).
     type: string
     enum: [receive, transmit]
-    requirement_level: required
+    requirement_level: recommended
   interface:
     description: Name of the network interface.
     type: string

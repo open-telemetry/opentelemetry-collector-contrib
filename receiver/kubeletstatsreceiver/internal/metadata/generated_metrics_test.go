@@ -217,14 +217,14 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
-				mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionReceive)
+				mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
 			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
-				mb.RecordK8sNodeNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionReceive)
+				mb.RecordK8sNodeNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
 			}
 
 			allMetricsCount++
@@ -296,14 +296,14 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
-				mb.RecordK8sPodNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionReceive)
+				mb.RecordK8sPodNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
 			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
-				mb.RecordK8sPodNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionReceive)
+				mb.RecordK8sPodNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
 			}
 
 			allMetricsCount++
@@ -824,7 +824,7 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("interface")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("direction")
-						assert.True(t, ok)
+						assert.False(t, ok)
 					}
 				case "k8s.node.network.io":
 					if tt.name != "reaggregate_set" {
@@ -873,7 +873,7 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("interface")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("direction")
-						assert.True(t, ok)
+						assert.False(t, ok)
 					}
 >>>>>>> 1b3dbf5fb6 (chore(receiver/kubeletstats): regenerate metadata outputs after schema update)
 				case "k8s.node.uptime":
@@ -1184,7 +1184,7 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("interface")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("direction")
-						assert.True(t, ok)
+						assert.False(t, ok)
 					}
 				case "k8s.pod.network.io":
 					if tt.name != "reaggregate_set" {
@@ -1233,7 +1233,7 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("interface")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("direction")
-						assert.True(t, ok)
+						assert.False(t, ok)
 					}
 >>>>>>> 1b3dbf5fb6 (chore(receiver/kubeletstats): regenerate metadata outputs after schema update)
 				case "k8s.pod.uptime":

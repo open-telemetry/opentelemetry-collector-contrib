@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
@@ -629,9 +628,6 @@ func (ms *K8sNodeNetworkErrorsConfig) Validate() error {
 			return fmt.Errorf("metric k8s.node.network.errors doesn't have an attribute %v, valid attributes: [interface, direction]", val)
 		}
 	}
-	if !slices.Contains(ms.EnabledAttributes, K8sNodeNetworkErrorsAttributeKeyDirection) {
-		return fmt.Errorf("direction is a required attribute for k8s.node.network.errors metric and must be included")
-	}
 
 	switch ms.AggregationStrategy {
 	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
@@ -680,9 +676,6 @@ func (ms *K8sNodeNetworkIoConfig) Validate() error {
 		default:
 			return fmt.Errorf("metric k8s.node.network.io doesn't have an attribute %v, valid attributes: [interface, direction]", val)
 		}
-	}
-	if !slices.Contains(ms.EnabledAttributes, K8sNodeNetworkIoAttributeKeyDirection) {
-		return fmt.Errorf("direction is a required attribute for k8s.node.network.io metric and must be included")
 	}
 
 	switch ms.AggregationStrategy {
@@ -1093,9 +1086,6 @@ func (ms *K8sPodNetworkErrorsConfig) Validate() error {
 			return fmt.Errorf("metric k8s.pod.network.errors doesn't have an attribute %v, valid attributes: [interface, direction]", val)
 		}
 	}
-	if !slices.Contains(ms.EnabledAttributes, K8sPodNetworkErrorsAttributeKeyDirection) {
-		return fmt.Errorf("direction is a required attribute for k8s.pod.network.errors metric and must be included")
-	}
 
 	switch ms.AggregationStrategy {
 	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
@@ -1144,9 +1134,6 @@ func (ms *K8sPodNetworkIoConfig) Validate() error {
 		default:
 			return fmt.Errorf("metric k8s.pod.network.io doesn't have an attribute %v, valid attributes: [interface, direction]", val)
 		}
-	}
-	if !slices.Contains(ms.EnabledAttributes, K8sPodNetworkIoAttributeKeyDirection) {
-		return fmt.Errorf("direction is a required attribute for k8s.pod.network.io metric and must be included")
 	}
 
 	switch ms.AggregationStrategy {

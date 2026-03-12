@@ -214,10 +214,10 @@ reaggregate_set:
       enabled: true
     k8s.node.network.errors:
       enabled: true
-      attributes: ["direction"]
+      attributes: []
     k8s.node.network.io:
       enabled: true
-      attributes: ["direction"]
+      attributes: []
     k8s.node.uptime:
       enabled: true
     k8s.pod.cpu.node.utilization:
@@ -256,10 +256,10 @@ reaggregate_set:
       enabled: true
     k8s.pod.network.errors:
       enabled: true
-      attributes: ["direction"]
+      attributes: []
     k8s.pod.network.io:
       enabled: true
-      attributes: ["direction"]
+      attributes: []
     k8s.pod.uptime:
       enabled: true
     k8s.pod.volume.usage:
