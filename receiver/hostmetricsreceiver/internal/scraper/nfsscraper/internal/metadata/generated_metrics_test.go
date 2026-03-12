@@ -59,21 +59,14 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["NfsClientNetCount"] = mb.metricNfsClientNetCount.config.AggregationStrategy
-			aggMap["NfsClientNetTCPConnectionAccepted"] = mb.metricNfsClientNetTCPConnectionAccepted.config.AggregationStrategy
 			aggMap["NfsClientOperationCount"] = mb.metricNfsClientOperationCount.config.AggregationStrategy
 			aggMap["NfsClientProcedureCount"] = mb.metricNfsClientProcedureCount.config.AggregationStrategy
-			aggMap["NfsClientRPCAuthrefreshCount"] = mb.metricNfsClientRPCAuthrefreshCount.config.AggregationStrategy
-			aggMap["NfsClientRPCCount"] = mb.metricNfsClientRPCCount.config.AggregationStrategy
-			aggMap["NfsClientRPCRetransmitCount"] = mb.metricNfsClientRPCRetransmitCount.config.AggregationStrategy
-			aggMap["NfsServerFhStaleCount"] = mb.metricNfsServerFhStaleCount.config.AggregationStrategy
 			aggMap["NfsServerIo"] = mb.metricNfsServerIo.config.AggregationStrategy
 			aggMap["NfsServerNetCount"] = mb.metricNfsServerNetCount.config.AggregationStrategy
-			aggMap["NfsServerNetTCPConnectionAccepted"] = mb.metricNfsServerNetTCPConnectionAccepted.config.AggregationStrategy
 			aggMap["NfsServerOperationCount"] = mb.metricNfsServerOperationCount.config.AggregationStrategy
 			aggMap["NfsServerProcedureCount"] = mb.metricNfsServerProcedureCount.config.AggregationStrategy
 			aggMap["NfsServerRepcacheRequests"] = mb.metricNfsServerRepcacheRequests.config.AggregationStrategy
 			aggMap["NfsServerRPCCount"] = mb.metricNfsServerRPCCount.config.AggregationStrategy
-			aggMap["NfsServerThreadCount"] = mb.metricNfsServerThreadCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
