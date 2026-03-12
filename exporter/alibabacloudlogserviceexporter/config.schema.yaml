@@ -1,0 +1,23 @@
+type: object
+properties:
+  access_key_id:
+    description: AlibabaCloud access key id
+    type: string
+  access_key_secret:
+    description: AlibabaCloud access key secret
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  ecs_ram_role:
+    description: Set AlibabaCLoud ECS ram role if you are using ACK
+    type: string
+  endpoint:
+    description: LogService's Endpoint, https://www.alibabacloud.com/help/doc-detail/29008.htm for AlibabaCloud Kubernetes(or ECS), set {region-id}-intranet.log.aliyuncs.com, eg cn-hangzhou-intranet.log.aliyuncs.com; others set {region-id}.log.aliyuncs.com, eg cn-hangzhou.log.aliyuncs.com
+    type: string
+  logstore:
+    description: LogService's Logstore Name
+    type: string
+  project:
+    description: LogService's Project Name
+    type: string
+  token_file_path:
+    description: Set Token File Path if you are using ACK
+    type: string

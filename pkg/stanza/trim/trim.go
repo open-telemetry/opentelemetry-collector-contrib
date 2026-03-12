@@ -5,7 +5,6 @@ package trim // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"bufio"
-	"bytes"
 )
 
 type Func func([]byte) []byte
@@ -45,18 +44,22 @@ func Nop(token []byte) []byte {
 	return token
 }
 
+func isSpace(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\r' || c == '\n'
+}
+
 func Leading(data []byte) []byte {
-	token := bytes.TrimLeft(data, "\r\n\t ")
-	if token == nil {
-		// TrimLeft sometimes overwrites something with nothing.
-		// We need to override this behavior in order to preserve empty tokens.
-		return data
+	for len(data) > 0 && isSpace(data[0]) {
+		data = data[1:]
 	}
-	return token
+	return data
 }
 
 func Trailing(data []byte) []byte {
-	return bytes.TrimRight(data, "\r\n\t ")
+	for len(data) > 0 && isSpace(data[len(data)-1]) {
+		data = data[:len(data)-1]
+	}
+	return data
 }
 
 func Whitespace(data []byte) []byte {

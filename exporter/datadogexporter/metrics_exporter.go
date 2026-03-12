@@ -68,13 +68,17 @@ func newMetricsExporter(
 	options = append(options,
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
 		otlpmetrics.WithStatsOut(statsOut))
-	if featuregates.MetricRemappingDisabledFeatureGate.IsEnabled() {
-		params.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
-	} else {
+
+	switch {
+	case featuregates.DisableMetricRemappingFeatureGate.IsEnabled():
+		options = append(options, otlpmetrics.WithoutRuntimeMetricMappings())
+	case featuregates.MetricRemappingDisabledFeatureGate.IsEnabled():
+		// Do nothing.
+	default:
 		options = append(options, otlpmetrics.WithRemapping())
 	}
 
-	if inferIntervalDeltaFeatureGate.IsEnabled() {
+	if featuregates.InferIntervalDeltaFeatureGate.IsEnabled() {
 		params.Logger.Info("Metrics interval will be inferred for OTLP delta metrics with a set StartTimestamp.")
 		options = append(options, otlpmetrics.WithInferDeltaInterval())
 	}

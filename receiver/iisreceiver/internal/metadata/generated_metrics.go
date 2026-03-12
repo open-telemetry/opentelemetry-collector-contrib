@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -10,6 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeDirection specifies the value direction attribute.
@@ -151,9 +159,9 @@ type metricInfo struct {
 }
 
 type metricIisApplicationPoolState struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   IisApplicationPoolStateConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills iis.application_pool.state metric with initial data.
@@ -190,7 +198,7 @@ func (m *metricIisApplicationPoolState) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisApplicationPoolState(cfg MetricConfig) metricIisApplicationPoolState {
+func newMetricIisApplicationPoolState(cfg IisApplicationPoolStateConfig) metricIisApplicationPoolState {
 	m := metricIisApplicationPoolState{config: cfg}
 
 	if cfg.Enabled {
@@ -201,9 +209,9 @@ func newMetricIisApplicationPoolState(cfg MetricConfig) metricIisApplicationPool
 }
 
 type metricIisApplicationPoolUptime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   IisApplicationPoolUptimeConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills iis.application_pool.uptime metric with initial data.
@@ -240,7 +248,7 @@ func (m *metricIisApplicationPoolUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisApplicationPoolUptime(cfg MetricConfig) metricIisApplicationPoolUptime {
+func newMetricIisApplicationPoolUptime(cfg IisApplicationPoolUptimeConfig) metricIisApplicationPoolUptime {
 	m := metricIisApplicationPoolUptime{config: cfg}
 
 	if cfg.Enabled {
@@ -251,9 +259,9 @@ func newMetricIisApplicationPoolUptime(cfg MetricConfig) metricIisApplicationPoo
 }
 
 type metricIisConnectionActive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   IisConnectionActiveConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills iis.connection.active metric with initial data.
@@ -292,7 +300,7 @@ func (m *metricIisConnectionActive) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisConnectionActive(cfg MetricConfig) metricIisConnectionActive {
+func newMetricIisConnectionActive(cfg IisConnectionActiveConfig) metricIisConnectionActive {
 	m := metricIisConnectionActive{config: cfg}
 
 	if cfg.Enabled {
@@ -303,9 +311,9 @@ func newMetricIisConnectionActive(cfg MetricConfig) metricIisConnectionActive {
 }
 
 type metricIisConnectionAnonymous struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   IisConnectionAnonymousConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills iis.connection.anonymous metric with initial data.
@@ -344,7 +352,7 @@ func (m *metricIisConnectionAnonymous) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisConnectionAnonymous(cfg MetricConfig) metricIisConnectionAnonymous {
+func newMetricIisConnectionAnonymous(cfg IisConnectionAnonymousConfig) metricIisConnectionAnonymous {
 	m := metricIisConnectionAnonymous{config: cfg}
 
 	if cfg.Enabled {
@@ -355,9 +363,9 @@ func newMetricIisConnectionAnonymous(cfg MetricConfig) metricIisConnectionAnonym
 }
 
 type metricIisConnectionAttemptCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   IisConnectionAttemptCountConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills iis.connection.attempt.count metric with initial data.
@@ -396,7 +404,7 @@ func (m *metricIisConnectionAttemptCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisConnectionAttemptCount(cfg MetricConfig) metricIisConnectionAttemptCount {
+func newMetricIisConnectionAttemptCount(cfg IisConnectionAttemptCountConfig) metricIisConnectionAttemptCount {
 	m := metricIisConnectionAttemptCount{config: cfg}
 
 	if cfg.Enabled {
@@ -407,9 +415,9 @@ func newMetricIisConnectionAttemptCount(cfg MetricConfig) metricIisConnectionAtt
 }
 
 type metricIisNetworkBlocked struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric          // data buffer for generated metric.
+	config   IisNetworkBlockedConfig // metric config provided by user.
+	capacity int                     // max observed number of data points added to the metric.
 }
 
 // init fills iis.network.blocked metric with initial data.
@@ -448,7 +456,7 @@ func (m *metricIisNetworkBlocked) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisNetworkBlocked(cfg MetricConfig) metricIisNetworkBlocked {
+func newMetricIisNetworkBlocked(cfg IisNetworkBlockedConfig) metricIisNetworkBlocked {
 	m := metricIisNetworkBlocked{config: cfg}
 
 	if cfg.Enabled {
@@ -459,9 +467,10 @@ func newMetricIisNetworkBlocked(cfg MetricConfig) metricIisNetworkBlocked {
 }
 
 type metricIisNetworkFileCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric            // data buffer for generated metric.
+	config        IisNetworkFileCountConfig // metric config provided by user.
+	capacity      int                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills iis.network.file.count metric with initial data.
@@ -473,17 +482,48 @@ func (m *metricIisNetworkFileCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricIisNetworkFileCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, IisNetworkFileCountAttributeKeyDirection) {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -496,13 +536,18 @@ func (m *metricIisNetworkFileCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricIisNetworkFileCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricIisNetworkFileCount(cfg MetricConfig) metricIisNetworkFileCount {
+func newMetricIisNetworkFileCount(cfg IisNetworkFileCountConfig) metricIisNetworkFileCount {
 	m := metricIisNetworkFileCount{config: cfg}
 
 	if cfg.Enabled {
@@ -513,9 +558,10 @@ func newMetricIisNetworkFileCount(cfg MetricConfig) metricIisNetworkFileCount {
 }
 
 type metricIisNetworkIo struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric     // data buffer for generated metric.
+	config        IisNetworkIoConfig // metric config provided by user.
+	capacity      int                // max observed number of data points added to the metric.
+	aggDataPoints []int64            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills iis.network.io metric with initial data.
@@ -527,17 +573,48 @@ func (m *metricIisNetworkIo) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricIisNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, IisNetworkIoAttributeKeyDirection) {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -550,13 +627,18 @@ func (m *metricIisNetworkIo) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricIisNetworkIo) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricIisNetworkIo(cfg MetricConfig) metricIisNetworkIo {
+func newMetricIisNetworkIo(cfg IisNetworkIoConfig) metricIisNetworkIo {
 	m := metricIisNetworkIo{config: cfg}
 
 	if cfg.Enabled {
@@ -567,9 +649,10 @@ func newMetricIisNetworkIo(cfg MetricConfig) metricIisNetworkIo {
 }
 
 type metricIisRequestCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric        // data buffer for generated metric.
+	config        IisRequestCountConfig // metric config provided by user.
+	capacity      int                   // max observed number of data points added to the metric.
+	aggDataPoints []int64               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills iis.request.count metric with initial data.
@@ -581,17 +664,48 @@ func (m *metricIisRequestCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricIisRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, requestAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, IisRequestCountAttributeKeyRequest) {
+		dp.Attributes().PutStr("request", requestAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("request", requestAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -604,13 +718,18 @@ func (m *metricIisRequestCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricIisRequestCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricIisRequestCount(cfg MetricConfig) metricIisRequestCount {
+func newMetricIisRequestCount(cfg IisRequestCountConfig) metricIisRequestCount {
 	m := metricIisRequestCount{config: cfg}
 
 	if cfg.Enabled {
@@ -621,9 +740,9 @@ func newMetricIisRequestCount(cfg MetricConfig) metricIisRequestCount {
 }
 
 type metricIisRequestQueueAgeMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   IisRequestQueueAgeMaxConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills iis.request.queue.age.max metric with initial data.
@@ -660,7 +779,7 @@ func (m *metricIisRequestQueueAgeMax) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisRequestQueueAgeMax(cfg MetricConfig) metricIisRequestQueueAgeMax {
+func newMetricIisRequestQueueAgeMax(cfg IisRequestQueueAgeMaxConfig) metricIisRequestQueueAgeMax {
 	m := metricIisRequestQueueAgeMax{config: cfg}
 
 	if cfg.Enabled {
@@ -671,9 +790,9 @@ func newMetricIisRequestQueueAgeMax(cfg MetricConfig) metricIisRequestQueueAgeMa
 }
 
 type metricIisRequestQueueCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   IisRequestQueueCountConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
 }
 
 // init fills iis.request.queue.count metric with initial data.
@@ -712,7 +831,7 @@ func (m *metricIisRequestQueueCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisRequestQueueCount(cfg MetricConfig) metricIisRequestQueueCount {
+func newMetricIisRequestQueueCount(cfg IisRequestQueueCountConfig) metricIisRequestQueueCount {
 	m := metricIisRequestQueueCount{config: cfg}
 
 	if cfg.Enabled {
@@ -723,9 +842,9 @@ func newMetricIisRequestQueueCount(cfg MetricConfig) metricIisRequestQueueCount 
 }
 
 type metricIisRequestRejected struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric           // data buffer for generated metric.
+	config   IisRequestRejectedConfig // metric config provided by user.
+	capacity int                      // max observed number of data points added to the metric.
 }
 
 // init fills iis.request.rejected metric with initial data.
@@ -764,7 +883,7 @@ func (m *metricIisRequestRejected) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisRequestRejected(cfg MetricConfig) metricIisRequestRejected {
+func newMetricIisRequestRejected(cfg IisRequestRejectedConfig) metricIisRequestRejected {
 	m := metricIisRequestRejected{config: cfg}
 
 	if cfg.Enabled {
@@ -775,9 +894,9 @@ func newMetricIisRequestRejected(cfg MetricConfig) metricIisRequestRejected {
 }
 
 type metricIisThreadActive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric        // data buffer for generated metric.
+	config   IisThreadActiveConfig // metric config provided by user.
+	capacity int                   // max observed number of data points added to the metric.
 }
 
 // init fills iis.thread.active metric with initial data.
@@ -816,7 +935,7 @@ func (m *metricIisThreadActive) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisThreadActive(cfg MetricConfig) metricIisThreadActive {
+func newMetricIisThreadActive(cfg IisThreadActiveConfig) metricIisThreadActive {
 	m := metricIisThreadActive{config: cfg}
 
 	if cfg.Enabled {
@@ -827,9 +946,9 @@ func newMetricIisThreadActive(cfg MetricConfig) metricIisThreadActive {
 }
 
 type metricIisUptime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric  // data buffer for generated metric.
+	config   IisUptimeConfig // metric config provided by user.
+	capacity int             // max observed number of data points added to the metric.
 }
 
 // init fills iis.uptime metric with initial data.
@@ -866,7 +985,7 @@ func (m *metricIisUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricIisUptime(cfg MetricConfig) metricIisUptime {
+func newMetricIisUptime(cfg IisUptimeConfig) metricIisUptime {
 	m := metricIisUptime{config: cfg}
 
 	if cfg.Enabled {

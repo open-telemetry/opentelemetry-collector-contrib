@@ -80,11 +80,7 @@ func (i *Input) configureListener() error {
 
 // goListenn will listen for tcp connections.
 func (i *Input) goListen(ctx context.Context) {
-	i.wg.Add(1)
-
-	go func() {
-		defer i.wg.Done()
-
+	i.wg.Go(func() {
 		for {
 			conn, err := i.listener.Accept()
 			if err != nil {
@@ -104,29 +100,23 @@ func (i *Input) goListen(ctx context.Context) {
 			i.goHandleClose(subctx, conn)
 			i.goHandleMessages(subctx, conn, cancel)
 		}
-	}()
+	})
 }
 
 // goHandleClose will wait for the context to finish before closing a connection.
 func (i *Input) goHandleClose(ctx context.Context, conn net.Conn) {
-	i.wg.Add(1)
-
-	go func() {
-		defer i.wg.Done()
+	i.wg.Go(func() {
 		<-ctx.Done()
 		i.Logger().Debug("Closing connection", zap.String("address", conn.RemoteAddr().String()))
 		if err := conn.Close(); err != nil {
 			i.Logger().Error("Failed to close connection", zap.Error(err))
 		}
-	}()
+	})
 }
 
 // goHandleMessages will handles messages from a tcp connection.
 func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel context.CancelFunc) {
-	i.wg.Add(1)
-
-	go func() {
-		defer i.wg.Done()
+	i.wg.Go(func() {
 		defer cancel()
 
 		dec := i.encoding.NewDecoder()
@@ -155,7 +145,7 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		if err := scanner.Err(); err != nil {
 			i.Logger().Error("Scanner error", zap.Error(err))
 		}
-	}()
+	})
 }
 
 func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.Decoder, log []byte) {

@@ -67,16 +67,14 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","data_stream":{"dataset":"generic","namespace":"default","type":"logs"},"error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
+			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","application":"myapp","attrKey1":"abc","attrKey2":"def","data_stream":{"dataset":"generic","namespace":"default","type":"logs"},"error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
 			actual := string(docs[0].Document)
 			assert.JSONEq(t, expected, actual)
 
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestLogsExporter(t, server.URL)
 		logs := newLogsWithAttributes(
 			// record attrs
 			map[string]any{
@@ -92,7 +90,8 @@ func TestExporterLogs(t *testing.T) {
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 		rec.WaitItems(1)
 	})
 
@@ -175,9 +174,7 @@ func TestExporterLogs(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "bodymap"
-				})
+				exporter := newTestLogsExporter(t, server.URL)
 				logs := plog.NewLogs()
 				resourceLogs := logs.ResourceLogs().AppendEmpty()
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
@@ -185,7 +182,8 @@ func TestExporterLogs(t *testing.T) {
 				logRecord := logRecords.AppendEmpty()
 				tt.body().CopyTo(logRecord.Body())
 
-				mustSendLogs(t, exporter, logs)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"bodymap"}})})
+				mustSendLogsWithCtx(ctx, t, exporter, logs)
 				rec.WaitItems(1)
 			})
 		}
@@ -212,11 +210,9 @@ func TestExporterLogs(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "bodymap"
-		})
-
-		err := exporter.ConsumeLogs(t.Context(), logs)
+		exporter := newTestLogsExporter(t, server.URL)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"bodymap"}})})
+		err := exporter.ConsumeLogs(ctx, logs)
 		assert.NoError(t, err)
 		rec.WaitItems(1)
 	})
@@ -225,7 +221,7 @@ func TestExporterLogs(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			assert.JSONEq(t,
-				`{"attr":{"key":"value"},"agent":{"name":"otlp"},"@timestamp":"1970-01-01T00:00:00.000000000Z"}`,
+				`{"attr":{"key":"value"},"@timestamp":"1970-01-01T00:00:00.000000000Z"}`,
 				string(docs[0].Document),
 			)
 			rec.Record(docs)
@@ -233,7 +229,6 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
 			cfg.LogsIndex = "index"
 			// deduplication is always performed except in otel mapping mode -
 			// there is no other configuration that controls it
@@ -243,7 +238,8 @@ func TestExporterLogs(t *testing.T) {
 			nil,
 			nil,
 		)
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 		rec.WaitItems(1)
 	})
 
@@ -256,7 +252,6 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "raw"
 			cfg.LogsIndex = "index"
 			// deduplication is always performed - there is no configuration that controls it
 		})
@@ -267,7 +262,8 @@ func TestExporterLogs(t *testing.T) {
 			nil,
 			nil,
 		)
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"raw"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 		rec.WaitItems(1)
 	})
 
@@ -319,6 +315,30 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
+	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
+		done := make(chan struct{}, 1)
+		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
+
+			w.WriteHeader(http.StatusOK)
+			select {
+			case done <- struct{}{}:
+			default:
+			}
+		})
+
+		exporter := newTestLogsExporter(t, server.URL)
+		logs := plog.NewLogs()
+		logRecord := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		logRecord.Body().SetStr("hello world")
+		ctx := client.NewContext(
+			t.Context(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
+		)
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
+		<-done
+	})
+
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
 		index := "someindex"
@@ -328,9 +348,7 @@ func TestExporterLogs(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestLogsExporter(t, server.URL)
 		logs := newLogsWithAttributes(
 			map[string]any{
 				"elasticsearch.index": index,
@@ -343,7 +361,8 @@ func TestExporterLogs(t *testing.T) {
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 
 		docs := rec.WaitItems(1)
 		doc := docs[0]
@@ -362,9 +381,7 @@ func TestExporterLogs(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "none"
-		})
+		exporter := newTestLogsExporter(t, server.URL)
 		logs := newLogsWithAttributes(
 			map[string]any{
 				elasticsearch.DataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
@@ -376,7 +393,8 @@ func TestExporterLogs(t *testing.T) {
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-		mustSendLogs(t, exporter, logs)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}})})
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
 
 		rec.WaitItems(1)
 	})
@@ -477,9 +495,7 @@ func TestExporterLogs(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "otel"
-				})
+				exporter := newTestLogsExporter(t, server.URL)
 				recordAttrs := map[string]any{
 					"data_stream.dataset": "attr.dataset",
 					"attr.foo":            "attr.foo.value",
@@ -497,7 +513,8 @@ func TestExporterLogs(t *testing.T) {
 					},
 				)
 				tc.body.CopyTo(logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
-				mustSendLogs(t, exporter, logs)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendLogsWithCtx(ctx, t, exporter, logs)
 
 				expected := []itemRequest{
 					{
@@ -596,11 +613,10 @@ func TestExporterLogs(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "otel"
-				})
+				exporter := newTestLogsExporter(t, server.URL)
 
-				mustSendLogs(t, exporter, newLogsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendLogsWithCtx(ctx, t, exporter, newLogsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
 
 				rec.WaitItems(1)
 
@@ -827,14 +843,18 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
 		for i := range 3 {
-			logRecord := plog.NewLogRecord()
+			// build logs from record and send with mapping mode in client metadata
+			logs := plog.NewLogs()
+			rl := logs.ResourceLogs().AppendEmpty()
+			sl := rl.ScopeLogs().AppendEmpty()
+			logRecord := sl.LogRecords().AppendEmpty()
 			logRecord.Attributes().PutInt("idx", int64(i))
-			mustSendLogRecords(t, exporter, logRecord)
+			mustSendLogsWithCtx(ctx, t, exporter, logs)
 		}
 
 		wg.Wait() // <- this blocks forever if the event is not retried
@@ -847,10 +867,10 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("publish logs with dynamic id", func(t *testing.T) {
 		t.Parallel()
-		exampleDocID := "abc123"
+		exampleDocID := "example-doc-id-123"
 		tableTests := []struct {
 			name          string
-			expectedDocID string // "" means the _id will not be set
+			expectedDocID string // "" means the document ID will not be set
 			recordAttrs   map[string]any
 		}{
 			{
@@ -865,7 +885,7 @@ func TestExporterLogs(t *testing.T) {
 				},
 			},
 			{
-				name:          "record attributes",
+				name:          "valid document id attribute should set _id",
 				expectedDocID: exampleDocID,
 				recordAttrs: map[string]any{
 					elasticsearch.DocumentIDAttributeName: exampleDocID,
@@ -873,19 +893,11 @@ func TestExporterLogs(t *testing.T) {
 			},
 		}
 
-		cfgs := map[string]func(*Config){
-			"async": func(cfg *Config) {
-				cfg.QueueBatchConfig.Get().WaitForResult = false
-				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
-			},
-			"sync": func(cfg *Config) {
-				cfg.QueueBatchConfig.Get().WaitForResult = true
-				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
-			},
-		}
+		mappingModes := []string{"scope_attribute", "client_metadata"}
+
 		for _, tt := range tableTests {
-			for cfgName, cfgFn := range cfgs {
-				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
+			for _, modeName := range mappingModes {
+				t.Run(tt.name+"/"+modeName, func(t *testing.T) {
 					t.Parallel()
 					rec := newBulkRecorder()
 					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -903,17 +915,24 @@ func TestExporterLogs(t *testing.T) {
 					})
 
 					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-						cfg.Mapping.Mode = "otel"
 						cfg.LogsDynamicID.Enabled = true
-						cfgFn(cfg)
 					})
 					logs := newLogsWithAttributes(
 						tt.recordAttrs,
-						map[string]any{},
-						map[string]any{},
+						nil,
+						nil,
 					)
 					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-					mustSendLogs(t, exporter, logs)
+
+					var ctx context.Context
+					switch modeName {
+					case "scope_attribute":
+						logs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("elastic.mapping.mode", "otel")
+						ctx = t.Context()
+					case "client_metadata":
+						ctx = client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+					}
+					mustSendLogsWithCtx(ctx, t, exporter, logs)
 
 					rec.WaitItems(1)
 				})
@@ -979,7 +998,6 @@ func TestExporterLogs(t *testing.T) {
 					})
 
 					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-						cfg.Mapping.Mode = "otel"
 						cfg.LogsDynamicPipeline.Enabled = true
 						cfgFn(cfg)
 					})
@@ -989,13 +1007,55 @@ func TestExporterLogs(t *testing.T) {
 						map[string]any{},
 					)
 					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-					mustSendLogs(t, exporter, logs)
+					ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+					mustSendLogsWithCtx(ctx, t, exporter, logs)
 
 					rec.WaitItems(1)
 				})
 			}
 		}
 	})
+}
+
+func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
+	rec := newBulkRecorder()
+	server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+		rec.Record(docs)
+		// Ensure the produced index corresponds to OTel mapping (contains ".otel-")
+		require.GreaterOrEqual(t, len(docs), 1)
+		assert.Contains(t, string(docs[0].Action), ".otel-")
+		return itemsAllOK(docs)
+	})
+	params := exportertest.NewNopSettings(metadata.Type)
+
+	// create config that sets Mapping.Mode (deprecated) to ecs
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoints = []string{server.URL}
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.Mapping.Mode = "ecs"
+	})
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	f := NewFactory()
+	exp, err := f.CreateLogs(t.Context(), params, cfg)
+	require.NoError(t, err)
+
+	// start exporter so bulk indexers are initialized
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, exp.Shutdown(t.Context()))
+	}()
+
+	// send a simple log record without any client metadata or scope attribute
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+	lr.Body().SetStr("hello")
+
+	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
+	rec.WaitItems(1)
 }
 
 func TestExporterMetrics(t *testing.T) {
@@ -1006,21 +1066,42 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
 		dpSum := pmetric.NewNumberDataPoint()
 		dpSum.SetDoubleValue(123.456)
 		dpSum.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-2 * time.Second)))
-		mustSendMetricSumDataPoints(t, exporter, dpSum)
+		mustSendMetricSumDataPointsWithCtx(ctx, t, exporter, dpSum)
 
 		dpGauge := pmetric.NewNumberDataPoint()
 		dpGauge.SetDoubleValue(123.456)
 		// Keep timestamp different to avoid metric grouping putting them in same doc
 		dpGauge.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
-		mustSendMetricGaugeDataPoints(t, exporter, dpGauge)
+		mustSendMetricGaugeDataPointsWithCtx(ctx, t, exporter, dpGauge)
 
 		rec.WaitItems(2)
+	})
+
+	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
+		done := make(chan struct{}, 1)
+		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
+
+			w.WriteHeader(http.StatusOK)
+			select {
+			case done <- struct{}{}:
+			default:
+			}
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+		metrics := newMetricsWithAttributes(nil, nil, nil)
+		ctx := client.NewContext(
+			t.Context(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
+		)
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+		<-done
 	})
 
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
@@ -1031,9 +1112,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 		metrics := newMetricsWithAttributes(
 			map[string]any{
 				"elasticsearch.index": index,
@@ -1045,7 +1124,8 @@ func TestExporterMetrics(t *testing.T) {
 				"elasticsearch.index": "ignored",
 			},
 		)
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		docs := rec.WaitItems(1)
 		doc := docs[0]
@@ -1064,9 +1144,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 		metrics := newMetricsWithAttributes(
 			map[string]any{
 				elasticsearch.DataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
@@ -1078,7 +1156,8 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		)
 		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		rec.WaitItems(1)
 	})
@@ -1090,13 +1169,13 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		// Explicitly set scope mapping mode to ecs for this test.
+		scopeA.Scope().Attributes().PutStr(elasticsearch.MappingModeAttributeName, "ecs")
 		metricSlice := scopeA.Metrics()
 		fooMetric := metricSlice.AppendEmpty()
 		fooMetric.SetName("metric.foo")
@@ -1111,15 +1190,16 @@ func TestExporterMetrics(t *testing.T) {
 		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
 		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}}}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}}}`),
 			},
 		}
@@ -1134,9 +1214,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1155,11 +1233,12 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.Negative().SetOffset(1)
 		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,1,2,1,1],"values":[-24.0,-3.0,0.0,6.0,12.0]}}}`),
 			},
 		}
@@ -1173,9 +1252,7 @@ func TestExporterMetrics(t *testing.T) {
 			return nil, nil
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1190,7 +1267,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
 		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 
-		err := exporter.ConsumeMetrics(t.Context(), metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		err := exporter.ConsumeMetrics(ctx, metrics)
 		assert.NoError(t, err)
 	})
 
@@ -1200,9 +1278,7 @@ func TestExporterMetrics(t *testing.T) {
 			return nil, nil
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1221,7 +1297,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.Negative().SetOffset(1)
 		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
 
-		err := exporter.ConsumeMetrics(t.Context(), metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		err := exporter.ConsumeMetrics(ctx, metrics)
 		assert.NoError(t, err)
 	})
 
@@ -1232,9 +1309,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1260,16 +1335,17 @@ func TestExporterMetrics(t *testing.T) {
 		barOtherDp := barDps.AppendEmpty()
 		barOtherDp.SetDoubleValue(1.0)
 
-		err := exporter.ConsumeMetrics(t.Context(), metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		err := exporter.ConsumeMetrics(ctx, metrics)
 		assert.NoError(t, err)
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.bar":"double_metrics","metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"bar":1.0}}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}}}`),
 			},
 		}
@@ -1284,9 +1360,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1354,7 +1428,8 @@ func TestExporterMetrics(t *testing.T) {
 		summaryDp.SetCount(1)
 		summaryDp.SetSum(1.5)
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1431,11 +1506,9 @@ func TestExporterMetrics(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "otel"
-				})
-
-				mustSendMetrics(t, exporter, newMetricsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
+				exporter := newTestMetricsExporter(t, server.URL)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendMetricsWithCtx(ctx, t, exporter, newMetricsWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs))
 				rec.WaitItems(1)
 
 				assert.Len(t, rec.Items(), 1)
@@ -1454,10 +1527,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
-
+		exporter := newTestMetricsExporter(t, server.URL)
 		metrics := pmetric.NewMetrics()
 		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
 		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
@@ -1476,7 +1546,8 @@ func TestExporterMetrics(t *testing.T) {
 			"elasticsearch.mapping.hints": []string{"_doc_count"},
 		})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1495,9 +1566,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
@@ -1526,7 +1595,8 @@ func TestExporterMetrics(t *testing.T) {
 			"elasticsearch.mapping.hints": []string{"_doc_count", "aggregate_metric_double"},
 		})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1549,9 +1619,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
@@ -1569,7 +1637,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooBarBazMetric.SetName("foo.bar.baz")
 		fooBarBazMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
@@ -1588,9 +1657,7 @@ func TestExporterMetrics(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
@@ -1607,19 +1674,117 @@ func TestExporterMetrics(t *testing.T) {
 		fooOtherDp.SetSum(2)
 		fooOtherDp.SetCount(3)
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"summary_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":1.5,"value_count":1}}}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"summary_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":2.0,"value_count":3}}}`),
 			},
 		}
 
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("ecs mode document with only invalid data points sends action without dynamic_templates", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeMetrics.Metrics()
+
+		// Gauge with NaN causes Value() to return error; no attribute or dynamic template is added.
+		invalidGauge := metricSlice.AppendEmpty()
+		invalidGauge.SetName("invalid.gauge")
+		invalidDp := invalidGauge.SetEmptyGauge().DataPoints().AppendEmpty()
+		invalidDp.SetTimestamp(ts)
+		invalidDp.SetDoubleValue(math.NaN())
+
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		docs := rec.WaitItems(1)
+		require.Len(t, docs, 1)
+		// Action must not contain dynamic_templates (or have empty map); document has no metric fields.
+		var actionMap map[string]any
+		require.NoError(t, json.Unmarshal(docs[0].Action, &actionMap))
+		create, ok := actionMap["create"].(map[string]any)
+		require.True(t, ok)
+		_, hasDynamicTemplates := create["dynamic_templates"]
+		assert.False(t, hasDynamicTemplates, "action should omit dynamic_templates when no metrics are valid")
+		assert.JSONEq(t,
+			`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"}}`,
+			string(docs[0].Document),
+		)
+	})
+
+	t.Run("ecs mode histogram summary gauge counter with dynamic_templates", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeMetrics.Metrics()
+
+		gaugeMetric := metricSlice.AppendEmpty()
+		gaugeMetric.SetName("ecs.gauge")
+		gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+		gaugeDp.SetTimestamp(ts)
+		gaugeDp.SetDoubleValue(1.0)
+
+		counterMetric := metricSlice.AppendEmpty()
+		counterMetric.SetName("ecs.counter")
+		counterMetric.SetEmptySum().SetIsMonotonic(true)
+		counterMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		counterDp := counterMetric.Sum().DataPoints().AppendEmpty()
+		counterDp.SetTimestamp(ts)
+		counterDp.SetDoubleValue(2.0)
+
+		histogramMetric := metricSlice.AppendEmpty()
+		histogramMetric.SetName("ecs.histogram")
+		histogram := histogramMetric.SetEmptyHistogram()
+		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		histogramDp := histogram.DataPoints().AppendEmpty()
+		histogramDp.SetTimestamp(ts)
+		histogramDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		histogramDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+
+		summaryMetric := metricSlice.AppendEmpty()
+		summaryMetric.SetName("ecs.summary")
+		summaryDp := summaryMetric.SetEmptySummary().DataPoints().AppendEmpty()
+		summaryDp.SetTimestamp(ts)
+		summaryDp.SetSum(5.0)
+		summaryDp.SetCount(10)
+
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"ecs.counter":"double_metrics","ecs.gauge":"double_metrics","ecs.histogram":"histogram_metrics","ecs.summary":"summary_metrics"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"ecs":{"counter":2.0,"gauge":1.0,"histogram":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]},"summary":{"sum":5.0,"value_count":10}}}`),
+			},
+		}
 		assertRecordedItems(t, expected, rec, false)
 	})
 }
@@ -1727,11 +1892,9 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 				return itemsAllOK(docs)
 			})
 
-			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-				cfg.Mapping.Mode = "ecs"
-			})
-
-			mustSendMetrics(t, exporter, metrics)
+			exporter := newTestMetricsExporter(t, server.URL)
+			ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+			mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 			assertDocsInIndices(t, map[string]int{
 				"metrics-generic-bar":                 2, // AA, BA
@@ -1749,11 +1912,9 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 				return itemsAllOK(docs)
 			})
 
-			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-				cfg.Mapping.Mode = "otel"
-			})
-
-			mustSendMetrics(t, exporter, metrics)
+			exporter := newTestMetricsExporter(t, server.URL)
+			ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+			mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 			assertDocsInIndices(t, map[string]int{
 				"metrics-generic.otel-bar":                 4, // AA->bar, AC->bar, BA->bar, BB->bar
@@ -1849,9 +2010,7 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
-		})
+		exporter := newTestMetricsExporter(t, server.URL)
 
 		metrics := pmetric.NewMetrics()
 		resource := metrics.ResourceMetrics().AppendEmpty()
@@ -1867,14 +2026,15 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		// a=b overwrites a=b in resource attribute
 		addMetric(scope.Metrics(), "baz", []kv{{k: "a", v: "b"}})
 
-		mustSendMetrics(t, exporter, metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"foo":"double_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"foo":1.0,"a":"c"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"bar":"double_metrics","baz":"double_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"bar":1.0,"baz":1.0,"a":"b"}`),
 			},
 		}
@@ -1892,9 +2052,7 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = mode
-				})
+				exporter := newTestMetricsExporter(t, server.URL)
 
 				metrics := pmetric.NewMetrics()
 				resourceA := metrics.ResourceMetrics().AppendEmpty()
@@ -1943,6 +2101,61 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("mapping hints excluded from grouping", func(t *testing.T) {
+		// Test that data points with different mapping hints are grouped together
+		// since elasticsearch.mapping.hints should be excluded from the hash.
+		for _, mode := range []string{"ecs", "otel"} {
+			t.Run(mode, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				testMetricsExporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = mode
+				})
+
+				metrics := pmetric.NewMetrics()
+				resource := metrics.ResourceMetrics().AppendEmpty()
+				scope := resource.ScopeMetrics().AppendEmpty()
+
+				// Metric with mapping hints
+				fooMetric := scope.Metrics().AppendEmpty()
+				fooMetric.SetName("metric.foo")
+				fooDp := fooMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				fooDp.SetDoubleValue(1.0)
+				hints := fooDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintAggregateMetricDouble))
+
+				// Metric without mapping hints - should be grouped with the above
+				barMetric := scope.Metrics().AppendEmpty()
+				barMetric.SetName("metric.bar")
+				barDp := barMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				barDp.SetDoubleValue(2.0)
+
+				// Metric with different mapping hints - should still be grouped
+				bazMetric := scope.Metrics().AppendEmpty()
+				bazMetric.SetName("metric.baz")
+				bazDp := bazMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				bazDp.SetDoubleValue(3.0)
+				bazHints := bazDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				bazHints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				mustSendMetrics(t, testMetricsExporter, metrics)
+
+				rec.WaitItems(1)
+				assert.Len(t, rec.Items(), 1)
+				// Sanity check that all metrics are included in a single document
+				// ECS mode uses short names (foo, bar, baz), OTel mode uses full names (metric.foo, etc.)
+				doc := string(rec.Items()[0].Document)
+				assert.Contains(t, doc, "foo")
+				assert.Contains(t, doc, "bar")
+				assert.Contains(t, doc, "baz")
+			})
+		}
+	})
 }
 
 func mapToDistinct(m map[string]any) attribute.Distinct {
@@ -1978,6 +2191,28 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
+	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
+		done := make(chan struct{}, 1)
+		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
+
+			w.WriteHeader(http.StatusOK)
+			select {
+			case done <- struct{}{}:
+			default:
+			}
+		})
+
+		exporter := newTestTracesExporter(t, server.URL)
+		traces := newTracesWithAttributes(nil, nil, nil)
+		ctx := client.NewContext(
+			t.Context(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
+		)
+		mustSendTracesWithCtx(ctx, t, exporter, traces)
+		<-done
+	})
+
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
 		index := "someindex"
@@ -1988,9 +2223,7 @@ func TestExporterTraces(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestTracesExporter(t, server.URL)
 
 		traces := newTracesWithAttributes(
 			map[string]any{
@@ -2005,7 +2238,8 @@ func TestExporterTraces(t *testing.T) {
 		)
 		event := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
 		event.Attributes().PutStr("elasticsearch.index", eventIndex)
-		mustSendTraces(t, exporter, traces)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendTracesWithCtx(ctx, t, exporter, traces)
 
 		docs := rec.WaitItems(2)
 		doc := docs[0]
@@ -2028,11 +2262,11 @@ func TestExporterTraces(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "none"
-		})
+		exporter := newTestTracesExporter(t, server.URL)
 
-		mustSendTraces(t, exporter, newTracesWithAttributes(
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}})})
+
+		mustSendTracesWithCtx(ctx, t, exporter, newTracesWithAttributes(
 			map[string]any{
 				elasticsearch.DataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
 			},
@@ -2100,9 +2334,7 @@ func TestExporterTraces(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+		exporter := newTestTracesExporter(t, server.URL)
 
 		traces := ptrace.NewTraces()
 		resourceSpans := traces.ResourceSpans()
@@ -2145,7 +2377,8 @@ func TestExporterTraces(t *testing.T) {
 			"link.attr.foo": "link.attr.bar",
 		})
 
-		mustSendTraces(t, exporter, traces)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+		mustSendTracesWithCtx(ctx, t, exporter, traces)
 
 		expected := []itemRequest{
 			{
@@ -2204,11 +2437,7 @@ func TestExporterTraces(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				configs := []func(cfg *Config){
-					func(cfg *Config) {
-						cfg.Mapping.Mode = "otel"
-					},
-				}
+				configs := []func(cfg *Config){}
 				if tc.config != nil {
 					configs = append(configs, tc.config)
 				}
@@ -2219,7 +2448,8 @@ func TestExporterTraces(t *testing.T) {
 				spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
 				spanEvent.SetName("some_event_name")
 				fillAttributeMap(spanEvent.Attributes(), tc.spanEventAttrs)
-				mustSendTraces(t, exporter, traces)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendTracesWithCtx(ctx, t, exporter, traces)
 
 				rec.WaitItems(2)
 				var spanEventDocs []itemRequest
@@ -2287,14 +2517,13 @@ func TestExporterTraces(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = "otel"
-				})
+				exporter := newTestTracesExporter(t, server.URL)
 
 				traces := newTracesWithAttributes(tc.recordAttrs, tc.scopeAttrs, tc.resourceAttrs)
 				spanEventAttrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty().Attributes()
 				fillAttributeMap(spanEventAttrs, tc.recordAttrs)
-				mustSendTraces(t, exporter, traces)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
+				mustSendTracesWithCtx(ctx, t, exporter, traces)
 
 				rec.WaitItems(2)
 
@@ -2307,6 +2536,192 @@ func TestExporterTraces(t *testing.T) {
 				}
 			})
 		}
+	})
+
+	t.Run("publish spans with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "example-doc-id-123"
+		tableTests := []struct {
+			name          string
+			expectedDocID string // "" means the document ID will not be set
+			spanAttrs     map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				spanAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "valid document id attribute should set _id",
+				expectedDocID: exampleDocID,
+				spanAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		for _, tt := range tableTests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+
+					if tt.expectedDocID == "" {
+						assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+					} else {
+						assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+					}
+
+					// Ensure the document id attribute is removed from the final document.
+					assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.TracesDynamicID.Enabled = true
+				})
+				traces := newTracesWithAttributes(
+					tt.spanAttrs,
+					map[string]any{
+						"elastic.mapping.mode": "otel",
+					},
+					map[string]any{},
+				)
+				mustSendTraces(t, exporter, traces)
+
+				rec.WaitItems(1)
+			})
+		}
+	})
+
+	t.Run("publish span events with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "span-event-doc-id-456"
+		tableTests := []struct {
+			name          string
+			expectedDocID string
+			eventAttrs    map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				eventAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "span event attributes",
+				expectedDocID: exampleDocID,
+				eventAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		for _, tt := range tableTests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.TracesDynamicID.Enabled = true
+				})
+				traces := newTracesWithAttributes(
+					map[string]any{},
+					map[string]any{
+						"elastic.mapping.mode": "otel",
+					},
+					map[string]any{},
+				)
+				spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+				spanEvent.SetName("test_event")
+				fillAttributeMap(spanEvent.Attributes(), tt.eventAttrs)
+				mustSendTraces(t, exporter, traces)
+
+				// Wait for both span and span event
+				rec.WaitItems(2)
+
+				// Find the span event document
+				var spanEventDoc *itemRequest
+				for _, doc := range rec.Items() {
+					if result := gjson.GetBytes(doc.Document, "event_name"); result.Raw != "" {
+						spanEventDoc = &doc
+						break
+					}
+				}
+
+				require.NotNil(t, spanEventDoc, "span event document should be present")
+
+				if tt.expectedDocID == "" {
+					assert.NotContains(t, string(spanEventDoc.Action), "_id", "expected _id to not be set")
+				} else {
+					assert.Equal(t, tt.expectedDocID, actionJSONToID(t, spanEventDoc.Action), "expected _id to be set")
+				}
+
+				// Ensure the document id attribute is removed from the final document.
+				assert.NotContains(t, string(spanEventDoc.Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+			})
+		}
+	})
+
+	t.Run("publish with dynamic id in ecs mode", func(t *testing.T) {
+		t.Parallel()
+		// Test that spans respect dynamic document IDs in ECS mode,
+		// while span events are embedded (not separate documents)
+		exampleDocID := "ecs-span-doc-id-789"
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicID.Enabled = true
+		})
+
+		traces := newTracesWithAttributes(
+			map[string]any{
+				elasticsearch.DocumentIDAttributeName: exampleDocID,
+			},
+			map[string]any{
+				"elastic.mapping.mode": "ecs",
+			},
+			map[string]any{},
+		)
+
+		// Add a span event with its own document ID attribute (should be ignored in ECS mode)
+		spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+		spanEvent.SetName("test_event_ecs")
+		spanEvent.Attributes().PutStr(elasticsearch.DocumentIDAttributeName, "should-be-ignored")
+
+		mustSendTraces(t, exporter, traces)
+
+		// In ECS mode, only the span document is created (span events are embedded)
+		rec.WaitItems(1)
+		docs := rec.Items()
+		require.Len(t, docs, 1, "should only have 1 document (span) in ECS mode")
+
+		// Verify the span document has the correct _id
+		assert.Equal(t, exampleDocID, actionJSONToID(t, docs[0].Action), "span should have dynamic _id")
+
+		// Verify the document ID attribute is removed from the span
+		assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "document id attribute should be removed")
 	})
 }
 
@@ -2383,7 +2798,6 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 
 	setAllowedMappingModes := func(cfg *Config) {
 		cfg.Mapping.AllowedModes = []string{"ecs", "otel"}
-		cfg.Mapping.Mode = "otel"
 	}
 
 	type checkFunc func(_ *testing.T, doc []byte, signal string)
@@ -2919,7 +3333,7 @@ func mustSendLogsWithCtx(
 	require.NoError(t, err)
 }
 
-func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+func mustSendMetricSumDataPointsWithCtx(ctx context.Context, t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	metric := scopeMetrics.Metrics().AppendEmpty()
@@ -2928,10 +3342,10 @@ func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPo
 	for _, dataPoint := range dataPoints {
 		dataPoint.CopyTo(metric.Sum().DataPoints().AppendEmpty())
 	}
-	mustSendMetrics(t, exporter, metrics)
+	mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 }
 
-func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+func mustSendMetricGaugeDataPointsWithCtx(ctx context.Context, t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	metric := scopeMetrics.Metrics().AppendEmpty()
@@ -2940,7 +3354,7 @@ func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, data
 	for _, dataPoint := range dataPoints {
 		dataPoint.CopyTo(metric.Gauge().DataPoints().AppendEmpty())
 	}
-	mustSendMetrics(t, exporter, metrics)
+	mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 }
 
 func mustSendMetrics(t *testing.T, exporter exporter.Metrics, metrics pmetric.Metrics) {

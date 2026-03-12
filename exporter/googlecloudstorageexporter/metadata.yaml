@@ -6,6 +6,7 @@ status:
   distributions: [contrib]
   stability:
     alpha: [logs]
+    development: [traces]
   codeowners:
     active: [constanca-m, braydonk]
     seeking_new: true

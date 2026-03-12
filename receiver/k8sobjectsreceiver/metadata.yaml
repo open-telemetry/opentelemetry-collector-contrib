@@ -1,4 +1,8 @@
+display_name: Kubernetes Objects Receiver
 type: k8sobjects
+
+description: The Kubernetes Objects Receiver collects (pull/watch) objects from the Kubernetes API server.
+
 
 status:
   class: receiver

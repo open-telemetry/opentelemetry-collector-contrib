@@ -32,6 +32,10 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 }
 
 var jmxScraperVersions = map[string]supportedJar{
+	"aca7937cee3fc0f669553d594c0b80bb9ff6417c42902c0414ddcea9753c7171": {
+		version: "1.53.0-alpha",
+		jar:     "JMX scraper",
+	},
 	"551ff618d4ae0c73c1df7596ed667fd1aab50563cf104c92f31cdbf95f735412": {
 		version: "1.52.0-alpha",
 		jar:     "JMX scraper",
@@ -61,6 +65,10 @@ var jmxScraperVersions = map[string]supportedJar{
 // If you change this variable name, please open an issue in opentelemetry-java-contrib
 // so that repository's release automation can be updated
 var jmxMetricsGathererVersions = map[string]supportedJar{
+	"10da69b4a8017403e81bc79f0cdd92813e1f6926ef9bbea4e1bae911d0ffe1a9": {
+		version: "1.53.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
 	"5d4badffccfd55e566cbd3aebee4f23f848dbd04b5cc7dede61d49cc2f051184": {
 		version: "1.52.0-alpha",
 		jar:     "JMX metrics gatherer",

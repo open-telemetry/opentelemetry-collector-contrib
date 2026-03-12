@@ -1,4 +1,5 @@
 status:
   disable_codecov_badge: true
   codeowners:
-    active: [mwear, evan-bradley]
+    active: [evan-bradley]
+    emeritus: [mwear]

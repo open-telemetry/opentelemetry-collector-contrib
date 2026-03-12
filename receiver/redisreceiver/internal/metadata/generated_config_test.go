@@ -26,64 +26,200 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RedisClientsBlocked:                       MetricConfig{Enabled: true},
-					RedisClientsConnected:                     MetricConfig{Enabled: true},
-					RedisClientsMaxInputBuffer:                MetricConfig{Enabled: true},
-					RedisClientsMaxOutputBuffer:               MetricConfig{Enabled: true},
-					RedisClusterClusterEnabled:                MetricConfig{Enabled: true},
-					RedisClusterKnownNodes:                    MetricConfig{Enabled: true},
-					RedisClusterLinksBufferLimitExceededCount: MetricConfig{Enabled: true},
-					RedisClusterNodeCount:                     MetricConfig{Enabled: true},
-					RedisClusterNodeUptime:                    MetricConfig{Enabled: true},
-					RedisClusterSlotsAssigned:                 MetricConfig{Enabled: true},
-					RedisClusterSlotsFail:                     MetricConfig{Enabled: true},
-					RedisClusterSlotsOk:                       MetricConfig{Enabled: true},
-					RedisClusterSlotsPfail:                    MetricConfig{Enabled: true},
-					RedisClusterState:                         MetricConfig{Enabled: true},
-					RedisClusterStatsMessagesReceived:         MetricConfig{Enabled: true},
-					RedisClusterStatsMessagesSent:             MetricConfig{Enabled: true},
-					RedisClusterUptime:                        MetricConfig{Enabled: true},
-					RedisCmdCalls:                             MetricConfig{Enabled: true},
-					RedisCmdLatency:                           MetricConfig{Enabled: true},
-					RedisCmdUsec:                              MetricConfig{Enabled: true},
-					RedisCommands:                             MetricConfig{Enabled: true},
-					RedisCommandsProcessed:                    MetricConfig{Enabled: true},
-					RedisConnectionsReceived:                  MetricConfig{Enabled: true},
-					RedisConnectionsRejected:                  MetricConfig{Enabled: true},
-					RedisCPUTime:                              MetricConfig{Enabled: true},
-					RedisDbAvgTTL:                             MetricConfig{Enabled: true},
-					RedisDbExpires:                            MetricConfig{Enabled: true},
-					RedisDbKeys:                               MetricConfig{Enabled: true},
-					RedisKeysEvicted:                          MetricConfig{Enabled: true},
-					RedisKeysExpired:                          MetricConfig{Enabled: true},
-					RedisKeyspaceHits:                         MetricConfig{Enabled: true},
-					RedisKeyspaceMisses:                       MetricConfig{Enabled: true},
-					RedisLatestFork:                           MetricConfig{Enabled: true},
-					RedisMaxmemory:                            MetricConfig{Enabled: true},
-					RedisMemoryFragmentationRatio:             MetricConfig{Enabled: true},
-					RedisMemoryLua:                            MetricConfig{Enabled: true},
-					RedisMemoryPeak:                           MetricConfig{Enabled: true},
-					RedisMemoryRss:                            MetricConfig{Enabled: true},
-					RedisMemoryUsed:                           MetricConfig{Enabled: true},
-					RedisMemoryUsedMemoryOverhead:             MetricConfig{Enabled: true},
-					RedisMemoryUsedMemoryStartup:              MetricConfig{Enabled: true},
-					RedisMode:                                 MetricConfig{Enabled: true},
-					RedisNetInput:                             MetricConfig{Enabled: true},
-					RedisNetOutput:                            MetricConfig{Enabled: true},
-					RedisRdbChangesSinceLastSave:              MetricConfig{Enabled: true},
-					RedisReplicationBacklogFirstByteOffset:    MetricConfig{Enabled: true},
-					RedisReplicationOffset:                    MetricConfig{Enabled: true},
-					RedisReplicationReplicaOffset:             MetricConfig{Enabled: true},
-					RedisRole:                                 MetricConfig{Enabled: true},
-					RedisSentinelMasters:                      MetricConfig{Enabled: true},
-					RedisSentinelRunningScripts:               MetricConfig{Enabled: true},
-					RedisSentinelScriptsQueueLength:           MetricConfig{Enabled: true},
-					RedisSentinelSimulateFailureFlags:         MetricConfig{Enabled: true},
-					RedisSentinelTiltSinceSeconds:             MetricConfig{Enabled: true},
-					RedisSentinelTotalTilt:                    MetricConfig{Enabled: true},
-					RedisSlavesConnected:                      MetricConfig{Enabled: true},
-					RedisTrackingTotalKeys:                    MetricConfig{Enabled: true},
-					RedisUptime:                               MetricConfig{Enabled: true},
+					RedisClientsBlocked: RedisClientsBlockedConfig{
+						Enabled: true,
+					},
+					RedisClientsConnected: RedisClientsConnectedConfig{
+						Enabled: true,
+					},
+					RedisClientsMaxInputBuffer: RedisClientsMaxInputBufferConfig{
+						Enabled: true,
+					},
+					RedisClientsMaxOutputBuffer: RedisClientsMaxOutputBufferConfig{
+						Enabled: true,
+					},
+					RedisClusterClusterEnabled: RedisClusterClusterEnabledConfig{
+						Enabled: true,
+					},
+					RedisClusterKnownNodes: RedisClusterKnownNodesConfig{
+						Enabled: true,
+					},
+					RedisClusterLinksBufferLimitExceededCount: RedisClusterLinksBufferLimitExceededCountConfig{
+						Enabled: true,
+					},
+					RedisClusterNodeCount: RedisClusterNodeCountConfig{
+						Enabled: true,
+					},
+					RedisClusterNodeUptime: RedisClusterNodeUptimeConfig{
+						Enabled: true,
+					},
+					RedisClusterSlotsAssigned: RedisClusterSlotsAssignedConfig{
+						Enabled: true,
+					},
+					RedisClusterSlotsFail: RedisClusterSlotsFailConfig{
+						Enabled: true,
+					},
+					RedisClusterSlotsOk: RedisClusterSlotsOkConfig{
+						Enabled: true,
+					},
+					RedisClusterSlotsPfail: RedisClusterSlotsPfailConfig{
+						Enabled: true,
+					},
+					RedisClusterState: RedisClusterStateConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisClusterStateAttributeKey{RedisClusterStateAttributeKeyClusterState},
+					},
+					RedisClusterStatsMessagesReceived: RedisClusterStatsMessagesReceivedConfig{
+						Enabled: true,
+					},
+					RedisClusterStatsMessagesSent: RedisClusterStatsMessagesSentConfig{
+						Enabled: true,
+					},
+					RedisClusterUptime: RedisClusterUptimeConfig{
+						Enabled: true,
+					},
+					RedisCmdCalls: RedisCmdCallsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisCmdCallsAttributeKey{RedisCmdCallsAttributeKeyCmd},
+					},
+					RedisCmdLatency: RedisCmdLatencyConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisCmdLatencyAttributeKey{RedisCmdLatencyAttributeKeyCmd, RedisCmdLatencyAttributeKeyPercentile},
+					},
+					RedisCmdUsec: RedisCmdUsecConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisCmdUsecAttributeKey{RedisCmdUsecAttributeKeyCmd},
+					},
+					RedisCommands: RedisCommandsConfig{
+						Enabled: true,
+					},
+					RedisCommandsProcessed: RedisCommandsProcessedConfig{
+						Enabled: true,
+					},
+					RedisConnectionsReceived: RedisConnectionsReceivedConfig{
+						Enabled: true,
+					},
+					RedisConnectionsRejected: RedisConnectionsRejectedConfig{
+						Enabled: true,
+					},
+					RedisCPUTime: RedisCPUTimeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisCPUTimeAttributeKey{RedisCPUTimeAttributeKeyState},
+					},
+					RedisDbAvgTTL: RedisDbAvgTTLConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisDbAvgTTLAttributeKey{RedisDbAvgTTLAttributeKeyDb},
+					},
+					RedisDbExpires: RedisDbExpiresConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisDbExpiresAttributeKey{RedisDbExpiresAttributeKeyDb},
+					},
+					RedisDbKeys: RedisDbKeysConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisDbKeysAttributeKey{RedisDbKeysAttributeKeyDb},
+					},
+					RedisKeysEvicted: RedisKeysEvictedConfig{
+						Enabled: true,
+					},
+					RedisKeysExpired: RedisKeysExpiredConfig{
+						Enabled: true,
+					},
+					RedisKeyspaceHits: RedisKeyspaceHitsConfig{
+						Enabled: true,
+					},
+					RedisKeyspaceMisses: RedisKeyspaceMissesConfig{
+						Enabled: true,
+					},
+					RedisLatestFork: RedisLatestForkConfig{
+						Enabled: true,
+					},
+					RedisMaxmemory: RedisMaxmemoryConfig{
+						Enabled: true,
+					},
+					RedisMemoryFragmentationRatio: RedisMemoryFragmentationRatioConfig{
+						Enabled: true,
+					},
+					RedisMemoryLua: RedisMemoryLuaConfig{
+						Enabled: true,
+					},
+					RedisMemoryPeak: RedisMemoryPeakConfig{
+						Enabled: true,
+					},
+					RedisMemoryRss: RedisMemoryRssConfig{
+						Enabled: true,
+					},
+					RedisMemoryUsed: RedisMemoryUsedConfig{
+						Enabled: true,
+					},
+					RedisMemoryUsedMemoryOverhead: RedisMemoryUsedMemoryOverheadConfig{
+						Enabled: true,
+					},
+					RedisMemoryUsedMemoryStartup: RedisMemoryUsedMemoryStartupConfig{
+						Enabled: true,
+					},
+					RedisMode: RedisModeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisModeAttributeKey{RedisModeAttributeKeyMode},
+					},
+					RedisNetInput: RedisNetInputConfig{
+						Enabled: true,
+					},
+					RedisNetOutput: RedisNetOutputConfig{
+						Enabled: true,
+					},
+					RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveConfig{
+						Enabled: true,
+					},
+					RedisReplicationBacklogFirstByteOffset: RedisReplicationBacklogFirstByteOffsetConfig{
+						Enabled: true,
+					},
+					RedisReplicationOffset: RedisReplicationOffsetConfig{
+						Enabled: true,
+					},
+					RedisReplicationReplicaOffset: RedisReplicationReplicaOffsetConfig{
+						Enabled: true,
+					},
+					RedisRole: RedisRoleConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisRoleAttributeKey{RedisRoleAttributeKeyRole},
+					},
+					RedisSentinelMasters: RedisSentinelMastersConfig{
+						Enabled: true,
+					},
+					RedisSentinelRunningScripts: RedisSentinelRunningScriptsConfig{
+						Enabled: true,
+					},
+					RedisSentinelScriptsQueueLength: RedisSentinelScriptsQueueLengthConfig{
+						Enabled: true,
+					},
+					RedisSentinelSimulateFailureFlags: RedisSentinelSimulateFailureFlagsConfig{
+						Enabled: true,
+					},
+					RedisSentinelTiltSinceSeconds: RedisSentinelTiltSinceSecondsConfig{
+						Enabled: true,
+					},
+					RedisSentinelTotalTilt: RedisSentinelTotalTiltConfig{
+						Enabled: true,
+					},
+					RedisSlavesConnected: RedisSlavesConnectedConfig{
+						Enabled: true,
+					},
+					RedisTrackingTotalKeys: RedisTrackingTotalKeysConfig{
+						Enabled: true,
+					},
+					RedisUptime: RedisUptimeConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					RedisVersion:  ResourceAttributeConfig{Enabled: true},
@@ -96,64 +232,200 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RedisClientsBlocked:                       MetricConfig{Enabled: false},
-					RedisClientsConnected:                     MetricConfig{Enabled: false},
-					RedisClientsMaxInputBuffer:                MetricConfig{Enabled: false},
-					RedisClientsMaxOutputBuffer:               MetricConfig{Enabled: false},
-					RedisClusterClusterEnabled:                MetricConfig{Enabled: false},
-					RedisClusterKnownNodes:                    MetricConfig{Enabled: false},
-					RedisClusterLinksBufferLimitExceededCount: MetricConfig{Enabled: false},
-					RedisClusterNodeCount:                     MetricConfig{Enabled: false},
-					RedisClusterNodeUptime:                    MetricConfig{Enabled: false},
-					RedisClusterSlotsAssigned:                 MetricConfig{Enabled: false},
-					RedisClusterSlotsFail:                     MetricConfig{Enabled: false},
-					RedisClusterSlotsOk:                       MetricConfig{Enabled: false},
-					RedisClusterSlotsPfail:                    MetricConfig{Enabled: false},
-					RedisClusterState:                         MetricConfig{Enabled: false},
-					RedisClusterStatsMessagesReceived:         MetricConfig{Enabled: false},
-					RedisClusterStatsMessagesSent:             MetricConfig{Enabled: false},
-					RedisClusterUptime:                        MetricConfig{Enabled: false},
-					RedisCmdCalls:                             MetricConfig{Enabled: false},
-					RedisCmdLatency:                           MetricConfig{Enabled: false},
-					RedisCmdUsec:                              MetricConfig{Enabled: false},
-					RedisCommands:                             MetricConfig{Enabled: false},
-					RedisCommandsProcessed:                    MetricConfig{Enabled: false},
-					RedisConnectionsReceived:                  MetricConfig{Enabled: false},
-					RedisConnectionsRejected:                  MetricConfig{Enabled: false},
-					RedisCPUTime:                              MetricConfig{Enabled: false},
-					RedisDbAvgTTL:                             MetricConfig{Enabled: false},
-					RedisDbExpires:                            MetricConfig{Enabled: false},
-					RedisDbKeys:                               MetricConfig{Enabled: false},
-					RedisKeysEvicted:                          MetricConfig{Enabled: false},
-					RedisKeysExpired:                          MetricConfig{Enabled: false},
-					RedisKeyspaceHits:                         MetricConfig{Enabled: false},
-					RedisKeyspaceMisses:                       MetricConfig{Enabled: false},
-					RedisLatestFork:                           MetricConfig{Enabled: false},
-					RedisMaxmemory:                            MetricConfig{Enabled: false},
-					RedisMemoryFragmentationRatio:             MetricConfig{Enabled: false},
-					RedisMemoryLua:                            MetricConfig{Enabled: false},
-					RedisMemoryPeak:                           MetricConfig{Enabled: false},
-					RedisMemoryRss:                            MetricConfig{Enabled: false},
-					RedisMemoryUsed:                           MetricConfig{Enabled: false},
-					RedisMemoryUsedMemoryOverhead:             MetricConfig{Enabled: false},
-					RedisMemoryUsedMemoryStartup:              MetricConfig{Enabled: false},
-					RedisMode:                                 MetricConfig{Enabled: false},
-					RedisNetInput:                             MetricConfig{Enabled: false},
-					RedisNetOutput:                            MetricConfig{Enabled: false},
-					RedisRdbChangesSinceLastSave:              MetricConfig{Enabled: false},
-					RedisReplicationBacklogFirstByteOffset:    MetricConfig{Enabled: false},
-					RedisReplicationOffset:                    MetricConfig{Enabled: false},
-					RedisReplicationReplicaOffset:             MetricConfig{Enabled: false},
-					RedisRole:                                 MetricConfig{Enabled: false},
-					RedisSentinelMasters:                      MetricConfig{Enabled: false},
-					RedisSentinelRunningScripts:               MetricConfig{Enabled: false},
-					RedisSentinelScriptsQueueLength:           MetricConfig{Enabled: false},
-					RedisSentinelSimulateFailureFlags:         MetricConfig{Enabled: false},
-					RedisSentinelTiltSinceSeconds:             MetricConfig{Enabled: false},
-					RedisSentinelTotalTilt:                    MetricConfig{Enabled: false},
-					RedisSlavesConnected:                      MetricConfig{Enabled: false},
-					RedisTrackingTotalKeys:                    MetricConfig{Enabled: false},
-					RedisUptime:                               MetricConfig{Enabled: false},
+					RedisClientsBlocked: RedisClientsBlockedConfig{
+						Enabled: false,
+					},
+					RedisClientsConnected: RedisClientsConnectedConfig{
+						Enabled: false,
+					},
+					RedisClientsMaxInputBuffer: RedisClientsMaxInputBufferConfig{
+						Enabled: false,
+					},
+					RedisClientsMaxOutputBuffer: RedisClientsMaxOutputBufferConfig{
+						Enabled: false,
+					},
+					RedisClusterClusterEnabled: RedisClusterClusterEnabledConfig{
+						Enabled: false,
+					},
+					RedisClusterKnownNodes: RedisClusterKnownNodesConfig{
+						Enabled: false,
+					},
+					RedisClusterLinksBufferLimitExceededCount: RedisClusterLinksBufferLimitExceededCountConfig{
+						Enabled: false,
+					},
+					RedisClusterNodeCount: RedisClusterNodeCountConfig{
+						Enabled: false,
+					},
+					RedisClusterNodeUptime: RedisClusterNodeUptimeConfig{
+						Enabled: false,
+					},
+					RedisClusterSlotsAssigned: RedisClusterSlotsAssignedConfig{
+						Enabled: false,
+					},
+					RedisClusterSlotsFail: RedisClusterSlotsFailConfig{
+						Enabled: false,
+					},
+					RedisClusterSlotsOk: RedisClusterSlotsOkConfig{
+						Enabled: false,
+					},
+					RedisClusterSlotsPfail: RedisClusterSlotsPfailConfig{
+						Enabled: false,
+					},
+					RedisClusterState: RedisClusterStateConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisClusterStateAttributeKey{RedisClusterStateAttributeKeyClusterState},
+					},
+					RedisClusterStatsMessagesReceived: RedisClusterStatsMessagesReceivedConfig{
+						Enabled: false,
+					},
+					RedisClusterStatsMessagesSent: RedisClusterStatsMessagesSentConfig{
+						Enabled: false,
+					},
+					RedisClusterUptime: RedisClusterUptimeConfig{
+						Enabled: false,
+					},
+					RedisCmdCalls: RedisCmdCallsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisCmdCallsAttributeKey{RedisCmdCallsAttributeKeyCmd},
+					},
+					RedisCmdLatency: RedisCmdLatencyConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisCmdLatencyAttributeKey{RedisCmdLatencyAttributeKeyCmd, RedisCmdLatencyAttributeKeyPercentile},
+					},
+					RedisCmdUsec: RedisCmdUsecConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisCmdUsecAttributeKey{RedisCmdUsecAttributeKeyCmd},
+					},
+					RedisCommands: RedisCommandsConfig{
+						Enabled: false,
+					},
+					RedisCommandsProcessed: RedisCommandsProcessedConfig{
+						Enabled: false,
+					},
+					RedisConnectionsReceived: RedisConnectionsReceivedConfig{
+						Enabled: false,
+					},
+					RedisConnectionsRejected: RedisConnectionsRejectedConfig{
+						Enabled: false,
+					},
+					RedisCPUTime: RedisCPUTimeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisCPUTimeAttributeKey{RedisCPUTimeAttributeKeyState},
+					},
+					RedisDbAvgTTL: RedisDbAvgTTLConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisDbAvgTTLAttributeKey{RedisDbAvgTTLAttributeKeyDb},
+					},
+					RedisDbExpires: RedisDbExpiresConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisDbExpiresAttributeKey{RedisDbExpiresAttributeKeyDb},
+					},
+					RedisDbKeys: RedisDbKeysConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisDbKeysAttributeKey{RedisDbKeysAttributeKeyDb},
+					},
+					RedisKeysEvicted: RedisKeysEvictedConfig{
+						Enabled: false,
+					},
+					RedisKeysExpired: RedisKeysExpiredConfig{
+						Enabled: false,
+					},
+					RedisKeyspaceHits: RedisKeyspaceHitsConfig{
+						Enabled: false,
+					},
+					RedisKeyspaceMisses: RedisKeyspaceMissesConfig{
+						Enabled: false,
+					},
+					RedisLatestFork: RedisLatestForkConfig{
+						Enabled: false,
+					},
+					RedisMaxmemory: RedisMaxmemoryConfig{
+						Enabled: false,
+					},
+					RedisMemoryFragmentationRatio: RedisMemoryFragmentationRatioConfig{
+						Enabled: false,
+					},
+					RedisMemoryLua: RedisMemoryLuaConfig{
+						Enabled: false,
+					},
+					RedisMemoryPeak: RedisMemoryPeakConfig{
+						Enabled: false,
+					},
+					RedisMemoryRss: RedisMemoryRssConfig{
+						Enabled: false,
+					},
+					RedisMemoryUsed: RedisMemoryUsedConfig{
+						Enabled: false,
+					},
+					RedisMemoryUsedMemoryOverhead: RedisMemoryUsedMemoryOverheadConfig{
+						Enabled: false,
+					},
+					RedisMemoryUsedMemoryStartup: RedisMemoryUsedMemoryStartupConfig{
+						Enabled: false,
+					},
+					RedisMode: RedisModeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []RedisModeAttributeKey{RedisModeAttributeKeyMode},
+					},
+					RedisNetInput: RedisNetInputConfig{
+						Enabled: false,
+					},
+					RedisNetOutput: RedisNetOutputConfig{
+						Enabled: false,
+					},
+					RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveConfig{
+						Enabled: false,
+					},
+					RedisReplicationBacklogFirstByteOffset: RedisReplicationBacklogFirstByteOffsetConfig{
+						Enabled: false,
+					},
+					RedisReplicationOffset: RedisReplicationOffsetConfig{
+						Enabled: false,
+					},
+					RedisReplicationReplicaOffset: RedisReplicationReplicaOffsetConfig{
+						Enabled: false,
+					},
+					RedisRole: RedisRoleConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisRoleAttributeKey{RedisRoleAttributeKeyRole},
+					},
+					RedisSentinelMasters: RedisSentinelMastersConfig{
+						Enabled: false,
+					},
+					RedisSentinelRunningScripts: RedisSentinelRunningScriptsConfig{
+						Enabled: false,
+					},
+					RedisSentinelScriptsQueueLength: RedisSentinelScriptsQueueLengthConfig{
+						Enabled: false,
+					},
+					RedisSentinelSimulateFailureFlags: RedisSentinelSimulateFailureFlagsConfig{
+						Enabled: false,
+					},
+					RedisSentinelTiltSinceSeconds: RedisSentinelTiltSinceSecondsConfig{
+						Enabled: false,
+					},
+					RedisSentinelTotalTilt: RedisSentinelTotalTiltConfig{
+						Enabled: false,
+					},
+					RedisSlavesConnected: RedisSlavesConnectedConfig{
+						Enabled: false,
+					},
+					RedisTrackingTotalKeys: RedisTrackingTotalKeysConfig{
+						Enabled: false,
+					},
+					RedisUptime: RedisUptimeConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					RedisVersion:  ResourceAttributeConfig{Enabled: false},
@@ -166,7 +438,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RedisClientsBlockedConfig{}, RedisClientsConnectedConfig{}, RedisClientsMaxInputBufferConfig{}, RedisClientsMaxOutputBufferConfig{}, RedisClusterClusterEnabledConfig{}, RedisClusterKnownNodesConfig{}, RedisClusterLinksBufferLimitExceededCountConfig{}, RedisClusterNodeCountConfig{}, RedisClusterNodeUptimeConfig{}, RedisClusterSlotsAssignedConfig{}, RedisClusterSlotsFailConfig{}, RedisClusterSlotsOkConfig{}, RedisClusterSlotsPfailConfig{}, RedisClusterStateConfig{}, RedisClusterStatsMessagesReceivedConfig{}, RedisClusterStatsMessagesSentConfig{}, RedisClusterUptimeConfig{}, RedisCmdCallsConfig{}, RedisCmdLatencyConfig{}, RedisCmdUsecConfig{}, RedisCommandsConfig{}, RedisCommandsProcessedConfig{}, RedisConnectionsReceivedConfig{}, RedisConnectionsRejectedConfig{}, RedisCPUTimeConfig{}, RedisDbAvgTTLConfig{}, RedisDbExpiresConfig{}, RedisDbKeysConfig{}, RedisKeysEvictedConfig{}, RedisKeysExpiredConfig{}, RedisKeyspaceHitsConfig{}, RedisKeyspaceMissesConfig{}, RedisLatestForkConfig{}, RedisMaxmemoryConfig{}, RedisMemoryFragmentationRatioConfig{}, RedisMemoryLuaConfig{}, RedisMemoryPeakConfig{}, RedisMemoryRssConfig{}, RedisMemoryUsedConfig{}, RedisMemoryUsedMemoryOverheadConfig{}, RedisMemoryUsedMemoryStartupConfig{}, RedisModeConfig{}, RedisNetInputConfig{}, RedisNetOutputConfig{}, RedisRdbChangesSinceLastSaveConfig{}, RedisReplicationBacklogFirstByteOffsetConfig{}, RedisReplicationOffsetConfig{}, RedisReplicationReplicaOffsetConfig{}, RedisRoleConfig{}, RedisSentinelMastersConfig{}, RedisSentinelRunningScriptsConfig{}, RedisSentinelScriptsQueueLengthConfig{}, RedisSentinelSimulateFailureFlagsConfig{}, RedisSentinelTiltSinceSecondsConfig{}, RedisSentinelTotalTiltConfig{}, RedisSlavesConnectedConfig{}, RedisTrackingTotalKeysConfig{}, RedisUptimeConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

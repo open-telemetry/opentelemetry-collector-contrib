@@ -3,12 +3,20 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 var MetricsInfo = metricsInfo{
@@ -226,9 +234,10 @@ type metricInfo struct {
 }
 
 type metricSplunkAggregationQueueRatio struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        SplunkAggregationQueueRatioConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.aggregation.queue.ratio metric with initial data.
@@ -238,19 +247,54 @@ func (m *metricSplunkAggregationQueueRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkAggregationQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkAggregationQueueRatioAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -263,13 +307,18 @@ func (m *metricSplunkAggregationQueueRatio) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkAggregationQueueRatio) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkAggregationQueueRatio(cfg MetricConfig) metricSplunkAggregationQueueRatio {
+func newMetricSplunkAggregationQueueRatio(cfg SplunkAggregationQueueRatioConfig) metricSplunkAggregationQueueRatio {
 	m := metricSplunkAggregationQueueRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -280,9 +329,10 @@ func newMetricSplunkAggregationQueueRatio(cfg MetricConfig) metricSplunkAggregat
 }
 
 type metricSplunkBucketsSearchableStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SplunkBucketsSearchableStatusConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.buckets.searchable.status metric with initial data.
@@ -292,20 +342,57 @@ func (m *metricSplunkBucketsSearchableStatus) init() {
 	m.data.SetUnit("{count}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkBucketsSearchableStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkIndexerSearchableAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusAttributeKeySplunkIndexerSearchable) {
+		dp.Attributes().PutStr("splunk.indexer.searchable", splunkIndexerSearchableAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.indexer.searchable", splunkIndexerSearchableAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -318,13 +405,18 @@ func (m *metricSplunkBucketsSearchableStatus) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkBucketsSearchableStatus) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkBucketsSearchableStatus(cfg MetricConfig) metricSplunkBucketsSearchableStatus {
+func newMetricSplunkBucketsSearchableStatus(cfg SplunkBucketsSearchableStatusConfig) metricSplunkBucketsSearchableStatus {
 	m := metricSplunkBucketsSearchableStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -335,9 +427,10 @@ func newMetricSplunkBucketsSearchableStatus(cfg MetricConfig) metricSplunkBucket
 }
 
 type metricSplunkDataIndexesExtendedBucketCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedBucketCountConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.bucket.count metric with initial data.
@@ -347,19 +440,54 @@ func (m *metricSplunkDataIndexesExtendedBucketCount) init() {
 	m.data.SetUnit("{buckets}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedBucketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -372,13 +500,18 @@ func (m *metricSplunkDataIndexesExtendedBucketCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkDataIndexesExtendedBucketCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedBucketCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketCount {
+func newMetricSplunkDataIndexesExtendedBucketCount(cfg SplunkDataIndexesExtendedBucketCountConfig) metricSplunkDataIndexesExtendedBucketCount {
 	m := metricSplunkDataIndexesExtendedBucketCount{config: cfg}
 
 	if cfg.Enabled {
@@ -389,9 +522,10 @@ func newMetricSplunkDataIndexesExtendedBucketCount(cfg MetricConfig) metricSplun
 }
 
 type metricSplunkDataIndexesExtendedBucketEventCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedBucketEventCountConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.bucket.event.count metric with initial data.
@@ -401,20 +535,57 @@ func (m *metricSplunkDataIndexesExtendedBucketEventCount) init() {
 	m.data.SetUnit("{events}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedBucketEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkBucketDir) {
+		dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -427,13 +598,18 @@ func (m *metricSplunkDataIndexesExtendedBucketEventCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkDataIndexesExtendedBucketEventCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedBucketEventCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketEventCount {
+func newMetricSplunkDataIndexesExtendedBucketEventCount(cfg SplunkDataIndexesExtendedBucketEventCountConfig) metricSplunkDataIndexesExtendedBucketEventCount {
 	m := metricSplunkDataIndexesExtendedBucketEventCount{config: cfg}
 
 	if cfg.Enabled {
@@ -444,9 +620,10 @@ func newMetricSplunkDataIndexesExtendedBucketEventCount(cfg MetricConfig) metric
 }
 
 type metricSplunkDataIndexesExtendedBucketHotCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedBucketHotCountConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.bucket.hot.count metric with initial data.
@@ -456,20 +633,57 @@ func (m *metricSplunkDataIndexesExtendedBucketHotCount) init() {
 	m.data.SetUnit("{buckets}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedBucketHotCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkBucketDir) {
+		dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -482,13 +696,18 @@ func (m *metricSplunkDataIndexesExtendedBucketHotCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkDataIndexesExtendedBucketHotCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedBucketHotCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketHotCount {
+func newMetricSplunkDataIndexesExtendedBucketHotCount(cfg SplunkDataIndexesExtendedBucketHotCountConfig) metricSplunkDataIndexesExtendedBucketHotCount {
 	m := metricSplunkDataIndexesExtendedBucketHotCount{config: cfg}
 
 	if cfg.Enabled {
@@ -499,9 +718,10 @@ func newMetricSplunkDataIndexesExtendedBucketHotCount(cfg MetricConfig) metricSp
 }
 
 type metricSplunkDataIndexesExtendedBucketWarmCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedBucketWarmCountConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.bucket.warm.count metric with initial data.
@@ -511,20 +731,57 @@ func (m *metricSplunkDataIndexesExtendedBucketWarmCount) init() {
 	m.data.SetUnit("{buckets}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedBucketWarmCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkBucketDir) {
+		dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -537,13 +794,18 @@ func (m *metricSplunkDataIndexesExtendedBucketWarmCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkDataIndexesExtendedBucketWarmCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedBucketWarmCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketWarmCount {
+func newMetricSplunkDataIndexesExtendedBucketWarmCount(cfg SplunkDataIndexesExtendedBucketWarmCountConfig) metricSplunkDataIndexesExtendedBucketWarmCount {
 	m := metricSplunkDataIndexesExtendedBucketWarmCount{config: cfg}
 
 	if cfg.Enabled {
@@ -554,9 +816,10 @@ func newMetricSplunkDataIndexesExtendedBucketWarmCount(cfg MetricConfig) metricS
 }
 
 type metricSplunkDataIndexesExtendedEventCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedEventCountConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.event.count metric with initial data.
@@ -566,19 +829,54 @@ func (m *metricSplunkDataIndexesExtendedEventCount) init() {
 	m.data.SetUnit("{events}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedEventCountAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -591,13 +889,18 @@ func (m *metricSplunkDataIndexesExtendedEventCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkDataIndexesExtendedEventCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedEventCount(cfg MetricConfig) metricSplunkDataIndexesExtendedEventCount {
+func newMetricSplunkDataIndexesExtendedEventCount(cfg SplunkDataIndexesExtendedEventCountConfig) metricSplunkDataIndexesExtendedEventCount {
 	m := metricSplunkDataIndexesExtendedEventCount{config: cfg}
 
 	if cfg.Enabled {
@@ -608,9 +911,10 @@ func newMetricSplunkDataIndexesExtendedEventCount(cfg MetricConfig) metricSplunk
 }
 
 type metricSplunkDataIndexesExtendedRawSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedRawSizeConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.raw.size metric with initial data.
@@ -620,19 +924,54 @@ func (m *metricSplunkDataIndexesExtendedRawSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedRawSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -645,13 +984,18 @@ func (m *metricSplunkDataIndexesExtendedRawSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkDataIndexesExtendedRawSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedRawSize(cfg MetricConfig) metricSplunkDataIndexesExtendedRawSize {
+func newMetricSplunkDataIndexesExtendedRawSize(cfg SplunkDataIndexesExtendedRawSizeConfig) metricSplunkDataIndexesExtendedRawSize {
 	m := metricSplunkDataIndexesExtendedRawSize{config: cfg}
 
 	if cfg.Enabled {
@@ -662,9 +1006,10 @@ func newMetricSplunkDataIndexesExtendedRawSize(cfg MetricConfig) metricSplunkDat
 }
 
 type metricSplunkDataIndexesExtendedTotalSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedTotalSizeConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.total.size metric with initial data.
@@ -674,19 +1019,54 @@ func (m *metricSplunkDataIndexesExtendedTotalSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkDataIndexesExtendedTotalSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -699,13 +1079,18 @@ func (m *metricSplunkDataIndexesExtendedTotalSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkDataIndexesExtendedTotalSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedTotalSize(cfg MetricConfig) metricSplunkDataIndexesExtendedTotalSize {
+func newMetricSplunkDataIndexesExtendedTotalSize(cfg SplunkDataIndexesExtendedTotalSizeConfig) metricSplunkDataIndexesExtendedTotalSize {
 	m := metricSplunkDataIndexesExtendedTotalSize{config: cfg}
 
 	if cfg.Enabled {
@@ -716,9 +1101,10 @@ func newMetricSplunkDataIndexesExtendedTotalSize(cfg MetricConfig) metricSplunkD
 }
 
 type metricSplunkHealth struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric     // data buffer for generated metric.
+	config        SplunkHealthConfig // metric config provided by user.
+	capacity      int                // max observed number of data points added to the metric.
+	aggDataPoints []int64            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.health metric with initial data.
@@ -728,20 +1114,57 @@ func (m *metricSplunkHealth) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkHealthAttributeKeySplunkFeature) {
+		dp.Attributes().PutStr("splunk.feature", splunkFeatureAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkHealthAttributeKeySplunkFeatureHealth) {
+		dp.Attributes().PutStr("splunk.feature.health", splunkFeatureHealthAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkHealthAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkHealthAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.feature", splunkFeatureAttributeValue)
-	dp.Attributes().PutStr("splunk.feature.health", splunkFeatureHealthAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -754,13 +1177,18 @@ func (m *metricSplunkHealth) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkHealth) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkHealth(cfg MetricConfig) metricSplunkHealth {
+func newMetricSplunkHealth(cfg SplunkHealthConfig) metricSplunkHealth {
 	m := metricSplunkHealth{config: cfg}
 
 	if cfg.Enabled {
@@ -771,9 +1199,10 @@ func newMetricSplunkHealth(cfg MetricConfig) metricSplunkHealth {
 }
 
 type metricSplunkIndexerAvgRate struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        SplunkIndexerAvgRateConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.avg.rate metric with initial data.
@@ -783,19 +1212,54 @@ func (m *metricSplunkIndexerAvgRate) init() {
 	m.data.SetUnit("KBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerAvgRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerAvgRateAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerAvgRateAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerAvgRateAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -808,13 +1272,18 @@ func (m *metricSplunkIndexerAvgRate) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexerAvgRate) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexerAvgRate(cfg MetricConfig) metricSplunkIndexerAvgRate {
+func newMetricSplunkIndexerAvgRate(cfg SplunkIndexerAvgRateConfig) metricSplunkIndexerAvgRate {
 	m := metricSplunkIndexerAvgRate{config: cfg}
 
 	if cfg.Enabled {
@@ -825,9 +1294,10 @@ func newMetricSplunkIndexerAvgRate(cfg MetricConfig) metricSplunkIndexerAvgRate 
 }
 
 type metricSplunkIndexerCPUTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        SplunkIndexerCPUTimeConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.cpu.time metric with initial data.
@@ -837,19 +1307,54 @@ func (m *metricSplunkIndexerCPUTime) init() {
 	m.data.SetUnit("{s}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerCPUTimeAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -862,13 +1367,18 @@ func (m *metricSplunkIndexerCPUTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexerCPUTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexerCPUTime(cfg MetricConfig) metricSplunkIndexerCPUTime {
+func newMetricSplunkIndexerCPUTime(cfg SplunkIndexerCPUTimeConfig) metricSplunkIndexerCPUTime {
 	m := metricSplunkIndexerCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -879,9 +1389,10 @@ func newMetricSplunkIndexerCPUTime(cfg MetricConfig) metricSplunkIndexerCPUTime 
 }
 
 type metricSplunkIndexerQueueRatio struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        SplunkIndexerQueueRatioConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.queue.ratio metric with initial data.
@@ -891,19 +1402,54 @@ func (m *metricSplunkIndexerQueueRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerQueueRatioAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -916,13 +1462,18 @@ func (m *metricSplunkIndexerQueueRatio) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexerQueueRatio) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexerQueueRatio(cfg MetricConfig) metricSplunkIndexerQueueRatio {
+func newMetricSplunkIndexerQueueRatio(cfg SplunkIndexerQueueRatioConfig) metricSplunkIndexerQueueRatio {
 	m := metricSplunkIndexerQueueRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -933,9 +1484,10 @@ func newMetricSplunkIndexerQueueRatio(cfg MetricConfig) metricSplunkIndexerQueue
 }
 
 type metricSplunkIndexerRawWriteTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SplunkIndexerRawWriteTimeConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []float64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.raw.write.time metric with initial data.
@@ -945,19 +1497,54 @@ func (m *metricSplunkIndexerRawWriteTime) init() {
 	m.data.SetUnit("{s}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerRawWriteTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRawWriteTimeAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -970,13 +1557,18 @@ func (m *metricSplunkIndexerRawWriteTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexerRawWriteTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexerRawWriteTime(cfg MetricConfig) metricSplunkIndexerRawWriteTime {
+func newMetricSplunkIndexerRawWriteTime(cfg SplunkIndexerRawWriteTimeConfig) metricSplunkIndexerRawWriteTime {
 	m := metricSplunkIndexerRawWriteTime{config: cfg}
 
 	if cfg.Enabled {
@@ -987,9 +1579,10 @@ func newMetricSplunkIndexerRawWriteTime(cfg MetricConfig) metricSplunkIndexerRaw
 }
 
 type metricSplunkIndexerRollingrestartStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SplunkIndexerRollingrestartStatusConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.rollingrestart.status metric with initial data.
@@ -999,20 +1592,57 @@ func (m *metricSplunkIndexerRollingrestartStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerRollingrestartStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue bool, splunkRollingorrestartAttributeValue bool, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusAttributeKeySplunkSearchableRestart) {
+		dp.Attributes().PutBool("splunk.searchable.restart", splunkSearchableRestartAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusAttributeKeySplunkRollingorrestart) {
+		dp.Attributes().PutBool("splunk.rollingorrestart", splunkRollingorrestartAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutBool("splunk.searchable.restart", splunkSearchableRestartAttributeValue)
-	dp.Attributes().PutBool("splunk.rollingorrestart", splunkRollingorrestartAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1025,13 +1655,18 @@ func (m *metricSplunkIndexerRollingrestartStatus) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexerRollingrestartStatus) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexerRollingrestartStatus(cfg MetricConfig) metricSplunkIndexerRollingrestartStatus {
+func newMetricSplunkIndexerRollingrestartStatus(cfg SplunkIndexerRollingrestartStatusConfig) metricSplunkIndexerRollingrestartStatus {
 	m := metricSplunkIndexerRollingrestartStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -1042,9 +1677,10 @@ func newMetricSplunkIndexerRollingrestartStatus(cfg MetricConfig) metricSplunkIn
 }
 
 type metricSplunkIndexerThroughput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        SplunkIndexerThroughputConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.throughput metric with initial data.
@@ -1054,19 +1690,54 @@ func (m *metricSplunkIndexerThroughput) init() {
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexerThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexerStatusAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerThroughputAttributeKeySplunkIndexerStatus) {
+		dp.Attributes().PutStr("splunk.indexer.status", splunkIndexerStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerThroughputAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerThroughputAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.indexer.status", splunkIndexerStatusAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1079,13 +1750,18 @@ func (m *metricSplunkIndexerThroughput) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexerThroughput) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexerThroughput(cfg MetricConfig) metricSplunkIndexerThroughput {
+func newMetricSplunkIndexerThroughput(cfg SplunkIndexerThroughputConfig) metricSplunkIndexerThroughput {
 	m := metricSplunkIndexerThroughput{config: cfg}
 
 	if cfg.Enabled {
@@ -1096,9 +1772,10 @@ func newMetricSplunkIndexerThroughput(cfg MetricConfig) metricSplunkIndexerThrou
 }
 
 type metricSplunkIndexesAvgSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        SplunkIndexesAvgSizeConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.avg.size metric with initial data.
@@ -1108,19 +1785,54 @@ func (m *metricSplunkIndexesAvgSize) init() {
 	m.data.SetUnit("Gb")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesAvgSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgSizeAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1133,13 +1845,18 @@ func (m *metricSplunkIndexesAvgSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexesAvgSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexesAvgSize(cfg MetricConfig) metricSplunkIndexesAvgSize {
+func newMetricSplunkIndexesAvgSize(cfg SplunkIndexesAvgSizeConfig) metricSplunkIndexesAvgSize {
 	m := metricSplunkIndexesAvgSize{config: cfg}
 
 	if cfg.Enabled {
@@ -1150,9 +1867,10 @@ func newMetricSplunkIndexesAvgSize(cfg MetricConfig) metricSplunkIndexesAvgSize 
 }
 
 type metricSplunkIndexesAvgUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        SplunkIndexesAvgUsageConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []float64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.avg.usage metric with initial data.
@@ -1162,19 +1880,54 @@ func (m *metricSplunkIndexesAvgUsage) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesAvgUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgUsageAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1187,13 +1940,18 @@ func (m *metricSplunkIndexesAvgUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexesAvgUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexesAvgUsage(cfg MetricConfig) metricSplunkIndexesAvgUsage {
+func newMetricSplunkIndexesAvgUsage(cfg SplunkIndexesAvgUsageConfig) metricSplunkIndexesAvgUsage {
 	m := metricSplunkIndexesAvgUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -1204,9 +1962,10 @@ func newMetricSplunkIndexesAvgUsage(cfg MetricConfig) metricSplunkIndexesAvgUsag
 }
 
 type metricSplunkIndexesBucketCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        SplunkIndexesBucketCountConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.bucket.count metric with initial data.
@@ -1216,19 +1975,54 @@ func (m *metricSplunkIndexesBucketCount) init() {
 	m.data.SetUnit("{count}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesBucketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesBucketCountAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesBucketCountAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesBucketCountAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1241,13 +2035,18 @@ func (m *metricSplunkIndexesBucketCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexesBucketCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexesBucketCount(cfg MetricConfig) metricSplunkIndexesBucketCount {
+func newMetricSplunkIndexesBucketCount(cfg SplunkIndexesBucketCountConfig) metricSplunkIndexesBucketCount {
 	m := metricSplunkIndexesBucketCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1258,9 +2057,10 @@ func newMetricSplunkIndexesBucketCount(cfg MetricConfig) metricSplunkIndexesBuck
 }
 
 type metricSplunkIndexesMedianDataAge struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SplunkIndexesMedianDataAgeConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.median.data.age metric with initial data.
@@ -1270,19 +2070,54 @@ func (m *metricSplunkIndexesMedianDataAge) init() {
 	m.data.SetUnit("{days}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesMedianDataAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesMedianDataAgeAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1295,13 +2130,18 @@ func (m *metricSplunkIndexesMedianDataAge) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexesMedianDataAge) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexesMedianDataAge(cfg MetricConfig) metricSplunkIndexesMedianDataAge {
+func newMetricSplunkIndexesMedianDataAge(cfg SplunkIndexesMedianDataAgeConfig) metricSplunkIndexesMedianDataAge {
 	m := metricSplunkIndexesMedianDataAge{config: cfg}
 
 	if cfg.Enabled {
@@ -1312,9 +2152,10 @@ func newMetricSplunkIndexesMedianDataAge(cfg MetricConfig) metricSplunkIndexesMe
 }
 
 type metricSplunkIndexesSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric          // data buffer for generated metric.
+	config        SplunkIndexesSizeConfig // metric config provided by user.
+	capacity      int                     // max observed number of data points added to the metric.
+	aggDataPoints []float64               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.size metric with initial data.
@@ -1324,19 +2165,54 @@ func (m *metricSplunkIndexesSize) init() {
 	m.data.SetUnit("Gb")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIndexesSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesSizeAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesSizeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesSizeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1349,13 +2225,18 @@ func (m *metricSplunkIndexesSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIndexesSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIndexesSize(cfg MetricConfig) metricSplunkIndexesSize {
+func newMetricSplunkIndexesSize(cfg SplunkIndexesSizeConfig) metricSplunkIndexesSize {
 	m := metricSplunkIndexesSize{config: cfg}
 
 	if cfg.Enabled {
@@ -1366,9 +2247,10 @@ func newMetricSplunkIndexesSize(cfg MetricConfig) metricSplunkIndexesSize {
 }
 
 type metricSplunkIoAvgIops struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric        // data buffer for generated metric.
+	config        SplunkIoAvgIopsConfig // metric config provided by user.
+	capacity      int                   // max observed number of data points added to the metric.
+	aggDataPoints []int64               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.io.avg.iops metric with initial data.
@@ -1378,19 +2260,54 @@ func (m *metricSplunkIoAvgIops) init() {
 	m.data.SetUnit("{iops}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkIoAvgIops) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkIoAvgIopsAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIoAvgIopsAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkIoAvgIopsAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1403,13 +2320,18 @@ func (m *metricSplunkIoAvgIops) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkIoAvgIops) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkIoAvgIops(cfg MetricConfig) metricSplunkIoAvgIops {
+func newMetricSplunkIoAvgIops(cfg SplunkIoAvgIopsConfig) metricSplunkIoAvgIops {
 	m := metricSplunkIoAvgIops{config: cfg}
 
 	if cfg.Enabled {
@@ -1420,9 +2342,10 @@ func newMetricSplunkIoAvgIops(cfg MetricConfig) metricSplunkIoAvgIops {
 }
 
 type metricSplunkKvstoreBackupStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SplunkKvstoreBackupStatusConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.kvstore.backup.status metric with initial data.
@@ -1432,19 +2355,54 @@ func (m *metricSplunkKvstoreBackupStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkKvstoreBackupStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreBackupStatusAttributeKeySplunkKvstoreStatusValue) {
+		dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1457,13 +2415,18 @@ func (m *metricSplunkKvstoreBackupStatus) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkKvstoreBackupStatus) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkKvstoreBackupStatus(cfg MetricConfig) metricSplunkKvstoreBackupStatus {
+func newMetricSplunkKvstoreBackupStatus(cfg SplunkKvstoreBackupStatusConfig) metricSplunkKvstoreBackupStatus {
 	m := metricSplunkKvstoreBackupStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -1474,9 +2437,10 @@ func newMetricSplunkKvstoreBackupStatus(cfg MetricConfig) metricSplunkKvstoreBac
 }
 
 type metricSplunkKvstoreReplicationStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SplunkKvstoreReplicationStatusConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.kvstore.replication.status metric with initial data.
@@ -1486,19 +2450,54 @@ func (m *metricSplunkKvstoreReplicationStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusAttributeKeySplunkKvstoreStatusValue) {
+		dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1511,13 +2510,18 @@ func (m *metricSplunkKvstoreReplicationStatus) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkKvstoreReplicationStatus) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkKvstoreReplicationStatus(cfg MetricConfig) metricSplunkKvstoreReplicationStatus {
+func newMetricSplunkKvstoreReplicationStatus(cfg SplunkKvstoreReplicationStatusConfig) metricSplunkKvstoreReplicationStatus {
 	m := metricSplunkKvstoreReplicationStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -1528,9 +2532,10 @@ func newMetricSplunkKvstoreReplicationStatus(cfg MetricConfig) metricSplunkKvsto
 }
 
 type metricSplunkKvstoreStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric            // data buffer for generated metric.
+	config        SplunkKvstoreStatusConfig // metric config provided by user.
+	capacity      int                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.kvstore.status metric with initial data.
@@ -1540,21 +2545,60 @@ func (m *metricSplunkKvstoreStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkKvstoreStorageEngine) {
+		dp.Attributes().PutStr("splunk.kvstore.storage.engine", splunkKvstoreStorageEngineAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkKvstoreExternal) {
+		dp.Attributes().PutStr("splunk.kvstore.external", splunkKvstoreExternalAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkKvstoreStatusValue) {
+		dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.kvstore.storage.engine", splunkKvstoreStorageEngineAttributeValue)
-	dp.Attributes().PutStr("splunk.kvstore.external", splunkKvstoreExternalAttributeValue)
-	dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1567,13 +2611,18 @@ func (m *metricSplunkKvstoreStatus) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkKvstoreStatus) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkKvstoreStatus(cfg MetricConfig) metricSplunkKvstoreStatus {
+func newMetricSplunkKvstoreStatus(cfg SplunkKvstoreStatusConfig) metricSplunkKvstoreStatus {
 	m := metricSplunkKvstoreStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -1584,9 +2633,10 @@ func newMetricSplunkKvstoreStatus(cfg MetricConfig) metricSplunkKvstoreStatus {
 }
 
 type metricSplunkLicenseExpirationSecondsRemaining struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        SplunkLicenseExpirationSecondsRemainingConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.license.expiration.seconds_remaining metric with initial data.
@@ -1596,21 +2646,60 @@ func (m *metricSplunkLicenseExpirationSecondsRemaining) init() {
 	m.data.SetUnit("{seconds}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkLicenseExpirationSecondsRemaining) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkLicenseStatusAttributeValue string, splunkLicenseLabelAttributeValue string, splunkLicenseTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseStatus) {
+		dp.Attributes().PutStr("splunk.license.status", splunkLicenseStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseLabel) {
+		dp.Attributes().PutStr("splunk.license.label", splunkLicenseLabelAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseType) {
+		dp.Attributes().PutStr("splunk.license.type", splunkLicenseTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.license.status", splunkLicenseStatusAttributeValue)
-	dp.Attributes().PutStr("splunk.license.label", splunkLicenseLabelAttributeValue)
-	dp.Attributes().PutStr("splunk.license.type", splunkLicenseTypeAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1623,13 +2712,18 @@ func (m *metricSplunkLicenseExpirationSecondsRemaining) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkLicenseExpirationSecondsRemaining) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkLicenseExpirationSecondsRemaining(cfg MetricConfig) metricSplunkLicenseExpirationSecondsRemaining {
+func newMetricSplunkLicenseExpirationSecondsRemaining(cfg SplunkLicenseExpirationSecondsRemainingConfig) metricSplunkLicenseExpirationSecondsRemaining {
 	m := metricSplunkLicenseExpirationSecondsRemaining{config: cfg}
 
 	if cfg.Enabled {
@@ -1640,9 +2734,10 @@ func newMetricSplunkLicenseExpirationSecondsRemaining(cfg MetricConfig) metricSp
 }
 
 type metricSplunkLicenseIndexUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        SplunkLicenseIndexUsageConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.license.index.usage metric with initial data.
@@ -1652,19 +2747,54 @@ func (m *metricSplunkLicenseIndexUsage) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkLicenseIndexUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseIndexUsageAttributeKeySplunkIndexName) {
+		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1677,13 +2807,18 @@ func (m *metricSplunkLicenseIndexUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkLicenseIndexUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkLicenseIndexUsage(cfg MetricConfig) metricSplunkLicenseIndexUsage {
+func newMetricSplunkLicenseIndexUsage(cfg SplunkLicenseIndexUsageConfig) metricSplunkLicenseIndexUsage {
 	m := metricSplunkLicenseIndexUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -1694,9 +2829,10 @@ func newMetricSplunkLicenseIndexUsage(cfg MetricConfig) metricSplunkLicenseIndex
 }
 
 type metricSplunkParseQueueRatio struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        SplunkParseQueueRatioConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []float64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.parse.queue.ratio metric with initial data.
@@ -1706,19 +2842,54 @@ func (m *metricSplunkParseQueueRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkParseQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkParseQueueRatioAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkParseQueueRatioAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkParseQueueRatioAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1731,13 +2902,18 @@ func (m *metricSplunkParseQueueRatio) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkParseQueueRatio) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkParseQueueRatio(cfg MetricConfig) metricSplunkParseQueueRatio {
+func newMetricSplunkParseQueueRatio(cfg SplunkParseQueueRatioConfig) metricSplunkParseQueueRatio {
 	m := metricSplunkParseQueueRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -1748,9 +2924,10 @@ func newMetricSplunkParseQueueRatio(cfg MetricConfig) metricSplunkParseQueueRati
 }
 
 type metricSplunkPipelineSetCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        SplunkPipelineSetCountConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.pipeline.set.count metric with initial data.
@@ -1760,19 +2937,54 @@ func (m *metricSplunkPipelineSetCount) init() {
 	m.data.SetUnit("KBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkPipelineSetCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkPipelineSetCountAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkPipelineSetCountAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkPipelineSetCountAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1785,13 +2997,18 @@ func (m *metricSplunkPipelineSetCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkPipelineSetCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkPipelineSetCount(cfg MetricConfig) metricSplunkPipelineSetCount {
+func newMetricSplunkPipelineSetCount(cfg SplunkPipelineSetCountConfig) metricSplunkPipelineSetCount {
 	m := metricSplunkPipelineSetCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1802,9 +3019,10 @@ func newMetricSplunkPipelineSetCount(cfg MetricConfig) metricSplunkPipelineSetCo
 }
 
 type metricSplunkSchedulerAvgExecutionLatency struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SplunkSchedulerAvgExecutionLatencyConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.scheduler.avg.execution.latency metric with initial data.
@@ -1814,19 +3032,54 @@ func (m *metricSplunkSchedulerAvgExecutionLatency) init() {
 	m.data.SetUnit("{ms}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSchedulerAvgExecutionLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1839,13 +3092,18 @@ func (m *metricSplunkSchedulerAvgExecutionLatency) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkSchedulerAvgExecutionLatency) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkSchedulerAvgExecutionLatency(cfg MetricConfig) metricSplunkSchedulerAvgExecutionLatency {
+func newMetricSplunkSchedulerAvgExecutionLatency(cfg SplunkSchedulerAvgExecutionLatencyConfig) metricSplunkSchedulerAvgExecutionLatency {
 	m := metricSplunkSchedulerAvgExecutionLatency{config: cfg}
 
 	if cfg.Enabled {
@@ -1856,9 +3114,10 @@ func newMetricSplunkSchedulerAvgExecutionLatency(cfg MetricConfig) metricSplunkS
 }
 
 type metricSplunkSchedulerAvgRunTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SplunkSchedulerAvgRunTimeConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []float64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.scheduler.avg.run.time metric with initial data.
@@ -1868,19 +3127,54 @@ func (m *metricSplunkSchedulerAvgRunTime) init() {
 	m.data.SetUnit("{ms}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSchedulerAvgRunTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgRunTimeAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1893,13 +3187,18 @@ func (m *metricSplunkSchedulerAvgRunTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkSchedulerAvgRunTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkSchedulerAvgRunTime(cfg MetricConfig) metricSplunkSchedulerAvgRunTime {
+func newMetricSplunkSchedulerAvgRunTime(cfg SplunkSchedulerAvgRunTimeConfig) metricSplunkSchedulerAvgRunTime {
 	m := metricSplunkSchedulerAvgRunTime{config: cfg}
 
 	if cfg.Enabled {
@@ -1910,9 +3209,10 @@ func newMetricSplunkSchedulerAvgRunTime(cfg MetricConfig) metricSplunkSchedulerA
 }
 
 type metricSplunkSchedulerCompletionRatio struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SplunkSchedulerCompletionRatioConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.scheduler.completion.ratio metric with initial data.
@@ -1922,19 +3222,54 @@ func (m *metricSplunkSchedulerCompletionRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSchedulerCompletionRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerCompletionRatioAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1947,13 +3282,18 @@ func (m *metricSplunkSchedulerCompletionRatio) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkSchedulerCompletionRatio) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkSchedulerCompletionRatio(cfg MetricConfig) metricSplunkSchedulerCompletionRatio {
+func newMetricSplunkSchedulerCompletionRatio(cfg SplunkSchedulerCompletionRatioConfig) metricSplunkSchedulerCompletionRatio {
 	m := metricSplunkSchedulerCompletionRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -1964,9 +3304,10 @@ func newMetricSplunkSchedulerCompletionRatio(cfg MetricConfig) metricSplunkSched
 }
 
 type metricSplunkSearchDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        SplunkSearchDurationConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.search.duration metric with initial data.
@@ -1976,18 +3317,51 @@ func (m *metricSplunkSearchDuration) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSearchDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchDurationAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchDurationAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2000,13 +3374,18 @@ func (m *metricSplunkSearchDuration) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkSearchDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkSearchDuration(cfg MetricConfig) metricSplunkSearchDuration {
+func newMetricSplunkSearchDuration(cfg SplunkSearchDurationConfig) metricSplunkSearchDuration {
 	m := metricSplunkSearchDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -2017,9 +3396,10 @@ func newMetricSplunkSearchDuration(cfg MetricConfig) metricSplunkSearchDuration 
 }
 
 type metricSplunkSearchInitiation struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        SplunkSearchInitiationConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.search.initiation metric with initial data.
@@ -2029,18 +3409,51 @@ func (m *metricSplunkSearchInitiation) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSearchInitiation) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchInitiationAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchInitiationAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2053,13 +3466,18 @@ func (m *metricSplunkSearchInitiation) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkSearchInitiation) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkSearchInitiation(cfg MetricConfig) metricSplunkSearchInitiation {
+func newMetricSplunkSearchInitiation(cfg SplunkSearchInitiationConfig) metricSplunkSearchInitiation {
 	m := metricSplunkSearchInitiation{config: cfg}
 
 	if cfg.Enabled {
@@ -2070,9 +3488,10 @@ func newMetricSplunkSearchInitiation(cfg MetricConfig) metricSplunkSearchInitiat
 }
 
 type metricSplunkSearchStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric           // data buffer for generated metric.
+	config        SplunkSearchStatusConfig // metric config provided by user.
+	capacity      int                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.search.status metric with initial data.
@@ -2082,19 +3501,54 @@ func (m *metricSplunkSearchStatus) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSearchStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSearchStateAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchStatusAttributeKeySplunkSearchState) {
+		dp.Attributes().PutStr("splunk.search.state", splunkSearchStateAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchStatusAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchStatusAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.search.state", splunkSearchStateAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2107,13 +3561,18 @@ func (m *metricSplunkSearchStatus) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkSearchStatus) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkSearchStatus(cfg MetricConfig) metricSplunkSearchStatus {
+func newMetricSplunkSearchStatus(cfg SplunkSearchStatusConfig) metricSplunkSearchStatus {
 	m := metricSplunkSearchStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -2124,9 +3583,10 @@ func newMetricSplunkSearchStatus(cfg MetricConfig) metricSplunkSearchStatus {
 }
 
 type metricSplunkSearchSuccess struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric            // data buffer for generated metric.
+	config        SplunkSearchSuccessConfig // metric config provided by user.
+	capacity      int                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.search.success metric with initial data.
@@ -2136,18 +3596,51 @@ func (m *metricSplunkSearchSuccess) init() {
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkSearchSuccess) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchSuccessAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchSuccessAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2160,13 +3653,18 @@ func (m *metricSplunkSearchSuccess) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkSearchSuccess) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkSearchSuccess(cfg MetricConfig) metricSplunkSearchSuccess {
+func newMetricSplunkSearchSuccess(cfg SplunkSearchSuccessConfig) metricSplunkSearchSuccess {
 	m := metricSplunkSearchSuccess{config: cfg}
 
 	if cfg.Enabled {
@@ -2177,9 +3675,10 @@ func newMetricSplunkSearchSuccess(cfg MetricConfig) metricSplunkSearchSuccess {
 }
 
 type metricSplunkServerIntrospectionQueuesCurrent struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        SplunkServerIntrospectionQueuesCurrentConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.introspection.queues.current metric with initial data.
@@ -2189,19 +3688,54 @@ func (m *metricSplunkServerIntrospectionQueuesCurrent) init() {
 	m.data.SetUnit("{queues}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerIntrospectionQueuesCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkQueueName) {
+		dp.Attributes().PutStr("splunk.queue.name", splunkQueueNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.queue.name", splunkQueueNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2214,13 +3748,18 @@ func (m *metricSplunkServerIntrospectionQueuesCurrent) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerIntrospectionQueuesCurrent) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerIntrospectionQueuesCurrent(cfg MetricConfig) metricSplunkServerIntrospectionQueuesCurrent {
+func newMetricSplunkServerIntrospectionQueuesCurrent(cfg SplunkServerIntrospectionQueuesCurrentConfig) metricSplunkServerIntrospectionQueuesCurrent {
 	m := metricSplunkServerIntrospectionQueuesCurrent{config: cfg}
 
 	if cfg.Enabled {
@@ -2231,9 +3770,10 @@ func newMetricSplunkServerIntrospectionQueuesCurrent(cfg MetricConfig) metricSpl
 }
 
 type metricSplunkServerIntrospectionQueuesCurrentBytes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        SplunkServerIntrospectionQueuesCurrentBytesConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.introspection.queues.current.bytes metric with initial data.
@@ -2243,19 +3783,54 @@ func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkQueueName) {
+		dp.Attributes().PutStr("splunk.queue.name", splunkQueueNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.queue.name", splunkQueueNameAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2268,13 +3843,18 @@ func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerIntrospectionQueuesCurrentBytes(cfg MetricConfig) metricSplunkServerIntrospectionQueuesCurrentBytes {
+func newMetricSplunkServerIntrospectionQueuesCurrentBytes(cfg SplunkServerIntrospectionQueuesCurrentBytesConfig) metricSplunkServerIntrospectionQueuesCurrentBytes {
 	m := metricSplunkServerIntrospectionQueuesCurrentBytes{config: cfg}
 
 	if cfg.Enabled {
@@ -2285,9 +3865,10 @@ func newMetricSplunkServerIntrospectionQueuesCurrentBytes(cfg MetricConfig) metr
 }
 
 type metricSplunkServerSearchartifactsAdhoc struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        SplunkServerSearchartifactsAdhocConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.adhoc metric with initial data.
@@ -2297,19 +3878,54 @@ func (m *metricSplunkServerSearchartifactsAdhoc) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsAdhoc) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2322,13 +3938,18 @@ func (m *metricSplunkServerSearchartifactsAdhoc) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsAdhoc) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsAdhoc(cfg MetricConfig) metricSplunkServerSearchartifactsAdhoc {
+func newMetricSplunkServerSearchartifactsAdhoc(cfg SplunkServerSearchartifactsAdhocConfig) metricSplunkServerSearchartifactsAdhoc {
 	m := metricSplunkServerSearchartifactsAdhoc{config: cfg}
 
 	if cfg.Enabled {
@@ -2339,9 +3960,10 @@ func newMetricSplunkServerSearchartifactsAdhoc(cfg MetricConfig) metricSplunkSer
 }
 
 type metricSplunkServerSearchartifactsAdhocSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        SplunkServerSearchartifactsAdhocSizeConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.adhoc.size metric with initial data.
@@ -2351,19 +3973,54 @@ func (m *metricSplunkServerSearchartifactsAdhocSize) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsAdhocSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2376,13 +4033,18 @@ func (m *metricSplunkServerSearchartifactsAdhocSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsAdhocSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsAdhocSize(cfg MetricConfig) metricSplunkServerSearchartifactsAdhocSize {
+func newMetricSplunkServerSearchartifactsAdhocSize(cfg SplunkServerSearchartifactsAdhocSizeConfig) metricSplunkServerSearchartifactsAdhocSize {
 	m := metricSplunkServerSearchartifactsAdhocSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2393,9 +4055,10 @@ func newMetricSplunkServerSearchartifactsAdhocSize(cfg MetricConfig) metricSplun
 }
 
 type metricSplunkServerSearchartifactsCompleted struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        SplunkServerSearchartifactsCompletedConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.completed metric with initial data.
@@ -2405,19 +4068,54 @@ func (m *metricSplunkServerSearchartifactsCompleted) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2430,13 +4128,18 @@ func (m *metricSplunkServerSearchartifactsCompleted) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsCompleted) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsCompleted(cfg MetricConfig) metricSplunkServerSearchartifactsCompleted {
+func newMetricSplunkServerSearchartifactsCompleted(cfg SplunkServerSearchartifactsCompletedConfig) metricSplunkServerSearchartifactsCompleted {
 	m := metricSplunkServerSearchartifactsCompleted{config: cfg}
 
 	if cfg.Enabled {
@@ -2447,9 +4150,10 @@ func newMetricSplunkServerSearchartifactsCompleted(cfg MetricConfig) metricSplun
 }
 
 type metricSplunkServerSearchartifactsCompletedSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SplunkServerSearchartifactsCompletedSizeConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.completed.size metric with initial data.
@@ -2459,19 +4163,54 @@ func (m *metricSplunkServerSearchartifactsCompletedSize) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsCompletedSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2484,13 +4223,18 @@ func (m *metricSplunkServerSearchartifactsCompletedSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsCompletedSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsCompletedSize(cfg MetricConfig) metricSplunkServerSearchartifactsCompletedSize {
+func newMetricSplunkServerSearchartifactsCompletedSize(cfg SplunkServerSearchartifactsCompletedSizeConfig) metricSplunkServerSearchartifactsCompletedSize {
 	m := metricSplunkServerSearchartifactsCompletedSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2501,9 +4245,10 @@ func newMetricSplunkServerSearchartifactsCompletedSize(cfg MetricConfig) metricS
 }
 
 type metricSplunkServerSearchartifactsIncomplete struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        SplunkServerSearchartifactsIncompleteConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.incomplete metric with initial data.
@@ -2513,19 +4258,54 @@ func (m *metricSplunkServerSearchartifactsIncomplete) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsIncomplete) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2538,13 +4318,18 @@ func (m *metricSplunkServerSearchartifactsIncomplete) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsIncomplete) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsIncomplete(cfg MetricConfig) metricSplunkServerSearchartifactsIncomplete {
+func newMetricSplunkServerSearchartifactsIncomplete(cfg SplunkServerSearchartifactsIncompleteConfig) metricSplunkServerSearchartifactsIncomplete {
 	m := metricSplunkServerSearchartifactsIncomplete{config: cfg}
 
 	if cfg.Enabled {
@@ -2555,9 +4340,10 @@ func newMetricSplunkServerSearchartifactsIncomplete(cfg MetricConfig) metricSplu
 }
 
 type metricSplunkServerSearchartifactsIncompleteSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        SplunkServerSearchartifactsIncompleteSizeConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.incomplete.size metric with initial data.
@@ -2567,19 +4353,54 @@ func (m *metricSplunkServerSearchartifactsIncompleteSize) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsIncompleteSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2592,13 +4413,18 @@ func (m *metricSplunkServerSearchartifactsIncompleteSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsIncompleteSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsIncompleteSize(cfg MetricConfig) metricSplunkServerSearchartifactsIncompleteSize {
+func newMetricSplunkServerSearchartifactsIncompleteSize(cfg SplunkServerSearchartifactsIncompleteSizeConfig) metricSplunkServerSearchartifactsIncompleteSize {
 	m := metricSplunkServerSearchartifactsIncompleteSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2609,9 +4435,10 @@ func newMetricSplunkServerSearchartifactsIncompleteSize(cfg MetricConfig) metric
 }
 
 type metricSplunkServerSearchartifactsInvalid struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SplunkServerSearchartifactsInvalidConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.invalid metric with initial data.
@@ -2621,19 +4448,54 @@ func (m *metricSplunkServerSearchartifactsInvalid) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsInvalid) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsInvalidAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2646,13 +4508,18 @@ func (m *metricSplunkServerSearchartifactsInvalid) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsInvalid) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsInvalid(cfg MetricConfig) metricSplunkServerSearchartifactsInvalid {
+func newMetricSplunkServerSearchartifactsInvalid(cfg SplunkServerSearchartifactsInvalidConfig) metricSplunkServerSearchartifactsInvalid {
 	m := metricSplunkServerSearchartifactsInvalid{config: cfg}
 
 	if cfg.Enabled {
@@ -2663,9 +4530,10 @@ func newMetricSplunkServerSearchartifactsInvalid(cfg MetricConfig) metricSplunkS
 }
 
 type metricSplunkServerSearchartifactsJobCacheCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SplunkServerSearchartifactsJobCacheCountConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.job.cache.count metric with initial data.
@@ -2675,19 +4543,54 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2700,13 +4603,18 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsJobCacheCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsJobCacheCount(cfg MetricConfig) metricSplunkServerSearchartifactsJobCacheCount {
+func newMetricSplunkServerSearchartifactsJobCacheCount(cfg SplunkServerSearchartifactsJobCacheCountConfig) metricSplunkServerSearchartifactsJobCacheCount {
 	m := metricSplunkServerSearchartifactsJobCacheCount{config: cfg}
 
 	if cfg.Enabled {
@@ -2717,9 +4625,10 @@ func newMetricSplunkServerSearchartifactsJobCacheCount(cfg MetricConfig) metricS
 }
 
 type metricSplunkServerSearchartifactsJobCacheSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        SplunkServerSearchartifactsJobCacheSizeConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.job.cache.size metric with initial data.
@@ -2729,20 +4638,57 @@ func (m *metricSplunkServerSearchartifactsJobCacheSize) init() {
 	m.data.SetUnit("{mb}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsJobCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSearchartifactsCacheTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSearchartifactsCacheType) {
+		dp.Attributes().PutStr("splunk.searchartifacts.cache.type", splunkSearchartifactsCacheTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.searchartifacts.cache.type", splunkSearchartifactsCacheTypeAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2755,13 +4701,18 @@ func (m *metricSplunkServerSearchartifactsJobCacheSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsJobCacheSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsJobCacheSize(cfg MetricConfig) metricSplunkServerSearchartifactsJobCacheSize {
+func newMetricSplunkServerSearchartifactsJobCacheSize(cfg SplunkServerSearchartifactsJobCacheSizeConfig) metricSplunkServerSearchartifactsJobCacheSize {
 	m := metricSplunkServerSearchartifactsJobCacheSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2772,9 +4723,10 @@ func newMetricSplunkServerSearchartifactsJobCacheSize(cfg MetricConfig) metricSp
 }
 
 type metricSplunkServerSearchartifactsSavedsearches struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SplunkServerSearchartifactsSavedsearchesConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.savedsearches metric with initial data.
@@ -2784,19 +4736,54 @@ func (m *metricSplunkServerSearchartifactsSavedsearches) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsSavedsearches) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2809,13 +4796,18 @@ func (m *metricSplunkServerSearchartifactsSavedsearches) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsSavedsearches) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsSavedsearches(cfg MetricConfig) metricSplunkServerSearchartifactsSavedsearches {
+func newMetricSplunkServerSearchartifactsSavedsearches(cfg SplunkServerSearchartifactsSavedsearchesConfig) metricSplunkServerSearchartifactsSavedsearches {
 	m := metricSplunkServerSearchartifactsSavedsearches{config: cfg}
 
 	if cfg.Enabled {
@@ -2826,9 +4818,10 @@ func newMetricSplunkServerSearchartifactsSavedsearches(cfg MetricConfig) metricS
 }
 
 type metricSplunkServerSearchartifactsScheduled struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        SplunkServerSearchartifactsScheduledConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.scheduled metric with initial data.
@@ -2838,19 +4831,54 @@ func (m *metricSplunkServerSearchartifactsScheduled) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsScheduled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2863,13 +4891,18 @@ func (m *metricSplunkServerSearchartifactsScheduled) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsScheduled) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsScheduled(cfg MetricConfig) metricSplunkServerSearchartifactsScheduled {
+func newMetricSplunkServerSearchartifactsScheduled(cfg SplunkServerSearchartifactsScheduledConfig) metricSplunkServerSearchartifactsScheduled {
 	m := metricSplunkServerSearchartifactsScheduled{config: cfg}
 
 	if cfg.Enabled {
@@ -2880,9 +4913,10 @@ func newMetricSplunkServerSearchartifactsScheduled(cfg MetricConfig) metricSplun
 }
 
 type metricSplunkServerSearchartifactsScheduledSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SplunkServerSearchartifactsScheduledSizeConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.scheduled.size metric with initial data.
@@ -2892,19 +4926,54 @@ func (m *metricSplunkServerSearchartifactsScheduledSize) init() {
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkServerSearchartifactsScheduledSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2917,13 +4986,18 @@ func (m *metricSplunkServerSearchartifactsScheduledSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkServerSearchartifactsScheduledSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkServerSearchartifactsScheduledSize(cfg MetricConfig) metricSplunkServerSearchartifactsScheduledSize {
+func newMetricSplunkServerSearchartifactsScheduledSize(cfg SplunkServerSearchartifactsScheduledSizeConfig) metricSplunkServerSearchartifactsScheduledSize {
 	m := metricSplunkServerSearchartifactsScheduledSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2934,9 +5008,10 @@ func newMetricSplunkServerSearchartifactsScheduledSize(cfg MetricConfig) metricS
 }
 
 type metricSplunkTypingQueueRatio struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        SplunkTypingQueueRatioConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.typing.queue.ratio metric with initial data.
@@ -2946,19 +5021,54 @@ func (m *metricSplunkTypingQueueRatio) init() {
 	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSplunkTypingQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkTypingQueueRatioAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkTypingQueueRatioAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkTypingQueueRatioAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
-	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2971,13 +5081,18 @@ func (m *metricSplunkTypingQueueRatio) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSplunkTypingQueueRatio) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSplunkTypingQueueRatio(cfg MetricConfig) metricSplunkTypingQueueRatio {
+func newMetricSplunkTypingQueueRatio(cfg SplunkTypingQueueRatioConfig) metricSplunkTypingQueueRatio {
 	m := metricSplunkTypingQueueRatio{config: cfg}
 
 	if cfg.Enabled {

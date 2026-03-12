@@ -1,20 +1,16 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external
-title: external package
 $defs:
-  OtherConfig:
+  other_config:
     type: object
     properties:
       baz:
         type: integer
         x-customType: int64
       test:
-        $ref: "#/$defs/TestConfig"
-  TestConfig:
+        $ref: "test_config"
+  test_config:
     type: object
     properties:
       foo:
         type: string
       bar:
         type: integer
-

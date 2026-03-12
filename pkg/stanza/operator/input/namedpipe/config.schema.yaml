@@ -1,0 +1,23 @@
+$defs:
+  base_config:
+    type: object
+    properties:
+      encoding:
+        type: string
+      max_log_size:
+        type: integer
+      mode:
+        type: integer
+        x-customType: uint32
+      multiline:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split.config
+      path:
+        type: string
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim.config
+  config:
+    description: Config is the configuration of a stdin input operator.
+    type: object
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
+      - $ref: base_config

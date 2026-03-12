@@ -5,15 +5,13 @@ package prometheusreceiver
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
@@ -28,7 +26,7 @@ foo_gauge_total{method="get",port="6380"} 13
 # EOF
 `
 
-// TestReportExtraScrapeMetrics validates extra scrape metrics enablement via config and feature gate.
+// TestReportExtraScrapeMetrics validates extra scrape metrics enablement via the Prometheus scrape configuration.
 func TestReportExtraScrapeMetrics(t *testing.T) {
 	target := func(expectExtraScrapeMetrics bool) *testData {
 		return &testData{
@@ -45,94 +43,70 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		featureGate bool
 		globalExtra *bool
 		scrapeExtra *bool
 		expectExtra bool
 	}{
 		{
-			name:        "gate_off_global_true",
-			featureGate: false,
+			name:        "global_true",
 			globalExtra: boolPtr(true),
 			scrapeExtra: nil,
 			expectExtra: true,
 		},
 		{
-			name:        "gate_off_scrape_true",
-			featureGate: false,
+			name:        "scrape_true",
 			globalExtra: boolPtr(false),
 			scrapeExtra: boolPtr(true),
 			expectExtra: true,
 		},
 		{
-			name:        "gate_off_scrape_false_overrides_global",
-			featureGate: false,
+			name:        "scrape_false_overrides_global",
 			globalExtra: boolPtr(true),
 			scrapeExtra: boolPtr(false),
 			expectExtra: false,
 		},
 		{
-			name:        "gate_off_global_false",
-			featureGate: false,
+			name:        "global_false",
 			globalExtra: boolPtr(false),
 			scrapeExtra: nil,
-			expectExtra: false,
-		},
-		{
-			name:        "gate_on_forces_global_true",
-			featureGate: true,
-			globalExtra: boolPtr(false),
-			scrapeExtra: nil,
-			expectExtra: true,
-		},
-		{
-			name:        "gate_on_scrape_false_overrides_global",
-			featureGate: true,
-			globalExtra: boolPtr(false),
-			scrapeExtra: boolPtr(false),
 			expectExtra: false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			testScraperMetrics(t, []*testData{target(tc.expectExtra)}, tc.featureGate, tc.globalExtra, tc.scrapeExtra, tc.expectExtra)
+			testScraperMetrics(t, []*testData{target(tc.expectExtra)}, tc.globalExtra, tc.scrapeExtra, tc.expectExtra)
 		})
 	}
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testScraperMetrics(t *testing.T, targets []*testData, featureGateEnabled bool, globalExtra, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate, featureGateEnabled)()
-
-	ctx := t.Context()
+func testScraperMetrics(t *testing.T, targets []*testData, globalExtra, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
 	mp, cfg, err := setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra, targets...)
 	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
-	cms := new(consumertest.MetricsSink)
-	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
-		PrometheusConfig: cfg,
-	}, cms)
-	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
+	// Calculate expected scrapes (pages that will return metrics, not 404s).
+	expectedScrapes := countExpectedScrapes(targets)
 
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-	// verify state after shutdown is called
-	t.Cleanup(func() {
-		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, receiver.Shutdown(t.Context()))
-		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
-	})
+	// Use signaling sink for deterministic synchronization.
+	cms := newSignalingSink(expectedScrapes)
+	set := receivertest.NewNopSettings(metadata.Type)
+	receiver := newTestReceiverSettingsConsumer(t, &Config{PrometheusConfig: cfg}, set, cms)
+	defer func() {
+		// Check targets prior to shutdown. The cleanup installed by newTestReceiver
+		// will check that there are no running targets after shutdown.
+		assert.Lenf(t,
+			flattenTargets(receiver.scrapeManager.TargetsAll()),
+			len(targets), "expected %v targets to be running", len(targets),
+		)
+	}()
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
 	mp.wg.Wait()
 
-	// Note:waitForScrapeResult is an attempt to address a possible race between waitgroup Done() being called in the ServerHTTP function
-	//      and when the receiver actually processes the http request responses into metrics.
-	//      this is a eventually timeout,tick that just waits for some condition.
-	//      however the condition to wait for may be suboptimal and may need to be adjusted.
-	waitForScrapeResults(t, targets, cms)
+	// Wait for consumer to receive all expected scrapes (deterministic, replaces polling).
+	cms.Wait(t, 30*time.Second)
 
 	// This begins the processing of the scrapes collected by the receiver
 	metrics := cms.AllMetrics()

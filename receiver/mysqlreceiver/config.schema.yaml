@@ -1,0 +1,60 @@
+$defs:
+  query_sample_collection:
+    type: object
+    properties:
+      max_rows_per_query:
+        type: integer
+        x-customType: uint64
+  statement_events_config:
+    type: object
+    properties:
+      digest_text_limit:
+        type: integer
+      limit:
+        type: integer
+      time_limit:
+        type: string
+        format: duration
+  top_query_collection:
+    type: object
+    properties:
+      collection_interval:
+        type: string
+        format: duration
+      lookback_time:
+        type: integer
+        x-customType: uint64
+      max_query_sample_count:
+        type: integer
+        x-customType: uint64
+      query_plan_cache_size:
+        type: integer
+      query_plan_cache_ttl:
+        type: string
+        format: duration
+      top_query_count:
+        type: integer
+        x-customType: uint64
+type: object
+properties:
+  allow_native_passwords:
+    type: boolean
+  database:
+    type: string
+  password:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  query_sample_collection:
+    $ref: query_sample_collection
+  statement_events:
+    $ref: statement_events_config
+  tls:
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  top_query_collection:
+    $ref: top_query_collection
+  username:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: go.opentelemetry.io/collector/config/confignet.addr_config
+  - $ref: ./internal/metadata.metrics_builder_config
+  - $ref: ./internal/metadata.logs_builder_config

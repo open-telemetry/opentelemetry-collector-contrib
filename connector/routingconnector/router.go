@@ -78,6 +78,7 @@ type routingItem[C any] struct {
 	dataPointStatement *ottl.Statement[*ottldatapoint.TransformContext]
 	logStatement       *ottl.Statement[*ottllog.TransformContext]
 	statementContext   string
+	action             Action
 }
 
 func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.TelemetrySettings) error {
@@ -279,14 +280,14 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			}
 		}
 
+		route.action = item.Action
+
 		consumer, err := r.consumerProvider(item.Pipelines...)
 		if err != nil {
 			return fmt.Errorf("%w: %s", errPipelineNotFound, err.Error())
 		}
 		route.consumer = consumer
-		if !dupeFound {
-			r.routeSlice = append(r.routeSlice, route)
-		}
+		r.routeSlice = append(r.routeSlice, route)
 
 		r.routes[key(item)] = route
 	}

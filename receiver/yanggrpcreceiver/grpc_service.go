@@ -174,8 +174,8 @@ func (s *grpcService) processTelemetryData(req *pb.MdtDialoutArgs) error {
 // extractYANGModule extracts the YANG module name from encoding path
 func (*grpcService) extractYANGModule(encodingPath string) string {
 	// Example: "Cisco-IOS-XE-interfaces-oper:interfaces/interface/statistics"
-	if idx := strings.Index(encodingPath, ":"); idx != -1 {
-		return encodingPath[:idx]
+	if before, _, ok := strings.Cut(encodingPath, ":"); ok {
+		return before
 	}
 	return "unknown"
 }

@@ -1,4 +1,7 @@
+display_name: TCP Receiver
 type: tcplog
+
+description: The TCP Receiver receives logs over TCP.
 
 status:
   class: receiver

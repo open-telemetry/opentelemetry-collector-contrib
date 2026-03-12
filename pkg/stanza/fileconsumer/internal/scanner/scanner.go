@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 
-	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 const DefaultBufferSize = 16 * 1024

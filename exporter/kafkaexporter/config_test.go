@@ -110,6 +110,9 @@ func TestLoadConfig(t *testing.T) {
 					Encoding: "otlp_proto",
 				},
 				Topic: "legacy_topic",
+				IncludeMetadataKeys: []string{
+					"metadata_key",
+				},
 			},
 		},
 		{
@@ -160,13 +163,18 @@ func TestLoadConfigFailed(t *testing.T) {
 
 	tests := []struct {
 		id            component.ID
-		expectedError error
+		errorContains string
 		configFile    string
 	}{
 		{
 			id:            component.NewIDWithName(metadata.Type, ""),
-			expectedError: errLogsPartitionExclusive,
+			errorContains: errLogsPartitionExclusive.Error(),
 			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, ""),
+			errorContains: `logs::topic_from_metadata_key: topic_from_metadata_key must be present in include_metadata_keys: "missing_metadata_key" not found in include_metadata_keys=[]`,
+			configFile:    "config-topic-from-metadata-failed.yaml",
 		},
 	}
 
@@ -181,7 +189,8 @@ func TestLoadConfigFailed(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedError)
+			err = xconfmap.Validate(cfg)
+			assert.ErrorContains(t, err, tt.errorContains)
 		})
 	}
 }

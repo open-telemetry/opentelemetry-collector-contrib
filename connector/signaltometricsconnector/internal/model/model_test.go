@@ -41,7 +41,7 @@ func TestFilterResourceAttributes(t *testing.T) {
 				"key.3": int64(11),
 				"key.4": "val.4",
 				// Collector instance info will be added
-				"signaltometrics.service.instance.id": testServiceInstanceID,
+				"signal_to_metrics.service.instance.id": testServiceInstanceID,
 			},
 		},
 		{
@@ -74,7 +74,7 @@ func TestFilterResourceAttributes(t *testing.T) {
 				// Resource attributes with default values are added
 				"key.302": "anything",
 				// Collector instance info will be added
-				"signaltometrics.service.instance.id": testServiceInstanceID,
+				"signal_to_metrics.service.instance.id": testServiceInstanceID,
 			},
 		},
 	} {

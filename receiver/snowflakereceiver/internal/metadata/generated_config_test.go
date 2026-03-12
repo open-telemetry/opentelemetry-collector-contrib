@@ -26,41 +26,175 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SnowflakeBillingCloudServiceTotal:              MetricConfig{Enabled: true},
-					SnowflakeBillingTotalCreditTotal:               MetricConfig{Enabled: true},
-					SnowflakeBillingVirtualWarehouseTotal:          MetricConfig{Enabled: true},
-					SnowflakeBillingWarehouseCloudServiceTotal:     MetricConfig{Enabled: true},
-					SnowflakeBillingWarehouseTotalCreditTotal:      MetricConfig{Enabled: true},
-					SnowflakeBillingWarehouseVirtualWarehouseTotal: MetricConfig{Enabled: true},
-					SnowflakeDatabaseBytesScannedAvg:               MetricConfig{Enabled: true},
-					SnowflakeDatabaseQueryCount:                    MetricConfig{Enabled: true},
-					SnowflakeLoginsTotal:                           MetricConfig{Enabled: true},
-					SnowflakePipeCreditsUsedTotal:                  MetricConfig{Enabled: true},
-					SnowflakeQueryBlocked:                          MetricConfig{Enabled: true},
-					SnowflakeQueryBytesDeletedAvg:                  MetricConfig{Enabled: true},
-					SnowflakeQueryBytesSpilledLocalAvg:             MetricConfig{Enabled: true},
-					SnowflakeQueryBytesSpilledRemoteAvg:            MetricConfig{Enabled: true},
-					SnowflakeQueryBytesWrittenAvg:                  MetricConfig{Enabled: true},
-					SnowflakeQueryCompilationTimeAvg:               MetricConfig{Enabled: true},
-					SnowflakeQueryDataScannedCacheAvg:              MetricConfig{Enabled: true},
-					SnowflakeQueryExecuted:                         MetricConfig{Enabled: true},
-					SnowflakeQueryExecutionTimeAvg:                 MetricConfig{Enabled: true},
-					SnowflakeQueryPartitionsScannedAvg:             MetricConfig{Enabled: true},
-					SnowflakeQueryQueuedOverload:                   MetricConfig{Enabled: true},
-					SnowflakeQueryQueuedProvision:                  MetricConfig{Enabled: true},
-					SnowflakeQueuedOverloadTimeAvg:                 MetricConfig{Enabled: true},
-					SnowflakeQueuedProvisioningTimeAvg:             MetricConfig{Enabled: true},
-					SnowflakeQueuedRepairTimeAvg:                   MetricConfig{Enabled: true},
-					SnowflakeRowsDeletedAvg:                        MetricConfig{Enabled: true},
-					SnowflakeRowsInsertedAvg:                       MetricConfig{Enabled: true},
-					SnowflakeRowsProducedAvg:                       MetricConfig{Enabled: true},
-					SnowflakeRowsUnloadedAvg:                       MetricConfig{Enabled: true},
-					SnowflakeRowsUpdatedAvg:                        MetricConfig{Enabled: true},
-					SnowflakeSessionIDCount:                        MetricConfig{Enabled: true},
-					SnowflakeStorageFailsafeBytesTotal:             MetricConfig{Enabled: true},
-					SnowflakeStorageStageBytesTotal:                MetricConfig{Enabled: true},
-					SnowflakeStorageStorageBytesTotal:              MetricConfig{Enabled: true},
-					SnowflakeTotalElapsedTimeAvg:                   MetricConfig{Enabled: true},
+					SnowflakeBillingCloudServiceTotal: SnowflakeBillingCloudServiceTotalConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingCloudServiceTotalAttributeKey{SnowflakeBillingCloudServiceTotalAttributeKeyServiceType},
+					},
+					SnowflakeBillingTotalCreditTotal: SnowflakeBillingTotalCreditTotalConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingTotalCreditTotalAttributeKey{SnowflakeBillingTotalCreditTotalAttributeKeyServiceType},
+					},
+					SnowflakeBillingVirtualWarehouseTotal: SnowflakeBillingVirtualWarehouseTotalConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingVirtualWarehouseTotalAttributeKey{SnowflakeBillingVirtualWarehouseTotalAttributeKeyServiceType},
+					},
+					SnowflakeBillingWarehouseCloudServiceTotal: SnowflakeBillingWarehouseCloudServiceTotalConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseCloudServiceTotalAttributeKey{SnowflakeBillingWarehouseCloudServiceTotalAttributeKeyWarehouseName},
+					},
+					SnowflakeBillingWarehouseTotalCreditTotal: SnowflakeBillingWarehouseTotalCreditTotalConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseTotalCreditTotalAttributeKey{SnowflakeBillingWarehouseTotalCreditTotalAttributeKeyWarehouseName},
+					},
+					SnowflakeBillingWarehouseVirtualWarehouseTotal: SnowflakeBillingWarehouseVirtualWarehouseTotalConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseVirtualWarehouseTotalAttributeKey{SnowflakeBillingWarehouseVirtualWarehouseTotalAttributeKeyWarehouseName},
+					},
+					SnowflakeDatabaseBytesScannedAvg: SnowflakeDatabaseBytesScannedAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeDatabaseBytesScannedAvgAttributeKey{SnowflakeDatabaseBytesScannedAvgAttributeKeySchemaName, SnowflakeDatabaseBytesScannedAvgAttributeKeyExecutionStatus, SnowflakeDatabaseBytesScannedAvgAttributeKeyErrorMessage, SnowflakeDatabaseBytesScannedAvgAttributeKeyQueryType, SnowflakeDatabaseBytesScannedAvgAttributeKeyWarehouseName, SnowflakeDatabaseBytesScannedAvgAttributeKeyDatabaseName, SnowflakeDatabaseBytesScannedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeDatabaseQueryCount: SnowflakeDatabaseQueryCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeDatabaseQueryCountAttributeKey{SnowflakeDatabaseQueryCountAttributeKeySchemaName, SnowflakeDatabaseQueryCountAttributeKeyExecutionStatus, SnowflakeDatabaseQueryCountAttributeKeyErrorMessage, SnowflakeDatabaseQueryCountAttributeKeyQueryType, SnowflakeDatabaseQueryCountAttributeKeyWarehouseName, SnowflakeDatabaseQueryCountAttributeKeyDatabaseName, SnowflakeDatabaseQueryCountAttributeKeyWarehouseSize},
+					},
+					SnowflakeLoginsTotal: SnowflakeLoginsTotalConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeLoginsTotalAttributeKey{SnowflakeLoginsTotalAttributeKeyErrorMessage, SnowflakeLoginsTotalAttributeKeyReportedClientType, SnowflakeLoginsTotalAttributeKeyIsSuccess},
+					},
+					SnowflakePipeCreditsUsedTotal: SnowflakePipeCreditsUsedTotalConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakePipeCreditsUsedTotalAttributeKey{SnowflakePipeCreditsUsedTotalAttributeKeyPipeName},
+					},
+					SnowflakeQueryBlocked: SnowflakeQueryBlockedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBlockedAttributeKey{SnowflakeQueryBlockedAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryBytesDeletedAvg: SnowflakeQueryBytesDeletedAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesDeletedAvgAttributeKey{SnowflakeQueryBytesDeletedAvgAttributeKeySchemaName, SnowflakeQueryBytesDeletedAvgAttributeKeyExecutionStatus, SnowflakeQueryBytesDeletedAvgAttributeKeyErrorMessage, SnowflakeQueryBytesDeletedAvgAttributeKeyQueryType, SnowflakeQueryBytesDeletedAvgAttributeKeyWarehouseName, SnowflakeQueryBytesDeletedAvgAttributeKeyDatabaseName, SnowflakeQueryBytesDeletedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesSpilledLocalAvg: SnowflakeQueryBytesSpilledLocalAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledLocalAvgAttributeKey{SnowflakeQueryBytesSpilledLocalAvgAttributeKeySchemaName, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyQueryType, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesSpilledRemoteAvg: SnowflakeQueryBytesSpilledRemoteAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledRemoteAvgAttributeKey{SnowflakeQueryBytesSpilledRemoteAvgAttributeKeySchemaName, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyQueryType, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesWrittenAvg: SnowflakeQueryBytesWrittenAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesWrittenAvgAttributeKey{SnowflakeQueryBytesWrittenAvgAttributeKeySchemaName, SnowflakeQueryBytesWrittenAvgAttributeKeyExecutionStatus, SnowflakeQueryBytesWrittenAvgAttributeKeyErrorMessage, SnowflakeQueryBytesWrittenAvgAttributeKeyQueryType, SnowflakeQueryBytesWrittenAvgAttributeKeyWarehouseName, SnowflakeQueryBytesWrittenAvgAttributeKeyDatabaseName, SnowflakeQueryBytesWrittenAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryCompilationTimeAvg: SnowflakeQueryCompilationTimeAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryCompilationTimeAvgAttributeKey{SnowflakeQueryCompilationTimeAvgAttributeKeySchemaName, SnowflakeQueryCompilationTimeAvgAttributeKeyExecutionStatus, SnowflakeQueryCompilationTimeAvgAttributeKeyErrorMessage, SnowflakeQueryCompilationTimeAvgAttributeKeyQueryType, SnowflakeQueryCompilationTimeAvgAttributeKeyWarehouseName, SnowflakeQueryCompilationTimeAvgAttributeKeyDatabaseName, SnowflakeQueryCompilationTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryDataScannedCacheAvg: SnowflakeQueryDataScannedCacheAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryDataScannedCacheAvgAttributeKey{SnowflakeQueryDataScannedCacheAvgAttributeKeySchemaName, SnowflakeQueryDataScannedCacheAvgAttributeKeyExecutionStatus, SnowflakeQueryDataScannedCacheAvgAttributeKeyErrorMessage, SnowflakeQueryDataScannedCacheAvgAttributeKeyQueryType, SnowflakeQueryDataScannedCacheAvgAttributeKeyWarehouseName, SnowflakeQueryDataScannedCacheAvgAttributeKeyDatabaseName, SnowflakeQueryDataScannedCacheAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryExecuted: SnowflakeQueryExecutedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryExecutedAttributeKey{SnowflakeQueryExecutedAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryExecutionTimeAvg: SnowflakeQueryExecutionTimeAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryExecutionTimeAvgAttributeKey{SnowflakeQueryExecutionTimeAvgAttributeKeySchemaName, SnowflakeQueryExecutionTimeAvgAttributeKeyExecutionStatus, SnowflakeQueryExecutionTimeAvgAttributeKeyErrorMessage, SnowflakeQueryExecutionTimeAvgAttributeKeyQueryType, SnowflakeQueryExecutionTimeAvgAttributeKeyWarehouseName, SnowflakeQueryExecutionTimeAvgAttributeKeyDatabaseName, SnowflakeQueryExecutionTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryPartitionsScannedAvg: SnowflakeQueryPartitionsScannedAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryPartitionsScannedAvgAttributeKey{SnowflakeQueryPartitionsScannedAvgAttributeKeySchemaName, SnowflakeQueryPartitionsScannedAvgAttributeKeyExecutionStatus, SnowflakeQueryPartitionsScannedAvgAttributeKeyErrorMessage, SnowflakeQueryPartitionsScannedAvgAttributeKeyQueryType, SnowflakeQueryPartitionsScannedAvgAttributeKeyWarehouseName, SnowflakeQueryPartitionsScannedAvgAttributeKeyDatabaseName, SnowflakeQueryPartitionsScannedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryQueuedOverload: SnowflakeQueryQueuedOverloadConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryQueuedOverloadAttributeKey{SnowflakeQueryQueuedOverloadAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryQueuedProvision: SnowflakeQueryQueuedProvisionConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryQueuedProvisionAttributeKey{SnowflakeQueryQueuedProvisionAttributeKeyWarehouseName},
+					},
+					SnowflakeQueuedOverloadTimeAvg: SnowflakeQueuedOverloadTimeAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedOverloadTimeAvgAttributeKey{SnowflakeQueuedOverloadTimeAvgAttributeKeySchemaName, SnowflakeQueuedOverloadTimeAvgAttributeKeyExecutionStatus, SnowflakeQueuedOverloadTimeAvgAttributeKeyErrorMessage, SnowflakeQueuedOverloadTimeAvgAttributeKeyQueryType, SnowflakeQueuedOverloadTimeAvgAttributeKeyWarehouseName, SnowflakeQueuedOverloadTimeAvgAttributeKeyDatabaseName, SnowflakeQueuedOverloadTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueuedProvisioningTimeAvg: SnowflakeQueuedProvisioningTimeAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedProvisioningTimeAvgAttributeKey{SnowflakeQueuedProvisioningTimeAvgAttributeKeySchemaName, SnowflakeQueuedProvisioningTimeAvgAttributeKeyExecutionStatus, SnowflakeQueuedProvisioningTimeAvgAttributeKeyErrorMessage, SnowflakeQueuedProvisioningTimeAvgAttributeKeyQueryType, SnowflakeQueuedProvisioningTimeAvgAttributeKeyWarehouseName, SnowflakeQueuedProvisioningTimeAvgAttributeKeyDatabaseName, SnowflakeQueuedProvisioningTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueuedRepairTimeAvg: SnowflakeQueuedRepairTimeAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedRepairTimeAvgAttributeKey{SnowflakeQueuedRepairTimeAvgAttributeKeySchemaName, SnowflakeQueuedRepairTimeAvgAttributeKeyExecutionStatus, SnowflakeQueuedRepairTimeAvgAttributeKeyErrorMessage, SnowflakeQueuedRepairTimeAvgAttributeKeyQueryType, SnowflakeQueuedRepairTimeAvgAttributeKeyWarehouseName, SnowflakeQueuedRepairTimeAvgAttributeKeyDatabaseName, SnowflakeQueuedRepairTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsDeletedAvg: SnowflakeRowsDeletedAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsDeletedAvgAttributeKey{SnowflakeRowsDeletedAvgAttributeKeySchemaName, SnowflakeRowsDeletedAvgAttributeKeyExecutionStatus, SnowflakeRowsDeletedAvgAttributeKeyErrorMessage, SnowflakeRowsDeletedAvgAttributeKeyQueryType, SnowflakeRowsDeletedAvgAttributeKeyWarehouseName, SnowflakeRowsDeletedAvgAttributeKeyDatabaseName, SnowflakeRowsDeletedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsInsertedAvg: SnowflakeRowsInsertedAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsInsertedAvgAttributeKey{SnowflakeRowsInsertedAvgAttributeKeySchemaName, SnowflakeRowsInsertedAvgAttributeKeyExecutionStatus, SnowflakeRowsInsertedAvgAttributeKeyErrorMessage, SnowflakeRowsInsertedAvgAttributeKeyQueryType, SnowflakeRowsInsertedAvgAttributeKeyWarehouseName, SnowflakeRowsInsertedAvgAttributeKeyDatabaseName, SnowflakeRowsInsertedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsProducedAvg: SnowflakeRowsProducedAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsProducedAvgAttributeKey{SnowflakeRowsProducedAvgAttributeKeySchemaName, SnowflakeRowsProducedAvgAttributeKeyExecutionStatus, SnowflakeRowsProducedAvgAttributeKeyErrorMessage, SnowflakeRowsProducedAvgAttributeKeyQueryType, SnowflakeRowsProducedAvgAttributeKeyWarehouseName, SnowflakeRowsProducedAvgAttributeKeyDatabaseName, SnowflakeRowsProducedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsUnloadedAvg: SnowflakeRowsUnloadedAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsUnloadedAvgAttributeKey{SnowflakeRowsUnloadedAvgAttributeKeySchemaName, SnowflakeRowsUnloadedAvgAttributeKeyExecutionStatus, SnowflakeRowsUnloadedAvgAttributeKeyErrorMessage, SnowflakeRowsUnloadedAvgAttributeKeyQueryType, SnowflakeRowsUnloadedAvgAttributeKeyWarehouseName, SnowflakeRowsUnloadedAvgAttributeKeyDatabaseName, SnowflakeRowsUnloadedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsUpdatedAvg: SnowflakeRowsUpdatedAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsUpdatedAvgAttributeKey{SnowflakeRowsUpdatedAvgAttributeKeySchemaName, SnowflakeRowsUpdatedAvgAttributeKeyExecutionStatus, SnowflakeRowsUpdatedAvgAttributeKeyErrorMessage, SnowflakeRowsUpdatedAvgAttributeKeyQueryType, SnowflakeRowsUpdatedAvgAttributeKeyWarehouseName, SnowflakeRowsUpdatedAvgAttributeKeyDatabaseName, SnowflakeRowsUpdatedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeSessionIDCount: SnowflakeSessionIDCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeSessionIDCountAttributeKey{SnowflakeSessionIDCountAttributeKeyUserName},
+					},
+					SnowflakeStorageFailsafeBytesTotal: SnowflakeStorageFailsafeBytesTotalConfig{
+						Enabled: true,
+					},
+					SnowflakeStorageStageBytesTotal: SnowflakeStorageStageBytesTotalConfig{
+						Enabled: true,
+					},
+					SnowflakeStorageStorageBytesTotal: SnowflakeStorageStorageBytesTotalConfig{
+						Enabled: true,
+					},
+					SnowflakeTotalElapsedTimeAvg: SnowflakeTotalElapsedTimeAvgConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeTotalElapsedTimeAvgAttributeKey{SnowflakeTotalElapsedTimeAvgAttributeKeySchemaName, SnowflakeTotalElapsedTimeAvgAttributeKeyExecutionStatus, SnowflakeTotalElapsedTimeAvgAttributeKeyErrorMessage, SnowflakeTotalElapsedTimeAvgAttributeKeyQueryType, SnowflakeTotalElapsedTimeAvgAttributeKeyWarehouseName, SnowflakeTotalElapsedTimeAvgAttributeKeyDatabaseName, SnowflakeTotalElapsedTimeAvgAttributeKeyWarehouseSize},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SnowflakeAccountName: ResourceAttributeConfig{Enabled: true},
@@ -71,41 +205,175 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SnowflakeBillingCloudServiceTotal:              MetricConfig{Enabled: false},
-					SnowflakeBillingTotalCreditTotal:               MetricConfig{Enabled: false},
-					SnowflakeBillingVirtualWarehouseTotal:          MetricConfig{Enabled: false},
-					SnowflakeBillingWarehouseCloudServiceTotal:     MetricConfig{Enabled: false},
-					SnowflakeBillingWarehouseTotalCreditTotal:      MetricConfig{Enabled: false},
-					SnowflakeBillingWarehouseVirtualWarehouseTotal: MetricConfig{Enabled: false},
-					SnowflakeDatabaseBytesScannedAvg:               MetricConfig{Enabled: false},
-					SnowflakeDatabaseQueryCount:                    MetricConfig{Enabled: false},
-					SnowflakeLoginsTotal:                           MetricConfig{Enabled: false},
-					SnowflakePipeCreditsUsedTotal:                  MetricConfig{Enabled: false},
-					SnowflakeQueryBlocked:                          MetricConfig{Enabled: false},
-					SnowflakeQueryBytesDeletedAvg:                  MetricConfig{Enabled: false},
-					SnowflakeQueryBytesSpilledLocalAvg:             MetricConfig{Enabled: false},
-					SnowflakeQueryBytesSpilledRemoteAvg:            MetricConfig{Enabled: false},
-					SnowflakeQueryBytesWrittenAvg:                  MetricConfig{Enabled: false},
-					SnowflakeQueryCompilationTimeAvg:               MetricConfig{Enabled: false},
-					SnowflakeQueryDataScannedCacheAvg:              MetricConfig{Enabled: false},
-					SnowflakeQueryExecuted:                         MetricConfig{Enabled: false},
-					SnowflakeQueryExecutionTimeAvg:                 MetricConfig{Enabled: false},
-					SnowflakeQueryPartitionsScannedAvg:             MetricConfig{Enabled: false},
-					SnowflakeQueryQueuedOverload:                   MetricConfig{Enabled: false},
-					SnowflakeQueryQueuedProvision:                  MetricConfig{Enabled: false},
-					SnowflakeQueuedOverloadTimeAvg:                 MetricConfig{Enabled: false},
-					SnowflakeQueuedProvisioningTimeAvg:             MetricConfig{Enabled: false},
-					SnowflakeQueuedRepairTimeAvg:                   MetricConfig{Enabled: false},
-					SnowflakeRowsDeletedAvg:                        MetricConfig{Enabled: false},
-					SnowflakeRowsInsertedAvg:                       MetricConfig{Enabled: false},
-					SnowflakeRowsProducedAvg:                       MetricConfig{Enabled: false},
-					SnowflakeRowsUnloadedAvg:                       MetricConfig{Enabled: false},
-					SnowflakeRowsUpdatedAvg:                        MetricConfig{Enabled: false},
-					SnowflakeSessionIDCount:                        MetricConfig{Enabled: false},
-					SnowflakeStorageFailsafeBytesTotal:             MetricConfig{Enabled: false},
-					SnowflakeStorageStageBytesTotal:                MetricConfig{Enabled: false},
-					SnowflakeStorageStorageBytesTotal:              MetricConfig{Enabled: false},
-					SnowflakeTotalElapsedTimeAvg:                   MetricConfig{Enabled: false},
+					SnowflakeBillingCloudServiceTotal: SnowflakeBillingCloudServiceTotalConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingCloudServiceTotalAttributeKey{SnowflakeBillingCloudServiceTotalAttributeKeyServiceType},
+					},
+					SnowflakeBillingTotalCreditTotal: SnowflakeBillingTotalCreditTotalConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingTotalCreditTotalAttributeKey{SnowflakeBillingTotalCreditTotalAttributeKeyServiceType},
+					},
+					SnowflakeBillingVirtualWarehouseTotal: SnowflakeBillingVirtualWarehouseTotalConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingVirtualWarehouseTotalAttributeKey{SnowflakeBillingVirtualWarehouseTotalAttributeKeyServiceType},
+					},
+					SnowflakeBillingWarehouseCloudServiceTotal: SnowflakeBillingWarehouseCloudServiceTotalConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseCloudServiceTotalAttributeKey{SnowflakeBillingWarehouseCloudServiceTotalAttributeKeyWarehouseName},
+					},
+					SnowflakeBillingWarehouseTotalCreditTotal: SnowflakeBillingWarehouseTotalCreditTotalConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseTotalCreditTotalAttributeKey{SnowflakeBillingWarehouseTotalCreditTotalAttributeKeyWarehouseName},
+					},
+					SnowflakeBillingWarehouseVirtualWarehouseTotal: SnowflakeBillingWarehouseVirtualWarehouseTotalConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseVirtualWarehouseTotalAttributeKey{SnowflakeBillingWarehouseVirtualWarehouseTotalAttributeKeyWarehouseName},
+					},
+					SnowflakeDatabaseBytesScannedAvg: SnowflakeDatabaseBytesScannedAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeDatabaseBytesScannedAvgAttributeKey{SnowflakeDatabaseBytesScannedAvgAttributeKeySchemaName, SnowflakeDatabaseBytesScannedAvgAttributeKeyExecutionStatus, SnowflakeDatabaseBytesScannedAvgAttributeKeyErrorMessage, SnowflakeDatabaseBytesScannedAvgAttributeKeyQueryType, SnowflakeDatabaseBytesScannedAvgAttributeKeyWarehouseName, SnowflakeDatabaseBytesScannedAvgAttributeKeyDatabaseName, SnowflakeDatabaseBytesScannedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeDatabaseQueryCount: SnowflakeDatabaseQueryCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeDatabaseQueryCountAttributeKey{SnowflakeDatabaseQueryCountAttributeKeySchemaName, SnowflakeDatabaseQueryCountAttributeKeyExecutionStatus, SnowflakeDatabaseQueryCountAttributeKeyErrorMessage, SnowflakeDatabaseQueryCountAttributeKeyQueryType, SnowflakeDatabaseQueryCountAttributeKeyWarehouseName, SnowflakeDatabaseQueryCountAttributeKeyDatabaseName, SnowflakeDatabaseQueryCountAttributeKeyWarehouseSize},
+					},
+					SnowflakeLoginsTotal: SnowflakeLoginsTotalConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeLoginsTotalAttributeKey{SnowflakeLoginsTotalAttributeKeyErrorMessage, SnowflakeLoginsTotalAttributeKeyReportedClientType, SnowflakeLoginsTotalAttributeKeyIsSuccess},
+					},
+					SnowflakePipeCreditsUsedTotal: SnowflakePipeCreditsUsedTotalConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakePipeCreditsUsedTotalAttributeKey{SnowflakePipeCreditsUsedTotalAttributeKeyPipeName},
+					},
+					SnowflakeQueryBlocked: SnowflakeQueryBlockedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBlockedAttributeKey{SnowflakeQueryBlockedAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryBytesDeletedAvg: SnowflakeQueryBytesDeletedAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesDeletedAvgAttributeKey{SnowflakeQueryBytesDeletedAvgAttributeKeySchemaName, SnowflakeQueryBytesDeletedAvgAttributeKeyExecutionStatus, SnowflakeQueryBytesDeletedAvgAttributeKeyErrorMessage, SnowflakeQueryBytesDeletedAvgAttributeKeyQueryType, SnowflakeQueryBytesDeletedAvgAttributeKeyWarehouseName, SnowflakeQueryBytesDeletedAvgAttributeKeyDatabaseName, SnowflakeQueryBytesDeletedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesSpilledLocalAvg: SnowflakeQueryBytesSpilledLocalAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledLocalAvgAttributeKey{SnowflakeQueryBytesSpilledLocalAvgAttributeKeySchemaName, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyQueryType, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesSpilledRemoteAvg: SnowflakeQueryBytesSpilledRemoteAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledRemoteAvgAttributeKey{SnowflakeQueryBytesSpilledRemoteAvgAttributeKeySchemaName, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyQueryType, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesWrittenAvg: SnowflakeQueryBytesWrittenAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesWrittenAvgAttributeKey{SnowflakeQueryBytesWrittenAvgAttributeKeySchemaName, SnowflakeQueryBytesWrittenAvgAttributeKeyExecutionStatus, SnowflakeQueryBytesWrittenAvgAttributeKeyErrorMessage, SnowflakeQueryBytesWrittenAvgAttributeKeyQueryType, SnowflakeQueryBytesWrittenAvgAttributeKeyWarehouseName, SnowflakeQueryBytesWrittenAvgAttributeKeyDatabaseName, SnowflakeQueryBytesWrittenAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryCompilationTimeAvg: SnowflakeQueryCompilationTimeAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryCompilationTimeAvgAttributeKey{SnowflakeQueryCompilationTimeAvgAttributeKeySchemaName, SnowflakeQueryCompilationTimeAvgAttributeKeyExecutionStatus, SnowflakeQueryCompilationTimeAvgAttributeKeyErrorMessage, SnowflakeQueryCompilationTimeAvgAttributeKeyQueryType, SnowflakeQueryCompilationTimeAvgAttributeKeyWarehouseName, SnowflakeQueryCompilationTimeAvgAttributeKeyDatabaseName, SnowflakeQueryCompilationTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryDataScannedCacheAvg: SnowflakeQueryDataScannedCacheAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryDataScannedCacheAvgAttributeKey{SnowflakeQueryDataScannedCacheAvgAttributeKeySchemaName, SnowflakeQueryDataScannedCacheAvgAttributeKeyExecutionStatus, SnowflakeQueryDataScannedCacheAvgAttributeKeyErrorMessage, SnowflakeQueryDataScannedCacheAvgAttributeKeyQueryType, SnowflakeQueryDataScannedCacheAvgAttributeKeyWarehouseName, SnowflakeQueryDataScannedCacheAvgAttributeKeyDatabaseName, SnowflakeQueryDataScannedCacheAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryExecuted: SnowflakeQueryExecutedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryExecutedAttributeKey{SnowflakeQueryExecutedAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryExecutionTimeAvg: SnowflakeQueryExecutionTimeAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryExecutionTimeAvgAttributeKey{SnowflakeQueryExecutionTimeAvgAttributeKeySchemaName, SnowflakeQueryExecutionTimeAvgAttributeKeyExecutionStatus, SnowflakeQueryExecutionTimeAvgAttributeKeyErrorMessage, SnowflakeQueryExecutionTimeAvgAttributeKeyQueryType, SnowflakeQueryExecutionTimeAvgAttributeKeyWarehouseName, SnowflakeQueryExecutionTimeAvgAttributeKeyDatabaseName, SnowflakeQueryExecutionTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryPartitionsScannedAvg: SnowflakeQueryPartitionsScannedAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryPartitionsScannedAvgAttributeKey{SnowflakeQueryPartitionsScannedAvgAttributeKeySchemaName, SnowflakeQueryPartitionsScannedAvgAttributeKeyExecutionStatus, SnowflakeQueryPartitionsScannedAvgAttributeKeyErrorMessage, SnowflakeQueryPartitionsScannedAvgAttributeKeyQueryType, SnowflakeQueryPartitionsScannedAvgAttributeKeyWarehouseName, SnowflakeQueryPartitionsScannedAvgAttributeKeyDatabaseName, SnowflakeQueryPartitionsScannedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryQueuedOverload: SnowflakeQueryQueuedOverloadConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryQueuedOverloadAttributeKey{SnowflakeQueryQueuedOverloadAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryQueuedProvision: SnowflakeQueryQueuedProvisionConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryQueuedProvisionAttributeKey{SnowflakeQueryQueuedProvisionAttributeKeyWarehouseName},
+					},
+					SnowflakeQueuedOverloadTimeAvg: SnowflakeQueuedOverloadTimeAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedOverloadTimeAvgAttributeKey{SnowflakeQueuedOverloadTimeAvgAttributeKeySchemaName, SnowflakeQueuedOverloadTimeAvgAttributeKeyExecutionStatus, SnowflakeQueuedOverloadTimeAvgAttributeKeyErrorMessage, SnowflakeQueuedOverloadTimeAvgAttributeKeyQueryType, SnowflakeQueuedOverloadTimeAvgAttributeKeyWarehouseName, SnowflakeQueuedOverloadTimeAvgAttributeKeyDatabaseName, SnowflakeQueuedOverloadTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueuedProvisioningTimeAvg: SnowflakeQueuedProvisioningTimeAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedProvisioningTimeAvgAttributeKey{SnowflakeQueuedProvisioningTimeAvgAttributeKeySchemaName, SnowflakeQueuedProvisioningTimeAvgAttributeKeyExecutionStatus, SnowflakeQueuedProvisioningTimeAvgAttributeKeyErrorMessage, SnowflakeQueuedProvisioningTimeAvgAttributeKeyQueryType, SnowflakeQueuedProvisioningTimeAvgAttributeKeyWarehouseName, SnowflakeQueuedProvisioningTimeAvgAttributeKeyDatabaseName, SnowflakeQueuedProvisioningTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueuedRepairTimeAvg: SnowflakeQueuedRepairTimeAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedRepairTimeAvgAttributeKey{SnowflakeQueuedRepairTimeAvgAttributeKeySchemaName, SnowflakeQueuedRepairTimeAvgAttributeKeyExecutionStatus, SnowflakeQueuedRepairTimeAvgAttributeKeyErrorMessage, SnowflakeQueuedRepairTimeAvgAttributeKeyQueryType, SnowflakeQueuedRepairTimeAvgAttributeKeyWarehouseName, SnowflakeQueuedRepairTimeAvgAttributeKeyDatabaseName, SnowflakeQueuedRepairTimeAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsDeletedAvg: SnowflakeRowsDeletedAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsDeletedAvgAttributeKey{SnowflakeRowsDeletedAvgAttributeKeySchemaName, SnowflakeRowsDeletedAvgAttributeKeyExecutionStatus, SnowflakeRowsDeletedAvgAttributeKeyErrorMessage, SnowflakeRowsDeletedAvgAttributeKeyQueryType, SnowflakeRowsDeletedAvgAttributeKeyWarehouseName, SnowflakeRowsDeletedAvgAttributeKeyDatabaseName, SnowflakeRowsDeletedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsInsertedAvg: SnowflakeRowsInsertedAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsInsertedAvgAttributeKey{SnowflakeRowsInsertedAvgAttributeKeySchemaName, SnowflakeRowsInsertedAvgAttributeKeyExecutionStatus, SnowflakeRowsInsertedAvgAttributeKeyErrorMessage, SnowflakeRowsInsertedAvgAttributeKeyQueryType, SnowflakeRowsInsertedAvgAttributeKeyWarehouseName, SnowflakeRowsInsertedAvgAttributeKeyDatabaseName, SnowflakeRowsInsertedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsProducedAvg: SnowflakeRowsProducedAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsProducedAvgAttributeKey{SnowflakeRowsProducedAvgAttributeKeySchemaName, SnowflakeRowsProducedAvgAttributeKeyExecutionStatus, SnowflakeRowsProducedAvgAttributeKeyErrorMessage, SnowflakeRowsProducedAvgAttributeKeyQueryType, SnowflakeRowsProducedAvgAttributeKeyWarehouseName, SnowflakeRowsProducedAvgAttributeKeyDatabaseName, SnowflakeRowsProducedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsUnloadedAvg: SnowflakeRowsUnloadedAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsUnloadedAvgAttributeKey{SnowflakeRowsUnloadedAvgAttributeKeySchemaName, SnowflakeRowsUnloadedAvgAttributeKeyExecutionStatus, SnowflakeRowsUnloadedAvgAttributeKeyErrorMessage, SnowflakeRowsUnloadedAvgAttributeKeyQueryType, SnowflakeRowsUnloadedAvgAttributeKeyWarehouseName, SnowflakeRowsUnloadedAvgAttributeKeyDatabaseName, SnowflakeRowsUnloadedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsUpdatedAvg: SnowflakeRowsUpdatedAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsUpdatedAvgAttributeKey{SnowflakeRowsUpdatedAvgAttributeKeySchemaName, SnowflakeRowsUpdatedAvgAttributeKeyExecutionStatus, SnowflakeRowsUpdatedAvgAttributeKeyErrorMessage, SnowflakeRowsUpdatedAvgAttributeKeyQueryType, SnowflakeRowsUpdatedAvgAttributeKeyWarehouseName, SnowflakeRowsUpdatedAvgAttributeKeyDatabaseName, SnowflakeRowsUpdatedAvgAttributeKeyWarehouseSize},
+					},
+					SnowflakeSessionIDCount: SnowflakeSessionIDCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeSessionIDCountAttributeKey{SnowflakeSessionIDCountAttributeKeyUserName},
+					},
+					SnowflakeStorageFailsafeBytesTotal: SnowflakeStorageFailsafeBytesTotalConfig{
+						Enabled: false,
+					},
+					SnowflakeStorageStageBytesTotal: SnowflakeStorageStageBytesTotalConfig{
+						Enabled: false,
+					},
+					SnowflakeStorageStorageBytesTotal: SnowflakeStorageStorageBytesTotalConfig{
+						Enabled: false,
+					},
+					SnowflakeTotalElapsedTimeAvg: SnowflakeTotalElapsedTimeAvgConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeTotalElapsedTimeAvgAttributeKey{SnowflakeTotalElapsedTimeAvgAttributeKeySchemaName, SnowflakeTotalElapsedTimeAvgAttributeKeyExecutionStatus, SnowflakeTotalElapsedTimeAvgAttributeKeyErrorMessage, SnowflakeTotalElapsedTimeAvgAttributeKeyQueryType, SnowflakeTotalElapsedTimeAvgAttributeKeyWarehouseName, SnowflakeTotalElapsedTimeAvgAttributeKeyDatabaseName, SnowflakeTotalElapsedTimeAvgAttributeKeyWarehouseSize},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SnowflakeAccountName: ResourceAttributeConfig{Enabled: false},
@@ -116,7 +384,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SnowflakeBillingCloudServiceTotalConfig{}, SnowflakeBillingTotalCreditTotalConfig{}, SnowflakeBillingVirtualWarehouseTotalConfig{}, SnowflakeBillingWarehouseCloudServiceTotalConfig{}, SnowflakeBillingWarehouseTotalCreditTotalConfig{}, SnowflakeBillingWarehouseVirtualWarehouseTotalConfig{}, SnowflakeDatabaseBytesScannedAvgConfig{}, SnowflakeDatabaseQueryCountConfig{}, SnowflakeLoginsTotalConfig{}, SnowflakePipeCreditsUsedTotalConfig{}, SnowflakeQueryBlockedConfig{}, SnowflakeQueryBytesDeletedAvgConfig{}, SnowflakeQueryBytesSpilledLocalAvgConfig{}, SnowflakeQueryBytesSpilledRemoteAvgConfig{}, SnowflakeQueryBytesWrittenAvgConfig{}, SnowflakeQueryCompilationTimeAvgConfig{}, SnowflakeQueryDataScannedCacheAvgConfig{}, SnowflakeQueryExecutedConfig{}, SnowflakeQueryExecutionTimeAvgConfig{}, SnowflakeQueryPartitionsScannedAvgConfig{}, SnowflakeQueryQueuedOverloadConfig{}, SnowflakeQueryQueuedProvisionConfig{}, SnowflakeQueuedOverloadTimeAvgConfig{}, SnowflakeQueuedProvisioningTimeAvgConfig{}, SnowflakeQueuedRepairTimeAvgConfig{}, SnowflakeRowsDeletedAvgConfig{}, SnowflakeRowsInsertedAvgConfig{}, SnowflakeRowsProducedAvgConfig{}, SnowflakeRowsUnloadedAvgConfig{}, SnowflakeRowsUpdatedAvgConfig{}, SnowflakeSessionIDCountConfig{}, SnowflakeStorageFailsafeBytesTotalConfig{}, SnowflakeStorageStageBytesTotalConfig{}, SnowflakeStorageStorageBytesTotalConfig{}, SnowflakeTotalElapsedTimeAvgConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

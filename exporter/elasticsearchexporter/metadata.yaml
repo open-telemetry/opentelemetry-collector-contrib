@@ -30,8 +30,7 @@ telemetry:
   metrics:
     elasticsearch.bulk_requests.count:
       prefix: otelcol.
-      stability:
-        level: alpha
+      stability: alpha
       enabled: true
       description: Count of the completed bulk requests.
       unit: "1"
@@ -41,8 +40,7 @@ telemetry:
       attributes: [outcome, http.response.status_code]
     elasticsearch.bulk_requests.latency:
       prefix: otelcol.
-      stability:
-        level: alpha
+      stability: alpha
       enabled: true
       description: Latency of Elasticsearch bulk operations in seconds.
       unit: s
@@ -52,8 +50,7 @@ telemetry:
       attributes: [outcome, http.response.status_code]
     elasticsearch.docs.processed:
       prefix: otelcol.
-      stability:
-        level: alpha
+      stability: alpha
       enabled: true
       description: Count of documents flushed to Elasticsearch.
       unit: "1"
@@ -63,8 +60,7 @@ telemetry:
       attributes: [outcome, http.response.status_code, failure_store, error.type]
     elasticsearch.docs.received:
       prefix: otelcol.
-      stability:
-        level: alpha
+      stability: alpha
       enabled: true
       description: Count of Elasticsearch documents successfully received to be buffered.
       unit: "1"
@@ -73,8 +69,7 @@ telemetry:
         monotonic: true
     elasticsearch.docs.retried:
       prefix: otelcol.
-      stability:
-        level: alpha
+      stability: alpha
       enabled: true
       description: Count of document retries.
       extended_documentation: Only document level retries are captured, whole bulk request retries are not captured.
@@ -84,8 +79,7 @@ telemetry:
         monotonic: true
     elasticsearch.flushed.bytes:
       prefix: otelcol.
-      stability:
-        level: alpha
+      stability: alpha
       enabled: true
       description: Number of bytes flushed by the indexer.
       unit: By
@@ -94,8 +88,7 @@ telemetry:
         monotonic: true
     elasticsearch.flushed.uncompressed_bytes:
       prefix: otelcol.
-      stability:
-        level: alpha
+      stability: alpha
       enabled: true
       description: Number of uncompressed bytes flushed by the indexer.
       unit: By

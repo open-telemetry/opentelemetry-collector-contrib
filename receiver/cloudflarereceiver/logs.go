@@ -106,10 +106,7 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 		return err
 	}
 
-	l.wg.Add(1)
-	go func() {
-		defer l.wg.Done()
-
+	l.wg.Go(func() {
 		if l.cfg.TLS != nil {
 			l.logger.Debug("Starting ServeTLS",
 				zap.String("address", l.cfg.Endpoint),
@@ -137,7 +134,7 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 		}
-	}()
+	})
 	return nil
 }
 
@@ -154,6 +151,9 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 			return
 		}
 	}
+
+	// Limit request body size
+	req.Body = http.MaxBytesReader(rw, req.Body, l.cfg.MaxRequestBodySize)
 
 	var payload []byte
 	if req.Header.Get("Content-Encoding") == "gzip" {

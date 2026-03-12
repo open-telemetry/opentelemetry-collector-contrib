@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -522,8 +524,7 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	// For each batch, we consume the same trace repeatedly for at least 2x the decision wait time
 	// this ensures that batches are being consumed concurrently with policy evaluation.
 	for _, batch := range batches {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			start := time.Now()
 			// The important thing here is that we are writing as close as
 			// possible to the moment when the policy is evaluated. We can't
@@ -536,8 +537,7 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 					errCh <- err
 				}
 			}
-			wg.Done()
-		}()
+		})
 	}
 	wg.Wait()
 	close(errCh)
@@ -855,6 +855,102 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	assert.Contains(t, sampledTraceIDs, uInt64ToTraceID(2))
 }
 
+func TestDecisionHooks(t *testing.T) {
+	controller := newTestTSPController()
+
+	// Track hook invocations
+	var sampledHookCalls []struct {
+		id pcommon.TraceID
+		td *TraceData
+	}
+	var nonSampledHookCalls []struct {
+		id pcommon.TraceID
+		td *TraceData
+	}
+
+	sampledHook := func(_ context.Context, id pcommon.TraceID, td *TraceData) {
+		sampledHookCalls = append(sampledHookCalls, struct {
+			id pcommon.TraceID
+			td *TraceData
+		}{id: id, td: td})
+	}
+
+	nonSampledHook := func(_ context.Context, id pcommon.TraceID, td *TraceData) {
+		nonSampledHookCalls = append(nonSampledHookCalls, struct {
+			id pcommon.TraceID
+			td *TraceData
+		}{id: id, td: td})
+	}
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "sample-high-latency",
+					Type: Latency,
+					LatencyCfg: LatencyCfg{
+						ThresholdMs: 100,
+					},
+				},
+			},
+		},
+		Options: []Option{
+			withTestController(controller),
+			WithSampledHooks(sampledHook),
+			WithNonSampledHooks(nonSampledHook),
+		},
+	}
+
+	msp := new(consumertest.TracesSink)
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Create a trace that will be sampled (high latency)
+	sampledTraceID := uInt64ToTraceID(1)
+	sampledTrace := simpleTracesWithID(sampledTraceID)
+	sampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-200 * time.Millisecond)))
+	sampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	// Create a trace that will not be sampled (low latency)
+	nonSampledTraceID := uInt64ToTraceID(2)
+	nonSampledTrace := simpleTracesWithID(nonSampledTraceID)
+	nonSampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-50 * time.Millisecond)))
+	nonSampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), sampledTrace))
+	require.NoError(t, p.ConsumeTraces(t.Context(), nonSampledTrace))
+
+	controller.waitForTick() // First tick does nothing
+	controller.waitForTick() // Second tick makes decisions
+
+	// Verify hooks were called
+	require.Len(t, sampledHookCalls, 1, "sampled hook should be called once")
+	require.Len(t, nonSampledHookCalls, 1, "non-sampled hook should be called once")
+
+	// Verify sampled hook data
+	sampledCall := sampledHookCalls[0]
+	assert.Equal(t, sampledTraceID, sampledCall.id)
+	assert.NotNil(t, sampledCall.td)
+	assert.Equal(t, samplingpolicy.Sampled, sampledCall.td.FinalDecision)
+	assert.Equal(t, "sample-high-latency", sampledCall.td.PolicyName)
+	assert.Equal(t, int64(1), sampledCall.td.SpanCount)
+
+	// Verify non-sampled hook data
+	nonSampledCall := nonSampledHookCalls[0]
+	assert.Equal(t, nonSampledTraceID, nonSampledCall.id)
+	assert.NotNil(t, nonSampledCall.td)
+	assert.Equal(t, samplingpolicy.NotSampled, nonSampledCall.td.FinalDecision)
+	assert.Empty(t, nonSampledCall.td.PolicyName, "PolicyName should be empty for not sampled traces")
+	assert.Equal(t, int64(1), nonSampledCall.td.SpanCount)
+}
+
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
 	var spanIDs []pcommon.SpanID
 
@@ -941,6 +1037,7 @@ type syncIDBatcher struct {
 	openBatch idbatcher.Batch
 	batchPipe chan idbatcher.Batch
 	stopped   bool
+	currentID uint64
 }
 
 var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
@@ -954,13 +1051,29 @@ func newSyncIDBatcher() idbatcher.Batcher {
 	}
 }
 
-func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
+func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
 	s.Lock()
+	defer s.Unlock()
 	if s.stopped {
 		panic("cannot add to stopped batcher!")
 	}
 	s.openBatch[id] = struct{}{}
-	s.Unlock()
+	return s.currentID
+}
+
+// MoveToEarlierBatch is a noop for a sync batcher as there is only one pending batch.
+func (s *syncIDBatcher) MoveToEarlierBatch(_ pcommon.TraceID, currentBatch, _ uint64) uint64 {
+	s.Lock()
+	defer s.Unlock()
+	return currentBatch
+}
+
+func (s *syncIDBatcher) RemoveFromBatch(id pcommon.TraceID, batch uint64) {
+	s.Lock()
+	defer s.Unlock()
+	if batch == s.currentID {
+		delete(s.openBatch, id)
+	}
 }
 
 func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) {
@@ -977,6 +1090,7 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	if !s.stopped {
 		s.batchPipe <- s.openBatch
 		s.openBatch = idbatcher.Batch{}
+		s.currentID++
 	}
 	return firstBatch, true
 }
@@ -1161,6 +1275,44 @@ func TestDropLargeTraces(t *testing.T) {
 	allSampledTraces = nextConsumer.AllTraces()
 	// The sink will still contain the original trace.
 	assert.Len(t, allSampledTraces, 2)
+
+	// These traces should not count as dropped too early as we record a separate metric.
+	var md metricdata.ResourceMetrics
+	require.NoError(t, telem.reader.Collect(t.Context(), &md))
+
+	expectedTooEarly := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
+		Description: "Count of traces that needed to be dropped before the configured wait time [Development]",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			IsMonotonic: true,
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints: []metricdata.DataPoint[int64]{
+				{
+					Value: 0,
+				},
+			},
+		},
+	}
+	tooEarly := telem.getMetric(expectedTooEarly.Name, md)
+	metricdatatest.AssertEqual(t, expectedTooEarly, tooEarly, metricdatatest.IgnoreTimestamp())
+
+	expectedTooLarge := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_traces_dropped_too_large",
+		Description: "Count of traces that were dropped because they were too large [Development]",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			IsMonotonic: true,
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints: []metricdata.DataPoint[int64]{
+				{
+					Value: 1,
+				},
+			},
+		},
+	}
+	tooLarge := telem.getMetric(expectedTooLarge.Name, md)
+	metricdatatest.AssertEqual(t, expectedTooLarge, tooLarge, metricdatatest.IgnoreTimestamp())
 }
 
 // TestDeleteQueueCleared verifies that all in memory traces are removed from
