@@ -13,7 +13,6 @@ import (
 	"time"
 
 	gojson "github.com/goccy/go-json"
-	"github.com/iancoleman/strcase"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
@@ -593,7 +592,7 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLo
 	if log.Resource != nil {
 		resourceAttributes.PutStr(gcpResourceTypeField, log.Resource.Type)
 		for k, v := range log.Resource.Labels {
-			shared.PutStr(strcase.ToSnakeWithIgnore(fmt.Sprintf("gcp.label.%s", k), "."), v, resourceAttributes)
+			shared.PutStr(shared.ToSnakeCase(fmt.Sprintf("gcp.label.%s", k), "."), v, resourceAttributes)
 		}
 	}
 
@@ -624,7 +623,7 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLo
 	}
 
 	for k, v := range log.Labels {
-		logRecord.Attributes().PutStr(strcase.ToSnakeWithIgnore(fmt.Sprintf("gcp.label.%v", k), "."), v)
+		logRecord.Attributes().PutStr(shared.ToSnakeCase(fmt.Sprintf("gcp.label.%v", k), "."), v)
 	}
 
 	handleOperationField(logRecord.Attributes(), log.Operation)

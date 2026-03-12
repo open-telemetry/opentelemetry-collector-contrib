@@ -18,6 +18,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "request"
+            default:
+              - "request"
       riak.node.operation.time.mean:
         description: "RiakNodeOperationTimeMeanConfig provides config for the riak.node.operation.time.mean metric."
         type: object
@@ -25,6 +41,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "request"
+            default:
+              - "request"
       riak.node.read_repair.count:
         description: "RiakNodeReadRepairCountConfig provides config for the riak.node.read_repair.count metric."
         type: object
@@ -39,6 +71,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       riak.vnode.operation.count:
         description: "RiakVnodeOperationCountConfig provides config for the riak.vnode.operation.count metric."
         type: object
@@ -46,6 +94,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "request"
+            default:
+              - "request"
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for riak resource attributes.
     type: object

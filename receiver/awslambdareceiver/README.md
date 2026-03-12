@@ -55,7 +55,7 @@ S3 events are handled in the following manner:
 - Download S3 object payload
 - Decode payload using the configured encoding extension
   - Default encoding: Preserve S3 object content as-is
-  - Custom encoding: Use specified encoding extension (for example, `awslogs_encoding` for AWS log formats)
+  - Custom encoding: Use specified encoding extension (for example, `aws_logs_encoding` for AWS log formats)
   - Metrics use `awscloudwatchmetricstreams_encoding` extension by default
 
 ### CloudWatch Logs subscription
@@ -66,7 +66,7 @@ CloudWatch Logs events are handled in the following manner:
 - Parse the CloudWatch Logs message (note - unlike S3 events, the payload is included in the event)
 - Decode payload using the configured encoding extension
   - Default encoding: Parse CloudWatch Logs messages to OpenTelemetry log records
-  - Custom encoding: Use specified encoding extension (for example, `awslogs_encoding` for AWS log formats)
+  - Custom encoding: Use specified encoding extension (for example, `aws_logs_encoding` for AWS log formats)
 
 ### Configurations
 
@@ -92,10 +92,10 @@ Given below are example configurations for various use cases.
 receivers:
   awslambda:
     s3:
-      encoding: awslogs_encoding
+      encoding: aws_logs_encoding
 
 extensions:
-  awslogs_encoding:
+  aws_logs_encoding:
     format: vpcflow
     vpcflow:
       file_format: plain-text
@@ -106,7 +106,7 @@ exporters:
 
 service:
   extensions:
-    - awslogs_encoding
+    - aws_logs_encoding
   pipelines:
     logs:
       receivers: [awslambda]
@@ -114,7 +114,7 @@ service:
 ```
 
 In this example, the `awslambdareceiver` is expected to be triggered when a VPC flow log is created at S3 bucket.
-The receiver retrieves the log file from S3 and decodes it using the `awslogs_encoding` extension with the `vpcflow` format.
+The receiver retrieves the log file from S3 and decodes it using the `aws_logs_encoding` extension with the `vpcflow` format.
 Parsed logs are forwarded to an OTLP listener via the `otlp_http` exporter.
 
 ### Example 2: ELB Access Logs from S3
@@ -123,10 +123,10 @@ Parsed logs are forwarded to an OTLP listener via the `otlp_http` exporter.
 receivers:
   awslambda:
     s3:
-      encoding: awslogs_encoding
+      encoding: aws_logs_encoding
 
 extensions:
-  awslogs_encoding:
+  aws_logs_encoding:
     format: elbaccess
     elbaccess:
       file_format: plain-text
@@ -137,7 +137,7 @@ exporters:
 
 service:
   extensions:
-    - awslogs_encoding
+    - aws_logs_encoding
   pipelines:
     logs:
       receivers: [awslambda]
@@ -233,7 +233,7 @@ To enable this feature, set the `failure_bucket_arn` configuration to the ARN of
 receivers:
   awslambda:
     s3:
-      encoding: awslogs_encoding
+      encoding: aws_logs_encoding
     failure_bucket_arn: "arn:aws:s3:::example"
 ```
 
