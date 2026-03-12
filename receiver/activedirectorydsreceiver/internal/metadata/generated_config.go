@@ -4,23 +4,27 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// ActiveDirectoryDsBindRateAttributeKey specifies the key of an attribute for the active_directory.ds.bind.rate metric.
+type ActiveDirectoryDsBindRateAttributeKey string
+
+const (
+	ActiveDirectoryDsBindRateAttributeKeyBindType ActiveDirectoryDsBindRateAttributeKey = "type"
+)
+
+// ActiveDirectoryDsBindRateConfig provides config for the active_directory.ds.bind.rate metric.
+type ActiveDirectoryDsBindRateConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []string `mapstructure:"attributes"`
-	definedAttributes   []string
-	requiredAttributes  []string
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ActiveDirectoryDsBindRateAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ActiveDirectoryDsBindRateConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,201 +33,660 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ActiveDirectoryDsBindRateConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
-		if !slices.Contains(ms.definedAttributes, val) {
-			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		switch val {
+		case ActiveDirectoryDsBindRateAttributeKeyBindType:
+		default:
+			return fmt.Errorf("metric active_directory.ds.bind.rate doesn't have an attribute %v, valid attributes: [type]", val)
 		}
 	}
 
-	for _, val := range ms.requiredAttributes {
-		if !slices.Contains(ms.EnabledAttributes, val) {
-			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-		}
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
-	if ms.AggregationStrategy != AggregationStrategySum &&
-		ms.AggregationStrategy != AggregationStrategyAvg &&
-		ms.AggregationStrategy != AggregationStrategyMin &&
-		ms.AggregationStrategy != AggregationStrategyMax {
-		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	return nil
+}
+
+// ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig provides config for the active_directory.ds.ldap.bind.last_successful.time metric.
+type ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+// ActiveDirectoryDsLdapBindRateConfig provides config for the active_directory.ds.ldap.bind.rate metric.
+type ActiveDirectoryDsLdapBindRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsLdapBindRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ActiveDirectoryDsLdapClientSessionCountConfig provides config for the active_directory.ds.ldap.client.session.count metric.
+type ActiveDirectoryDsLdapClientSessionCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsLdapClientSessionCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ActiveDirectoryDsLdapSearchRateConfig provides config for the active_directory.ds.ldap.search.rate metric.
+type ActiveDirectoryDsLdapSearchRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsLdapSearchRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ActiveDirectoryDsNameCacheHitRateConfig provides config for the active_directory.ds.name_cache.hit_rate metric.
+type ActiveDirectoryDsNameCacheHitRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsNameCacheHitRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ActiveDirectoryDsNotificationQueuedConfig provides config for the active_directory.ds.notification.queued metric.
+type ActiveDirectoryDsNotificationQueuedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsNotificationQueuedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ActiveDirectoryDsOperationRateAttributeKey specifies the key of an attribute for the active_directory.ds.operation.rate metric.
+type ActiveDirectoryDsOperationRateAttributeKey string
+
+const (
+	ActiveDirectoryDsOperationRateAttributeKeyOperationType ActiveDirectoryDsOperationRateAttributeKey = "type"
+)
+
+// ActiveDirectoryDsOperationRateConfig provides config for the active_directory.ds.operation.rate metric.
+type ActiveDirectoryDsOperationRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ActiveDirectoryDsOperationRateAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ActiveDirectoryDsOperationRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ActiveDirectoryDsOperationRateConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ActiveDirectoryDsOperationRateAttributeKeyOperationType:
+		default:
+			return fmt.Errorf("metric active_directory.ds.operation.rate doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ActiveDirectoryDsReplicationNetworkIoAttributeKey specifies the key of an attribute for the active_directory.ds.replication.network.io metric.
+type ActiveDirectoryDsReplicationNetworkIoAttributeKey string
+
+const (
+	ActiveDirectoryDsReplicationNetworkIoAttributeKeyDirection       ActiveDirectoryDsReplicationNetworkIoAttributeKey = "direction"
+	ActiveDirectoryDsReplicationNetworkIoAttributeKeyNetworkDataType ActiveDirectoryDsReplicationNetworkIoAttributeKey = "type"
+)
+
+// ActiveDirectoryDsReplicationNetworkIoConfig provides config for the active_directory.ds.replication.network.io metric.
+type ActiveDirectoryDsReplicationNetworkIoConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ActiveDirectoryDsReplicationNetworkIoAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ActiveDirectoryDsReplicationNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ActiveDirectoryDsReplicationNetworkIoConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ActiveDirectoryDsReplicationNetworkIoAttributeKeyDirection, ActiveDirectoryDsReplicationNetworkIoAttributeKeyNetworkDataType:
+		default:
+			return fmt.Errorf("metric active_directory.ds.replication.network.io doesn't have an attribute %v, valid attributes: [direction, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ActiveDirectoryDsReplicationObjectRateAttributeKey specifies the key of an attribute for the active_directory.ds.replication.object.rate metric.
+type ActiveDirectoryDsReplicationObjectRateAttributeKey string
+
+const (
+	ActiveDirectoryDsReplicationObjectRateAttributeKeyDirection ActiveDirectoryDsReplicationObjectRateAttributeKey = "direction"
+)
+
+// ActiveDirectoryDsReplicationObjectRateConfig provides config for the active_directory.ds.replication.object.rate metric.
+type ActiveDirectoryDsReplicationObjectRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ActiveDirectoryDsReplicationObjectRateAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ActiveDirectoryDsReplicationObjectRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ActiveDirectoryDsReplicationObjectRateConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ActiveDirectoryDsReplicationObjectRateAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric active_directory.ds.replication.object.rate doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ActiveDirectoryDsReplicationOperationPendingConfig provides config for the active_directory.ds.replication.operation.pending metric.
+type ActiveDirectoryDsReplicationOperationPendingConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsReplicationOperationPendingConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ActiveDirectoryDsReplicationPropertyRateAttributeKey specifies the key of an attribute for the active_directory.ds.replication.property.rate metric.
+type ActiveDirectoryDsReplicationPropertyRateAttributeKey string
+
+const (
+	ActiveDirectoryDsReplicationPropertyRateAttributeKeyDirection ActiveDirectoryDsReplicationPropertyRateAttributeKey = "direction"
+)
+
+// ActiveDirectoryDsReplicationPropertyRateConfig provides config for the active_directory.ds.replication.property.rate metric.
+type ActiveDirectoryDsReplicationPropertyRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ActiveDirectoryDsReplicationPropertyRateAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ActiveDirectoryDsReplicationPropertyRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ActiveDirectoryDsReplicationPropertyRateConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ActiveDirectoryDsReplicationPropertyRateAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric active_directory.ds.replication.property.rate doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ActiveDirectoryDsReplicationSyncObjectPendingConfig provides config for the active_directory.ds.replication.sync.object.pending metric.
+type ActiveDirectoryDsReplicationSyncObjectPendingConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsReplicationSyncObjectPendingConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ActiveDirectoryDsReplicationSyncRequestCountAttributeKey specifies the key of an attribute for the active_directory.ds.replication.sync.request.count metric.
+type ActiveDirectoryDsReplicationSyncRequestCountAttributeKey string
+
+const (
+	ActiveDirectoryDsReplicationSyncRequestCountAttributeKeySyncResult ActiveDirectoryDsReplicationSyncRequestCountAttributeKey = "result"
+)
+
+// ActiveDirectoryDsReplicationSyncRequestCountConfig provides config for the active_directory.ds.replication.sync.request.count metric.
+type ActiveDirectoryDsReplicationSyncRequestCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ActiveDirectoryDsReplicationSyncRequestCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ActiveDirectoryDsReplicationSyncRequestCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ActiveDirectoryDsReplicationSyncRequestCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ActiveDirectoryDsReplicationSyncRequestCountAttributeKeySyncResult:
+		default:
+			return fmt.Errorf("metric active_directory.ds.replication.sync.request.count doesn't have an attribute %v, valid attributes: [result]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ActiveDirectoryDsReplicationValueRateAttributeKey specifies the key of an attribute for the active_directory.ds.replication.value.rate metric.
+type ActiveDirectoryDsReplicationValueRateAttributeKey string
+
+const (
+	ActiveDirectoryDsReplicationValueRateAttributeKeyDirection ActiveDirectoryDsReplicationValueRateAttributeKey = "direction"
+	ActiveDirectoryDsReplicationValueRateAttributeKeyValueType ActiveDirectoryDsReplicationValueRateAttributeKey = "type"
+)
+
+// ActiveDirectoryDsReplicationValueRateConfig provides config for the active_directory.ds.replication.value.rate metric.
+type ActiveDirectoryDsReplicationValueRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ActiveDirectoryDsReplicationValueRateAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ActiveDirectoryDsReplicationValueRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ActiveDirectoryDsReplicationValueRateConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ActiveDirectoryDsReplicationValueRateAttributeKeyDirection, ActiveDirectoryDsReplicationValueRateAttributeKeyValueType:
+		default:
+			return fmt.Errorf("metric active_directory.ds.replication.value.rate doesn't have an attribute %v, valid attributes: [direction, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig provides config for the active_directory.ds.security_descriptor_propagations_event.queued metric.
+type ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ActiveDirectoryDsSuboperationRateAttributeKey specifies the key of an attribute for the active_directory.ds.suboperation.rate metric.
+type ActiveDirectoryDsSuboperationRateAttributeKey string
+
+const (
+	ActiveDirectoryDsSuboperationRateAttributeKeySuboperationType ActiveDirectoryDsSuboperationRateAttributeKey = "type"
+)
+
+// ActiveDirectoryDsSuboperationRateConfig provides config for the active_directory.ds.suboperation.rate metric.
+type ActiveDirectoryDsSuboperationRateConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ActiveDirectoryDsSuboperationRateAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ActiveDirectoryDsSuboperationRateConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ActiveDirectoryDsSuboperationRateConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ActiveDirectoryDsSuboperationRateAttributeKeySuboperationType:
+		default:
+			return fmt.Errorf("metric active_directory.ds.suboperation.rate doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ActiveDirectoryDsThreadCountConfig provides config for the active_directory.ds.thread.count metric.
+type ActiveDirectoryDsThreadCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ActiveDirectoryDsThreadCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsConfig provides config for active_directory_ds metrics.
 type MetricsConfig struct {
-	ActiveDirectoryDsBindRate                                  MetricConfig `mapstructure:"active_directory.ds.bind.rate"`
-	ActiveDirectoryDsLdapBindLastSuccessfulTime                MetricConfig `mapstructure:"active_directory.ds.ldap.bind.last_successful.time"`
-	ActiveDirectoryDsLdapBindRate                              MetricConfig `mapstructure:"active_directory.ds.ldap.bind.rate"`
-	ActiveDirectoryDsLdapClientSessionCount                    MetricConfig `mapstructure:"active_directory.ds.ldap.client.session.count"`
-	ActiveDirectoryDsLdapSearchRate                            MetricConfig `mapstructure:"active_directory.ds.ldap.search.rate"`
-	ActiveDirectoryDsNameCacheHitRate                          MetricConfig `mapstructure:"active_directory.ds.name_cache.hit_rate"`
-	ActiveDirectoryDsNotificationQueued                        MetricConfig `mapstructure:"active_directory.ds.notification.queued"`
-	ActiveDirectoryDsOperationRate                             MetricConfig `mapstructure:"active_directory.ds.operation.rate"`
-	ActiveDirectoryDsReplicationNetworkIo                      MetricConfig `mapstructure:"active_directory.ds.replication.network.io"`
-	ActiveDirectoryDsReplicationObjectRate                     MetricConfig `mapstructure:"active_directory.ds.replication.object.rate"`
-	ActiveDirectoryDsReplicationOperationPending               MetricConfig `mapstructure:"active_directory.ds.replication.operation.pending"`
-	ActiveDirectoryDsReplicationPropertyRate                   MetricConfig `mapstructure:"active_directory.ds.replication.property.rate"`
-	ActiveDirectoryDsReplicationSyncObjectPending              MetricConfig `mapstructure:"active_directory.ds.replication.sync.object.pending"`
-	ActiveDirectoryDsReplicationSyncRequestCount               MetricConfig `mapstructure:"active_directory.ds.replication.sync.request.count"`
-	ActiveDirectoryDsReplicationValueRate                      MetricConfig `mapstructure:"active_directory.ds.replication.value.rate"`
-	ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued MetricConfig `mapstructure:"active_directory.ds.security_descriptor_propagations_event.queued"`
-	ActiveDirectoryDsSuboperationRate                          MetricConfig `mapstructure:"active_directory.ds.suboperation.rate"`
-	ActiveDirectoryDsThreadCount                               MetricConfig `mapstructure:"active_directory.ds.thread.count"`
+	ActiveDirectoryDsBindRate                                  ActiveDirectoryDsBindRateConfig                                  `mapstructure:"active_directory.ds.bind.rate"`
+	ActiveDirectoryDsLdapBindLastSuccessfulTime                ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig                `mapstructure:"active_directory.ds.ldap.bind.last_successful.time"`
+	ActiveDirectoryDsLdapBindRate                              ActiveDirectoryDsLdapBindRateConfig                              `mapstructure:"active_directory.ds.ldap.bind.rate"`
+	ActiveDirectoryDsLdapClientSessionCount                    ActiveDirectoryDsLdapClientSessionCountConfig                    `mapstructure:"active_directory.ds.ldap.client.session.count"`
+	ActiveDirectoryDsLdapSearchRate                            ActiveDirectoryDsLdapSearchRateConfig                            `mapstructure:"active_directory.ds.ldap.search.rate"`
+	ActiveDirectoryDsNameCacheHitRate                          ActiveDirectoryDsNameCacheHitRateConfig                          `mapstructure:"active_directory.ds.name_cache.hit_rate"`
+	ActiveDirectoryDsNotificationQueued                        ActiveDirectoryDsNotificationQueuedConfig                        `mapstructure:"active_directory.ds.notification.queued"`
+	ActiveDirectoryDsOperationRate                             ActiveDirectoryDsOperationRateConfig                             `mapstructure:"active_directory.ds.operation.rate"`
+	ActiveDirectoryDsReplicationNetworkIo                      ActiveDirectoryDsReplicationNetworkIoConfig                      `mapstructure:"active_directory.ds.replication.network.io"`
+	ActiveDirectoryDsReplicationObjectRate                     ActiveDirectoryDsReplicationObjectRateConfig                     `mapstructure:"active_directory.ds.replication.object.rate"`
+	ActiveDirectoryDsReplicationOperationPending               ActiveDirectoryDsReplicationOperationPendingConfig               `mapstructure:"active_directory.ds.replication.operation.pending"`
+	ActiveDirectoryDsReplicationPropertyRate                   ActiveDirectoryDsReplicationPropertyRateConfig                   `mapstructure:"active_directory.ds.replication.property.rate"`
+	ActiveDirectoryDsReplicationSyncObjectPending              ActiveDirectoryDsReplicationSyncObjectPendingConfig              `mapstructure:"active_directory.ds.replication.sync.object.pending"`
+	ActiveDirectoryDsReplicationSyncRequestCount               ActiveDirectoryDsReplicationSyncRequestCountConfig               `mapstructure:"active_directory.ds.replication.sync.request.count"`
+	ActiveDirectoryDsReplicationValueRate                      ActiveDirectoryDsReplicationValueRateConfig                      `mapstructure:"active_directory.ds.replication.value.rate"`
+	ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig `mapstructure:"active_directory.ds.security_descriptor_propagations_event.queued"`
+	ActiveDirectoryDsSuboperationRate                          ActiveDirectoryDsSuboperationRateConfig                          `mapstructure:"active_directory.ds.suboperation.rate"`
+	ActiveDirectoryDsThreadCount                               ActiveDirectoryDsThreadCountConfig                               `mapstructure:"active_directory.ds.thread.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		ActiveDirectoryDsBindRate: MetricConfig{
-			Enabled: true,
-
+		ActiveDirectoryDsBindRate: ActiveDirectoryDsBindRateConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"type"},
-			EnabledAttributes:   []string{"type"},
+			EnabledAttributes:   []ActiveDirectoryDsBindRateAttributeKey{ActiveDirectoryDsBindRateAttributeKeyBindType},
 		},
-		ActiveDirectoryDsLdapBindLastSuccessfulTime: MetricConfig{
+		ActiveDirectoryDsLdapBindLastSuccessfulTime: ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig{
 			Enabled: true,
-
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
 		},
-		ActiveDirectoryDsLdapBindRate: MetricConfig{
+		ActiveDirectoryDsLdapBindRate: ActiveDirectoryDsLdapBindRateConfig{
 			Enabled: true,
-
+		},
+		ActiveDirectoryDsLdapClientSessionCount: ActiveDirectoryDsLdapClientSessionCountConfig{
+			Enabled: true,
+		},
+		ActiveDirectoryDsLdapSearchRate: ActiveDirectoryDsLdapSearchRateConfig{
+			Enabled: true,
+		},
+		ActiveDirectoryDsNameCacheHitRate: ActiveDirectoryDsNameCacheHitRateConfig{
+			Enabled: true,
+		},
+		ActiveDirectoryDsNotificationQueued: ActiveDirectoryDsNotificationQueuedConfig{
+			Enabled: true,
+		},
+		ActiveDirectoryDsOperationRate: ActiveDirectoryDsOperationRateConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
+			EnabledAttributes:   []ActiveDirectoryDsOperationRateAttributeKey{ActiveDirectoryDsOperationRateAttributeKeyOperationType},
 		},
-		ActiveDirectoryDsLdapClientSessionCount: MetricConfig{
-			Enabled: true,
-
+		ActiveDirectoryDsReplicationNetworkIo: ActiveDirectoryDsReplicationNetworkIoConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
+			EnabledAttributes:   []ActiveDirectoryDsReplicationNetworkIoAttributeKey{ActiveDirectoryDsReplicationNetworkIoAttributeKeyDirection, ActiveDirectoryDsReplicationNetworkIoAttributeKeyNetworkDataType},
 		},
-		ActiveDirectoryDsLdapSearchRate: MetricConfig{
-			Enabled: true,
-
+		ActiveDirectoryDsReplicationObjectRate: ActiveDirectoryDsReplicationObjectRateConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
+			EnabledAttributes:   []ActiveDirectoryDsReplicationObjectRateAttributeKey{ActiveDirectoryDsReplicationObjectRateAttributeKeyDirection},
 		},
-		ActiveDirectoryDsNameCacheHitRate: MetricConfig{
+		ActiveDirectoryDsReplicationOperationPending: ActiveDirectoryDsReplicationOperationPendingConfig{
 			Enabled: true,
-
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
 		},
-		ActiveDirectoryDsNotificationQueued: MetricConfig{
-			Enabled: true,
-
+		ActiveDirectoryDsReplicationPropertyRate: ActiveDirectoryDsReplicationPropertyRateConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
+			EnabledAttributes:   []ActiveDirectoryDsReplicationPropertyRateAttributeKey{ActiveDirectoryDsReplicationPropertyRateAttributeKeyDirection},
 		},
-		ActiveDirectoryDsOperationRate: MetricConfig{
+		ActiveDirectoryDsReplicationSyncObjectPending: ActiveDirectoryDsReplicationSyncObjectPendingConfig{
 			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"type"},
-			EnabledAttributes:   []string{"type"},
 		},
-		ActiveDirectoryDsReplicationNetworkIo: MetricConfig{
-			Enabled: true,
-
+		ActiveDirectoryDsReplicationSyncRequestCount: ActiveDirectoryDsReplicationSyncRequestCountConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"direction", "type"},
-			EnabledAttributes:   []string{"direction", "type"},
+			EnabledAttributes:   []ActiveDirectoryDsReplicationSyncRequestCountAttributeKey{ActiveDirectoryDsReplicationSyncRequestCountAttributeKeySyncResult},
 		},
-		ActiveDirectoryDsReplicationObjectRate: MetricConfig{
-			Enabled: true,
-
+		ActiveDirectoryDsReplicationValueRate: ActiveDirectoryDsReplicationValueRateConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"direction"},
-			EnabledAttributes:   []string{"direction"},
+			EnabledAttributes:   []ActiveDirectoryDsReplicationValueRateAttributeKey{ActiveDirectoryDsReplicationValueRateAttributeKeyDirection, ActiveDirectoryDsReplicationValueRateAttributeKeyValueType},
 		},
-		ActiveDirectoryDsReplicationOperationPending: MetricConfig{
+		ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig{
 			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
 		},
-		ActiveDirectoryDsReplicationPropertyRate: MetricConfig{
-			Enabled: true,
-
+		ActiveDirectoryDsSuboperationRate: ActiveDirectoryDsSuboperationRateConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"direction"},
-			EnabledAttributes:   []string{"direction"},
+			EnabledAttributes:   []ActiveDirectoryDsSuboperationRateAttributeKey{ActiveDirectoryDsSuboperationRateAttributeKeySuboperationType},
 		},
-		ActiveDirectoryDsReplicationSyncObjectPending: MetricConfig{
+		ActiveDirectoryDsThreadCount: ActiveDirectoryDsThreadCountConfig{
 			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
-		},
-		ActiveDirectoryDsReplicationSyncRequestCount: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"result"},
-			EnabledAttributes:   []string{"result"},
-		},
-		ActiveDirectoryDsReplicationValueRate: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"direction", "type"},
-			EnabledAttributes:   []string{"direction", "type"},
-		},
-		ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
-		},
-		ActiveDirectoryDsSuboperationRate: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"type"},
-			EnabledAttributes:   []string{"type"},
-		},
-		ActiveDirectoryDsThreadCount: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
 		},
 	}
 }

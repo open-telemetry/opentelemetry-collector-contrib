@@ -58,7 +58,31 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricsBuilderConfig{}), cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
+			if diff := cmp.Diff(
+				tt.expected,
+				cfg,
+				cmpopts.IgnoreUnexported(
+					metadata.MetricsBuilderConfig{},
+					metadata.ActiveDirectoryDsBindRateConfig{},
+					metadata.ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig{},
+					metadata.ActiveDirectoryDsLdapBindRateConfig{},
+					metadata.ActiveDirectoryDsLdapClientSessionCountConfig{},
+					metadata.ActiveDirectoryDsLdapSearchRateConfig{},
+					metadata.ActiveDirectoryDsNameCacheHitRateConfig{},
+					metadata.ActiveDirectoryDsNotificationQueuedConfig{},
+					metadata.ActiveDirectoryDsOperationRateConfig{},
+					metadata.ActiveDirectoryDsReplicationNetworkIoConfig{},
+					metadata.ActiveDirectoryDsReplicationObjectRateConfig{},
+					metadata.ActiveDirectoryDsReplicationOperationPendingConfig{},
+					metadata.ActiveDirectoryDsReplicationPropertyRateConfig{},
+					metadata.ActiveDirectoryDsReplicationSyncObjectPendingConfig{},
+					metadata.ActiveDirectoryDsReplicationSyncRequestCountConfig{},
+					metadata.ActiveDirectoryDsReplicationValueRateConfig{},
+					metadata.ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig{},
+					metadata.ActiveDirectoryDsSuboperationRateConfig{},
+					metadata.ActiveDirectoryDsThreadCountConfig{},
+				),
+			); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

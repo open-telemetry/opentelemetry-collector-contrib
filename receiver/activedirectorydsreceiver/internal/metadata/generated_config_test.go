@@ -26,95 +26,75 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ActiveDirectoryDsBindRate: MetricConfig{
+					ActiveDirectoryDsBindRate: ActiveDirectoryDsBindRateConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []ActiveDirectoryDsBindRateAttributeKey{ActiveDirectoryDsBindRateAttributeKeyBindType},
 					},
-					ActiveDirectoryDsLdapBindLastSuccessfulTime: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsLdapBindLastSuccessfulTime: ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig{
+						Enabled: true,
 					},
-					ActiveDirectoryDsLdapBindRate: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsLdapBindRate: ActiveDirectoryDsLdapBindRateConfig{
+						Enabled: true,
 					},
-					ActiveDirectoryDsLdapClientSessionCount: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsLdapClientSessionCount: ActiveDirectoryDsLdapClientSessionCountConfig{
+						Enabled: true,
 					},
-					ActiveDirectoryDsLdapSearchRate: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsLdapSearchRate: ActiveDirectoryDsLdapSearchRateConfig{
+						Enabled: true,
 					},
-					ActiveDirectoryDsNameCacheHitRate: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsNameCacheHitRate: ActiveDirectoryDsNameCacheHitRateConfig{
+						Enabled: true,
 					},
-					ActiveDirectoryDsNotificationQueued: MetricConfig{
+					ActiveDirectoryDsNotificationQueued: ActiveDirectoryDsNotificationQueuedConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsOperationRate: ActiveDirectoryDsOperationRateConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []ActiveDirectoryDsOperationRateAttributeKey{ActiveDirectoryDsOperationRateAttributeKeyOperationType},
 					},
-					ActiveDirectoryDsOperationRate: MetricConfig{
+					ActiveDirectoryDsReplicationNetworkIo: ActiveDirectoryDsReplicationNetworkIoConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationNetworkIoAttributeKey{ActiveDirectoryDsReplicationNetworkIoAttributeKeyDirection, ActiveDirectoryDsReplicationNetworkIoAttributeKeyNetworkDataType},
 					},
-					ActiveDirectoryDsReplicationNetworkIo: MetricConfig{
+					ActiveDirectoryDsReplicationObjectRate: ActiveDirectoryDsReplicationObjectRateConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction", "type"},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationObjectRateAttributeKey{ActiveDirectoryDsReplicationObjectRateAttributeKeyDirection},
 					},
-					ActiveDirectoryDsReplicationObjectRate: MetricConfig{
+					ActiveDirectoryDsReplicationOperationPending: ActiveDirectoryDsReplicationOperationPendingConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsReplicationPropertyRate: ActiveDirectoryDsReplicationPropertyRateConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction"},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationPropertyRateAttributeKey{ActiveDirectoryDsReplicationPropertyRateAttributeKeyDirection},
 					},
-					ActiveDirectoryDsReplicationOperationPending: MetricConfig{
+					ActiveDirectoryDsReplicationSyncObjectPending: ActiveDirectoryDsReplicationSyncObjectPendingConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsReplicationSyncRequestCount: ActiveDirectoryDsReplicationSyncRequestCountConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationSyncRequestCountAttributeKey{ActiveDirectoryDsReplicationSyncRequestCountAttributeKeySyncResult},
 					},
-					ActiveDirectoryDsReplicationPropertyRate: MetricConfig{
+					ActiveDirectoryDsReplicationValueRate: ActiveDirectoryDsReplicationValueRateConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction"},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationValueRateAttributeKey{ActiveDirectoryDsReplicationValueRateAttributeKeyDirection, ActiveDirectoryDsReplicationValueRateAttributeKeyValueType},
 					},
-					ActiveDirectoryDsReplicationSyncObjectPending: MetricConfig{
+					ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig{
+						Enabled: true,
+					},
+					ActiveDirectoryDsSuboperationRate: ActiveDirectoryDsSuboperationRateConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []ActiveDirectoryDsSuboperationRateAttributeKey{ActiveDirectoryDsSuboperationRateAttributeKeySuboperationType},
 					},
-					ActiveDirectoryDsReplicationSyncRequestCount: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"result"},
-					},
-					ActiveDirectoryDsReplicationValueRate: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction", "type"},
-					},
-					ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					ActiveDirectoryDsSuboperationRate: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
-					},
-					ActiveDirectoryDsThreadCount: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsThreadCount: ActiveDirectoryDsThreadCountConfig{
+						Enabled: true,
 					},
 				},
 			},
@@ -123,95 +103,75 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ActiveDirectoryDsBindRate: MetricConfig{
+					ActiveDirectoryDsBindRate: ActiveDirectoryDsBindRateConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []ActiveDirectoryDsBindRateAttributeKey{ActiveDirectoryDsBindRateAttributeKeyBindType},
 					},
-					ActiveDirectoryDsLdapBindLastSuccessfulTime: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsLdapBindLastSuccessfulTime: ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig{
+						Enabled: false,
 					},
-					ActiveDirectoryDsLdapBindRate: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsLdapBindRate: ActiveDirectoryDsLdapBindRateConfig{
+						Enabled: false,
 					},
-					ActiveDirectoryDsLdapClientSessionCount: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsLdapClientSessionCount: ActiveDirectoryDsLdapClientSessionCountConfig{
+						Enabled: false,
 					},
-					ActiveDirectoryDsLdapSearchRate: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsLdapSearchRate: ActiveDirectoryDsLdapSearchRateConfig{
+						Enabled: false,
 					},
-					ActiveDirectoryDsNameCacheHitRate: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsNameCacheHitRate: ActiveDirectoryDsNameCacheHitRateConfig{
+						Enabled: false,
 					},
-					ActiveDirectoryDsNotificationQueued: MetricConfig{
+					ActiveDirectoryDsNotificationQueued: ActiveDirectoryDsNotificationQueuedConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsOperationRate: ActiveDirectoryDsOperationRateConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []ActiveDirectoryDsOperationRateAttributeKey{ActiveDirectoryDsOperationRateAttributeKeyOperationType},
 					},
-					ActiveDirectoryDsOperationRate: MetricConfig{
+					ActiveDirectoryDsReplicationNetworkIo: ActiveDirectoryDsReplicationNetworkIoConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationNetworkIoAttributeKey{ActiveDirectoryDsReplicationNetworkIoAttributeKeyDirection, ActiveDirectoryDsReplicationNetworkIoAttributeKeyNetworkDataType},
 					},
-					ActiveDirectoryDsReplicationNetworkIo: MetricConfig{
+					ActiveDirectoryDsReplicationObjectRate: ActiveDirectoryDsReplicationObjectRateConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction", "type"},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationObjectRateAttributeKey{ActiveDirectoryDsReplicationObjectRateAttributeKeyDirection},
 					},
-					ActiveDirectoryDsReplicationObjectRate: MetricConfig{
+					ActiveDirectoryDsReplicationOperationPending: ActiveDirectoryDsReplicationOperationPendingConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsReplicationPropertyRate: ActiveDirectoryDsReplicationPropertyRateConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction"},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationPropertyRateAttributeKey{ActiveDirectoryDsReplicationPropertyRateAttributeKeyDirection},
 					},
-					ActiveDirectoryDsReplicationOperationPending: MetricConfig{
+					ActiveDirectoryDsReplicationSyncObjectPending: ActiveDirectoryDsReplicationSyncObjectPendingConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsReplicationSyncRequestCount: ActiveDirectoryDsReplicationSyncRequestCountConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationSyncRequestCountAttributeKey{ActiveDirectoryDsReplicationSyncRequestCountAttributeKeySyncResult},
 					},
-					ActiveDirectoryDsReplicationPropertyRate: MetricConfig{
+					ActiveDirectoryDsReplicationValueRate: ActiveDirectoryDsReplicationValueRateConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction"},
+						EnabledAttributes:   []ActiveDirectoryDsReplicationValueRateAttributeKey{ActiveDirectoryDsReplicationValueRateAttributeKeyDirection, ActiveDirectoryDsReplicationValueRateAttributeKeyValueType},
 					},
-					ActiveDirectoryDsReplicationSyncObjectPending: MetricConfig{
+					ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig{
+						Enabled: false,
+					},
+					ActiveDirectoryDsSuboperationRate: ActiveDirectoryDsSuboperationRateConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []ActiveDirectoryDsSuboperationRateAttributeKey{ActiveDirectoryDsSuboperationRateAttributeKeySuboperationType},
 					},
-					ActiveDirectoryDsReplicationSyncRequestCount: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"result"},
-					},
-					ActiveDirectoryDsReplicationValueRate: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction", "type"},
-					},
-					ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					ActiveDirectoryDsSuboperationRate: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
-					},
-					ActiveDirectoryDsThreadCount: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					ActiveDirectoryDsThreadCount: ActiveDirectoryDsThreadCountConfig{
+						Enabled: false,
 					},
 				},
 			},
@@ -220,7 +180,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ActiveDirectoryDsBindRateConfig{}, ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig{}, ActiveDirectoryDsLdapBindRateConfig{}, ActiveDirectoryDsLdapClientSessionCountConfig{}, ActiveDirectoryDsLdapSearchRateConfig{}, ActiveDirectoryDsNameCacheHitRateConfig{}, ActiveDirectoryDsNotificationQueuedConfig{}, ActiveDirectoryDsOperationRateConfig{}, ActiveDirectoryDsReplicationNetworkIoConfig{}, ActiveDirectoryDsReplicationObjectRateConfig{}, ActiveDirectoryDsReplicationOperationPendingConfig{}, ActiveDirectoryDsReplicationPropertyRateConfig{}, ActiveDirectoryDsReplicationSyncObjectPendingConfig{}, ActiveDirectoryDsReplicationSyncRequestCountConfig{}, ActiveDirectoryDsReplicationValueRateConfig{}, ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig{}, ActiveDirectoryDsSuboperationRateConfig{}, ActiveDirectoryDsThreadCountConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

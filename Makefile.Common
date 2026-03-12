@@ -74,7 +74,7 @@ GOIMPORTS           = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/tools/cmd/g
 PORTO               = $(subst \,/,$(shell $(GO_TOOL) -n github.com/jcchavezs/porto/cmd/porto))
 CHECKFILE           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/checkfile))
 CROSSLINK           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/crosslink))
-GOJUNIT             = $(subst \,/,$(shell $(GO_TOOL) -n github.com/jstemmer/go-junit-report))
+GOJUNIT             = $(subst \,/,$(shell $(GO_TOOL) -n github.com/jstemmer/go-junit-report/v2))
 BUILDER             = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/builder))
 GOFUMPT             = $(subst \,/,$(shell $(GO_TOOL) -n mvdan.cc/gofumpt))
 GOVULNCHECK         = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/vuln/cmd/govulncheck))
@@ -95,6 +95,10 @@ ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
 
 # All source code and .sh files (evaluated when used)
 ALL_SRC_AND_SHELL_CMD := find . -type f \( \( -name "*.go" -o -name "*.sh" \) -and \( -not -path '*/third_party/*' \) \) | sort
+
+no_targets__:
+help:
+	sh -c "$(MAKE) -p no_targets__ | awk -F':' '/^[a-zA-Z0-9][^\$$#\/\\t=]*:([^=]|$$)/ {split(\$$1,A,/ /);for(i in A)print A[i]}' | grep -v '__\$$' | sort"
 
 pwd:
 	@pwd

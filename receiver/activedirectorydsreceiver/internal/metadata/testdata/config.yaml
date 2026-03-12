@@ -6,22 +6,16 @@ all_set:
       attributes: ["type"]
     active_directory.ds.ldap.bind.last_successful.time:
       enabled: true
-      attributes: []
     active_directory.ds.ldap.bind.rate:
       enabled: true
-      attributes: []
     active_directory.ds.ldap.client.session.count:
       enabled: true
-      attributes: []
     active_directory.ds.ldap.search.rate:
       enabled: true
-      attributes: []
     active_directory.ds.name_cache.hit_rate:
       enabled: true
-      attributes: []
     active_directory.ds.notification.queued:
       enabled: true
-      attributes: []
     active_directory.ds.operation.rate:
       enabled: true
       attributes: ["type"]
@@ -33,13 +27,11 @@ all_set:
       attributes: ["direction"]
     active_directory.ds.replication.operation.pending:
       enabled: true
-      attributes: []
     active_directory.ds.replication.property.rate:
       enabled: true
       attributes: ["direction"]
     active_directory.ds.replication.sync.object.pending:
       enabled: true
-      attributes: []
     active_directory.ds.replication.sync.request.count:
       enabled: true
       attributes: ["result"]
@@ -48,13 +40,11 @@ all_set:
       attributes: ["direction","type"]
     active_directory.ds.security_descriptor_propagations_event.queued:
       enabled: true
-      attributes: []
     active_directory.ds.suboperation.rate:
       enabled: true
       attributes: ["type"]
     active_directory.ds.thread.count:
       enabled: true
-      attributes: []
 reaggregate_set:
   metrics:
     active_directory.ds.bind.rate:
@@ -62,22 +52,16 @@ reaggregate_set:
       attributes: []
     active_directory.ds.ldap.bind.last_successful.time:
       enabled: true
-      attributes: []
     active_directory.ds.ldap.bind.rate:
       enabled: true
-      attributes: []
     active_directory.ds.ldap.client.session.count:
       enabled: true
-      attributes: []
     active_directory.ds.ldap.search.rate:
       enabled: true
-      attributes: []
     active_directory.ds.name_cache.hit_rate:
       enabled: true
-      attributes: []
     active_directory.ds.notification.queued:
       enabled: true
-      attributes: []
     active_directory.ds.operation.rate:
       enabled: true
       attributes: []
@@ -89,13 +73,11 @@ reaggregate_set:
       attributes: []
     active_directory.ds.replication.operation.pending:
       enabled: true
-      attributes: []
     active_directory.ds.replication.property.rate:
       enabled: true
       attributes: []
     active_directory.ds.replication.sync.object.pending:
       enabled: true
-      attributes: []
     active_directory.ds.replication.sync.request.count:
       enabled: true
       attributes: []
@@ -104,13 +86,11 @@ reaggregate_set:
       attributes: []
     active_directory.ds.security_descriptor_propagations_event.queued:
       enabled: true
-      attributes: []
     active_directory.ds.suboperation.rate:
       enabled: true
       attributes: []
     active_directory.ds.thread.count:
       enabled: true
-      attributes: []
 none_set:
   metrics:
     active_directory.ds.bind.rate:
@@ -118,22 +98,16 @@ none_set:
       attributes: ["type"]
     active_directory.ds.ldap.bind.last_successful.time:
       enabled: false
-      attributes: []
     active_directory.ds.ldap.bind.rate:
       enabled: false
-      attributes: []
     active_directory.ds.ldap.client.session.count:
       enabled: false
-      attributes: []
     active_directory.ds.ldap.search.rate:
       enabled: false
-      attributes: []
     active_directory.ds.name_cache.hit_rate:
       enabled: false
-      attributes: []
     active_directory.ds.notification.queued:
       enabled: false
-      attributes: []
     active_directory.ds.operation.rate:
       enabled: false
       attributes: ["type"]
@@ -145,13 +119,11 @@ none_set:
       attributes: ["direction"]
     active_directory.ds.replication.operation.pending:
       enabled: false
-      attributes: []
     active_directory.ds.replication.property.rate:
       enabled: false
       attributes: ["direction"]
     active_directory.ds.replication.sync.object.pending:
       enabled: false
-      attributes: []
     active_directory.ds.replication.sync.request.count:
       enabled: false
       attributes: ["result"]
@@ -160,10 +132,8 @@ none_set:
       attributes: ["direction","type"]
     active_directory.ds.security_descriptor_propagations_event.queued:
       enabled: false
-      attributes: []
     active_directory.ds.suboperation.rate:
       enabled: false
       attributes: ["type"]
     active_directory.ds.thread.count:
       enabled: false
-      attributes: []

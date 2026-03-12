@@ -42,10 +42,17 @@ const (
 	categoryFrontDoorHealthProbeLog            = "FrontDoorHealthProbeLog"
 	categoryFrontdoorWebApplicationFirewallLog = "FrontDoorWebApplicationFirewallLog"
 	categoryFunctionAppLogs                    = "FunctionAppLogs"
-	categoryRecommendation                     = "Recommendation"
 	categoryStorageRead                        = "StorageRead"
 	categoryStorageWrite                       = "StorageWrite"
 	categoryStorageDelete                      = "StorageDelete"
+	categoryAdministrative                     = "Administrative"
+	categoryAlert                              = "Alert"
+	categoryAutoscale                          = "Autoscale"
+	categorySecurity                           = "Security"
+	categoryPolicy                             = "Policy"
+	categoryRecommendation                     = "Recommendation"
+	categoryResourceHealth                     = "ResourceHealth"
+	categoryServiceHealth                      = "ServiceHealth"
 )
 
 // Non-SemConv attributes that are used for common Azure Log Record fields
@@ -61,10 +68,6 @@ const (
 	// OpenTelemetry attribute name for generic Azure Operation Duration,
 	// from `durationMs` field in Azure Log Record
 	attributeAzureOperationDuration = "azure.operation.duration"
-
-	// OpenTelemetry attribute name for Azure Identity,
-	// from `identity` field in Azure Log Record
-	attributeAzureIdentity = "azure.identity"
 
 	// OpenTelemetry attribute name for Azure Log Record properties,
 	// from `properties` field in Azure Log Record
@@ -121,21 +124,20 @@ type azureLogRecord interface {
 // This schema are applicable to most Resource Logs and
 // can be extended with additional fields for specific Log Categories
 type azureLogRecordBase struct {
-	Time              string          `json:"time"`      // most Categories use this field for timestamp
-	TimeStamp         string          `json:"timestamp"` // some Categories use this field for timestamp
-	ResourceID        string          `json:"resourceId"`
-	TenantID          string          `json:"tenantId"`
-	OperationName     string          `json:"operationName"`
-	OperationVersion  *string         `json:"operationVersion"`
-	ResultType        *string         `json:"resultType"`
-	ResultSignature   *string         `json:"resultSignature"`
-	ResultDescription *string         `json:"resultDescription"`
-	DurationMs        *json.Number    `json:"durationMs"` // int
-	CallerIPAddress   *string         `json:"callerIpAddress"`
-	CorrelationID     *string         `json:"correlationId"`
-	Identity          *map[string]any `json:"identity"`
-	Level             *string         `json:"level"`
-	Location          string          `json:"location"`
+	Time              string       `json:"time"`      // most Categories use this field for timestamp
+	TimeStamp         string       `json:"timestamp"` // some Categories use this field for timestamp
+	ResourceID        string       `json:"resourceId"`
+	TenantID          string       `json:"tenantId"`
+	OperationName     string       `json:"operationName"`
+	OperationVersion  *string      `json:"operationVersion"`
+	ResultType        *string      `json:"resultType"`
+	ResultSignature   *string      `json:"resultSignature"`
+	ResultDescription *string      `json:"resultDescription"`
+	DurationMs        *json.Number `json:"durationMs"` // int
+	CallerIPAddress   *string      `json:"callerIpAddress"`
+	CorrelationID     *string      `json:"correlationId"`
+	Level             *json.Number `json:"level"`
+	Location          string       `json:"location"`
 }
 
 // GetResource returns resource attributes for the parsed Log Record
@@ -180,7 +182,7 @@ func (r *azureLogRecordBase) GetLevel() (plog.SeverityNumber, string, bool) {
 	severity := asSeverity(*r.Level)
 	// Saving original log.Level text,
 	// not the internal OpenTelemetry SeverityNumber -> SeverityText mapping
-	return severity, *r.Level, true
+	return severity, r.Level.String(), true
 }
 
 // PutCommonAttributes puts already parsed common attributes into provided Attributes Map/Body
@@ -195,9 +197,10 @@ func (r *azureLogRecordBase) PutCommonAttributes(attrs pcommon.Map, _ pcommon.Va
 	unmarshaler.AttrPutStrPtrIf(attrs, string(conventions.NetworkPeerAddressKey), r.CallerIPAddress)
 	unmarshaler.AttrPutStrPtrIf(attrs, attributeAzureCorrelationID, r.CorrelationID)
 	unmarshaler.AttrPutIntNumberPtrIf(attrs, attributeAzureOperationDuration, r.DurationMs)
-	if r.Identity != nil {
-		unmarshaler.AttrPutMapIf(attrs, attributeAzureIdentity, *r.Identity)
-	}
+	// Identity is NOT processed here. Each category-specific struct is
+	// responsible for calling the appropriate identity parser in its own
+	// PutCommonAttributes override, because the identity field has different
+	// structures across Azure log categories (Activity, Storage, etc.).
 }
 
 // PutProperties puts already attributes from "properties" field into provided Attributes Map/Body
@@ -207,10 +210,12 @@ func (*azureLogRecordBase) PutProperties(_ pcommon.Map, _ pcommon.Value) error {
 	return nil
 }
 
-// azureLogRecordBase represents a single Azure log following the common schema,
-// but has unknown for us Category
+// azureLogRecordGeneric represents a single Azure log following the common schema,
+// but has unknown for us Category.
 // In this case we couldn't correctly map properties to attributes and simply copy them
-// as-is to the attributes
+// as-is to the attributes.
+// Identity is not handled for unknown categories - each known category handles
+// its own identity structure with a typed struct.
 type azureLogRecordGeneric struct {
 	azureLogRecordBase
 
@@ -316,12 +321,26 @@ func processLogRecord(logCategory string, record []byte) (azureLogRecord, error)
 		parsed = new(frontDoorWAFLog)
 	case categoryFunctionAppLogs:
 		parsed = new(azureFunctionAppLog)
-	case categoryRecommendation:
-		parsed = new(azureRecommendationLog)
 	// StorageRead, StorageWrite, StorageDelete share the same properties,
 	// called StorageBlobLogs, see https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/storagebloblogs
 	case categoryStorageRead, categoryStorageWrite, categoryStorageDelete:
 		parsed = new(azureStorageBlobLog)
+	case categoryAdministrative:
+		parsed = new(azureAdministrativeLog)
+	case categoryAlert:
+		parsed = new(azureAlertLog)
+	case categoryAutoscale:
+		parsed = new(azureAutoscaleLog)
+	case categorySecurity:
+		parsed = new(azureSecurityLog)
+	case categoryPolicy:
+		parsed = new(azurePolicyLog)
+	case categoryServiceHealth:
+		parsed = new(azureServiceHealthLog)
+	case categoryRecommendation:
+		parsed = new(azureRecommendationLog)
+	case categoryResourceHealth:
+		parsed = new(azureResourceHealthLog)
 	default:
 		parsed = new(azureLogRecordGeneric)
 	}
