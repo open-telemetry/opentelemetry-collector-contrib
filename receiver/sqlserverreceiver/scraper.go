@@ -180,6 +180,7 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 
 	rb.SetHostName(hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
+	rb.SetServiceName("microsoft.sql_server")
 
 	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
 		rb.SetServerAddress(serverAddress)
@@ -198,6 +199,15 @@ func (s *sqlServerScraperHelper) applyResourceOverrides(rb *metadata.ResourceBui
 		res.Attributes().PutStr(key, value)
 	}
 	s.mb.EmitForResource(metadata.WithResource(res))
+}
+
+// applyResourceOverridesToResource applies user-defined resource attribute overrides
+// directly to a pcommon.Resource. Used for logs paths where the ResourceBuilder has
+// already been emitted.
+func (s *sqlServerScraperHelper) applyResourceOverridesToResource(res pcommon.Resource) {
+	for key, value := range s.config.ResourceAttributesOverride {
+		res.Attributes().PutStr(key, value)
+	}
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) error {
@@ -786,6 +796,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		if !resourcesAdded {
 			resources = s.setupResourceBuilder(s.lb.NewResourceBuilder(), row).Emit()
+			s.applyResourceOverridesToResource(resources)
 			resourcesAdded = true
 		}
 		s.lb.RecordDbServerTopQueryEvent(
@@ -1076,6 +1087,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		if !resourcesAdded {
 			resources = s.setupResourceBuilder(s.lb.NewResourceBuilder(), row).Emit()
+			s.applyResourceOverridesToResource(resources)
 			resourcesAdded = true
 		}
 	}

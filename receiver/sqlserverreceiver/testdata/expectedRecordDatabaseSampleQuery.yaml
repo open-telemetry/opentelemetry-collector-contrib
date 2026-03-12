@@ -13,6 +13,9 @@ resourceLogs:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: microsoft.sql_server
         - key: sqlserver.computer.name
           value:
             stringValue: DESKTOP-GHAEGRD
