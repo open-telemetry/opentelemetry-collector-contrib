@@ -305,7 +305,7 @@ func TestConfig_InstallationMethodDefault(t *testing.T) {
 
 	err := cfg.Validate()
 	require.NoError(t, err)
-	assert.Equal(t, "", cfg.InstallationMethod, "InstallationMethod should default to empty string")
+	assert.Empty(t, cfg.InstallationMethod, "InstallationMethod should default to empty string")
 }
 
 func TestConfig_InstallationMethodValidValues(t *testing.T) {
