@@ -61,10 +61,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.147.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.147.1-0.20260312222452-c212d203a110 // indirect
 	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260312222452-c212d203a110 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.147.1-0.20260312222452-c212d203a110 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.147.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.147.1-0.20260312222452-c212d203a110 // indirect
 	go.opentelemetry.io/collector/pipeline v1.53.1-0.20260312222452-c212d203a110 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
