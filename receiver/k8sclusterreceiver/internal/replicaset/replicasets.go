@@ -28,15 +28,15 @@ func Transform(rs *appsv1.ReplicaSet) *appsv1.ReplicaSet {
 
 func RecordMetrics(mb *metadata.MetricsBuilder, rs *appsv1.ReplicaSet, ts pcommon.Timestamp) {
 	if rs.Spec.Replicas != nil {
-		mb.RecordK8sReplicasetDesiredDataPoint(ts, int64(*rs.Spec.Replicas))
-		mb.RecordK8sReplicasetAvailableDataPoint(ts, int64(rs.Status.AvailableReplicas))
+		mb.RecordK8sReplicasetDesiredDataPoint(ts, int64(*rs.Spec.Replicas))             //nolint:staticcheck
+		mb.RecordK8sReplicasetAvailableDataPoint(ts, int64(rs.Status.AvailableReplicas)) //nolint:staticcheck
 	}
 
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(rs.Namespace)
 	rb.SetK8sReplicasetName(rs.Name)
 	rb.SetK8sReplicasetUID(string(rs.UID))
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
 }
 
 func GetMetadata(rs *appsv1.ReplicaSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

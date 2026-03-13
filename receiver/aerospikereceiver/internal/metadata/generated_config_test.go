@@ -26,46 +26,58 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					AerospikeNamespaceDiskAvailable: MetricConfig{
+					AerospikeNamespaceDiskAvailable: AerospikeNamespaceDiskAvailableConfig{
 						Enabled: true,
 					},
-					AerospikeNamespaceGeojsonRegionQueryCells: MetricConfig{
+					AerospikeNamespaceGeojsonRegionQueryCells: AerospikeNamespaceGeojsonRegionQueryCellsConfig{
 						Enabled: true,
 					},
-					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{
+					AerospikeNamespaceGeojsonRegionQueryFalsePositive: AerospikeNamespaceGeojsonRegionQueryFalsePositiveConfig{
 						Enabled: true,
 					},
-					AerospikeNamespaceGeojsonRegionQueryPoints: MetricConfig{
+					AerospikeNamespaceGeojsonRegionQueryPoints: AerospikeNamespaceGeojsonRegionQueryPointsConfig{
 						Enabled: true,
 					},
-					AerospikeNamespaceGeojsonRegionQueryRequests: MetricConfig{
+					AerospikeNamespaceGeojsonRegionQueryRequests: AerospikeNamespaceGeojsonRegionQueryRequestsConfig{
 						Enabled: true,
 					},
-					AerospikeNamespaceMemoryFree: MetricConfig{
+					AerospikeNamespaceMemoryFree: AerospikeNamespaceMemoryFreeConfig{
 						Enabled: true,
 					},
-					AerospikeNamespaceMemoryUsage: MetricConfig{
+					AerospikeNamespaceMemoryUsage: AerospikeNamespaceMemoryUsageConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNamespaceMemoryUsageAttributeKey{AerospikeNamespaceMemoryUsageAttributeKeyNamespaceComponent},
+					},
+					AerospikeNamespaceQueryCount: AerospikeNamespaceQueryCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNamespaceQueryCountAttributeKey{AerospikeNamespaceQueryCountAttributeKeyQueryType, AerospikeNamespaceQueryCountAttributeKeyIndexType, AerospikeNamespaceQueryCountAttributeKeyQueryResult},
+					},
+					AerospikeNamespaceScanCount: AerospikeNamespaceScanCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNamespaceScanCountAttributeKey{AerospikeNamespaceScanCountAttributeKeyScanType, AerospikeNamespaceScanCountAttributeKeyScanResult},
+					},
+					AerospikeNamespaceTransactionCount: AerospikeNamespaceTransactionCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNamespaceTransactionCountAttributeKey{AerospikeNamespaceTransactionCountAttributeKeyTransactionType, AerospikeNamespaceTransactionCountAttributeKeyTransactionResult},
+					},
+					AerospikeNodeConnectionCount: AerospikeNodeConnectionCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNodeConnectionCountAttributeKey{AerospikeNodeConnectionCountAttributeKeyConnectionType, AerospikeNodeConnectionCountAttributeKeyConnectionOp},
+					},
+					AerospikeNodeConnectionOpen: AerospikeNodeConnectionOpenConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNodeConnectionOpenAttributeKey{AerospikeNodeConnectionOpenAttributeKeyConnectionType},
+					},
+					AerospikeNodeMemoryFree: AerospikeNodeMemoryFreeConfig{
 						Enabled: true,
 					},
-					AerospikeNamespaceQueryCount: MetricConfig{
-						Enabled: true,
-					},
-					AerospikeNamespaceScanCount: MetricConfig{
-						Enabled: true,
-					},
-					AerospikeNamespaceTransactionCount: MetricConfig{
-						Enabled: true,
-					},
-					AerospikeNodeConnectionCount: MetricConfig{
-						Enabled: true,
-					},
-					AerospikeNodeConnectionOpen: MetricConfig{
-						Enabled: true,
-					},
-					AerospikeNodeMemoryFree: MetricConfig{
-						Enabled: true,
-					},
-					AerospikeNodeQueryTracked: MetricConfig{
+					AerospikeNodeQueryTracked: AerospikeNodeQueryTrackedConfig{
 						Enabled: true,
 					},
 				},
@@ -79,46 +91,58 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					AerospikeNamespaceDiskAvailable: MetricConfig{
+					AerospikeNamespaceDiskAvailable: AerospikeNamespaceDiskAvailableConfig{
 						Enabled: false,
 					},
-					AerospikeNamespaceGeojsonRegionQueryCells: MetricConfig{
+					AerospikeNamespaceGeojsonRegionQueryCells: AerospikeNamespaceGeojsonRegionQueryCellsConfig{
 						Enabled: false,
 					},
-					AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{
+					AerospikeNamespaceGeojsonRegionQueryFalsePositive: AerospikeNamespaceGeojsonRegionQueryFalsePositiveConfig{
 						Enabled: false,
 					},
-					AerospikeNamespaceGeojsonRegionQueryPoints: MetricConfig{
+					AerospikeNamespaceGeojsonRegionQueryPoints: AerospikeNamespaceGeojsonRegionQueryPointsConfig{
 						Enabled: false,
 					},
-					AerospikeNamespaceGeojsonRegionQueryRequests: MetricConfig{
+					AerospikeNamespaceGeojsonRegionQueryRequests: AerospikeNamespaceGeojsonRegionQueryRequestsConfig{
 						Enabled: false,
 					},
-					AerospikeNamespaceMemoryFree: MetricConfig{
+					AerospikeNamespaceMemoryFree: AerospikeNamespaceMemoryFreeConfig{
 						Enabled: false,
 					},
-					AerospikeNamespaceMemoryUsage: MetricConfig{
+					AerospikeNamespaceMemoryUsage: AerospikeNamespaceMemoryUsageConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNamespaceMemoryUsageAttributeKey{AerospikeNamespaceMemoryUsageAttributeKeyNamespaceComponent},
+					},
+					AerospikeNamespaceQueryCount: AerospikeNamespaceQueryCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNamespaceQueryCountAttributeKey{AerospikeNamespaceQueryCountAttributeKeyQueryType, AerospikeNamespaceQueryCountAttributeKeyIndexType, AerospikeNamespaceQueryCountAttributeKeyQueryResult},
+					},
+					AerospikeNamespaceScanCount: AerospikeNamespaceScanCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNamespaceScanCountAttributeKey{AerospikeNamespaceScanCountAttributeKeyScanType, AerospikeNamespaceScanCountAttributeKeyScanResult},
+					},
+					AerospikeNamespaceTransactionCount: AerospikeNamespaceTransactionCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNamespaceTransactionCountAttributeKey{AerospikeNamespaceTransactionCountAttributeKeyTransactionType, AerospikeNamespaceTransactionCountAttributeKeyTransactionResult},
+					},
+					AerospikeNodeConnectionCount: AerospikeNodeConnectionCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNodeConnectionCountAttributeKey{AerospikeNodeConnectionCountAttributeKeyConnectionType, AerospikeNodeConnectionCountAttributeKeyConnectionOp},
+					},
+					AerospikeNodeConnectionOpen: AerospikeNodeConnectionOpenConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []AerospikeNodeConnectionOpenAttributeKey{AerospikeNodeConnectionOpenAttributeKeyConnectionType},
+					},
+					AerospikeNodeMemoryFree: AerospikeNodeMemoryFreeConfig{
 						Enabled: false,
 					},
-					AerospikeNamespaceQueryCount: MetricConfig{
-						Enabled: false,
-					},
-					AerospikeNamespaceScanCount: MetricConfig{
-						Enabled: false,
-					},
-					AerospikeNamespaceTransactionCount: MetricConfig{
-						Enabled: false,
-					},
-					AerospikeNodeConnectionCount: MetricConfig{
-						Enabled: false,
-					},
-					AerospikeNodeConnectionOpen: MetricConfig{
-						Enabled: false,
-					},
-					AerospikeNodeMemoryFree: MetricConfig{
-						Enabled: false,
-					},
-					AerospikeNodeQueryTracked: MetricConfig{
+					AerospikeNodeQueryTracked: AerospikeNodeQueryTrackedConfig{
 						Enabled: false,
 					},
 				},
@@ -132,7 +156,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(AerospikeNamespaceDiskAvailableConfig{}, AerospikeNamespaceGeojsonRegionQueryCellsConfig{}, AerospikeNamespaceGeojsonRegionQueryFalsePositiveConfig{}, AerospikeNamespaceGeojsonRegionQueryPointsConfig{}, AerospikeNamespaceGeojsonRegionQueryRequestsConfig{}, AerospikeNamespaceMemoryFreeConfig{}, AerospikeNamespaceMemoryUsageConfig{}, AerospikeNamespaceQueryCountConfig{}, AerospikeNamespaceScanCountConfig{}, AerospikeNamespaceTransactionCountConfig{}, AerospikeNodeConnectionCountConfig{}, AerospikeNodeConnectionOpenConfig{}, AerospikeNodeMemoryFreeConfig{}, AerospikeNodeQueryTrackedConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

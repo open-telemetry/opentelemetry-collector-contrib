@@ -53,6 +53,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "component"
+            default:
+              - "component"
       aerospike.namespace.query.count:
         description: "AerospikeNamespaceQueryCountConfig provides config for the aerospike.namespace.query.count metric."
         type: object
@@ -60,6 +76,26 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "index"
+                - "result"
+            default:
+              - "type"
+              - "index"
+              - "result"
       aerospike.namespace.scan.count:
         description: "AerospikeNamespaceScanCountConfig provides config for the aerospike.namespace.scan.count metric."
         type: object
@@ -67,6 +103,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "result"
+            default:
+              - "type"
+              - "result"
       aerospike.namespace.transaction.count:
         description: "AerospikeNamespaceTransactionCountConfig provides config for the aerospike.namespace.transaction.count metric."
         type: object
@@ -74,6 +128,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "result"
+            default:
+              - "type"
+              - "result"
       aerospike.node.connection.count:
         description: "AerospikeNodeConnectionCountConfig provides config for the aerospike.node.connection.count metric."
         type: object
@@ -81,6 +153,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "operation"
+            default:
+              - "type"
+              - "operation"
       aerospike.node.connection.open:
         description: "AerospikeNodeConnectionOpenConfig provides config for the aerospike.node.connection.open metric."
         type: object
@@ -88,6 +178,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       aerospike.node.memory.free:
         description: "AerospikeNodeMemoryFreeConfig provides config for the aerospike.node.memory.free metric."
         type: object
