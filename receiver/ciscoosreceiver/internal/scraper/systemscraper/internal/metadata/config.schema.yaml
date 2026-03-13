@@ -5,21 +5,21 @@ $defs:
     type: object
     properties:
       cisco.device.up:
-        description: "CiscoDeviceUpConfig provides config for the cisco.device.up metric."
+        description: "CiscoDeviceUpMetricConfig provides config for the cisco.device.up metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.cpu.utilization:
-        description: "SystemCPUUtilizationConfig provides config for the system.cpu.utilization metric."
+        description: "SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.memory.utilization:
-        description: "SystemMemoryUtilizationConfig provides config for the system.memory.utilization metric."
+        description: "SystemMemoryUtilizationMetricConfig provides config for the system.memory.utilization metric."
         type: object
         properties:
           enabled:
