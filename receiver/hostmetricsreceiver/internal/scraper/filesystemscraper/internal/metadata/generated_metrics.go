@@ -73,10 +73,10 @@ type metricInfo struct {
 }
 
 type metricSystemFilesystemInodesUsage struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        SystemFilesystemInodesUsageConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SystemFilesystemInodesUsageMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.filesystem.inodes.usage metric with initial data.
@@ -99,19 +99,19 @@ func (m *metricSystemFilesystemInodesUsage) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageAttributeKeyDevice) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageAttributeKeyMode) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageMetricAttributeKeyMode) {
 		dp.Attributes().PutStr("mode", modeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageAttributeKeyMountpoint) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageMetricAttributeKeyMountpoint) {
 		dp.Attributes().PutStr("mountpoint", mountpointAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageAttributeKeyType) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageMetricAttributeKeyType) {
 		dp.Attributes().PutStr("type", typeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageAttributeKeyState) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemInodesUsageMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -165,7 +165,7 @@ func (m *metricSystemFilesystemInodesUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemFilesystemInodesUsage(cfg SystemFilesystemInodesUsageConfig) metricSystemFilesystemInodesUsage {
+func newMetricSystemFilesystemInodesUsage(cfg SystemFilesystemInodesUsageMetricConfig) metricSystemFilesystemInodesUsage {
 	m := metricSystemFilesystemInodesUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -176,10 +176,10 @@ func newMetricSystemFilesystemInodesUsage(cfg SystemFilesystemInodesUsageConfig)
 }
 
 type metricSystemFilesystemUsage struct {
-	data          pmetric.Metric              // data buffer for generated metric.
-	config        SystemFilesystemUsageConfig // metric config provided by user.
-	capacity      int                         // max observed number of data points added to the metric.
-	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        SystemFilesystemUsageMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.filesystem.usage metric with initial data.
@@ -202,19 +202,19 @@ func (m *metricSystemFilesystemUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageAttributeKeyDevice) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageAttributeKeyMode) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageMetricAttributeKeyMode) {
 		dp.Attributes().PutStr("mode", modeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageAttributeKeyMountpoint) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageMetricAttributeKeyMountpoint) {
 		dp.Attributes().PutStr("mountpoint", mountpointAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageAttributeKeyType) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageMetricAttributeKeyType) {
 		dp.Attributes().PutStr("type", typeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageAttributeKeyState) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUsageMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -268,7 +268,7 @@ func (m *metricSystemFilesystemUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemFilesystemUsage(cfg SystemFilesystemUsageConfig) metricSystemFilesystemUsage {
+func newMetricSystemFilesystemUsage(cfg SystemFilesystemUsageMetricConfig) metricSystemFilesystemUsage {
 	m := metricSystemFilesystemUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -279,10 +279,10 @@ func newMetricSystemFilesystemUsage(cfg SystemFilesystemUsageConfig) metricSyste
 }
 
 type metricSystemFilesystemUtilization struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        SystemFilesystemUtilizationConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SystemFilesystemUtilizationMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []float64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.filesystem.utilization metric with initial data.
@@ -303,16 +303,16 @@ func (m *metricSystemFilesystemUtilization) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUtilizationAttributeKeyDevice) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUtilizationMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUtilizationAttributeKeyMode) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUtilizationMetricAttributeKeyMode) {
 		dp.Attributes().PutStr("mode", modeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUtilizationAttributeKeyMountpoint) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUtilizationMetricAttributeKeyMountpoint) {
 		dp.Attributes().PutStr("mountpoint", mountpointAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUtilizationAttributeKeyType) {
+	if slices.Contains(m.config.EnabledAttributes, SystemFilesystemUtilizationMetricAttributeKeyType) {
 		dp.Attributes().PutStr("type", typeAttributeValue)
 	}
 
@@ -366,7 +366,7 @@ func (m *metricSystemFilesystemUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemFilesystemUtilization(cfg SystemFilesystemUtilizationConfig) metricSystemFilesystemUtilization {
+func newMetricSystemFilesystemUtilization(cfg SystemFilesystemUtilizationMetricConfig) metricSystemFilesystemUtilization {
 	m := metricSystemFilesystemUtilization{config: cfg}
 
 	if cfg.Enabled {

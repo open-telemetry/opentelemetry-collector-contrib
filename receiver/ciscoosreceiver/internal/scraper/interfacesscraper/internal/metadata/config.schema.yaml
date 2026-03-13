@@ -5,35 +5,35 @@ $defs:
     type: object
     properties:
       system.network.errors:
-        description: "SystemNetworkErrorsConfig provides config for the system.network.errors metric."
+        description: "SystemNetworkErrorsMetricConfig provides config for the system.network.errors metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.network.interface.status:
-        description: "SystemNetworkInterfaceStatusConfig provides config for the system.network.interface.status metric."
+        description: "SystemNetworkInterfaceStatusMetricConfig provides config for the system.network.interface.status metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.network.io:
-        description: "SystemNetworkIoConfig provides config for the system.network.io metric."
+        description: "SystemNetworkIoMetricConfig provides config for the system.network.io metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.network.packet.count:
-        description: "SystemNetworkPacketCountConfig provides config for the system.network.packet.count metric."
+        description: "SystemNetworkPacketCountMetricConfig provides config for the system.network.packet.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.network.packet.dropped:
-        description: "SystemNetworkPacketDroppedConfig provides config for the system.network.packet.dropped metric."
+        description: "SystemNetworkPacketDroppedMetricConfig provides config for the system.network.packet.dropped metric."
         type: object
         properties:
           enabled:

@@ -5,14 +5,14 @@ $defs:
     type: object
     properties:
       riak.memory.limit:
-        description: "RiakMemoryLimitConfig provides config for the riak.memory.limit metric."
+        description: "RiakMemoryLimitMetricConfig provides config for the riak.memory.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       riak.node.operation.count:
-        description: "RiakNodeOperationCountConfig provides config for the riak.node.operation.count metric."
+        description: "RiakNodeOperationCountMetricConfig provides config for the riak.node.operation.count metric."
         type: object
         properties:
           enabled:
@@ -35,7 +35,7 @@ $defs:
             default:
               - "request"
       riak.node.operation.time.mean:
-        description: "RiakNodeOperationTimeMeanConfig provides config for the riak.node.operation.time.mean metric."
+        description: "RiakNodeOperationTimeMeanMetricConfig provides config for the riak.node.operation.time.mean metric."
         type: object
         properties:
           enabled:
@@ -58,14 +58,14 @@ $defs:
             default:
               - "request"
       riak.node.read_repair.count:
-        description: "RiakNodeReadRepairCountConfig provides config for the riak.node.read_repair.count metric."
+        description: "RiakNodeReadRepairCountMetricConfig provides config for the riak.node.read_repair.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       riak.vnode.index.operation.count:
-        description: "RiakVnodeIndexOperationCountConfig provides config for the riak.vnode.index.operation.count metric."
+        description: "RiakVnodeIndexOperationCountMetricConfig provides config for the riak.vnode.index.operation.count metric."
         type: object
         properties:
           enabled:
@@ -88,7 +88,7 @@ $defs:
             default:
               - "operation"
       riak.vnode.operation.count:
-        description: "RiakVnodeOperationCountConfig provides config for the riak.vnode.operation.count metric."
+        description: "RiakVnodeOperationCountMetricConfig provides config for the riak.vnode.operation.count metric."
         type: object
         properties:
           enabled:

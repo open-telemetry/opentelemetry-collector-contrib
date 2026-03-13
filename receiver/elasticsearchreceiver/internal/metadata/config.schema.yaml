@@ -5,644 +5,644 @@ $defs:
     type: object
     properties:
       elasticsearch.breaker.memory.estimated:
-        description: "ElasticsearchBreakerMemoryEstimatedConfig provides config for the elasticsearch.breaker.memory.estimated metric."
+        description: "ElasticsearchBreakerMemoryEstimatedMetricConfig provides config for the elasticsearch.breaker.memory.estimated metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.breaker.memory.limit:
-        description: "ElasticsearchBreakerMemoryLimitConfig provides config for the elasticsearch.breaker.memory.limit metric."
+        description: "ElasticsearchBreakerMemoryLimitMetricConfig provides config for the elasticsearch.breaker.memory.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.breaker.tripped:
-        description: "ElasticsearchBreakerTrippedConfig provides config for the elasticsearch.breaker.tripped metric."
+        description: "ElasticsearchBreakerTrippedMetricConfig provides config for the elasticsearch.breaker.tripped metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.data_nodes:
-        description: "ElasticsearchClusterDataNodesConfig provides config for the elasticsearch.cluster.data_nodes metric."
+        description: "ElasticsearchClusterDataNodesMetricConfig provides config for the elasticsearch.cluster.data_nodes metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.health:
-        description: "ElasticsearchClusterHealthConfig provides config for the elasticsearch.cluster.health metric."
+        description: "ElasticsearchClusterHealthMetricConfig provides config for the elasticsearch.cluster.health metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.in_flight_fetch:
-        description: "ElasticsearchClusterInFlightFetchConfig provides config for the elasticsearch.cluster.in_flight_fetch metric."
+        description: "ElasticsearchClusterInFlightFetchMetricConfig provides config for the elasticsearch.cluster.in_flight_fetch metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.indices.cache.evictions:
-        description: "ElasticsearchClusterIndicesCacheEvictionsConfig provides config for the elasticsearch.cluster.indices.cache.evictions metric."
+        description: "ElasticsearchClusterIndicesCacheEvictionsMetricConfig provides config for the elasticsearch.cluster.indices.cache.evictions metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.cluster.nodes:
-        description: "ElasticsearchClusterNodesConfig provides config for the elasticsearch.cluster.nodes metric."
+        description: "ElasticsearchClusterNodesMetricConfig provides config for the elasticsearch.cluster.nodes metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.pending_tasks:
-        description: "ElasticsearchClusterPendingTasksConfig provides config for the elasticsearch.cluster.pending_tasks metric."
+        description: "ElasticsearchClusterPendingTasksMetricConfig provides config for the elasticsearch.cluster.pending_tasks metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.published_states.differences:
-        description: "ElasticsearchClusterPublishedStatesDifferencesConfig provides config for the elasticsearch.cluster.published_states.differences metric."
+        description: "ElasticsearchClusterPublishedStatesDifferencesMetricConfig provides config for the elasticsearch.cluster.published_states.differences metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.published_states.full:
-        description: "ElasticsearchClusterPublishedStatesFullConfig provides config for the elasticsearch.cluster.published_states.full metric."
+        description: "ElasticsearchClusterPublishedStatesFullMetricConfig provides config for the elasticsearch.cluster.published_states.full metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.shards:
-        description: "ElasticsearchClusterShardsConfig provides config for the elasticsearch.cluster.shards metric."
+        description: "ElasticsearchClusterShardsMetricConfig provides config for the elasticsearch.cluster.shards metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.state_queue:
-        description: "ElasticsearchClusterStateQueueConfig provides config for the elasticsearch.cluster.state_queue metric."
+        description: "ElasticsearchClusterStateQueueMetricConfig provides config for the elasticsearch.cluster.state_queue metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.state_update.count:
-        description: "ElasticsearchClusterStateUpdateCountConfig provides config for the elasticsearch.cluster.state_update.count metric."
+        description: "ElasticsearchClusterStateUpdateCountMetricConfig provides config for the elasticsearch.cluster.state_update.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.cluster.state_update.time:
-        description: "ElasticsearchClusterStateUpdateTimeConfig provides config for the elasticsearch.cluster.state_update.time metric."
+        description: "ElasticsearchClusterStateUpdateTimeMetricConfig provides config for the elasticsearch.cluster.state_update.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.index.cache.evictions:
-        description: "ElasticsearchIndexCacheEvictionsConfig provides config for the elasticsearch.index.cache.evictions metric."
+        description: "ElasticsearchIndexCacheEvictionsMetricConfig provides config for the elasticsearch.index.cache.evictions metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.index.cache.memory.usage:
-        description: "ElasticsearchIndexCacheMemoryUsageConfig provides config for the elasticsearch.index.cache.memory.usage metric."
+        description: "ElasticsearchIndexCacheMemoryUsageMetricConfig provides config for the elasticsearch.index.cache.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.index.cache.size:
-        description: "ElasticsearchIndexCacheSizeConfig provides config for the elasticsearch.index.cache.size metric."
+        description: "ElasticsearchIndexCacheSizeMetricConfig provides config for the elasticsearch.index.cache.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.index.documents:
-        description: "ElasticsearchIndexDocumentsConfig provides config for the elasticsearch.index.documents metric."
+        description: "ElasticsearchIndexDocumentsMetricConfig provides config for the elasticsearch.index.documents metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.index.operations.completed:
-        description: "ElasticsearchIndexOperationsCompletedConfig provides config for the elasticsearch.index.operations.completed metric."
+        description: "ElasticsearchIndexOperationsCompletedMetricConfig provides config for the elasticsearch.index.operations.completed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.index.operations.merge.current:
-        description: "ElasticsearchIndexOperationsMergeCurrentConfig provides config for the elasticsearch.index.operations.merge.current metric."
+        description: "ElasticsearchIndexOperationsMergeCurrentMetricConfig provides config for the elasticsearch.index.operations.merge.current metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.index.operations.merge.docs_count:
-        description: "ElasticsearchIndexOperationsMergeDocsCountConfig provides config for the elasticsearch.index.operations.merge.docs_count metric."
+        description: "ElasticsearchIndexOperationsMergeDocsCountMetricConfig provides config for the elasticsearch.index.operations.merge.docs_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.index.operations.merge.size:
-        description: "ElasticsearchIndexOperationsMergeSizeConfig provides config for the elasticsearch.index.operations.merge.size metric."
+        description: "ElasticsearchIndexOperationsMergeSizeMetricConfig provides config for the elasticsearch.index.operations.merge.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.index.operations.time:
-        description: "ElasticsearchIndexOperationsTimeConfig provides config for the elasticsearch.index.operations.time metric."
+        description: "ElasticsearchIndexOperationsTimeMetricConfig provides config for the elasticsearch.index.operations.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.index.segments.count:
-        description: "ElasticsearchIndexSegmentsCountConfig provides config for the elasticsearch.index.segments.count metric."
+        description: "ElasticsearchIndexSegmentsCountMetricConfig provides config for the elasticsearch.index.segments.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.index.segments.memory:
-        description: "ElasticsearchIndexSegmentsMemoryConfig provides config for the elasticsearch.index.segments.memory metric."
+        description: "ElasticsearchIndexSegmentsMemoryMetricConfig provides config for the elasticsearch.index.segments.memory metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.index.segments.size:
-        description: "ElasticsearchIndexSegmentsSizeConfig provides config for the elasticsearch.index.segments.size metric."
+        description: "ElasticsearchIndexSegmentsSizeMetricConfig provides config for the elasticsearch.index.segments.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.index.shards.size:
-        description: "ElasticsearchIndexShardsSizeConfig provides config for the elasticsearch.index.shards.size metric."
+        description: "ElasticsearchIndexShardsSizeMetricConfig provides config for the elasticsearch.index.shards.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.index.translog.operations:
-        description: "ElasticsearchIndexTranslogOperationsConfig provides config for the elasticsearch.index.translog.operations metric."
+        description: "ElasticsearchIndexTranslogOperationsMetricConfig provides config for the elasticsearch.index.translog.operations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.index.translog.size:
-        description: "ElasticsearchIndexTranslogSizeConfig provides config for the elasticsearch.index.translog.size metric."
+        description: "ElasticsearchIndexTranslogSizeMetricConfig provides config for the elasticsearch.index.translog.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.indexing_pressure.memory.limit:
-        description: "ElasticsearchIndexingPressureMemoryLimitConfig provides config for the elasticsearch.indexing_pressure.memory.limit metric."
+        description: "ElasticsearchIndexingPressureMemoryLimitMetricConfig provides config for the elasticsearch.indexing_pressure.memory.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.indexing_pressure.memory.total.primary_rejections:
-        description: "ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig provides config for the elasticsearch.indexing_pressure.memory.total.primary_rejections metric."
+        description: "ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig provides config for the elasticsearch.indexing_pressure.memory.total.primary_rejections metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.indexing_pressure.memory.total.replica_rejections:
-        description: "ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig provides config for the elasticsearch.indexing_pressure.memory.total.replica_rejections metric."
+        description: "ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig provides config for the elasticsearch.indexing_pressure.memory.total.replica_rejections metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.memory.indexing_pressure:
-        description: "ElasticsearchMemoryIndexingPressureConfig provides config for the elasticsearch.memory.indexing_pressure metric."
+        description: "ElasticsearchMemoryIndexingPressureMetricConfig provides config for the elasticsearch.memory.indexing_pressure metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.cache.count:
-        description: "ElasticsearchNodeCacheCountConfig provides config for the elasticsearch.node.cache.count metric."
+        description: "ElasticsearchNodeCacheCountMetricConfig provides config for the elasticsearch.node.cache.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.cache.evictions:
-        description: "ElasticsearchNodeCacheEvictionsConfig provides config for the elasticsearch.node.cache.evictions metric."
+        description: "ElasticsearchNodeCacheEvictionsMetricConfig provides config for the elasticsearch.node.cache.evictions metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.cache.memory.usage:
-        description: "ElasticsearchNodeCacheMemoryUsageConfig provides config for the elasticsearch.node.cache.memory.usage metric."
+        description: "ElasticsearchNodeCacheMemoryUsageMetricConfig provides config for the elasticsearch.node.cache.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.cache.size:
-        description: "ElasticsearchNodeCacheSizeConfig provides config for the elasticsearch.node.cache.size metric."
+        description: "ElasticsearchNodeCacheSizeMetricConfig provides config for the elasticsearch.node.cache.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.node.cluster.connections:
-        description: "ElasticsearchNodeClusterConnectionsConfig provides config for the elasticsearch.node.cluster.connections metric."
+        description: "ElasticsearchNodeClusterConnectionsMetricConfig provides config for the elasticsearch.node.cluster.connections metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.cluster.io:
-        description: "ElasticsearchNodeClusterIoConfig provides config for the elasticsearch.node.cluster.io metric."
+        description: "ElasticsearchNodeClusterIoMetricConfig provides config for the elasticsearch.node.cluster.io metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.disk.io.read:
-        description: "ElasticsearchNodeDiskIoReadConfig provides config for the elasticsearch.node.disk.io.read metric."
+        description: "ElasticsearchNodeDiskIoReadMetricConfig provides config for the elasticsearch.node.disk.io.read metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.disk.io.write:
-        description: "ElasticsearchNodeDiskIoWriteConfig provides config for the elasticsearch.node.disk.io.write metric."
+        description: "ElasticsearchNodeDiskIoWriteMetricConfig provides config for the elasticsearch.node.disk.io.write metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.documents:
-        description: "ElasticsearchNodeDocumentsConfig provides config for the elasticsearch.node.documents metric."
+        description: "ElasticsearchNodeDocumentsMetricConfig provides config for the elasticsearch.node.documents metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.fs.disk.available:
-        description: "ElasticsearchNodeFsDiskAvailableConfig provides config for the elasticsearch.node.fs.disk.available metric."
+        description: "ElasticsearchNodeFsDiskAvailableMetricConfig provides config for the elasticsearch.node.fs.disk.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.fs.disk.free:
-        description: "ElasticsearchNodeFsDiskFreeConfig provides config for the elasticsearch.node.fs.disk.free metric."
+        description: "ElasticsearchNodeFsDiskFreeMetricConfig provides config for the elasticsearch.node.fs.disk.free metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.fs.disk.total:
-        description: "ElasticsearchNodeFsDiskTotalConfig provides config for the elasticsearch.node.fs.disk.total metric."
+        description: "ElasticsearchNodeFsDiskTotalMetricConfig provides config for the elasticsearch.node.fs.disk.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.http.connections:
-        description: "ElasticsearchNodeHTTPConnectionsConfig provides config for the elasticsearch.node.http.connections metric."
+        description: "ElasticsearchNodeHTTPConnectionsMetricConfig provides config for the elasticsearch.node.http.connections metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.ingest.documents:
-        description: "ElasticsearchNodeIngestDocumentsConfig provides config for the elasticsearch.node.ingest.documents metric."
+        description: "ElasticsearchNodeIngestDocumentsMetricConfig provides config for the elasticsearch.node.ingest.documents metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.ingest.documents.current:
-        description: "ElasticsearchNodeIngestDocumentsCurrentConfig provides config for the elasticsearch.node.ingest.documents.current metric."
+        description: "ElasticsearchNodeIngestDocumentsCurrentMetricConfig provides config for the elasticsearch.node.ingest.documents.current metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.ingest.operations.failed:
-        description: "ElasticsearchNodeIngestOperationsFailedConfig provides config for the elasticsearch.node.ingest.operations.failed metric."
+        description: "ElasticsearchNodeIngestOperationsFailedMetricConfig provides config for the elasticsearch.node.ingest.operations.failed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.open_files:
-        description: "ElasticsearchNodeOpenFilesConfig provides config for the elasticsearch.node.open_files metric."
+        description: "ElasticsearchNodeOpenFilesMetricConfig provides config for the elasticsearch.node.open_files metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.operations.completed:
-        description: "ElasticsearchNodeOperationsCompletedConfig provides config for the elasticsearch.node.operations.completed metric."
+        description: "ElasticsearchNodeOperationsCompletedMetricConfig provides config for the elasticsearch.node.operations.completed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.operations.current:
-        description: "ElasticsearchNodeOperationsCurrentConfig provides config for the elasticsearch.node.operations.current metric."
+        description: "ElasticsearchNodeOperationsCurrentMetricConfig provides config for the elasticsearch.node.operations.current metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.node.operations.get.completed:
-        description: "ElasticsearchNodeOperationsGetCompletedConfig provides config for the elasticsearch.node.operations.get.completed metric."
+        description: "ElasticsearchNodeOperationsGetCompletedMetricConfig provides config for the elasticsearch.node.operations.get.completed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.node.operations.get.time:
-        description: "ElasticsearchNodeOperationsGetTimeConfig provides config for the elasticsearch.node.operations.get.time metric."
+        description: "ElasticsearchNodeOperationsGetTimeMetricConfig provides config for the elasticsearch.node.operations.get.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.node.operations.time:
-        description: "ElasticsearchNodeOperationsTimeConfig provides config for the elasticsearch.node.operations.time metric."
+        description: "ElasticsearchNodeOperationsTimeMetricConfig provides config for the elasticsearch.node.operations.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.pipeline.ingest.documents.current:
-        description: "ElasticsearchNodePipelineIngestDocumentsCurrentConfig provides config for the elasticsearch.node.pipeline.ingest.documents.current metric."
+        description: "ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig provides config for the elasticsearch.node.pipeline.ingest.documents.current metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.pipeline.ingest.documents.preprocessed:
-        description: "ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig provides config for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric."
+        description: "ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig provides config for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.pipeline.ingest.operations.failed:
-        description: "ElasticsearchNodePipelineIngestOperationsFailedConfig provides config for the elasticsearch.node.pipeline.ingest.operations.failed metric."
+        description: "ElasticsearchNodePipelineIngestOperationsFailedMetricConfig provides config for the elasticsearch.node.pipeline.ingest.operations.failed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.script.cache_evictions:
-        description: "ElasticsearchNodeScriptCacheEvictionsConfig provides config for the elasticsearch.node.script.cache_evictions metric."
+        description: "ElasticsearchNodeScriptCacheEvictionsMetricConfig provides config for the elasticsearch.node.script.cache_evictions metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.script.compilation_limit_triggered:
-        description: "ElasticsearchNodeScriptCompilationLimitTriggeredConfig provides config for the elasticsearch.node.script.compilation_limit_triggered metric."
+        description: "ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig provides config for the elasticsearch.node.script.compilation_limit_triggered metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.script.compilations:
-        description: "ElasticsearchNodeScriptCompilationsConfig provides config for the elasticsearch.node.script.compilations metric."
+        description: "ElasticsearchNodeScriptCompilationsMetricConfig provides config for the elasticsearch.node.script.compilations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.segments.memory:
-        description: "ElasticsearchNodeSegmentsMemoryConfig provides config for the elasticsearch.node.segments.memory metric."
+        description: "ElasticsearchNodeSegmentsMemoryMetricConfig provides config for the elasticsearch.node.segments.memory metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.node.shards.data_set.size:
-        description: "ElasticsearchNodeShardsDataSetSizeConfig provides config for the elasticsearch.node.shards.data_set.size metric."
+        description: "ElasticsearchNodeShardsDataSetSizeMetricConfig provides config for the elasticsearch.node.shards.data_set.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.shards.reserved.size:
-        description: "ElasticsearchNodeShardsReservedSizeConfig provides config for the elasticsearch.node.shards.reserved.size metric."
+        description: "ElasticsearchNodeShardsReservedSizeMetricConfig provides config for the elasticsearch.node.shards.reserved.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.shards.size:
-        description: "ElasticsearchNodeShardsSizeConfig provides config for the elasticsearch.node.shards.size metric."
+        description: "ElasticsearchNodeShardsSizeMetricConfig provides config for the elasticsearch.node.shards.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.thread_pool.tasks.finished:
-        description: "ElasticsearchNodeThreadPoolTasksFinishedConfig provides config for the elasticsearch.node.thread_pool.tasks.finished metric."
+        description: "ElasticsearchNodeThreadPoolTasksFinishedMetricConfig provides config for the elasticsearch.node.thread_pool.tasks.finished metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.thread_pool.tasks.queued:
-        description: "ElasticsearchNodeThreadPoolTasksQueuedConfig provides config for the elasticsearch.node.thread_pool.tasks.queued metric."
+        description: "ElasticsearchNodeThreadPoolTasksQueuedMetricConfig provides config for the elasticsearch.node.thread_pool.tasks.queued metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.thread_pool.threads:
-        description: "ElasticsearchNodeThreadPoolThreadsConfig provides config for the elasticsearch.node.thread_pool.threads metric."
+        description: "ElasticsearchNodeThreadPoolThreadsMetricConfig provides config for the elasticsearch.node.thread_pool.threads metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.translog.operations:
-        description: "ElasticsearchNodeTranslogOperationsConfig provides config for the elasticsearch.node.translog.operations metric."
+        description: "ElasticsearchNodeTranslogOperationsMetricConfig provides config for the elasticsearch.node.translog.operations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.translog.size:
-        description: "ElasticsearchNodeTranslogSizeConfig provides config for the elasticsearch.node.translog.size metric."
+        description: "ElasticsearchNodeTranslogSizeMetricConfig provides config for the elasticsearch.node.translog.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.node.translog.uncommitted.size:
-        description: "ElasticsearchNodeTranslogUncommittedSizeConfig provides config for the elasticsearch.node.translog.uncommitted.size metric."
+        description: "ElasticsearchNodeTranslogUncommittedSizeMetricConfig provides config for the elasticsearch.node.translog.uncommitted.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.os.cpu.load_avg.15m:
-        description: "ElasticsearchOsCPULoadAvg15mConfig provides config for the elasticsearch.os.cpu.load_avg.15m metric."
+        description: "ElasticsearchOsCPULoadAvg15mMetricConfig provides config for the elasticsearch.os.cpu.load_avg.15m metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.os.cpu.load_avg.1m:
-        description: "ElasticsearchOsCPULoadAvg1mConfig provides config for the elasticsearch.os.cpu.load_avg.1m metric."
+        description: "ElasticsearchOsCPULoadAvg1mMetricConfig provides config for the elasticsearch.os.cpu.load_avg.1m metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.os.cpu.load_avg.5m:
-        description: "ElasticsearchOsCPULoadAvg5mConfig provides config for the elasticsearch.os.cpu.load_avg.5m metric."
+        description: "ElasticsearchOsCPULoadAvg5mMetricConfig provides config for the elasticsearch.os.cpu.load_avg.5m metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.os.cpu.usage:
-        description: "ElasticsearchOsCPUUsageConfig provides config for the elasticsearch.os.cpu.usage metric."
+        description: "ElasticsearchOsCPUUsageMetricConfig provides config for the elasticsearch.os.cpu.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.os.memory:
-        description: "ElasticsearchOsMemoryConfig provides config for the elasticsearch.os.memory metric."
+        description: "ElasticsearchOsMemoryMetricConfig provides config for the elasticsearch.os.memory metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       elasticsearch.process.cpu.time:
-        description: "ElasticsearchProcessCPUTimeConfig provides config for the elasticsearch.process.cpu.time metric."
+        description: "ElasticsearchProcessCPUTimeMetricConfig provides config for the elasticsearch.process.cpu.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.process.cpu.usage:
-        description: "ElasticsearchProcessCPUUsageConfig provides config for the elasticsearch.process.cpu.usage metric."
+        description: "ElasticsearchProcessCPUUsageMetricConfig provides config for the elasticsearch.process.cpu.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       elasticsearch.process.memory.virtual:
-        description: "ElasticsearchProcessMemoryVirtualConfig provides config for the elasticsearch.process.memory.virtual metric."
+        description: "ElasticsearchProcessMemoryVirtualMetricConfig provides config for the elasticsearch.process.memory.virtual metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       jvm.classes.loaded:
-        description: "JvmClassesLoadedConfig provides config for the jvm.classes.loaded metric."
+        description: "JvmClassesLoadedMetricConfig provides config for the jvm.classes.loaded metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.gc.collections.count:
-        description: "JvmGcCollectionsCountConfig provides config for the jvm.gc.collections.count metric."
+        description: "JvmGcCollectionsCountMetricConfig provides config for the jvm.gc.collections.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.gc.collections.elapsed:
-        description: "JvmGcCollectionsElapsedConfig provides config for the jvm.gc.collections.elapsed metric."
+        description: "JvmGcCollectionsElapsedMetricConfig provides config for the jvm.gc.collections.elapsed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.memory.heap.committed:
-        description: "JvmMemoryHeapCommittedConfig provides config for the jvm.memory.heap.committed metric."
+        description: "JvmMemoryHeapCommittedMetricConfig provides config for the jvm.memory.heap.committed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.memory.heap.max:
-        description: "JvmMemoryHeapMaxConfig provides config for the jvm.memory.heap.max metric."
+        description: "JvmMemoryHeapMaxMetricConfig provides config for the jvm.memory.heap.max metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.memory.heap.used:
-        description: "JvmMemoryHeapUsedConfig provides config for the jvm.memory.heap.used metric."
+        description: "JvmMemoryHeapUsedMetricConfig provides config for the jvm.memory.heap.used metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.memory.heap.utilization:
-        description: "JvmMemoryHeapUtilizationConfig provides config for the jvm.memory.heap.utilization metric."
+        description: "JvmMemoryHeapUtilizationMetricConfig provides config for the jvm.memory.heap.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       jvm.memory.nonheap.committed:
-        description: "JvmMemoryNonheapCommittedConfig provides config for the jvm.memory.nonheap.committed metric."
+        description: "JvmMemoryNonheapCommittedMetricConfig provides config for the jvm.memory.nonheap.committed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.memory.nonheap.used:
-        description: "JvmMemoryNonheapUsedConfig provides config for the jvm.memory.nonheap.used metric."
+        description: "JvmMemoryNonheapUsedMetricConfig provides config for the jvm.memory.nonheap.used metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.memory.pool.max:
-        description: "JvmMemoryPoolMaxConfig provides config for the jvm.memory.pool.max metric."
+        description: "JvmMemoryPoolMaxMetricConfig provides config for the jvm.memory.pool.max metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.memory.pool.used:
-        description: "JvmMemoryPoolUsedConfig provides config for the jvm.memory.pool.used metric."
+        description: "JvmMemoryPoolUsedMetricConfig provides config for the jvm.memory.pool.used metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       jvm.threads.count:
-        description: "JvmThreadsCountConfig provides config for the jvm.threads.count metric."
+        description: "JvmThreadsCountMetricConfig provides config for the jvm.threads.count metric."
         type: object
         properties:
           enabled:
