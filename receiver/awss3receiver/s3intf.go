@@ -11,6 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+)
+
+const (
+	ingestedTag    = "otel-collector:status"
+	ingestedStatus = "ingested"
 )
 
 type ListObjectsV2Pager interface {
@@ -24,7 +30,7 @@ type ListObjectsAPI interface {
 
 type SingleObjectAPI interface {
 	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
-	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
+	PutObjectTagging(ctx context.Context, params *s3.PutObjectTaggingInput, optFns ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error)
 }
 
 type s3ListObjectsAPIImpl struct {
@@ -53,7 +59,6 @@ func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, S
 		})
 	}
 	client := s3.NewFromConfig(awsCfg, s3OptionFuncs...)
-
 	return &s3ListObjectsAPIImpl{client: client}, client, nil
 }
 
@@ -79,12 +84,20 @@ func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key s
 	return contents, nil
 }
 
-// deleteS3Object deletes an S3 object for a given bucket and key
-func deleteS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) error {
-	params := s3.DeleteObjectInput{
+// tagS3Object tags an S3 object for a given bucket and key
+func tagS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) error {
+	params := s3.PutObjectTaggingInput{
 		Bucket: &bucket,
 		Key:    &key,
+		Tagging: &types.Tagging{
+			TagSet: []types.Tag{
+				{
+					Key:   aws.String(ingestedTag),
+					Value: aws.String(ingestedStatus),
+				},
+			},
+		},
 	}
-	_, err := client.DeleteObject(ctx, &params)
+	_, err := client.PutObjectTagging(ctx, &params)
 	return err
 }

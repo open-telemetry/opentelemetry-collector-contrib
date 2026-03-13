@@ -184,8 +184,8 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 }
 
 type mockSingleObjectAPI struct {
-	getObjectFunc    func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
-	deleteObjectFunc func(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
+	getObjectFunc        func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+	putObjectTaggingFunc func(ctx context.Context, params *s3.PutObjectTaggingInput, optFns ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error)
 }
 
 func (m *mockSingleObjectAPI) GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
@@ -195,12 +195,12 @@ func (m *mockSingleObjectAPI) GetObject(ctx context.Context, params *s3.GetObjec
 	return nil, errors.New("GetObject not mocked")
 }
 
-func (m *mockSingleObjectAPI) DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error) {
-	if m.deleteObjectFunc != nil {
-		return m.deleteObjectFunc(ctx, params, optFns...)
+func (m *mockSingleObjectAPI) PutObjectTagging(ctx context.Context, params *s3.PutObjectTaggingInput, optFns ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error) {
+	if m.putObjectTaggingFunc != nil {
+		return m.putObjectTaggingFunc(ctx, params, optFns...)
 	}
 	// Default to success if no mock function provided
-	return &s3.DeleteObjectOutput{}, nil
+	return &s3.PutObjectTaggingOutput{}, nil
 }
 
 type mockListObjectsAPI func(params *s3.ListObjectsV2Input) ListObjectsV2Pager
@@ -641,9 +641,9 @@ func Test_readAll_ContextDone(t *testing.T) {
 	}, notifier.messages)
 }
 
-func Test_readTelemetryForTime_WithDelete(t *testing.T) {
+func Test_readTelemetryForTime_WithTag(t *testing.T) {
 	testKey := "year=2023/month=01/day=02/hour=03/minute=04/traces_test"
-	deletedKeys := make([]string, 0)
+	taggedKeys := make([]string, 0)
 
 	reader := &s3TimeBasedReader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
@@ -669,12 +669,12 @@ func Test_readTelemetryForTime_WithDelete(t *testing.T) {
 					Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 				}, nil
 			},
-			deleteObjectFunc: func(_ context.Context, params *s3.DeleteObjectInput, _ ...func(*s3.Options)) (*s3.DeleteObjectOutput, error) {
+			putObjectTaggingFunc: func(_ context.Context, params *s3.PutObjectTaggingInput, _ ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error) {
 				t.Helper()
 				require.Equal(t, "bucket", *params.Bucket)
 				require.Equal(t, testKey, *params.Key)
-				deletedKeys = append(deletedKeys, *params.Key)
-				return &s3.DeleteObjectOutput{}, nil
+				taggedKeys = append(taggedKeys, *params.Key)
+				return &s3.PutObjectTaggingOutput{}, nil
 			},
 		},
 		logger:                         zap.NewNop(),
@@ -683,7 +683,7 @@ func Test_readTelemetryForTime_WithDelete(t *testing.T) {
 		S3PartitionTimeLocation:        time.UTC,
 		filePrefix:                     "",
 		filePrefixIncludeTelemetryType: true,
-		deleteObjectAfterIngestion:     true, // Enable deletion
+		tagObjectAfterIngestion:        true, // Enable tagging
 	}
 
 	testTime, err := time.Parse(time.RFC3339, "2023-01-02T03:04:05Z")
@@ -697,10 +697,10 @@ func Test_readTelemetryForTime_WithDelete(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, []string{testKey}, dataCallbackKeys)
-	require.Equal(t, []string{testKey}, deletedKeys, "Object should be deleted after successful ingestion")
+	require.Equal(t, []string{testKey}, taggedKeys, "Object should be tagged after successful ingestion")
 }
 
-func Test_readTelemetryForTime_DeleteFailure(t *testing.T) {
+func Test_readTelemetryForTime_TagFailure(t *testing.T) {
 	testKey := "year=2023/month=01/day=02/hour=03/minute=04/traces_test"
 
 	reader := &s3TimeBasedReader{
@@ -727,11 +727,11 @@ func Test_readTelemetryForTime_DeleteFailure(t *testing.T) {
 					Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 				}, nil
 			},
-			deleteObjectFunc: func(_ context.Context, params *s3.DeleteObjectInput, _ ...func(*s3.Options)) (*s3.DeleteObjectOutput, error) {
+			putObjectTaggingFunc: func(_ context.Context, params *s3.PutObjectTaggingInput, _ ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error) {
 				t.Helper()
 				require.Equal(t, "bucket", *params.Bucket)
 				require.Equal(t, testKey, *params.Key)
-				return nil, errors.New("delete failed")
+				return nil, errors.New("tagging failed")
 			},
 		},
 		logger:                         zap.NewNop(),
@@ -740,20 +740,20 @@ func Test_readTelemetryForTime_DeleteFailure(t *testing.T) {
 		S3PartitionTimeLocation:        time.UTC,
 		filePrefix:                     "",
 		filePrefixIncludeTelemetryType: true,
-		deleteObjectAfterIngestion:     true, // Enable deletion
+		tagObjectAfterIngestion:        true, // Enable tagging
 	}
 
 	testTime, err := time.Parse(time.RFC3339, "2023-01-02T03:04:05Z")
 	require.NoError(t, err)
 
 	dataCallbackKeys := make([]string, 0)
-	// Should not return error even if delete fails
+	// Should not return error even if tagging fails
 	err = reader.readTelemetryForTime(t.Context(), testTime, "traces", func(_ context.Context, key string, _ []byte) error {
 		t.Helper()
 		dataCallbackKeys = append(dataCallbackKeys, key)
 		return nil
 	})
-	require.NoError(t, err, "Should not fail when delete fails")
+	require.NoError(t, err, "Should not fail when tagging fails")
 	require.Equal(t, []string{testKey}, dataCallbackKeys, "Data should still be processed")
 }
 

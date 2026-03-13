@@ -20,8 +20,6 @@ $defs:
     description: S3DownloaderConfig contains aws s3 downloader related config to controls things like bucket, prefix, batching, connections, retries, etc.
     type: object
     properties:
-      delete_object_after_ingestion:
-        type: boolean
       endpoint:
         type: string
       endpoint_partition_id:
@@ -42,6 +40,8 @@ $defs:
         type: string
       s3_prefix:
         type: string
+      tag_object_after_ingestion:
+        type: boolean
   sqs_config:
     description: SQSConfig holds SQS queue configuration for receiving object change notifications.
     type: object

@@ -28,7 +28,7 @@ type s3TimeBasedReader struct {
 	startTime                      time.Time
 	endTime                        time.Time
 	notifier                       statusNotifier
-	deleteObjectAfterIngestion     bool
+	tagObjectAfterIngestion        bool
 }
 
 func newS3TimeBasedReader(ctx context.Context, notifier statusNotifier, logger *zap.Logger, cfg *Config) (*s3TimeBasedReader, error) {
@@ -68,7 +68,7 @@ func newS3TimeBasedReader(ctx context.Context, notifier statusNotifier, logger *
 		startTime:                      startTime,
 		endTime:                        endTime,
 		notifier:                       notifier,
-		deleteObjectAfterIngestion:     cfg.S3Downloader.DeleteObjectAfterIngestion,
+		tagObjectAfterIngestion:        cfg.S3Downloader.TagObjectAfterIngestion,
 	}, nil
 }
 
@@ -150,20 +150,21 @@ func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t t
 				if err != nil {
 					return err
 				}
+
 				s3Reader.logger.Debug("Retrieved telemetry", zap.String("key", *obj.Key))
 				if callbackErr := dataCallback(ctx, *obj.Key, data); callbackErr != nil {
 					return callbackErr
 				}
 
-				if s3Reader.deleteObjectAfterIngestion {
-					if err = deleteS3Object(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key); err != nil {
-						s3Reader.logger.Warn("Failed to delete S3 object",
+				if s3Reader.tagObjectAfterIngestion {
+					if err = tagS3Object(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key); err != nil {
+						s3Reader.logger.Warn("Failed to tag S3 object",
 							zap.String("bucket", s3Reader.s3Bucket),
 							zap.String("key", *obj.Key),
 							zap.Error(err))
 						// Don't return error as the object was processed successfully
 					} else {
-						s3Reader.logger.Debug("Deleted S3 object",
+						s3Reader.logger.Debug("Tagged S3 object",
 							zap.String("bucket", s3Reader.s3Bucket),
 							zap.String("key", *obj.Key))
 					}

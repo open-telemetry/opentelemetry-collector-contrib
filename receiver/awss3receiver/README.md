@@ -51,7 +51,7 @@ The following exporter configuration parameters are supported.
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
 | `notifications:`        |                                                                                                                                            |             |          |
 | `opampextension`        | Name of the OpAMP Extension to use to send ingest progress notifications.                                                                  |             |          |
-| `delete_object_after_ingestion`        | If enabled the receiver will attempt to delete the object after successfully ingesting it.                                                                  | false       | Optional |
+| `tag_object_after_ingestion`        | If enabled the receiver will attempt to tag the object after successfully ingesting it.                                                                  | false       | Optional |
 
 There are two modes of operation:
 
@@ -154,3 +154,7 @@ The "ingesting" status is sent at the beginning of the ingest process before dat
 If during the processing of the data an error occurs a status message with `ingest_status` set to "failed" status with
 the time of the data being ingested when the failure occurred.
 If the ingest process completes successfully a status message with `ingest_status` set to "completed" is sent.
+
+## Object Lifecycle Management
+If the `tag_object_after_ingestion` is enabled the receiver will make a best-effort attempt to tag objects with `otel-collector:status = ingested` after they are processed by the pipeline. This requires an additional `s3:PutObjectTagging` permission.
+This tag can then be used with a lifecycle policy to expire ingested objects or transition them to cheaper storage classes.
