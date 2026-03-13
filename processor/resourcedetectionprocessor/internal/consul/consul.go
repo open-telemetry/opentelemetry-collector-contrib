@@ -32,9 +32,8 @@ type Detector struct {
 	rb       *metadata.ResourceBuilder
 }
 
-// NewDetector creates a new system metadata detector
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
-	userCfg := dcfg.(Config)
+// buildConsulAPIConfig translates the detector Config into a hashicorp consul api.Config.
+func buildConsulAPIConfig(userCfg Config) *api.Config {
 	cfg := api.DefaultConfig()
 
 	if userCfg.Address != "" {
@@ -50,8 +49,15 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 		cfg.Token = string(userCfg.Token)
 	}
 	if userCfg.TokenFile != "" {
-		cfg.Token = userCfg.TokenFile
+		cfg.TokenFile = userCfg.TokenFile
 	}
+
+	return cfg
+}
+
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	userCfg := dcfg.(Config)
+	cfg := buildConsulAPIConfig(userCfg)
 
 	client, err := api.NewClient(cfg)
 	if err != nil {

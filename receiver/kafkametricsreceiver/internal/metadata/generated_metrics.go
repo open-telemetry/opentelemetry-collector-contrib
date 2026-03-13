@@ -95,10 +95,10 @@ type metricInfo struct {
 }
 
 type metricKafkaBrokerLogRetentionPeriod struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        KafkaBrokerLogRetentionPeriodConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.broker.log_retention_period metric with initial data.
@@ -119,7 +119,7 @@ func (m *metricKafkaBrokerLogRetentionPeriod) recordDataPoint(start pcommon.Time
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "broker") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaBrokerLogRetentionPeriodAttributeKeyBroker) {
 		dp.Attributes().PutStr("broker", brokerAttributeValue)
 	}
 
@@ -173,7 +173,7 @@ func (m *metricKafkaBrokerLogRetentionPeriod) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricKafkaBrokerLogRetentionPeriod(cfg MetricConfig) metricKafkaBrokerLogRetentionPeriod {
+func newMetricKafkaBrokerLogRetentionPeriod(cfg KafkaBrokerLogRetentionPeriodConfig) metricKafkaBrokerLogRetentionPeriod {
 	m := metricKafkaBrokerLogRetentionPeriod{config: cfg}
 
 	if cfg.Enabled {
@@ -184,9 +184,9 @@ func newMetricKafkaBrokerLogRetentionPeriod(cfg MetricConfig) metricKafkaBrokerL
 }
 
 type metricKafkaBrokers struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric     // data buffer for generated metric.
+	config   KafkaBrokersConfig // metric config provided by user.
+	capacity int                // max observed number of data points added to the metric.
 }
 
 // init fills kafka.brokers metric with initial data.
@@ -225,7 +225,7 @@ func (m *metricKafkaBrokers) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaBrokers(cfg MetricConfig) metricKafkaBrokers {
+func newMetricKafkaBrokers(cfg KafkaBrokersConfig) metricKafkaBrokers {
 	m := metricKafkaBrokers{config: cfg}
 
 	if cfg.Enabled {
@@ -236,10 +236,10 @@ func newMetricKafkaBrokers(cfg MetricConfig) metricKafkaBrokers {
 }
 
 type metricKafkaConsumerGroupLag struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        KafkaConsumerGroupLagConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.consumer_group.lag metric with initial data.
@@ -260,13 +260,13 @@ func (m *metricKafkaConsumerGroupLag) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "group") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupLagAttributeKeyGroup) {
 		dp.Attributes().PutStr("group", groupAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupLagAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "partition") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupLagAttributeKeyPartition) {
 		dp.Attributes().PutInt("partition", partitionAttributeValue)
 	}
 
@@ -320,7 +320,7 @@ func (m *metricKafkaConsumerGroupLag) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaConsumerGroupLag(cfg MetricConfig) metricKafkaConsumerGroupLag {
+func newMetricKafkaConsumerGroupLag(cfg KafkaConsumerGroupLagConfig) metricKafkaConsumerGroupLag {
 	m := metricKafkaConsumerGroupLag{config: cfg}
 
 	if cfg.Enabled {
@@ -331,10 +331,10 @@ func newMetricKafkaConsumerGroupLag(cfg MetricConfig) metricKafkaConsumerGroupLa
 }
 
 type metricKafkaConsumerGroupLagSum struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        KafkaConsumerGroupLagSumConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.consumer_group.lag_sum metric with initial data.
@@ -355,10 +355,10 @@ func (m *metricKafkaConsumerGroupLagSum) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "group") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupLagSumAttributeKeyGroup) {
 		dp.Attributes().PutStr("group", groupAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupLagSumAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
 
@@ -412,7 +412,7 @@ func (m *metricKafkaConsumerGroupLagSum) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaConsumerGroupLagSum(cfg MetricConfig) metricKafkaConsumerGroupLagSum {
+func newMetricKafkaConsumerGroupLagSum(cfg KafkaConsumerGroupLagSumConfig) metricKafkaConsumerGroupLagSum {
 	m := metricKafkaConsumerGroupLagSum{config: cfg}
 
 	if cfg.Enabled {
@@ -423,10 +423,10 @@ func newMetricKafkaConsumerGroupLagSum(cfg MetricConfig) metricKafkaConsumerGrou
 }
 
 type metricKafkaConsumerGroupMembers struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        KafkaConsumerGroupMembersConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.consumer_group.members metric with initial data.
@@ -449,7 +449,7 @@ func (m *metricKafkaConsumerGroupMembers) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "group") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupMembersAttributeKeyGroup) {
 		dp.Attributes().PutStr("group", groupAttributeValue)
 	}
 
@@ -503,7 +503,7 @@ func (m *metricKafkaConsumerGroupMembers) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaConsumerGroupMembers(cfg MetricConfig) metricKafkaConsumerGroupMembers {
+func newMetricKafkaConsumerGroupMembers(cfg KafkaConsumerGroupMembersConfig) metricKafkaConsumerGroupMembers {
 	m := metricKafkaConsumerGroupMembers{config: cfg}
 
 	if cfg.Enabled {
@@ -514,10 +514,10 @@ func newMetricKafkaConsumerGroupMembers(cfg MetricConfig) metricKafkaConsumerGro
 }
 
 type metricKafkaConsumerGroupOffset struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        KafkaConsumerGroupOffsetConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.consumer_group.offset metric with initial data.
@@ -538,13 +538,13 @@ func (m *metricKafkaConsumerGroupOffset) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "group") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupOffsetAttributeKeyGroup) {
 		dp.Attributes().PutStr("group", groupAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupOffsetAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "partition") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupOffsetAttributeKeyPartition) {
 		dp.Attributes().PutInt("partition", partitionAttributeValue)
 	}
 
@@ -598,7 +598,7 @@ func (m *metricKafkaConsumerGroupOffset) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaConsumerGroupOffset(cfg MetricConfig) metricKafkaConsumerGroupOffset {
+func newMetricKafkaConsumerGroupOffset(cfg KafkaConsumerGroupOffsetConfig) metricKafkaConsumerGroupOffset {
 	m := metricKafkaConsumerGroupOffset{config: cfg}
 
 	if cfg.Enabled {
@@ -609,10 +609,10 @@ func newMetricKafkaConsumerGroupOffset(cfg MetricConfig) metricKafkaConsumerGrou
 }
 
 type metricKafkaConsumerGroupOffsetSum struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        KafkaConsumerGroupOffsetSumConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.consumer_group.offset_sum metric with initial data.
@@ -633,10 +633,10 @@ func (m *metricKafkaConsumerGroupOffsetSum) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "group") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupOffsetSumAttributeKeyGroup) {
 		dp.Attributes().PutStr("group", groupAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaConsumerGroupOffsetSumAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
 
@@ -690,7 +690,7 @@ func (m *metricKafkaConsumerGroupOffsetSum) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaConsumerGroupOffsetSum(cfg MetricConfig) metricKafkaConsumerGroupOffsetSum {
+func newMetricKafkaConsumerGroupOffsetSum(cfg KafkaConsumerGroupOffsetSumConfig) metricKafkaConsumerGroupOffsetSum {
 	m := metricKafkaConsumerGroupOffsetSum{config: cfg}
 
 	if cfg.Enabled {
@@ -701,10 +701,10 @@ func newMetricKafkaConsumerGroupOffsetSum(cfg MetricConfig) metricKafkaConsumerG
 }
 
 type metricKafkaPartitionCurrentOffset struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        KafkaPartitionCurrentOffsetConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.partition.current_offset metric with initial data.
@@ -725,10 +725,10 @@ func (m *metricKafkaPartitionCurrentOffset) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaPartitionCurrentOffsetAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "partition") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaPartitionCurrentOffsetAttributeKeyPartition) {
 		dp.Attributes().PutInt("partition", partitionAttributeValue)
 	}
 
@@ -782,7 +782,7 @@ func (m *metricKafkaPartitionCurrentOffset) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaPartitionCurrentOffset(cfg MetricConfig) metricKafkaPartitionCurrentOffset {
+func newMetricKafkaPartitionCurrentOffset(cfg KafkaPartitionCurrentOffsetConfig) metricKafkaPartitionCurrentOffset {
 	m := metricKafkaPartitionCurrentOffset{config: cfg}
 
 	if cfg.Enabled {
@@ -793,10 +793,10 @@ func newMetricKafkaPartitionCurrentOffset(cfg MetricConfig) metricKafkaPartition
 }
 
 type metricKafkaPartitionOldestOffset struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        KafkaPartitionOldestOffsetConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.partition.oldest_offset metric with initial data.
@@ -817,10 +817,10 @@ func (m *metricKafkaPartitionOldestOffset) recordDataPoint(start pcommon.Timesta
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaPartitionOldestOffsetAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "partition") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaPartitionOldestOffsetAttributeKeyPartition) {
 		dp.Attributes().PutInt("partition", partitionAttributeValue)
 	}
 
@@ -874,7 +874,7 @@ func (m *metricKafkaPartitionOldestOffset) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaPartitionOldestOffset(cfg MetricConfig) metricKafkaPartitionOldestOffset {
+func newMetricKafkaPartitionOldestOffset(cfg KafkaPartitionOldestOffsetConfig) metricKafkaPartitionOldestOffset {
 	m := metricKafkaPartitionOldestOffset{config: cfg}
 
 	if cfg.Enabled {
@@ -885,10 +885,10 @@ func newMetricKafkaPartitionOldestOffset(cfg MetricConfig) metricKafkaPartitionO
 }
 
 type metricKafkaPartitionReplicas struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        KafkaPartitionReplicasConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.partition.replicas metric with initial data.
@@ -911,10 +911,10 @@ func (m *metricKafkaPartitionReplicas) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaPartitionReplicasAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "partition") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaPartitionReplicasAttributeKeyPartition) {
 		dp.Attributes().PutInt("partition", partitionAttributeValue)
 	}
 
@@ -968,7 +968,7 @@ func (m *metricKafkaPartitionReplicas) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaPartitionReplicas(cfg MetricConfig) metricKafkaPartitionReplicas {
+func newMetricKafkaPartitionReplicas(cfg KafkaPartitionReplicasConfig) metricKafkaPartitionReplicas {
 	m := metricKafkaPartitionReplicas{config: cfg}
 
 	if cfg.Enabled {
@@ -979,10 +979,10 @@ func newMetricKafkaPartitionReplicas(cfg MetricConfig) metricKafkaPartitionRepli
 }
 
 type metricKafkaPartitionReplicasInSync struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        KafkaPartitionReplicasInSyncConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.partition.replicas_in_sync metric with initial data.
@@ -1005,10 +1005,10 @@ func (m *metricKafkaPartitionReplicasInSync) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaPartitionReplicasInSyncAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "partition") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaPartitionReplicasInSyncAttributeKeyPartition) {
 		dp.Attributes().PutInt("partition", partitionAttributeValue)
 	}
 
@@ -1062,7 +1062,7 @@ func (m *metricKafkaPartitionReplicasInSync) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaPartitionReplicasInSync(cfg MetricConfig) metricKafkaPartitionReplicasInSync {
+func newMetricKafkaPartitionReplicasInSync(cfg KafkaPartitionReplicasInSyncConfig) metricKafkaPartitionReplicasInSync {
 	m := metricKafkaPartitionReplicasInSync{config: cfg}
 
 	if cfg.Enabled {
@@ -1073,10 +1073,10 @@ func newMetricKafkaPartitionReplicasInSync(cfg MetricConfig) metricKafkaPartitio
 }
 
 type metricKafkaTopicLogRetentionPeriod struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        KafkaTopicLogRetentionPeriodConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.topic.log_retention_period metric with initial data.
@@ -1097,7 +1097,7 @@ func (m *metricKafkaTopicLogRetentionPeriod) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaTopicLogRetentionPeriodAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
 
@@ -1151,7 +1151,7 @@ func (m *metricKafkaTopicLogRetentionPeriod) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaTopicLogRetentionPeriod(cfg MetricConfig) metricKafkaTopicLogRetentionPeriod {
+func newMetricKafkaTopicLogRetentionPeriod(cfg KafkaTopicLogRetentionPeriodConfig) metricKafkaTopicLogRetentionPeriod {
 	m := metricKafkaTopicLogRetentionPeriod{config: cfg}
 
 	if cfg.Enabled {
@@ -1162,10 +1162,10 @@ func newMetricKafkaTopicLogRetentionPeriod(cfg MetricConfig) metricKafkaTopicLog
 }
 
 type metricKafkaTopicLogRetentionSize struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        KafkaTopicLogRetentionSizeConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.topic.log_retention_size metric with initial data.
@@ -1186,7 +1186,7 @@ func (m *metricKafkaTopicLogRetentionSize) recordDataPoint(start pcommon.Timesta
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaTopicLogRetentionSizeAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
 
@@ -1240,7 +1240,7 @@ func (m *metricKafkaTopicLogRetentionSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaTopicLogRetentionSize(cfg MetricConfig) metricKafkaTopicLogRetentionSize {
+func newMetricKafkaTopicLogRetentionSize(cfg KafkaTopicLogRetentionSizeConfig) metricKafkaTopicLogRetentionSize {
 	m := metricKafkaTopicLogRetentionSize{config: cfg}
 
 	if cfg.Enabled {
@@ -1251,10 +1251,10 @@ func newMetricKafkaTopicLogRetentionSize(cfg MetricConfig) metricKafkaTopicLogRe
 }
 
 type metricKafkaTopicMinInsyncReplicas struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        KafkaTopicMinInsyncReplicasConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.topic.min_insync_replicas metric with initial data.
@@ -1275,7 +1275,7 @@ func (m *metricKafkaTopicMinInsyncReplicas) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaTopicMinInsyncReplicasAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
 
@@ -1329,7 +1329,7 @@ func (m *metricKafkaTopicMinInsyncReplicas) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaTopicMinInsyncReplicas(cfg MetricConfig) metricKafkaTopicMinInsyncReplicas {
+func newMetricKafkaTopicMinInsyncReplicas(cfg KafkaTopicMinInsyncReplicasConfig) metricKafkaTopicMinInsyncReplicas {
 	m := metricKafkaTopicMinInsyncReplicas{config: cfg}
 
 	if cfg.Enabled {
@@ -1340,10 +1340,10 @@ func newMetricKafkaTopicMinInsyncReplicas(cfg MetricConfig) metricKafkaTopicMinI
 }
 
 type metricKafkaTopicPartitions struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        KafkaTopicPartitionsConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.topic.partitions metric with initial data.
@@ -1366,7 +1366,7 @@ func (m *metricKafkaTopicPartitions) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaTopicPartitionsAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
 
@@ -1420,7 +1420,7 @@ func (m *metricKafkaTopicPartitions) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaTopicPartitions(cfg MetricConfig) metricKafkaTopicPartitions {
+func newMetricKafkaTopicPartitions(cfg KafkaTopicPartitionsConfig) metricKafkaTopicPartitions {
 	m := metricKafkaTopicPartitions{config: cfg}
 
 	if cfg.Enabled {
@@ -1431,10 +1431,10 @@ func newMetricKafkaTopicPartitions(cfg MetricConfig) metricKafkaTopicPartitions 
 }
 
 type metricKafkaTopicReplicationFactor struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        KafkaTopicReplicationFactorConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills kafka.topic.replication_factor metric with initial data.
@@ -1455,7 +1455,7 @@ func (m *metricKafkaTopicReplicationFactor) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "topic") {
+	if slices.Contains(m.config.EnabledAttributes, KafkaTopicReplicationFactorAttributeKeyTopic) {
 		dp.Attributes().PutStr("topic", topicAttributeValue)
 	}
 
@@ -1509,7 +1509,7 @@ func (m *metricKafkaTopicReplicationFactor) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricKafkaTopicReplicationFactor(cfg MetricConfig) metricKafkaTopicReplicationFactor {
+func newMetricKafkaTopicReplicationFactor(cfg KafkaTopicReplicationFactorConfig) metricKafkaTopicReplicationFactor {
 	m := metricKafkaTopicReplicationFactor{config: cfg}
 
 	if cfg.Enabled {
