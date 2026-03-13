@@ -18,6 +18,9 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 	"github.com/DataDog/datadog-agent/pkg/serializer/types"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -29,11 +32,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
-	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 // mockHost implements component.Host and hostcapabilities.ModuleInfo for testing
@@ -231,7 +229,7 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 
 	// Expect map with keys and values (os.type is always injected as a fallback)
 	require.NotNil(t, ext.otelCollectorMetadata)
-	expected := map[string]string{"a_key": "1", "b_key": "2", string(conventions.OSTypeKey): runtime.GOOS}
+	expected := map[string]string{"a_key": "1", "b_key": "2", "os.type": runtime.GOOS}
 	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
 
 	// Cleanup
@@ -282,7 +280,7 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 		"deployment.environment.name": "prod",
 		"cloud.region":                "us-east",
 		"team.name":                   "backend",
-		string(conventions.OSTypeKey): runtime.GOOS,
+		"os.type":                     runtime.GOOS,
 	}
 	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
 
