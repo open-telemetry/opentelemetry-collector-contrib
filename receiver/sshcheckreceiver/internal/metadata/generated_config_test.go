@@ -26,12 +26,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SshcheckDuration:     MetricConfig{Enabled: true},
-					SshcheckError:        MetricConfig{Enabled: true},
-					SshcheckSftpDuration: MetricConfig{Enabled: true},
-					SshcheckSftpError:    MetricConfig{Enabled: true},
-					SshcheckSftpStatus:   MetricConfig{Enabled: true},
-					SshcheckStatus:       MetricConfig{Enabled: true},
+					SshcheckDuration: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckError: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckSftpDuration: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckSftpError: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckSftpStatus: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckStatus: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SSHEndpoint: ResourceAttributeConfig{Enabled: true},
@@ -42,12 +54,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SshcheckDuration:     MetricConfig{Enabled: false},
-					SshcheckError:        MetricConfig{Enabled: false},
-					SshcheckSftpDuration: MetricConfig{Enabled: false},
-					SshcheckSftpError:    MetricConfig{Enabled: false},
-					SshcheckSftpStatus:   MetricConfig{Enabled: false},
-					SshcheckStatus:       MetricConfig{Enabled: false},
+					SshcheckDuration: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckError: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckSftpDuration: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckSftpError: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckSftpStatus: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckStatus: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SSHEndpoint: ResourceAttributeConfig{Enabled: false},

@@ -3229,6 +3229,12 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 	})
 }
 
+func withResourceMoved(res pcommon.Resource) ResourceMetricsOption {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
+		res.MoveTo(rm.Resource())
+	})
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
@@ -3249,11 +3255,103 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	})
 }
 
+// ForK8sNamespace returns a K8sNamespaceMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.namespace entity.
+func (mb *MetricsBuilder) ForK8sNamespace(e *K8sNamespaceEntity) *K8sNamespaceMetricsBuilder {
+	return &K8sNamespaceMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sNode returns a K8sNodeMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.node entity.
+func (mb *MetricsBuilder) ForK8sNode(e *K8sNodeEntity) *K8sNodeMetricsBuilder {
+	return &K8sNodeMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sDeployment returns a K8sDeploymentMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.deployment entity.
+func (mb *MetricsBuilder) ForK8sDeployment(e *K8sDeploymentEntity) *K8sDeploymentMetricsBuilder {
+	return &K8sDeploymentMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sReplicaset returns a K8sReplicasetMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.replicaset entity.
+func (mb *MetricsBuilder) ForK8sReplicaset(e *K8sReplicasetEntity) *K8sReplicasetMetricsBuilder {
+	return &K8sReplicasetMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sStatefulset returns a K8sStatefulsetMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.statefulset entity.
+func (mb *MetricsBuilder) ForK8sStatefulset(e *K8sStatefulsetEntity) *K8sStatefulsetMetricsBuilder {
+	return &K8sStatefulsetMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sDaemonset returns a K8sDaemonsetMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.daemonset entity.
+func (mb *MetricsBuilder) ForK8sDaemonset(e *K8sDaemonsetEntity) *K8sDaemonsetMetricsBuilder {
+	return &K8sDaemonsetMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sCronjob returns a K8sCronjobMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.cronjob entity.
+func (mb *MetricsBuilder) ForK8sCronjob(e *K8sCronjobEntity) *K8sCronjobMetricsBuilder {
+	return &K8sCronjobMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sJob returns a K8sJobMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.job entity.
+func (mb *MetricsBuilder) ForK8sJob(e *K8sJobEntity) *K8sJobMetricsBuilder {
+	return &K8sJobMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sPod returns a K8sPodMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.pod entity.
+func (mb *MetricsBuilder) ForK8sPod(e *K8sPodEntity) *K8sPodMetricsBuilder {
+	return &K8sPodMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sContainer returns a K8sContainerMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.container entity.
+func (mb *MetricsBuilder) ForK8sContainer(e *K8sContainerEntity) *K8sContainerMetricsBuilder {
+	return &K8sContainerMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sReplicationcontroller returns a K8sReplicationcontrollerMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.replicationcontroller entity.
+func (mb *MetricsBuilder) ForK8sReplicationcontroller(e *K8sReplicationcontrollerEntity) *K8sReplicationcontrollerMetricsBuilder {
+	return &K8sReplicationcontrollerMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sResourcequota returns a K8sResourcequotaMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.resourcequota entity.
+func (mb *MetricsBuilder) ForK8sResourcequota(e *K8sResourcequotaEntity) *K8sResourcequotaMetricsBuilder {
+	return &K8sResourcequotaMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sService returns a K8sServiceMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.service entity.
+func (mb *MetricsBuilder) ForK8sService(e *K8sServiceEntity) *K8sServiceMetricsBuilder {
+	return &K8sServiceMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sHpa returns a K8sHpaMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.hpa entity.
+func (mb *MetricsBuilder) ForK8sHpa(e *K8sHpaEntity) *K8sHpaMetricsBuilder {
+	return &K8sHpaMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForOpenshiftClusterquota returns a OpenshiftClusterquotaMetricsBuilder that restricts metric recording
+// to metrics belonging to the openshift.clusterquota entity.
+func (mb *MetricsBuilder) ForOpenshiftClusterquota(e *OpenshiftClusterquotaEntity) *OpenshiftClusterquotaMetricsBuilder {
+	return &OpenshiftClusterquotaMetricsBuilder{mb: mb, entity: e}
+}
+
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
+//
+// Deprecated: Use the For<EntityType> methods to get entity-scoped builders and call Emit() on them instead.
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
@@ -3341,241 +3439,337 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordK8sContainerCPULimitDataPoint adds a data point to k8s.container.cpu_limit metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerCPULimitDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerCPULimitDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sContainerCPULimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerCPURequestDataPoint adds a data point to k8s.container.cpu_request metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerCPURequestDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerCPURequestDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sContainerCPURequest.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerEphemeralstorageLimitDataPoint adds a data point to k8s.container.ephemeralstorage_limit metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerEphemeralstorageLimitDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerEphemeralstorageLimitDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerEphemeralstorageLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerEphemeralstorageRequestDataPoint adds a data point to k8s.container.ephemeralstorage_request metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerEphemeralstorageRequestDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerEphemeralstorageRequestDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerEphemeralstorageRequest.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerMemoryLimitDataPoint adds a data point to k8s.container.memory_limit metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerMemoryLimitDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerMemoryLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerMemoryRequestDataPoint adds a data point to k8s.container.memory_request metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerMemoryRequestDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerMemoryRequestDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerMemoryRequest.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerReadyDataPoint adds a data point to k8s.container.ready metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerReadyDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerReadyDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerReady.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerRestartsDataPoint adds a data point to k8s.container.restarts metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerRestartsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerRestarts.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerStatusReasonDataPoint adds a data point to k8s.container.status.reason metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerStatusReasonDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerStatusReasonDataPoint(ts pcommon.Timestamp, val int64, k8sContainerStatusReasonAttributeValue AttributeK8sContainerStatusReason) {
 	mb.metricK8sContainerStatusReason.recordDataPoint(mb.startTime, ts, val, k8sContainerStatusReasonAttributeValue.String())
 }
 
 // RecordK8sContainerStatusStateDataPoint adds a data point to k8s.container.status.state metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerStatusStateDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerStatusStateDataPoint(ts pcommon.Timestamp, val int64, k8sContainerStatusStateAttributeValue AttributeK8sContainerStatusState) {
 	mb.metricK8sContainerStatusState.recordDataPoint(mb.startTime, ts, val, k8sContainerStatusStateAttributeValue.String())
 }
 
 // RecordK8sContainerStorageLimitDataPoint adds a data point to k8s.container.storage_limit metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerStorageLimitDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerStorageLimitDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerStorageLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerStorageRequestDataPoint adds a data point to k8s.container.storage_request metric.
+//
+// Deprecated: Use mb.ForK8sContainer(entity).RecordK8sContainerStorageRequestDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sContainerStorageRequestDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerStorageRequest.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sCronjobActiveJobsDataPoint adds a data point to k8s.cronjob.active_jobs metric.
+//
+// Deprecated: Use mb.ForK8sCronjob(entity).RecordK8sCronjobActiveJobsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sCronjobActiveJobsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sCronjobActiveJobs.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sDaemonsetCurrentScheduledNodesDataPoint adds a data point to k8s.daemonset.current_scheduled_nodes metric.
+//
+// Deprecated: Use mb.ForK8sDaemonset(entity).RecordK8sDaemonsetCurrentScheduledNodesDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sDaemonsetCurrentScheduledNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sDaemonsetDesiredScheduledNodesDataPoint adds a data point to k8s.daemonset.desired_scheduled_nodes metric.
+//
+// Deprecated: Use mb.ForK8sDaemonset(entity).RecordK8sDaemonsetDesiredScheduledNodesDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sDaemonsetDesiredScheduledNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sDaemonsetMisscheduledNodesDataPoint adds a data point to k8s.daemonset.misscheduled_nodes metric.
+//
+// Deprecated: Use mb.ForK8sDaemonset(entity).RecordK8sDaemonsetMisscheduledNodesDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sDaemonsetMisscheduledNodesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sDaemonsetMisscheduledNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sDaemonsetReadyNodesDataPoint adds a data point to k8s.daemonset.ready_nodes metric.
+//
+// Deprecated: Use mb.ForK8sDaemonset(entity).RecordK8sDaemonsetReadyNodesDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sDaemonsetReadyNodesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sDaemonsetReadyNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sDeploymentAvailableDataPoint adds a data point to k8s.deployment.available metric.
+//
+// Deprecated: Use mb.ForK8sDeployment(entity).RecordK8sDeploymentAvailableDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sDeploymentAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sDeploymentAvailable.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sDeploymentDesiredDataPoint adds a data point to k8s.deployment.desired metric.
+//
+// Deprecated: Use mb.ForK8sDeployment(entity).RecordK8sDeploymentDesiredDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sDeploymentDesiredDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sDeploymentDesired.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sHpaCurrentReplicasDataPoint adds a data point to k8s.hpa.current_replicas metric.
+//
+// Deprecated: Use mb.ForK8sHpa(entity).RecordK8sHpaCurrentReplicasDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sHpaCurrentReplicasDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sHpaCurrentReplicas.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sHpaDesiredReplicasDataPoint adds a data point to k8s.hpa.desired_replicas metric.
+//
+// Deprecated: Use mb.ForK8sHpa(entity).RecordK8sHpaDesiredReplicasDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sHpaDesiredReplicasDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sHpaDesiredReplicas.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sHpaMaxReplicasDataPoint adds a data point to k8s.hpa.max_replicas metric.
+//
+// Deprecated: Use mb.ForK8sHpa(entity).RecordK8sHpaMaxReplicasDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sHpaMaxReplicasDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sHpaMaxReplicas.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sHpaMinReplicasDataPoint adds a data point to k8s.hpa.min_replicas metric.
+//
+// Deprecated: Use mb.ForK8sHpa(entity).RecordK8sHpaMinReplicasDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sHpaMinReplicasDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sHpaMinReplicas.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sJobActivePodsDataPoint adds a data point to k8s.job.active_pods metric.
+//
+// Deprecated: Use mb.ForK8sJob(entity).RecordK8sJobActivePodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sJobActivePodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sJobActivePods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sJobDesiredSuccessfulPodsDataPoint adds a data point to k8s.job.desired_successful_pods metric.
+//
+// Deprecated: Use mb.ForK8sJob(entity).RecordK8sJobDesiredSuccessfulPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sJobDesiredSuccessfulPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sJobDesiredSuccessfulPods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sJobFailedPodsDataPoint adds a data point to k8s.job.failed_pods metric.
+//
+// Deprecated: Use mb.ForK8sJob(entity).RecordK8sJobFailedPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sJobFailedPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sJobFailedPods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sJobMaxParallelPodsDataPoint adds a data point to k8s.job.max_parallel_pods metric.
+//
+// Deprecated: Use mb.ForK8sJob(entity).RecordK8sJobMaxParallelPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sJobMaxParallelPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sJobMaxParallelPods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sJobSuccessfulPodsDataPoint adds a data point to k8s.job.successful_pods metric.
+//
+// Deprecated: Use mb.ForK8sJob(entity).RecordK8sJobSuccessfulPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sJobSuccessfulPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sJobSuccessfulPods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sNamespacePhaseDataPoint adds a data point to k8s.namespace.phase metric.
+//
+// Deprecated: Use mb.ForK8sNamespace(entity).RecordK8sNamespacePhaseDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sNamespacePhaseDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sNamespacePhase.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sNodeConditionDataPoint adds a data point to k8s.node.condition metric.
+//
+// Deprecated: Use mb.ForK8sNode(entity).RecordK8sNodeConditionDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sNodeConditionDataPoint(ts pcommon.Timestamp, val int64, conditionAttributeValue string) {
 	mb.metricK8sNodeCondition.recordDataPoint(mb.startTime, ts, val, conditionAttributeValue)
 }
 
 // RecordK8sPodPhaseDataPoint adds a data point to k8s.pod.phase metric.
+//
+// Deprecated: Use mb.ForK8sPod(entity).RecordK8sPodPhaseDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sPodPhaseDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sPodPhase.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sPodStatusReasonDataPoint adds a data point to k8s.pod.status_reason metric.
+//
+// Deprecated: Use mb.ForK8sPod(entity).RecordK8sPodStatusReasonDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sPodStatusReasonDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sPodStatusReason.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sReplicasetAvailableDataPoint adds a data point to k8s.replicaset.available metric.
+//
+// Deprecated: Use mb.ForK8sReplicaset(entity).RecordK8sReplicasetAvailableDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sReplicasetAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sReplicasetAvailable.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sReplicasetDesiredDataPoint adds a data point to k8s.replicaset.desired metric.
+//
+// Deprecated: Use mb.ForK8sReplicaset(entity).RecordK8sReplicasetDesiredDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sReplicasetDesiredDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sReplicasetDesired.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sReplicationControllerAvailableDataPoint adds a data point to k8s.replication_controller.available metric.
+//
+// Deprecated: Use mb.ForK8sReplicationcontroller(entity).RecordK8sReplicationControllerAvailableDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sReplicationControllerAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sReplicationControllerAvailable.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sReplicationControllerDesiredDataPoint adds a data point to k8s.replication_controller.desired metric.
+//
+// Deprecated: Use mb.ForK8sReplicationcontroller(entity).RecordK8sReplicationControllerDesiredDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sReplicationControllerDesiredDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sReplicationControllerDesired.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sResourceQuotaHardLimitDataPoint adds a data point to k8s.resource_quota.hard_limit metric.
+//
+// Deprecated: Use mb.ForK8sResourcequota(entity).RecordK8sResourceQuotaHardLimitDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sResourceQuotaHardLimitDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
 	mb.metricK8sResourceQuotaHardLimit.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
 }
 
 // RecordK8sResourceQuotaUsedDataPoint adds a data point to k8s.resource_quota.used metric.
+//
+// Deprecated: Use mb.ForK8sResourcequota(entity).RecordK8sResourceQuotaUsedDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sResourceQuotaUsedDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
 	mb.metricK8sResourceQuotaUsed.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
 }
 
 // RecordK8sServiceEndpointCountDataPoint adds a data point to k8s.service.endpoint.count metric.
+//
+// Deprecated: Use mb.ForK8sService(entity).RecordK8sServiceEndpointCountDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sServiceEndpointCountDataPoint(ts pcommon.Timestamp, val int64, k8sServiceEndpointAddressTypeAttributeValue AttributeK8sServiceEndpointAddressType, k8sServiceEndpointConditionAttributeValue AttributeK8sServiceEndpointCondition, k8sServiceEndpointZoneAttributeValue string) {
 	mb.metricK8sServiceEndpointCount.recordDataPoint(mb.startTime, ts, val, k8sServiceEndpointAddressTypeAttributeValue.String(), k8sServiceEndpointConditionAttributeValue.String(), k8sServiceEndpointZoneAttributeValue)
 }
 
 // RecordK8sServiceLoadBalancerIngressCountDataPoint adds a data point to k8s.service.load_balancer.ingress.count metric.
+//
+// Deprecated: Use mb.ForK8sService(entity).RecordK8sServiceLoadBalancerIngressCountDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sServiceLoadBalancerIngressCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sServiceLoadBalancerIngressCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetCurrentPodsDataPoint adds a data point to k8s.statefulset.current_pods metric.
+//
+// Deprecated: Use mb.ForK8sStatefulset(entity).RecordK8sStatefulsetCurrentPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sStatefulsetCurrentPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sStatefulsetCurrentPods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetDesiredPodsDataPoint adds a data point to k8s.statefulset.desired_pods metric.
+//
+// Deprecated: Use mb.ForK8sStatefulset(entity).RecordK8sStatefulsetDesiredPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sStatefulsetDesiredPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sStatefulsetDesiredPods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetReadyPodsDataPoint adds a data point to k8s.statefulset.ready_pods metric.
+//
+// Deprecated: Use mb.ForK8sStatefulset(entity).RecordK8sStatefulsetReadyPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sStatefulsetReadyPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sStatefulsetReadyPods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetUpdatedPodsDataPoint adds a data point to k8s.statefulset.updated_pods metric.
+//
+// Deprecated: Use mb.ForK8sStatefulset(entity).RecordK8sStatefulsetUpdatedPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sStatefulsetUpdatedPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sStatefulsetUpdatedPods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordOpenshiftAppliedclusterquotaLimitDataPoint adds a data point to openshift.appliedclusterquota.limit metric.
+//
+// Deprecated: Use mb.ForOpenshiftClusterquota(entity).RecordOpenshiftAppliedclusterquotaLimitDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
 	mb.metricOpenshiftAppliedclusterquotaLimit.recordDataPoint(mb.startTime, ts, val, k8sNamespaceNameAttributeValue, resourceAttributeValue)
 }
 
 // RecordOpenshiftAppliedclusterquotaUsedDataPoint adds a data point to openshift.appliedclusterquota.used metric.
+//
+// Deprecated: Use mb.ForOpenshiftClusterquota(entity).RecordOpenshiftAppliedclusterquotaUsedDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
 	mb.metricOpenshiftAppliedclusterquotaUsed.recordDataPoint(mb.startTime, ts, val, k8sNamespaceNameAttributeValue, resourceAttributeValue)
 }
 
 // RecordOpenshiftClusterquotaLimitDataPoint adds a data point to openshift.clusterquota.limit metric.
+//
+// Deprecated: Use mb.ForOpenshiftClusterquota(entity).RecordOpenshiftClusterquotaLimitDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordOpenshiftClusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
 	mb.metricOpenshiftClusterquotaLimit.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
 }
 
 // RecordOpenshiftClusterquotaUsedDataPoint adds a data point to openshift.clusterquota.used metric.
+//
+// Deprecated: Use mb.ForOpenshiftClusterquota(entity).RecordOpenshiftClusterquotaUsedDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordOpenshiftClusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
 	mb.metricOpenshiftClusterquotaUsed.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
 }

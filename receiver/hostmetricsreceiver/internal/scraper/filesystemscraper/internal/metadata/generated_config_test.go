@@ -26,9 +26,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{Enabled: true},
-					SystemFilesystemUsage:       MetricConfig{Enabled: true},
-					SystemFilesystemUtilization: MetricConfig{Enabled: true},
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemInodesUsageAttributeKey{SystemFilesystemInodesUsageAttributeKeyDevice, SystemFilesystemInodesUsageAttributeKeyMode, SystemFilesystemInodesUsageAttributeKeyMountpoint, SystemFilesystemInodesUsageAttributeKeyType, SystemFilesystemInodesUsageAttributeKeyState},
+					},
+					SystemFilesystemUsage: SystemFilesystemUsageConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemUsageAttributeKey{SystemFilesystemUsageAttributeKeyDevice, SystemFilesystemUsageAttributeKeyMode, SystemFilesystemUsageAttributeKeyMountpoint, SystemFilesystemUsageAttributeKeyType, SystemFilesystemUsageAttributeKeyState},
+					},
+					SystemFilesystemUtilization: SystemFilesystemUtilizationConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemFilesystemUtilizationAttributeKey{SystemFilesystemUtilizationAttributeKeyDevice, SystemFilesystemUtilizationAttributeKeyMode, SystemFilesystemUtilizationAttributeKeyMountpoint, SystemFilesystemUtilizationAttributeKeyType},
+					},
 				},
 			},
 		},
@@ -36,9 +48,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{Enabled: false},
-					SystemFilesystemUsage:       MetricConfig{Enabled: false},
-					SystemFilesystemUtilization: MetricConfig{Enabled: false},
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemInodesUsageAttributeKey{SystemFilesystemInodesUsageAttributeKeyDevice, SystemFilesystemInodesUsageAttributeKeyMode, SystemFilesystemInodesUsageAttributeKeyMountpoint, SystemFilesystemInodesUsageAttributeKeyType, SystemFilesystemInodesUsageAttributeKeyState},
+					},
+					SystemFilesystemUsage: SystemFilesystemUsageConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemUsageAttributeKey{SystemFilesystemUsageAttributeKeyDevice, SystemFilesystemUsageAttributeKeyMode, SystemFilesystemUsageAttributeKeyMountpoint, SystemFilesystemUsageAttributeKeyType, SystemFilesystemUsageAttributeKeyState},
+					},
+					SystemFilesystemUtilization: SystemFilesystemUtilizationConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemFilesystemUtilizationAttributeKey{SystemFilesystemUtilizationAttributeKeyDevice, SystemFilesystemUtilizationAttributeKeyMode, SystemFilesystemUtilizationAttributeKeyMountpoint, SystemFilesystemUtilizationAttributeKeyType},
+					},
 				},
 			},
 		},
@@ -46,7 +70,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemFilesystemInodesUsageConfig{}, SystemFilesystemUsageConfig{}, SystemFilesystemUtilizationConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

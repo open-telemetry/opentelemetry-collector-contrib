@@ -97,6 +97,18 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 
+	jsonCfg := createDefaultConfig()
+	jsonCfg.(*Config).Endpoint = defaultEndpoint
+	jsonCfg.(*Config).JSON = true
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "json"),
+		expected: jsonCfg,
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()

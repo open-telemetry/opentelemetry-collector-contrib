@@ -26,170 +26,106 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HaproxyActive: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxyActive: HaproxyActiveConfig{
+						Enabled: true,
 					},
-					HaproxyBackup: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxyBackup: HaproxyBackupConfig{
+						Enabled: true,
 					},
-					HaproxyBytesInput: MetricConfig{
+					HaproxyBytesInput: HaproxyBytesInputConfig{
+						Enabled: true,
+					},
+					HaproxyBytesOutput: HaproxyBytesOutputConfig{
+						Enabled: true,
+					},
+					HaproxyClientsCanceled: HaproxyClientsCanceledConfig{
+						Enabled: true,
+					},
+					HaproxyCompressionBypass: HaproxyCompressionBypassConfig{
+						Enabled: true,
+					},
+					HaproxyCompressionCount: HaproxyCompressionCountConfig{
+						Enabled: true,
+					},
+					HaproxyCompressionInput: HaproxyCompressionInputConfig{
+						Enabled: true,
+					},
+					HaproxyCompressionOutput: HaproxyCompressionOutputConfig{
+						Enabled: true,
+					},
+					HaproxyConnectionsAverageTime: HaproxyConnectionsAverageTimeConfig{
+						Enabled: true,
+					},
+					HaproxyConnectionsErrors: HaproxyConnectionsErrorsConfig{
+						Enabled: true,
+					},
+					HaproxyConnectionsRate: HaproxyConnectionsRateConfig{
+						Enabled: true,
+					},
+					HaproxyConnectionsRetries: HaproxyConnectionsRetriesConfig{
+						Enabled: true,
+					},
+					HaproxyConnectionsTotal: HaproxyConnectionsTotalConfig{
+						Enabled: true,
+					},
+					HaproxyDowntime: HaproxyDowntimeConfig{
+						Enabled: true,
+					},
+					HaproxyFailedChecks: HaproxyFailedChecksConfig{
+						Enabled: true,
+					},
+					HaproxyRequestsAverageTime: HaproxyRequestsAverageTimeConfig{
+						Enabled: true,
+					},
+					HaproxyRequestsDenied: HaproxyRequestsDeniedConfig{
+						Enabled: true,
+					},
+					HaproxyRequestsErrors: HaproxyRequestsErrorsConfig{
+						Enabled: true,
+					},
+					HaproxyRequestsQueued: HaproxyRequestsQueuedConfig{
+						Enabled: true,
+					},
+					HaproxyRequestsRate: HaproxyRequestsRateConfig{
+						Enabled: true,
+					},
+					HaproxyRequestsRedispatched: HaproxyRequestsRedispatchedConfig{
+						Enabled: true,
+					},
+					HaproxyRequestsTotal: HaproxyRequestsTotalConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []HaproxyRequestsTotalAttributeKey{HaproxyRequestsTotalAttributeKeyStatusCode},
 					},
-					HaproxyBytesOutput: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxyResponsesAverageTime: HaproxyResponsesAverageTimeConfig{
+						Enabled: true,
 					},
-					HaproxyClientsCanceled: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxyResponsesDenied: HaproxyResponsesDeniedConfig{
+						Enabled: true,
 					},
-					HaproxyCompressionBypass: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxyResponsesErrors: HaproxyResponsesErrorsConfig{
+						Enabled: true,
 					},
-					HaproxyCompressionCount: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxyServerSelectedTotal: HaproxyServerSelectedTotalConfig{
+						Enabled: true,
 					},
-					HaproxyCompressionInput: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxySessionsAverage: HaproxySessionsAverageConfig{
+						Enabled: true,
 					},
-					HaproxyCompressionOutput: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxySessionsCount: HaproxySessionsCountConfig{
+						Enabled: true,
 					},
-					HaproxyConnectionsAverageTime: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxySessionsLimit: HaproxySessionsLimitConfig{
+						Enabled: true,
 					},
-					HaproxyConnectionsErrors: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxySessionsRate: HaproxySessionsRateConfig{
+						Enabled: true,
 					},
-					HaproxyConnectionsRate: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxySessionsTotal: HaproxySessionsTotalConfig{
+						Enabled: true,
 					},
-					HaproxyConnectionsRetries: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyConnectionsTotal: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyDowntime: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyFailedChecks: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsAverageTime: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsDenied: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsErrors: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsQueued: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsRate: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsRedispatched: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsTotal: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"status_code"},
-					},
-					HaproxyResponsesAverageTime: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyResponsesDenied: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyResponsesErrors: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyServerSelectedTotal: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsAverage: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsCount: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsLimit: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsRate: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsTotal: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyWeight: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxyWeight: HaproxyWeightConfig{
+						Enabled: true,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -203,170 +139,106 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HaproxyActive: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxyActive: HaproxyActiveConfig{
+						Enabled: false,
 					},
-					HaproxyBackup: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxyBackup: HaproxyBackupConfig{
+						Enabled: false,
 					},
-					HaproxyBytesInput: MetricConfig{
+					HaproxyBytesInput: HaproxyBytesInputConfig{
+						Enabled: false,
+					},
+					HaproxyBytesOutput: HaproxyBytesOutputConfig{
+						Enabled: false,
+					},
+					HaproxyClientsCanceled: HaproxyClientsCanceledConfig{
+						Enabled: false,
+					},
+					HaproxyCompressionBypass: HaproxyCompressionBypassConfig{
+						Enabled: false,
+					},
+					HaproxyCompressionCount: HaproxyCompressionCountConfig{
+						Enabled: false,
+					},
+					HaproxyCompressionInput: HaproxyCompressionInputConfig{
+						Enabled: false,
+					},
+					HaproxyCompressionOutput: HaproxyCompressionOutputConfig{
+						Enabled: false,
+					},
+					HaproxyConnectionsAverageTime: HaproxyConnectionsAverageTimeConfig{
+						Enabled: false,
+					},
+					HaproxyConnectionsErrors: HaproxyConnectionsErrorsConfig{
+						Enabled: false,
+					},
+					HaproxyConnectionsRate: HaproxyConnectionsRateConfig{
+						Enabled: false,
+					},
+					HaproxyConnectionsRetries: HaproxyConnectionsRetriesConfig{
+						Enabled: false,
+					},
+					HaproxyConnectionsTotal: HaproxyConnectionsTotalConfig{
+						Enabled: false,
+					},
+					HaproxyDowntime: HaproxyDowntimeConfig{
+						Enabled: false,
+					},
+					HaproxyFailedChecks: HaproxyFailedChecksConfig{
+						Enabled: false,
+					},
+					HaproxyRequestsAverageTime: HaproxyRequestsAverageTimeConfig{
+						Enabled: false,
+					},
+					HaproxyRequestsDenied: HaproxyRequestsDeniedConfig{
+						Enabled: false,
+					},
+					HaproxyRequestsErrors: HaproxyRequestsErrorsConfig{
+						Enabled: false,
+					},
+					HaproxyRequestsQueued: HaproxyRequestsQueuedConfig{
+						Enabled: false,
+					},
+					HaproxyRequestsRate: HaproxyRequestsRateConfig{
+						Enabled: false,
+					},
+					HaproxyRequestsRedispatched: HaproxyRequestsRedispatchedConfig{
+						Enabled: false,
+					},
+					HaproxyRequestsTotal: HaproxyRequestsTotalConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []HaproxyRequestsTotalAttributeKey{HaproxyRequestsTotalAttributeKeyStatusCode},
 					},
-					HaproxyBytesOutput: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxyResponsesAverageTime: HaproxyResponsesAverageTimeConfig{
+						Enabled: false,
 					},
-					HaproxyClientsCanceled: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxyResponsesDenied: HaproxyResponsesDeniedConfig{
+						Enabled: false,
 					},
-					HaproxyCompressionBypass: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxyResponsesErrors: HaproxyResponsesErrorsConfig{
+						Enabled: false,
 					},
-					HaproxyCompressionCount: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxyServerSelectedTotal: HaproxyServerSelectedTotalConfig{
+						Enabled: false,
 					},
-					HaproxyCompressionInput: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxySessionsAverage: HaproxySessionsAverageConfig{
+						Enabled: false,
 					},
-					HaproxyCompressionOutput: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxySessionsCount: HaproxySessionsCountConfig{
+						Enabled: false,
 					},
-					HaproxyConnectionsAverageTime: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxySessionsLimit: HaproxySessionsLimitConfig{
+						Enabled: false,
 					},
-					HaproxyConnectionsErrors: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					HaproxySessionsRate: HaproxySessionsRateConfig{
+						Enabled: false,
 					},
-					HaproxyConnectionsRate: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxySessionsTotal: HaproxySessionsTotalConfig{
+						Enabled: false,
 					},
-					HaproxyConnectionsRetries: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyConnectionsTotal: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyDowntime: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyFailedChecks: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsAverageTime: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsDenied: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsErrors: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsQueued: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsRate: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsRedispatched: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyRequestsTotal: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"status_code"},
-					},
-					HaproxyResponsesAverageTime: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyResponsesDenied: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyResponsesErrors: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyServerSelectedTotal: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsAverage: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsCount: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsLimit: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsRate: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
-					},
-					HaproxySessionsTotal: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
-					HaproxyWeight: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					HaproxyWeight: HaproxyWeightConfig{
+						Enabled: false,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -380,7 +252,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HaproxyActiveConfig{}, HaproxyBackupConfig{}, HaproxyBytesInputConfig{}, HaproxyBytesOutputConfig{}, HaproxyClientsCanceledConfig{}, HaproxyCompressionBypassConfig{}, HaproxyCompressionCountConfig{}, HaproxyCompressionInputConfig{}, HaproxyCompressionOutputConfig{}, HaproxyConnectionsAverageTimeConfig{}, HaproxyConnectionsErrorsConfig{}, HaproxyConnectionsRateConfig{}, HaproxyConnectionsRetriesConfig{}, HaproxyConnectionsTotalConfig{}, HaproxyDowntimeConfig{}, HaproxyFailedChecksConfig{}, HaproxyRequestsAverageTimeConfig{}, HaproxyRequestsDeniedConfig{}, HaproxyRequestsErrorsConfig{}, HaproxyRequestsQueuedConfig{}, HaproxyRequestsRateConfig{}, HaproxyRequestsRedispatchedConfig{}, HaproxyRequestsTotalConfig{}, HaproxyResponsesAverageTimeConfig{}, HaproxyResponsesDeniedConfig{}, HaproxyResponsesErrorsConfig{}, HaproxyServerSelectedTotalConfig{}, HaproxySessionsAverageConfig{}, HaproxySessionsCountConfig{}, HaproxySessionsLimitConfig{}, HaproxySessionsRateConfig{}, HaproxySessionsTotalConfig{}, HaproxyWeightConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
