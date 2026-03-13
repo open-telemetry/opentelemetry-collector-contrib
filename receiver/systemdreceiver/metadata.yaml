@@ -1,4 +1,7 @@
+display_name: Systemd Receiver
 type: systemd
+
+description: The Systemd Receiver gathers metrics for locally running systemd units.
 
 reaggregation_enabled: true
 

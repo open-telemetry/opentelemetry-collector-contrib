@@ -58,17 +58,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemLinuxMemoryAvailable"] = mb.metricSystemLinuxMemoryAvailable.config.AggregationStrategy
-			aggMap["SystemLinuxMemoryDirty"] = mb.metricSystemLinuxMemoryDirty.config.AggregationStrategy
-			aggMap["SystemMemoryLimit"] = mb.metricSystemMemoryLimit.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxHugepagesLimit"] = mb.metricSystemMemoryLinuxHugepagesLimit.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxHugepagesPageSize"] = mb.metricSystemMemoryLinuxHugepagesPageSize.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxHugepagesReserved"] = mb.metricSystemMemoryLinuxHugepagesReserved.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxHugepagesSurplus"] = mb.metricSystemMemoryLinuxHugepagesSurplus.config.AggregationStrategy
 			aggMap["SystemMemoryLinuxHugepagesUsage"] = mb.metricSystemMemoryLinuxHugepagesUsage.config.AggregationStrategy
 			aggMap["SystemMemoryLinuxHugepagesUtilization"] = mb.metricSystemMemoryLinuxHugepagesUtilization.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxShared"] = mb.metricSystemMemoryLinuxShared.config.AggregationStrategy
-			aggMap["SystemMemoryPageSize"] = mb.metricSystemMemoryPageSize.config.AggregationStrategy
 			aggMap["SystemMemoryUsage"] = mb.metricSystemMemoryUsage.config.AggregationStrategy
 			aggMap["SystemMemoryUtilization"] = mb.metricSystemMemoryUtilization.config.AggregationStrategy
 
@@ -146,30 +137,36 @@ func TestMetricsBuilder(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "system.linux.memory.available":
 					assert.False(t, validatedMetrics["system.linux.memory.available"], "Found a duplicate in the metrics slice: system.linux.memory.available")
 					validatedMetrics["system.linux.memory.available"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -177,13 +174,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.linux.memory.dirty":
 					assert.False(t, validatedMetrics["system.linux.memory.dirty"], "Found a duplicate in the metrics slice: system.linux.memory.dirty")
 					validatedMetrics["system.linux.memory.dirty"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of dirty memory according to `/proc/meminfo`.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of dirty memory according to `/proc/meminfo`.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -191,13 +188,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.memory.limit":
 					assert.False(t, validatedMetrics["system.memory.limit"], "Found a duplicate in the metrics slice: system.memory.limit")
 					validatedMetrics["system.memory.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total bytes of memory available.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total bytes of memory available.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -205,13 +202,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.memory.linux.hugepages.limit":
 					assert.False(t, validatedMetrics["system.memory.linux.hugepages.limit"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.limit")
 					validatedMetrics["system.memory.linux.hugepages.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of hugepages available.", ms.At(i).Description())
-					assert.Equal(t, "{page}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of hugepages available.", mi.Description())
+					assert.Equal(t, "{page}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -219,11 +216,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.memory.linux.hugepages.page_size":
 					assert.False(t, validatedMetrics["system.memory.linux.hugepages.page_size"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.page_size")
 					validatedMetrics["system.memory.linux.hugepages.page_size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "System hugepage size in bytes.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "System hugepage size in bytes.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -231,11 +228,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.memory.linux.hugepages.reserved":
 					assert.False(t, validatedMetrics["system.memory.linux.hugepages.reserved"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.reserved")
 					validatedMetrics["system.memory.linux.hugepages.reserved"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of reserved hugepages (hugepages for which a commitment to allocate has been made, but no allocation has yet been made). This is reported as a separate metric rather than a usage state because reserved pages are already counted in free pages - they represent a subset of free pages that cannot be used for non-reserved allocations.", ms.At(i).Description())
-					assert.Equal(t, "{page}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of reserved hugepages (hugepages for which a commitment to allocate has been made, but no allocation has yet been made). This is reported as a separate metric rather than a usage state because reserved pages are already counted in free pages - they represent a subset of free pages that cannot be used for non-reserved allocations.", mi.Description())
+					assert.Equal(t, "{page}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -243,11 +240,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.memory.linux.hugepages.surplus":
 					assert.False(t, validatedMetrics["system.memory.linux.hugepages.surplus"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.surplus")
 					validatedMetrics["system.memory.linux.hugepages.surplus"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of surplus hugepages (overcommitted hugepages beyond the persistent pool). This is reported as a separate metric rather than a usage state because surplus pages can be in either used or free state, and including them would break the semantic convention that usage states must sum to the limit.", ms.At(i).Description())
-					assert.Equal(t, "{page}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of surplus hugepages (overcommitted hugepages beyond the persistent pool). This is reported as a separate metric rather than a usage state because surplus pages can be in either used or free state, and including them would break the semantic convention that usage states must sum to the limit.", mi.Description())
+					assert.Equal(t, "{page}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -256,13 +253,13 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["system.memory.linux.hugepages.usage"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.usage")
 						validatedMetrics["system.memory.linux.hugepages.usage"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of hugepages in use by state.", ms.At(i).Description())
-						assert.Equal(t, "{page}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of hugepages in use by state.", mi.Description())
+						assert.Equal(t, "{page}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -273,13 +270,13 @@ func TestMetricsBuilder(t *testing.T) {
 					} else {
 						assert.False(t, validatedMetrics["system.memory.linux.hugepages.usage"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.usage")
 						validatedMetrics["system.memory.linux.hugepages.usage"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Number of hugepages in use by state.", ms.At(i).Description())
-						assert.Equal(t, "{page}", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of hugepages in use by state.", mi.Description())
+						assert.Equal(t, "{page}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -300,11 +297,11 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["system.memory.linux.hugepages.utilization"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.utilization")
 						validatedMetrics["system.memory.linux.hugepages.utilization"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Percentage of hugepages in use by state.", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Percentage of hugepages in use by state.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -315,11 +312,11 @@ func TestMetricsBuilder(t *testing.T) {
 					} else {
 						assert.False(t, validatedMetrics["system.memory.linux.hugepages.utilization"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.utilization")
 						validatedMetrics["system.memory.linux.hugepages.utilization"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Percentage of hugepages in use by state.", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Percentage of hugepages in use by state.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -339,13 +336,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.memory.linux.shared":
 					assert.False(t, validatedMetrics["system.memory.linux.shared"], "Found a duplicate in the metrics slice: system.memory.linux.shared")
 					validatedMetrics["system.memory.linux.shared"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -353,11 +350,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.memory.page_size":
 					assert.False(t, validatedMetrics["system.memory.page_size"], "Found a duplicate in the metrics slice: system.memory.page_size")
 					validatedMetrics["system.memory.page_size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "A constant value for the system's configured page size.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "A constant value for the system's configured page size.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -366,13 +363,13 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["system.memory.usage"], "Found a duplicate in the metrics slice: system.memory.usage")
 						validatedMetrics["system.memory.usage"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Bytes of memory in use.", ms.At(i).Description())
-						assert.Equal(t, "By", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in use.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -383,13 +380,13 @@ func TestMetricsBuilder(t *testing.T) {
 					} else {
 						assert.False(t, validatedMetrics["system.memory.usage"], "Found a duplicate in the metrics slice: system.memory.usage")
 						validatedMetrics["system.memory.usage"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Bytes of memory in use.", ms.At(i).Description())
-						assert.Equal(t, "By", ms.At(i).Unit())
-						assert.False(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in use.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -410,11 +407,11 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["system.memory.utilization"], "Found a duplicate in the metrics slice: system.memory.utilization")
 						validatedMetrics["system.memory.utilization"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Percentage of memory bytes in use.", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Percentage of memory bytes in use.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -425,11 +422,11 @@ func TestMetricsBuilder(t *testing.T) {
 					} else {
 						assert.False(t, validatedMetrics["system.memory.utilization"], "Found a duplicate in the metrics slice: system.memory.utilization")
 						validatedMetrics["system.memory.utilization"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Percentage of memory bytes in use.", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Percentage of memory bytes in use.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())

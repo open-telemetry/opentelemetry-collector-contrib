@@ -44,7 +44,7 @@ var ReceiverPrometheusreceiverRemoveReportExtraScrapeMetricsConfigFeatureGate = 
 var ReceiverPrometheusreceiverRemoveStartTimeAdjustmentFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will leave the start time unset. Use the metricstarttime processor instead if you need this functionality."),
+	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will leave the start time unset. Use the metric_start_time processor instead if you need this functionality."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36364"),
 	featuregate.WithRegisterFromVersion("v0.121.0"),
 	featuregate.WithRegisterToVersion("v0.142.0"),

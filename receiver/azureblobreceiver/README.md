@@ -60,7 +60,7 @@ Using Event Hub mode with connection string authentication:
 
 ```yaml
 receivers:
-  azureblob:
+  azure_blob:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
     event_hub:
       endpoint: Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=otelhubbpollicy;SharedAccessKey=mPJVubIK5dJ6mLfZo1ucsdkLysLSQ6N7kddvsIcmoEs=;EntityPath=otellhub
@@ -70,7 +70,7 @@ Using Event Hub mode with service principal authentication:
 
 ```yaml
 receivers:
-  azureblob:
+  azure_blob:
     auth: service_principal
     service_principal:
       tenant_id: "${tenant_id}"
@@ -85,7 +85,7 @@ Using polling mode (no Event Hub):
 
 ```yaml
 receivers:
-  azureblob:
+  azure_blob:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
 ```
 

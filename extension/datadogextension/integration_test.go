@@ -359,6 +359,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 		site,
 		fullConfig,
 		"unknown",
+		"",
 		buildInfo,
 		int64(payloadTTL),
 	)
@@ -567,6 +568,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 		"datadoghq.com",
 		fullConfig,
 		"unknown",
+		"",
 		buildInfo,
 		int64(payloadTTL),
 	)
@@ -730,6 +732,7 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 		"datadoghq.com",
 		"{}",
 		"unknown",
+		"",
 		buildInfo,
 		int64(payloadTTL),
 	)
@@ -826,6 +829,7 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 		"datadoghq.com",
 		"{}",
 		"unknown",
+		"",
 		buildInfo,
 		int64(payloadTTL),
 	)

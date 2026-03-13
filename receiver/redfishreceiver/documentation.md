@@ -236,5 +236,5 @@ Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| base_url | base url. | Any Str | true |
-| system.host_name | System host name. | Any Str | true |
+| host.name | System host name. | Any Str | true |
+| url.full | Full URL of Redfish API endpoint. | Any Str | true |

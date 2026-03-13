@@ -26,40 +26,40 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemDiskIo: MetricConfig{
+					SystemDiskIo: SystemDiskIoConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemDiskIoAttributeKey{SystemDiskIoAttributeKeyDevice, SystemDiskIoAttributeKeyDirection},
 					},
-					SystemDiskIoTime: MetricConfig{
+					SystemDiskIoTime: SystemDiskIoTimeConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device"},
+						EnabledAttributes:   []SystemDiskIoTimeAttributeKey{SystemDiskIoTimeAttributeKeyDevice},
 					},
-					SystemDiskMerged: MetricConfig{
+					SystemDiskMerged: SystemDiskMergedConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemDiskMergedAttributeKey{SystemDiskMergedAttributeKeyDevice, SystemDiskMergedAttributeKeyDirection},
 					},
-					SystemDiskOperationTime: MetricConfig{
+					SystemDiskOperationTime: SystemDiskOperationTimeConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemDiskOperationTimeAttributeKey{SystemDiskOperationTimeAttributeKeyDevice, SystemDiskOperationTimeAttributeKeyDirection},
 					},
-					SystemDiskOperations: MetricConfig{
+					SystemDiskOperations: SystemDiskOperationsConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemDiskOperationsAttributeKey{SystemDiskOperationsAttributeKeyDevice, SystemDiskOperationsAttributeKeyDirection},
 					},
-					SystemDiskPendingOperations: MetricConfig{
+					SystemDiskPendingOperations: SystemDiskPendingOperationsConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device"},
+						EnabledAttributes:   []SystemDiskPendingOperationsAttributeKey{SystemDiskPendingOperationsAttributeKeyDevice},
 					},
-					SystemDiskWeightedIoTime: MetricConfig{
+					SystemDiskWeightedIoTime: SystemDiskWeightedIoTimeConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device"},
+						EnabledAttributes:   []SystemDiskWeightedIoTimeAttributeKey{SystemDiskWeightedIoTimeAttributeKeyDevice},
 					},
 				},
 			},
@@ -68,40 +68,40 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemDiskIo: MetricConfig{
+					SystemDiskIo: SystemDiskIoConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemDiskIoAttributeKey{SystemDiskIoAttributeKeyDevice, SystemDiskIoAttributeKeyDirection},
 					},
-					SystemDiskIoTime: MetricConfig{
+					SystemDiskIoTime: SystemDiskIoTimeConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device"},
+						EnabledAttributes:   []SystemDiskIoTimeAttributeKey{SystemDiskIoTimeAttributeKeyDevice},
 					},
-					SystemDiskMerged: MetricConfig{
+					SystemDiskMerged: SystemDiskMergedConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemDiskMergedAttributeKey{SystemDiskMergedAttributeKeyDevice, SystemDiskMergedAttributeKeyDirection},
 					},
-					SystemDiskOperationTime: MetricConfig{
+					SystemDiskOperationTime: SystemDiskOperationTimeConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemDiskOperationTimeAttributeKey{SystemDiskOperationTimeAttributeKeyDevice, SystemDiskOperationTimeAttributeKeyDirection},
 					},
-					SystemDiskOperations: MetricConfig{
+					SystemDiskOperations: SystemDiskOperationsConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "direction"},
+						EnabledAttributes:   []SystemDiskOperationsAttributeKey{SystemDiskOperationsAttributeKeyDevice, SystemDiskOperationsAttributeKeyDirection},
 					},
-					SystemDiskPendingOperations: MetricConfig{
+					SystemDiskPendingOperations: SystemDiskPendingOperationsConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device"},
+						EnabledAttributes:   []SystemDiskPendingOperationsAttributeKey{SystemDiskPendingOperationsAttributeKeyDevice},
 					},
-					SystemDiskWeightedIoTime: MetricConfig{
+					SystemDiskWeightedIoTime: SystemDiskWeightedIoTimeConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device"},
+						EnabledAttributes:   []SystemDiskWeightedIoTimeAttributeKey{SystemDiskWeightedIoTimeAttributeKeyDevice},
 					},
 				},
 			},
@@ -110,7 +110,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemDiskIoConfig{}, SystemDiskIoTimeConfig{}, SystemDiskMergedConfig{}, SystemDiskOperationTimeConfig{}, SystemDiskOperationsConfig{}, SystemDiskPendingOperationsConfig{}, SystemDiskWeightedIoTimeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
