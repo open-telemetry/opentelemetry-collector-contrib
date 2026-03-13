@@ -450,14 +450,14 @@ $defs:
         properties:
           enabled:
             type: boolean
-            default: true
+            default: false
       db.server.top_query:
         description: EventConfig provides common config for a  db.server.top_query event.
         type: object
         properties:
           enabled:
             type: boolean
-            default: true
+            default: false
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for postgresql resource attributes.
     type: object
