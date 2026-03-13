@@ -58,7 +58,7 @@ func RecordMetrics(_ *zap.Logger, mb *metadata.MetricsBuilder, svc *corev1.Servi
 			continue
 		}
 
-		mb.RecordK8sServiceEndpointCountDataPoint(
+		mb.RecordK8sServiceEndpointCountDataPoint( //nolint:staticcheck
 			ts,
 			int64(counts.Ready),
 			addressTypeEnum,
@@ -66,7 +66,7 @@ func RecordMetrics(_ *zap.Logger, mb *metadata.MetricsBuilder, svc *corev1.Servi
 			key.Zone,
 		)
 
-		mb.RecordK8sServiceEndpointCountDataPoint(
+		mb.RecordK8sServiceEndpointCountDataPoint( //nolint:staticcheck
 			ts,
 			int64(counts.Serving),
 			addressTypeEnum,
@@ -74,7 +74,7 @@ func RecordMetrics(_ *zap.Logger, mb *metadata.MetricsBuilder, svc *corev1.Servi
 			key.Zone,
 		)
 
-		mb.RecordK8sServiceEndpointCountDataPoint(
+		mb.RecordK8sServiceEndpointCountDataPoint( //nolint:staticcheck
 			ts,
 			int64(counts.Terminating),
 			addressTypeEnum,
@@ -85,7 +85,7 @@ func RecordMetrics(_ *zap.Logger, mb *metadata.MetricsBuilder, svc *corev1.Servi
 
 	if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
 		ingressCount := len(svc.Status.LoadBalancer.Ingress)
-		mb.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, int64(ingressCount))
+		mb.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, int64(ingressCount)) //nolint:staticcheck
 	}
 
 	rb := mb.NewResourceBuilder()
@@ -97,7 +97,7 @@ func RecordMetrics(_ *zap.Logger, mb *metadata.MetricsBuilder, svc *corev1.Servi
 		rb.SetK8sServiceTrafficDistribution(*svc.Spec.TrafficDistribution)
 	}
 	rb.SetK8sServicePublishNotReadyAddresses(svc.Spec.PublishNotReadyAddresses)
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
 }
 
 // EndpointCounts tracks the counts of endpoints in different conditions

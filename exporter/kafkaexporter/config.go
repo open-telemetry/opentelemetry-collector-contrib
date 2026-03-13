@@ -5,6 +5,8 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -17,7 +19,15 @@ import (
 
 var _ component.Config = (*Config)(nil)
 
-var errLogsPartitionExclusive = errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
+var errLogsPartitionExclusive = errors.New(
+	"partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled",
+)
+
+var (
+	errTopicMetadataKeyNotIncluded        = errors.New("topic_from_metadata_key must be present in include_metadata_keys")
+	errBatchPartitionMetadataKeysRequired = errors.New("sending_queue::batch::partition::metadata_keys must be configured when include_metadata_keys is set and batching is enabled")
+	errIncludeMetadataKeysNotPartitioned  = errors.New("sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values")
+)
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
@@ -86,11 +96,77 @@ type Config struct {
 	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
 }
 
-func (c *Config) Validate() (err error) {
+func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
 	}
-	return err
+	if err := validateBatchPartitionerKeys(c.QueueBatchConfig, c.IncludeMetadataKeys); err != nil {
+		return err
+	}
+
+	if err := validateTopicFromMetadataKey(c.Logs.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
+		return fmt.Errorf("logs::topic_from_metadata_key: %w", err)
+	}
+	if err := validateTopicFromMetadataKey(c.Metrics.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
+		return fmt.Errorf("metrics::topic_from_metadata_key: %w", err)
+	}
+	if err := validateTopicFromMetadataKey(c.Traces.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
+		return fmt.Errorf("traces::topic_from_metadata_key: %w", err)
+	}
+	if err := validateTopicFromMetadataKey(c.Profiles.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
+		return fmt.Errorf("profiles::topic_from_metadata_key: %w", err)
+	}
+	return nil
+}
+
+func validateBatchPartitionerKeys(queueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig], includeMetadataKeys []string) error {
+	if len(includeMetadataKeys) == 0 || !isBatchingEnabled(queueBatchConfig) {
+		return nil
+	}
+
+	partitionMetadataKeys := queueBatchConfig.Get().Batch.Get().Partition.MetadataKeys
+	if len(partitionMetadataKeys) == 0 {
+		return errBatchPartitionMetadataKeysRequired
+	}
+
+	partitionMetadataKeySet := make(map[string]struct{}, len(partitionMetadataKeys))
+	for _, key := range partitionMetadataKeys {
+		partitionMetadataKeySet[key] = struct{}{}
+	}
+
+	for _, includeKey := range includeMetadataKeys {
+		if _, ok := partitionMetadataKeySet[includeKey]; !ok {
+			return fmt.Errorf("%w: missing %q from sending_queue::batch::partition::metadata_keys=%v",
+				errIncludeMetadataKeysNotPartitioned,
+				includeKey,
+				partitionMetadataKeys,
+			)
+		}
+	}
+
+	return nil
+}
+
+func isBatchingEnabled(queueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig]) bool {
+	if !queueBatchConfig.HasValue() {
+		return false
+	}
+
+	return queueBatchConfig.Get().Batch.HasValue()
+}
+
+func validateTopicFromMetadataKey(topicFromMetadataKey string, includeMetadataKeys []string) error {
+	if topicFromMetadataKey == "" {
+		return nil
+	}
+	if slices.Contains(includeMetadataKeys, topicFromMetadataKey) {
+		return nil
+	}
+	return fmt.Errorf("%w: %q not found in include_metadata_keys=%v",
+		errTopicMetadataKeyNotIncluded,
+		topicFromMetadataKey,
+		includeMetadataKeys,
+	)
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

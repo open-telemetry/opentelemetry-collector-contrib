@@ -10,15 +10,6 @@ import (
 	"go.opentelemetry.io/collector/client"
 )
 
-type benchHeader struct {
-	Key   string
-	Value []byte
-}
-
-func makeBenchHeader(key string, value []byte) benchHeader {
-	return benchHeader{Key: key, Value: value}
-}
-
 func BenchmarkMetadataToHeaders(b *testing.B) {
 	// Scenario 1: Keys configured but NONE match the metadata.
 	// This is the hot path where the fix avoids a wasted allocation.
@@ -38,7 +29,7 @@ func BenchmarkMetadataToHeaders(b *testing.B) {
 				b.ReportAllocs()
 				b.ResetTimer()
 				for range b.N {
-					_ = metadataToHeaders(ctx, keys, makeBenchHeader)
+					_ = metadataToHeaders(ctx, keys)
 				}
 			})
 		}
@@ -62,7 +53,7 @@ func BenchmarkMetadataToHeaders(b *testing.B) {
 				b.ReportAllocs()
 				b.ResetTimer()
 				for range b.N {
-					_ = metadataToHeaders(ctx, keys, makeBenchHeader)
+					_ = metadataToHeaders(ctx, keys)
 				}
 			})
 		}
@@ -79,7 +70,7 @@ func BenchmarkMetadataToHeaders(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for range b.N {
-			_ = metadataToHeaders[benchHeader](ctx, nil, makeBenchHeader)
+			_ = metadataToHeaders(ctx, nil)
 		}
 	})
 }
