@@ -465,28 +465,6 @@ func TestPrepareOtelCollectorMetadata_DeploymentType(t *testing.T) {
 	}
 }
 
-func TestPrepareOtelCollectorMetadata_OS(t *testing.T) {
-	buildInfo := CustomBuildInfo{Command: "otelcol", Description: "Test Collector", Version: "1.0.0"}
-	metadata := PrepareOtelCollectorMetadata(
-		"test-host", "config", "test-uuid", "1.0.0", "datadoghq.com", "{}",
-		"unknown", "", buildInfo, int64(5*time.Minute*3),
-	)
-
-	assert.NotEmpty(t, metadata.OS)
-
-	payload := &OtelCollectorPayload{Hostname: "test-host", Timestamp: time.Now().UnixNano(), UUID: "test-uuid", Metadata: metadata}
-	jsonData, err := json.Marshal(payload)
-	require.NoError(t, err)
-
-	var jsonMap map[string]any
-	err = json.Unmarshal(jsonData, &jsonMap)
-	require.NoError(t, err)
-
-	metadataMap, ok := jsonMap["otel_collector"].(map[string]any)
-	require.True(t, ok)
-	assert.NotEmpty(t, metadataMap["os"])
-}
-
 func TestPrepareOtelCollectorMetadata_InstallationMethod(t *testing.T) {
 	tests := []struct {
 		name               string

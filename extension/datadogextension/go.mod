@@ -27,6 +27,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.53.1-0.20260312222452-c212d203a110
 	go.opentelemetry.io/collector/service v0.147.1-0.20260312222452-c212d203a110
 	go.opentelemetry.io/collector/service/hostcapabilities v0.147.1-0.20260312222452-c212d203a110
+	go.opentelemetry.io/otel v1.42.0
 	go.uber.org/zap v1.27.1
 )
 
@@ -253,7 +254,6 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.1-0.20260312222452-c212d203a110 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.67.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.22.0 // indirect
-	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.18.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.18.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.42.0 // indirect
