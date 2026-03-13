@@ -18,9 +18,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 	"github.com/DataDog/datadog-agent/pkg/serializer/types"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
-	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +29,10 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 // mockHost implements component.Host and hostcapabilities.ModuleInfo for testing
