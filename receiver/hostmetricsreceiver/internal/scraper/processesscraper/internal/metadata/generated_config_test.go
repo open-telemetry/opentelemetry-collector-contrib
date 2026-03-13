@@ -26,15 +26,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemProcessesCount: MetricConfig{
+					SystemProcessesCount: SystemProcessesCountConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"status"},
+						EnabledAttributes:   []SystemProcessesCountAttributeKey{SystemProcessesCountAttributeKeyStatus},
 					},
-					SystemProcessesCreated: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					SystemProcessesCreated: SystemProcessesCreatedConfig{
+						Enabled: true,
 					},
 				},
 			},
@@ -43,15 +41,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemProcessesCount: MetricConfig{
+					SystemProcessesCount: SystemProcessesCountConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"status"},
+						EnabledAttributes:   []SystemProcessesCountAttributeKey{SystemProcessesCountAttributeKeyStatus},
 					},
-					SystemProcessesCreated: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+					SystemProcessesCreated: SystemProcessesCreatedConfig{
+						Enabled: false,
 					},
 				},
 			},
@@ -60,7 +56,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemProcessesCountConfig{}, SystemProcessesCreatedConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

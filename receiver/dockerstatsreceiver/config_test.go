@@ -71,12 +71,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
 					m := metadata.DefaultMetricsBuilderConfig()
-					m.Metrics.ContainerCPUUsageSystem = metadata.MetricConfig{
-						Enabled: false,
-					}
-					m.Metrics.ContainerMemoryTotalRss = metadata.MetricConfig{
-						Enabled: true,
-					}
+					m.Metrics.ContainerCPUUsageSystem.Enabled = false
+					m.Metrics.ContainerMemoryTotalRss.Enabled = true
 					return m
 				}(),
 			},
@@ -91,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.ContainerBlockioIoMergedRecursiveConfig{}, metadata.ContainerBlockioIoQueuedRecursiveConfig{}, metadata.ContainerBlockioIoServiceBytesRecursiveConfig{}, metadata.ContainerBlockioIoServiceTimeRecursiveConfig{}, metadata.ContainerBlockioIoServicedRecursiveConfig{}, metadata.ContainerBlockioIoTimeRecursiveConfig{}, metadata.ContainerBlockioIoWaitTimeRecursiveConfig{}, metadata.ContainerBlockioSectorsRecursiveConfig{}, metadata.ContainerCPULimitConfig{}, metadata.ContainerCPULogicalCountConfig{}, metadata.ContainerCPUSharesConfig{}, metadata.ContainerCPUThrottlingDataPeriodsConfig{}, metadata.ContainerCPUThrottlingDataThrottledPeriodsConfig{}, metadata.ContainerCPUThrottlingDataThrottledTimeConfig{}, metadata.ContainerCPUUsageKernelmodeConfig{}, metadata.ContainerCPUUsagePercpuConfig{}, metadata.ContainerCPUUsageSystemConfig{}, metadata.ContainerCPUUsageTotalConfig{}, metadata.ContainerCPUUsageUsermodeConfig{}, metadata.ContainerCPUUtilizationConfig{}, metadata.ContainerMemoryActiveAnonConfig{}, metadata.ContainerMemoryActiveFileConfig{}, metadata.ContainerMemoryAnonConfig{}, metadata.ContainerMemoryCacheConfig{}, metadata.ContainerMemoryDirtyConfig{}, metadata.ContainerMemoryFailsConfig{}, metadata.ContainerMemoryFileConfig{}, metadata.ContainerMemoryHierarchicalMemoryLimitConfig{}, metadata.ContainerMemoryHierarchicalMemswLimitConfig{}, metadata.ContainerMemoryInactiveAnonConfig{}, metadata.ContainerMemoryInactiveFileConfig{}, metadata.ContainerMemoryMappedFileConfig{}, metadata.ContainerMemoryPercentConfig{}, metadata.ContainerMemoryPgfaultConfig{}, metadata.ContainerMemoryPgmajfaultConfig{}, metadata.ContainerMemoryPgpginConfig{}, metadata.ContainerMemoryPgpgoutConfig{}, metadata.ContainerMemoryRssConfig{}, metadata.ContainerMemoryRssHugeConfig{}, metadata.ContainerMemoryTotalActiveAnonConfig{}, metadata.ContainerMemoryTotalActiveFileConfig{}, metadata.ContainerMemoryTotalCacheConfig{}, metadata.ContainerMemoryTotalDirtyConfig{}, metadata.ContainerMemoryTotalInactiveAnonConfig{}, metadata.ContainerMemoryTotalInactiveFileConfig{}, metadata.ContainerMemoryTotalMappedFileConfig{}, metadata.ContainerMemoryTotalPgfaultConfig{}, metadata.ContainerMemoryTotalPgmajfaultConfig{}, metadata.ContainerMemoryTotalPgpginConfig{}, metadata.ContainerMemoryTotalPgpgoutConfig{}, metadata.ContainerMemoryTotalRssConfig{}, metadata.ContainerMemoryTotalRssHugeConfig{}, metadata.ContainerMemoryTotalUnevictableConfig{}, metadata.ContainerMemoryTotalWritebackConfig{}, metadata.ContainerMemoryUnevictableConfig{}, metadata.ContainerMemoryUsageLimitConfig{}, metadata.ContainerMemoryUsageMaxConfig{}, metadata.ContainerMemoryUsageTotalConfig{}, metadata.ContainerMemoryWritebackConfig{}, metadata.ContainerNetworkIoUsageRxBytesConfig{}, metadata.ContainerNetworkIoUsageRxDroppedConfig{}, metadata.ContainerNetworkIoUsageRxErrorsConfig{}, metadata.ContainerNetworkIoUsageRxPacketsConfig{}, metadata.ContainerNetworkIoUsageTxBytesConfig{}, metadata.ContainerNetworkIoUsageTxDroppedConfig{}, metadata.ContainerNetworkIoUsageTxErrorsConfig{}, metadata.ContainerNetworkIoUsageTxPacketsConfig{}, metadata.ContainerPidsCountConfig{}, metadata.ContainerPidsLimitConfig{}, metadata.ContainerRestartsConfig{}, metadata.ContainerUptimeConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

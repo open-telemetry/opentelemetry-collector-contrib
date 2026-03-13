@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 	set := receivertest.NewNopSettings(receivertest.NopType)
-	set.ID = component.NewID(component.MustNewType("yanggrpc"))
+	set.ID = component.NewID(component.MustNewType("yang_grpc"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }

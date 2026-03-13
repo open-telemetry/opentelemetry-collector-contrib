@@ -26,20 +26,20 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+						EnabledAttributes:   []SystemFilesystemInodesUsageAttributeKey{SystemFilesystemInodesUsageAttributeKeyDevice, SystemFilesystemInodesUsageAttributeKeyMode, SystemFilesystemInodesUsageAttributeKeyMountpoint, SystemFilesystemInodesUsageAttributeKeyType, SystemFilesystemInodesUsageAttributeKeyState},
 					},
-					SystemFilesystemUsage: MetricConfig{
+					SystemFilesystemUsage: SystemFilesystemUsageConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+						EnabledAttributes:   []SystemFilesystemUsageAttributeKey{SystemFilesystemUsageAttributeKeyDevice, SystemFilesystemUsageAttributeKeyMode, SystemFilesystemUsageAttributeKeyMountpoint, SystemFilesystemUsageAttributeKeyType, SystemFilesystemUsageAttributeKeyState},
 					},
-					SystemFilesystemUtilization: MetricConfig{
+					SystemFilesystemUtilization: SystemFilesystemUtilizationConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type"},
+						EnabledAttributes:   []SystemFilesystemUtilizationAttributeKey{SystemFilesystemUtilizationAttributeKeyDevice, SystemFilesystemUtilizationAttributeKeyMode, SystemFilesystemUtilizationAttributeKeyMountpoint, SystemFilesystemUtilizationAttributeKeyType},
 					},
 				},
 			},
@@ -48,20 +48,20 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+						EnabledAttributes:   []SystemFilesystemInodesUsageAttributeKey{SystemFilesystemInodesUsageAttributeKeyDevice, SystemFilesystemInodesUsageAttributeKeyMode, SystemFilesystemInodesUsageAttributeKeyMountpoint, SystemFilesystemInodesUsageAttributeKeyType, SystemFilesystemInodesUsageAttributeKeyState},
 					},
-					SystemFilesystemUsage: MetricConfig{
+					SystemFilesystemUsage: SystemFilesystemUsageConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+						EnabledAttributes:   []SystemFilesystemUsageAttributeKey{SystemFilesystemUsageAttributeKeyDevice, SystemFilesystemUsageAttributeKeyMode, SystemFilesystemUsageAttributeKeyMountpoint, SystemFilesystemUsageAttributeKeyType, SystemFilesystemUsageAttributeKeyState},
 					},
-					SystemFilesystemUtilization: MetricConfig{
+					SystemFilesystemUtilization: SystemFilesystemUtilizationConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type"},
+						EnabledAttributes:   []SystemFilesystemUtilizationAttributeKey{SystemFilesystemUtilizationAttributeKeyDevice, SystemFilesystemUtilizationAttributeKeyMode, SystemFilesystemUtilizationAttributeKeyMountpoint, SystemFilesystemUtilizationAttributeKeyType},
 					},
 				},
 			},
@@ -70,7 +70,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemFilesystemInodesUsageConfig{}, SystemFilesystemUsageConfig{}, SystemFilesystemUtilizationConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

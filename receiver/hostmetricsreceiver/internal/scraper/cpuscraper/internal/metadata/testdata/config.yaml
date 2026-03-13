@@ -6,10 +6,8 @@ all_set:
       attributes: ["cpu"]
     system.cpu.logical.count:
       enabled: true
-      attributes: []
     system.cpu.physical.count:
       enabled: true
-      attributes: []
     system.cpu.time:
       enabled: true
       attributes: ["cpu","state"]
@@ -23,10 +21,8 @@ reaggregate_set:
       attributes: []
     system.cpu.logical.count:
       enabled: true
-      attributes: []
     system.cpu.physical.count:
       enabled: true
-      attributes: []
     system.cpu.time:
       enabled: true
       attributes: []
@@ -40,10 +36,8 @@ none_set:
       attributes: ["cpu"]
     system.cpu.logical.count:
       enabled: false
-      attributes: []
     system.cpu.physical.count:
       enabled: false
-      attributes: []
     system.cpu.time:
       enabled: false
       attributes: ["cpu","state"]

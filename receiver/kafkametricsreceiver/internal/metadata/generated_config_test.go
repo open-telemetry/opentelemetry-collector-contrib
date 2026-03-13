@@ -26,85 +26,83 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					KafkaBrokerLogRetentionPeriod: MetricConfig{
+					KafkaBrokerLogRetentionPeriod: KafkaBrokerLogRetentionPeriodConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"broker"},
+						EnabledAttributes:   []KafkaBrokerLogRetentionPeriodAttributeKey{KafkaBrokerLogRetentionPeriodAttributeKeyBroker},
 					},
-					KafkaBrokers: MetricConfig{
+					KafkaBrokers: KafkaBrokersConfig{
+						Enabled: true,
+					},
+					KafkaConsumerGroupLag: KafkaConsumerGroupLagConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaConsumerGroupLagAttributeKey{KafkaConsumerGroupLagAttributeKeyGroup, KafkaConsumerGroupLagAttributeKeyTopic, KafkaConsumerGroupLagAttributeKeyPartition},
+					},
+					KafkaConsumerGroupLagSum: KafkaConsumerGroupLagSumConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaConsumerGroupLagSumAttributeKey{KafkaConsumerGroupLagSumAttributeKeyGroup, KafkaConsumerGroupLagSumAttributeKeyTopic},
+					},
+					KafkaConsumerGroupMembers: KafkaConsumerGroupMembersConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []KafkaConsumerGroupMembersAttributeKey{KafkaConsumerGroupMembersAttributeKeyGroup},
 					},
-					KafkaConsumerGroupLag: MetricConfig{
+					KafkaConsumerGroupOffset: KafkaConsumerGroupOffsetConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"group", "topic", "partition"},
+						EnabledAttributes:   []KafkaConsumerGroupOffsetAttributeKey{KafkaConsumerGroupOffsetAttributeKeyGroup, KafkaConsumerGroupOffsetAttributeKeyTopic, KafkaConsumerGroupOffsetAttributeKeyPartition},
 					},
-					KafkaConsumerGroupLagSum: MetricConfig{
+					KafkaConsumerGroupOffsetSum: KafkaConsumerGroupOffsetSumConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"group", "topic"},
+						EnabledAttributes:   []KafkaConsumerGroupOffsetSumAttributeKey{KafkaConsumerGroupOffsetSumAttributeKeyGroup, KafkaConsumerGroupOffsetSumAttributeKeyTopic},
 					},
-					KafkaConsumerGroupMembers: MetricConfig{
+					KafkaPartitionCurrentOffset: KafkaPartitionCurrentOffsetConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaPartitionCurrentOffsetAttributeKey{KafkaPartitionCurrentOffsetAttributeKeyTopic, KafkaPartitionCurrentOffsetAttributeKeyPartition},
+					},
+					KafkaPartitionOldestOffset: KafkaPartitionOldestOffsetConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaPartitionOldestOffsetAttributeKey{KafkaPartitionOldestOffsetAttributeKeyTopic, KafkaPartitionOldestOffsetAttributeKeyPartition},
+					},
+					KafkaPartitionReplicas: KafkaPartitionReplicasConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"group"},
+						EnabledAttributes:   []KafkaPartitionReplicasAttributeKey{KafkaPartitionReplicasAttributeKeyTopic, KafkaPartitionReplicasAttributeKeyPartition},
 					},
-					KafkaConsumerGroupOffset: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"group", "topic", "partition"},
-					},
-					KafkaConsumerGroupOffsetSum: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"group", "topic"},
-					},
-					KafkaPartitionCurrentOffset: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic", "partition"},
-					},
-					KafkaPartitionOldestOffset: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic", "partition"},
-					},
-					KafkaPartitionReplicas: MetricConfig{
+					KafkaPartitionReplicasInSync: KafkaPartitionReplicasInSyncConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"topic", "partition"},
+						EnabledAttributes:   []KafkaPartitionReplicasInSyncAttributeKey{KafkaPartitionReplicasInSyncAttributeKeyTopic, KafkaPartitionReplicasInSyncAttributeKeyPartition},
 					},
-					KafkaPartitionReplicasInSync: MetricConfig{
+					KafkaTopicLogRetentionPeriod: KafkaTopicLogRetentionPeriodConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaTopicLogRetentionPeriodAttributeKey{KafkaTopicLogRetentionPeriodAttributeKeyTopic},
+					},
+					KafkaTopicLogRetentionSize: KafkaTopicLogRetentionSizeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaTopicLogRetentionSizeAttributeKey{KafkaTopicLogRetentionSizeAttributeKeyTopic},
+					},
+					KafkaTopicMinInsyncReplicas: KafkaTopicMinInsyncReplicasConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaTopicMinInsyncReplicasAttributeKey{KafkaTopicMinInsyncReplicasAttributeKeyTopic},
+					},
+					KafkaTopicPartitions: KafkaTopicPartitionsConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"topic", "partition"},
+						EnabledAttributes:   []KafkaTopicPartitionsAttributeKey{KafkaTopicPartitionsAttributeKeyTopic},
 					},
-					KafkaTopicLogRetentionPeriod: MetricConfig{
+					KafkaTopicReplicationFactor: KafkaTopicReplicationFactorConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic"},
-					},
-					KafkaTopicLogRetentionSize: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic"},
-					},
-					KafkaTopicMinInsyncReplicas: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic"},
-					},
-					KafkaTopicPartitions: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"topic"},
-					},
-					KafkaTopicReplicationFactor: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic"},
+						EnabledAttributes:   []KafkaTopicReplicationFactorAttributeKey{KafkaTopicReplicationFactorAttributeKeyTopic},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -116,85 +114,83 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					KafkaBrokerLogRetentionPeriod: MetricConfig{
+					KafkaBrokerLogRetentionPeriod: KafkaBrokerLogRetentionPeriodConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"broker"},
+						EnabledAttributes:   []KafkaBrokerLogRetentionPeriodAttributeKey{KafkaBrokerLogRetentionPeriodAttributeKeyBroker},
 					},
-					KafkaBrokers: MetricConfig{
+					KafkaBrokers: KafkaBrokersConfig{
+						Enabled: false,
+					},
+					KafkaConsumerGroupLag: KafkaConsumerGroupLagConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaConsumerGroupLagAttributeKey{KafkaConsumerGroupLagAttributeKeyGroup, KafkaConsumerGroupLagAttributeKeyTopic, KafkaConsumerGroupLagAttributeKeyPartition},
+					},
+					KafkaConsumerGroupLagSum: KafkaConsumerGroupLagSumConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaConsumerGroupLagSumAttributeKey{KafkaConsumerGroupLagSumAttributeKeyGroup, KafkaConsumerGroupLagSumAttributeKeyTopic},
+					},
+					KafkaConsumerGroupMembers: KafkaConsumerGroupMembersConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
+						EnabledAttributes:   []KafkaConsumerGroupMembersAttributeKey{KafkaConsumerGroupMembersAttributeKeyGroup},
 					},
-					KafkaConsumerGroupLag: MetricConfig{
+					KafkaConsumerGroupOffset: KafkaConsumerGroupOffsetConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"group", "topic", "partition"},
+						EnabledAttributes:   []KafkaConsumerGroupOffsetAttributeKey{KafkaConsumerGroupOffsetAttributeKeyGroup, KafkaConsumerGroupOffsetAttributeKeyTopic, KafkaConsumerGroupOffsetAttributeKeyPartition},
 					},
-					KafkaConsumerGroupLagSum: MetricConfig{
+					KafkaConsumerGroupOffsetSum: KafkaConsumerGroupOffsetSumConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"group", "topic"},
+						EnabledAttributes:   []KafkaConsumerGroupOffsetSumAttributeKey{KafkaConsumerGroupOffsetSumAttributeKeyGroup, KafkaConsumerGroupOffsetSumAttributeKeyTopic},
 					},
-					KafkaConsumerGroupMembers: MetricConfig{
+					KafkaPartitionCurrentOffset: KafkaPartitionCurrentOffsetConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaPartitionCurrentOffsetAttributeKey{KafkaPartitionCurrentOffsetAttributeKeyTopic, KafkaPartitionCurrentOffsetAttributeKeyPartition},
+					},
+					KafkaPartitionOldestOffset: KafkaPartitionOldestOffsetConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaPartitionOldestOffsetAttributeKey{KafkaPartitionOldestOffsetAttributeKeyTopic, KafkaPartitionOldestOffsetAttributeKeyPartition},
+					},
+					KafkaPartitionReplicas: KafkaPartitionReplicasConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"group"},
+						EnabledAttributes:   []KafkaPartitionReplicasAttributeKey{KafkaPartitionReplicasAttributeKeyTopic, KafkaPartitionReplicasAttributeKeyPartition},
 					},
-					KafkaConsumerGroupOffset: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"group", "topic", "partition"},
-					},
-					KafkaConsumerGroupOffsetSum: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"group", "topic"},
-					},
-					KafkaPartitionCurrentOffset: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic", "partition"},
-					},
-					KafkaPartitionOldestOffset: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic", "partition"},
-					},
-					KafkaPartitionReplicas: MetricConfig{
+					KafkaPartitionReplicasInSync: KafkaPartitionReplicasInSyncConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"topic", "partition"},
+						EnabledAttributes:   []KafkaPartitionReplicasInSyncAttributeKey{KafkaPartitionReplicasInSyncAttributeKeyTopic, KafkaPartitionReplicasInSyncAttributeKeyPartition},
 					},
-					KafkaPartitionReplicasInSync: MetricConfig{
+					KafkaTopicLogRetentionPeriod: KafkaTopicLogRetentionPeriodConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaTopicLogRetentionPeriodAttributeKey{KafkaTopicLogRetentionPeriodAttributeKeyTopic},
+					},
+					KafkaTopicLogRetentionSize: KafkaTopicLogRetentionSizeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaTopicLogRetentionSizeAttributeKey{KafkaTopicLogRetentionSizeAttributeKeyTopic},
+					},
+					KafkaTopicMinInsyncReplicas: KafkaTopicMinInsyncReplicasConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []KafkaTopicMinInsyncReplicasAttributeKey{KafkaTopicMinInsyncReplicasAttributeKeyTopic},
+					},
+					KafkaTopicPartitions: KafkaTopicPartitionsConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"topic", "partition"},
+						EnabledAttributes:   []KafkaTopicPartitionsAttributeKey{KafkaTopicPartitionsAttributeKeyTopic},
 					},
-					KafkaTopicLogRetentionPeriod: MetricConfig{
+					KafkaTopicReplicationFactor: KafkaTopicReplicationFactorConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic"},
-					},
-					KafkaTopicLogRetentionSize: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic"},
-					},
-					KafkaTopicMinInsyncReplicas: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic"},
-					},
-					KafkaTopicPartitions: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"topic"},
-					},
-					KafkaTopicReplicationFactor: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"topic"},
+						EnabledAttributes:   []KafkaTopicReplicationFactorAttributeKey{KafkaTopicReplicationFactorAttributeKeyTopic},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -206,7 +202,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(KafkaBrokerLogRetentionPeriodConfig{}, KafkaBrokersConfig{}, KafkaConsumerGroupLagConfig{}, KafkaConsumerGroupLagSumConfig{}, KafkaConsumerGroupMembersConfig{}, KafkaConsumerGroupOffsetConfig{}, KafkaConsumerGroupOffsetSumConfig{}, KafkaPartitionCurrentOffsetConfig{}, KafkaPartitionOldestOffsetConfig{}, KafkaPartitionReplicasConfig{}, KafkaPartitionReplicasInSyncConfig{}, KafkaTopicLogRetentionPeriodConfig{}, KafkaTopicLogRetentionSizeConfig{}, KafkaTopicMinInsyncReplicasConfig{}, KafkaTopicPartitionsConfig{}, KafkaTopicReplicationFactorConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

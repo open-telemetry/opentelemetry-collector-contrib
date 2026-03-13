@@ -26,20 +26,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPULoadAverage15m: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					SystemCPULoadAverage15m: SystemCPULoadAverage15mConfig{
+						Enabled: true,
 					},
-					SystemCPULoadAverage1m: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					SystemCPULoadAverage1m: SystemCPULoadAverage1mConfig{
+						Enabled: true,
 					},
-					SystemCPULoadAverage5m: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					SystemCPULoadAverage5m: SystemCPULoadAverage5mConfig{
+						Enabled: true,
 					},
 				},
 			},
@@ -48,20 +42,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPULoadAverage15m: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					SystemCPULoadAverage15m: SystemCPULoadAverage15mConfig{
+						Enabled: false,
 					},
-					SystemCPULoadAverage1m: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					SystemCPULoadAverage1m: SystemCPULoadAverage1mConfig{
+						Enabled: false,
 					},
-					SystemCPULoadAverage5m: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{},
+					SystemCPULoadAverage5m: SystemCPULoadAverage5mConfig{
+						Enabled: false,
 					},
 				},
 			},
@@ -70,7 +58,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemCPULoadAverage15mConfig{}, SystemCPULoadAverage1mConfig{}, SystemCPULoadAverage5mConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
