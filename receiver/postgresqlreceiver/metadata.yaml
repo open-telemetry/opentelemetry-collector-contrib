@@ -200,7 +200,7 @@ attributes:
     requirement_level: recommended
 events:
   db.server.query_sample:
-    enabled: true
+    enabled: false
     description: query sample
     attributes:
       - db.system.name
@@ -219,7 +219,7 @@ events:
       - postgresql.query_id
       - postgresql.total_exec_time
   db.server.top_query:
-    enabled: true
+    enabled: false
     description: top query
     attributes:
       - db.system.name
