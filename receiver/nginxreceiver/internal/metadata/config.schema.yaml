@@ -5,28 +5,28 @@ $defs:
     type: object
     properties:
       nginx.connections_accepted:
-        description: "NginxConnectionsAcceptedConfig provides config for the nginx.connections_accepted metric."
+        description: "NginxConnectionsAcceptedMetricConfig provides config for the nginx.connections_accepted metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nginx.connections_current:
-        description: "NginxConnectionsCurrentConfig provides config for the nginx.connections_current metric."
+        description: "NginxConnectionsCurrentMetricConfig provides config for the nginx.connections_current metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nginx.connections_handled:
-        description: "NginxConnectionsHandledConfig provides config for the nginx.connections_handled metric."
+        description: "NginxConnectionsHandledMetricConfig provides config for the nginx.connections_handled metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nginx.requests:
-        description: "NginxRequestsConfig provides config for the nginx.requests metric."
+        description: "NginxRequestsMetricConfig provides config for the nginx.requests metric."
         type: object
         properties:
           enabled:

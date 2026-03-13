@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       system.paging.faults:
-        description: "SystemPagingFaultsConfig provides config for the system.paging.faults metric."
+        description: "SystemPagingFaultsMetricConfig provides config for the system.paging.faults metric."
         type: object
         properties:
           enabled:
@@ -28,7 +28,7 @@ $defs:
             default:
               - "type"
       system.paging.operations:
-        description: "SystemPagingOperationsConfig provides config for the system.paging.operations metric."
+        description: "SystemPagingOperationsMetricConfig provides config for the system.paging.operations metric."
         type: object
         properties:
           enabled:
@@ -53,7 +53,7 @@ $defs:
               - "direction"
               - "type"
       system.paging.usage:
-        description: "SystemPagingUsageConfig provides config for the system.paging.usage metric."
+        description: "SystemPagingUsageMetricConfig provides config for the system.paging.usage metric."
         type: object
         properties:
           enabled:
@@ -78,7 +78,7 @@ $defs:
               - "device"
               - "state"
       system.paging.utilization:
-        description: "SystemPagingUtilizationConfig provides config for the system.paging.utilization metric."
+        description: "SystemPagingUtilizationMetricConfig provides config for the system.paging.utilization metric."
         type: object
         properties:
           enabled:

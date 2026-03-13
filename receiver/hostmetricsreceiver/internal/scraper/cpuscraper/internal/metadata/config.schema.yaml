@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       system.cpu.frequency:
-        description: "SystemCPUFrequencyConfig provides config for the system.cpu.frequency metric."
+        description: "SystemCPUFrequencyMetricConfig provides config for the system.cpu.frequency metric."
         type: object
         properties:
           enabled:
@@ -28,21 +28,21 @@ $defs:
             default:
               - "cpu"
       system.cpu.logical.count:
-        description: "SystemCPULogicalCountConfig provides config for the system.cpu.logical.count metric."
+        description: "SystemCPULogicalCountMetricConfig provides config for the system.cpu.logical.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.cpu.physical.count:
-        description: "SystemCPUPhysicalCountConfig provides config for the system.cpu.physical.count metric."
+        description: "SystemCPUPhysicalCountMetricConfig provides config for the system.cpu.physical.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.cpu.time:
-        description: "SystemCPUTimeConfig provides config for the system.cpu.time metric."
+        description: "SystemCPUTimeMetricConfig provides config for the system.cpu.time metric."
         type: object
         properties:
           enabled:
@@ -67,7 +67,7 @@ $defs:
               - "cpu"
               - "state"
       system.cpu.utilization:
-        description: "SystemCPUUtilizationConfig provides config for the system.cpu.utilization metric."
+        description: "SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric."
         type: object
         properties:
           enabled:
