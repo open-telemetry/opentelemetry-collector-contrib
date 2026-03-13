@@ -75,7 +75,7 @@ func parseSeverity(renderedLevel, level string) entry.Severity {
 }
 
 // formattedBody will parse a body from the event.
-func formattedBody(e *EventXML) map[string]any {
+func formattedBody(e *EventXML, eventDataFormat EventDataFormat) map[string]any {
 	message, details := parseMessage(e.Channel, e.Message)
 
 	level := e.RenderedLevel
@@ -117,7 +117,7 @@ func formattedBody(e *EventXML) map[string]any {
 		"task":        task,
 		"opcode":      opcode,
 		"keywords":    keywords,
-		"event_data":  parseEventData(e.EventData),
+		"event_data":  parseEventData(e.EventData, eventDataFormat),
 		"version":     e.Version,
 	}
 
@@ -152,10 +152,13 @@ func parseMessage(channel, message string) (string, map[string]any) {
 	}
 }
 
-// parseEventData parses event data into a flat map.
-// Named Data elements become direct keys, anonymous Data elements use numbered keys (Data1, Data2, etc.).
+// parseEventData converts EventData XML elements into a map.
+// When format is EventDataFormatMap, named Data elements become direct keys and
+// anonymous elements use numbered keys (param1, param2, …).
+// When format is EventDataFormatArray, data is stored as a "data" slice of
+// single-key maps, preserving the original collector format.
 // see: https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-datafieldtype-complextype
-func parseEventData(eventData EventData) map[string]any {
+func parseEventData(eventData EventData, format EventDataFormat) map[string]any {
 	outputMap := make(map[string]any, len(eventData.Data)+2)
 
 	if eventData.Name != "" {
@@ -169,16 +172,25 @@ func parseEventData(eventData EventData) map[string]any {
 		return outputMap
 	}
 
-	anonymousCounter := 1
-	for _, data := range eventData.Data {
-		if data.Name != "" {
-			// Named data element - use the name as key
-			outputMap[data.Name] = data.Value
-		} else {
-			// Anonymous data element - use numbered key
-			key := fmt.Sprintf("Data%d", anonymousCounter)
-			outputMap[key] = data.Value
-			anonymousCounter++
+	switch format {
+	case EventDataFormatArray:
+		dataMaps := make([]any, len(eventData.Data))
+		for i, data := range eventData.Data {
+			dataMaps[i] = map[string]any{
+				data.Name: data.Value,
+			}
+		}
+		outputMap["data"] = dataMaps
+	default:
+		anonymousCounter := 1
+		for _, data := range eventData.Data {
+			if data.Name != "" {
+				outputMap[data.Name] = data.Value
+			} else {
+				key := fmt.Sprintf("param%d", anonymousCounter)
+				outputMap[key] = data.Value
+				anonymousCounter++
+			}
 		}
 	}
 

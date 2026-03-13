@@ -7,7 +7,7 @@ change_type: breaking
 component: receiver/windowseventlog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change event_data format from array of maps to flat map for easier OTTL access
+note: Change event_data from an array of single-key maps to a flat map by default, making fields directly accessible via OTTL. The previous format is available by setting `event_data_format: array`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42565, 32952]
@@ -16,13 +16,13 @@ issues: [42565, 32952]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The event_data field is now a flat map instead of an array of single-key maps.
-  Named Data elements become direct keys (e.g., event_data.ProcessId), and
-  anonymous Data elements use numbered keys (Data1, Data2, etc.).
-  This makes fields directly accessible via OTTL expressions.
+  Named <Data> elements become direct keys (e.g., body["event_data"]["ProcessId"]).
+  Anonymous <Data> elements use numbered keys: param1, param2, etc.
+  To preserve the previous array format, set event_data_format: array in the receiver configuration.
 
 # If your change doesn't affect end users or the exported elements of any package,
-# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# you should instead start your pull request title with [chore] or use the "Skip Changelog"
+# label.
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.

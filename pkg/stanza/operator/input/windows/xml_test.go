@@ -99,7 +99,7 @@ func TestParseBody(t *testing.T) {
 		"version": uint8(0),
 	}
 
-	require.Equal(t, expected, formattedBody(xml))
+	require.Equal(t, expected, formattedBody(xml, EventDataFormatMap))
 }
 
 func TestParseBodySecurityExecution(t *testing.T) {
@@ -174,7 +174,7 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		"version": uint8(0),
 	}
 
-	require.Equal(t, expected, formattedBody(xml))
+	require.Equal(t, expected, formattedBody(xml, EventDataFormatMap))
 }
 
 func TestParseBodyFullExecution(t *testing.T) {
@@ -265,7 +265,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 		"version": uint8(0),
 	}
 
-	require.Equal(t, expected, formattedBody(xml))
+	require.Equal(t, expected, formattedBody(xml, EventDataFormatMap))
 }
 
 func TestParseBodyCorrelation(t *testing.T) {
@@ -336,7 +336,7 @@ func TestParseBodyCorrelation(t *testing.T) {
 		"version": uint8(1),
 	}
 
-	require.Equal(t, expected, formattedBody(xml))
+	require.Equal(t, expected, formattedBody(xml, EventDataFormatMap))
 }
 
 func TestParseNoRendered(t *testing.T) {
@@ -393,7 +393,7 @@ func TestParseNoRendered(t *testing.T) {
 		"version": uint8(0),
 	}
 
-	require.Equal(t, expected, formattedBody(xml))
+	require.Equal(t, expected, formattedBody(xml, EventDataFormatMap))
 }
 
 func TestParseBodySecurity(t *testing.T) {
@@ -454,7 +454,7 @@ func TestParseBodySecurity(t *testing.T) {
 		"version": uint8(0),
 	}
 
-	require.Equal(t, expected, formattedBody(xml))
+	require.Equal(t, expected, formattedBody(xml, EventDataFormatMap))
 }
 
 func TestParseEventData(t *testing.T) {
@@ -466,7 +466,7 @@ func TestParseEventData(t *testing.T) {
 		},
 	}
 
-	parsed := formattedBody(xmlMap)
+	parsed := formattedBody(xmlMap, EventDataFormatMap)
 	expectedMap := map[string]any{
 		"name":   "EVENT_DATA",
 		"field":  "value",
@@ -480,10 +480,10 @@ func TestParseEventData(t *testing.T) {
 		},
 	}
 
-	parsed = formattedBody(xmlMixed)
+	parsed = formattedBody(xmlMixed, EventDataFormatMap)
 	expectedFlat := map[string]any{
 		"named_field": "value",
-		"Data1":       "no_name",
+		"param1":      "no_name",
 	}
 	require.Equal(t, expectedFlat, parsed["event_data"])
 }
@@ -886,8 +886,8 @@ func TestParseEventDataVariants(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"Data1": "first",
-				"Data2": "second",
+				"param1": "first",
+				"param2": "second",
 			},
 		},
 		{
@@ -902,9 +902,9 @@ func TestParseEventDataVariants(t *testing.T) {
 			},
 			expected: map[string]any{
 				"Named1": "value1",
-				"Data1":  "anonymous1",
+				"param1": "anonymous1",
 				"Named2": "value2",
-				"Data2":  "anonymous2",
+				"param2": "anonymous2",
 			},
 		},
 		{
@@ -943,7 +943,75 @@ func TestParseEventDataVariants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := parseEventData(tt.input)
+			result := parseEventData(tt.input, EventDataFormatMap)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestParseEventDataArrayFormat(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    EventData
+		expected map[string]any
+	}{
+		{
+			name: "named data as array",
+			input: EventData{
+				Data: []Data{
+					{Name: "ProcessId", Value: "7924"},
+					{Name: "Application", Value: "app.exe"},
+				},
+			},
+			expected: map[string]any{
+				"data": []any{
+					map[string]any{"ProcessId": "7924"},
+					map[string]any{"Application": "app.exe"},
+				},
+			},
+		},
+		{
+			name: "anonymous data as array",
+			input: EventData{
+				Data: []Data{
+					{Value: "first"},
+					{Value: "second"},
+				},
+			},
+			expected: map[string]any{
+				"data": []any{
+					map[string]any{"": "first"},
+					map[string]any{"": "second"},
+				},
+			},
+		},
+		{
+			name: "with name and binary attributes",
+			input: EventData{
+				Name:   "EVENT_DATA",
+				Binary: "2D20",
+				Data: []Data{
+					{Name: "Field", Value: "value"},
+				},
+			},
+			expected: map[string]any{
+				"name":   "EVENT_DATA",
+				"binary": "2D20",
+				"data": []any{
+					map[string]any{"Field": "value"},
+				},
+			},
+		},
+		{
+			name:     "empty event data",
+			input:    EventData{},
+			expected: map[string]any{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parseEventData(tt.input, EventDataFormatArray)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -976,10 +1044,104 @@ func TestParseBodyWithAnonymousEventData(t *testing.T) {
 		Version: 0,
 	}
 
-	body := formattedBody(xml)
+	body := formattedBody(xml, EventDataFormatMap)
 	eventData := body["event_data"].(map[string]any)
 
-	require.Equal(t, "first_value", eventData["Data1"])
-	require.Equal(t, "second_value", eventData["Data2"])
+	require.Equal(t, "first_value", eventData["param1"])
+	require.Equal(t, "second_value", eventData["param2"])
 	require.Equal(t, "2D20", eventData["binary"])
+}
+
+func TestFormattedBodyArrayFormat(t *testing.T) {
+	xml := &EventXML{
+		EventID: EventID{
+			ID:         1,
+			Qualifiers: 2,
+		},
+		Provider: Provider{
+			Name:            "provider",
+			GUID:            "guid",
+			EventSourceName: "event source",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2020-07-30T01:01:01.123456789Z",
+		},
+		Computer: "computer",
+		Channel:  "application",
+		RecordID: 1,
+		Level:    "Information",
+		Message:  "message",
+		Task:     "task",
+		Opcode:   "opcode",
+		Keywords: []string{"keyword"},
+		EventData: EventData{
+			Data: []Data{{Name: "ProcessId", Value: "7924"}, {Name: "Application", Value: "app.exe"}},
+		},
+		RenderedLevel:    "rendered_level",
+		RenderedTask:     "rendered_task",
+		RenderedOpcode:   "rendered_opcode",
+		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
+	}
+
+	body := formattedBody(xml, EventDataFormatArray)
+	eventData := body["event_data"].(map[string]any)
+
+	expected := []any{
+		map[string]any{"ProcessId": "7924"},
+		map[string]any{"Application": "app.exe"},
+	}
+	require.Equal(t, expected, eventData["data"])
+}
+
+func TestUnmarshalAndFormatAnonymousEventData(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlWithAnonymousEventDataEntries.xml"))
+	require.NoError(t, err)
+
+	event, err := unmarshalEventXML(data)
+	require.NoError(t, err)
+
+	mapBody := formattedBody(event, EventDataFormatMap)
+	mapEventData := mapBody["event_data"].(map[string]any)
+	require.Equal(t, "1st_value", mapEventData["param1"])
+	require.Equal(t, "2nd_value", mapEventData["param2"])
+	require.Equal(t, "2D20", mapEventData["binary"])
+	_, hasDataKey := mapEventData["data"]
+	require.False(t, hasDataKey, "map format should not have a 'data' key")
+
+	arrayBody := formattedBody(event, EventDataFormatArray)
+	arrayEventData := arrayBody["event_data"].(map[string]any)
+	require.Equal(t, []any{
+		map[string]any{"": "1st_value"},
+		map[string]any{"": "2nd_value"},
+	}, arrayEventData["data"])
+	require.Equal(t, "2D20", arrayEventData["binary"])
+}
+
+func TestUnmarshalAndFormatNamedEventData(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
+	require.NoError(t, err)
+
+	event, err := unmarshalEventXML(data)
+	require.NoError(t, err)
+
+	mapBody := formattedBody(event, EventDataFormatMap)
+	mapEventData := mapBody["event_data"].(map[string]any)
+	require.Equal(t, "2022-04-28T19:48:52Z", mapEventData["Time"])
+	require.Equal(t, "RulesEngine", mapEventData["Source"])
+
+	arrayBody := formattedBody(event, EventDataFormatArray)
+	arrayEventData := arrayBody["event_data"].(map[string]any)
+	require.Equal(t, []any{
+		map[string]any{"Time": "2022-04-28T19:48:52Z"},
+		map[string]any{"Source": "RulesEngine"},
+	}, arrayEventData["data"])
+}
+
+func TestParseEventDataSingleAnonymous(t *testing.T) {
+	input := EventData{
+		Data: []Data{{Value: "Test log"}},
+	}
+	result := parseEventData(input, EventDataFormatMap)
+	require.Equal(t, map[string]any{"param1": "Test log"}, result)
 }
