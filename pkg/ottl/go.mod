@@ -24,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.53.1-0.20260312222452-c212d203a110
 	go.opentelemetry.io/collector/pdata/pprofile v0.147.1-0.20260312222452-c212d203a110
 	go.opentelemetry.io/otel v1.42.0
+	go.opentelemetry.io/otel/sdk v1.42.0
 	go.opentelemetry.io/otel/trace v1.42.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
@@ -50,7 +51,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.147.1-0.20260312222452-c212d203a110 // indirect
 	go.opentelemetry.io/otel/metric v1.42.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.42.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
