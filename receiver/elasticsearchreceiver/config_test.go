@@ -192,6 +192,7 @@ func TestLoadConfig(t *testing.T) {
 			if diff := cmp.Diff(
 				tt.expected,
 				cfg,
+				cmpopts.IgnoreUnexported(metadata.MetricsConfig{}),
 				cmpopts.IgnoreUnexported(configoptional.Optional[configauth.Config]{}),
 				cmpopts.IgnoreUnexported(configoptional.Optional[confighttp.CookiesConfig]{}),
 				cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
