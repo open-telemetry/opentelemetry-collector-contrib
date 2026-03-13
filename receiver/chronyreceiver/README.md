@@ -75,7 +75,15 @@ receivers:
 When the collector and chronyd run in separate containers with different Linux network namespaces
 but share a filesystem volume for the Unix socket, Go's default abstract socket autobind fails
 because abstract sockets are namespace-scoped. Use `local_endpoint` to bind the client socket to
-a filesystem path on the shared volume:
+a filesystem path on the shared volume.
+
+The chronyd instance must be configured to listen on the same socket path. In `chrony.conf`:
+
+```
+bindcmdaddress /run/chrony/chronyd.sock
+```
+
+The corresponding collector configuration:
 
 ```yaml
 receivers:
@@ -86,8 +94,9 @@ receivers:
     collection_interval: 10s
 ```
 
-The socket file at `local_endpoint` is automatically cleaned up before each request and after
-the response is received.
+Both containers must mount the `/run/chrony` directory as a shared volume. The socket file at
+`local_endpoint` is automatically cleaned up before each request and after the response is
+received.
 
 The complete list of metrics emitted by this receiver is found in the [documentation].
 
