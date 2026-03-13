@@ -68,6 +68,7 @@ components:
         - awscloudwatchmetricstreams_encoding
         - awsproxy
         - azure_auth
+        - azure_encoding
         - basicauth
         - bearertokenauth
         - cgroup_runtime
