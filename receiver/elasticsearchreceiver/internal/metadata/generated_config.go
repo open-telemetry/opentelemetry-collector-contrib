@@ -10,17 +10,23 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled             bool `mapstructure:"enabled"`
-	enabledSetByUser    bool
-	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []string `mapstructure:"attributes"`
-	definedAttributes   []string
-	requiredAttributes  []string
+// ElasticsearchBreakerMemoryEstimatedAttributeKey specifies the key of an attribute for the elasticsearch.breaker.memory.estimated metric.
+type ElasticsearchBreakerMemoryEstimatedAttributeKey string
+
+const (
+	ElasticsearchBreakerMemoryEstimatedAttributeKeyCircuitBreakerName ElasticsearchBreakerMemoryEstimatedAttributeKey = "name"
+)
+
+// ElasticsearchBreakerMemoryEstimatedConfig provides config for the elasticsearch.breaker.memory.estimated metric.
+type ElasticsearchBreakerMemoryEstimatedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchBreakerMemoryEstimatedAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchBreakerMemoryEstimatedConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,25 +35,3168 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	if len(ms.definedAttributes) > 0 {
-		for _, val := range ms.EnabledAttributes {
-			if !slices.Contains(ms.definedAttributes, val) {
-				return fmt.Errorf("%v is not defined in metadata.yaml", val)
-			}
-		}
 
-		for _, val := range ms.requiredAttributes {
-			if !slices.Contains(ms.EnabledAttributes, val) {
-				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-			}
-		}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
-		if ms.AggregationStrategy != AggregationStrategySum &&
-			ms.AggregationStrategy != AggregationStrategyAvg &&
-			ms.AggregationStrategy != AggregationStrategyMin &&
-			ms.AggregationStrategy != AggregationStrategyMax {
-			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+func (ms *ElasticsearchBreakerMemoryEstimatedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchBreakerMemoryEstimatedAttributeKeyCircuitBreakerName:
+		default:
+			return fmt.Errorf("metric elasticsearch.breaker.memory.estimated doesn't have an attribute %v, valid attributes: [name]", val)
 		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchBreakerMemoryLimitAttributeKey specifies the key of an attribute for the elasticsearch.breaker.memory.limit metric.
+type ElasticsearchBreakerMemoryLimitAttributeKey string
+
+const (
+	ElasticsearchBreakerMemoryLimitAttributeKeyCircuitBreakerName ElasticsearchBreakerMemoryLimitAttributeKey = "name"
+)
+
+// ElasticsearchBreakerMemoryLimitConfig provides config for the elasticsearch.breaker.memory.limit metric.
+type ElasticsearchBreakerMemoryLimitConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchBreakerMemoryLimitAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchBreakerMemoryLimitConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchBreakerMemoryLimitConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchBreakerMemoryLimitAttributeKeyCircuitBreakerName:
+		default:
+			return fmt.Errorf("metric elasticsearch.breaker.memory.limit doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchBreakerTrippedAttributeKey specifies the key of an attribute for the elasticsearch.breaker.tripped metric.
+type ElasticsearchBreakerTrippedAttributeKey string
+
+const (
+	ElasticsearchBreakerTrippedAttributeKeyCircuitBreakerName ElasticsearchBreakerTrippedAttributeKey = "name"
+)
+
+// ElasticsearchBreakerTrippedConfig provides config for the elasticsearch.breaker.tripped metric.
+type ElasticsearchBreakerTrippedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchBreakerTrippedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchBreakerTrippedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchBreakerTrippedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchBreakerTrippedAttributeKeyCircuitBreakerName:
+		default:
+			return fmt.Errorf("metric elasticsearch.breaker.tripped doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchClusterDataNodesConfig provides config for the elasticsearch.cluster.data_nodes metric.
+type ElasticsearchClusterDataNodesConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchClusterDataNodesConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchClusterHealthAttributeKey specifies the key of an attribute for the elasticsearch.cluster.health metric.
+type ElasticsearchClusterHealthAttributeKey string
+
+const (
+	ElasticsearchClusterHealthAttributeKeyHealthStatus ElasticsearchClusterHealthAttributeKey = "status"
+)
+
+// ElasticsearchClusterHealthConfig provides config for the elasticsearch.cluster.health metric.
+type ElasticsearchClusterHealthConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterHealthAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchClusterHealthConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchClusterHealthConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchClusterHealthAttributeKeyHealthStatus:
+		default:
+			return fmt.Errorf("metric elasticsearch.cluster.health doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchClusterInFlightFetchConfig provides config for the elasticsearch.cluster.in_flight_fetch metric.
+type ElasticsearchClusterInFlightFetchConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchClusterInFlightFetchConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchClusterIndicesCacheEvictionsAttributeKey specifies the key of an attribute for the elasticsearch.cluster.indices.cache.evictions metric.
+type ElasticsearchClusterIndicesCacheEvictionsAttributeKey string
+
+const (
+	ElasticsearchClusterIndicesCacheEvictionsAttributeKeyCacheName ElasticsearchClusterIndicesCacheEvictionsAttributeKey = "cache_name"
+)
+
+// ElasticsearchClusterIndicesCacheEvictionsConfig provides config for the elasticsearch.cluster.indices.cache.evictions metric.
+type ElasticsearchClusterIndicesCacheEvictionsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterIndicesCacheEvictionsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchClusterIndicesCacheEvictionsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchClusterIndicesCacheEvictionsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchClusterIndicesCacheEvictionsAttributeKeyCacheName:
+		default:
+			return fmt.Errorf("metric elasticsearch.cluster.indices.cache.evictions doesn't have an attribute %v, valid attributes: [cache_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchClusterNodesConfig provides config for the elasticsearch.cluster.nodes metric.
+type ElasticsearchClusterNodesConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchClusterNodesConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchClusterPendingTasksConfig provides config for the elasticsearch.cluster.pending_tasks metric.
+type ElasticsearchClusterPendingTasksConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchClusterPendingTasksConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchClusterPublishedStatesDifferencesAttributeKey specifies the key of an attribute for the elasticsearch.cluster.published_states.differences metric.
+type ElasticsearchClusterPublishedStatesDifferencesAttributeKey string
+
+const (
+	ElasticsearchClusterPublishedStatesDifferencesAttributeKeyClusterPublishedDifferenceState ElasticsearchClusterPublishedStatesDifferencesAttributeKey = "state"
+)
+
+// ElasticsearchClusterPublishedStatesDifferencesConfig provides config for the elasticsearch.cluster.published_states.differences metric.
+type ElasticsearchClusterPublishedStatesDifferencesConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterPublishedStatesDifferencesAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchClusterPublishedStatesDifferencesConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchClusterPublishedStatesDifferencesConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchClusterPublishedStatesDifferencesAttributeKeyClusterPublishedDifferenceState:
+		default:
+			return fmt.Errorf("metric elasticsearch.cluster.published_states.differences doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchClusterPublishedStatesFullConfig provides config for the elasticsearch.cluster.published_states.full metric.
+type ElasticsearchClusterPublishedStatesFullConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchClusterPublishedStatesFullConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchClusterShardsAttributeKey specifies the key of an attribute for the elasticsearch.cluster.shards metric.
+type ElasticsearchClusterShardsAttributeKey string
+
+const (
+	ElasticsearchClusterShardsAttributeKeyShardState ElasticsearchClusterShardsAttributeKey = "state"
+)
+
+// ElasticsearchClusterShardsConfig provides config for the elasticsearch.cluster.shards metric.
+type ElasticsearchClusterShardsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterShardsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchClusterShardsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchClusterShardsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchClusterShardsAttributeKeyShardState:
+		default:
+			return fmt.Errorf("metric elasticsearch.cluster.shards doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchClusterStateQueueAttributeKey specifies the key of an attribute for the elasticsearch.cluster.state_queue metric.
+type ElasticsearchClusterStateQueueAttributeKey string
+
+const (
+	ElasticsearchClusterStateQueueAttributeKeyClusterStateQueueState ElasticsearchClusterStateQueueAttributeKey = "state"
+)
+
+// ElasticsearchClusterStateQueueConfig provides config for the elasticsearch.cluster.state_queue metric.
+type ElasticsearchClusterStateQueueConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterStateQueueAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchClusterStateQueueConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchClusterStateQueueConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchClusterStateQueueAttributeKeyClusterStateQueueState:
+		default:
+			return fmt.Errorf("metric elasticsearch.cluster.state_queue doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchClusterStateUpdateCountAttributeKey specifies the key of an attribute for the elasticsearch.cluster.state_update.count metric.
+type ElasticsearchClusterStateUpdateCountAttributeKey string
+
+const (
+	ElasticsearchClusterStateUpdateCountAttributeKeyClusterStateUpdateState ElasticsearchClusterStateUpdateCountAttributeKey = "state"
+)
+
+// ElasticsearchClusterStateUpdateCountConfig provides config for the elasticsearch.cluster.state_update.count metric.
+type ElasticsearchClusterStateUpdateCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterStateUpdateCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchClusterStateUpdateCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchClusterStateUpdateCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchClusterStateUpdateCountAttributeKeyClusterStateUpdateState:
+		default:
+			return fmt.Errorf("metric elasticsearch.cluster.state_update.count doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchClusterStateUpdateTimeAttributeKey specifies the key of an attribute for the elasticsearch.cluster.state_update.time metric.
+type ElasticsearchClusterStateUpdateTimeAttributeKey string
+
+const (
+	ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateState ElasticsearchClusterStateUpdateTimeAttributeKey = "state"
+	ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateType  ElasticsearchClusterStateUpdateTimeAttributeKey = "type"
+)
+
+// ElasticsearchClusterStateUpdateTimeConfig provides config for the elasticsearch.cluster.state_update.time metric.
+type ElasticsearchClusterStateUpdateTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterStateUpdateTimeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchClusterStateUpdateTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchClusterStateUpdateTimeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateType:
+		default:
+			return fmt.Errorf("metric elasticsearch.cluster.state_update.time doesn't have an attribute %v, valid attributes: [state, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexCacheEvictionsAttributeKey specifies the key of an attribute for the elasticsearch.index.cache.evictions metric.
+type ElasticsearchIndexCacheEvictionsAttributeKey string
+
+const (
+	ElasticsearchIndexCacheEvictionsAttributeKeyCacheName            ElasticsearchIndexCacheEvictionsAttributeKey = "cache_name"
+	ElasticsearchIndexCacheEvictionsAttributeKeyIndexAggregationType ElasticsearchIndexCacheEvictionsAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexCacheEvictionsConfig provides config for the elasticsearch.index.cache.evictions metric.
+type ElasticsearchIndexCacheEvictionsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexCacheEvictionsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexCacheEvictionsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexCacheEvictionsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexCacheEvictionsAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.cache.evictions doesn't have an attribute %v, valid attributes: [cache_name, aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexCacheMemoryUsageAttributeKey specifies the key of an attribute for the elasticsearch.index.cache.memory.usage metric.
+type ElasticsearchIndexCacheMemoryUsageAttributeKey string
+
+const (
+	ElasticsearchIndexCacheMemoryUsageAttributeKeyCacheName            ElasticsearchIndexCacheMemoryUsageAttributeKey = "cache_name"
+	ElasticsearchIndexCacheMemoryUsageAttributeKeyIndexAggregationType ElasticsearchIndexCacheMemoryUsageAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexCacheMemoryUsageConfig provides config for the elasticsearch.index.cache.memory.usage metric.
+type ElasticsearchIndexCacheMemoryUsageConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexCacheMemoryUsageAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexCacheMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexCacheMemoryUsageConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexCacheMemoryUsageAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.cache.memory.usage doesn't have an attribute %v, valid attributes: [cache_name, aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexCacheSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.cache.size metric.
+type ElasticsearchIndexCacheSizeAttributeKey string
+
+const (
+	ElasticsearchIndexCacheSizeAttributeKeyIndexAggregationType ElasticsearchIndexCacheSizeAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexCacheSizeConfig provides config for the elasticsearch.index.cache.size metric.
+type ElasticsearchIndexCacheSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexCacheSizeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexCacheSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexCacheSizeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexCacheSizeAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.cache.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexDocumentsAttributeKey specifies the key of an attribute for the elasticsearch.index.documents metric.
+type ElasticsearchIndexDocumentsAttributeKey string
+
+const (
+	ElasticsearchIndexDocumentsAttributeKeyDocumentState        ElasticsearchIndexDocumentsAttributeKey = "state"
+	ElasticsearchIndexDocumentsAttributeKeyIndexAggregationType ElasticsearchIndexDocumentsAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexDocumentsConfig provides config for the elasticsearch.index.documents metric.
+type ElasticsearchIndexDocumentsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexDocumentsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexDocumentsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexDocumentsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexDocumentsAttributeKeyDocumentState, ElasticsearchIndexDocumentsAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.documents doesn't have an attribute %v, valid attributes: [state, aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexOperationsCompletedAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.completed metric.
+type ElasticsearchIndexOperationsCompletedAttributeKey string
+
+const (
+	ElasticsearchIndexOperationsCompletedAttributeKeyOperation            ElasticsearchIndexOperationsCompletedAttributeKey = "operation"
+	ElasticsearchIndexOperationsCompletedAttributeKeyIndexAggregationType ElasticsearchIndexOperationsCompletedAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexOperationsCompletedConfig provides config for the elasticsearch.index.operations.completed metric.
+type ElasticsearchIndexOperationsCompletedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsCompletedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexOperationsCompletedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexOperationsCompletedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexOperationsCompletedAttributeKeyOperation, ElasticsearchIndexOperationsCompletedAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.operations.completed doesn't have an attribute %v, valid attributes: [operation, aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexOperationsMergeCurrentAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.merge.current metric.
+type ElasticsearchIndexOperationsMergeCurrentAttributeKey string
+
+const (
+	ElasticsearchIndexOperationsMergeCurrentAttributeKeyIndexAggregationType ElasticsearchIndexOperationsMergeCurrentAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexOperationsMergeCurrentConfig provides config for the elasticsearch.index.operations.merge.current metric.
+type ElasticsearchIndexOperationsMergeCurrentConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsMergeCurrentAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexOperationsMergeCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexOperationsMergeCurrentConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexOperationsMergeCurrentAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.operations.merge.current doesn't have an attribute %v, valid attributes: [aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexOperationsMergeDocsCountAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.merge.docs_count metric.
+type ElasticsearchIndexOperationsMergeDocsCountAttributeKey string
+
+const (
+	ElasticsearchIndexOperationsMergeDocsCountAttributeKeyIndexAggregationType ElasticsearchIndexOperationsMergeDocsCountAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexOperationsMergeDocsCountConfig provides config for the elasticsearch.index.operations.merge.docs_count metric.
+type ElasticsearchIndexOperationsMergeDocsCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsMergeDocsCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexOperationsMergeDocsCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexOperationsMergeDocsCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexOperationsMergeDocsCountAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.operations.merge.docs_count doesn't have an attribute %v, valid attributes: [aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexOperationsMergeSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.merge.size metric.
+type ElasticsearchIndexOperationsMergeSizeAttributeKey string
+
+const (
+	ElasticsearchIndexOperationsMergeSizeAttributeKeyIndexAggregationType ElasticsearchIndexOperationsMergeSizeAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexOperationsMergeSizeConfig provides config for the elasticsearch.index.operations.merge.size metric.
+type ElasticsearchIndexOperationsMergeSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsMergeSizeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexOperationsMergeSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexOperationsMergeSizeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexOperationsMergeSizeAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.operations.merge.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexOperationsTimeAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.time metric.
+type ElasticsearchIndexOperationsTimeAttributeKey string
+
+const (
+	ElasticsearchIndexOperationsTimeAttributeKeyOperation            ElasticsearchIndexOperationsTimeAttributeKey = "operation"
+	ElasticsearchIndexOperationsTimeAttributeKeyIndexAggregationType ElasticsearchIndexOperationsTimeAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexOperationsTimeConfig provides config for the elasticsearch.index.operations.time metric.
+type ElasticsearchIndexOperationsTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsTimeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexOperationsTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexOperationsTimeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexOperationsTimeAttributeKeyOperation, ElasticsearchIndexOperationsTimeAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.operations.time doesn't have an attribute %v, valid attributes: [operation, aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexSegmentsCountAttributeKey specifies the key of an attribute for the elasticsearch.index.segments.count metric.
+type ElasticsearchIndexSegmentsCountAttributeKey string
+
+const (
+	ElasticsearchIndexSegmentsCountAttributeKeyIndexAggregationType ElasticsearchIndexSegmentsCountAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexSegmentsCountConfig provides config for the elasticsearch.index.segments.count metric.
+type ElasticsearchIndexSegmentsCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexSegmentsCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexSegmentsCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexSegmentsCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexSegmentsCountAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.segments.count doesn't have an attribute %v, valid attributes: [aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexSegmentsMemoryAttributeKey specifies the key of an attribute for the elasticsearch.index.segments.memory metric.
+type ElasticsearchIndexSegmentsMemoryAttributeKey string
+
+const (
+	ElasticsearchIndexSegmentsMemoryAttributeKeyIndexAggregationType     ElasticsearchIndexSegmentsMemoryAttributeKey = "aggregation"
+	ElasticsearchIndexSegmentsMemoryAttributeKeySegmentsMemoryObjectType ElasticsearchIndexSegmentsMemoryAttributeKey = "object"
+)
+
+// ElasticsearchIndexSegmentsMemoryConfig provides config for the elasticsearch.index.segments.memory metric.
+type ElasticsearchIndexSegmentsMemoryConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexSegmentsMemoryAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexSegmentsMemoryConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexSegmentsMemoryConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexSegmentsMemoryAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryAttributeKeySegmentsMemoryObjectType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.segments.memory doesn't have an attribute %v, valid attributes: [aggregation, object]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexSegmentsSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.segments.size metric.
+type ElasticsearchIndexSegmentsSizeAttributeKey string
+
+const (
+	ElasticsearchIndexSegmentsSizeAttributeKeyIndexAggregationType ElasticsearchIndexSegmentsSizeAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexSegmentsSizeConfig provides config for the elasticsearch.index.segments.size metric.
+type ElasticsearchIndexSegmentsSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexSegmentsSizeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexSegmentsSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexSegmentsSizeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexSegmentsSizeAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.segments.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexShardsSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.shards.size metric.
+type ElasticsearchIndexShardsSizeAttributeKey string
+
+const (
+	ElasticsearchIndexShardsSizeAttributeKeyIndexAggregationType ElasticsearchIndexShardsSizeAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexShardsSizeConfig provides config for the elasticsearch.index.shards.size metric.
+type ElasticsearchIndexShardsSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexShardsSizeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexShardsSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexShardsSizeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexShardsSizeAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.shards.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexTranslogOperationsAttributeKey specifies the key of an attribute for the elasticsearch.index.translog.operations metric.
+type ElasticsearchIndexTranslogOperationsAttributeKey string
+
+const (
+	ElasticsearchIndexTranslogOperationsAttributeKeyIndexAggregationType ElasticsearchIndexTranslogOperationsAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexTranslogOperationsConfig provides config for the elasticsearch.index.translog.operations metric.
+type ElasticsearchIndexTranslogOperationsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexTranslogOperationsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexTranslogOperationsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexTranslogOperationsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexTranslogOperationsAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.translog.operations doesn't have an attribute %v, valid attributes: [aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexTranslogSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.translog.size metric.
+type ElasticsearchIndexTranslogSizeAttributeKey string
+
+const (
+	ElasticsearchIndexTranslogSizeAttributeKeyIndexAggregationType ElasticsearchIndexTranslogSizeAttributeKey = "aggregation"
+)
+
+// ElasticsearchIndexTranslogSizeConfig provides config for the elasticsearch.index.translog.size metric.
+type ElasticsearchIndexTranslogSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexTranslogSizeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchIndexTranslogSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchIndexTranslogSizeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchIndexTranslogSizeAttributeKeyIndexAggregationType:
+		default:
+			return fmt.Errorf("metric elasticsearch.index.translog.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchIndexingPressureMemoryLimitConfig provides config for the elasticsearch.indexing_pressure.memory.limit metric.
+type ElasticsearchIndexingPressureMemoryLimitConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchIndexingPressureMemoryLimitConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig provides config for the elasticsearch.indexing_pressure.memory.total.primary_rejections metric.
+type ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig provides config for the elasticsearch.indexing_pressure.memory.total.replica_rejections metric.
+type ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchMemoryIndexingPressureAttributeKey specifies the key of an attribute for the elasticsearch.memory.indexing_pressure metric.
+type ElasticsearchMemoryIndexingPressureAttributeKey string
+
+const (
+	ElasticsearchMemoryIndexingPressureAttributeKeyIndexingPressureStage ElasticsearchMemoryIndexingPressureAttributeKey = "stage"
+)
+
+// ElasticsearchMemoryIndexingPressureConfig provides config for the elasticsearch.memory.indexing_pressure metric.
+type ElasticsearchMemoryIndexingPressureConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchMemoryIndexingPressureAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchMemoryIndexingPressureConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchMemoryIndexingPressureConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchMemoryIndexingPressureAttributeKeyIndexingPressureStage:
+		default:
+			return fmt.Errorf("metric elasticsearch.memory.indexing_pressure doesn't have an attribute %v, valid attributes: [stage]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeCacheCountAttributeKey specifies the key of an attribute for the elasticsearch.node.cache.count metric.
+type ElasticsearchNodeCacheCountAttributeKey string
+
+const (
+	ElasticsearchNodeCacheCountAttributeKeyQueryCacheCountType ElasticsearchNodeCacheCountAttributeKey = "type"
+)
+
+// ElasticsearchNodeCacheCountConfig provides config for the elasticsearch.node.cache.count metric.
+type ElasticsearchNodeCacheCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeCacheCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeCacheCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeCacheCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeCacheCountAttributeKeyQueryCacheCountType:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.cache.count doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeCacheEvictionsAttributeKey specifies the key of an attribute for the elasticsearch.node.cache.evictions metric.
+type ElasticsearchNodeCacheEvictionsAttributeKey string
+
+const (
+	ElasticsearchNodeCacheEvictionsAttributeKeyCacheName ElasticsearchNodeCacheEvictionsAttributeKey = "cache_name"
+)
+
+// ElasticsearchNodeCacheEvictionsConfig provides config for the elasticsearch.node.cache.evictions metric.
+type ElasticsearchNodeCacheEvictionsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeCacheEvictionsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeCacheEvictionsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeCacheEvictionsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeCacheEvictionsAttributeKeyCacheName:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.cache.evictions doesn't have an attribute %v, valid attributes: [cache_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeCacheMemoryUsageAttributeKey specifies the key of an attribute for the elasticsearch.node.cache.memory.usage metric.
+type ElasticsearchNodeCacheMemoryUsageAttributeKey string
+
+const (
+	ElasticsearchNodeCacheMemoryUsageAttributeKeyCacheName ElasticsearchNodeCacheMemoryUsageAttributeKey = "cache_name"
+)
+
+// ElasticsearchNodeCacheMemoryUsageConfig provides config for the elasticsearch.node.cache.memory.usage metric.
+type ElasticsearchNodeCacheMemoryUsageConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeCacheMemoryUsageAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeCacheMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeCacheMemoryUsageConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeCacheMemoryUsageAttributeKeyCacheName:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.cache.memory.usage doesn't have an attribute %v, valid attributes: [cache_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeCacheSizeConfig provides config for the elasticsearch.node.cache.size metric.
+type ElasticsearchNodeCacheSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeCacheSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeClusterConnectionsConfig provides config for the elasticsearch.node.cluster.connections metric.
+type ElasticsearchNodeClusterConnectionsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeClusterConnectionsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeClusterIoAttributeKey specifies the key of an attribute for the elasticsearch.node.cluster.io metric.
+type ElasticsearchNodeClusterIoAttributeKey string
+
+const (
+	ElasticsearchNodeClusterIoAttributeKeyDirection ElasticsearchNodeClusterIoAttributeKey = "direction"
+)
+
+// ElasticsearchNodeClusterIoConfig provides config for the elasticsearch.node.cluster.io metric.
+type ElasticsearchNodeClusterIoConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeClusterIoAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeClusterIoConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeClusterIoConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeClusterIoAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.cluster.io doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeDiskIoReadConfig provides config for the elasticsearch.node.disk.io.read metric.
+type ElasticsearchNodeDiskIoReadConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeDiskIoReadConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeDiskIoWriteConfig provides config for the elasticsearch.node.disk.io.write metric.
+type ElasticsearchNodeDiskIoWriteConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeDiskIoWriteConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeDocumentsAttributeKey specifies the key of an attribute for the elasticsearch.node.documents metric.
+type ElasticsearchNodeDocumentsAttributeKey string
+
+const (
+	ElasticsearchNodeDocumentsAttributeKeyDocumentState ElasticsearchNodeDocumentsAttributeKey = "state"
+)
+
+// ElasticsearchNodeDocumentsConfig provides config for the elasticsearch.node.documents metric.
+type ElasticsearchNodeDocumentsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeDocumentsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeDocumentsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeDocumentsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeDocumentsAttributeKeyDocumentState:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.documents doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeFsDiskAvailableConfig provides config for the elasticsearch.node.fs.disk.available metric.
+type ElasticsearchNodeFsDiskAvailableConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeFsDiskAvailableConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeFsDiskFreeConfig provides config for the elasticsearch.node.fs.disk.free metric.
+type ElasticsearchNodeFsDiskFreeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeFsDiskFreeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeFsDiskTotalConfig provides config for the elasticsearch.node.fs.disk.total metric.
+type ElasticsearchNodeFsDiskTotalConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeFsDiskTotalConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeHTTPConnectionsConfig provides config for the elasticsearch.node.http.connections metric.
+type ElasticsearchNodeHTTPConnectionsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeHTTPConnectionsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeIngestDocumentsConfig provides config for the elasticsearch.node.ingest.documents metric.
+type ElasticsearchNodeIngestDocumentsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeIngestDocumentsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeIngestDocumentsCurrentConfig provides config for the elasticsearch.node.ingest.documents.current metric.
+type ElasticsearchNodeIngestDocumentsCurrentConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeIngestDocumentsCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeIngestOperationsFailedConfig provides config for the elasticsearch.node.ingest.operations.failed metric.
+type ElasticsearchNodeIngestOperationsFailedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeIngestOperationsFailedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeOpenFilesConfig provides config for the elasticsearch.node.open_files metric.
+type ElasticsearchNodeOpenFilesConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeOpenFilesConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeOperationsCompletedAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.completed metric.
+type ElasticsearchNodeOperationsCompletedAttributeKey string
+
+const (
+	ElasticsearchNodeOperationsCompletedAttributeKeyOperation ElasticsearchNodeOperationsCompletedAttributeKey = "operation"
+)
+
+// ElasticsearchNodeOperationsCompletedConfig provides config for the elasticsearch.node.operations.completed metric.
+type ElasticsearchNodeOperationsCompletedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsCompletedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeOperationsCompletedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeOperationsCompletedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeOperationsCompletedAttributeKeyOperation:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.operations.completed doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeOperationsCurrentAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.current metric.
+type ElasticsearchNodeOperationsCurrentAttributeKey string
+
+const (
+	ElasticsearchNodeOperationsCurrentAttributeKeyOperation ElasticsearchNodeOperationsCurrentAttributeKey = "operation"
+)
+
+// ElasticsearchNodeOperationsCurrentConfig provides config for the elasticsearch.node.operations.current metric.
+type ElasticsearchNodeOperationsCurrentConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsCurrentAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeOperationsCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeOperationsCurrentConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeOperationsCurrentAttributeKeyOperation:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.operations.current doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeOperationsGetCompletedAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.get.completed metric.
+type ElasticsearchNodeOperationsGetCompletedAttributeKey string
+
+const (
+	ElasticsearchNodeOperationsGetCompletedAttributeKeyGetResult ElasticsearchNodeOperationsGetCompletedAttributeKey = "result"
+)
+
+// ElasticsearchNodeOperationsGetCompletedConfig provides config for the elasticsearch.node.operations.get.completed metric.
+type ElasticsearchNodeOperationsGetCompletedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsGetCompletedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeOperationsGetCompletedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeOperationsGetCompletedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeOperationsGetCompletedAttributeKeyGetResult:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.operations.get.completed doesn't have an attribute %v, valid attributes: [result]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeOperationsGetTimeAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.get.time metric.
+type ElasticsearchNodeOperationsGetTimeAttributeKey string
+
+const (
+	ElasticsearchNodeOperationsGetTimeAttributeKeyGetResult ElasticsearchNodeOperationsGetTimeAttributeKey = "result"
+)
+
+// ElasticsearchNodeOperationsGetTimeConfig provides config for the elasticsearch.node.operations.get.time metric.
+type ElasticsearchNodeOperationsGetTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsGetTimeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeOperationsGetTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeOperationsGetTimeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeOperationsGetTimeAttributeKeyGetResult:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.operations.get.time doesn't have an attribute %v, valid attributes: [result]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeOperationsTimeAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.time metric.
+type ElasticsearchNodeOperationsTimeAttributeKey string
+
+const (
+	ElasticsearchNodeOperationsTimeAttributeKeyOperation ElasticsearchNodeOperationsTimeAttributeKey = "operation"
+)
+
+// ElasticsearchNodeOperationsTimeConfig provides config for the elasticsearch.node.operations.time metric.
+type ElasticsearchNodeOperationsTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsTimeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeOperationsTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeOperationsTimeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeOperationsTimeAttributeKeyOperation:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.operations.time doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey specifies the key of an attribute for the elasticsearch.node.pipeline.ingest.documents.current metric.
+type ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey string
+
+const (
+	ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKeyIngestPipelineName ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey = "name"
+)
+
+// ElasticsearchNodePipelineIngestDocumentsCurrentConfig provides config for the elasticsearch.node.pipeline.ingest.documents.current metric.
+type ElasticsearchNodePipelineIngestDocumentsCurrentConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodePipelineIngestDocumentsCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodePipelineIngestDocumentsCurrentConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKeyIngestPipelineName:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.pipeline.ingest.documents.current doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey specifies the key of an attribute for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric.
+type ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey string
+
+const (
+	ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKeyIngestPipelineName ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey = "name"
+)
+
+// ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig provides config for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric.
+type ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKeyIngestPipelineName:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.pipeline.ingest.documents.preprocessed doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodePipelineIngestOperationsFailedAttributeKey specifies the key of an attribute for the elasticsearch.node.pipeline.ingest.operations.failed metric.
+type ElasticsearchNodePipelineIngestOperationsFailedAttributeKey string
+
+const (
+	ElasticsearchNodePipelineIngestOperationsFailedAttributeKeyIngestPipelineName ElasticsearchNodePipelineIngestOperationsFailedAttributeKey = "name"
+)
+
+// ElasticsearchNodePipelineIngestOperationsFailedConfig provides config for the elasticsearch.node.pipeline.ingest.operations.failed metric.
+type ElasticsearchNodePipelineIngestOperationsFailedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodePipelineIngestOperationsFailedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodePipelineIngestOperationsFailedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodePipelineIngestOperationsFailedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodePipelineIngestOperationsFailedAttributeKeyIngestPipelineName:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.pipeline.ingest.operations.failed doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeScriptCacheEvictionsConfig provides config for the elasticsearch.node.script.cache_evictions metric.
+type ElasticsearchNodeScriptCacheEvictionsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeScriptCacheEvictionsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeScriptCompilationLimitTriggeredConfig provides config for the elasticsearch.node.script.compilation_limit_triggered metric.
+type ElasticsearchNodeScriptCompilationLimitTriggeredConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeScriptCompilationLimitTriggeredConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeScriptCompilationsConfig provides config for the elasticsearch.node.script.compilations metric.
+type ElasticsearchNodeScriptCompilationsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeScriptCompilationsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeSegmentsMemoryAttributeKey specifies the key of an attribute for the elasticsearch.node.segments.memory metric.
+type ElasticsearchNodeSegmentsMemoryAttributeKey string
+
+const (
+	ElasticsearchNodeSegmentsMemoryAttributeKeySegmentsMemoryObjectType ElasticsearchNodeSegmentsMemoryAttributeKey = "object"
+)
+
+// ElasticsearchNodeSegmentsMemoryConfig provides config for the elasticsearch.node.segments.memory metric.
+type ElasticsearchNodeSegmentsMemoryConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeSegmentsMemoryAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeSegmentsMemoryConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeSegmentsMemoryConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeSegmentsMemoryAttributeKeySegmentsMemoryObjectType:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.segments.memory doesn't have an attribute %v, valid attributes: [object]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeShardsDataSetSizeConfig provides config for the elasticsearch.node.shards.data_set.size metric.
+type ElasticsearchNodeShardsDataSetSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeShardsDataSetSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeShardsReservedSizeConfig provides config for the elasticsearch.node.shards.reserved.size metric.
+type ElasticsearchNodeShardsReservedSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeShardsReservedSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeShardsSizeConfig provides config for the elasticsearch.node.shards.size metric.
+type ElasticsearchNodeShardsSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeShardsSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeThreadPoolTasksFinishedAttributeKey specifies the key of an attribute for the elasticsearch.node.thread_pool.tasks.finished metric.
+type ElasticsearchNodeThreadPoolTasksFinishedAttributeKey string
+
+const (
+	ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyThreadPoolName ElasticsearchNodeThreadPoolTasksFinishedAttributeKey = "thread_pool_name"
+	ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyTaskState      ElasticsearchNodeThreadPoolTasksFinishedAttributeKey = "state"
+)
+
+// ElasticsearchNodeThreadPoolTasksFinishedConfig provides config for the elasticsearch.node.thread_pool.tasks.finished metric.
+type ElasticsearchNodeThreadPoolTasksFinishedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeThreadPoolTasksFinishedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeThreadPoolTasksFinishedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeThreadPoolTasksFinishedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyTaskState:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.thread_pool.tasks.finished doesn't have an attribute %v, valid attributes: [thread_pool_name, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeThreadPoolTasksQueuedAttributeKey specifies the key of an attribute for the elasticsearch.node.thread_pool.tasks.queued metric.
+type ElasticsearchNodeThreadPoolTasksQueuedAttributeKey string
+
+const (
+	ElasticsearchNodeThreadPoolTasksQueuedAttributeKeyThreadPoolName ElasticsearchNodeThreadPoolTasksQueuedAttributeKey = "thread_pool_name"
+)
+
+// ElasticsearchNodeThreadPoolTasksQueuedConfig provides config for the elasticsearch.node.thread_pool.tasks.queued metric.
+type ElasticsearchNodeThreadPoolTasksQueuedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeThreadPoolTasksQueuedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeThreadPoolTasksQueuedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeThreadPoolTasksQueuedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeThreadPoolTasksQueuedAttributeKeyThreadPoolName:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.thread_pool.tasks.queued doesn't have an attribute %v, valid attributes: [thread_pool_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeThreadPoolThreadsAttributeKey specifies the key of an attribute for the elasticsearch.node.thread_pool.threads metric.
+type ElasticsearchNodeThreadPoolThreadsAttributeKey string
+
+const (
+	ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadPoolName ElasticsearchNodeThreadPoolThreadsAttributeKey = "thread_pool_name"
+	ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadState    ElasticsearchNodeThreadPoolThreadsAttributeKey = "state"
+)
+
+// ElasticsearchNodeThreadPoolThreadsConfig provides config for the elasticsearch.node.thread_pool.threads metric.
+type ElasticsearchNodeThreadPoolThreadsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeThreadPoolThreadsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchNodeThreadPoolThreadsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchNodeThreadPoolThreadsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadState:
+		default:
+			return fmt.Errorf("metric elasticsearch.node.thread_pool.threads doesn't have an attribute %v, valid attributes: [thread_pool_name, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchNodeTranslogOperationsConfig provides config for the elasticsearch.node.translog.operations metric.
+type ElasticsearchNodeTranslogOperationsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeTranslogOperationsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeTranslogSizeConfig provides config for the elasticsearch.node.translog.size metric.
+type ElasticsearchNodeTranslogSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeTranslogSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchNodeTranslogUncommittedSizeConfig provides config for the elasticsearch.node.translog.uncommitted.size metric.
+type ElasticsearchNodeTranslogUncommittedSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchNodeTranslogUncommittedSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchOsCPULoadAvg15mConfig provides config for the elasticsearch.os.cpu.load_avg.15m metric.
+type ElasticsearchOsCPULoadAvg15mConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchOsCPULoadAvg15mConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchOsCPULoadAvg1mConfig provides config for the elasticsearch.os.cpu.load_avg.1m metric.
+type ElasticsearchOsCPULoadAvg1mConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchOsCPULoadAvg1mConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchOsCPULoadAvg5mConfig provides config for the elasticsearch.os.cpu.load_avg.5m metric.
+type ElasticsearchOsCPULoadAvg5mConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchOsCPULoadAvg5mConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchOsCPUUsageConfig provides config for the elasticsearch.os.cpu.usage metric.
+type ElasticsearchOsCPUUsageConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchOsCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchOsMemoryAttributeKey specifies the key of an attribute for the elasticsearch.os.memory metric.
+type ElasticsearchOsMemoryAttributeKey string
+
+const (
+	ElasticsearchOsMemoryAttributeKeyMemoryState ElasticsearchOsMemoryAttributeKey = "state"
+)
+
+// ElasticsearchOsMemoryConfig provides config for the elasticsearch.os.memory metric.
+type ElasticsearchOsMemoryConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchOsMemoryAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ElasticsearchOsMemoryConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ElasticsearchOsMemoryConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ElasticsearchOsMemoryAttributeKeyMemoryState:
+		default:
+			return fmt.Errorf("metric elasticsearch.os.memory doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ElasticsearchProcessCPUTimeConfig provides config for the elasticsearch.process.cpu.time metric.
+type ElasticsearchProcessCPUTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchProcessCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchProcessCPUUsageConfig provides config for the elasticsearch.process.cpu.usage metric.
+type ElasticsearchProcessCPUUsageConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchProcessCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ElasticsearchProcessMemoryVirtualConfig provides config for the elasticsearch.process.memory.virtual metric.
+type ElasticsearchProcessMemoryVirtualConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ElasticsearchProcessMemoryVirtualConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// JvmClassesLoadedConfig provides config for the jvm.classes.loaded metric.
+type JvmClassesLoadedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *JvmClassesLoadedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// JvmGcCollectionsCountAttributeKey specifies the key of an attribute for the jvm.gc.collections.count metric.
+type JvmGcCollectionsCountAttributeKey string
+
+const (
+	JvmGcCollectionsCountAttributeKeyCollectorName JvmGcCollectionsCountAttributeKey = "name"
+)
+
+// JvmGcCollectionsCountConfig provides config for the jvm.gc.collections.count metric.
+type JvmGcCollectionsCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []JvmGcCollectionsCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *JvmGcCollectionsCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *JvmGcCollectionsCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case JvmGcCollectionsCountAttributeKeyCollectorName:
+		default:
+			return fmt.Errorf("metric jvm.gc.collections.count doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// JvmGcCollectionsElapsedAttributeKey specifies the key of an attribute for the jvm.gc.collections.elapsed metric.
+type JvmGcCollectionsElapsedAttributeKey string
+
+const (
+	JvmGcCollectionsElapsedAttributeKeyCollectorName JvmGcCollectionsElapsedAttributeKey = "name"
+)
+
+// JvmGcCollectionsElapsedConfig provides config for the jvm.gc.collections.elapsed metric.
+type JvmGcCollectionsElapsedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []JvmGcCollectionsElapsedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *JvmGcCollectionsElapsedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *JvmGcCollectionsElapsedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case JvmGcCollectionsElapsedAttributeKeyCollectorName:
+		default:
+			return fmt.Errorf("metric jvm.gc.collections.elapsed doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// JvmMemoryHeapCommittedConfig provides config for the jvm.memory.heap.committed metric.
+type JvmMemoryHeapCommittedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *JvmMemoryHeapCommittedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// JvmMemoryHeapMaxConfig provides config for the jvm.memory.heap.max metric.
+type JvmMemoryHeapMaxConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *JvmMemoryHeapMaxConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// JvmMemoryHeapUsedConfig provides config for the jvm.memory.heap.used metric.
+type JvmMemoryHeapUsedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *JvmMemoryHeapUsedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// JvmMemoryHeapUtilizationConfig provides config for the jvm.memory.heap.utilization metric.
+type JvmMemoryHeapUtilizationConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *JvmMemoryHeapUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// JvmMemoryNonheapCommittedConfig provides config for the jvm.memory.nonheap.committed metric.
+type JvmMemoryNonheapCommittedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *JvmMemoryNonheapCommittedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// JvmMemoryNonheapUsedConfig provides config for the jvm.memory.nonheap.used metric.
+type JvmMemoryNonheapUsedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *JvmMemoryNonheapUsedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// JvmMemoryPoolMaxAttributeKey specifies the key of an attribute for the jvm.memory.pool.max metric.
+type JvmMemoryPoolMaxAttributeKey string
+
+const (
+	JvmMemoryPoolMaxAttributeKeyMemoryPoolName JvmMemoryPoolMaxAttributeKey = "name"
+)
+
+// JvmMemoryPoolMaxConfig provides config for the jvm.memory.pool.max metric.
+type JvmMemoryPoolMaxConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []JvmMemoryPoolMaxAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *JvmMemoryPoolMaxConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *JvmMemoryPoolMaxConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case JvmMemoryPoolMaxAttributeKeyMemoryPoolName:
+		default:
+			return fmt.Errorf("metric jvm.memory.pool.max doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// JvmMemoryPoolUsedAttributeKey specifies the key of an attribute for the jvm.memory.pool.used metric.
+type JvmMemoryPoolUsedAttributeKey string
+
+const (
+	JvmMemoryPoolUsedAttributeKeyMemoryPoolName JvmMemoryPoolUsedAttributeKey = "name"
+)
+
+// JvmMemoryPoolUsedConfig provides config for the jvm.memory.pool.used metric.
+type JvmMemoryPoolUsedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []JvmMemoryPoolUsedAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *JvmMemoryPoolUsedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *JvmMemoryPoolUsedConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case JvmMemoryPoolUsedAttributeKeyMemoryPoolName:
+		default:
+			return fmt.Errorf("metric jvm.memory.pool.used doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// JvmThreadsCountConfig provides config for the jvm.threads.count metric.
+type JvmThreadsCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *JvmThreadsCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
@@ -56,520 +3205,472 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for elasticsearch metrics.
 type MetricsConfig struct {
-	ElasticsearchBreakerMemoryEstimated                       MetricConfig `mapstructure:"elasticsearch.breaker.memory.estimated"`
-	ElasticsearchBreakerMemoryLimit                           MetricConfig `mapstructure:"elasticsearch.breaker.memory.limit"`
-	ElasticsearchBreakerTripped                               MetricConfig `mapstructure:"elasticsearch.breaker.tripped"`
-	ElasticsearchClusterDataNodes                             MetricConfig `mapstructure:"elasticsearch.cluster.data_nodes"`
-	ElasticsearchClusterHealth                                MetricConfig `mapstructure:"elasticsearch.cluster.health"`
-	ElasticsearchClusterInFlightFetch                         MetricConfig `mapstructure:"elasticsearch.cluster.in_flight_fetch"`
-	ElasticsearchClusterIndicesCacheEvictions                 MetricConfig `mapstructure:"elasticsearch.cluster.indices.cache.evictions"`
-	ElasticsearchClusterNodes                                 MetricConfig `mapstructure:"elasticsearch.cluster.nodes"`
-	ElasticsearchClusterPendingTasks                          MetricConfig `mapstructure:"elasticsearch.cluster.pending_tasks"`
-	ElasticsearchClusterPublishedStatesDifferences            MetricConfig `mapstructure:"elasticsearch.cluster.published_states.differences"`
-	ElasticsearchClusterPublishedStatesFull                   MetricConfig `mapstructure:"elasticsearch.cluster.published_states.full"`
-	ElasticsearchClusterShards                                MetricConfig `mapstructure:"elasticsearch.cluster.shards"`
-	ElasticsearchClusterStateQueue                            MetricConfig `mapstructure:"elasticsearch.cluster.state_queue"`
-	ElasticsearchClusterStateUpdateCount                      MetricConfig `mapstructure:"elasticsearch.cluster.state_update.count"`
-	ElasticsearchClusterStateUpdateTime                       MetricConfig `mapstructure:"elasticsearch.cluster.state_update.time"`
-	ElasticsearchIndexCacheEvictions                          MetricConfig `mapstructure:"elasticsearch.index.cache.evictions"`
-	ElasticsearchIndexCacheMemoryUsage                        MetricConfig `mapstructure:"elasticsearch.index.cache.memory.usage"`
-	ElasticsearchIndexCacheSize                               MetricConfig `mapstructure:"elasticsearch.index.cache.size"`
-	ElasticsearchIndexDocuments                               MetricConfig `mapstructure:"elasticsearch.index.documents"`
-	ElasticsearchIndexOperationsCompleted                     MetricConfig `mapstructure:"elasticsearch.index.operations.completed"`
-	ElasticsearchIndexOperationsMergeCurrent                  MetricConfig `mapstructure:"elasticsearch.index.operations.merge.current"`
-	ElasticsearchIndexOperationsMergeDocsCount                MetricConfig `mapstructure:"elasticsearch.index.operations.merge.docs_count"`
-	ElasticsearchIndexOperationsMergeSize                     MetricConfig `mapstructure:"elasticsearch.index.operations.merge.size"`
-	ElasticsearchIndexOperationsTime                          MetricConfig `mapstructure:"elasticsearch.index.operations.time"`
-	ElasticsearchIndexSegmentsCount                           MetricConfig `mapstructure:"elasticsearch.index.segments.count"`
-	ElasticsearchIndexSegmentsMemory                          MetricConfig `mapstructure:"elasticsearch.index.segments.memory"`
-	ElasticsearchIndexSegmentsSize                            MetricConfig `mapstructure:"elasticsearch.index.segments.size"`
-	ElasticsearchIndexShardsSize                              MetricConfig `mapstructure:"elasticsearch.index.shards.size"`
-	ElasticsearchIndexTranslogOperations                      MetricConfig `mapstructure:"elasticsearch.index.translog.operations"`
-	ElasticsearchIndexTranslogSize                            MetricConfig `mapstructure:"elasticsearch.index.translog.size"`
-	ElasticsearchIndexingPressureMemoryLimit                  MetricConfig `mapstructure:"elasticsearch.indexing_pressure.memory.limit"`
-	ElasticsearchIndexingPressureMemoryTotalPrimaryRejections MetricConfig `mapstructure:"elasticsearch.indexing_pressure.memory.total.primary_rejections"`
-	ElasticsearchIndexingPressureMemoryTotalReplicaRejections MetricConfig `mapstructure:"elasticsearch.indexing_pressure.memory.total.replica_rejections"`
-	ElasticsearchMemoryIndexingPressure                       MetricConfig `mapstructure:"elasticsearch.memory.indexing_pressure"`
-	ElasticsearchNodeCacheCount                               MetricConfig `mapstructure:"elasticsearch.node.cache.count"`
-	ElasticsearchNodeCacheEvictions                           MetricConfig `mapstructure:"elasticsearch.node.cache.evictions"`
-	ElasticsearchNodeCacheMemoryUsage                         MetricConfig `mapstructure:"elasticsearch.node.cache.memory.usage"`
-	ElasticsearchNodeCacheSize                                MetricConfig `mapstructure:"elasticsearch.node.cache.size"`
-	ElasticsearchNodeClusterConnections                       MetricConfig `mapstructure:"elasticsearch.node.cluster.connections"`
-	ElasticsearchNodeClusterIo                                MetricConfig `mapstructure:"elasticsearch.node.cluster.io"`
-	ElasticsearchNodeDiskIoRead                               MetricConfig `mapstructure:"elasticsearch.node.disk.io.read"`
-	ElasticsearchNodeDiskIoWrite                              MetricConfig `mapstructure:"elasticsearch.node.disk.io.write"`
-	ElasticsearchNodeDocuments                                MetricConfig `mapstructure:"elasticsearch.node.documents"`
-	ElasticsearchNodeFsDiskAvailable                          MetricConfig `mapstructure:"elasticsearch.node.fs.disk.available"`
-	ElasticsearchNodeFsDiskFree                               MetricConfig `mapstructure:"elasticsearch.node.fs.disk.free"`
-	ElasticsearchNodeFsDiskTotal                              MetricConfig `mapstructure:"elasticsearch.node.fs.disk.total"`
-	ElasticsearchNodeHTTPConnections                          MetricConfig `mapstructure:"elasticsearch.node.http.connections"`
-	ElasticsearchNodeIngestDocuments                          MetricConfig `mapstructure:"elasticsearch.node.ingest.documents"`
-	ElasticsearchNodeIngestDocumentsCurrent                   MetricConfig `mapstructure:"elasticsearch.node.ingest.documents.current"`
-	ElasticsearchNodeIngestOperationsFailed                   MetricConfig `mapstructure:"elasticsearch.node.ingest.operations.failed"`
-	ElasticsearchNodeOpenFiles                                MetricConfig `mapstructure:"elasticsearch.node.open_files"`
-	ElasticsearchNodeOperationsCompleted                      MetricConfig `mapstructure:"elasticsearch.node.operations.completed"`
-	ElasticsearchNodeOperationsCurrent                        MetricConfig `mapstructure:"elasticsearch.node.operations.current"`
-	ElasticsearchNodeOperationsGetCompleted                   MetricConfig `mapstructure:"elasticsearch.node.operations.get.completed"`
-	ElasticsearchNodeOperationsGetTime                        MetricConfig `mapstructure:"elasticsearch.node.operations.get.time"`
-	ElasticsearchNodeOperationsTime                           MetricConfig `mapstructure:"elasticsearch.node.operations.time"`
-	ElasticsearchNodePipelineIngestDocumentsCurrent           MetricConfig `mapstructure:"elasticsearch.node.pipeline.ingest.documents.current"`
-	ElasticsearchNodePipelineIngestDocumentsPreprocessed      MetricConfig `mapstructure:"elasticsearch.node.pipeline.ingest.documents.preprocessed"`
-	ElasticsearchNodePipelineIngestOperationsFailed           MetricConfig `mapstructure:"elasticsearch.node.pipeline.ingest.operations.failed"`
-	ElasticsearchNodeScriptCacheEvictions                     MetricConfig `mapstructure:"elasticsearch.node.script.cache_evictions"`
-	ElasticsearchNodeScriptCompilationLimitTriggered          MetricConfig `mapstructure:"elasticsearch.node.script.compilation_limit_triggered"`
-	ElasticsearchNodeScriptCompilations                       MetricConfig `mapstructure:"elasticsearch.node.script.compilations"`
-	ElasticsearchNodeSegmentsMemory                           MetricConfig `mapstructure:"elasticsearch.node.segments.memory"`
-	ElasticsearchNodeShardsDataSetSize                        MetricConfig `mapstructure:"elasticsearch.node.shards.data_set.size"`
-	ElasticsearchNodeShardsReservedSize                       MetricConfig `mapstructure:"elasticsearch.node.shards.reserved.size"`
-	ElasticsearchNodeShardsSize                               MetricConfig `mapstructure:"elasticsearch.node.shards.size"`
-	ElasticsearchNodeThreadPoolTasksFinished                  MetricConfig `mapstructure:"elasticsearch.node.thread_pool.tasks.finished"`
-	ElasticsearchNodeThreadPoolTasksQueued                    MetricConfig `mapstructure:"elasticsearch.node.thread_pool.tasks.queued"`
-	ElasticsearchNodeThreadPoolThreads                        MetricConfig `mapstructure:"elasticsearch.node.thread_pool.threads"`
-	ElasticsearchNodeTranslogOperations                       MetricConfig `mapstructure:"elasticsearch.node.translog.operations"`
-	ElasticsearchNodeTranslogSize                             MetricConfig `mapstructure:"elasticsearch.node.translog.size"`
-	ElasticsearchNodeTranslogUncommittedSize                  MetricConfig `mapstructure:"elasticsearch.node.translog.uncommitted.size"`
-	ElasticsearchOsCPULoadAvg15m                              MetricConfig `mapstructure:"elasticsearch.os.cpu.load_avg.15m"`
-	ElasticsearchOsCPULoadAvg1m                               MetricConfig `mapstructure:"elasticsearch.os.cpu.load_avg.1m"`
-	ElasticsearchOsCPULoadAvg5m                               MetricConfig `mapstructure:"elasticsearch.os.cpu.load_avg.5m"`
-	ElasticsearchOsCPUUsage                                   MetricConfig `mapstructure:"elasticsearch.os.cpu.usage"`
-	ElasticsearchOsMemory                                     MetricConfig `mapstructure:"elasticsearch.os.memory"`
-	ElasticsearchProcessCPUTime                               MetricConfig `mapstructure:"elasticsearch.process.cpu.time"`
-	ElasticsearchProcessCPUUsage                              MetricConfig `mapstructure:"elasticsearch.process.cpu.usage"`
-	ElasticsearchProcessMemoryVirtual                         MetricConfig `mapstructure:"elasticsearch.process.memory.virtual"`
-	JvmClassesLoaded                                          MetricConfig `mapstructure:"jvm.classes.loaded"`
-	JvmGcCollectionsCount                                     MetricConfig `mapstructure:"jvm.gc.collections.count"`
-	JvmGcCollectionsElapsed                                   MetricConfig `mapstructure:"jvm.gc.collections.elapsed"`
-	JvmMemoryHeapCommitted                                    MetricConfig `mapstructure:"jvm.memory.heap.committed"`
-	JvmMemoryHeapMax                                          MetricConfig `mapstructure:"jvm.memory.heap.max"`
-	JvmMemoryHeapUsed                                         MetricConfig `mapstructure:"jvm.memory.heap.used"`
-	JvmMemoryHeapUtilization                                  MetricConfig `mapstructure:"jvm.memory.heap.utilization"`
-	JvmMemoryNonheapCommitted                                 MetricConfig `mapstructure:"jvm.memory.nonheap.committed"`
-	JvmMemoryNonheapUsed                                      MetricConfig `mapstructure:"jvm.memory.nonheap.used"`
-	JvmMemoryPoolMax                                          MetricConfig `mapstructure:"jvm.memory.pool.max"`
-	JvmMemoryPoolUsed                                         MetricConfig `mapstructure:"jvm.memory.pool.used"`
-	JvmThreadsCount                                           MetricConfig `mapstructure:"jvm.threads.count"`
+	ElasticsearchBreakerMemoryEstimated                       ElasticsearchBreakerMemoryEstimatedConfig                       `mapstructure:"elasticsearch.breaker.memory.estimated"`
+	ElasticsearchBreakerMemoryLimit                           ElasticsearchBreakerMemoryLimitConfig                           `mapstructure:"elasticsearch.breaker.memory.limit"`
+	ElasticsearchBreakerTripped                               ElasticsearchBreakerTrippedConfig                               `mapstructure:"elasticsearch.breaker.tripped"`
+	ElasticsearchClusterDataNodes                             ElasticsearchClusterDataNodesConfig                             `mapstructure:"elasticsearch.cluster.data_nodes"`
+	ElasticsearchClusterHealth                                ElasticsearchClusterHealthConfig                                `mapstructure:"elasticsearch.cluster.health"`
+	ElasticsearchClusterInFlightFetch                         ElasticsearchClusterInFlightFetchConfig                         `mapstructure:"elasticsearch.cluster.in_flight_fetch"`
+	ElasticsearchClusterIndicesCacheEvictions                 ElasticsearchClusterIndicesCacheEvictionsConfig                 `mapstructure:"elasticsearch.cluster.indices.cache.evictions"`
+	ElasticsearchClusterNodes                                 ElasticsearchClusterNodesConfig                                 `mapstructure:"elasticsearch.cluster.nodes"`
+	ElasticsearchClusterPendingTasks                          ElasticsearchClusterPendingTasksConfig                          `mapstructure:"elasticsearch.cluster.pending_tasks"`
+	ElasticsearchClusterPublishedStatesDifferences            ElasticsearchClusterPublishedStatesDifferencesConfig            `mapstructure:"elasticsearch.cluster.published_states.differences"`
+	ElasticsearchClusterPublishedStatesFull                   ElasticsearchClusterPublishedStatesFullConfig                   `mapstructure:"elasticsearch.cluster.published_states.full"`
+	ElasticsearchClusterShards                                ElasticsearchClusterShardsConfig                                `mapstructure:"elasticsearch.cluster.shards"`
+	ElasticsearchClusterStateQueue                            ElasticsearchClusterStateQueueConfig                            `mapstructure:"elasticsearch.cluster.state_queue"`
+	ElasticsearchClusterStateUpdateCount                      ElasticsearchClusterStateUpdateCountConfig                      `mapstructure:"elasticsearch.cluster.state_update.count"`
+	ElasticsearchClusterStateUpdateTime                       ElasticsearchClusterStateUpdateTimeConfig                       `mapstructure:"elasticsearch.cluster.state_update.time"`
+	ElasticsearchIndexCacheEvictions                          ElasticsearchIndexCacheEvictionsConfig                          `mapstructure:"elasticsearch.index.cache.evictions"`
+	ElasticsearchIndexCacheMemoryUsage                        ElasticsearchIndexCacheMemoryUsageConfig                        `mapstructure:"elasticsearch.index.cache.memory.usage"`
+	ElasticsearchIndexCacheSize                               ElasticsearchIndexCacheSizeConfig                               `mapstructure:"elasticsearch.index.cache.size"`
+	ElasticsearchIndexDocuments                               ElasticsearchIndexDocumentsConfig                               `mapstructure:"elasticsearch.index.documents"`
+	ElasticsearchIndexOperationsCompleted                     ElasticsearchIndexOperationsCompletedConfig                     `mapstructure:"elasticsearch.index.operations.completed"`
+	ElasticsearchIndexOperationsMergeCurrent                  ElasticsearchIndexOperationsMergeCurrentConfig                  `mapstructure:"elasticsearch.index.operations.merge.current"`
+	ElasticsearchIndexOperationsMergeDocsCount                ElasticsearchIndexOperationsMergeDocsCountConfig                `mapstructure:"elasticsearch.index.operations.merge.docs_count"`
+	ElasticsearchIndexOperationsMergeSize                     ElasticsearchIndexOperationsMergeSizeConfig                     `mapstructure:"elasticsearch.index.operations.merge.size"`
+	ElasticsearchIndexOperationsTime                          ElasticsearchIndexOperationsTimeConfig                          `mapstructure:"elasticsearch.index.operations.time"`
+	ElasticsearchIndexSegmentsCount                           ElasticsearchIndexSegmentsCountConfig                           `mapstructure:"elasticsearch.index.segments.count"`
+	ElasticsearchIndexSegmentsMemory                          ElasticsearchIndexSegmentsMemoryConfig                          `mapstructure:"elasticsearch.index.segments.memory"`
+	ElasticsearchIndexSegmentsSize                            ElasticsearchIndexSegmentsSizeConfig                            `mapstructure:"elasticsearch.index.segments.size"`
+	ElasticsearchIndexShardsSize                              ElasticsearchIndexShardsSizeConfig                              `mapstructure:"elasticsearch.index.shards.size"`
+	ElasticsearchIndexTranslogOperations                      ElasticsearchIndexTranslogOperationsConfig                      `mapstructure:"elasticsearch.index.translog.operations"`
+	ElasticsearchIndexTranslogSize                            ElasticsearchIndexTranslogSizeConfig                            `mapstructure:"elasticsearch.index.translog.size"`
+	ElasticsearchIndexingPressureMemoryLimit                  ElasticsearchIndexingPressureMemoryLimitConfig                  `mapstructure:"elasticsearch.indexing_pressure.memory.limit"`
+	ElasticsearchIndexingPressureMemoryTotalPrimaryRejections ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig `mapstructure:"elasticsearch.indexing_pressure.memory.total.primary_rejections"`
+	ElasticsearchIndexingPressureMemoryTotalReplicaRejections ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig `mapstructure:"elasticsearch.indexing_pressure.memory.total.replica_rejections"`
+	ElasticsearchMemoryIndexingPressure                       ElasticsearchMemoryIndexingPressureConfig                       `mapstructure:"elasticsearch.memory.indexing_pressure"`
+	ElasticsearchNodeCacheCount                               ElasticsearchNodeCacheCountConfig                               `mapstructure:"elasticsearch.node.cache.count"`
+	ElasticsearchNodeCacheEvictions                           ElasticsearchNodeCacheEvictionsConfig                           `mapstructure:"elasticsearch.node.cache.evictions"`
+	ElasticsearchNodeCacheMemoryUsage                         ElasticsearchNodeCacheMemoryUsageConfig                         `mapstructure:"elasticsearch.node.cache.memory.usage"`
+	ElasticsearchNodeCacheSize                                ElasticsearchNodeCacheSizeConfig                                `mapstructure:"elasticsearch.node.cache.size"`
+	ElasticsearchNodeClusterConnections                       ElasticsearchNodeClusterConnectionsConfig                       `mapstructure:"elasticsearch.node.cluster.connections"`
+	ElasticsearchNodeClusterIo                                ElasticsearchNodeClusterIoConfig                                `mapstructure:"elasticsearch.node.cluster.io"`
+	ElasticsearchNodeDiskIoRead                               ElasticsearchNodeDiskIoReadConfig                               `mapstructure:"elasticsearch.node.disk.io.read"`
+	ElasticsearchNodeDiskIoWrite                              ElasticsearchNodeDiskIoWriteConfig                              `mapstructure:"elasticsearch.node.disk.io.write"`
+	ElasticsearchNodeDocuments                                ElasticsearchNodeDocumentsConfig                                `mapstructure:"elasticsearch.node.documents"`
+	ElasticsearchNodeFsDiskAvailable                          ElasticsearchNodeFsDiskAvailableConfig                          `mapstructure:"elasticsearch.node.fs.disk.available"`
+	ElasticsearchNodeFsDiskFree                               ElasticsearchNodeFsDiskFreeConfig                               `mapstructure:"elasticsearch.node.fs.disk.free"`
+	ElasticsearchNodeFsDiskTotal                              ElasticsearchNodeFsDiskTotalConfig                              `mapstructure:"elasticsearch.node.fs.disk.total"`
+	ElasticsearchNodeHTTPConnections                          ElasticsearchNodeHTTPConnectionsConfig                          `mapstructure:"elasticsearch.node.http.connections"`
+	ElasticsearchNodeIngestDocuments                          ElasticsearchNodeIngestDocumentsConfig                          `mapstructure:"elasticsearch.node.ingest.documents"`
+	ElasticsearchNodeIngestDocumentsCurrent                   ElasticsearchNodeIngestDocumentsCurrentConfig                   `mapstructure:"elasticsearch.node.ingest.documents.current"`
+	ElasticsearchNodeIngestOperationsFailed                   ElasticsearchNodeIngestOperationsFailedConfig                   `mapstructure:"elasticsearch.node.ingest.operations.failed"`
+	ElasticsearchNodeOpenFiles                                ElasticsearchNodeOpenFilesConfig                                `mapstructure:"elasticsearch.node.open_files"`
+	ElasticsearchNodeOperationsCompleted                      ElasticsearchNodeOperationsCompletedConfig                      `mapstructure:"elasticsearch.node.operations.completed"`
+	ElasticsearchNodeOperationsCurrent                        ElasticsearchNodeOperationsCurrentConfig                        `mapstructure:"elasticsearch.node.operations.current"`
+	ElasticsearchNodeOperationsGetCompleted                   ElasticsearchNodeOperationsGetCompletedConfig                   `mapstructure:"elasticsearch.node.operations.get.completed"`
+	ElasticsearchNodeOperationsGetTime                        ElasticsearchNodeOperationsGetTimeConfig                        `mapstructure:"elasticsearch.node.operations.get.time"`
+	ElasticsearchNodeOperationsTime                           ElasticsearchNodeOperationsTimeConfig                           `mapstructure:"elasticsearch.node.operations.time"`
+	ElasticsearchNodePipelineIngestDocumentsCurrent           ElasticsearchNodePipelineIngestDocumentsCurrentConfig           `mapstructure:"elasticsearch.node.pipeline.ingest.documents.current"`
+	ElasticsearchNodePipelineIngestDocumentsPreprocessed      ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig      `mapstructure:"elasticsearch.node.pipeline.ingest.documents.preprocessed"`
+	ElasticsearchNodePipelineIngestOperationsFailed           ElasticsearchNodePipelineIngestOperationsFailedConfig           `mapstructure:"elasticsearch.node.pipeline.ingest.operations.failed"`
+	ElasticsearchNodeScriptCacheEvictions                     ElasticsearchNodeScriptCacheEvictionsConfig                     `mapstructure:"elasticsearch.node.script.cache_evictions"`
+	ElasticsearchNodeScriptCompilationLimitTriggered          ElasticsearchNodeScriptCompilationLimitTriggeredConfig          `mapstructure:"elasticsearch.node.script.compilation_limit_triggered"`
+	ElasticsearchNodeScriptCompilations                       ElasticsearchNodeScriptCompilationsConfig                       `mapstructure:"elasticsearch.node.script.compilations"`
+	ElasticsearchNodeSegmentsMemory                           ElasticsearchNodeSegmentsMemoryConfig                           `mapstructure:"elasticsearch.node.segments.memory"`
+	ElasticsearchNodeShardsDataSetSize                        ElasticsearchNodeShardsDataSetSizeConfig                        `mapstructure:"elasticsearch.node.shards.data_set.size"`
+	ElasticsearchNodeShardsReservedSize                       ElasticsearchNodeShardsReservedSizeConfig                       `mapstructure:"elasticsearch.node.shards.reserved.size"`
+	ElasticsearchNodeShardsSize                               ElasticsearchNodeShardsSizeConfig                               `mapstructure:"elasticsearch.node.shards.size"`
+	ElasticsearchNodeThreadPoolTasksFinished                  ElasticsearchNodeThreadPoolTasksFinishedConfig                  `mapstructure:"elasticsearch.node.thread_pool.tasks.finished"`
+	ElasticsearchNodeThreadPoolTasksQueued                    ElasticsearchNodeThreadPoolTasksQueuedConfig                    `mapstructure:"elasticsearch.node.thread_pool.tasks.queued"`
+	ElasticsearchNodeThreadPoolThreads                        ElasticsearchNodeThreadPoolThreadsConfig                        `mapstructure:"elasticsearch.node.thread_pool.threads"`
+	ElasticsearchNodeTranslogOperations                       ElasticsearchNodeTranslogOperationsConfig                       `mapstructure:"elasticsearch.node.translog.operations"`
+	ElasticsearchNodeTranslogSize                             ElasticsearchNodeTranslogSizeConfig                             `mapstructure:"elasticsearch.node.translog.size"`
+	ElasticsearchNodeTranslogUncommittedSize                  ElasticsearchNodeTranslogUncommittedSizeConfig                  `mapstructure:"elasticsearch.node.translog.uncommitted.size"`
+	ElasticsearchOsCPULoadAvg15m                              ElasticsearchOsCPULoadAvg15mConfig                              `mapstructure:"elasticsearch.os.cpu.load_avg.15m"`
+	ElasticsearchOsCPULoadAvg1m                               ElasticsearchOsCPULoadAvg1mConfig                               `mapstructure:"elasticsearch.os.cpu.load_avg.1m"`
+	ElasticsearchOsCPULoadAvg5m                               ElasticsearchOsCPULoadAvg5mConfig                               `mapstructure:"elasticsearch.os.cpu.load_avg.5m"`
+	ElasticsearchOsCPUUsage                                   ElasticsearchOsCPUUsageConfig                                   `mapstructure:"elasticsearch.os.cpu.usage"`
+	ElasticsearchOsMemory                                     ElasticsearchOsMemoryConfig                                     `mapstructure:"elasticsearch.os.memory"`
+	ElasticsearchProcessCPUTime                               ElasticsearchProcessCPUTimeConfig                               `mapstructure:"elasticsearch.process.cpu.time"`
+	ElasticsearchProcessCPUUsage                              ElasticsearchProcessCPUUsageConfig                              `mapstructure:"elasticsearch.process.cpu.usage"`
+	ElasticsearchProcessMemoryVirtual                         ElasticsearchProcessMemoryVirtualConfig                         `mapstructure:"elasticsearch.process.memory.virtual"`
+	JvmClassesLoaded                                          JvmClassesLoadedConfig                                          `mapstructure:"jvm.classes.loaded"`
+	JvmGcCollectionsCount                                     JvmGcCollectionsCountConfig                                     `mapstructure:"jvm.gc.collections.count"`
+	JvmGcCollectionsElapsed                                   JvmGcCollectionsElapsedConfig                                   `mapstructure:"jvm.gc.collections.elapsed"`
+	JvmMemoryHeapCommitted                                    JvmMemoryHeapCommittedConfig                                    `mapstructure:"jvm.memory.heap.committed"`
+	JvmMemoryHeapMax                                          JvmMemoryHeapMaxConfig                                          `mapstructure:"jvm.memory.heap.max"`
+	JvmMemoryHeapUsed                                         JvmMemoryHeapUsedConfig                                         `mapstructure:"jvm.memory.heap.used"`
+	JvmMemoryHeapUtilization                                  JvmMemoryHeapUtilizationConfig                                  `mapstructure:"jvm.memory.heap.utilization"`
+	JvmMemoryNonheapCommitted                                 JvmMemoryNonheapCommittedConfig                                 `mapstructure:"jvm.memory.nonheap.committed"`
+	JvmMemoryNonheapUsed                                      JvmMemoryNonheapUsedConfig                                      `mapstructure:"jvm.memory.nonheap.used"`
+	JvmMemoryPoolMax                                          JvmMemoryPoolMaxConfig                                          `mapstructure:"jvm.memory.pool.max"`
+	JvmMemoryPoolUsed                                         JvmMemoryPoolUsedConfig                                         `mapstructure:"jvm.memory.pool.used"`
+	JvmThreadsCount                                           JvmThreadsCountConfig                                           `mapstructure:"jvm.threads.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		ElasticsearchBreakerMemoryEstimated: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		ElasticsearchBreakerMemoryEstimated: ElasticsearchBreakerMemoryEstimatedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []ElasticsearchBreakerMemoryEstimatedAttributeKey{ElasticsearchBreakerMemoryEstimatedAttributeKeyCircuitBreakerName},
 		},
-		ElasticsearchBreakerMemoryLimit: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		ElasticsearchBreakerMemoryLimit: ElasticsearchBreakerMemoryLimitConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchBreakerMemoryLimitAttributeKey{ElasticsearchBreakerMemoryLimitAttributeKeyCircuitBreakerName},
 		},
-		ElasticsearchBreakerTripped: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		ElasticsearchBreakerTripped: ElasticsearchBreakerTrippedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchBreakerTrippedAttributeKey{ElasticsearchBreakerTrippedAttributeKeyCircuitBreakerName},
 		},
-		ElasticsearchClusterDataNodes: MetricConfig{
+		ElasticsearchClusterDataNodes: ElasticsearchClusterDataNodesConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterHealth: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"status"},
-			EnabledAttributes:  []string{"status"},
+		ElasticsearchClusterHealth: ElasticsearchClusterHealthConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchClusterHealthAttributeKey{ElasticsearchClusterHealthAttributeKeyHealthStatus},
 		},
-		ElasticsearchClusterInFlightFetch: MetricConfig{
+		ElasticsearchClusterInFlightFetch: ElasticsearchClusterInFlightFetchConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterIndicesCacheEvictions: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"cache_name"},
-			EnabledAttributes:  []string{"cache_name"},
+		ElasticsearchClusterIndicesCacheEvictions: ElasticsearchClusterIndicesCacheEvictionsConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchClusterIndicesCacheEvictionsAttributeKey{ElasticsearchClusterIndicesCacheEvictionsAttributeKeyCacheName},
 		},
-		ElasticsearchClusterNodes: MetricConfig{
+		ElasticsearchClusterNodes: ElasticsearchClusterNodesConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterPendingTasks: MetricConfig{
+		ElasticsearchClusterPendingTasks: ElasticsearchClusterPendingTasksConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterPublishedStatesDifferences: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state"},
-			EnabledAttributes:  []string{"state"},
+		ElasticsearchClusterPublishedStatesDifferences: ElasticsearchClusterPublishedStatesDifferencesConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchClusterPublishedStatesDifferencesAttributeKey{ElasticsearchClusterPublishedStatesDifferencesAttributeKeyClusterPublishedDifferenceState},
 		},
-		ElasticsearchClusterPublishedStatesFull: MetricConfig{
+		ElasticsearchClusterPublishedStatesFull: ElasticsearchClusterPublishedStatesFullConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterShards: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state"},
-			EnabledAttributes:  []string{"state"},
+		ElasticsearchClusterShards: ElasticsearchClusterShardsConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchClusterShardsAttributeKey{ElasticsearchClusterShardsAttributeKeyShardState},
 		},
-		ElasticsearchClusterStateQueue: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state"},
-			EnabledAttributes:  []string{"state"},
+		ElasticsearchClusterStateQueue: ElasticsearchClusterStateQueueConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchClusterStateQueueAttributeKey{ElasticsearchClusterStateQueueAttributeKeyClusterStateQueueState},
 		},
-		ElasticsearchClusterStateUpdateCount: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state"},
-			EnabledAttributes:  []string{"state"},
+		ElasticsearchClusterStateUpdateCount: ElasticsearchClusterStateUpdateCountConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchClusterStateUpdateCountAttributeKey{ElasticsearchClusterStateUpdateCountAttributeKeyClusterStateUpdateState},
 		},
-		ElasticsearchClusterStateUpdateTime: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state", "type"},
-			EnabledAttributes:  []string{"state", "type"},
+		ElasticsearchClusterStateUpdateTime: ElasticsearchClusterStateUpdateTimeConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchClusterStateUpdateTimeAttributeKey{ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateType},
 		},
-		ElasticsearchIndexCacheEvictions: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"cache_name", "aggregation"},
-			EnabledAttributes:  []string{"cache_name", "aggregation"},
+		ElasticsearchIndexCacheEvictions: ElasticsearchIndexCacheEvictionsConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexCacheEvictionsAttributeKey{ElasticsearchIndexCacheEvictionsAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexCacheMemoryUsage: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"cache_name", "aggregation"},
-			EnabledAttributes:  []string{"cache_name", "aggregation"},
+		ElasticsearchIndexCacheMemoryUsage: ElasticsearchIndexCacheMemoryUsageConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexCacheMemoryUsageAttributeKey{ElasticsearchIndexCacheMemoryUsageAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexCacheSize: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation"},
-			EnabledAttributes:  []string{"aggregation"},
+		ElasticsearchIndexCacheSize: ElasticsearchIndexCacheSizeConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexCacheSizeAttributeKey{ElasticsearchIndexCacheSizeAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexDocuments: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state", "aggregation"},
-			EnabledAttributes:  []string{"state", "aggregation"},
+		ElasticsearchIndexDocuments: ElasticsearchIndexDocumentsConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexDocumentsAttributeKey{ElasticsearchIndexDocumentsAttributeKeyDocumentState, ElasticsearchIndexDocumentsAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsCompleted: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"operation", "aggregation"},
-			EnabledAttributes:  []string{"operation", "aggregation"},
+		ElasticsearchIndexOperationsCompleted: ElasticsearchIndexOperationsCompletedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexOperationsCompletedAttributeKey{ElasticsearchIndexOperationsCompletedAttributeKeyOperation, ElasticsearchIndexOperationsCompletedAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsMergeCurrent: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation"},
-			EnabledAttributes:  []string{"aggregation"},
+		ElasticsearchIndexOperationsMergeCurrent: ElasticsearchIndexOperationsMergeCurrentConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []ElasticsearchIndexOperationsMergeCurrentAttributeKey{ElasticsearchIndexOperationsMergeCurrentAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsMergeDocsCount: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation"},
-			EnabledAttributes:  []string{"aggregation"},
+		ElasticsearchIndexOperationsMergeDocsCount: ElasticsearchIndexOperationsMergeDocsCountConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexOperationsMergeDocsCountAttributeKey{ElasticsearchIndexOperationsMergeDocsCountAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsMergeSize: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation"},
-			EnabledAttributes:  []string{"aggregation"},
+		ElasticsearchIndexOperationsMergeSize: ElasticsearchIndexOperationsMergeSizeConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexOperationsMergeSizeAttributeKey{ElasticsearchIndexOperationsMergeSizeAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsTime: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"operation", "aggregation"},
-			EnabledAttributes:  []string{"operation", "aggregation"},
+		ElasticsearchIndexOperationsTime: ElasticsearchIndexOperationsTimeConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexOperationsTimeAttributeKey{ElasticsearchIndexOperationsTimeAttributeKeyOperation, ElasticsearchIndexOperationsTimeAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexSegmentsCount: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation"},
-			EnabledAttributes:  []string{"aggregation"},
+		ElasticsearchIndexSegmentsCount: ElasticsearchIndexSegmentsCountConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexSegmentsCountAttributeKey{ElasticsearchIndexSegmentsCountAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexSegmentsMemory: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation", "object"},
-			EnabledAttributes:  []string{"aggregation", "object"},
+		ElasticsearchIndexSegmentsMemory: ElasticsearchIndexSegmentsMemoryConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexSegmentsMemoryAttributeKey{ElasticsearchIndexSegmentsMemoryAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryAttributeKeySegmentsMemoryObjectType},
 		},
-		ElasticsearchIndexSegmentsSize: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation"},
-			EnabledAttributes:  []string{"aggregation"},
+		ElasticsearchIndexSegmentsSize: ElasticsearchIndexSegmentsSizeConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexSegmentsSizeAttributeKey{ElasticsearchIndexSegmentsSizeAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexShardsSize: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation"},
-			EnabledAttributes:  []string{"aggregation"},
+		ElasticsearchIndexShardsSize: ElasticsearchIndexShardsSizeConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexShardsSizeAttributeKey{ElasticsearchIndexShardsSizeAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexTranslogOperations: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation"},
-			EnabledAttributes:  []string{"aggregation"},
+		ElasticsearchIndexTranslogOperations: ElasticsearchIndexTranslogOperationsConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexTranslogOperationsAttributeKey{ElasticsearchIndexTranslogOperationsAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexTranslogSize: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"aggregation"},
-			EnabledAttributes:  []string{"aggregation"},
+		ElasticsearchIndexTranslogSize: ElasticsearchIndexTranslogSizeConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchIndexTranslogSizeAttributeKey{ElasticsearchIndexTranslogSizeAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexingPressureMemoryLimit: MetricConfig{
+		ElasticsearchIndexingPressureMemoryLimit: ElasticsearchIndexingPressureMemoryLimitConfig{
 			Enabled: true,
 		},
-		ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: MetricConfig{
+		ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig{
 			Enabled: true,
 		},
-		ElasticsearchIndexingPressureMemoryTotalReplicaRejections: MetricConfig{
+		ElasticsearchIndexingPressureMemoryTotalReplicaRejections: ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig{
 			Enabled: true,
 		},
-		ElasticsearchMemoryIndexingPressure: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"stage"},
-			EnabledAttributes:  []string{"stage"},
+		ElasticsearchMemoryIndexingPressure: ElasticsearchMemoryIndexingPressureConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchMemoryIndexingPressureAttributeKey{ElasticsearchMemoryIndexingPressureAttributeKeyIndexingPressureStage},
 		},
-		ElasticsearchNodeCacheCount: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"type"},
-			EnabledAttributes:  []string{"type"},
+		ElasticsearchNodeCacheCount: ElasticsearchNodeCacheCountConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeCacheCountAttributeKey{ElasticsearchNodeCacheCountAttributeKeyQueryCacheCountType},
 		},
-		ElasticsearchNodeCacheEvictions: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"cache_name"},
-			EnabledAttributes:  []string{"cache_name"},
+		ElasticsearchNodeCacheEvictions: ElasticsearchNodeCacheEvictionsConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeCacheEvictionsAttributeKey{ElasticsearchNodeCacheEvictionsAttributeKeyCacheName},
 		},
-		ElasticsearchNodeCacheMemoryUsage: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"cache_name"},
-			EnabledAttributes:  []string{"cache_name"},
+		ElasticsearchNodeCacheMemoryUsage: ElasticsearchNodeCacheMemoryUsageConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeCacheMemoryUsageAttributeKey{ElasticsearchNodeCacheMemoryUsageAttributeKeyCacheName},
 		},
-		ElasticsearchNodeCacheSize: MetricConfig{
+		ElasticsearchNodeCacheSize: ElasticsearchNodeCacheSizeConfig{
 			Enabled: false,
 		},
-		ElasticsearchNodeClusterConnections: MetricConfig{
+		ElasticsearchNodeClusterConnections: ElasticsearchNodeClusterConnectionsConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeClusterIo: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"direction"},
-			EnabledAttributes:  []string{"direction"},
+		ElasticsearchNodeClusterIo: ElasticsearchNodeClusterIoConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeClusterIoAttributeKey{ElasticsearchNodeClusterIoAttributeKeyDirection},
 		},
-		ElasticsearchNodeDiskIoRead: MetricConfig{
+		ElasticsearchNodeDiskIoRead: ElasticsearchNodeDiskIoReadConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeDiskIoWrite: MetricConfig{
+		ElasticsearchNodeDiskIoWrite: ElasticsearchNodeDiskIoWriteConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeDocuments: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state"},
-			EnabledAttributes:  []string{"state"},
+		ElasticsearchNodeDocuments: ElasticsearchNodeDocumentsConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeDocumentsAttributeKey{ElasticsearchNodeDocumentsAttributeKeyDocumentState},
 		},
-		ElasticsearchNodeFsDiskAvailable: MetricConfig{
+		ElasticsearchNodeFsDiskAvailable: ElasticsearchNodeFsDiskAvailableConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeFsDiskFree: MetricConfig{
+		ElasticsearchNodeFsDiskFree: ElasticsearchNodeFsDiskFreeConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeFsDiskTotal: MetricConfig{
+		ElasticsearchNodeFsDiskTotal: ElasticsearchNodeFsDiskTotalConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeHTTPConnections: MetricConfig{
+		ElasticsearchNodeHTTPConnections: ElasticsearchNodeHTTPConnectionsConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeIngestDocuments: MetricConfig{
+		ElasticsearchNodeIngestDocuments: ElasticsearchNodeIngestDocumentsConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeIngestDocumentsCurrent: MetricConfig{
+		ElasticsearchNodeIngestDocumentsCurrent: ElasticsearchNodeIngestDocumentsCurrentConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeIngestOperationsFailed: MetricConfig{
+		ElasticsearchNodeIngestOperationsFailed: ElasticsearchNodeIngestOperationsFailedConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeOpenFiles: MetricConfig{
+		ElasticsearchNodeOpenFiles: ElasticsearchNodeOpenFilesConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeOperationsCompleted: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"operation"},
-			EnabledAttributes:  []string{"operation"},
+		ElasticsearchNodeOperationsCompleted: ElasticsearchNodeOperationsCompletedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeOperationsCompletedAttributeKey{ElasticsearchNodeOperationsCompletedAttributeKeyOperation},
 		},
-		ElasticsearchNodeOperationsCurrent: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"operation"},
-			EnabledAttributes:  []string{"operation"},
+		ElasticsearchNodeOperationsCurrent: ElasticsearchNodeOperationsCurrentConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []ElasticsearchNodeOperationsCurrentAttributeKey{ElasticsearchNodeOperationsCurrentAttributeKeyOperation},
 		},
-		ElasticsearchNodeOperationsGetCompleted: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"result"},
-			EnabledAttributes:  []string{"result"},
+		ElasticsearchNodeOperationsGetCompleted: ElasticsearchNodeOperationsGetCompletedConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeOperationsGetCompletedAttributeKey{ElasticsearchNodeOperationsGetCompletedAttributeKeyGetResult},
 		},
-		ElasticsearchNodeOperationsGetTime: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"result"},
-			EnabledAttributes:  []string{"result"},
+		ElasticsearchNodeOperationsGetTime: ElasticsearchNodeOperationsGetTimeConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeOperationsGetTimeAttributeKey{ElasticsearchNodeOperationsGetTimeAttributeKeyGetResult},
 		},
-		ElasticsearchNodeOperationsTime: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"operation"},
-			EnabledAttributes:  []string{"operation"},
+		ElasticsearchNodeOperationsTime: ElasticsearchNodeOperationsTimeConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeOperationsTimeAttributeKey{ElasticsearchNodeOperationsTimeAttributeKeyOperation},
 		},
-		ElasticsearchNodePipelineIngestDocumentsCurrent: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		ElasticsearchNodePipelineIngestDocumentsCurrent: ElasticsearchNodePipelineIngestDocumentsCurrentConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey{ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKeyIngestPipelineName},
 		},
-		ElasticsearchNodePipelineIngestDocumentsPreprocessed: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		ElasticsearchNodePipelineIngestDocumentsPreprocessed: ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey{ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKeyIngestPipelineName},
 		},
-		ElasticsearchNodePipelineIngestOperationsFailed: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		ElasticsearchNodePipelineIngestOperationsFailed: ElasticsearchNodePipelineIngestOperationsFailedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodePipelineIngestOperationsFailedAttributeKey{ElasticsearchNodePipelineIngestOperationsFailedAttributeKeyIngestPipelineName},
 		},
-		ElasticsearchNodeScriptCacheEvictions: MetricConfig{
+		ElasticsearchNodeScriptCacheEvictions: ElasticsearchNodeScriptCacheEvictionsConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeScriptCompilationLimitTriggered: MetricConfig{
+		ElasticsearchNodeScriptCompilationLimitTriggered: ElasticsearchNodeScriptCompilationLimitTriggeredConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeScriptCompilations: MetricConfig{
+		ElasticsearchNodeScriptCompilations: ElasticsearchNodeScriptCompilationsConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeSegmentsMemory: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"object"},
-			EnabledAttributes:  []string{"object"},
+		ElasticsearchNodeSegmentsMemory: ElasticsearchNodeSegmentsMemoryConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeSegmentsMemoryAttributeKey{ElasticsearchNodeSegmentsMemoryAttributeKeySegmentsMemoryObjectType},
 		},
-		ElasticsearchNodeShardsDataSetSize: MetricConfig{
+		ElasticsearchNodeShardsDataSetSize: ElasticsearchNodeShardsDataSetSizeConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeShardsReservedSize: MetricConfig{
+		ElasticsearchNodeShardsReservedSize: ElasticsearchNodeShardsReservedSizeConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeShardsSize: MetricConfig{
+		ElasticsearchNodeShardsSize: ElasticsearchNodeShardsSizeConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeThreadPoolTasksFinished: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"thread_pool_name", "state"},
-			EnabledAttributes:  []string{"thread_pool_name", "state"},
+		ElasticsearchNodeThreadPoolTasksFinished: ElasticsearchNodeThreadPoolTasksFinishedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksFinishedAttributeKey{ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyTaskState},
 		},
-		ElasticsearchNodeThreadPoolTasksQueued: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"thread_pool_name"},
-			EnabledAttributes:  []string{"thread_pool_name"},
+		ElasticsearchNodeThreadPoolTasksQueued: ElasticsearchNodeThreadPoolTasksQueuedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksQueuedAttributeKey{ElasticsearchNodeThreadPoolTasksQueuedAttributeKeyThreadPoolName},
 		},
-		ElasticsearchNodeThreadPoolThreads: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"thread_pool_name", "state"},
-			EnabledAttributes:  []string{"thread_pool_name", "state"},
+		ElasticsearchNodeThreadPoolThreads: ElasticsearchNodeThreadPoolThreadsConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ElasticsearchNodeThreadPoolThreadsAttributeKey{ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadState},
 		},
-		ElasticsearchNodeTranslogOperations: MetricConfig{
+		ElasticsearchNodeTranslogOperations: ElasticsearchNodeTranslogOperationsConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeTranslogSize: MetricConfig{
+		ElasticsearchNodeTranslogSize: ElasticsearchNodeTranslogSizeConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeTranslogUncommittedSize: MetricConfig{
+		ElasticsearchNodeTranslogUncommittedSize: ElasticsearchNodeTranslogUncommittedSizeConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsCPULoadAvg15m: MetricConfig{
+		ElasticsearchOsCPULoadAvg15m: ElasticsearchOsCPULoadAvg15mConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsCPULoadAvg1m: MetricConfig{
+		ElasticsearchOsCPULoadAvg1m: ElasticsearchOsCPULoadAvg1mConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsCPULoadAvg5m: MetricConfig{
+		ElasticsearchOsCPULoadAvg5m: ElasticsearchOsCPULoadAvg5mConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsCPUUsage: MetricConfig{
+		ElasticsearchOsCPUUsage: ElasticsearchOsCPUUsageConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsMemory: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state"},
-			EnabledAttributes:  []string{"state"},
+		ElasticsearchOsMemory: ElasticsearchOsMemoryConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []ElasticsearchOsMemoryAttributeKey{ElasticsearchOsMemoryAttributeKeyMemoryState},
 		},
-		ElasticsearchProcessCPUTime: MetricConfig{
+		ElasticsearchProcessCPUTime: ElasticsearchProcessCPUTimeConfig{
 			Enabled: false,
 		},
-		ElasticsearchProcessCPUUsage: MetricConfig{
+		ElasticsearchProcessCPUUsage: ElasticsearchProcessCPUUsageConfig{
 			Enabled: false,
 		},
-		ElasticsearchProcessMemoryVirtual: MetricConfig{
+		ElasticsearchProcessMemoryVirtual: ElasticsearchProcessMemoryVirtualConfig{
 			Enabled: false,
 		},
-		JvmClassesLoaded: MetricConfig{
+		JvmClassesLoaded: JvmClassesLoadedConfig{
 			Enabled: true,
 		},
-		JvmGcCollectionsCount: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		JvmGcCollectionsCount: JvmGcCollectionsCountConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []JvmGcCollectionsCountAttributeKey{JvmGcCollectionsCountAttributeKeyCollectorName},
 		},
-		JvmGcCollectionsElapsed: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		JvmGcCollectionsElapsed: JvmGcCollectionsElapsedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []JvmGcCollectionsElapsedAttributeKey{JvmGcCollectionsElapsedAttributeKeyCollectorName},
 		},
-		JvmMemoryHeapCommitted: MetricConfig{
+		JvmMemoryHeapCommitted: JvmMemoryHeapCommittedConfig{
 			Enabled: true,
 		},
-		JvmMemoryHeapMax: MetricConfig{
+		JvmMemoryHeapMax: JvmMemoryHeapMaxConfig{
 			Enabled: true,
 		},
-		JvmMemoryHeapUsed: MetricConfig{
+		JvmMemoryHeapUsed: JvmMemoryHeapUsedConfig{
 			Enabled: true,
 		},
-		JvmMemoryHeapUtilization: MetricConfig{
+		JvmMemoryHeapUtilization: JvmMemoryHeapUtilizationConfig{
 			Enabled: false,
 		},
-		JvmMemoryNonheapCommitted: MetricConfig{
+		JvmMemoryNonheapCommitted: JvmMemoryNonheapCommittedConfig{
 			Enabled: true,
 		},
-		JvmMemoryNonheapUsed: MetricConfig{
+		JvmMemoryNonheapUsed: JvmMemoryNonheapUsedConfig{
 			Enabled: true,
 		},
-		JvmMemoryPoolMax: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		JvmMemoryPoolMax: JvmMemoryPoolMaxConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []JvmMemoryPoolMaxAttributeKey{JvmMemoryPoolMaxAttributeKeyMemoryPoolName},
 		},
-		JvmMemoryPoolUsed: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"name"},
-			EnabledAttributes:  []string{"name"},
+		JvmMemoryPoolUsed: JvmMemoryPoolUsedConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []JvmMemoryPoolUsedAttributeKey{JvmMemoryPoolUsedAttributeKeyMemoryPoolName},
 		},
-		JvmThreadsCount: MetricConfig{
+		JvmThreadsCount: JvmThreadsCountConfig{
 			Enabled: true,
 		},
 	}

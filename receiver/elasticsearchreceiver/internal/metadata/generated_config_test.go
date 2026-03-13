@@ -26,280 +26,376 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ElasticsearchBreakerMemoryEstimated: MetricConfig{
-						Enabled: true,
-					},
-					ElasticsearchBreakerMemoryLimit: MetricConfig{
-						Enabled: true,
+					ElasticsearchBreakerMemoryEstimated: ElasticsearchBreakerMemoryEstimatedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchBreakerMemoryEstimatedAttributeKey{ElasticsearchBreakerMemoryEstimatedAttributeKeyCircuitBreakerName},
 					},
-					ElasticsearchBreakerTripped: MetricConfig{
-						Enabled: true,
+					ElasticsearchBreakerMemoryLimit: ElasticsearchBreakerMemoryLimitConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchBreakerMemoryLimitAttributeKey{ElasticsearchBreakerMemoryLimitAttributeKeyCircuitBreakerName},
 					},
-					ElasticsearchClusterDataNodes: MetricConfig{
-						Enabled: true,
+					ElasticsearchBreakerTripped: ElasticsearchBreakerTrippedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchBreakerTrippedAttributeKey{ElasticsearchBreakerTrippedAttributeKeyCircuitBreakerName},
 					},
-					ElasticsearchClusterHealth: MetricConfig{
+					ElasticsearchClusterDataNodes: ElasticsearchClusterDataNodesConfig{
 						Enabled: true,
 					},
-					ElasticsearchClusterInFlightFetch: MetricConfig{
-						Enabled: true,
+					ElasticsearchClusterHealth: ElasticsearchClusterHealthConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterHealthAttributeKey{ElasticsearchClusterHealthAttributeKeyHealthStatus},
 					},
-					ElasticsearchClusterIndicesCacheEvictions: MetricConfig{
+					ElasticsearchClusterInFlightFetch: ElasticsearchClusterInFlightFetchConfig{
 						Enabled: true,
 					},
-					ElasticsearchClusterNodes: MetricConfig{
-						Enabled: true,
+					ElasticsearchClusterIndicesCacheEvictions: ElasticsearchClusterIndicesCacheEvictionsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterIndicesCacheEvictionsAttributeKey{ElasticsearchClusterIndicesCacheEvictionsAttributeKeyCacheName},
 					},
-					ElasticsearchClusterPendingTasks: MetricConfig{
+					ElasticsearchClusterNodes: ElasticsearchClusterNodesConfig{
 						Enabled: true,
-					},
-					ElasticsearchClusterPublishedStatesDifferences: MetricConfig{
+					},
+					ElasticsearchClusterPendingTasks: ElasticsearchClusterPendingTasksConfig{
 						Enabled: true,
 					},
-					ElasticsearchClusterPublishedStatesFull: MetricConfig{
+					ElasticsearchClusterPublishedStatesDifferences: ElasticsearchClusterPublishedStatesDifferencesConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterPublishedStatesDifferencesAttributeKey{ElasticsearchClusterPublishedStatesDifferencesAttributeKeyClusterPublishedDifferenceState},
+					},
+					ElasticsearchClusterPublishedStatesFull: ElasticsearchClusterPublishedStatesFullConfig{
 						Enabled: true,
 					},
-					ElasticsearchClusterShards: MetricConfig{
-						Enabled: true,
+					ElasticsearchClusterShards: ElasticsearchClusterShardsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterShardsAttributeKey{ElasticsearchClusterShardsAttributeKeyShardState},
 					},
-					ElasticsearchClusterStateQueue: MetricConfig{
-						Enabled: true,
+					ElasticsearchClusterStateQueue: ElasticsearchClusterStateQueueConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateQueueAttributeKey{ElasticsearchClusterStateQueueAttributeKeyClusterStateQueueState},
 					},
-					ElasticsearchClusterStateUpdateCount: MetricConfig{
-						Enabled: true,
+					ElasticsearchClusterStateUpdateCount: ElasticsearchClusterStateUpdateCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateUpdateCountAttributeKey{ElasticsearchClusterStateUpdateCountAttributeKeyClusterStateUpdateState},
 					},
-					ElasticsearchClusterStateUpdateTime: MetricConfig{
-						Enabled: true,
+					ElasticsearchClusterStateUpdateTime: ElasticsearchClusterStateUpdateTimeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateUpdateTimeAttributeKey{ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateType},
 					},
-					ElasticsearchIndexCacheEvictions: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexCacheEvictions: ElasticsearchIndexCacheEvictionsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheEvictionsAttributeKey{ElasticsearchIndexCacheEvictionsAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexCacheMemoryUsage: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexCacheMemoryUsage: ElasticsearchIndexCacheMemoryUsageConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheMemoryUsageAttributeKey{ElasticsearchIndexCacheMemoryUsageAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexCacheSize: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexCacheSize: ElasticsearchIndexCacheSizeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheSizeAttributeKey{ElasticsearchIndexCacheSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexDocuments: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexDocuments: ElasticsearchIndexDocumentsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexDocumentsAttributeKey{ElasticsearchIndexDocumentsAttributeKeyDocumentState, ElasticsearchIndexDocumentsAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsCompleted: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexOperationsCompleted: ElasticsearchIndexOperationsCompletedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsCompletedAttributeKey{ElasticsearchIndexOperationsCompletedAttributeKeyOperation, ElasticsearchIndexOperationsCompletedAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsMergeCurrent: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexOperationsMergeCurrent: ElasticsearchIndexOperationsMergeCurrentConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeCurrentAttributeKey{ElasticsearchIndexOperationsMergeCurrentAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsMergeDocsCount: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexOperationsMergeDocsCount: ElasticsearchIndexOperationsMergeDocsCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeDocsCountAttributeKey{ElasticsearchIndexOperationsMergeDocsCountAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsMergeSize: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexOperationsMergeSize: ElasticsearchIndexOperationsMergeSizeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeSizeAttributeKey{ElasticsearchIndexOperationsMergeSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsTime: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexOperationsTime: ElasticsearchIndexOperationsTimeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsTimeAttributeKey{ElasticsearchIndexOperationsTimeAttributeKeyOperation, ElasticsearchIndexOperationsTimeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexSegmentsCount: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexSegmentsCount: ElasticsearchIndexSegmentsCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsCountAttributeKey{ElasticsearchIndexSegmentsCountAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexSegmentsMemory: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexSegmentsMemory: ElasticsearchIndexSegmentsMemoryConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsMemoryAttributeKey{ElasticsearchIndexSegmentsMemoryAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryAttributeKeySegmentsMemoryObjectType},
 					},
-					ElasticsearchIndexSegmentsSize: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexSegmentsSize: ElasticsearchIndexSegmentsSizeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsSizeAttributeKey{ElasticsearchIndexSegmentsSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexShardsSize: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexShardsSize: ElasticsearchIndexShardsSizeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexShardsSizeAttributeKey{ElasticsearchIndexShardsSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexTranslogOperations: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexTranslogOperations: ElasticsearchIndexTranslogOperationsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexTranslogOperationsAttributeKey{ElasticsearchIndexTranslogOperationsAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexTranslogSize: MetricConfig{
-						Enabled: true,
+					ElasticsearchIndexTranslogSize: ElasticsearchIndexTranslogSizeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexTranslogSizeAttributeKey{ElasticsearchIndexTranslogSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexingPressureMemoryLimit: MetricConfig{
+					ElasticsearchIndexingPressureMemoryLimit: ElasticsearchIndexingPressureMemoryLimitConfig{
 						Enabled: true,
 					},
-					ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: MetricConfig{
+					ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig{
 						Enabled: true,
 					},
-					ElasticsearchIndexingPressureMemoryTotalReplicaRejections: MetricConfig{
+					ElasticsearchIndexingPressureMemoryTotalReplicaRejections: ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig{
 						Enabled: true,
 					},
-					ElasticsearchMemoryIndexingPressure: MetricConfig{
-						Enabled: true,
+					ElasticsearchMemoryIndexingPressure: ElasticsearchMemoryIndexingPressureConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchMemoryIndexingPressureAttributeKey{ElasticsearchMemoryIndexingPressureAttributeKeyIndexingPressureStage},
 					},
-					ElasticsearchNodeCacheCount: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeCacheCount: ElasticsearchNodeCacheCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheCountAttributeKey{ElasticsearchNodeCacheCountAttributeKeyQueryCacheCountType},
 					},
-					ElasticsearchNodeCacheEvictions: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeCacheEvictions: ElasticsearchNodeCacheEvictionsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheEvictionsAttributeKey{ElasticsearchNodeCacheEvictionsAttributeKeyCacheName},
 					},
-					ElasticsearchNodeCacheMemoryUsage: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeCacheMemoryUsage: ElasticsearchNodeCacheMemoryUsageConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheMemoryUsageAttributeKey{ElasticsearchNodeCacheMemoryUsageAttributeKeyCacheName},
 					},
-					ElasticsearchNodeCacheSize: MetricConfig{
+					ElasticsearchNodeCacheSize: ElasticsearchNodeCacheSizeConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeClusterConnections: MetricConfig{
+					ElasticsearchNodeClusterConnections: ElasticsearchNodeClusterConnectionsConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeClusterIo: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeClusterIo: ElasticsearchNodeClusterIoConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeClusterIoAttributeKey{ElasticsearchNodeClusterIoAttributeKeyDirection},
 					},
-					ElasticsearchNodeDiskIoRead: MetricConfig{
+					ElasticsearchNodeDiskIoRead: ElasticsearchNodeDiskIoReadConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeDiskIoWrite: MetricConfig{
+					ElasticsearchNodeDiskIoWrite: ElasticsearchNodeDiskIoWriteConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeDocuments: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeDocuments: ElasticsearchNodeDocumentsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeDocumentsAttributeKey{ElasticsearchNodeDocumentsAttributeKeyDocumentState},
 					},
-					ElasticsearchNodeFsDiskAvailable: MetricConfig{
+					ElasticsearchNodeFsDiskAvailable: ElasticsearchNodeFsDiskAvailableConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeFsDiskFree: MetricConfig{
+					ElasticsearchNodeFsDiskFree: ElasticsearchNodeFsDiskFreeConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeFsDiskTotal: MetricConfig{
+					ElasticsearchNodeFsDiskTotal: ElasticsearchNodeFsDiskTotalConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeHTTPConnections: MetricConfig{
+					ElasticsearchNodeHTTPConnections: ElasticsearchNodeHTTPConnectionsConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeIngestDocuments: MetricConfig{
+					ElasticsearchNodeIngestDocuments: ElasticsearchNodeIngestDocumentsConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeIngestDocumentsCurrent: MetricConfig{
+					ElasticsearchNodeIngestDocumentsCurrent: ElasticsearchNodeIngestDocumentsCurrentConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeIngestOperationsFailed: MetricConfig{
+					ElasticsearchNodeIngestOperationsFailed: ElasticsearchNodeIngestOperationsFailedConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeOpenFiles: MetricConfig{
+					ElasticsearchNodeOpenFiles: ElasticsearchNodeOpenFilesConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeOperationsCompleted: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeOperationsCompleted: ElasticsearchNodeOperationsCompletedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsCompletedAttributeKey{ElasticsearchNodeOperationsCompletedAttributeKeyOperation},
 					},
-					ElasticsearchNodeOperationsCurrent: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeOperationsCurrent: ElasticsearchNodeOperationsCurrentConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchNodeOperationsCurrentAttributeKey{ElasticsearchNodeOperationsCurrentAttributeKeyOperation},
 					},
-					ElasticsearchNodeOperationsGetCompleted: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeOperationsGetCompleted: ElasticsearchNodeOperationsGetCompletedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsGetCompletedAttributeKey{ElasticsearchNodeOperationsGetCompletedAttributeKeyGetResult},
 					},
-					ElasticsearchNodeOperationsGetTime: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeOperationsGetTime: ElasticsearchNodeOperationsGetTimeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsGetTimeAttributeKey{ElasticsearchNodeOperationsGetTimeAttributeKeyGetResult},
 					},
-					ElasticsearchNodeOperationsTime: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeOperationsTime: ElasticsearchNodeOperationsTimeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsTimeAttributeKey{ElasticsearchNodeOperationsTimeAttributeKeyOperation},
 					},
-					ElasticsearchNodePipelineIngestDocumentsCurrent: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodePipelineIngestDocumentsCurrent: ElasticsearchNodePipelineIngestDocumentsCurrentConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey{ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKeyIngestPipelineName},
 					},
-					ElasticsearchNodePipelineIngestDocumentsPreprocessed: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodePipelineIngestDocumentsPreprocessed: ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey{ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKeyIngestPipelineName},
 					},
-					ElasticsearchNodePipelineIngestOperationsFailed: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodePipelineIngestOperationsFailed: ElasticsearchNodePipelineIngestOperationsFailedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestOperationsFailedAttributeKey{ElasticsearchNodePipelineIngestOperationsFailedAttributeKeyIngestPipelineName},
 					},
-					ElasticsearchNodeScriptCacheEvictions: MetricConfig{
+					ElasticsearchNodeScriptCacheEvictions: ElasticsearchNodeScriptCacheEvictionsConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeScriptCompilationLimitTriggered: MetricConfig{
+					ElasticsearchNodeScriptCompilationLimitTriggered: ElasticsearchNodeScriptCompilationLimitTriggeredConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeScriptCompilations: MetricConfig{
+					ElasticsearchNodeScriptCompilations: ElasticsearchNodeScriptCompilationsConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeSegmentsMemory: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeSegmentsMemory: ElasticsearchNodeSegmentsMemoryConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeSegmentsMemoryAttributeKey{ElasticsearchNodeSegmentsMemoryAttributeKeySegmentsMemoryObjectType},
 					},
-					ElasticsearchNodeShardsDataSetSize: MetricConfig{
+					ElasticsearchNodeShardsDataSetSize: ElasticsearchNodeShardsDataSetSizeConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeShardsReservedSize: MetricConfig{
+					ElasticsearchNodeShardsReservedSize: ElasticsearchNodeShardsReservedSizeConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeShardsSize: MetricConfig{
+					ElasticsearchNodeShardsSize: ElasticsearchNodeShardsSizeConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeThreadPoolTasksFinished: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeThreadPoolTasksFinished: ElasticsearchNodeThreadPoolTasksFinishedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksFinishedAttributeKey{ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyTaskState},
 					},
-					ElasticsearchNodeThreadPoolTasksQueued: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeThreadPoolTasksQueued: ElasticsearchNodeThreadPoolTasksQueuedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksQueuedAttributeKey{ElasticsearchNodeThreadPoolTasksQueuedAttributeKeyThreadPoolName},
 					},
-					ElasticsearchNodeThreadPoolThreads: MetricConfig{
-						Enabled: true,
+					ElasticsearchNodeThreadPoolThreads: ElasticsearchNodeThreadPoolThreadsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolThreadsAttributeKey{ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadState},
 					},
-					ElasticsearchNodeTranslogOperations: MetricConfig{
+					ElasticsearchNodeTranslogOperations: ElasticsearchNodeTranslogOperationsConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeTranslogSize: MetricConfig{
+					ElasticsearchNodeTranslogSize: ElasticsearchNodeTranslogSizeConfig{
 						Enabled: true,
 					},
-					ElasticsearchNodeTranslogUncommittedSize: MetricConfig{
+					ElasticsearchNodeTranslogUncommittedSize: ElasticsearchNodeTranslogUncommittedSizeConfig{
 						Enabled: true,
 					},
-					ElasticsearchOsCPULoadAvg15m: MetricConfig{
+					ElasticsearchOsCPULoadAvg15m: ElasticsearchOsCPULoadAvg15mConfig{
 						Enabled: true,
 					},
-					ElasticsearchOsCPULoadAvg1m: MetricConfig{
+					ElasticsearchOsCPULoadAvg1m: ElasticsearchOsCPULoadAvg1mConfig{
 						Enabled: true,
 					},
-					ElasticsearchOsCPULoadAvg5m: MetricConfig{
+					ElasticsearchOsCPULoadAvg5m: ElasticsearchOsCPULoadAvg5mConfig{
 						Enabled: true,
 					},
-					ElasticsearchOsCPUUsage: MetricConfig{
+					ElasticsearchOsCPUUsage: ElasticsearchOsCPUUsageConfig{
 						Enabled: true,
 					},
-					ElasticsearchOsMemory: MetricConfig{
-						Enabled: true,
+					ElasticsearchOsMemory: ElasticsearchOsMemoryConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchOsMemoryAttributeKey{ElasticsearchOsMemoryAttributeKeyMemoryState},
 					},
-					ElasticsearchProcessCPUTime: MetricConfig{
+					ElasticsearchProcessCPUTime: ElasticsearchProcessCPUTimeConfig{
 						Enabled: true,
 					},
-					ElasticsearchProcessCPUUsage: MetricConfig{
+					ElasticsearchProcessCPUUsage: ElasticsearchProcessCPUUsageConfig{
 						Enabled: true,
 					},
-					ElasticsearchProcessMemoryVirtual: MetricConfig{
+					ElasticsearchProcessMemoryVirtual: ElasticsearchProcessMemoryVirtualConfig{
 						Enabled: true,
 					},
-					JvmClassesLoaded: MetricConfig{
+					JvmClassesLoaded: JvmClassesLoadedConfig{
 						Enabled: true,
 					},
-					JvmGcCollectionsCount: MetricConfig{
-						Enabled: true,
+					JvmGcCollectionsCount: JvmGcCollectionsCountConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []JvmGcCollectionsCountAttributeKey{JvmGcCollectionsCountAttributeKeyCollectorName},
 					},
-					JvmGcCollectionsElapsed: MetricConfig{
-						Enabled: true,
+					JvmGcCollectionsElapsed: JvmGcCollectionsElapsedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []JvmGcCollectionsElapsedAttributeKey{JvmGcCollectionsElapsedAttributeKeyCollectorName},
 					},
-					JvmMemoryHeapCommitted: MetricConfig{
+					JvmMemoryHeapCommitted: JvmMemoryHeapCommittedConfig{
 						Enabled: true,
 					},
-					JvmMemoryHeapMax: MetricConfig{
+					JvmMemoryHeapMax: JvmMemoryHeapMaxConfig{
 						Enabled: true,
 					},
-					JvmMemoryHeapUsed: MetricConfig{
+					JvmMemoryHeapUsed: JvmMemoryHeapUsedConfig{
 						Enabled: true,
 					},
-					JvmMemoryHeapUtilization: MetricConfig{
+					JvmMemoryHeapUtilization: JvmMemoryHeapUtilizationConfig{
 						Enabled: true,
 					},
-					JvmMemoryNonheapCommitted: MetricConfig{
+					JvmMemoryNonheapCommitted: JvmMemoryNonheapCommittedConfig{
 						Enabled: true,
 					},
-					JvmMemoryNonheapUsed: MetricConfig{
+					JvmMemoryNonheapUsed: JvmMemoryNonheapUsedConfig{
 						Enabled: true,
 					},
-					JvmMemoryPoolMax: MetricConfig{
-						Enabled: true,
+					JvmMemoryPoolMax: JvmMemoryPoolMaxConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []JvmMemoryPoolMaxAttributeKey{JvmMemoryPoolMaxAttributeKeyMemoryPoolName},
 					},
-					JvmMemoryPoolUsed: MetricConfig{
-						Enabled: true,
+					JvmMemoryPoolUsed: JvmMemoryPoolUsedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []JvmMemoryPoolUsedAttributeKey{JvmMemoryPoolUsedAttributeKeyMemoryPoolName},
 					},
-					JvmThreadsCount: MetricConfig{
+					JvmThreadsCount: JvmThreadsCountConfig{
 						Enabled: true,
 					},
 				},
@@ -315,280 +411,376 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ElasticsearchBreakerMemoryEstimated: MetricConfig{
-						Enabled: false,
-					},
-					ElasticsearchBreakerMemoryLimit: MetricConfig{
-						Enabled: false,
+					ElasticsearchBreakerMemoryEstimated: ElasticsearchBreakerMemoryEstimatedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchBreakerMemoryEstimatedAttributeKey{ElasticsearchBreakerMemoryEstimatedAttributeKeyCircuitBreakerName},
 					},
-					ElasticsearchBreakerTripped: MetricConfig{
-						Enabled: false,
+					ElasticsearchBreakerMemoryLimit: ElasticsearchBreakerMemoryLimitConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchBreakerMemoryLimitAttributeKey{ElasticsearchBreakerMemoryLimitAttributeKeyCircuitBreakerName},
 					},
-					ElasticsearchClusterDataNodes: MetricConfig{
-						Enabled: false,
+					ElasticsearchBreakerTripped: ElasticsearchBreakerTrippedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchBreakerTrippedAttributeKey{ElasticsearchBreakerTrippedAttributeKeyCircuitBreakerName},
 					},
-					ElasticsearchClusterHealth: MetricConfig{
+					ElasticsearchClusterDataNodes: ElasticsearchClusterDataNodesConfig{
 						Enabled: false,
 					},
-					ElasticsearchClusterInFlightFetch: MetricConfig{
-						Enabled: false,
+					ElasticsearchClusterHealth: ElasticsearchClusterHealthConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterHealthAttributeKey{ElasticsearchClusterHealthAttributeKeyHealthStatus},
 					},
-					ElasticsearchClusterIndicesCacheEvictions: MetricConfig{
+					ElasticsearchClusterInFlightFetch: ElasticsearchClusterInFlightFetchConfig{
 						Enabled: false,
 					},
-					ElasticsearchClusterNodes: MetricConfig{
-						Enabled: false,
+					ElasticsearchClusterIndicesCacheEvictions: ElasticsearchClusterIndicesCacheEvictionsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterIndicesCacheEvictionsAttributeKey{ElasticsearchClusterIndicesCacheEvictionsAttributeKeyCacheName},
 					},
-					ElasticsearchClusterPendingTasks: MetricConfig{
+					ElasticsearchClusterNodes: ElasticsearchClusterNodesConfig{
 						Enabled: false,
-					},
-					ElasticsearchClusterPublishedStatesDifferences: MetricConfig{
+					},
+					ElasticsearchClusterPendingTasks: ElasticsearchClusterPendingTasksConfig{
 						Enabled: false,
 					},
-					ElasticsearchClusterPublishedStatesFull: MetricConfig{
+					ElasticsearchClusterPublishedStatesDifferences: ElasticsearchClusterPublishedStatesDifferencesConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterPublishedStatesDifferencesAttributeKey{ElasticsearchClusterPublishedStatesDifferencesAttributeKeyClusterPublishedDifferenceState},
+					},
+					ElasticsearchClusterPublishedStatesFull: ElasticsearchClusterPublishedStatesFullConfig{
 						Enabled: false,
 					},
-					ElasticsearchClusterShards: MetricConfig{
-						Enabled: false,
+					ElasticsearchClusterShards: ElasticsearchClusterShardsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterShardsAttributeKey{ElasticsearchClusterShardsAttributeKeyShardState},
 					},
-					ElasticsearchClusterStateQueue: MetricConfig{
-						Enabled: false,
+					ElasticsearchClusterStateQueue: ElasticsearchClusterStateQueueConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateQueueAttributeKey{ElasticsearchClusterStateQueueAttributeKeyClusterStateQueueState},
 					},
-					ElasticsearchClusterStateUpdateCount: MetricConfig{
-						Enabled: false,
+					ElasticsearchClusterStateUpdateCount: ElasticsearchClusterStateUpdateCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateUpdateCountAttributeKey{ElasticsearchClusterStateUpdateCountAttributeKeyClusterStateUpdateState},
 					},
-					ElasticsearchClusterStateUpdateTime: MetricConfig{
-						Enabled: false,
+					ElasticsearchClusterStateUpdateTime: ElasticsearchClusterStateUpdateTimeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchClusterStateUpdateTimeAttributeKey{ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateType},
 					},
-					ElasticsearchIndexCacheEvictions: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexCacheEvictions: ElasticsearchIndexCacheEvictionsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheEvictionsAttributeKey{ElasticsearchIndexCacheEvictionsAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexCacheMemoryUsage: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexCacheMemoryUsage: ElasticsearchIndexCacheMemoryUsageConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheMemoryUsageAttributeKey{ElasticsearchIndexCacheMemoryUsageAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexCacheSize: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexCacheSize: ElasticsearchIndexCacheSizeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexCacheSizeAttributeKey{ElasticsearchIndexCacheSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexDocuments: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexDocuments: ElasticsearchIndexDocumentsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexDocumentsAttributeKey{ElasticsearchIndexDocumentsAttributeKeyDocumentState, ElasticsearchIndexDocumentsAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsCompleted: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexOperationsCompleted: ElasticsearchIndexOperationsCompletedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsCompletedAttributeKey{ElasticsearchIndexOperationsCompletedAttributeKeyOperation, ElasticsearchIndexOperationsCompletedAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsMergeCurrent: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexOperationsMergeCurrent: ElasticsearchIndexOperationsMergeCurrentConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeCurrentAttributeKey{ElasticsearchIndexOperationsMergeCurrentAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsMergeDocsCount: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexOperationsMergeDocsCount: ElasticsearchIndexOperationsMergeDocsCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeDocsCountAttributeKey{ElasticsearchIndexOperationsMergeDocsCountAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsMergeSize: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexOperationsMergeSize: ElasticsearchIndexOperationsMergeSizeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsMergeSizeAttributeKey{ElasticsearchIndexOperationsMergeSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexOperationsTime: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexOperationsTime: ElasticsearchIndexOperationsTimeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexOperationsTimeAttributeKey{ElasticsearchIndexOperationsTimeAttributeKeyOperation, ElasticsearchIndexOperationsTimeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexSegmentsCount: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexSegmentsCount: ElasticsearchIndexSegmentsCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsCountAttributeKey{ElasticsearchIndexSegmentsCountAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexSegmentsMemory: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexSegmentsMemory: ElasticsearchIndexSegmentsMemoryConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsMemoryAttributeKey{ElasticsearchIndexSegmentsMemoryAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryAttributeKeySegmentsMemoryObjectType},
 					},
-					ElasticsearchIndexSegmentsSize: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexSegmentsSize: ElasticsearchIndexSegmentsSizeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexSegmentsSizeAttributeKey{ElasticsearchIndexSegmentsSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexShardsSize: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexShardsSize: ElasticsearchIndexShardsSizeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexShardsSizeAttributeKey{ElasticsearchIndexShardsSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexTranslogOperations: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexTranslogOperations: ElasticsearchIndexTranslogOperationsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexTranslogOperationsAttributeKey{ElasticsearchIndexTranslogOperationsAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexTranslogSize: MetricConfig{
-						Enabled: false,
+					ElasticsearchIndexTranslogSize: ElasticsearchIndexTranslogSizeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchIndexTranslogSizeAttributeKey{ElasticsearchIndexTranslogSizeAttributeKeyIndexAggregationType},
 					},
-					ElasticsearchIndexingPressureMemoryLimit: MetricConfig{
+					ElasticsearchIndexingPressureMemoryLimit: ElasticsearchIndexingPressureMemoryLimitConfig{
 						Enabled: false,
 					},
-					ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: MetricConfig{
+					ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig{
 						Enabled: false,
 					},
-					ElasticsearchIndexingPressureMemoryTotalReplicaRejections: MetricConfig{
+					ElasticsearchIndexingPressureMemoryTotalReplicaRejections: ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig{
 						Enabled: false,
 					},
-					ElasticsearchMemoryIndexingPressure: MetricConfig{
-						Enabled: false,
+					ElasticsearchMemoryIndexingPressure: ElasticsearchMemoryIndexingPressureConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchMemoryIndexingPressureAttributeKey{ElasticsearchMemoryIndexingPressureAttributeKeyIndexingPressureStage},
 					},
-					ElasticsearchNodeCacheCount: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeCacheCount: ElasticsearchNodeCacheCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheCountAttributeKey{ElasticsearchNodeCacheCountAttributeKeyQueryCacheCountType},
 					},
-					ElasticsearchNodeCacheEvictions: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeCacheEvictions: ElasticsearchNodeCacheEvictionsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheEvictionsAttributeKey{ElasticsearchNodeCacheEvictionsAttributeKeyCacheName},
 					},
-					ElasticsearchNodeCacheMemoryUsage: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeCacheMemoryUsage: ElasticsearchNodeCacheMemoryUsageConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeCacheMemoryUsageAttributeKey{ElasticsearchNodeCacheMemoryUsageAttributeKeyCacheName},
 					},
-					ElasticsearchNodeCacheSize: MetricConfig{
+					ElasticsearchNodeCacheSize: ElasticsearchNodeCacheSizeConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeClusterConnections: MetricConfig{
+					ElasticsearchNodeClusterConnections: ElasticsearchNodeClusterConnectionsConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeClusterIo: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeClusterIo: ElasticsearchNodeClusterIoConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeClusterIoAttributeKey{ElasticsearchNodeClusterIoAttributeKeyDirection},
 					},
-					ElasticsearchNodeDiskIoRead: MetricConfig{
+					ElasticsearchNodeDiskIoRead: ElasticsearchNodeDiskIoReadConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeDiskIoWrite: MetricConfig{
+					ElasticsearchNodeDiskIoWrite: ElasticsearchNodeDiskIoWriteConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeDocuments: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeDocuments: ElasticsearchNodeDocumentsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeDocumentsAttributeKey{ElasticsearchNodeDocumentsAttributeKeyDocumentState},
 					},
-					ElasticsearchNodeFsDiskAvailable: MetricConfig{
+					ElasticsearchNodeFsDiskAvailable: ElasticsearchNodeFsDiskAvailableConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeFsDiskFree: MetricConfig{
+					ElasticsearchNodeFsDiskFree: ElasticsearchNodeFsDiskFreeConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeFsDiskTotal: MetricConfig{
+					ElasticsearchNodeFsDiskTotal: ElasticsearchNodeFsDiskTotalConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeHTTPConnections: MetricConfig{
+					ElasticsearchNodeHTTPConnections: ElasticsearchNodeHTTPConnectionsConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeIngestDocuments: MetricConfig{
+					ElasticsearchNodeIngestDocuments: ElasticsearchNodeIngestDocumentsConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeIngestDocumentsCurrent: MetricConfig{
+					ElasticsearchNodeIngestDocumentsCurrent: ElasticsearchNodeIngestDocumentsCurrentConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeIngestOperationsFailed: MetricConfig{
+					ElasticsearchNodeIngestOperationsFailed: ElasticsearchNodeIngestOperationsFailedConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeOpenFiles: MetricConfig{
+					ElasticsearchNodeOpenFiles: ElasticsearchNodeOpenFilesConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeOperationsCompleted: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeOperationsCompleted: ElasticsearchNodeOperationsCompletedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsCompletedAttributeKey{ElasticsearchNodeOperationsCompletedAttributeKeyOperation},
 					},
-					ElasticsearchNodeOperationsCurrent: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeOperationsCurrent: ElasticsearchNodeOperationsCurrentConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchNodeOperationsCurrentAttributeKey{ElasticsearchNodeOperationsCurrentAttributeKeyOperation},
 					},
-					ElasticsearchNodeOperationsGetCompleted: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeOperationsGetCompleted: ElasticsearchNodeOperationsGetCompletedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsGetCompletedAttributeKey{ElasticsearchNodeOperationsGetCompletedAttributeKeyGetResult},
 					},
-					ElasticsearchNodeOperationsGetTime: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeOperationsGetTime: ElasticsearchNodeOperationsGetTimeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsGetTimeAttributeKey{ElasticsearchNodeOperationsGetTimeAttributeKeyGetResult},
 					},
-					ElasticsearchNodeOperationsTime: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeOperationsTime: ElasticsearchNodeOperationsTimeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeOperationsTimeAttributeKey{ElasticsearchNodeOperationsTimeAttributeKeyOperation},
 					},
-					ElasticsearchNodePipelineIngestDocumentsCurrent: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodePipelineIngestDocumentsCurrent: ElasticsearchNodePipelineIngestDocumentsCurrentConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey{ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKeyIngestPipelineName},
 					},
-					ElasticsearchNodePipelineIngestDocumentsPreprocessed: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodePipelineIngestDocumentsPreprocessed: ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey{ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKeyIngestPipelineName},
 					},
-					ElasticsearchNodePipelineIngestOperationsFailed: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodePipelineIngestOperationsFailed: ElasticsearchNodePipelineIngestOperationsFailedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodePipelineIngestOperationsFailedAttributeKey{ElasticsearchNodePipelineIngestOperationsFailedAttributeKeyIngestPipelineName},
 					},
-					ElasticsearchNodeScriptCacheEvictions: MetricConfig{
+					ElasticsearchNodeScriptCacheEvictions: ElasticsearchNodeScriptCacheEvictionsConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeScriptCompilationLimitTriggered: MetricConfig{
+					ElasticsearchNodeScriptCompilationLimitTriggered: ElasticsearchNodeScriptCompilationLimitTriggeredConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeScriptCompilations: MetricConfig{
+					ElasticsearchNodeScriptCompilations: ElasticsearchNodeScriptCompilationsConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeSegmentsMemory: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeSegmentsMemory: ElasticsearchNodeSegmentsMemoryConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeSegmentsMemoryAttributeKey{ElasticsearchNodeSegmentsMemoryAttributeKeySegmentsMemoryObjectType},
 					},
-					ElasticsearchNodeShardsDataSetSize: MetricConfig{
+					ElasticsearchNodeShardsDataSetSize: ElasticsearchNodeShardsDataSetSizeConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeShardsReservedSize: MetricConfig{
+					ElasticsearchNodeShardsReservedSize: ElasticsearchNodeShardsReservedSizeConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeShardsSize: MetricConfig{
+					ElasticsearchNodeShardsSize: ElasticsearchNodeShardsSizeConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeThreadPoolTasksFinished: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeThreadPoolTasksFinished: ElasticsearchNodeThreadPoolTasksFinishedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksFinishedAttributeKey{ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyTaskState},
 					},
-					ElasticsearchNodeThreadPoolTasksQueued: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeThreadPoolTasksQueued: ElasticsearchNodeThreadPoolTasksQueuedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksQueuedAttributeKey{ElasticsearchNodeThreadPoolTasksQueuedAttributeKeyThreadPoolName},
 					},
-					ElasticsearchNodeThreadPoolThreads: MetricConfig{
-						Enabled: false,
+					ElasticsearchNodeThreadPoolThreads: ElasticsearchNodeThreadPoolThreadsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ElasticsearchNodeThreadPoolThreadsAttributeKey{ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadState},
 					},
-					ElasticsearchNodeTranslogOperations: MetricConfig{
+					ElasticsearchNodeTranslogOperations: ElasticsearchNodeTranslogOperationsConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeTranslogSize: MetricConfig{
+					ElasticsearchNodeTranslogSize: ElasticsearchNodeTranslogSizeConfig{
 						Enabled: false,
 					},
-					ElasticsearchNodeTranslogUncommittedSize: MetricConfig{
+					ElasticsearchNodeTranslogUncommittedSize: ElasticsearchNodeTranslogUncommittedSizeConfig{
 						Enabled: false,
 					},
-					ElasticsearchOsCPULoadAvg15m: MetricConfig{
+					ElasticsearchOsCPULoadAvg15m: ElasticsearchOsCPULoadAvg15mConfig{
 						Enabled: false,
 					},
-					ElasticsearchOsCPULoadAvg1m: MetricConfig{
+					ElasticsearchOsCPULoadAvg1m: ElasticsearchOsCPULoadAvg1mConfig{
 						Enabled: false,
 					},
-					ElasticsearchOsCPULoadAvg5m: MetricConfig{
+					ElasticsearchOsCPULoadAvg5m: ElasticsearchOsCPULoadAvg5mConfig{
 						Enabled: false,
 					},
-					ElasticsearchOsCPUUsage: MetricConfig{
+					ElasticsearchOsCPUUsage: ElasticsearchOsCPUUsageConfig{
 						Enabled: false,
 					},
-					ElasticsearchOsMemory: MetricConfig{
-						Enabled: false,
+					ElasticsearchOsMemory: ElasticsearchOsMemoryConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ElasticsearchOsMemoryAttributeKey{ElasticsearchOsMemoryAttributeKeyMemoryState},
 					},
-					ElasticsearchProcessCPUTime: MetricConfig{
+					ElasticsearchProcessCPUTime: ElasticsearchProcessCPUTimeConfig{
 						Enabled: false,
 					},
-					ElasticsearchProcessCPUUsage: MetricConfig{
+					ElasticsearchProcessCPUUsage: ElasticsearchProcessCPUUsageConfig{
 						Enabled: false,
 					},
-					ElasticsearchProcessMemoryVirtual: MetricConfig{
+					ElasticsearchProcessMemoryVirtual: ElasticsearchProcessMemoryVirtualConfig{
 						Enabled: false,
 					},
-					JvmClassesLoaded: MetricConfig{
+					JvmClassesLoaded: JvmClassesLoadedConfig{
 						Enabled: false,
 					},
-					JvmGcCollectionsCount: MetricConfig{
-						Enabled: false,
+					JvmGcCollectionsCount: JvmGcCollectionsCountConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []JvmGcCollectionsCountAttributeKey{JvmGcCollectionsCountAttributeKeyCollectorName},
 					},
-					JvmGcCollectionsElapsed: MetricConfig{
-						Enabled: false,
+					JvmGcCollectionsElapsed: JvmGcCollectionsElapsedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []JvmGcCollectionsElapsedAttributeKey{JvmGcCollectionsElapsedAttributeKeyCollectorName},
 					},
-					JvmMemoryHeapCommitted: MetricConfig{
+					JvmMemoryHeapCommitted: JvmMemoryHeapCommittedConfig{
 						Enabled: false,
 					},
-					JvmMemoryHeapMax: MetricConfig{
+					JvmMemoryHeapMax: JvmMemoryHeapMaxConfig{
 						Enabled: false,
 					},
-					JvmMemoryHeapUsed: MetricConfig{
+					JvmMemoryHeapUsed: JvmMemoryHeapUsedConfig{
 						Enabled: false,
 					},
-					JvmMemoryHeapUtilization: MetricConfig{
+					JvmMemoryHeapUtilization: JvmMemoryHeapUtilizationConfig{
 						Enabled: false,
 					},
-					JvmMemoryNonheapCommitted: MetricConfig{
+					JvmMemoryNonheapCommitted: JvmMemoryNonheapCommittedConfig{
 						Enabled: false,
 					},
-					JvmMemoryNonheapUsed: MetricConfig{
+					JvmMemoryNonheapUsed: JvmMemoryNonheapUsedConfig{
 						Enabled: false,
 					},
-					JvmMemoryPoolMax: MetricConfig{
-						Enabled: false,
+					JvmMemoryPoolMax: JvmMemoryPoolMaxConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []JvmMemoryPoolMaxAttributeKey{JvmMemoryPoolMaxAttributeKeyMemoryPoolName},
 					},
-					JvmMemoryPoolUsed: MetricConfig{
-						Enabled: false,
+					JvmMemoryPoolUsed: JvmMemoryPoolUsedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []JvmMemoryPoolUsedAttributeKey{JvmMemoryPoolUsedAttributeKeyMemoryPoolName},
 					},
-					JvmThreadsCount: MetricConfig{
+					JvmThreadsCount: JvmThreadsCountConfig{
 						Enabled: false,
 					},
 				},
@@ -604,7 +796,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ElasticsearchBreakerMemoryEstimatedConfig{}, ElasticsearchBreakerMemoryLimitConfig{}, ElasticsearchBreakerTrippedConfig{}, ElasticsearchClusterDataNodesConfig{}, ElasticsearchClusterHealthConfig{}, ElasticsearchClusterInFlightFetchConfig{}, ElasticsearchClusterIndicesCacheEvictionsConfig{}, ElasticsearchClusterNodesConfig{}, ElasticsearchClusterPendingTasksConfig{}, ElasticsearchClusterPublishedStatesDifferencesConfig{}, ElasticsearchClusterPublishedStatesFullConfig{}, ElasticsearchClusterShardsConfig{}, ElasticsearchClusterStateQueueConfig{}, ElasticsearchClusterStateUpdateCountConfig{}, ElasticsearchClusterStateUpdateTimeConfig{}, ElasticsearchIndexCacheEvictionsConfig{}, ElasticsearchIndexCacheMemoryUsageConfig{}, ElasticsearchIndexCacheSizeConfig{}, ElasticsearchIndexDocumentsConfig{}, ElasticsearchIndexOperationsCompletedConfig{}, ElasticsearchIndexOperationsMergeCurrentConfig{}, ElasticsearchIndexOperationsMergeDocsCountConfig{}, ElasticsearchIndexOperationsMergeSizeConfig{}, ElasticsearchIndexOperationsTimeConfig{}, ElasticsearchIndexSegmentsCountConfig{}, ElasticsearchIndexSegmentsMemoryConfig{}, ElasticsearchIndexSegmentsSizeConfig{}, ElasticsearchIndexShardsSizeConfig{}, ElasticsearchIndexTranslogOperationsConfig{}, ElasticsearchIndexTranslogSizeConfig{}, ElasticsearchIndexingPressureMemoryLimitConfig{}, ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig{}, ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig{}, ElasticsearchMemoryIndexingPressureConfig{}, ElasticsearchNodeCacheCountConfig{}, ElasticsearchNodeCacheEvictionsConfig{}, ElasticsearchNodeCacheMemoryUsageConfig{}, ElasticsearchNodeCacheSizeConfig{}, ElasticsearchNodeClusterConnectionsConfig{}, ElasticsearchNodeClusterIoConfig{}, ElasticsearchNodeDiskIoReadConfig{}, ElasticsearchNodeDiskIoWriteConfig{}, ElasticsearchNodeDocumentsConfig{}, ElasticsearchNodeFsDiskAvailableConfig{}, ElasticsearchNodeFsDiskFreeConfig{}, ElasticsearchNodeFsDiskTotalConfig{}, ElasticsearchNodeHTTPConnectionsConfig{}, ElasticsearchNodeIngestDocumentsConfig{}, ElasticsearchNodeIngestDocumentsCurrentConfig{}, ElasticsearchNodeIngestOperationsFailedConfig{}, ElasticsearchNodeOpenFilesConfig{}, ElasticsearchNodeOperationsCompletedConfig{}, ElasticsearchNodeOperationsCurrentConfig{}, ElasticsearchNodeOperationsGetCompletedConfig{}, ElasticsearchNodeOperationsGetTimeConfig{}, ElasticsearchNodeOperationsTimeConfig{}, ElasticsearchNodePipelineIngestDocumentsCurrentConfig{}, ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig{}, ElasticsearchNodePipelineIngestOperationsFailedConfig{}, ElasticsearchNodeScriptCacheEvictionsConfig{}, ElasticsearchNodeScriptCompilationLimitTriggeredConfig{}, ElasticsearchNodeScriptCompilationsConfig{}, ElasticsearchNodeSegmentsMemoryConfig{}, ElasticsearchNodeShardsDataSetSizeConfig{}, ElasticsearchNodeShardsReservedSizeConfig{}, ElasticsearchNodeShardsSizeConfig{}, ElasticsearchNodeThreadPoolTasksFinishedConfig{}, ElasticsearchNodeThreadPoolTasksQueuedConfig{}, ElasticsearchNodeThreadPoolThreadsConfig{}, ElasticsearchNodeTranslogOperationsConfig{}, ElasticsearchNodeTranslogSizeConfig{}, ElasticsearchNodeTranslogUncommittedSizeConfig{}, ElasticsearchOsCPULoadAvg15mConfig{}, ElasticsearchOsCPULoadAvg1mConfig{}, ElasticsearchOsCPULoadAvg5mConfig{}, ElasticsearchOsCPUUsageConfig{}, ElasticsearchOsMemoryConfig{}, ElasticsearchProcessCPUTimeConfig{}, ElasticsearchProcessCPUUsageConfig{}, ElasticsearchProcessMemoryVirtualConfig{}, JvmClassesLoadedConfig{}, JvmGcCollectionsCountConfig{}, JvmGcCollectionsElapsedConfig{}, JvmMemoryHeapCommittedConfig{}, JvmMemoryHeapMaxConfig{}, JvmMemoryHeapUsedConfig{}, JvmMemoryHeapUtilizationConfig{}, JvmMemoryNonheapCommittedConfig{}, JvmMemoryNonheapUsedConfig{}, JvmMemoryPoolMaxConfig{}, JvmMemoryPoolUsedConfig{}, JvmThreadsCountConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
