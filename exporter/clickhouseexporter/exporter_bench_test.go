@@ -22,24 +22,24 @@ import (
 type noopBatch struct{}
 
 func (noopBatch) Abort() error                    { return nil }
-func (noopBatch) Append(_ ...any) error            { return nil }
-func (noopBatch) AppendStruct(_ any) error         { return nil }
-func (noopBatch) Column(_ int) driver.BatchColumn  { return nil }
-func (noopBatch) Flush() error                     { return nil }
-func (noopBatch) Send() error                      { return nil }
-func (noopBatch) IsSent() bool                     { return false }
-func (noopBatch) Rows() int                        { return 0 }
-func (noopBatch) Columns() []column.Interface      { return nil }
-func (noopBatch) Close() error                     { return nil }
+func (noopBatch) Append(_ ...any) error           { return nil }
+func (noopBatch) AppendStruct(_ any) error        { return nil }
+func (noopBatch) Column(_ int) driver.BatchColumn { return nil }
+func (noopBatch) Flush() error                    { return nil }
+func (noopBatch) Send() error                     { return nil }
+func (noopBatch) IsSent() bool                    { return false }
+func (noopBatch) Rows() int                       { return 0 }
+func (noopBatch) Columns() []column.Interface     { return nil }
+func (noopBatch) Close() error                    { return nil }
 
 // noopConn implements driver.Conn, returning noopBatch for PrepareBatch.
 type noopConn struct{}
 
-func (noopConn) Contributors() []string                                          { return nil }
-func (noopConn) ServerVersion() (*driver.ServerVersion, error)                   { return nil, nil }
-func (noopConn) Select(_ context.Context, _ any, _ string, _ ...any) error       { return nil }
+func (noopConn) Contributors() []string                                           { return nil }
+func (noopConn) ServerVersion() (*driver.ServerVersion, error)                    { return nil, nil }
+func (noopConn) Select(_ context.Context, _ any, _ string, _ ...any) error        { return nil }
 func (noopConn) Query(_ context.Context, _ string, _ ...any) (driver.Rows, error) { return nil, nil }
-func (noopConn) QueryRow(_ context.Context, _ string, _ ...any) driver.Row       { return nil }
+func (noopConn) QueryRow(_ context.Context, _ string, _ ...any) driver.Row        { return nil }
 func (noopConn) PrepareBatch(_ context.Context, _ string, _ ...driver.PrepareBatchOption) (driver.Batch, error) {
 	return noopBatch{}, nil
 }
@@ -196,12 +196,10 @@ func BenchmarkPushLogsData(b *testing.B) {
 	}
 	exporter.schemaFeatures.EventName = true
 	exporter.insertSQL = "INSERT INTO test"
-	ctx := context.Background()
-
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
-		if err := exporter.pushLogsData(ctx, logs); err != nil {
+		if err := exporter.pushLogsData(b.Context(), logs); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -218,12 +216,11 @@ func BenchmarkPushTraceData(b *testing.B) {
 		cfg:       withDefaultConfig(),
 		insertSQL: "INSERT INTO test",
 	}
-	ctx := context.Background()
 
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
-		if err := exporter.pushTraceData(ctx, traces); err != nil {
+		if err := exporter.pushTraceData(b.Context(), traces); err != nil {
 			b.Fatal(err)
 		}
 	}
