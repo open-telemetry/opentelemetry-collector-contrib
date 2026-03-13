@@ -59,14 +59,16 @@ func TestCreateMetricExporter(t *testing.T) {
 			}),
 		},
 		{
-			name: "with include metadata keys and partitioner",
+			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
-					Sizer: exporterhelper.RequestSizerTypeBytes,
-				})
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
 			}),
 		},
 	}
@@ -115,14 +117,16 @@ func TestCreateLogExporter(t *testing.T) {
 			}),
 		},
 		{
-			name: "with include metadata keys and partitioner",
+			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
-					Sizer: exporterhelper.RequestSizerTypeBytes,
-				})
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
 			}),
 		},
 	}
@@ -171,14 +175,16 @@ func TestCreateTraceExporter(t *testing.T) {
 			}),
 		},
 		{
-			name: "with include metadata keys and partitioner",
+			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
-					Sizer: exporterhelper.RequestSizerTypeBytes,
-				})
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
 			}),
 		},
 	}
@@ -227,14 +233,16 @@ func TestCreateProfileExporter(t *testing.T) {
 			}),
 		},
 		{
-			name: "with include metadata keys and partitioner",
+			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
-					Sizer: exporterhelper.RequestSizerTypeBytes,
-				})
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
 			}),
 		},
 	}
