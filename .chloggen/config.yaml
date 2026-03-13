@@ -195,6 +195,7 @@ components:
     - processor/groupbyattrs
     - processor/groupbytrace
     - processor/hetznerdetector
+    - processor/ibmcloudvpcdetector
     - processor/interval
     - processor/isolationforest
     - processor/k8s_attributes
