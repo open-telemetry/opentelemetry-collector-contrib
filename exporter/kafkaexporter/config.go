@@ -22,7 +22,12 @@ var _ component.Config = (*Config)(nil)
 var errLogsPartitionExclusive = errors.New(
 	"partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled",
 )
-var errTopicMetadataKeyNotIncluded = errors.New("topic_from_metadata_key must be present in include_metadata_keys")
+
+var (
+	errTopicMetadataKeyNotIncluded        = errors.New("topic_from_metadata_key must be present in include_metadata_keys")
+	errBatchPartitionMetadataKeysRequired = errors.New("sending_queue::batch::partition::metadata_keys must be configured when include_metadata_keys is set and batching is enabled")
+	errIncludeMetadataKeysNotPartitioned  = errors.New("sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values")
+)
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
@@ -95,6 +100,9 @@ func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
 	}
+	if err := validateBatchPartitionerKeys(c.QueueBatchConfig, c.IncludeMetadataKeys); err != nil {
+		return err
+	}
 
 	if err := validateTopicFromMetadataKey(c.Logs.TopicFromMetadataKey, c.IncludeMetadataKeys); err != nil {
 		return fmt.Errorf("logs::topic_from_metadata_key: %w", err)
@@ -109,6 +117,42 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("profiles::topic_from_metadata_key: %w", err)
 	}
 	return nil
+}
+
+func validateBatchPartitionerKeys(queueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig], includeMetadataKeys []string) error {
+	if len(includeMetadataKeys) == 0 || !isBatchingEnabled(queueBatchConfig) {
+		return nil
+	}
+
+	partitionMetadataKeys := queueBatchConfig.Get().Batch.Get().Partition.MetadataKeys
+	if len(partitionMetadataKeys) == 0 {
+		return errBatchPartitionMetadataKeysRequired
+	}
+
+	partitionMetadataKeySet := make(map[string]struct{}, len(partitionMetadataKeys))
+	for _, key := range partitionMetadataKeys {
+		partitionMetadataKeySet[key] = struct{}{}
+	}
+
+	for _, includeKey := range includeMetadataKeys {
+		if _, ok := partitionMetadataKeySet[includeKey]; !ok {
+			return fmt.Errorf("%w: missing %q from sending_queue::batch::partition::metadata_keys=%v",
+				errIncludeMetadataKeysNotPartitioned,
+				includeKey,
+				partitionMetadataKeys,
+			)
+		}
+	}
+
+	return nil
+}
+
+func isBatchingEnabled(queueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig]) bool {
+	if !queueBatchConfig.HasValue() {
+		return false
+	}
+
+	return queueBatchConfig.Get().Batch.HasValue()
 }
 
 func validateTopicFromMetadataKey(topicFromMetadataKey string, includeMetadataKeys []string) error {
