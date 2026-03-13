@@ -17,6 +17,8 @@ status:
     emeritus: [rmfitzpatrick]
   unsupported_platforms: [darwin, windows]
 
+reaggregation_enabled: true
+
 sem_conv_version: 1.38.0
 
 tests:
@@ -62,18 +64,23 @@ attributes:
   core:
     description: "The CPU core number when utilising per-CPU metrics."
     type: string
+    requirement_level: recommended
   device_major:
     description: "Device major number for block IO operations."
     type: string
+    requirement_level: recommended
   device_minor:
     description: "Device minor number for block IO operations."
     type: string
+    requirement_level: recommended
   interface:
     description: "Network interface."
     type: string
+    requirement_level: recommended
   operation:
     description: "Type of BlockIO operation."
     type: string
+    requirement_level: recommended
 
 metrics:
   # CPU

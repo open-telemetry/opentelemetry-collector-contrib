@@ -25,6 +25,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "source"
+            default:
+              - "source"
       postgresql.bgwriter.checkpoint.count:
         description: "PostgresqlBgwriterCheckpointCountConfig provides config for the postgresql.bgwriter.checkpoint.count metric."
         type: object
@@ -32,6 +48,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       postgresql.bgwriter.duration:
         description: "PostgresqlBgwriterDurationConfig provides config for the postgresql.bgwriter.duration metric."
         type: object
@@ -39,6 +71,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       postgresql.bgwriter.maxwritten:
         description: "PostgresqlBgwriterMaxwrittenConfig provides config for the postgresql.bgwriter.maxwritten metric."
         type: object
@@ -67,6 +115,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "source"
+            default:
+              - "source"
       postgresql.commits:
         description: "PostgresqlCommitsConfig provides config for the postgresql.commits metric."
         type: object
@@ -95,6 +159,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "relation"
+                - "mode"
+                - "lock_type"
+            default:
+              - "relation"
+              - "mode"
+              - "lock_type"
       postgresql.db_size:
         description: "PostgresqlDbSizeConfig provides config for the postgresql.db_size metric."
         type: object
@@ -116,6 +200,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "function"
+            default:
+              - "function"
       postgresql.index.scans:
         description: "PostgresqlIndexScansConfig provides config for the postgresql.index.scans metric."
         type: object
@@ -137,6 +237,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       postgresql.replication.data_delay:
         description: "PostgresqlReplicationDataDelayConfig provides config for the postgresql.replication.data_delay metric."
         type: object
@@ -144,6 +260,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "replication_client"
+            default:
+              - "replication_client"
       postgresql.rollbacks:
         description: "PostgresqlRollbacksConfig provides config for the postgresql.rollbacks metric."
         type: object
@@ -158,6 +290,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       postgresql.sequential_scans:
         description: "PostgresqlSequentialScansConfig provides config for the postgresql.sequential_scans metric."
         type: object
@@ -249,6 +397,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "replication_client"
+            default:
+              - "operation"
+              - "replication_client"
       postgresql.wal.lag:
         description: "PostgresqlWalLagConfig provides config for the postgresql.wal.lag metric."
         type: object
@@ -256,6 +422,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "replication_client"
+            default:
+              - "operation"
+              - "replication_client"
   events_config:
     description: EventsConfig provides config for postgresql events.
     type: object
