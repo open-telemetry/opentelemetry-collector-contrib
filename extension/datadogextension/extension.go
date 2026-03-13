@@ -125,6 +125,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.configs.extension.API.Site,
 		fullConfig,
 		e.configs.extension.DeploymentType,
+		e.configs.extension.InstallationMethod,
 		buildInfo,
 		int64(payloadTTL),
 	)

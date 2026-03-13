@@ -4,6 +4,9 @@ properties:
   aggregation_interval:
     type: string
     format: duration
+  counter_type:
+    description: 'CounterType specifies how counter values are represented in exported metrics. Valid values: "int" (default), "float", "stochastic_int".'
+    $ref: ./protocol.counter_type
   enable_ip_only_aggregation:
     type: boolean
   enable_metric_type:

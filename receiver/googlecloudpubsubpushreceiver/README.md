@@ -25,10 +25,10 @@ All received data is parsed into OpenTelemetry format using configurable encodin
 receivers:
   googlecloudpubsubpush:
     endpoint: :8080
-    encoding: googlecloudlogentry_encoding
+    encoding: google_cloud_logentry_encoding
 
 extensions:
-  googlecloudlogentry_encoding:
+  google_cloud_logentry_encoding:
 ```
 
 ## Difference to the current google pub sub receiver

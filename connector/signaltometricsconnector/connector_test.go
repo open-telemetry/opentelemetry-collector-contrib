@@ -365,6 +365,7 @@ func assertAggregatedMetrics(t *testing.T, expected, actual pmetric.Metrics) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
 	))
 }
 
