@@ -870,6 +870,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 type ResourceAttributesConfig struct {
 	HaproxyAddr        ResourceAttributeConfig `mapstructure:"haproxy.addr"`
 	HaproxyProxyName   ResourceAttributeConfig `mapstructure:"haproxy.proxy_name"`
+	HaproxyServerState ResourceAttributeConfig `mapstructure:"haproxy.server.state"`
 	HaproxyServiceName ResourceAttributeConfig `mapstructure:"haproxy.service_name"`
 }
 
@@ -880,6 +881,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		HaproxyProxyName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		HaproxyServerState: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		HaproxyServiceName: ResourceAttributeConfig{
 			Enabled: true,

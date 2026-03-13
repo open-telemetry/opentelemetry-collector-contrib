@@ -2053,6 +2053,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.HaproxyServerState.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["haproxy.server.state"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServerState.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.HaproxyServerState.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["haproxy.server.state"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServerState.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude)
 	}
