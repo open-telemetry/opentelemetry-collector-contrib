@@ -287,6 +287,9 @@ by specifying a list of attributes that should be included in the final metrics.
 If no attributes are specified for `include_resource_attributes` then no filtering
 is performed i.e. all resource attributes of the incoming data is considered.
 
+Each entry uses either `key` (exact match) or `prefix` (wildcard match by prefix).
+Exactly one of `key` or `prefix` must be set per entry.
+
 ```yaml
 include_resource_attributes:
   - key: resource.foo # Include resource.foo attribute if present
@@ -294,10 +297,10 @@ include_resource_attributes:
     default_value: bar
   - key: resource.baz # Optional resource.baz attribute is added if present
     optional: true
+  - prefix: "labels." # Include all attributes starting with "labels."
 ```
 
-With the above configuration the produced metrics would have the following
-resource attributes:
+#### key-based entries
 
 - `resource.foo` will be present for the produced metrics if the incoming data also
   has the attribute defined. If the attribute is missing in the incoming data the
@@ -309,6 +312,41 @@ resource attributes:
   are basically an include list, the `optional` option is a no-op i.e. the resource
   attributes with `optional` set to `true` behaves identical to an attribute configured
   without `default_value` or `optional`.
+
+#### prefix-based entries
+
+A `prefix` entry includes all resource attributes whose key starts with the given
+string. This is useful when the exact attribute names are not known ahead of time
+(e.g. dynamic labels injected by an upstream component).
+
+```yaml
+include_resource_attributes:
+  - key: service.name
+  - prefix: "labels."
+  - prefix: "numeric_labels."
+```
+
+With the above configuration, `service.name` is always included, and any resource
+attributes matching `labels.*` or `numeric_labels.*` are included dynamically.
+
+Prefix entries are implicitly optional -- if no attributes match the prefix, the
+metric is still produced. Prefix entries cannot have `default_value` or `optional`
+set.
+
+The `prefix` field also works for event-level `attributes`. In that context,
+prefix entries are treated as optional: they never block metric production when
+no matching attributes exist.
+
+### Validation
+
+All `include_resource_attributes` and `attributes` entries are validated at
+startup. Each entry must have exactly one of `key` or `prefix` set. Invalid
+entries (missing both, setting both, or using unsupported combinations like
+`prefix` with `default_value`) will cause the connector to fail to start.
+
+> **Note:** Prior versions did not validate `include_resource_attributes`
+> entries. Existing configurations with invalid entries that were previously
+> silently accepted will now be rejected.
 
 ### Single writer
 

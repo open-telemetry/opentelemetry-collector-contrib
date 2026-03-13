@@ -125,6 +125,60 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
+			path: "prefix_with_key",
+			errorMsgs: []string{
+				fullErrorForSignal(t, "spans", "include_resource_attributes validation failed: exactly one of key or prefix must be set"),
+				fullErrorForSignal(t, "datapoints", "include_resource_attributes validation failed: exactly one of key or prefix must be set"),
+				fullErrorForSignal(t, "logs", "include_resource_attributes validation failed: exactly one of key or prefix must be set"),
+				fullErrorForSignal(t, "profiles", "include_resource_attributes validation failed: exactly one of key or prefix must be set"),
+			},
+		},
+		{
+			path: "prefix_with_default_value",
+			errorMsgs: []string{
+				fullErrorForSignal(t, "spans", `include_resource_attributes validation failed: prefix attribute "labels." cannot have a default_value`),
+				fullErrorForSignal(t, "datapoints", `include_resource_attributes validation failed: prefix attribute "labels." cannot have a default_value`),
+				fullErrorForSignal(t, "logs", `include_resource_attributes validation failed: prefix attribute "labels." cannot have a default_value`),
+				fullErrorForSignal(t, "profiles", `include_resource_attributes validation failed: prefix attribute "labels." cannot have a default_value`),
+			},
+		},
+		{
+			path: "prefix_with_optional",
+			errorMsgs: []string{
+				fullErrorForSignal(t, "spans", `include_resource_attributes validation failed: prefix attribute "labels." cannot set optional`),
+				fullErrorForSignal(t, "datapoints", `include_resource_attributes validation failed: prefix attribute "labels." cannot set optional`),
+				fullErrorForSignal(t, "logs", `include_resource_attributes validation failed: prefix attribute "labels." cannot set optional`),
+				fullErrorForSignal(t, "profiles", `include_resource_attributes validation failed: prefix attribute "labels." cannot set optional`),
+			},
+		},
+		{
+			path: "empty_key_and_prefix",
+			errorMsgs: []string{
+				fullErrorForSignal(t, "spans", "include_resource_attributes validation failed: exactly one of key or prefix must be set"),
+				fullErrorForSignal(t, "datapoints", "include_resource_attributes validation failed: exactly one of key or prefix must be set"),
+				fullErrorForSignal(t, "logs", "include_resource_attributes validation failed: exactly one of key or prefix must be set"),
+				fullErrorForSignal(t, "profiles", "include_resource_attributes validation failed: exactly one of key or prefix must be set"),
+			},
+		},
+		{
+			path: "valid_with_prefix",
+			expected: &Config{
+				Spans: []MetricInfo{
+					{
+						Name: "span.sum",
+						IncludeResourceAttributes: []Attribute{
+							{Key: "service.name"},
+							{Prefix: "labels."},
+							{Prefix: "numeric_labels."},
+						},
+						Sum: configoptional.Some(Sum{
+							Value: "1",
+						}),
+					},
+				},
+			},
+		},
+		{
 			path: "valid_full",
 			expected: &Config{
 				Spans: []MetricInfo{

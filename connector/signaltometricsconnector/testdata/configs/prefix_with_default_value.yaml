@@ -1,0 +1,29 @@
+signal_to_metrics:
+  spans:
+    - name: span.sum
+      include_resource_attributes:
+        - prefix: "labels."
+          default_value: foo
+      sum:
+        value: "1"
+  datapoints:
+    - name: dp.sum
+      include_resource_attributes:
+        - prefix: "labels."
+          default_value: foo
+      sum:
+        value: "1"
+  logs:
+    - name: log.sum
+      include_resource_attributes:
+        - prefix: "labels."
+          default_value: foo
+      sum:
+        value: "1"
+  profiles:
+    - name: profile.sum
+      include_resource_attributes:
+        - prefix: "labels."
+          default_value: foo
+      sum:
+        value: "1"

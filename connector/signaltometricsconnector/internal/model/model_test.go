@@ -77,6 +77,39 @@ func TestFilterResourceAttributes(t *testing.T) {
 				"signal_to_metrics.service.instance.id": testServiceInstanceID,
 			},
 		},
+		{
+			name: "include_resource_attributes_with_prefix",
+			includeResourceAttributes: []AttributeKeyValue{
+				testAttributeKeyValue(t, "key.1", false, nil),
+				testPrefixAttributeKeyValue("key."),
+			},
+			expected: map[string]any{
+				"key.1": "val.1",
+				"key.2": true,
+				"key.3": int64(11),
+				"key.4": "val.4",
+				"signal_to_metrics.service.instance.id": testServiceInstanceID,
+			},
+		},
+		{
+			name: "include_resource_attributes_with_prefix_partial_match",
+			includeResourceAttributes: []AttributeKeyValue{
+				testPrefixAttributeKeyValue("key.1"),
+			},
+			expected: map[string]any{
+				"key.1": "val.1",
+				"signal_to_metrics.service.instance.id": testServiceInstanceID,
+			},
+		},
+		{
+			name: "include_resource_attributes_with_prefix_no_match",
+			includeResourceAttributes: []AttributeKeyValue{
+				testPrefixAttributeKeyValue("labels."),
+			},
+			expected: map[string]any{
+				"signal_to_metrics.service.instance.id": testServiceInstanceID,
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			md := MetricDef[*ottlspan.TransformContext]{
@@ -146,6 +179,31 @@ func TestFilterAttributes(t *testing.T) {
 				"key.2": true,
 			},
 		},
+		{
+			name: "attributes_configured_with_prefix",
+			attributes: []AttributeKeyValue{
+				testAttributeKeyValue(t, "key.1", false, nil),
+				testPrefixAttributeKeyValue("key."),
+			},
+			expectedDecision: true,
+			expectedAttributes: map[string]any{
+				"key.1": "val.1",
+				"key.2": true,
+				"key.3": int64(11),
+				"key.4": "val.4",
+			},
+		},
+		{
+			name: "attributes_configured_with_prefix_no_match_still_processes",
+			attributes: []AttributeKeyValue{
+				testAttributeKeyValue(t, "key.1", false, nil),
+				testPrefixAttributeKeyValue("labels."),
+			},
+			expectedDecision: true,
+			expectedAttributes: map[string]any{
+				"key.1": "val.1",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			md := MetricDef[*ottlspan.TransformContext]{
@@ -187,5 +245,12 @@ func testAttributeKeyValue(
 		Key:          k,
 		Optional:     optional,
 		DefaultValue: defaultVal,
+	}
+}
+
+func testPrefixAttributeKeyValue(prefix string) AttributeKeyValue {
+	return AttributeKeyValue{
+		Prefix:       prefix,
+		DefaultValue: pcommon.NewValueEmpty(),
 	}
 }

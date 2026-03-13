@@ -169,6 +169,11 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 
 type Attribute struct {
 	Key          string `mapstructure:"key"`
+	// Prefix matches all attributes whose key starts with this string.
+	// Each Attribute must set exactly one of Key or Prefix.
+	// Prefix entries are always optional (they never block metric
+	// production) and cannot specify DefaultValue or Optional.
+	Prefix       string `mapstructure:"prefix"`
 	Optional     bool   `mapstructure:"optional"`
 	DefaultValue any    `mapstructure:"default_value"`
 	// prevent unkeyed literal initialization
@@ -240,24 +245,57 @@ func (mi *MetricInfo) ensureDefaults() {
 	}
 }
 
+func (mi *MetricInfo) validateIncludeResourceAttributes() error {
+	tmp := pcommon.NewValueEmpty()
+	duplicate := map[string]struct{}{}
+	for _, attr := range mi.IncludeResourceAttributes {
+		if err := validateAttribute(attr, tmp, duplicate); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (mi *MetricInfo) validateAttributes() error {
 	tmp := pcommon.NewValueEmpty()
 	duplicate := map[string]struct{}{}
 	for _, attr := range mi.Attributes {
-		if attr.Key == "" {
-			return errors.New("attribute key missing")
+		if err := validateAttribute(attr, tmp, duplicate); err != nil {
+			return err
 		}
-		if attr.DefaultValue != nil && attr.Optional {
-			return errors.New("only one of default_value or optional should be set")
-		}
-		if _, ok := duplicate[attr.Key]; ok {
-			return fmt.Errorf("duplicate key found in attributes config: %s", attr.Key)
-		}
-		if err := tmp.FromRaw(attr.DefaultValue); err != nil {
-			return fmt.Errorf("invalid default value specified for attribute %s", attr.Key)
-		}
-		duplicate[attr.Key] = struct{}{}
 	}
+	return nil
+}
+
+func validateAttribute(attr Attribute, tmp pcommon.Value, duplicate map[string]struct{}) error {
+	hasKey := attr.Key != ""
+	hasPrefix := attr.Prefix != ""
+	if hasKey == hasPrefix {
+		return errors.New("exactly one of key or prefix must be set for an attribute")
+	}
+	if hasPrefix {
+		if attr.DefaultValue != nil {
+			return fmt.Errorf("prefix attribute %q cannot have a default_value", attr.Prefix)
+		}
+		if attr.Optional {
+			return fmt.Errorf("prefix attribute %q cannot set optional (prefix entries are implicitly optional)", attr.Prefix)
+		}
+		if _, ok := duplicate[attr.Prefix]; ok {
+			return fmt.Errorf("duplicate prefix found in attributes config: %s", attr.Prefix)
+		}
+		duplicate[attr.Prefix] = struct{}{}
+		return nil
+	}
+	if attr.DefaultValue != nil && attr.Optional {
+		return errors.New("only one of default_value or optional should be set")
+	}
+	if _, ok := duplicate[attr.Key]; ok {
+		return fmt.Errorf("duplicate key found in attributes config: %s", attr.Key)
+	}
+	if err := tmp.FromRaw(attr.DefaultValue); err != nil {
+		return fmt.Errorf("invalid default value specified for attribute %s", attr.Key)
+	}
+	duplicate[attr.Key] = struct{}{}
 	return nil
 }
 
@@ -308,6 +346,9 @@ func (mi *MetricInfo) validateGauge() error {
 func validateMetricInfo[K any](mi *MetricInfo, parser ottl.Parser[K]) error {
 	if mi.Name == "" {
 		return errors.New("missing required metric name configuration")
+	}
+	if err := mi.validateIncludeResourceAttributes(); err != nil {
+		return fmt.Errorf("include_resource_attributes validation failed: %w", err)
 	}
 	if err := mi.validateAttributes(); err != nil {
 		return fmt.Errorf("attributes validation failed: %w", err)

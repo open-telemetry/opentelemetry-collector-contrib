@@ -6,6 +6,7 @@ package model // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,6 +18,7 @@ import (
 
 type AttributeKeyValue struct {
 	Key          string
+	Prefix       string
 	Optional     bool
 	DefaultValue pcommon.Value
 }
@@ -233,7 +235,7 @@ func (md *MetricDef[K]) FilterResourceAttributes(
 func (md *MetricDef[K]) FilterAttributes(attrs pcommon.Map) (pcommon.Map, bool) {
 	// Figure out if all the attributes are available, saves allocation
 	for _, filter := range md.Attributes {
-		if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty || filter.Optional {
+		if filter.Prefix != "" || filter.DefaultValue.Type() != pcommon.ValueTypeEmpty || filter.Optional {
 			continue
 		}
 		if _, ok := attrs.Get(filter.Key); !ok {
@@ -247,6 +249,15 @@ func filterAttributes(attrs pcommon.Map, filters []AttributeKeyValue, expectedLe
 	filteredAttrs := pcommon.NewMap()
 	filteredAttrs.EnsureCapacity(expectedLen)
 	for _, filter := range filters {
+		if filter.Prefix != "" {
+			attrs.Range(func(k string, v pcommon.Value) bool {
+				if strings.HasPrefix(k, filter.Prefix) {
+					v.CopyTo(filteredAttrs.PutEmpty(k))
+				}
+				return true
+			})
+			continue
+		}
 		if attr, ok := attrs.Get(filter.Key); ok {
 			attr.CopyTo(filteredAttrs.PutEmpty(filter.Key))
 			continue
@@ -268,6 +279,7 @@ func parseAttributeConfigs(cfgs []config.Attribute) ([]AttributeKeyValue, error)
 		}
 		kvs[i] = AttributeKeyValue{
 			Key:          attr.Key,
+			Prefix:       attr.Prefix,
 			Optional:     attr.Optional,
 			DefaultValue: val,
 		}
