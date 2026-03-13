@@ -361,7 +361,7 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 	}
 }
 
-func TestDynamicMemoryLimitRefresh(t *testing.T) {
+func TestDynamicMemoryLimitRefreshSudo(t *testing.T) {
 	checkCgroupSystem(t)
 
 	cgroupPath, err := cgroup2.PidGroupPath(os.Getpid())
