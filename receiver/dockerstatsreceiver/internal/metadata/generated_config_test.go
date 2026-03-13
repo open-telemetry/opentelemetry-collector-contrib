@@ -26,77 +26,253 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoMergedRecursive:          MetricConfig{Enabled: true},
-					ContainerBlockioIoQueuedRecursive:          MetricConfig{Enabled: true},
-					ContainerBlockioIoServiceBytesRecursive:    MetricConfig{Enabled: true},
-					ContainerBlockioIoServiceTimeRecursive:     MetricConfig{Enabled: true},
-					ContainerBlockioIoServicedRecursive:        MetricConfig{Enabled: true},
-					ContainerBlockioIoTimeRecursive:            MetricConfig{Enabled: true},
-					ContainerBlockioIoWaitTimeRecursive:        MetricConfig{Enabled: true},
-					ContainerBlockioSectorsRecursive:           MetricConfig{Enabled: true},
-					ContainerCPULimit:                          MetricConfig{Enabled: true},
-					ContainerCPULogicalCount:                   MetricConfig{Enabled: true},
-					ContainerCPUShares:                         MetricConfig{Enabled: true},
-					ContainerCPUThrottlingDataPeriods:          MetricConfig{Enabled: true},
-					ContainerCPUThrottlingDataThrottledPeriods: MetricConfig{Enabled: true},
-					ContainerCPUThrottlingDataThrottledTime:    MetricConfig{Enabled: true},
-					ContainerCPUUsageKernelmode:                MetricConfig{Enabled: true},
-					ContainerCPUUsagePercpu:                    MetricConfig{Enabled: true},
-					ContainerCPUUsageSystem:                    MetricConfig{Enabled: true},
-					ContainerCPUUsageTotal:                     MetricConfig{Enabled: true},
-					ContainerCPUUsageUsermode:                  MetricConfig{Enabled: true},
-					ContainerCPUUtilization:                    MetricConfig{Enabled: true},
-					ContainerMemoryActiveAnon:                  MetricConfig{Enabled: true},
-					ContainerMemoryActiveFile:                  MetricConfig{Enabled: true},
-					ContainerMemoryAnon:                        MetricConfig{Enabled: true},
-					ContainerMemoryCache:                       MetricConfig{Enabled: true},
-					ContainerMemoryDirty:                       MetricConfig{Enabled: true},
-					ContainerMemoryFails:                       MetricConfig{Enabled: true},
-					ContainerMemoryFile:                        MetricConfig{Enabled: true},
-					ContainerMemoryHierarchicalMemoryLimit:     MetricConfig{Enabled: true},
-					ContainerMemoryHierarchicalMemswLimit:      MetricConfig{Enabled: true},
-					ContainerMemoryInactiveAnon:                MetricConfig{Enabled: true},
-					ContainerMemoryInactiveFile:                MetricConfig{Enabled: true},
-					ContainerMemoryMappedFile:                  MetricConfig{Enabled: true},
-					ContainerMemoryPercent:                     MetricConfig{Enabled: true},
-					ContainerMemoryPgfault:                     MetricConfig{Enabled: true},
-					ContainerMemoryPgmajfault:                  MetricConfig{Enabled: true},
-					ContainerMemoryPgpgin:                      MetricConfig{Enabled: true},
-					ContainerMemoryPgpgout:                     MetricConfig{Enabled: true},
-					ContainerMemoryRss:                         MetricConfig{Enabled: true},
-					ContainerMemoryRssHuge:                     MetricConfig{Enabled: true},
-					ContainerMemoryTotalActiveAnon:             MetricConfig{Enabled: true},
-					ContainerMemoryTotalActiveFile:             MetricConfig{Enabled: true},
-					ContainerMemoryTotalCache:                  MetricConfig{Enabled: true},
-					ContainerMemoryTotalDirty:                  MetricConfig{Enabled: true},
-					ContainerMemoryTotalInactiveAnon:           MetricConfig{Enabled: true},
-					ContainerMemoryTotalInactiveFile:           MetricConfig{Enabled: true},
-					ContainerMemoryTotalMappedFile:             MetricConfig{Enabled: true},
-					ContainerMemoryTotalPgfault:                MetricConfig{Enabled: true},
-					ContainerMemoryTotalPgmajfault:             MetricConfig{Enabled: true},
-					ContainerMemoryTotalPgpgin:                 MetricConfig{Enabled: true},
-					ContainerMemoryTotalPgpgout:                MetricConfig{Enabled: true},
-					ContainerMemoryTotalRss:                    MetricConfig{Enabled: true},
-					ContainerMemoryTotalRssHuge:                MetricConfig{Enabled: true},
-					ContainerMemoryTotalUnevictable:            MetricConfig{Enabled: true},
-					ContainerMemoryTotalWriteback:              MetricConfig{Enabled: true},
-					ContainerMemoryUnevictable:                 MetricConfig{Enabled: true},
-					ContainerMemoryUsageLimit:                  MetricConfig{Enabled: true},
-					ContainerMemoryUsageMax:                    MetricConfig{Enabled: true},
-					ContainerMemoryUsageTotal:                  MetricConfig{Enabled: true},
-					ContainerMemoryWriteback:                   MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageRxBytes:             MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageRxDropped:           MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageRxErrors:            MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageRxPackets:           MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageTxBytes:             MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageTxDropped:           MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageTxErrors:            MetricConfig{Enabled: true},
-					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: true},
-					ContainerPidsCount:                         MetricConfig{Enabled: true},
-					ContainerPidsLimit:                         MetricConfig{Enabled: true},
-					ContainerRestarts:                          MetricConfig{Enabled: true},
-					ContainerUptime:                            MetricConfig{Enabled: true},
+					ContainerBlockioIoMergedRecursive: ContainerBlockioIoMergedRecursiveConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoMergedRecursiveAttributeKey{ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoMergedRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoQueuedRecursive: ContainerBlockioIoQueuedRecursiveConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoQueuedRecursiveAttributeKey{ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoQueuedRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoServiceBytesRecursive: ContainerBlockioIoServiceBytesRecursiveConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoServiceBytesRecursiveAttributeKey{ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServiceBytesRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoServiceTimeRecursive: ContainerBlockioIoServiceTimeRecursiveConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoServiceTimeRecursiveAttributeKey{ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServiceTimeRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoServicedRecursive: ContainerBlockioIoServicedRecursiveConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoServicedRecursiveAttributeKey{ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServicedRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoTimeRecursive: ContainerBlockioIoTimeRecursiveConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoTimeRecursiveAttributeKey{ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoTimeRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoWaitTimeRecursive: ContainerBlockioIoWaitTimeRecursiveConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoWaitTimeRecursiveAttributeKey{ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoWaitTimeRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioSectorsRecursive: ContainerBlockioSectorsRecursiveConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioSectorsRecursiveAttributeKey{ContainerBlockioSectorsRecursiveAttributeKeyDeviceMajor, ContainerBlockioSectorsRecursiveAttributeKeyDeviceMinor, ContainerBlockioSectorsRecursiveAttributeKeyOperation},
+					},
+					ContainerCPULimit: ContainerCPULimitConfig{
+						Enabled: true,
+					},
+					ContainerCPULogicalCount: ContainerCPULogicalCountConfig{
+						Enabled: true,
+					},
+					ContainerCPUShares: ContainerCPUSharesConfig{
+						Enabled: true,
+					},
+					ContainerCPUThrottlingDataPeriods: ContainerCPUThrottlingDataPeriodsConfig{
+						Enabled: true,
+					},
+					ContainerCPUThrottlingDataThrottledPeriods: ContainerCPUThrottlingDataThrottledPeriodsConfig{
+						Enabled: true,
+					},
+					ContainerCPUThrottlingDataThrottledTime: ContainerCPUThrottlingDataThrottledTimeConfig{
+						Enabled: true,
+					},
+					ContainerCPUUsageKernelmode: ContainerCPUUsageKernelmodeConfig{
+						Enabled: true,
+					},
+					ContainerCPUUsagePercpu: ContainerCPUUsagePercpuConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerCPUUsagePercpuAttributeKey{ContainerCPUUsagePercpuAttributeKeyCore},
+					},
+					ContainerCPUUsageSystem: ContainerCPUUsageSystemConfig{
+						Enabled: true,
+					},
+					ContainerCPUUsageTotal: ContainerCPUUsageTotalConfig{
+						Enabled: true,
+					},
+					ContainerCPUUsageUsermode: ContainerCPUUsageUsermodeConfig{
+						Enabled: true,
+					},
+					ContainerCPUUtilization: ContainerCPUUtilizationConfig{
+						Enabled: true,
+					},
+					ContainerMemoryActiveAnon: ContainerMemoryActiveAnonConfig{
+						Enabled: true,
+					},
+					ContainerMemoryActiveFile: ContainerMemoryActiveFileConfig{
+						Enabled: true,
+					},
+					ContainerMemoryAnon: ContainerMemoryAnonConfig{
+						Enabled: true,
+					},
+					ContainerMemoryCache: ContainerMemoryCacheConfig{
+						Enabled: true,
+					},
+					ContainerMemoryDirty: ContainerMemoryDirtyConfig{
+						Enabled: true,
+					},
+					ContainerMemoryFails: ContainerMemoryFailsConfig{
+						Enabled: true,
+					},
+					ContainerMemoryFile: ContainerMemoryFileConfig{
+						Enabled: true,
+					},
+					ContainerMemoryHierarchicalMemoryLimit: ContainerMemoryHierarchicalMemoryLimitConfig{
+						Enabled: true,
+					},
+					ContainerMemoryHierarchicalMemswLimit: ContainerMemoryHierarchicalMemswLimitConfig{
+						Enabled: true,
+					},
+					ContainerMemoryInactiveAnon: ContainerMemoryInactiveAnonConfig{
+						Enabled: true,
+					},
+					ContainerMemoryInactiveFile: ContainerMemoryInactiveFileConfig{
+						Enabled: true,
+					},
+					ContainerMemoryMappedFile: ContainerMemoryMappedFileConfig{
+						Enabled: true,
+					},
+					ContainerMemoryPercent: ContainerMemoryPercentConfig{
+						Enabled: true,
+					},
+					ContainerMemoryPgfault: ContainerMemoryPgfaultConfig{
+						Enabled: true,
+					},
+					ContainerMemoryPgmajfault: ContainerMemoryPgmajfaultConfig{
+						Enabled: true,
+					},
+					ContainerMemoryPgpgin: ContainerMemoryPgpginConfig{
+						Enabled: true,
+					},
+					ContainerMemoryPgpgout: ContainerMemoryPgpgoutConfig{
+						Enabled: true,
+					},
+					ContainerMemoryRss: ContainerMemoryRssConfig{
+						Enabled: true,
+					},
+					ContainerMemoryRssHuge: ContainerMemoryRssHugeConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalActiveAnon: ContainerMemoryTotalActiveAnonConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalActiveFile: ContainerMemoryTotalActiveFileConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalCache: ContainerMemoryTotalCacheConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalDirty: ContainerMemoryTotalDirtyConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalInactiveAnon: ContainerMemoryTotalInactiveAnonConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalInactiveFile: ContainerMemoryTotalInactiveFileConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalMappedFile: ContainerMemoryTotalMappedFileConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalPgfault: ContainerMemoryTotalPgfaultConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalPgmajfault: ContainerMemoryTotalPgmajfaultConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalPgpgin: ContainerMemoryTotalPgpginConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalPgpgout: ContainerMemoryTotalPgpgoutConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalRss: ContainerMemoryTotalRssConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalRssHuge: ContainerMemoryTotalRssHugeConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalUnevictable: ContainerMemoryTotalUnevictableConfig{
+						Enabled: true,
+					},
+					ContainerMemoryTotalWriteback: ContainerMemoryTotalWritebackConfig{
+						Enabled: true,
+					},
+					ContainerMemoryUnevictable: ContainerMemoryUnevictableConfig{
+						Enabled: true,
+					},
+					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitConfig{
+						Enabled: true,
+					},
+					ContainerMemoryUsageMax: ContainerMemoryUsageMaxConfig{
+						Enabled: true,
+					},
+					ContainerMemoryUsageTotal: ContainerMemoryUsageTotalConfig{
+						Enabled: true,
+					},
+					ContainerMemoryWriteback: ContainerMemoryWritebackConfig{
+						Enabled: true,
+					},
+					ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageRxBytesAttributeKey{ContainerNetworkIoUsageRxBytesAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageRxDropped: ContainerNetworkIoUsageRxDroppedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageRxDroppedAttributeKey{ContainerNetworkIoUsageRxDroppedAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageRxErrors: ContainerNetworkIoUsageRxErrorsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageRxErrorsAttributeKey{ContainerNetworkIoUsageRxErrorsAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageRxPackets: ContainerNetworkIoUsageRxPacketsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageRxPacketsAttributeKey{ContainerNetworkIoUsageRxPacketsAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageTxBytesAttributeKey{ContainerNetworkIoUsageTxBytesAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageTxDropped: ContainerNetworkIoUsageTxDroppedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageTxDroppedAttributeKey{ContainerNetworkIoUsageTxDroppedAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageTxErrors: ContainerNetworkIoUsageTxErrorsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageTxErrorsAttributeKey{ContainerNetworkIoUsageTxErrorsAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageTxPackets: ContainerNetworkIoUsageTxPacketsConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageTxPacketsAttributeKey{ContainerNetworkIoUsageTxPacketsAttributeKeyInterface},
+					},
+					ContainerPidsCount: ContainerPidsCountConfig{
+						Enabled: true,
+					},
+					ContainerPidsLimit: ContainerPidsLimitConfig{
+						Enabled: true,
+					},
+					ContainerRestarts: ContainerRestartsConfig{
+						Enabled: true,
+					},
+					ContainerUptime: ContainerUptimeConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerCommandLine: ResourceAttributeConfig{Enabled: true},
@@ -113,77 +289,253 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoMergedRecursive:          MetricConfig{Enabled: false},
-					ContainerBlockioIoQueuedRecursive:          MetricConfig{Enabled: false},
-					ContainerBlockioIoServiceBytesRecursive:    MetricConfig{Enabled: false},
-					ContainerBlockioIoServiceTimeRecursive:     MetricConfig{Enabled: false},
-					ContainerBlockioIoServicedRecursive:        MetricConfig{Enabled: false},
-					ContainerBlockioIoTimeRecursive:            MetricConfig{Enabled: false},
-					ContainerBlockioIoWaitTimeRecursive:        MetricConfig{Enabled: false},
-					ContainerBlockioSectorsRecursive:           MetricConfig{Enabled: false},
-					ContainerCPULimit:                          MetricConfig{Enabled: false},
-					ContainerCPULogicalCount:                   MetricConfig{Enabled: false},
-					ContainerCPUShares:                         MetricConfig{Enabled: false},
-					ContainerCPUThrottlingDataPeriods:          MetricConfig{Enabled: false},
-					ContainerCPUThrottlingDataThrottledPeriods: MetricConfig{Enabled: false},
-					ContainerCPUThrottlingDataThrottledTime:    MetricConfig{Enabled: false},
-					ContainerCPUUsageKernelmode:                MetricConfig{Enabled: false},
-					ContainerCPUUsagePercpu:                    MetricConfig{Enabled: false},
-					ContainerCPUUsageSystem:                    MetricConfig{Enabled: false},
-					ContainerCPUUsageTotal:                     MetricConfig{Enabled: false},
-					ContainerCPUUsageUsermode:                  MetricConfig{Enabled: false},
-					ContainerCPUUtilization:                    MetricConfig{Enabled: false},
-					ContainerMemoryActiveAnon:                  MetricConfig{Enabled: false},
-					ContainerMemoryActiveFile:                  MetricConfig{Enabled: false},
-					ContainerMemoryAnon:                        MetricConfig{Enabled: false},
-					ContainerMemoryCache:                       MetricConfig{Enabled: false},
-					ContainerMemoryDirty:                       MetricConfig{Enabled: false},
-					ContainerMemoryFails:                       MetricConfig{Enabled: false},
-					ContainerMemoryFile:                        MetricConfig{Enabled: false},
-					ContainerMemoryHierarchicalMemoryLimit:     MetricConfig{Enabled: false},
-					ContainerMemoryHierarchicalMemswLimit:      MetricConfig{Enabled: false},
-					ContainerMemoryInactiveAnon:                MetricConfig{Enabled: false},
-					ContainerMemoryInactiveFile:                MetricConfig{Enabled: false},
-					ContainerMemoryMappedFile:                  MetricConfig{Enabled: false},
-					ContainerMemoryPercent:                     MetricConfig{Enabled: false},
-					ContainerMemoryPgfault:                     MetricConfig{Enabled: false},
-					ContainerMemoryPgmajfault:                  MetricConfig{Enabled: false},
-					ContainerMemoryPgpgin:                      MetricConfig{Enabled: false},
-					ContainerMemoryPgpgout:                     MetricConfig{Enabled: false},
-					ContainerMemoryRss:                         MetricConfig{Enabled: false},
-					ContainerMemoryRssHuge:                     MetricConfig{Enabled: false},
-					ContainerMemoryTotalActiveAnon:             MetricConfig{Enabled: false},
-					ContainerMemoryTotalActiveFile:             MetricConfig{Enabled: false},
-					ContainerMemoryTotalCache:                  MetricConfig{Enabled: false},
-					ContainerMemoryTotalDirty:                  MetricConfig{Enabled: false},
-					ContainerMemoryTotalInactiveAnon:           MetricConfig{Enabled: false},
-					ContainerMemoryTotalInactiveFile:           MetricConfig{Enabled: false},
-					ContainerMemoryTotalMappedFile:             MetricConfig{Enabled: false},
-					ContainerMemoryTotalPgfault:                MetricConfig{Enabled: false},
-					ContainerMemoryTotalPgmajfault:             MetricConfig{Enabled: false},
-					ContainerMemoryTotalPgpgin:                 MetricConfig{Enabled: false},
-					ContainerMemoryTotalPgpgout:                MetricConfig{Enabled: false},
-					ContainerMemoryTotalRss:                    MetricConfig{Enabled: false},
-					ContainerMemoryTotalRssHuge:                MetricConfig{Enabled: false},
-					ContainerMemoryTotalUnevictable:            MetricConfig{Enabled: false},
-					ContainerMemoryTotalWriteback:              MetricConfig{Enabled: false},
-					ContainerMemoryUnevictable:                 MetricConfig{Enabled: false},
-					ContainerMemoryUsageLimit:                  MetricConfig{Enabled: false},
-					ContainerMemoryUsageMax:                    MetricConfig{Enabled: false},
-					ContainerMemoryUsageTotal:                  MetricConfig{Enabled: false},
-					ContainerMemoryWriteback:                   MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageRxBytes:             MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageRxDropped:           MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageRxErrors:            MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageRxPackets:           MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageTxBytes:             MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageTxDropped:           MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageTxErrors:            MetricConfig{Enabled: false},
-					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: false},
-					ContainerPidsCount:                         MetricConfig{Enabled: false},
-					ContainerPidsLimit:                         MetricConfig{Enabled: false},
-					ContainerRestarts:                          MetricConfig{Enabled: false},
-					ContainerUptime:                            MetricConfig{Enabled: false},
+					ContainerBlockioIoMergedRecursive: ContainerBlockioIoMergedRecursiveConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoMergedRecursiveAttributeKey{ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoMergedRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoQueuedRecursive: ContainerBlockioIoQueuedRecursiveConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoQueuedRecursiveAttributeKey{ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoQueuedRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoServiceBytesRecursive: ContainerBlockioIoServiceBytesRecursiveConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoServiceBytesRecursiveAttributeKey{ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServiceBytesRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoServiceTimeRecursive: ContainerBlockioIoServiceTimeRecursiveConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoServiceTimeRecursiveAttributeKey{ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServiceTimeRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoServicedRecursive: ContainerBlockioIoServicedRecursiveConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoServicedRecursiveAttributeKey{ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServicedRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoTimeRecursive: ContainerBlockioIoTimeRecursiveConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoTimeRecursiveAttributeKey{ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoTimeRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioIoWaitTimeRecursive: ContainerBlockioIoWaitTimeRecursiveConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioIoWaitTimeRecursiveAttributeKey{ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoWaitTimeRecursiveAttributeKeyOperation},
+					},
+					ContainerBlockioSectorsRecursive: ContainerBlockioSectorsRecursiveConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerBlockioSectorsRecursiveAttributeKey{ContainerBlockioSectorsRecursiveAttributeKeyDeviceMajor, ContainerBlockioSectorsRecursiveAttributeKeyDeviceMinor, ContainerBlockioSectorsRecursiveAttributeKeyOperation},
+					},
+					ContainerCPULimit: ContainerCPULimitConfig{
+						Enabled: false,
+					},
+					ContainerCPULogicalCount: ContainerCPULogicalCountConfig{
+						Enabled: false,
+					},
+					ContainerCPUShares: ContainerCPUSharesConfig{
+						Enabled: false,
+					},
+					ContainerCPUThrottlingDataPeriods: ContainerCPUThrottlingDataPeriodsConfig{
+						Enabled: false,
+					},
+					ContainerCPUThrottlingDataThrottledPeriods: ContainerCPUThrottlingDataThrottledPeriodsConfig{
+						Enabled: false,
+					},
+					ContainerCPUThrottlingDataThrottledTime: ContainerCPUThrottlingDataThrottledTimeConfig{
+						Enabled: false,
+					},
+					ContainerCPUUsageKernelmode: ContainerCPUUsageKernelmodeConfig{
+						Enabled: false,
+					},
+					ContainerCPUUsagePercpu: ContainerCPUUsagePercpuConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerCPUUsagePercpuAttributeKey{ContainerCPUUsagePercpuAttributeKeyCore},
+					},
+					ContainerCPUUsageSystem: ContainerCPUUsageSystemConfig{
+						Enabled: false,
+					},
+					ContainerCPUUsageTotal: ContainerCPUUsageTotalConfig{
+						Enabled: false,
+					},
+					ContainerCPUUsageUsermode: ContainerCPUUsageUsermodeConfig{
+						Enabled: false,
+					},
+					ContainerCPUUtilization: ContainerCPUUtilizationConfig{
+						Enabled: false,
+					},
+					ContainerMemoryActiveAnon: ContainerMemoryActiveAnonConfig{
+						Enabled: false,
+					},
+					ContainerMemoryActiveFile: ContainerMemoryActiveFileConfig{
+						Enabled: false,
+					},
+					ContainerMemoryAnon: ContainerMemoryAnonConfig{
+						Enabled: false,
+					},
+					ContainerMemoryCache: ContainerMemoryCacheConfig{
+						Enabled: false,
+					},
+					ContainerMemoryDirty: ContainerMemoryDirtyConfig{
+						Enabled: false,
+					},
+					ContainerMemoryFails: ContainerMemoryFailsConfig{
+						Enabled: false,
+					},
+					ContainerMemoryFile: ContainerMemoryFileConfig{
+						Enabled: false,
+					},
+					ContainerMemoryHierarchicalMemoryLimit: ContainerMemoryHierarchicalMemoryLimitConfig{
+						Enabled: false,
+					},
+					ContainerMemoryHierarchicalMemswLimit: ContainerMemoryHierarchicalMemswLimitConfig{
+						Enabled: false,
+					},
+					ContainerMemoryInactiveAnon: ContainerMemoryInactiveAnonConfig{
+						Enabled: false,
+					},
+					ContainerMemoryInactiveFile: ContainerMemoryInactiveFileConfig{
+						Enabled: false,
+					},
+					ContainerMemoryMappedFile: ContainerMemoryMappedFileConfig{
+						Enabled: false,
+					},
+					ContainerMemoryPercent: ContainerMemoryPercentConfig{
+						Enabled: false,
+					},
+					ContainerMemoryPgfault: ContainerMemoryPgfaultConfig{
+						Enabled: false,
+					},
+					ContainerMemoryPgmajfault: ContainerMemoryPgmajfaultConfig{
+						Enabled: false,
+					},
+					ContainerMemoryPgpgin: ContainerMemoryPgpginConfig{
+						Enabled: false,
+					},
+					ContainerMemoryPgpgout: ContainerMemoryPgpgoutConfig{
+						Enabled: false,
+					},
+					ContainerMemoryRss: ContainerMemoryRssConfig{
+						Enabled: false,
+					},
+					ContainerMemoryRssHuge: ContainerMemoryRssHugeConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalActiveAnon: ContainerMemoryTotalActiveAnonConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalActiveFile: ContainerMemoryTotalActiveFileConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalCache: ContainerMemoryTotalCacheConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalDirty: ContainerMemoryTotalDirtyConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalInactiveAnon: ContainerMemoryTotalInactiveAnonConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalInactiveFile: ContainerMemoryTotalInactiveFileConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalMappedFile: ContainerMemoryTotalMappedFileConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalPgfault: ContainerMemoryTotalPgfaultConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalPgmajfault: ContainerMemoryTotalPgmajfaultConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalPgpgin: ContainerMemoryTotalPgpginConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalPgpgout: ContainerMemoryTotalPgpgoutConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalRss: ContainerMemoryTotalRssConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalRssHuge: ContainerMemoryTotalRssHugeConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalUnevictable: ContainerMemoryTotalUnevictableConfig{
+						Enabled: false,
+					},
+					ContainerMemoryTotalWriteback: ContainerMemoryTotalWritebackConfig{
+						Enabled: false,
+					},
+					ContainerMemoryUnevictable: ContainerMemoryUnevictableConfig{
+						Enabled: false,
+					},
+					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitConfig{
+						Enabled: false,
+					},
+					ContainerMemoryUsageMax: ContainerMemoryUsageMaxConfig{
+						Enabled: false,
+					},
+					ContainerMemoryUsageTotal: ContainerMemoryUsageTotalConfig{
+						Enabled: false,
+					},
+					ContainerMemoryWriteback: ContainerMemoryWritebackConfig{
+						Enabled: false,
+					},
+					ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageRxBytesAttributeKey{ContainerNetworkIoUsageRxBytesAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageRxDropped: ContainerNetworkIoUsageRxDroppedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageRxDroppedAttributeKey{ContainerNetworkIoUsageRxDroppedAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageRxErrors: ContainerNetworkIoUsageRxErrorsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageRxErrorsAttributeKey{ContainerNetworkIoUsageRxErrorsAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageRxPackets: ContainerNetworkIoUsageRxPacketsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageRxPacketsAttributeKey{ContainerNetworkIoUsageRxPacketsAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageTxBytesAttributeKey{ContainerNetworkIoUsageTxBytesAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageTxDropped: ContainerNetworkIoUsageTxDroppedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageTxDroppedAttributeKey{ContainerNetworkIoUsageTxDroppedAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageTxErrors: ContainerNetworkIoUsageTxErrorsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageTxErrorsAttributeKey{ContainerNetworkIoUsageTxErrorsAttributeKeyInterface},
+					},
+					ContainerNetworkIoUsageTxPackets: ContainerNetworkIoUsageTxPacketsConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerNetworkIoUsageTxPacketsAttributeKey{ContainerNetworkIoUsageTxPacketsAttributeKeyInterface},
+					},
+					ContainerPidsCount: ContainerPidsCountConfig{
+						Enabled: false,
+					},
+					ContainerPidsLimit: ContainerPidsLimitConfig{
+						Enabled: false,
+					},
+					ContainerRestarts: ContainerRestartsConfig{
+						Enabled: false,
+					},
+					ContainerUptime: ContainerUptimeConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerCommandLine: ResourceAttributeConfig{Enabled: false},
@@ -200,7 +552,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerBlockioIoMergedRecursiveConfig{}, ContainerBlockioIoQueuedRecursiveConfig{}, ContainerBlockioIoServiceBytesRecursiveConfig{}, ContainerBlockioIoServiceTimeRecursiveConfig{}, ContainerBlockioIoServicedRecursiveConfig{}, ContainerBlockioIoTimeRecursiveConfig{}, ContainerBlockioIoWaitTimeRecursiveConfig{}, ContainerBlockioSectorsRecursiveConfig{}, ContainerCPULimitConfig{}, ContainerCPULogicalCountConfig{}, ContainerCPUSharesConfig{}, ContainerCPUThrottlingDataPeriodsConfig{}, ContainerCPUThrottlingDataThrottledPeriodsConfig{}, ContainerCPUThrottlingDataThrottledTimeConfig{}, ContainerCPUUsageKernelmodeConfig{}, ContainerCPUUsagePercpuConfig{}, ContainerCPUUsageSystemConfig{}, ContainerCPUUsageTotalConfig{}, ContainerCPUUsageUsermodeConfig{}, ContainerCPUUtilizationConfig{}, ContainerMemoryActiveAnonConfig{}, ContainerMemoryActiveFileConfig{}, ContainerMemoryAnonConfig{}, ContainerMemoryCacheConfig{}, ContainerMemoryDirtyConfig{}, ContainerMemoryFailsConfig{}, ContainerMemoryFileConfig{}, ContainerMemoryHierarchicalMemoryLimitConfig{}, ContainerMemoryHierarchicalMemswLimitConfig{}, ContainerMemoryInactiveAnonConfig{}, ContainerMemoryInactiveFileConfig{}, ContainerMemoryMappedFileConfig{}, ContainerMemoryPercentConfig{}, ContainerMemoryPgfaultConfig{}, ContainerMemoryPgmajfaultConfig{}, ContainerMemoryPgpginConfig{}, ContainerMemoryPgpgoutConfig{}, ContainerMemoryRssConfig{}, ContainerMemoryRssHugeConfig{}, ContainerMemoryTotalActiveAnonConfig{}, ContainerMemoryTotalActiveFileConfig{}, ContainerMemoryTotalCacheConfig{}, ContainerMemoryTotalDirtyConfig{}, ContainerMemoryTotalInactiveAnonConfig{}, ContainerMemoryTotalInactiveFileConfig{}, ContainerMemoryTotalMappedFileConfig{}, ContainerMemoryTotalPgfaultConfig{}, ContainerMemoryTotalPgmajfaultConfig{}, ContainerMemoryTotalPgpginConfig{}, ContainerMemoryTotalPgpgoutConfig{}, ContainerMemoryTotalRssConfig{}, ContainerMemoryTotalRssHugeConfig{}, ContainerMemoryTotalUnevictableConfig{}, ContainerMemoryTotalWritebackConfig{}, ContainerMemoryUnevictableConfig{}, ContainerMemoryUsageLimitConfig{}, ContainerMemoryUsageMaxConfig{}, ContainerMemoryUsageTotalConfig{}, ContainerMemoryWritebackConfig{}, ContainerNetworkIoUsageRxBytesConfig{}, ContainerNetworkIoUsageRxDroppedConfig{}, ContainerNetworkIoUsageRxErrorsConfig{}, ContainerNetworkIoUsageRxPacketsConfig{}, ContainerNetworkIoUsageTxBytesConfig{}, ContainerNetworkIoUsageTxDroppedConfig{}, ContainerNetworkIoUsageTxErrorsConfig{}, ContainerNetworkIoUsageTxPacketsConfig{}, ContainerPidsCountConfig{}, ContainerPidsLimitConfig{}, ContainerRestartsConfig{}, ContainerUptimeConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

@@ -1,0 +1,4 @@
+change_type: 'deprecation'
+component: processor/metric_start_time
+note: Introduce new snake case compliant name `metric_start_time`
+issues: [46777]

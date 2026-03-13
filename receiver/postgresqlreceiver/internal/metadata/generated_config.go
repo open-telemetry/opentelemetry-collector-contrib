@@ -3,17 +3,19 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// PostgresqlBackendsConfig provides config for the postgresql.backends metric.
+type PostgresqlBackendsConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *PostgresqlBackendsConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -27,155 +29,1189 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// PostgresqlBgwriterBuffersAllocatedConfig provides config for the postgresql.bgwriter.buffers.allocated metric.
+type PostgresqlBgwriterBuffersAllocatedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlBgwriterBuffersAllocatedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlBgwriterBuffersWritesAttributeKey specifies the key of an attribute for the postgresql.bgwriter.buffers.writes metric.
+type PostgresqlBgwriterBuffersWritesAttributeKey string
+
+const (
+	PostgresqlBgwriterBuffersWritesAttributeKeyBgBufferSource PostgresqlBgwriterBuffersWritesAttributeKey = "source"
+)
+
+// PostgresqlBgwriterBuffersWritesConfig provides config for the postgresql.bgwriter.buffers.writes metric.
+type PostgresqlBgwriterBuffersWritesConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlBgwriterBuffersWritesAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlBgwriterBuffersWritesConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlBgwriterBuffersWritesConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlBgwriterBuffersWritesAttributeKeyBgBufferSource:
+		default:
+			return fmt.Errorf("metric postgresql.bgwriter.buffers.writes doesn't have an attribute %v, valid attributes: [source]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlBgwriterCheckpointCountAttributeKey specifies the key of an attribute for the postgresql.bgwriter.checkpoint.count metric.
+type PostgresqlBgwriterCheckpointCountAttributeKey string
+
+const (
+	PostgresqlBgwriterCheckpointCountAttributeKeyBgCheckpointType PostgresqlBgwriterCheckpointCountAttributeKey = "type"
+)
+
+// PostgresqlBgwriterCheckpointCountConfig provides config for the postgresql.bgwriter.checkpoint.count metric.
+type PostgresqlBgwriterCheckpointCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlBgwriterCheckpointCountAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlBgwriterCheckpointCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlBgwriterCheckpointCountConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlBgwriterCheckpointCountAttributeKeyBgCheckpointType:
+		default:
+			return fmt.Errorf("metric postgresql.bgwriter.checkpoint.count doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlBgwriterDurationAttributeKey specifies the key of an attribute for the postgresql.bgwriter.duration metric.
+type PostgresqlBgwriterDurationAttributeKey string
+
+const (
+	PostgresqlBgwriterDurationAttributeKeyBgDurationType PostgresqlBgwriterDurationAttributeKey = "type"
+)
+
+// PostgresqlBgwriterDurationConfig provides config for the postgresql.bgwriter.duration metric.
+type PostgresqlBgwriterDurationConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlBgwriterDurationAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlBgwriterDurationConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlBgwriterDurationConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlBgwriterDurationAttributeKeyBgDurationType:
+		default:
+			return fmt.Errorf("metric postgresql.bgwriter.duration doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlBgwriterMaxwrittenConfig provides config for the postgresql.bgwriter.maxwritten metric.
+type PostgresqlBgwriterMaxwrittenConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlBgwriterMaxwrittenConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlBlksHitConfig provides config for the postgresql.blks_hit metric.
+type PostgresqlBlksHitConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlBlksHitConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlBlksReadConfig provides config for the postgresql.blks_read metric.
+type PostgresqlBlksReadConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlBlksReadConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlBlocksReadAttributeKey specifies the key of an attribute for the postgresql.blocks_read metric.
+type PostgresqlBlocksReadAttributeKey string
+
+const (
+	PostgresqlBlocksReadAttributeKeySource PostgresqlBlocksReadAttributeKey = "source"
+)
+
+// PostgresqlBlocksReadConfig provides config for the postgresql.blocks_read metric.
+type PostgresqlBlocksReadConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlBlocksReadAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlBlocksReadConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlBlocksReadConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlBlocksReadAttributeKeySource:
+		default:
+			return fmt.Errorf("metric postgresql.blocks_read doesn't have an attribute %v, valid attributes: [source]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlCommitsConfig provides config for the postgresql.commits metric.
+type PostgresqlCommitsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlCommitsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlConnectionMaxConfig provides config for the postgresql.connection.max metric.
+type PostgresqlConnectionMaxConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlConnectionMaxConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlDatabaseCountConfig provides config for the postgresql.database.count metric.
+type PostgresqlDatabaseCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlDatabaseCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlDatabaseLocksAttributeKey specifies the key of an attribute for the postgresql.database.locks metric.
+type PostgresqlDatabaseLocksAttributeKey string
+
+const (
+	PostgresqlDatabaseLocksAttributeKeyRelation PostgresqlDatabaseLocksAttributeKey = "relation"
+	PostgresqlDatabaseLocksAttributeKeyMode     PostgresqlDatabaseLocksAttributeKey = "mode"
+	PostgresqlDatabaseLocksAttributeKeyLockType PostgresqlDatabaseLocksAttributeKey = "lock_type"
+)
+
+// PostgresqlDatabaseLocksConfig provides config for the postgresql.database.locks metric.
+type PostgresqlDatabaseLocksConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlDatabaseLocksAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlDatabaseLocksConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlDatabaseLocksConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlDatabaseLocksAttributeKeyRelation, PostgresqlDatabaseLocksAttributeKeyMode, PostgresqlDatabaseLocksAttributeKeyLockType:
+		default:
+			return fmt.Errorf("metric postgresql.database.locks doesn't have an attribute %v, valid attributes: [relation, mode, lock_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlDbSizeConfig provides config for the postgresql.db_size metric.
+type PostgresqlDbSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlDbSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlDeadlocksConfig provides config for the postgresql.deadlocks metric.
+type PostgresqlDeadlocksConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlDeadlocksConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlFunctionCallsAttributeKey specifies the key of an attribute for the postgresql.function.calls metric.
+type PostgresqlFunctionCallsAttributeKey string
+
+const (
+	PostgresqlFunctionCallsAttributeKeyFunction PostgresqlFunctionCallsAttributeKey = "function"
+)
+
+// PostgresqlFunctionCallsConfig provides config for the postgresql.function.calls metric.
+type PostgresqlFunctionCallsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlFunctionCallsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlFunctionCallsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlFunctionCallsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlFunctionCallsAttributeKeyFunction:
+		default:
+			return fmt.Errorf("metric postgresql.function.calls doesn't have an attribute %v, valid attributes: [function]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlIndexScansConfig provides config for the postgresql.index.scans metric.
+type PostgresqlIndexScansConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlIndexScansConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlIndexSizeConfig provides config for the postgresql.index.size metric.
+type PostgresqlIndexSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlIndexSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlOperationsAttributeKey specifies the key of an attribute for the postgresql.operations metric.
+type PostgresqlOperationsAttributeKey string
+
+const (
+	PostgresqlOperationsAttributeKeyOperation PostgresqlOperationsAttributeKey = "operation"
+)
+
+// PostgresqlOperationsConfig provides config for the postgresql.operations metric.
+type PostgresqlOperationsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlOperationsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlOperationsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlOperationsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlOperationsAttributeKeyOperation:
+		default:
+			return fmt.Errorf("metric postgresql.operations doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlReplicationDataDelayAttributeKey specifies the key of an attribute for the postgresql.replication.data_delay metric.
+type PostgresqlReplicationDataDelayAttributeKey string
+
+const (
+	PostgresqlReplicationDataDelayAttributeKeyReplicationClient PostgresqlReplicationDataDelayAttributeKey = "replication_client"
+)
+
+// PostgresqlReplicationDataDelayConfig provides config for the postgresql.replication.data_delay metric.
+type PostgresqlReplicationDataDelayConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlReplicationDataDelayAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlReplicationDataDelayConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlReplicationDataDelayConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlReplicationDataDelayAttributeKeyReplicationClient:
+		default:
+			return fmt.Errorf("metric postgresql.replication.data_delay doesn't have an attribute %v, valid attributes: [replication_client]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlRollbacksConfig provides config for the postgresql.rollbacks metric.
+type PostgresqlRollbacksConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlRollbacksConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlRowsAttributeKey specifies the key of an attribute for the postgresql.rows metric.
+type PostgresqlRowsAttributeKey string
+
+const (
+	PostgresqlRowsAttributeKeyState PostgresqlRowsAttributeKey = "state"
+)
+
+// PostgresqlRowsConfig provides config for the postgresql.rows metric.
+type PostgresqlRowsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlRowsAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlRowsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlRowsConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlRowsAttributeKeyState:
+		default:
+			return fmt.Errorf("metric postgresql.rows doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlSequentialScansConfig provides config for the postgresql.sequential_scans metric.
+type PostgresqlSequentialScansConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlSequentialScansConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTableCountConfig provides config for the postgresql.table.count metric.
+type PostgresqlTableCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTableCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTableSizeConfig provides config for the postgresql.table.size metric.
+type PostgresqlTableSizeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTableSizeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTableVacuumCountConfig provides config for the postgresql.table.vacuum.count metric.
+type PostgresqlTableVacuumCountConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTableVacuumCountConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTempIoConfig provides config for the postgresql.temp.io metric.
+type PostgresqlTempIoConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTempIoConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTempFilesConfig provides config for the postgresql.temp_files metric.
+type PostgresqlTempFilesConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTempFilesConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTupDeletedConfig provides config for the postgresql.tup_deleted metric.
+type PostgresqlTupDeletedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTupDeletedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTupFetchedConfig provides config for the postgresql.tup_fetched metric.
+type PostgresqlTupFetchedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTupFetchedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTupInsertedConfig provides config for the postgresql.tup_inserted metric.
+type PostgresqlTupInsertedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTupInsertedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTupReturnedConfig provides config for the postgresql.tup_returned metric.
+type PostgresqlTupReturnedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTupReturnedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlTupUpdatedConfig provides config for the postgresql.tup_updated metric.
+type PostgresqlTupUpdatedConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlTupUpdatedConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlWalAgeConfig provides config for the postgresql.wal.age metric.
+type PostgresqlWalAgeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PostgresqlWalAgeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PostgresqlWalDelayAttributeKey specifies the key of an attribute for the postgresql.wal.delay metric.
+type PostgresqlWalDelayAttributeKey string
+
+const (
+	PostgresqlWalDelayAttributeKeyWalOperationLag   PostgresqlWalDelayAttributeKey = "operation"
+	PostgresqlWalDelayAttributeKeyReplicationClient PostgresqlWalDelayAttributeKey = "replication_client"
+)
+
+// PostgresqlWalDelayConfig provides config for the postgresql.wal.delay metric.
+type PostgresqlWalDelayConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlWalDelayAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlWalDelayConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlWalDelayConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlWalDelayAttributeKeyWalOperationLag, PostgresqlWalDelayAttributeKeyReplicationClient:
+		default:
+			return fmt.Errorf("metric postgresql.wal.delay doesn't have an attribute %v, valid attributes: [operation, replication_client]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlWalLagAttributeKey specifies the key of an attribute for the postgresql.wal.lag metric.
+type PostgresqlWalLagAttributeKey string
+
+const (
+	PostgresqlWalLagAttributeKeyWalOperationLag   PostgresqlWalLagAttributeKey = "operation"
+	PostgresqlWalLagAttributeKeyReplicationClient PostgresqlWalLagAttributeKey = "replication_client"
+)
+
+// PostgresqlWalLagConfig provides config for the postgresql.wal.lag metric.
+type PostgresqlWalLagConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlWalLagAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlWalLagConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlWalLagConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlWalLagAttributeKeyWalOperationLag, PostgresqlWalLagAttributeKeyReplicationClient:
+		default:
+			return fmt.Errorf("metric postgresql.wal.lag doesn't have an attribute %v, valid attributes: [operation, replication_client]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for postgresql metrics.
 type MetricsConfig struct {
-	PostgresqlBackends                 MetricConfig `mapstructure:"postgresql.backends"`
-	PostgresqlBgwriterBuffersAllocated MetricConfig `mapstructure:"postgresql.bgwriter.buffers.allocated"`
-	PostgresqlBgwriterBuffersWrites    MetricConfig `mapstructure:"postgresql.bgwriter.buffers.writes"`
-	PostgresqlBgwriterCheckpointCount  MetricConfig `mapstructure:"postgresql.bgwriter.checkpoint.count"`
-	PostgresqlBgwriterDuration         MetricConfig `mapstructure:"postgresql.bgwriter.duration"`
-	PostgresqlBgwriterMaxwritten       MetricConfig `mapstructure:"postgresql.bgwriter.maxwritten"`
-	PostgresqlBlksHit                  MetricConfig `mapstructure:"postgresql.blks_hit"`
-	PostgresqlBlksRead                 MetricConfig `mapstructure:"postgresql.blks_read"`
-	PostgresqlBlocksRead               MetricConfig `mapstructure:"postgresql.blocks_read"`
-	PostgresqlCommits                  MetricConfig `mapstructure:"postgresql.commits"`
-	PostgresqlConnectionMax            MetricConfig `mapstructure:"postgresql.connection.max"`
-	PostgresqlDatabaseCount            MetricConfig `mapstructure:"postgresql.database.count"`
-	PostgresqlDatabaseLocks            MetricConfig `mapstructure:"postgresql.database.locks"`
-	PostgresqlDbSize                   MetricConfig `mapstructure:"postgresql.db_size"`
-	PostgresqlDeadlocks                MetricConfig `mapstructure:"postgresql.deadlocks"`
-	PostgresqlFunctionCalls            MetricConfig `mapstructure:"postgresql.function.calls"`
-	PostgresqlIndexScans               MetricConfig `mapstructure:"postgresql.index.scans"`
-	PostgresqlIndexSize                MetricConfig `mapstructure:"postgresql.index.size"`
-	PostgresqlOperations               MetricConfig `mapstructure:"postgresql.operations"`
-	PostgresqlReplicationDataDelay     MetricConfig `mapstructure:"postgresql.replication.data_delay"`
-	PostgresqlRollbacks                MetricConfig `mapstructure:"postgresql.rollbacks"`
-	PostgresqlRows                     MetricConfig `mapstructure:"postgresql.rows"`
-	PostgresqlSequentialScans          MetricConfig `mapstructure:"postgresql.sequential_scans"`
-	PostgresqlTableCount               MetricConfig `mapstructure:"postgresql.table.count"`
-	PostgresqlTableSize                MetricConfig `mapstructure:"postgresql.table.size"`
-	PostgresqlTableVacuumCount         MetricConfig `mapstructure:"postgresql.table.vacuum.count"`
-	PostgresqlTempIo                   MetricConfig `mapstructure:"postgresql.temp.io"`
-	PostgresqlTempFiles                MetricConfig `mapstructure:"postgresql.temp_files"`
-	PostgresqlTupDeleted               MetricConfig `mapstructure:"postgresql.tup_deleted"`
-	PostgresqlTupFetched               MetricConfig `mapstructure:"postgresql.tup_fetched"`
-	PostgresqlTupInserted              MetricConfig `mapstructure:"postgresql.tup_inserted"`
-	PostgresqlTupReturned              MetricConfig `mapstructure:"postgresql.tup_returned"`
-	PostgresqlTupUpdated               MetricConfig `mapstructure:"postgresql.tup_updated"`
-	PostgresqlWalAge                   MetricConfig `mapstructure:"postgresql.wal.age"`
-	PostgresqlWalDelay                 MetricConfig `mapstructure:"postgresql.wal.delay"`
-	PostgresqlWalLag                   MetricConfig `mapstructure:"postgresql.wal.lag"`
+	PostgresqlBackends                 PostgresqlBackendsConfig                 `mapstructure:"postgresql.backends"`
+	PostgresqlBgwriterBuffersAllocated PostgresqlBgwriterBuffersAllocatedConfig `mapstructure:"postgresql.bgwriter.buffers.allocated"`
+	PostgresqlBgwriterBuffersWrites    PostgresqlBgwriterBuffersWritesConfig    `mapstructure:"postgresql.bgwriter.buffers.writes"`
+	PostgresqlBgwriterCheckpointCount  PostgresqlBgwriterCheckpointCountConfig  `mapstructure:"postgresql.bgwriter.checkpoint.count"`
+	PostgresqlBgwriterDuration         PostgresqlBgwriterDurationConfig         `mapstructure:"postgresql.bgwriter.duration"`
+	PostgresqlBgwriterMaxwritten       PostgresqlBgwriterMaxwrittenConfig       `mapstructure:"postgresql.bgwriter.maxwritten"`
+	PostgresqlBlksHit                  PostgresqlBlksHitConfig                  `mapstructure:"postgresql.blks_hit"`
+	PostgresqlBlksRead                 PostgresqlBlksReadConfig                 `mapstructure:"postgresql.blks_read"`
+	PostgresqlBlocksRead               PostgresqlBlocksReadConfig               `mapstructure:"postgresql.blocks_read"`
+	PostgresqlCommits                  PostgresqlCommitsConfig                  `mapstructure:"postgresql.commits"`
+	PostgresqlConnectionMax            PostgresqlConnectionMaxConfig            `mapstructure:"postgresql.connection.max"`
+	PostgresqlDatabaseCount            PostgresqlDatabaseCountConfig            `mapstructure:"postgresql.database.count"`
+	PostgresqlDatabaseLocks            PostgresqlDatabaseLocksConfig            `mapstructure:"postgresql.database.locks"`
+	PostgresqlDbSize                   PostgresqlDbSizeConfig                   `mapstructure:"postgresql.db_size"`
+	PostgresqlDeadlocks                PostgresqlDeadlocksConfig                `mapstructure:"postgresql.deadlocks"`
+	PostgresqlFunctionCalls            PostgresqlFunctionCallsConfig            `mapstructure:"postgresql.function.calls"`
+	PostgresqlIndexScans               PostgresqlIndexScansConfig               `mapstructure:"postgresql.index.scans"`
+	PostgresqlIndexSize                PostgresqlIndexSizeConfig                `mapstructure:"postgresql.index.size"`
+	PostgresqlOperations               PostgresqlOperationsConfig               `mapstructure:"postgresql.operations"`
+	PostgresqlReplicationDataDelay     PostgresqlReplicationDataDelayConfig     `mapstructure:"postgresql.replication.data_delay"`
+	PostgresqlRollbacks                PostgresqlRollbacksConfig                `mapstructure:"postgresql.rollbacks"`
+	PostgresqlRows                     PostgresqlRowsConfig                     `mapstructure:"postgresql.rows"`
+	PostgresqlSequentialScans          PostgresqlSequentialScansConfig          `mapstructure:"postgresql.sequential_scans"`
+	PostgresqlTableCount               PostgresqlTableCountConfig               `mapstructure:"postgresql.table.count"`
+	PostgresqlTableSize                PostgresqlTableSizeConfig                `mapstructure:"postgresql.table.size"`
+	PostgresqlTableVacuumCount         PostgresqlTableVacuumCountConfig         `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlTempIo                   PostgresqlTempIoConfig                   `mapstructure:"postgresql.temp.io"`
+	PostgresqlTempFiles                PostgresqlTempFilesConfig                `mapstructure:"postgresql.temp_files"`
+	PostgresqlTupDeleted               PostgresqlTupDeletedConfig               `mapstructure:"postgresql.tup_deleted"`
+	PostgresqlTupFetched               PostgresqlTupFetchedConfig               `mapstructure:"postgresql.tup_fetched"`
+	PostgresqlTupInserted              PostgresqlTupInsertedConfig              `mapstructure:"postgresql.tup_inserted"`
+	PostgresqlTupReturned              PostgresqlTupReturnedConfig              `mapstructure:"postgresql.tup_returned"`
+	PostgresqlTupUpdated               PostgresqlTupUpdatedConfig               `mapstructure:"postgresql.tup_updated"`
+	PostgresqlWalAge                   PostgresqlWalAgeConfig                   `mapstructure:"postgresql.wal.age"`
+	PostgresqlWalDelay                 PostgresqlWalDelayConfig                 `mapstructure:"postgresql.wal.delay"`
+	PostgresqlWalLag                   PostgresqlWalLagConfig                   `mapstructure:"postgresql.wal.lag"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		PostgresqlBackends: MetricConfig{
+		PostgresqlBackends: PostgresqlBackendsConfig{
 			Enabled: true,
 		},
-		PostgresqlBgwriterBuffersAllocated: MetricConfig{
+		PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedConfig{
 			Enabled: true,
 		},
-		PostgresqlBgwriterBuffersWrites: MetricConfig{
+		PostgresqlBgwriterBuffersWrites: PostgresqlBgwriterBuffersWritesConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlBgwriterBuffersWritesAttributeKey{PostgresqlBgwriterBuffersWritesAttributeKeyBgBufferSource},
+		},
+		PostgresqlBgwriterCheckpointCount: PostgresqlBgwriterCheckpointCountConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlBgwriterCheckpointCountAttributeKey{PostgresqlBgwriterCheckpointCountAttributeKeyBgCheckpointType},
+		},
+		PostgresqlBgwriterDuration: PostgresqlBgwriterDurationConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlBgwriterDurationAttributeKey{PostgresqlBgwriterDurationAttributeKeyBgDurationType},
+		},
+		PostgresqlBgwriterMaxwritten: PostgresqlBgwriterMaxwrittenConfig{
 			Enabled: true,
 		},
-		PostgresqlBgwriterCheckpointCount: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlBgwriterDuration: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlBgwriterMaxwritten: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlBlksHit: MetricConfig{
+		PostgresqlBlksHit: PostgresqlBlksHitConfig{
 			Enabled: false,
 		},
-		PostgresqlBlksRead: MetricConfig{
+		PostgresqlBlksRead: PostgresqlBlksReadConfig{
 			Enabled: false,
 		},
-		PostgresqlBlocksRead: MetricConfig{
+		PostgresqlBlocksRead: PostgresqlBlocksReadConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlBlocksReadAttributeKey{PostgresqlBlocksReadAttributeKeySource},
+		},
+		PostgresqlCommits: PostgresqlCommitsConfig{
 			Enabled: true,
 		},
-		PostgresqlCommits: MetricConfig{
+		PostgresqlConnectionMax: PostgresqlConnectionMaxConfig{
 			Enabled: true,
 		},
-		PostgresqlConnectionMax: MetricConfig{
+		PostgresqlDatabaseCount: PostgresqlDatabaseCountConfig{
 			Enabled: true,
 		},
-		PostgresqlDatabaseCount: MetricConfig{
+		PostgresqlDatabaseLocks: PostgresqlDatabaseLocksConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []PostgresqlDatabaseLocksAttributeKey{PostgresqlDatabaseLocksAttributeKeyRelation, PostgresqlDatabaseLocksAttributeKeyMode, PostgresqlDatabaseLocksAttributeKeyLockType},
+		},
+		PostgresqlDbSize: PostgresqlDbSizeConfig{
 			Enabled: true,
 		},
-		PostgresqlDatabaseLocks: MetricConfig{
+		PostgresqlDeadlocks: PostgresqlDeadlocksConfig{
 			Enabled: false,
 		},
-		PostgresqlDbSize: MetricConfig{
+		PostgresqlFunctionCalls: PostgresqlFunctionCallsConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlFunctionCallsAttributeKey{PostgresqlFunctionCallsAttributeKeyFunction},
+		},
+		PostgresqlIndexScans: PostgresqlIndexScansConfig{
 			Enabled: true,
 		},
-		PostgresqlDeadlocks: MetricConfig{
+		PostgresqlIndexSize: PostgresqlIndexSizeConfig{
+			Enabled: true,
+		},
+		PostgresqlOperations: PostgresqlOperationsConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlOperationsAttributeKey{PostgresqlOperationsAttributeKeyOperation},
+		},
+		PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []PostgresqlReplicationDataDelayAttributeKey{PostgresqlReplicationDataDelayAttributeKeyReplicationClient},
+		},
+		PostgresqlRollbacks: PostgresqlRollbacksConfig{
+			Enabled: true,
+		},
+		PostgresqlRows: PostgresqlRowsConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlRowsAttributeKey{PostgresqlRowsAttributeKeyState},
+		},
+		PostgresqlSequentialScans: PostgresqlSequentialScansConfig{
 			Enabled: false,
 		},
-		PostgresqlFunctionCalls: MetricConfig{
+		PostgresqlTableCount: PostgresqlTableCountConfig{
+			Enabled: true,
+		},
+		PostgresqlTableSize: PostgresqlTableSizeConfig{
+			Enabled: true,
+		},
+		PostgresqlTableVacuumCount: PostgresqlTableVacuumCountConfig{
+			Enabled: true,
+		},
+		PostgresqlTempIo: PostgresqlTempIoConfig{
 			Enabled: false,
 		},
-		PostgresqlIndexScans: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlIndexSize: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlOperations: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlReplicationDataDelay: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlRollbacks: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlRows: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlSequentialScans: MetricConfig{
+		PostgresqlTempFiles: PostgresqlTempFilesConfig{
 			Enabled: false,
 		},
-		PostgresqlTableCount: MetricConfig{
+		PostgresqlTupDeleted: PostgresqlTupDeletedConfig{
+			Enabled: false,
+		},
+		PostgresqlTupFetched: PostgresqlTupFetchedConfig{
+			Enabled: false,
+		},
+		PostgresqlTupInserted: PostgresqlTupInsertedConfig{
+			Enabled: false,
+		},
+		PostgresqlTupReturned: PostgresqlTupReturnedConfig{
+			Enabled: false,
+		},
+		PostgresqlTupUpdated: PostgresqlTupUpdatedConfig{
+			Enabled: false,
+		},
+		PostgresqlWalAge: PostgresqlWalAgeConfig{
 			Enabled: true,
 		},
-		PostgresqlTableSize: MetricConfig{
-			Enabled: true,
+		PostgresqlWalDelay: PostgresqlWalDelayConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []PostgresqlWalDelayAttributeKey{PostgresqlWalDelayAttributeKeyWalOperationLag, PostgresqlWalDelayAttributeKeyReplicationClient},
 		},
-		PostgresqlTableVacuumCount: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlTempIo: MetricConfig{
-			Enabled: false,
-		},
-		PostgresqlTempFiles: MetricConfig{
-			Enabled: false,
-		},
-		PostgresqlTupDeleted: MetricConfig{
-			Enabled: false,
-		},
-		PostgresqlTupFetched: MetricConfig{
-			Enabled: false,
-		},
-		PostgresqlTupInserted: MetricConfig{
-			Enabled: false,
-		},
-		PostgresqlTupReturned: MetricConfig{
-			Enabled: false,
-		},
-		PostgresqlTupUpdated: MetricConfig{
-			Enabled: false,
-		},
-		PostgresqlWalAge: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlWalDelay: MetricConfig{
-			Enabled: false,
-		},
-		PostgresqlWalLag: MetricConfig{
-			Enabled: true,
+		PostgresqlWalLag: PostgresqlWalLagConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []PostgresqlWalLagAttributeKey{PostgresqlWalLagAttributeKeyWalOperationLag, PostgresqlWalLagAttributeKeyReplicationClient},
 		},
 	}
 }

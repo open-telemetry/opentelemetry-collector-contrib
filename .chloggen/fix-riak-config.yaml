@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/riak
+note: Enable re-aggregation and set requirement levels for attributes.
+issues: [46377]
+sub_components: []

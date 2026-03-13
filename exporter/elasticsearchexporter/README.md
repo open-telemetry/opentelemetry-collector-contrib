@@ -531,9 +531,9 @@ It is recommended to enrich events using the [elasticapmprocessor](https://githu
 | source.address              | source.ip                   | false    | false          |
 | telemetry.distro.name       | ""                          | false    | false          |
 | telemetry.distro.version    | ""                          | false    | false          |
-| telemetry.sdk.language      | ""                          | false    | false          |
+| telemetry.sdk.language      | service.language.name       | false    | false          |
 | telemetry.sdk.name          | ""                          | false    | false          |
-| telemetry.sdk.version       | ""                          | false    | false          |
+| telemetry.sdk.version       | service.language.version    | false    | false          |
 
 ### Log record attribute mapping
 

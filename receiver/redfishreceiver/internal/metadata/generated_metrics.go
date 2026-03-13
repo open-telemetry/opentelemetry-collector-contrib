@@ -808,17 +808,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.BaseURL.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["base_url"] = filter.CreateFilter(mbc.ResourceAttributes.BaseURL.MetricsInclude)
+	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.BaseURL.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["base_url"] = filter.CreateFilter(mbc.ResourceAttributes.BaseURL.MetricsExclude)
+	if mbc.ResourceAttributes.HostName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SystemHostName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["system.host_name"] = filter.CreateFilter(mbc.ResourceAttributes.SystemHostName.MetricsInclude)
+	if mbc.ResourceAttributes.URLFull.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["url.full"] = filter.CreateFilter(mbc.ResourceAttributes.URLFull.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SystemHostName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["system.host_name"] = filter.CreateFilter(mbc.ResourceAttributes.SystemHostName.MetricsExclude)
+	if mbc.ResourceAttributes.URLFull.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["url.full"] = filter.CreateFilter(mbc.ResourceAttributes.URLFull.MetricsExclude)
 	}
 
 	for _, op := range options {

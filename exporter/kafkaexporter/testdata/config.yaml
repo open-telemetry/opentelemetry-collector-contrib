@@ -21,6 +21,8 @@ kafka:
     max_elapsed_time: 10m
 kafka/legacy_topic:
   topic: legacy_topic
+  include_metadata_keys:
+    - metadata_key
   metrics:
     topic: metrics_topic
   logs:
@@ -29,3 +31,14 @@ kafka/legacy_encoding:
   encoding: legacy_encoding
   metrics:
     encoding: metrics_encoding
+kafka/metadata_batch_valid:
+  include_metadata_keys:
+    - metadata_key
+  sending_queue:
+    enabled: true
+    batch:
+      sizer: bytes
+      partition:
+        metadata_keys:
+          - metadata_key
+          - another_key

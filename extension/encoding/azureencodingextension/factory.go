@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/traces"
 )
 
@@ -37,6 +38,11 @@ func createExtension(_ context.Context, settings extension.Settings, cfg compone
 			settings.BuildInfo,
 			settings.Logger,
 			config.Traces,
+		),
+		metricUnmarshaler: metrics.NewAzureResourceMetricsUnmarshaler(
+			settings.BuildInfo,
+			settings.Logger,
+			config.Metrics,
 		),
 	}, nil
 }
