@@ -19,13 +19,13 @@ const (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, cj *batchv1.CronJob, ts pcommon.Timestamp) {
-	mb.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
+	mb.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active))) //nolint:staticcheck
 
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(cj.Namespace)
 	rb.SetK8sCronjobUID(string(cj.UID))
 	rb.SetK8sCronjobName(cj.Name)
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
 }
 
 func GetMetadata(cj *batchv1.CronJob) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

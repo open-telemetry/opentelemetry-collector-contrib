@@ -3,23 +3,16 @@
 package metadata
 
 import (
-	"fmt"
-	"slices"
-
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled             bool `mapstructure:"enabled"`
-	enabledSetByUser    bool
-	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []string `mapstructure:"attributes"`
-	definedAttributes   []string
-	requiredAttributes  []string
+// SystemCPULoadAverage15mConfig provides config for the system.cpu.load_average.15m metric.
+type SystemCPULoadAverage15mConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPULoadAverage15mConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -28,25 +21,45 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	if len(ms.definedAttributes) > 0 {
-		for _, val := range ms.EnabledAttributes {
-			if !slices.Contains(ms.definedAttributes, val) {
-				return fmt.Errorf("%v is not defined in metadata.yaml", val)
-			}
-		}
 
-		for _, val := range ms.requiredAttributes {
-			if !slices.Contains(ms.EnabledAttributes, val) {
-				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-			}
-		}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
-		if ms.AggregationStrategy != AggregationStrategySum &&
-			ms.AggregationStrategy != AggregationStrategyAvg &&
-			ms.AggregationStrategy != AggregationStrategyMin &&
-			ms.AggregationStrategy != AggregationStrategyMax {
-			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
-		}
+// SystemCPULoadAverage1mConfig provides config for the system.cpu.load_average.1m metric.
+type SystemCPULoadAverage1mConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemCPULoadAverage1mConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemCPULoadAverage5mConfig provides config for the system.cpu.load_average.5m metric.
+type SystemCPULoadAverage5mConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemCPULoadAverage5mConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
@@ -55,20 +68,20 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for load metrics.
 type MetricsConfig struct {
-	SystemCPULoadAverage15m MetricConfig `mapstructure:"system.cpu.load_average.15m"`
-	SystemCPULoadAverage1m  MetricConfig `mapstructure:"system.cpu.load_average.1m"`
-	SystemCPULoadAverage5m  MetricConfig `mapstructure:"system.cpu.load_average.5m"`
+	SystemCPULoadAverage15m SystemCPULoadAverage15mConfig `mapstructure:"system.cpu.load_average.15m"`
+	SystemCPULoadAverage1m  SystemCPULoadAverage1mConfig  `mapstructure:"system.cpu.load_average.1m"`
+	SystemCPULoadAverage5m  SystemCPULoadAverage5mConfig  `mapstructure:"system.cpu.load_average.5m"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemCPULoadAverage15m: MetricConfig{
+		SystemCPULoadAverage15m: SystemCPULoadAverage15mConfig{
 			Enabled: true,
 		},
-		SystemCPULoadAverage1m: MetricConfig{
+		SystemCPULoadAverage1m: SystemCPULoadAverage1mConfig{
 			Enabled: true,
 		},
-		SystemCPULoadAverage5m: MetricConfig{
+		SystemCPULoadAverage5m: SystemCPULoadAverage5mConfig{
 			Enabled: true,
 		},
 	}
