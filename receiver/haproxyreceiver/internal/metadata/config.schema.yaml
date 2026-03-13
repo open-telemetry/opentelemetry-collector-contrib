@@ -5,161 +5,161 @@ $defs:
     type: object
     properties:
       haproxy.active:
-        description: "HaproxyActiveConfig provides config for the haproxy.active metric."
+        description: "HaproxyActiveMetricConfig provides config for the haproxy.active metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.backup:
-        description: "HaproxyBackupConfig provides config for the haproxy.backup metric."
+        description: "HaproxyBackupMetricConfig provides config for the haproxy.backup metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.bytes.input:
-        description: "HaproxyBytesInputConfig provides config for the haproxy.bytes.input metric."
+        description: "HaproxyBytesInputMetricConfig provides config for the haproxy.bytes.input metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.bytes.output:
-        description: "HaproxyBytesOutputConfig provides config for the haproxy.bytes.output metric."
+        description: "HaproxyBytesOutputMetricConfig provides config for the haproxy.bytes.output metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.clients.canceled:
-        description: "HaproxyClientsCanceledConfig provides config for the haproxy.clients.canceled metric."
+        description: "HaproxyClientsCanceledMetricConfig provides config for the haproxy.clients.canceled metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.compression.bypass:
-        description: "HaproxyCompressionBypassConfig provides config for the haproxy.compression.bypass metric."
+        description: "HaproxyCompressionBypassMetricConfig provides config for the haproxy.compression.bypass metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.compression.count:
-        description: "HaproxyCompressionCountConfig provides config for the haproxy.compression.count metric."
+        description: "HaproxyCompressionCountMetricConfig provides config for the haproxy.compression.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.compression.input:
-        description: "HaproxyCompressionInputConfig provides config for the haproxy.compression.input metric."
+        description: "HaproxyCompressionInputMetricConfig provides config for the haproxy.compression.input metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.compression.output:
-        description: "HaproxyCompressionOutputConfig provides config for the haproxy.compression.output metric."
+        description: "HaproxyCompressionOutputMetricConfig provides config for the haproxy.compression.output metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.connections.average_time:
-        description: "HaproxyConnectionsAverageTimeConfig provides config for the haproxy.connections.average_time metric."
+        description: "HaproxyConnectionsAverageTimeMetricConfig provides config for the haproxy.connections.average_time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.connections.errors:
-        description: "HaproxyConnectionsErrorsConfig provides config for the haproxy.connections.errors metric."
+        description: "HaproxyConnectionsErrorsMetricConfig provides config for the haproxy.connections.errors metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.connections.rate:
-        description: "HaproxyConnectionsRateConfig provides config for the haproxy.connections.rate metric."
+        description: "HaproxyConnectionsRateMetricConfig provides config for the haproxy.connections.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.connections.retries:
-        description: "HaproxyConnectionsRetriesConfig provides config for the haproxy.connections.retries metric."
+        description: "HaproxyConnectionsRetriesMetricConfig provides config for the haproxy.connections.retries metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.connections.total:
-        description: "HaproxyConnectionsTotalConfig provides config for the haproxy.connections.total metric."
+        description: "HaproxyConnectionsTotalMetricConfig provides config for the haproxy.connections.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.downtime:
-        description: "HaproxyDowntimeConfig provides config for the haproxy.downtime metric."
+        description: "HaproxyDowntimeMetricConfig provides config for the haproxy.downtime metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.failed_checks:
-        description: "HaproxyFailedChecksConfig provides config for the haproxy.failed_checks metric."
+        description: "HaproxyFailedChecksMetricConfig provides config for the haproxy.failed_checks metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.requests.average_time:
-        description: "HaproxyRequestsAverageTimeConfig provides config for the haproxy.requests.average_time metric."
+        description: "HaproxyRequestsAverageTimeMetricConfig provides config for the haproxy.requests.average_time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.requests.denied:
-        description: "HaproxyRequestsDeniedConfig provides config for the haproxy.requests.denied metric."
+        description: "HaproxyRequestsDeniedMetricConfig provides config for the haproxy.requests.denied metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.requests.errors:
-        description: "HaproxyRequestsErrorsConfig provides config for the haproxy.requests.errors metric."
+        description: "HaproxyRequestsErrorsMetricConfig provides config for the haproxy.requests.errors metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.requests.queued:
-        description: "HaproxyRequestsQueuedConfig provides config for the haproxy.requests.queued metric."
+        description: "HaproxyRequestsQueuedMetricConfig provides config for the haproxy.requests.queued metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.requests.rate:
-        description: "HaproxyRequestsRateConfig provides config for the haproxy.requests.rate metric."
+        description: "HaproxyRequestsRateMetricConfig provides config for the haproxy.requests.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.requests.redispatched:
-        description: "HaproxyRequestsRedispatchedConfig provides config for the haproxy.requests.redispatched metric."
+        description: "HaproxyRequestsRedispatchedMetricConfig provides config for the haproxy.requests.redispatched metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.requests.total:
-        description: "HaproxyRequestsTotalConfig provides config for the haproxy.requests.total metric."
+        description: "HaproxyRequestsTotalMetricConfig provides config for the haproxy.requests.total metric."
         type: object
         properties:
           enabled:
@@ -182,70 +182,70 @@ $defs:
             default:
               - "status_code"
       haproxy.responses.average_time:
-        description: "HaproxyResponsesAverageTimeConfig provides config for the haproxy.responses.average_time metric."
+        description: "HaproxyResponsesAverageTimeMetricConfig provides config for the haproxy.responses.average_time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.responses.denied:
-        description: "HaproxyResponsesDeniedConfig provides config for the haproxy.responses.denied metric."
+        description: "HaproxyResponsesDeniedMetricConfig provides config for the haproxy.responses.denied metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.responses.errors:
-        description: "HaproxyResponsesErrorsConfig provides config for the haproxy.responses.errors metric."
+        description: "HaproxyResponsesErrorsMetricConfig provides config for the haproxy.responses.errors metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.server_selected.total:
-        description: "HaproxyServerSelectedTotalConfig provides config for the haproxy.server_selected.total metric."
+        description: "HaproxyServerSelectedTotalMetricConfig provides config for the haproxy.server_selected.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.sessions.average:
-        description: "HaproxySessionsAverageConfig provides config for the haproxy.sessions.average metric."
+        description: "HaproxySessionsAverageMetricConfig provides config for the haproxy.sessions.average metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.sessions.count:
-        description: "HaproxySessionsCountConfig provides config for the haproxy.sessions.count metric."
+        description: "HaproxySessionsCountMetricConfig provides config for the haproxy.sessions.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.sessions.limit:
-        description: "HaproxySessionsLimitConfig provides config for the haproxy.sessions.limit metric."
+        description: "HaproxySessionsLimitMetricConfig provides config for the haproxy.sessions.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.sessions.rate:
-        description: "HaproxySessionsRateConfig provides config for the haproxy.sessions.rate metric."
+        description: "HaproxySessionsRateMetricConfig provides config for the haproxy.sessions.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       haproxy.sessions.total:
-        description: "HaproxySessionsTotalConfig provides config for the haproxy.sessions.total metric."
+        description: "HaproxySessionsTotalMetricConfig provides config for the haproxy.sessions.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       haproxy.weight:
-        description: "HaproxyWeightConfig provides config for the haproxy.weight metric."
+        description: "HaproxyWeightMetricConfig provides config for the haproxy.weight metric."
         type: object
         properties:
           enabled:
@@ -279,6 +279,23 @@ $defs:
           enabled:
             type: boolean
             default: true
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+      haproxy.server.state:
+        description: ResourceAttributeConfig provides common config for a haproxy.server.state resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
           metrics_include:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array

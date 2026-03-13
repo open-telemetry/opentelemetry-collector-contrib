@@ -228,7 +228,6 @@ const successfulInstanceResponse = `{
     "collector_resource_attributes": {},
     "collector_deployment_type": "unknown",
     "collector_installation_method": "",
-    "os": "",
     "ttl": 900000000000
   },
   "uuid": "test-uuid"

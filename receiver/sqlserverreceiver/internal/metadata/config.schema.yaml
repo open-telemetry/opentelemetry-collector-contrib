@@ -5,350 +5,350 @@ $defs:
     type: object
     properties:
       sqlserver.batch.request.rate:
-        description: "SqlserverBatchRequestRateConfig provides config for the sqlserver.batch.request.rate metric."
+        description: "SqlserverBatchRequestRateMetricConfig provides config for the sqlserver.batch.request.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.batch.sql_compilation.rate:
-        description: "SqlserverBatchSQLCompilationRateConfig provides config for the sqlserver.batch.sql_compilation.rate metric."
+        description: "SqlserverBatchSQLCompilationRateMetricConfig provides config for the sqlserver.batch.sql_compilation.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.batch.sql_recompilation.rate:
-        description: "SqlserverBatchSQLRecompilationRateConfig provides config for the sqlserver.batch.sql_recompilation.rate metric."
+        description: "SqlserverBatchSQLRecompilationRateMetricConfig provides config for the sqlserver.batch.sql_recompilation.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.computer.uptime:
-        description: "SqlserverComputerUptimeConfig provides config for the sqlserver.computer.uptime metric."
+        description: "SqlserverComputerUptimeMetricConfig provides config for the sqlserver.computer.uptime metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.cpu.count:
-        description: "SqlserverCPUCountConfig provides config for the sqlserver.cpu.count metric."
+        description: "SqlserverCPUCountMetricConfig provides config for the sqlserver.cpu.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.database.backup_or_restore.rate:
-        description: "SqlserverDatabaseBackupOrRestoreRateConfig provides config for the sqlserver.database.backup_or_restore.rate metric."
+        description: "SqlserverDatabaseBackupOrRestoreRateMetricConfig provides config for the sqlserver.database.backup_or_restore.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.database.count:
-        description: "SqlserverDatabaseCountConfig provides config for the sqlserver.database.count metric."
+        description: "SqlserverDatabaseCountMetricConfig provides config for the sqlserver.database.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.database.execution.errors:
-        description: "SqlserverDatabaseExecutionErrorsConfig provides config for the sqlserver.database.execution.errors metric."
+        description: "SqlserverDatabaseExecutionErrorsMetricConfig provides config for the sqlserver.database.execution.errors metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.database.full_scan.rate:
-        description: "SqlserverDatabaseFullScanRateConfig provides config for the sqlserver.database.full_scan.rate metric."
+        description: "SqlserverDatabaseFullScanRateMetricConfig provides config for the sqlserver.database.full_scan.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.database.io:
-        description: "SqlserverDatabaseIoConfig provides config for the sqlserver.database.io metric."
+        description: "SqlserverDatabaseIoMetricConfig provides config for the sqlserver.database.io metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.database.latency:
-        description: "SqlserverDatabaseLatencyConfig provides config for the sqlserver.database.latency metric."
+        description: "SqlserverDatabaseLatencyMetricConfig provides config for the sqlserver.database.latency metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.database.operations:
-        description: "SqlserverDatabaseOperationsConfig provides config for the sqlserver.database.operations metric."
+        description: "SqlserverDatabaseOperationsMetricConfig provides config for the sqlserver.database.operations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.database.tempdb.space:
-        description: "SqlserverDatabaseTempdbSpaceConfig provides config for the sqlserver.database.tempdb.space metric."
+        description: "SqlserverDatabaseTempdbSpaceMetricConfig provides config for the sqlserver.database.tempdb.space metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.database.tempdb.version_store.size:
-        description: "SqlserverDatabaseTempdbVersionStoreSizeConfig provides config for the sqlserver.database.tempdb.version_store.size metric."
+        description: "SqlserverDatabaseTempdbVersionStoreSizeMetricConfig provides config for the sqlserver.database.tempdb.version_store.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.deadlock.rate:
-        description: "SqlserverDeadlockRateConfig provides config for the sqlserver.deadlock.rate metric."
+        description: "SqlserverDeadlockRateMetricConfig provides config for the sqlserver.deadlock.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.index.search.rate:
-        description: "SqlserverIndexSearchRateConfig provides config for the sqlserver.index.search.rate metric."
+        description: "SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.lock.timeout.rate:
-        description: "SqlserverLockTimeoutRateConfig provides config for the sqlserver.lock.timeout.rate metric."
+        description: "SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.lock.wait.count:
-        description: "SqlserverLockWaitCountConfig provides config for the sqlserver.lock.wait.count metric."
+        description: "SqlserverLockWaitCountMetricConfig provides config for the sqlserver.lock.wait.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.lock.wait.rate:
-        description: "SqlserverLockWaitRateConfig provides config for the sqlserver.lock.wait.rate metric."
+        description: "SqlserverLockWaitRateMetricConfig provides config for the sqlserver.lock.wait.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.lock.wait_time.avg:
-        description: "SqlserverLockWaitTimeAvgConfig provides config for the sqlserver.lock.wait_time.avg metric."
+        description: "SqlserverLockWaitTimeAvgMetricConfig provides config for the sqlserver.lock.wait_time.avg metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.login.rate:
-        description: "SqlserverLoginRateConfig provides config for the sqlserver.login.rate metric."
+        description: "SqlserverLoginRateMetricConfig provides config for the sqlserver.login.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.logout.rate:
-        description: "SqlserverLogoutRateConfig provides config for the sqlserver.logout.rate metric."
+        description: "SqlserverLogoutRateMetricConfig provides config for the sqlserver.logout.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.memory.grants.pending.count:
-        description: "SqlserverMemoryGrantsPendingCountConfig provides config for the sqlserver.memory.grants.pending.count metric."
+        description: "SqlserverMemoryGrantsPendingCountMetricConfig provides config for the sqlserver.memory.grants.pending.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.memory.usage:
-        description: "SqlserverMemoryUsageConfig provides config for the sqlserver.memory.usage metric."
+        description: "SqlserverMemoryUsageMetricConfig provides config for the sqlserver.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.os.wait.duration:
-        description: "SqlserverOsWaitDurationConfig provides config for the sqlserver.os.wait.duration metric."
+        description: "SqlserverOsWaitDurationMetricConfig provides config for the sqlserver.os.wait.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.page.buffer_cache.free_list.stalls.rate:
-        description: "SqlserverPageBufferCacheFreeListStallsRateConfig provides config for the sqlserver.page.buffer_cache.free_list.stalls.rate metric."
+        description: "SqlserverPageBufferCacheFreeListStallsRateMetricConfig provides config for the sqlserver.page.buffer_cache.free_list.stalls.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.page.buffer_cache.hit_ratio:
-        description: "SqlserverPageBufferCacheHitRatioConfig provides config for the sqlserver.page.buffer_cache.hit_ratio metric."
+        description: "SqlserverPageBufferCacheHitRatioMetricConfig provides config for the sqlserver.page.buffer_cache.hit_ratio metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.page.checkpoint.flush.rate:
-        description: "SqlserverPageCheckpointFlushRateConfig provides config for the sqlserver.page.checkpoint.flush.rate metric."
+        description: "SqlserverPageCheckpointFlushRateMetricConfig provides config for the sqlserver.page.checkpoint.flush.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.page.lazy_write.rate:
-        description: "SqlserverPageLazyWriteRateConfig provides config for the sqlserver.page.lazy_write.rate metric."
+        description: "SqlserverPageLazyWriteRateMetricConfig provides config for the sqlserver.page.lazy_write.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.page.life_expectancy:
-        description: "SqlserverPageLifeExpectancyConfig provides config for the sqlserver.page.life_expectancy metric."
+        description: "SqlserverPageLifeExpectancyMetricConfig provides config for the sqlserver.page.life_expectancy metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.page.lookup.rate:
-        description: "SqlserverPageLookupRateConfig provides config for the sqlserver.page.lookup.rate metric."
+        description: "SqlserverPageLookupRateMetricConfig provides config for the sqlserver.page.lookup.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.page.operation.rate:
-        description: "SqlserverPageOperationRateConfig provides config for the sqlserver.page.operation.rate metric."
+        description: "SqlserverPageOperationRateMetricConfig provides config for the sqlserver.page.operation.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.page.split.rate:
-        description: "SqlserverPageSplitRateConfig provides config for the sqlserver.page.split.rate metric."
+        description: "SqlserverPageSplitRateMetricConfig provides config for the sqlserver.page.split.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.processes.blocked:
-        description: "SqlserverProcessesBlockedConfig provides config for the sqlserver.processes.blocked metric."
+        description: "SqlserverProcessesBlockedMetricConfig provides config for the sqlserver.processes.blocked metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.replica.data.rate:
-        description: "SqlserverReplicaDataRateConfig provides config for the sqlserver.replica.data.rate metric."
+        description: "SqlserverReplicaDataRateMetricConfig provides config for the sqlserver.replica.data.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.resource_pool.disk.operations:
-        description: "SqlserverResourcePoolDiskOperationsConfig provides config for the sqlserver.resource_pool.disk.operations metric."
+        description: "SqlserverResourcePoolDiskOperationsMetricConfig provides config for the sqlserver.resource_pool.disk.operations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.resource_pool.disk.throttled.read.rate:
-        description: "SqlserverResourcePoolDiskThrottledReadRateConfig provides config for the sqlserver.resource_pool.disk.throttled.read.rate metric."
+        description: "SqlserverResourcePoolDiskThrottledReadRateMetricConfig provides config for the sqlserver.resource_pool.disk.throttled.read.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.resource_pool.disk.throttled.write.rate:
-        description: "SqlserverResourcePoolDiskThrottledWriteRateConfig provides config for the sqlserver.resource_pool.disk.throttled.write.rate metric."
+        description: "SqlserverResourcePoolDiskThrottledWriteRateMetricConfig provides config for the sqlserver.resource_pool.disk.throttled.write.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.table.count:
-        description: "SqlserverTableCountConfig provides config for the sqlserver.table.count metric."
+        description: "SqlserverTableCountMetricConfig provides config for the sqlserver.table.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.transaction.delay:
-        description: "SqlserverTransactionDelayConfig provides config for the sqlserver.transaction.delay metric."
+        description: "SqlserverTransactionDelayMetricConfig provides config for the sqlserver.transaction.delay metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.transaction.mirror_write.rate:
-        description: "SqlserverTransactionMirrorWriteRateConfig provides config for the sqlserver.transaction.mirror_write.rate metric."
+        description: "SqlserverTransactionMirrorWriteRateMetricConfig provides config for the sqlserver.transaction.mirror_write.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sqlserver.transaction.rate:
-        description: "SqlserverTransactionRateConfig provides config for the sqlserver.transaction.rate metric."
+        description: "SqlserverTransactionRateMetricConfig provides config for the sqlserver.transaction.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.transaction.write.rate:
-        description: "SqlserverTransactionWriteRateConfig provides config for the sqlserver.transaction.write.rate metric."
+        description: "SqlserverTransactionWriteRateMetricConfig provides config for the sqlserver.transaction.write.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.transaction_log.flush.data.rate:
-        description: "SqlserverTransactionLogFlushDataRateConfig provides config for the sqlserver.transaction_log.flush.data.rate metric."
+        description: "SqlserverTransactionLogFlushDataRateMetricConfig provides config for the sqlserver.transaction_log.flush.data.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.transaction_log.flush.rate:
-        description: "SqlserverTransactionLogFlushRateConfig provides config for the sqlserver.transaction_log.flush.rate metric."
+        description: "SqlserverTransactionLogFlushRateMetricConfig provides config for the sqlserver.transaction_log.flush.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.transaction_log.flush.wait.rate:
-        description: "SqlserverTransactionLogFlushWaitRateConfig provides config for the sqlserver.transaction_log.flush.wait.rate metric."
+        description: "SqlserverTransactionLogFlushWaitRateMetricConfig provides config for the sqlserver.transaction_log.flush.wait.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.transaction_log.growth.count:
-        description: "SqlserverTransactionLogGrowthCountConfig provides config for the sqlserver.transaction_log.growth.count metric."
+        description: "SqlserverTransactionLogGrowthCountMetricConfig provides config for the sqlserver.transaction_log.growth.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.transaction_log.shrink.count:
-        description: "SqlserverTransactionLogShrinkCountConfig provides config for the sqlserver.transaction_log.shrink.count metric."
+        description: "SqlserverTransactionLogShrinkCountMetricConfig provides config for the sqlserver.transaction_log.shrink.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.transaction_log.usage:
-        description: "SqlserverTransactionLogUsageConfig provides config for the sqlserver.transaction_log.usage metric."
+        description: "SqlserverTransactionLogUsageMetricConfig provides config for the sqlserver.transaction_log.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sqlserver.user.connection.count:
-        description: "SqlserverUserConnectionCountConfig provides config for the sqlserver.user.connection.count metric."
+        description: "SqlserverUserConnectionCountMetricConfig provides config for the sqlserver.user.connection.count metric."
         type: object
         properties:
           enabled:
