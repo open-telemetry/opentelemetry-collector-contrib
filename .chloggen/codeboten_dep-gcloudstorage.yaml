@@ -1,0 +1,4 @@
+change_type: 'deprecation'
+component: exporter/google_cloud_storage
+note: Introduce new snake case compliant name `google_cloud_storage`
+issues: [46733]

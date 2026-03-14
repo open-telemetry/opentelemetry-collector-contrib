@@ -23,6 +23,10 @@ resource_attributes:
     description: Proxy name
     enabled: true
     type: string
+  haproxy.server.state:
+    description: Server status (UP, DOWN, NOLB, MAINT, no check, etc.). Corresponds to HAProxy's `status` field.
+    enabled: false
+    type: string
   haproxy.service_name:
     description: Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener)
     enabled: true

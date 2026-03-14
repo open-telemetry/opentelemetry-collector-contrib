@@ -445,10 +445,6 @@ component_management:
     name: processor_cumulativetodelta
     paths:
     - processor/cumulativetodeltaprocessor/**
-  - component_id: processor_datadogsemantics
-    name: processor_datadogsemantics
-    paths:
-    - processor/datadogsemanticsprocessor/**
   - component_id: processor_deltatocumulative
     name: processor_deltatocumulative
     paths:

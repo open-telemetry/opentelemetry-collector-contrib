@@ -1,4 +1,7 @@
+display_name: vCenter Receiver
 type: vcenter
+
+description: This receiver fetches metrics from a vCenter or ESXi host running VMware vSphere APIs.
 
 status:
   class: receiver
