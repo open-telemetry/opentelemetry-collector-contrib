@@ -6,11 +6,12 @@ package correctnesstests // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"bufio"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
-	"net"
 
 	"go.uber.org/zap"
 
@@ -48,16 +49,8 @@ func CreateConfigYaml(
 	// and the collector's receivers (sender endpoint), which can happen if CreateConfigYaml
 	// is called before the receivers are started (bound).
 	telemetryPort := testutil.GetAvailablePort(tb)
-	found := false
-	for !found {
-		found = true
-		for _, p := range plannedPorts {
-			if p == telemetryPort {
-				found = false
-				telemetryPort = testutil.GetAvailablePort(tb)
-				break
-			}
-		}
+	for slices.Contains(plannedPorts, telemetryPort) {
+		telemetryPort = testutil.GetAvailablePort(tb)
 	}
 
 	// Prepare extra processor config section and comma-separated list of extra processor
