@@ -301,11 +301,6 @@ func newCommonTestCase(t *testing.T, tc testChannel) *commonTestCase {
 	return ctc
 }
 
-func (ctc *commonTestCase) cancelAndWait() error {
-	ctc.cancel()
-	return ctc.wait()
-}
-
 func (ctc *commonTestCase) wait() error {
 	return <-ctc.streamErr
 }
@@ -400,19 +395,6 @@ func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq 
 	}()
 }
 
-func requireCanceledStatus(t *testing.T, err error) {
-	requireStatus(t, codes.Canceled, err)
-}
-
-func requireCanceledOrCleanStatus(t *testing.T, err error) {
-	// TODO: This fixed the test on #46000 but it is unclear if
-	// it is the desired thing to test for.
-	if err == nil {
-		return
-	}
-	requireStatus(t, codes.Canceled, err)
-}
-
 func requireUnavailableStatus(t *testing.T, err error) {
 	requireStatus(t, codes.Unavailable, err)
 }
@@ -496,7 +478,8 @@ func TestBoundedQueueLimits(t *testing.T) {
 				}, []json.Marshaler{
 					compareJSONTraces{actualTD},
 				})
-				requireCanceledOrCleanStatus(t, ctc.cancelAndWait())
+				close(ctc.receive)
+				require.NoError(t, ctc.wait())
 			}
 		})
 	}
@@ -522,8 +505,8 @@ func TestReceiverTraces(t *testing.T) {
 		compareJSONTraces{(<-ctc.consume).Data.(ptrace.Traces)},
 	})
 
-	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	close(ctc.receive)
+	require.NoError(t, ctc.wait())
 }
 
 func TestReceiverLogs(t *testing.T) {
@@ -541,8 +524,8 @@ func TestReceiverLogs(t *testing.T) {
 
 	assert.Equal(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
 
-	err = ctc.cancelAndWait()
-	requireCanceledOrCleanStatus(t, err)
+	close(ctc.receive)
+	require.NoError(t, ctc.wait())
 }
 
 func TestReceiverMetrics(t *testing.T) {
@@ -565,8 +548,8 @@ func TestReceiverMetrics(t *testing.T) {
 		compareJSONMetrics{(<-ctc.consume).Data.(pmetric.Metrics)},
 	})
 
-	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	close(ctc.receive)
+	require.NoError(t, ctc.wait())
 }
 
 func TestReceiverRecvError(t *testing.T) {
@@ -712,8 +695,8 @@ func TestReceiverConsumeError(t *testing.T) {
 			})
 		}
 
-		err = ctc.cancelAndWait()
-		requireCanceledOrCleanStatus(t, err)
+		close(ctc.receive)
+		require.NoError(t, ctc.wait())
 	}
 }
 
