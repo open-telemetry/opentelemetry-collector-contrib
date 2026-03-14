@@ -235,7 +235,7 @@ func (a *argument) accept(v grammarVisitor) {
 // mathExpression, function call, or literal.
 type value struct {
 	IsNil          *isNil           `parser:"( @Nil"`
-	Literal        *mathExprLiteral `parser:"| @@ (?! OpAddSub | OpMultDiv)"`
+	Literal        *mathExprLiteral `parser:"| @@ (?! OpAddSub | OpMultDiv | OpBitwiseAnd | OpBitwiseOr)"`
 	MathExpression *mathExpression  `parser:"| @@"`
 	Bytes          *byteSlice       `parser:"| @Bytes"`
 	String         *string          `parser:"| @String"`
@@ -436,20 +436,72 @@ func (r *opAddSubTerm) accept(v grammarVisitor) {
 	}
 }
 
-type mathExpression struct {
+type bitwiseAndTerm struct {
 	Left  *addSubTerm     `parser:"@@"`
 	Right []*opAddSubTerm `parser:"@@*"`
+}
+
+func (m *bitwiseAndTerm) accept(v grammarVisitor) {
+	if m.Left != nil {
+		m.Left.accept(v)
+	}
+	for _, r := range m.Right {
+		if r != nil {
+			r.accept(v)
+		}
+	}
+}
+
+type opBitwiseAndTerm struct {
+	Operator mathOp          `parser:"@OpBitwiseAnd"`
+	Term     *bitwiseAndTerm `parser:"@@"`
+}
+
+func (o *opBitwiseAndTerm) accept(v grammarVisitor) {
+	if o.Term != nil {
+		o.Term.accept(v)
+	}
+}
+
+type bitwiseOrTerm struct {
+	Left  *bitwiseAndTerm     `parser:"@@"`
+	Right []*opBitwiseAndTerm `parser:"@@*"`
+}
+
+func (m *bitwiseOrTerm) accept(v grammarVisitor) {
+	if m.Left != nil {
+		m.Left.accept(v)
+	}
+	for _, r := range m.Right {
+		if r != nil {
+			r.accept(v)
+		}
+	}
+}
+
+type opBitwiseOrTerm struct {
+	Operator mathOp         `parser:"@OpBitwiseOr"`
+	Term     *bitwiseOrTerm `parser:"@@"`
+}
+
+func (o *opBitwiseOrTerm) accept(v grammarVisitor) {
+	if o.Term != nil {
+		o.Term.accept(v)
+	}
+}
+
+type mathExpression struct {
+	Left  *bitwiseOrTerm     `parser:"@@"`
+	Right []*opBitwiseOrTerm `parser:"@@*"`
 }
 
 func (m *mathExpression) accept(v grammarVisitor) {
 	if m.Left != nil {
 		m.Left.accept(v)
 	}
-	if m.Right != nil {
-		for _, r := range m.Right {
-			if r != nil {
-				r.accept(v)
-			}
+	for _, r := range m.Right {
+		if r != nil {
+			r.accept(v)
 		}
 	}
 }
@@ -461,6 +513,8 @@ const (
 	sub
 	mult
 	div
+	bitwiseAnd
+	bitwiseOr
 )
 
 var mathOpTable = map[string]mathOp{
@@ -468,6 +522,8 @@ var mathOpTable = map[string]mathOp{
 	"-": sub,
 	"*": mult,
 	"/": div,
+	"&": bitwiseAnd,
+	"|": bitwiseOr,
 }
 
 func (m *mathOp) Capture(values []string) error {
@@ -489,6 +545,10 @@ func (m *mathOp) String() string {
 		return "*"
 	case div:
 		return "/"
+	case bitwiseAnd:
+		return "&"
+	case bitwiseOr:
+		return "|"
 	default:
 		return "UNKNOWN OP!"
 	}
@@ -510,6 +570,8 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `OpOr`, Pattern: `\b(or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
 		{Name: `OpComparison`, Pattern: `==|!=|>=|<=|>|<`},
+		{Name: `OpBitwiseAnd`, Pattern: `&`},
+		{Name: `OpBitwiseOr`, Pattern: `\|`},
 		{Name: `OpAddSub`, Pattern: `\+|\-`},
 		{Name: `OpMultDiv`, Pattern: `\/|\*`},
 		{Name: `Boolean`, Pattern: `\b(true|false)\b`},
