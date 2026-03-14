@@ -5,35 +5,35 @@ $defs:
     type: object
     properties:
       ping.loss.ratio:
-        description: "PingLossRatioConfig provides config for the ping.loss.ratio metric."
+        description: "PingLossRatioMetricConfig provides config for the ping.loss.ratio metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       ping.rtt.avg:
-        description: "PingRttAvgConfig provides config for the ping.rtt.avg metric."
+        description: "PingRttAvgMetricConfig provides config for the ping.rtt.avg metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       ping.rtt.max:
-        description: "PingRttMaxConfig provides config for the ping.rtt.max metric."
+        description: "PingRttMaxMetricConfig provides config for the ping.rtt.max metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       ping.rtt.min:
-        description: "PingRttMinConfig provides config for the ping.rtt.min metric."
+        description: "PingRttMinMetricConfig provides config for the ping.rtt.min metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       ping.rtt.stddev:
-        description: "PingRttStddevConfig provides config for the ping.rtt.stddev metric."
+        description: "PingRttStddevMetricConfig provides config for the ping.rtt.stddev metric."
         type: object
         properties:
           enabled:

@@ -6,13 +6,13 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// WindowsServiceStatusConfig provides config for the windows.service.status metric.
-type WindowsServiceStatusConfig struct {
+// WindowsServiceStatusMetricConfig provides config for the windows.service.status metric.
+type WindowsServiceStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *WindowsServiceStatusConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *WindowsServiceStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -28,12 +28,12 @@ func (ms *WindowsServiceStatusConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for windowsservice metrics.
 type MetricsConfig struct {
-	WindowsServiceStatus WindowsServiceStatusConfig `mapstructure:"windows.service.status"`
+	WindowsServiceStatus WindowsServiceStatusMetricConfig `mapstructure:"windows.service.status"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		WindowsServiceStatus: WindowsServiceStatusConfig{
+		WindowsServiceStatus: WindowsServiceStatusMetricConfig{
 			Enabled: true,
 		},
 	}
