@@ -2,8 +2,6 @@ $defs:
   resolver:
     type: object
     properties:
-      include_file_permissions:
-        type: boolean
       include_file_name:
         type: boolean
       include_file_name_resolved:
@@ -15,4 +13,6 @@ $defs:
       include_file_path:
         type: boolean
       include_file_path_resolved:
+        type: boolean
+      include_file_permissions:
         type: boolean

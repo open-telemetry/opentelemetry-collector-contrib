@@ -19,6 +19,11 @@ func (r *Resolver) addPermissionInfo(file *os.File, attributes map[string]any) e
 	}
 	fileStat := fileInfo.Sys().(*syscall.Stat_t)
 
+	if r.IncludeFilePermissions {
+		// Format the file mode as a 3-digit octal string (e.g., "755")
+		perms := fmt.Sprintf("%03o", fileInfo.Mode().Perm())
+		attributes[LogFilePermissions] = perms
+	}
 	if r.IncludeFileOwnerName {
 		fileOwner, errFileUser := user.LookupId(fmt.Sprint(fileStat.Uid))
 		if errFileUser != nil {
@@ -32,11 +37,6 @@ func (r *Resolver) addPermissionInfo(file *os.File, attributes map[string]any) e
 			return fmt.Errorf("resolve file group name: %w", errFileGroup)
 		}
 		attributes[LogFileOwnerGroupName] = fileGroup.Name
-	}
-	if r.IncludeFilePermissions {
-		// Format the file mode as a 3-digit octal string (e.g., "755")
-		perms := fmt.Sprintf("%03o", fileInfo.Mode().Perm())
-		attributes[LogFilePermissions] = perms
 	}
 	return nil
 }
