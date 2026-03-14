@@ -8,23 +8,23 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// NfsClientNetCountAttributeKey specifies the key of an attribute for the nfs.client.net.count metric.
-type NfsClientNetCountAttributeKey string
+// NfsClientNetCountMetricAttributeKey specifies the key of an attribute for the nfs.client.net.count metric.
+type NfsClientNetCountMetricAttributeKey string
 
 const (
-	NfsClientNetCountAttributeKeyNetworkTransport NfsClientNetCountAttributeKey = "network.transport"
+	NfsClientNetCountMetricAttributeKeyNetworkTransport NfsClientNetCountMetricAttributeKey = "network.transport"
 )
 
-// NfsClientNetCountConfig provides config for the nfs.client.net.count metric.
-type NfsClientNetCountConfig struct {
+// NfsClientNetCountMetricConfig provides config for the nfs.client.net.count metric.
+type NfsClientNetCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NfsClientNetCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NfsClientNetCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NfsClientNetCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsClientNetCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -38,10 +38,10 @@ func (ms *NfsClientNetCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NfsClientNetCountConfig) Validate() error {
+func (ms *NfsClientNetCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NfsClientNetCountAttributeKeyNetworkTransport:
+		case NfsClientNetCountMetricAttributeKeyNetworkTransport:
 		default:
 			return fmt.Errorf("metric nfs.client.net.count doesn't have an attribute %v, valid attributes: [network.transport]", val)
 		}
@@ -56,13 +56,13 @@ func (ms *NfsClientNetCountConfig) Validate() error {
 	return nil
 }
 
-// NfsClientNetTCPConnectionAcceptedConfig provides config for the nfs.client.net.tcp.connection.accepted metric.
-type NfsClientNetTCPConnectionAcceptedConfig struct {
+// NfsClientNetTCPConnectionAcceptedMetricConfig provides config for the nfs.client.net.tcp.connection.accepted metric.
+type NfsClientNetTCPConnectionAcceptedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NfsClientNetTCPConnectionAcceptedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsClientNetTCPConnectionAcceptedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -76,24 +76,24 @@ func (ms *NfsClientNetTCPConnectionAcceptedConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// NfsClientOperationCountAttributeKey specifies the key of an attribute for the nfs.client.operation.count metric.
-type NfsClientOperationCountAttributeKey string
+// NfsClientOperationCountMetricAttributeKey specifies the key of an attribute for the nfs.client.operation.count metric.
+type NfsClientOperationCountMetricAttributeKey string
 
 const (
-	NfsClientOperationCountAttributeKeyOncRPCVersion    NfsClientOperationCountAttributeKey = "onc_rpc.version"
-	NfsClientOperationCountAttributeKeyNfsOperationName NfsClientOperationCountAttributeKey = "nfs.operation.name"
+	NfsClientOperationCountMetricAttributeKeyOncRPCVersion    NfsClientOperationCountMetricAttributeKey = "onc_rpc.version"
+	NfsClientOperationCountMetricAttributeKeyNfsOperationName NfsClientOperationCountMetricAttributeKey = "nfs.operation.name"
 )
 
-// NfsClientOperationCountConfig provides config for the nfs.client.operation.count metric.
-type NfsClientOperationCountConfig struct {
+// NfsClientOperationCountMetricConfig provides config for the nfs.client.operation.count metric.
+type NfsClientOperationCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NfsClientOperationCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NfsClientOperationCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NfsClientOperationCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsClientOperationCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -107,10 +107,10 @@ func (ms *NfsClientOperationCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NfsClientOperationCountConfig) Validate() error {
+func (ms *NfsClientOperationCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NfsClientOperationCountAttributeKeyOncRPCVersion, NfsClientOperationCountAttributeKeyNfsOperationName:
+		case NfsClientOperationCountMetricAttributeKeyOncRPCVersion, NfsClientOperationCountMetricAttributeKeyNfsOperationName:
 		default:
 			return fmt.Errorf("metric nfs.client.operation.count doesn't have an attribute %v, valid attributes: [onc_rpc.version, nfs.operation.name]", val)
 		}
@@ -125,24 +125,24 @@ func (ms *NfsClientOperationCountConfig) Validate() error {
 	return nil
 }
 
-// NfsClientProcedureCountAttributeKey specifies the key of an attribute for the nfs.client.procedure.count metric.
-type NfsClientProcedureCountAttributeKey string
+// NfsClientProcedureCountMetricAttributeKey specifies the key of an attribute for the nfs.client.procedure.count metric.
+type NfsClientProcedureCountMetricAttributeKey string
 
 const (
-	NfsClientProcedureCountAttributeKeyOncRPCVersion       NfsClientProcedureCountAttributeKey = "onc_rpc.version"
-	NfsClientProcedureCountAttributeKeyOncRPCProcedureName NfsClientProcedureCountAttributeKey = "onc_rpc.procedure.name"
+	NfsClientProcedureCountMetricAttributeKeyOncRPCVersion       NfsClientProcedureCountMetricAttributeKey = "onc_rpc.version"
+	NfsClientProcedureCountMetricAttributeKeyOncRPCProcedureName NfsClientProcedureCountMetricAttributeKey = "onc_rpc.procedure.name"
 )
 
-// NfsClientProcedureCountConfig provides config for the nfs.client.procedure.count metric.
-type NfsClientProcedureCountConfig struct {
+// NfsClientProcedureCountMetricConfig provides config for the nfs.client.procedure.count metric.
+type NfsClientProcedureCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NfsClientProcedureCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NfsClientProcedureCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NfsClientProcedureCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsClientProcedureCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -156,10 +156,10 @@ func (ms *NfsClientProcedureCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NfsClientProcedureCountConfig) Validate() error {
+func (ms *NfsClientProcedureCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NfsClientProcedureCountAttributeKeyOncRPCVersion, NfsClientProcedureCountAttributeKeyOncRPCProcedureName:
+		case NfsClientProcedureCountMetricAttributeKeyOncRPCVersion, NfsClientProcedureCountMetricAttributeKeyOncRPCProcedureName:
 		default:
 			return fmt.Errorf("metric nfs.client.procedure.count doesn't have an attribute %v, valid attributes: [onc_rpc.version, onc_rpc.procedure.name]", val)
 		}
@@ -174,13 +174,13 @@ func (ms *NfsClientProcedureCountConfig) Validate() error {
 	return nil
 }
 
-// NfsClientRPCAuthrefreshCountConfig provides config for the nfs.client.rpc.authrefresh.count metric.
-type NfsClientRPCAuthrefreshCountConfig struct {
+// NfsClientRPCAuthrefreshCountMetricConfig provides config for the nfs.client.rpc.authrefresh.count metric.
+type NfsClientRPCAuthrefreshCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NfsClientRPCAuthrefreshCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsClientRPCAuthrefreshCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -194,13 +194,13 @@ func (ms *NfsClientRPCAuthrefreshCountConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// NfsClientRPCCountConfig provides config for the nfs.client.rpc.count metric.
-type NfsClientRPCCountConfig struct {
+// NfsClientRPCCountMetricConfig provides config for the nfs.client.rpc.count metric.
+type NfsClientRPCCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NfsClientRPCCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsClientRPCCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -214,13 +214,13 @@ func (ms *NfsClientRPCCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// NfsClientRPCRetransmitCountConfig provides config for the nfs.client.rpc.retransmit.count metric.
-type NfsClientRPCRetransmitCountConfig struct {
+// NfsClientRPCRetransmitCountMetricConfig provides config for the nfs.client.rpc.retransmit.count metric.
+type NfsClientRPCRetransmitCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NfsClientRPCRetransmitCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsClientRPCRetransmitCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -234,13 +234,13 @@ func (ms *NfsClientRPCRetransmitCountConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// NfsServerFhStaleCountConfig provides config for the nfs.server.fh.stale.count metric.
-type NfsServerFhStaleCountConfig struct {
+// NfsServerFhStaleCountMetricConfig provides config for the nfs.server.fh.stale.count metric.
+type NfsServerFhStaleCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NfsServerFhStaleCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsServerFhStaleCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -254,23 +254,23 @@ func (ms *NfsServerFhStaleCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// NfsServerIoAttributeKey specifies the key of an attribute for the nfs.server.io metric.
-type NfsServerIoAttributeKey string
+// NfsServerIoMetricAttributeKey specifies the key of an attribute for the nfs.server.io metric.
+type NfsServerIoMetricAttributeKey string
 
 const (
-	NfsServerIoAttributeKeyNetworkIoDirection NfsServerIoAttributeKey = "network.io.direction"
+	NfsServerIoMetricAttributeKeyNetworkIoDirection NfsServerIoMetricAttributeKey = "network.io.direction"
 )
 
-// NfsServerIoConfig provides config for the nfs.server.io metric.
-type NfsServerIoConfig struct {
+// NfsServerIoMetricConfig provides config for the nfs.server.io metric.
+type NfsServerIoMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NfsServerIoAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NfsServerIoMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NfsServerIoConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsServerIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -284,10 +284,10 @@ func (ms *NfsServerIoConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NfsServerIoConfig) Validate() error {
+func (ms *NfsServerIoMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NfsServerIoAttributeKeyNetworkIoDirection:
+		case NfsServerIoMetricAttributeKeyNetworkIoDirection:
 		default:
 			return fmt.Errorf("metric nfs.server.io doesn't have an attribute %v, valid attributes: [network.io.direction]", val)
 		}
@@ -302,23 +302,23 @@ func (ms *NfsServerIoConfig) Validate() error {
 	return nil
 }
 
-// NfsServerNetCountAttributeKey specifies the key of an attribute for the nfs.server.net.count metric.
-type NfsServerNetCountAttributeKey string
+// NfsServerNetCountMetricAttributeKey specifies the key of an attribute for the nfs.server.net.count metric.
+type NfsServerNetCountMetricAttributeKey string
 
 const (
-	NfsServerNetCountAttributeKeyNetworkTransport NfsServerNetCountAttributeKey = "network.transport"
+	NfsServerNetCountMetricAttributeKeyNetworkTransport NfsServerNetCountMetricAttributeKey = "network.transport"
 )
 
-// NfsServerNetCountConfig provides config for the nfs.server.net.count metric.
-type NfsServerNetCountConfig struct {
+// NfsServerNetCountMetricConfig provides config for the nfs.server.net.count metric.
+type NfsServerNetCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NfsServerNetCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NfsServerNetCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NfsServerNetCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsServerNetCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -332,10 +332,10 @@ func (ms *NfsServerNetCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NfsServerNetCountConfig) Validate() error {
+func (ms *NfsServerNetCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NfsServerNetCountAttributeKeyNetworkTransport:
+		case NfsServerNetCountMetricAttributeKeyNetworkTransport:
 		default:
 			return fmt.Errorf("metric nfs.server.net.count doesn't have an attribute %v, valid attributes: [network.transport]", val)
 		}
@@ -350,13 +350,13 @@ func (ms *NfsServerNetCountConfig) Validate() error {
 	return nil
 }
 
-// NfsServerNetTCPConnectionAcceptedConfig provides config for the nfs.server.net.tcp.connection.accepted metric.
-type NfsServerNetTCPConnectionAcceptedConfig struct {
+// NfsServerNetTCPConnectionAcceptedMetricConfig provides config for the nfs.server.net.tcp.connection.accepted metric.
+type NfsServerNetTCPConnectionAcceptedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NfsServerNetTCPConnectionAcceptedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsServerNetTCPConnectionAcceptedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -370,24 +370,24 @@ func (ms *NfsServerNetTCPConnectionAcceptedConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// NfsServerOperationCountAttributeKey specifies the key of an attribute for the nfs.server.operation.count metric.
-type NfsServerOperationCountAttributeKey string
+// NfsServerOperationCountMetricAttributeKey specifies the key of an attribute for the nfs.server.operation.count metric.
+type NfsServerOperationCountMetricAttributeKey string
 
 const (
-	NfsServerOperationCountAttributeKeyOncRPCVersion    NfsServerOperationCountAttributeKey = "onc_rpc.version"
-	NfsServerOperationCountAttributeKeyNfsOperationName NfsServerOperationCountAttributeKey = "nfs.operation.name"
+	NfsServerOperationCountMetricAttributeKeyOncRPCVersion    NfsServerOperationCountMetricAttributeKey = "onc_rpc.version"
+	NfsServerOperationCountMetricAttributeKeyNfsOperationName NfsServerOperationCountMetricAttributeKey = "nfs.operation.name"
 )
 
-// NfsServerOperationCountConfig provides config for the nfs.server.operation.count metric.
-type NfsServerOperationCountConfig struct {
+// NfsServerOperationCountMetricConfig provides config for the nfs.server.operation.count metric.
+type NfsServerOperationCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NfsServerOperationCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NfsServerOperationCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NfsServerOperationCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsServerOperationCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -401,10 +401,10 @@ func (ms *NfsServerOperationCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NfsServerOperationCountConfig) Validate() error {
+func (ms *NfsServerOperationCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NfsServerOperationCountAttributeKeyOncRPCVersion, NfsServerOperationCountAttributeKeyNfsOperationName:
+		case NfsServerOperationCountMetricAttributeKeyOncRPCVersion, NfsServerOperationCountMetricAttributeKeyNfsOperationName:
 		default:
 			return fmt.Errorf("metric nfs.server.operation.count doesn't have an attribute %v, valid attributes: [onc_rpc.version, nfs.operation.name]", val)
 		}
@@ -419,24 +419,24 @@ func (ms *NfsServerOperationCountConfig) Validate() error {
 	return nil
 }
 
-// NfsServerProcedureCountAttributeKey specifies the key of an attribute for the nfs.server.procedure.count metric.
-type NfsServerProcedureCountAttributeKey string
+// NfsServerProcedureCountMetricAttributeKey specifies the key of an attribute for the nfs.server.procedure.count metric.
+type NfsServerProcedureCountMetricAttributeKey string
 
 const (
-	NfsServerProcedureCountAttributeKeyOncRPCVersion       NfsServerProcedureCountAttributeKey = "onc_rpc.version"
-	NfsServerProcedureCountAttributeKeyOncRPCProcedureName NfsServerProcedureCountAttributeKey = "onc_rpc.procedure.name"
+	NfsServerProcedureCountMetricAttributeKeyOncRPCVersion       NfsServerProcedureCountMetricAttributeKey = "onc_rpc.version"
+	NfsServerProcedureCountMetricAttributeKeyOncRPCProcedureName NfsServerProcedureCountMetricAttributeKey = "onc_rpc.procedure.name"
 )
 
-// NfsServerProcedureCountConfig provides config for the nfs.server.procedure.count metric.
-type NfsServerProcedureCountConfig struct {
+// NfsServerProcedureCountMetricConfig provides config for the nfs.server.procedure.count metric.
+type NfsServerProcedureCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NfsServerProcedureCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NfsServerProcedureCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NfsServerProcedureCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsServerProcedureCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -450,10 +450,10 @@ func (ms *NfsServerProcedureCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NfsServerProcedureCountConfig) Validate() error {
+func (ms *NfsServerProcedureCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NfsServerProcedureCountAttributeKeyOncRPCVersion, NfsServerProcedureCountAttributeKeyOncRPCProcedureName:
+		case NfsServerProcedureCountMetricAttributeKeyOncRPCVersion, NfsServerProcedureCountMetricAttributeKeyOncRPCProcedureName:
 		default:
 			return fmt.Errorf("metric nfs.server.procedure.count doesn't have an attribute %v, valid attributes: [onc_rpc.version, onc_rpc.procedure.name]", val)
 		}
@@ -468,23 +468,23 @@ func (ms *NfsServerProcedureCountConfig) Validate() error {
 	return nil
 }
 
-// NfsServerRepcacheRequestsAttributeKey specifies the key of an attribute for the nfs.server.repcache.requests metric.
-type NfsServerRepcacheRequestsAttributeKey string
+// NfsServerRepcacheRequestsMetricAttributeKey specifies the key of an attribute for the nfs.server.repcache.requests metric.
+type NfsServerRepcacheRequestsMetricAttributeKey string
 
 const (
-	NfsServerRepcacheRequestsAttributeKeyNfsServerRepcacheStatus NfsServerRepcacheRequestsAttributeKey = "nfs.server.repcache.status"
+	NfsServerRepcacheRequestsMetricAttributeKeyNfsServerRepcacheStatus NfsServerRepcacheRequestsMetricAttributeKey = "nfs.server.repcache.status"
 )
 
-// NfsServerRepcacheRequestsConfig provides config for the nfs.server.repcache.requests metric.
-type NfsServerRepcacheRequestsConfig struct {
+// NfsServerRepcacheRequestsMetricConfig provides config for the nfs.server.repcache.requests metric.
+type NfsServerRepcacheRequestsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NfsServerRepcacheRequestsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NfsServerRepcacheRequestsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NfsServerRepcacheRequestsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsServerRepcacheRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -498,10 +498,10 @@ func (ms *NfsServerRepcacheRequestsConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-func (ms *NfsServerRepcacheRequestsConfig) Validate() error {
+func (ms *NfsServerRepcacheRequestsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NfsServerRepcacheRequestsAttributeKeyNfsServerRepcacheStatus:
+		case NfsServerRepcacheRequestsMetricAttributeKeyNfsServerRepcacheStatus:
 		default:
 			return fmt.Errorf("metric nfs.server.repcache.requests doesn't have an attribute %v, valid attributes: [nfs.server.repcache.status]", val)
 		}
@@ -516,23 +516,23 @@ func (ms *NfsServerRepcacheRequestsConfig) Validate() error {
 	return nil
 }
 
-// NfsServerRPCCountAttributeKey specifies the key of an attribute for the nfs.server.rpc.count metric.
-type NfsServerRPCCountAttributeKey string
+// NfsServerRPCCountMetricAttributeKey specifies the key of an attribute for the nfs.server.rpc.count metric.
+type NfsServerRPCCountMetricAttributeKey string
 
 const (
-	NfsServerRPCCountAttributeKeyErrorType NfsServerRPCCountAttributeKey = "error.type"
+	NfsServerRPCCountMetricAttributeKeyErrorType NfsServerRPCCountMetricAttributeKey = "error.type"
 )
 
-// NfsServerRPCCountConfig provides config for the nfs.server.rpc.count metric.
-type NfsServerRPCCountConfig struct {
+// NfsServerRPCCountMetricConfig provides config for the nfs.server.rpc.count metric.
+type NfsServerRPCCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NfsServerRPCCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NfsServerRPCCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NfsServerRPCCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsServerRPCCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -546,10 +546,10 @@ func (ms *NfsServerRPCCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NfsServerRPCCountConfig) Validate() error {
+func (ms *NfsServerRPCCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NfsServerRPCCountAttributeKeyErrorType:
+		case NfsServerRPCCountMetricAttributeKeyErrorType:
 		default:
 			return fmt.Errorf("metric nfs.server.rpc.count doesn't have an attribute %v, valid attributes: [error.type]", val)
 		}
@@ -564,13 +564,13 @@ func (ms *NfsServerRPCCountConfig) Validate() error {
 	return nil
 }
 
-// NfsServerThreadCountConfig provides config for the nfs.server.thread.count metric.
-type NfsServerThreadCountConfig struct {
+// NfsServerThreadCountMetricConfig provides config for the nfs.server.thread.count metric.
+type NfsServerThreadCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NfsServerThreadCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NfsServerThreadCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -586,90 +586,90 @@ func (ms *NfsServerThreadCountConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for nfs metrics.
 type MetricsConfig struct {
-	NfsClientNetCount                 NfsClientNetCountConfig                 `mapstructure:"nfs.client.net.count"`
-	NfsClientNetTCPConnectionAccepted NfsClientNetTCPConnectionAcceptedConfig `mapstructure:"nfs.client.net.tcp.connection.accepted"`
-	NfsClientOperationCount           NfsClientOperationCountConfig           `mapstructure:"nfs.client.operation.count"`
-	NfsClientProcedureCount           NfsClientProcedureCountConfig           `mapstructure:"nfs.client.procedure.count"`
-	NfsClientRPCAuthrefreshCount      NfsClientRPCAuthrefreshCountConfig      `mapstructure:"nfs.client.rpc.authrefresh.count"`
-	NfsClientRPCCount                 NfsClientRPCCountConfig                 `mapstructure:"nfs.client.rpc.count"`
-	NfsClientRPCRetransmitCount       NfsClientRPCRetransmitCountConfig       `mapstructure:"nfs.client.rpc.retransmit.count"`
-	NfsServerFhStaleCount             NfsServerFhStaleCountConfig             `mapstructure:"nfs.server.fh.stale.count"`
-	NfsServerIo                       NfsServerIoConfig                       `mapstructure:"nfs.server.io"`
-	NfsServerNetCount                 NfsServerNetCountConfig                 `mapstructure:"nfs.server.net.count"`
-	NfsServerNetTCPConnectionAccepted NfsServerNetTCPConnectionAcceptedConfig `mapstructure:"nfs.server.net.tcp.connection.accepted"`
-	NfsServerOperationCount           NfsServerOperationCountConfig           `mapstructure:"nfs.server.operation.count"`
-	NfsServerProcedureCount           NfsServerProcedureCountConfig           `mapstructure:"nfs.server.procedure.count"`
-	NfsServerRepcacheRequests         NfsServerRepcacheRequestsConfig         `mapstructure:"nfs.server.repcache.requests"`
-	NfsServerRPCCount                 NfsServerRPCCountConfig                 `mapstructure:"nfs.server.rpc.count"`
-	NfsServerThreadCount              NfsServerThreadCountConfig              `mapstructure:"nfs.server.thread.count"`
+	NfsClientNetCount                 NfsClientNetCountMetricConfig                 `mapstructure:"nfs.client.net.count"`
+	NfsClientNetTCPConnectionAccepted NfsClientNetTCPConnectionAcceptedMetricConfig `mapstructure:"nfs.client.net.tcp.connection.accepted"`
+	NfsClientOperationCount           NfsClientOperationCountMetricConfig           `mapstructure:"nfs.client.operation.count"`
+	NfsClientProcedureCount           NfsClientProcedureCountMetricConfig           `mapstructure:"nfs.client.procedure.count"`
+	NfsClientRPCAuthrefreshCount      NfsClientRPCAuthrefreshCountMetricConfig      `mapstructure:"nfs.client.rpc.authrefresh.count"`
+	NfsClientRPCCount                 NfsClientRPCCountMetricConfig                 `mapstructure:"nfs.client.rpc.count"`
+	NfsClientRPCRetransmitCount       NfsClientRPCRetransmitCountMetricConfig       `mapstructure:"nfs.client.rpc.retransmit.count"`
+	NfsServerFhStaleCount             NfsServerFhStaleCountMetricConfig             `mapstructure:"nfs.server.fh.stale.count"`
+	NfsServerIo                       NfsServerIoMetricConfig                       `mapstructure:"nfs.server.io"`
+	NfsServerNetCount                 NfsServerNetCountMetricConfig                 `mapstructure:"nfs.server.net.count"`
+	NfsServerNetTCPConnectionAccepted NfsServerNetTCPConnectionAcceptedMetricConfig `mapstructure:"nfs.server.net.tcp.connection.accepted"`
+	NfsServerOperationCount           NfsServerOperationCountMetricConfig           `mapstructure:"nfs.server.operation.count"`
+	NfsServerProcedureCount           NfsServerProcedureCountMetricConfig           `mapstructure:"nfs.server.procedure.count"`
+	NfsServerRepcacheRequests         NfsServerRepcacheRequestsMetricConfig         `mapstructure:"nfs.server.repcache.requests"`
+	NfsServerRPCCount                 NfsServerRPCCountMetricConfig                 `mapstructure:"nfs.server.rpc.count"`
+	NfsServerThreadCount              NfsServerThreadCountMetricConfig              `mapstructure:"nfs.server.thread.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		NfsClientNetCount: NfsClientNetCountConfig{
+		NfsClientNetCount: NfsClientNetCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NfsClientNetCountAttributeKey{NfsClientNetCountAttributeKeyNetworkTransport},
+			EnabledAttributes:   []NfsClientNetCountMetricAttributeKey{NfsClientNetCountMetricAttributeKeyNetworkTransport},
 		},
-		NfsClientNetTCPConnectionAccepted: NfsClientNetTCPConnectionAcceptedConfig{
+		NfsClientNetTCPConnectionAccepted: NfsClientNetTCPConnectionAcceptedMetricConfig{
 			Enabled: true,
 		},
-		NfsClientOperationCount: NfsClientOperationCountConfig{
+		NfsClientOperationCount: NfsClientOperationCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NfsClientOperationCountAttributeKey{NfsClientOperationCountAttributeKeyOncRPCVersion, NfsClientOperationCountAttributeKeyNfsOperationName},
+			EnabledAttributes:   []NfsClientOperationCountMetricAttributeKey{NfsClientOperationCountMetricAttributeKeyOncRPCVersion, NfsClientOperationCountMetricAttributeKeyNfsOperationName},
 		},
-		NfsClientProcedureCount: NfsClientProcedureCountConfig{
+		NfsClientProcedureCount: NfsClientProcedureCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NfsClientProcedureCountAttributeKey{NfsClientProcedureCountAttributeKeyOncRPCVersion, NfsClientProcedureCountAttributeKeyOncRPCProcedureName},
+			EnabledAttributes:   []NfsClientProcedureCountMetricAttributeKey{NfsClientProcedureCountMetricAttributeKeyOncRPCVersion, NfsClientProcedureCountMetricAttributeKeyOncRPCProcedureName},
 		},
-		NfsClientRPCAuthrefreshCount: NfsClientRPCAuthrefreshCountConfig{
+		NfsClientRPCAuthrefreshCount: NfsClientRPCAuthrefreshCountMetricConfig{
 			Enabled: true,
 		},
-		NfsClientRPCCount: NfsClientRPCCountConfig{
+		NfsClientRPCCount: NfsClientRPCCountMetricConfig{
 			Enabled: true,
 		},
-		NfsClientRPCRetransmitCount: NfsClientRPCRetransmitCountConfig{
+		NfsClientRPCRetransmitCount: NfsClientRPCRetransmitCountMetricConfig{
 			Enabled: true,
 		},
-		NfsServerFhStaleCount: NfsServerFhStaleCountConfig{
+		NfsServerFhStaleCount: NfsServerFhStaleCountMetricConfig{
 			Enabled: true,
 		},
-		NfsServerIo: NfsServerIoConfig{
+		NfsServerIo: NfsServerIoMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NfsServerIoAttributeKey{NfsServerIoAttributeKeyNetworkIoDirection},
+			EnabledAttributes:   []NfsServerIoMetricAttributeKey{NfsServerIoMetricAttributeKeyNetworkIoDirection},
 		},
-		NfsServerNetCount: NfsServerNetCountConfig{
+		NfsServerNetCount: NfsServerNetCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NfsServerNetCountAttributeKey{NfsServerNetCountAttributeKeyNetworkTransport},
+			EnabledAttributes:   []NfsServerNetCountMetricAttributeKey{NfsServerNetCountMetricAttributeKeyNetworkTransport},
 		},
-		NfsServerNetTCPConnectionAccepted: NfsServerNetTCPConnectionAcceptedConfig{
+		NfsServerNetTCPConnectionAccepted: NfsServerNetTCPConnectionAcceptedMetricConfig{
 			Enabled: true,
 		},
-		NfsServerOperationCount: NfsServerOperationCountConfig{
+		NfsServerOperationCount: NfsServerOperationCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NfsServerOperationCountAttributeKey{NfsServerOperationCountAttributeKeyOncRPCVersion, NfsServerOperationCountAttributeKeyNfsOperationName},
+			EnabledAttributes:   []NfsServerOperationCountMetricAttributeKey{NfsServerOperationCountMetricAttributeKeyOncRPCVersion, NfsServerOperationCountMetricAttributeKeyNfsOperationName},
 		},
-		NfsServerProcedureCount: NfsServerProcedureCountConfig{
+		NfsServerProcedureCount: NfsServerProcedureCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NfsServerProcedureCountAttributeKey{NfsServerProcedureCountAttributeKeyOncRPCVersion, NfsServerProcedureCountAttributeKeyOncRPCProcedureName},
+			EnabledAttributes:   []NfsServerProcedureCountMetricAttributeKey{NfsServerProcedureCountMetricAttributeKeyOncRPCVersion, NfsServerProcedureCountMetricAttributeKeyOncRPCProcedureName},
 		},
-		NfsServerRepcacheRequests: NfsServerRepcacheRequestsConfig{
+		NfsServerRepcacheRequests: NfsServerRepcacheRequestsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NfsServerRepcacheRequestsAttributeKey{NfsServerRepcacheRequestsAttributeKeyNfsServerRepcacheStatus},
+			EnabledAttributes:   []NfsServerRepcacheRequestsMetricAttributeKey{NfsServerRepcacheRequestsMetricAttributeKeyNfsServerRepcacheStatus},
 		},
-		NfsServerRPCCount: NfsServerRPCCountConfig{
+		NfsServerRPCCount: NfsServerRPCCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NfsServerRPCCountAttributeKey{NfsServerRPCCountAttributeKeyErrorType},
+			EnabledAttributes:   []NfsServerRPCCountMetricAttributeKey{NfsServerRPCCountMetricAttributeKeyErrorType},
 		},
-		NfsServerThreadCount: NfsServerThreadCountConfig{
+		NfsServerThreadCount: NfsServerThreadCountMetricConfig{
 			Enabled: true,
 		},
 	}

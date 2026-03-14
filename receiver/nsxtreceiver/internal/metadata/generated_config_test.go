@@ -27,34 +27,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NsxtNodeCPUUtilization: NsxtNodeCPUUtilizationConfig{
+					NsxtNodeCPUUtilization: NsxtNodeCPUUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []NsxtNodeCPUUtilizationAttributeKey{NsxtNodeCPUUtilizationAttributeKeyClass},
+						EnabledAttributes:   []NsxtNodeCPUUtilizationMetricAttributeKey{NsxtNodeCPUUtilizationMetricAttributeKeyClass},
 					},
-					NsxtNodeFilesystemUsage: NsxtNodeFilesystemUsageConfig{
+					NsxtNodeFilesystemUsage: NsxtNodeFilesystemUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []NsxtNodeFilesystemUsageAttributeKey{NsxtNodeFilesystemUsageAttributeKeyDiskState},
+						EnabledAttributes:   []NsxtNodeFilesystemUsageMetricAttributeKey{NsxtNodeFilesystemUsageMetricAttributeKeyDiskState},
 					},
-					NsxtNodeFilesystemUtilization: NsxtNodeFilesystemUtilizationConfig{
+					NsxtNodeFilesystemUtilization: NsxtNodeFilesystemUtilizationMetricConfig{
 						Enabled: true,
 					},
-					NsxtNodeMemoryCacheUsage: NsxtNodeMemoryCacheUsageConfig{
+					NsxtNodeMemoryCacheUsage: NsxtNodeMemoryCacheUsageMetricConfig{
 						Enabled: true,
 					},
-					NsxtNodeMemoryUsage: NsxtNodeMemoryUsageConfig{
+					NsxtNodeMemoryUsage: NsxtNodeMemoryUsageMetricConfig{
 						Enabled: true,
 					},
-					NsxtNodeNetworkIo: NsxtNodeNetworkIoConfig{
+					NsxtNodeNetworkIo: NsxtNodeNetworkIoMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []NsxtNodeNetworkIoAttributeKey{NsxtNodeNetworkIoAttributeKeyDirection},
+						EnabledAttributes:   []NsxtNodeNetworkIoMetricAttributeKey{NsxtNodeNetworkIoMetricAttributeKeyDirection},
 					},
-					NsxtNodeNetworkPacketCount: NsxtNodeNetworkPacketCountConfig{
+					NsxtNodeNetworkPacketCount: NsxtNodeNetworkPacketCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []NsxtNodeNetworkPacketCountAttributeKey{NsxtNodeNetworkPacketCountAttributeKeyDirection, NsxtNodeNetworkPacketCountAttributeKeyPacketType},
+						EnabledAttributes:   []NsxtNodeNetworkPacketCountMetricAttributeKey{NsxtNodeNetworkPacketCountMetricAttributeKeyDirection, NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -69,34 +69,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NsxtNodeCPUUtilization: NsxtNodeCPUUtilizationConfig{
+					NsxtNodeCPUUtilization: NsxtNodeCPUUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []NsxtNodeCPUUtilizationAttributeKey{NsxtNodeCPUUtilizationAttributeKeyClass},
+						EnabledAttributes:   []NsxtNodeCPUUtilizationMetricAttributeKey{NsxtNodeCPUUtilizationMetricAttributeKeyClass},
 					},
-					NsxtNodeFilesystemUsage: NsxtNodeFilesystemUsageConfig{
+					NsxtNodeFilesystemUsage: NsxtNodeFilesystemUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []NsxtNodeFilesystemUsageAttributeKey{NsxtNodeFilesystemUsageAttributeKeyDiskState},
+						EnabledAttributes:   []NsxtNodeFilesystemUsageMetricAttributeKey{NsxtNodeFilesystemUsageMetricAttributeKeyDiskState},
 					},
-					NsxtNodeFilesystemUtilization: NsxtNodeFilesystemUtilizationConfig{
+					NsxtNodeFilesystemUtilization: NsxtNodeFilesystemUtilizationMetricConfig{
 						Enabled: false,
 					},
-					NsxtNodeMemoryCacheUsage: NsxtNodeMemoryCacheUsageConfig{
+					NsxtNodeMemoryCacheUsage: NsxtNodeMemoryCacheUsageMetricConfig{
 						Enabled: false,
 					},
-					NsxtNodeMemoryUsage: NsxtNodeMemoryUsageConfig{
+					NsxtNodeMemoryUsage: NsxtNodeMemoryUsageMetricConfig{
 						Enabled: false,
 					},
-					NsxtNodeNetworkIo: NsxtNodeNetworkIoConfig{
+					NsxtNodeNetworkIo: NsxtNodeNetworkIoMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []NsxtNodeNetworkIoAttributeKey{NsxtNodeNetworkIoAttributeKeyDirection},
+						EnabledAttributes:   []NsxtNodeNetworkIoMetricAttributeKey{NsxtNodeNetworkIoMetricAttributeKeyDirection},
 					},
-					NsxtNodeNetworkPacketCount: NsxtNodeNetworkPacketCountConfig{
+					NsxtNodeNetworkPacketCount: NsxtNodeNetworkPacketCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []NsxtNodeNetworkPacketCountAttributeKey{NsxtNodeNetworkPacketCountAttributeKeyDirection, NsxtNodeNetworkPacketCountAttributeKeyPacketType},
+						EnabledAttributes:   []NsxtNodeNetworkPacketCountMetricAttributeKey{NsxtNodeNetworkPacketCountMetricAttributeKeyDirection, NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -111,7 +111,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(NsxtNodeCPUUtilizationConfig{}, NsxtNodeFilesystemUsageConfig{}, NsxtNodeFilesystemUtilizationConfig{}, NsxtNodeMemoryCacheUsageConfig{}, NsxtNodeMemoryUsageConfig{}, NsxtNodeNetworkIoConfig{}, NsxtNodeNetworkPacketCountConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(NsxtNodeCPUUtilizationMetricConfig{}, NsxtNodeFilesystemUsageMetricConfig{}, NsxtNodeFilesystemUtilizationMetricConfig{}, NsxtNodeMemoryCacheUsageMetricConfig{}, NsxtNodeMemoryUsageMetricConfig{}, NsxtNodeNetworkIoMetricConfig{}, NsxtNodeNetworkPacketCountMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

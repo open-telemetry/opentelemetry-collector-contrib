@@ -167,10 +167,10 @@ type metricInfo struct {
 }
 
 type metricNsxtNodeCPUUtilization struct {
-	data          pmetric.Metric               // data buffer for generated metric.
-	config        NsxtNodeCPUUtilizationConfig // metric config provided by user.
-	capacity      int                          // max observed number of data points added to the metric.
-	aggDataPoints []float64                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        NsxtNodeCPUUtilizationMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.cpu.utilization metric with initial data.
@@ -191,7 +191,7 @@ func (m *metricNsxtNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, NsxtNodeCPUUtilizationAttributeKeyClass) {
+	if slices.Contains(m.config.EnabledAttributes, NsxtNodeCPUUtilizationMetricAttributeKeyClass) {
 		dp.Attributes().PutStr("class", classAttributeValue)
 	}
 
@@ -245,7 +245,7 @@ func (m *metricNsxtNodeCPUUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNsxtNodeCPUUtilization(cfg NsxtNodeCPUUtilizationConfig) metricNsxtNodeCPUUtilization {
+func newMetricNsxtNodeCPUUtilization(cfg NsxtNodeCPUUtilizationMetricConfig) metricNsxtNodeCPUUtilization {
 	m := metricNsxtNodeCPUUtilization{config: cfg}
 
 	if cfg.Enabled {
@@ -256,10 +256,10 @@ func newMetricNsxtNodeCPUUtilization(cfg NsxtNodeCPUUtilizationConfig) metricNsx
 }
 
 type metricNsxtNodeFilesystemUsage struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        NsxtNodeFilesystemUsageConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        NsxtNodeFilesystemUsageMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.filesystem.usage metric with initial data.
@@ -282,7 +282,7 @@ func (m *metricNsxtNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, NsxtNodeFilesystemUsageAttributeKeyDiskState) {
+	if slices.Contains(m.config.EnabledAttributes, NsxtNodeFilesystemUsageMetricAttributeKeyDiskState) {
 		dp.Attributes().PutStr("state", diskStateAttributeValue)
 	}
 
@@ -336,7 +336,7 @@ func (m *metricNsxtNodeFilesystemUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNsxtNodeFilesystemUsage(cfg NsxtNodeFilesystemUsageConfig) metricNsxtNodeFilesystemUsage {
+func newMetricNsxtNodeFilesystemUsage(cfg NsxtNodeFilesystemUsageMetricConfig) metricNsxtNodeFilesystemUsage {
 	m := metricNsxtNodeFilesystemUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -347,9 +347,9 @@ func newMetricNsxtNodeFilesystemUsage(cfg NsxtNodeFilesystemUsageConfig) metricN
 }
 
 type metricNsxtNodeFilesystemUtilization struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   NsxtNodeFilesystemUtilizationConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   NsxtNodeFilesystemUtilizationMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills nsxt.node.filesystem.utilization metric with initial data.
@@ -386,7 +386,7 @@ func (m *metricNsxtNodeFilesystemUtilization) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricNsxtNodeFilesystemUtilization(cfg NsxtNodeFilesystemUtilizationConfig) metricNsxtNodeFilesystemUtilization {
+func newMetricNsxtNodeFilesystemUtilization(cfg NsxtNodeFilesystemUtilizationMetricConfig) metricNsxtNodeFilesystemUtilization {
 	m := metricNsxtNodeFilesystemUtilization{config: cfg}
 
 	if cfg.Enabled {
@@ -397,9 +397,9 @@ func newMetricNsxtNodeFilesystemUtilization(cfg NsxtNodeFilesystemUtilizationCon
 }
 
 type metricNsxtNodeMemoryCacheUsage struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   NsxtNodeMemoryCacheUsageConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   NsxtNodeMemoryCacheUsageMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills nsxt.node.memory.cache.usage metric with initial data.
@@ -438,7 +438,7 @@ func (m *metricNsxtNodeMemoryCacheUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNsxtNodeMemoryCacheUsage(cfg NsxtNodeMemoryCacheUsageConfig) metricNsxtNodeMemoryCacheUsage {
+func newMetricNsxtNodeMemoryCacheUsage(cfg NsxtNodeMemoryCacheUsageMetricConfig) metricNsxtNodeMemoryCacheUsage {
 	m := metricNsxtNodeMemoryCacheUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -449,9 +449,9 @@ func newMetricNsxtNodeMemoryCacheUsage(cfg NsxtNodeMemoryCacheUsageConfig) metri
 }
 
 type metricNsxtNodeMemoryUsage struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   NsxtNodeMemoryUsageConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   NsxtNodeMemoryUsageMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills nsxt.node.memory.usage metric with initial data.
@@ -490,7 +490,7 @@ func (m *metricNsxtNodeMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNsxtNodeMemoryUsage(cfg NsxtNodeMemoryUsageConfig) metricNsxtNodeMemoryUsage {
+func newMetricNsxtNodeMemoryUsage(cfg NsxtNodeMemoryUsageMetricConfig) metricNsxtNodeMemoryUsage {
 	m := metricNsxtNodeMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -501,10 +501,10 @@ func newMetricNsxtNodeMemoryUsage(cfg NsxtNodeMemoryUsageConfig) metricNsxtNodeM
 }
 
 type metricNsxtNodeNetworkIo struct {
-	data          pmetric.Metric          // data buffer for generated metric.
-	config        NsxtNodeNetworkIoConfig // metric config provided by user.
-	capacity      int                     // max observed number of data points added to the metric.
-	aggDataPoints []int64                 // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        NsxtNodeNetworkIoMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.network.io metric with initial data.
@@ -527,7 +527,7 @@ func (m *metricNsxtNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, NsxtNodeNetworkIoAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, NsxtNodeNetworkIoMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -581,7 +581,7 @@ func (m *metricNsxtNodeNetworkIo) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNsxtNodeNetworkIo(cfg NsxtNodeNetworkIoConfig) metricNsxtNodeNetworkIo {
+func newMetricNsxtNodeNetworkIo(cfg NsxtNodeNetworkIoMetricConfig) metricNsxtNodeNetworkIo {
 	m := metricNsxtNodeNetworkIo{config: cfg}
 
 	if cfg.Enabled {
@@ -592,10 +592,10 @@ func newMetricNsxtNodeNetworkIo(cfg NsxtNodeNetworkIoConfig) metricNsxtNodeNetwo
 }
 
 type metricNsxtNodeNetworkPacketCount struct {
-	data          pmetric.Metric                   // data buffer for generated metric.
-	config        NsxtNodeNetworkPacketCountConfig // metric config provided by user.
-	capacity      int                              // max observed number of data points added to the metric.
-	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        NsxtNodeNetworkPacketCountMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nsxt.node.network.packet.count metric with initial data.
@@ -618,10 +618,10 @@ func (m *metricNsxtNodeNetworkPacketCount) recordDataPoint(start pcommon.Timesta
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, NsxtNodeNetworkPacketCountAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, NsxtNodeNetworkPacketCountMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, NsxtNodeNetworkPacketCountAttributeKeyPacketType) {
+	if slices.Contains(m.config.EnabledAttributes, NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType) {
 		dp.Attributes().PutStr("type", packetTypeAttributeValue)
 	}
 
@@ -675,7 +675,7 @@ func (m *metricNsxtNodeNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNsxtNodeNetworkPacketCount(cfg NsxtNodeNetworkPacketCountConfig) metricNsxtNodeNetworkPacketCount {
+func newMetricNsxtNodeNetworkPacketCount(cfg NsxtNodeNetworkPacketCountMetricConfig) metricNsxtNodeNetworkPacketCount {
 	m := metricNsxtNodeNetworkPacketCount{config: cfg}
 
 	if cfg.Enabled {

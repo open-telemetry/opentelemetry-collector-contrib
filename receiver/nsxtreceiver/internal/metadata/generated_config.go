@@ -9,23 +9,23 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// NsxtNodeCPUUtilizationAttributeKey specifies the key of an attribute for the nsxt.node.cpu.utilization metric.
-type NsxtNodeCPUUtilizationAttributeKey string
+// NsxtNodeCPUUtilizationMetricAttributeKey specifies the key of an attribute for the nsxt.node.cpu.utilization metric.
+type NsxtNodeCPUUtilizationMetricAttributeKey string
 
 const (
-	NsxtNodeCPUUtilizationAttributeKeyClass NsxtNodeCPUUtilizationAttributeKey = "class"
+	NsxtNodeCPUUtilizationMetricAttributeKeyClass NsxtNodeCPUUtilizationMetricAttributeKey = "class"
 )
 
-// NsxtNodeCPUUtilizationConfig provides config for the nsxt.node.cpu.utilization metric.
-type NsxtNodeCPUUtilizationConfig struct {
+// NsxtNodeCPUUtilizationMetricConfig provides config for the nsxt.node.cpu.utilization metric.
+type NsxtNodeCPUUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NsxtNodeCPUUtilizationAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NsxtNodeCPUUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NsxtNodeCPUUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NsxtNodeCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -39,10 +39,10 @@ func (ms *NsxtNodeCPUUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NsxtNodeCPUUtilizationConfig) Validate() error {
+func (ms *NsxtNodeCPUUtilizationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NsxtNodeCPUUtilizationAttributeKeyClass:
+		case NsxtNodeCPUUtilizationMetricAttributeKeyClass:
 		default:
 			return fmt.Errorf("metric nsxt.node.cpu.utilization doesn't have an attribute %v, valid attributes: [class]", val)
 		}
@@ -57,23 +57,23 @@ func (ms *NsxtNodeCPUUtilizationConfig) Validate() error {
 	return nil
 }
 
-// NsxtNodeFilesystemUsageAttributeKey specifies the key of an attribute for the nsxt.node.filesystem.usage metric.
-type NsxtNodeFilesystemUsageAttributeKey string
+// NsxtNodeFilesystemUsageMetricAttributeKey specifies the key of an attribute for the nsxt.node.filesystem.usage metric.
+type NsxtNodeFilesystemUsageMetricAttributeKey string
 
 const (
-	NsxtNodeFilesystemUsageAttributeKeyDiskState NsxtNodeFilesystemUsageAttributeKey = "state"
+	NsxtNodeFilesystemUsageMetricAttributeKeyDiskState NsxtNodeFilesystemUsageMetricAttributeKey = "state"
 )
 
-// NsxtNodeFilesystemUsageConfig provides config for the nsxt.node.filesystem.usage metric.
-type NsxtNodeFilesystemUsageConfig struct {
+// NsxtNodeFilesystemUsageMetricConfig provides config for the nsxt.node.filesystem.usage metric.
+type NsxtNodeFilesystemUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NsxtNodeFilesystemUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NsxtNodeFilesystemUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NsxtNodeFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NsxtNodeFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -87,10 +87,10 @@ func (ms *NsxtNodeFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NsxtNodeFilesystemUsageConfig) Validate() error {
+func (ms *NsxtNodeFilesystemUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NsxtNodeFilesystemUsageAttributeKeyDiskState:
+		case NsxtNodeFilesystemUsageMetricAttributeKeyDiskState:
 		default:
 			return fmt.Errorf("metric nsxt.node.filesystem.usage doesn't have an attribute %v, valid attributes: [state]", val)
 		}
@@ -105,13 +105,13 @@ func (ms *NsxtNodeFilesystemUsageConfig) Validate() error {
 	return nil
 }
 
-// NsxtNodeFilesystemUtilizationConfig provides config for the nsxt.node.filesystem.utilization metric.
-type NsxtNodeFilesystemUtilizationConfig struct {
+// NsxtNodeFilesystemUtilizationMetricConfig provides config for the nsxt.node.filesystem.utilization metric.
+type NsxtNodeFilesystemUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NsxtNodeFilesystemUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NsxtNodeFilesystemUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -125,13 +125,13 @@ func (ms *NsxtNodeFilesystemUtilizationConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// NsxtNodeMemoryCacheUsageConfig provides config for the nsxt.node.memory.cache.usage metric.
-type NsxtNodeMemoryCacheUsageConfig struct {
+// NsxtNodeMemoryCacheUsageMetricConfig provides config for the nsxt.node.memory.cache.usage metric.
+type NsxtNodeMemoryCacheUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NsxtNodeMemoryCacheUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NsxtNodeMemoryCacheUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -145,13 +145,13 @@ func (ms *NsxtNodeMemoryCacheUsageConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// NsxtNodeMemoryUsageConfig provides config for the nsxt.node.memory.usage metric.
-type NsxtNodeMemoryUsageConfig struct {
+// NsxtNodeMemoryUsageMetricConfig provides config for the nsxt.node.memory.usage metric.
+type NsxtNodeMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *NsxtNodeMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NsxtNodeMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -165,23 +165,23 @@ func (ms *NsxtNodeMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// NsxtNodeNetworkIoAttributeKey specifies the key of an attribute for the nsxt.node.network.io metric.
-type NsxtNodeNetworkIoAttributeKey string
+// NsxtNodeNetworkIoMetricAttributeKey specifies the key of an attribute for the nsxt.node.network.io metric.
+type NsxtNodeNetworkIoMetricAttributeKey string
 
 const (
-	NsxtNodeNetworkIoAttributeKeyDirection NsxtNodeNetworkIoAttributeKey = "direction"
+	NsxtNodeNetworkIoMetricAttributeKeyDirection NsxtNodeNetworkIoMetricAttributeKey = "direction"
 )
 
-// NsxtNodeNetworkIoConfig provides config for the nsxt.node.network.io metric.
-type NsxtNodeNetworkIoConfig struct {
+// NsxtNodeNetworkIoMetricConfig provides config for the nsxt.node.network.io metric.
+type NsxtNodeNetworkIoMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NsxtNodeNetworkIoAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NsxtNodeNetworkIoMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NsxtNodeNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NsxtNodeNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -195,10 +195,10 @@ func (ms *NsxtNodeNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *NsxtNodeNetworkIoConfig) Validate() error {
+func (ms *NsxtNodeNetworkIoMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NsxtNodeNetworkIoAttributeKeyDirection:
+		case NsxtNodeNetworkIoMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric nsxt.node.network.io doesn't have an attribute %v, valid attributes: [direction]", val)
 		}
@@ -213,24 +213,24 @@ func (ms *NsxtNodeNetworkIoConfig) Validate() error {
 	return nil
 }
 
-// NsxtNodeNetworkPacketCountAttributeKey specifies the key of an attribute for the nsxt.node.network.packet.count metric.
-type NsxtNodeNetworkPacketCountAttributeKey string
+// NsxtNodeNetworkPacketCountMetricAttributeKey specifies the key of an attribute for the nsxt.node.network.packet.count metric.
+type NsxtNodeNetworkPacketCountMetricAttributeKey string
 
 const (
-	NsxtNodeNetworkPacketCountAttributeKeyDirection  NsxtNodeNetworkPacketCountAttributeKey = "direction"
-	NsxtNodeNetworkPacketCountAttributeKeyPacketType NsxtNodeNetworkPacketCountAttributeKey = "type"
+	NsxtNodeNetworkPacketCountMetricAttributeKeyDirection  NsxtNodeNetworkPacketCountMetricAttributeKey = "direction"
+	NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType NsxtNodeNetworkPacketCountMetricAttributeKey = "type"
 )
 
-// NsxtNodeNetworkPacketCountConfig provides config for the nsxt.node.network.packet.count metric.
-type NsxtNodeNetworkPacketCountConfig struct {
+// NsxtNodeNetworkPacketCountMetricConfig provides config for the nsxt.node.network.packet.count metric.
+type NsxtNodeNetworkPacketCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []NsxtNodeNetworkPacketCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NsxtNodeNetworkPacketCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *NsxtNodeNetworkPacketCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NsxtNodeNetworkPacketCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -244,10 +244,10 @@ func (ms *NsxtNodeNetworkPacketCountConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *NsxtNodeNetworkPacketCountConfig) Validate() error {
+func (ms *NsxtNodeNetworkPacketCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case NsxtNodeNetworkPacketCountAttributeKeyDirection, NsxtNodeNetworkPacketCountAttributeKeyPacketType:
+		case NsxtNodeNetworkPacketCountMetricAttributeKeyDirection, NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType:
 		default:
 			return fmt.Errorf("metric nsxt.node.network.packet.count doesn't have an attribute %v, valid attributes: [direction, type]", val)
 		}
@@ -264,45 +264,45 @@ func (ms *NsxtNodeNetworkPacketCountConfig) Validate() error {
 
 // MetricsConfig provides config for nsxt metrics.
 type MetricsConfig struct {
-	NsxtNodeCPUUtilization        NsxtNodeCPUUtilizationConfig        `mapstructure:"nsxt.node.cpu.utilization"`
-	NsxtNodeFilesystemUsage       NsxtNodeFilesystemUsageConfig       `mapstructure:"nsxt.node.filesystem.usage"`
-	NsxtNodeFilesystemUtilization NsxtNodeFilesystemUtilizationConfig `mapstructure:"nsxt.node.filesystem.utilization"`
-	NsxtNodeMemoryCacheUsage      NsxtNodeMemoryCacheUsageConfig      `mapstructure:"nsxt.node.memory.cache.usage"`
-	NsxtNodeMemoryUsage           NsxtNodeMemoryUsageConfig           `mapstructure:"nsxt.node.memory.usage"`
-	NsxtNodeNetworkIo             NsxtNodeNetworkIoConfig             `mapstructure:"nsxt.node.network.io"`
-	NsxtNodeNetworkPacketCount    NsxtNodeNetworkPacketCountConfig    `mapstructure:"nsxt.node.network.packet.count"`
+	NsxtNodeCPUUtilization        NsxtNodeCPUUtilizationMetricConfig        `mapstructure:"nsxt.node.cpu.utilization"`
+	NsxtNodeFilesystemUsage       NsxtNodeFilesystemUsageMetricConfig       `mapstructure:"nsxt.node.filesystem.usage"`
+	NsxtNodeFilesystemUtilization NsxtNodeFilesystemUtilizationMetricConfig `mapstructure:"nsxt.node.filesystem.utilization"`
+	NsxtNodeMemoryCacheUsage      NsxtNodeMemoryCacheUsageMetricConfig      `mapstructure:"nsxt.node.memory.cache.usage"`
+	NsxtNodeMemoryUsage           NsxtNodeMemoryUsageMetricConfig           `mapstructure:"nsxt.node.memory.usage"`
+	NsxtNodeNetworkIo             NsxtNodeNetworkIoMetricConfig             `mapstructure:"nsxt.node.network.io"`
+	NsxtNodeNetworkPacketCount    NsxtNodeNetworkPacketCountMetricConfig    `mapstructure:"nsxt.node.network.packet.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		NsxtNodeCPUUtilization: NsxtNodeCPUUtilizationConfig{
+		NsxtNodeCPUUtilization: NsxtNodeCPUUtilizationMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []NsxtNodeCPUUtilizationAttributeKey{NsxtNodeCPUUtilizationAttributeKeyClass},
+			EnabledAttributes:   []NsxtNodeCPUUtilizationMetricAttributeKey{NsxtNodeCPUUtilizationMetricAttributeKeyClass},
 		},
-		NsxtNodeFilesystemUsage: NsxtNodeFilesystemUsageConfig{
+		NsxtNodeFilesystemUsage: NsxtNodeFilesystemUsageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NsxtNodeFilesystemUsageAttributeKey{NsxtNodeFilesystemUsageAttributeKeyDiskState},
+			EnabledAttributes:   []NsxtNodeFilesystemUsageMetricAttributeKey{NsxtNodeFilesystemUsageMetricAttributeKeyDiskState},
 		},
-		NsxtNodeFilesystemUtilization: NsxtNodeFilesystemUtilizationConfig{
+		NsxtNodeFilesystemUtilization: NsxtNodeFilesystemUtilizationMetricConfig{
 			Enabled: true,
 		},
-		NsxtNodeMemoryCacheUsage: NsxtNodeMemoryCacheUsageConfig{
+		NsxtNodeMemoryCacheUsage: NsxtNodeMemoryCacheUsageMetricConfig{
 			Enabled: true,
 		},
-		NsxtNodeMemoryUsage: NsxtNodeMemoryUsageConfig{
+		NsxtNodeMemoryUsage: NsxtNodeMemoryUsageMetricConfig{
 			Enabled: true,
 		},
-		NsxtNodeNetworkIo: NsxtNodeNetworkIoConfig{
+		NsxtNodeNetworkIo: NsxtNodeNetworkIoMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NsxtNodeNetworkIoAttributeKey{NsxtNodeNetworkIoAttributeKeyDirection},
+			EnabledAttributes:   []NsxtNodeNetworkIoMetricAttributeKey{NsxtNodeNetworkIoMetricAttributeKeyDirection},
 		},
-		NsxtNodeNetworkPacketCount: NsxtNodeNetworkPacketCountConfig{
+		NsxtNodeNetworkPacketCount: NsxtNodeNetworkPacketCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []NsxtNodeNetworkPacketCountAttributeKey{NsxtNodeNetworkPacketCountAttributeKeyDirection, NsxtNodeNetworkPacketCountAttributeKeyPacketType},
+			EnabledAttributes:   []NsxtNodeNetworkPacketCountMetricAttributeKey{NsxtNodeNetworkPacketCountMetricAttributeKeyDirection, NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType},
 		},
 	}
 }

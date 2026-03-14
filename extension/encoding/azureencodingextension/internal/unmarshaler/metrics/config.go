@@ -17,6 +17,14 @@ const (
 	AggregationAverage MetricAggregation = "average"
 )
 
+var supportedAggregations = []MetricAggregation{
+	AggregationCount,
+	AggregationTotal,
+	AggregationMinimum,
+	AggregationMaximum,
+	AggregationAverage,
+}
+
 type MetricsConfig struct {
 	// TimeFormats is a list of time formats parsing layouts for Azure Metrics Records
 	TimeFormats []string `mapstructure:"time_formats"`
