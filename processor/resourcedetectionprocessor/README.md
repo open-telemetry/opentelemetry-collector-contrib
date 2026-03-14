@@ -908,42 +908,6 @@ processors:
       fail_on_missing_metadata: true
 ```
 
-### IBM Cloud VPC
-
-Queries the [IBM Cloud VPC Instance Metadata Service](https://cloud.ibm.com/apidocs/vpc-metadata/latest#get-instance) to retrieve resource attributes from the instance.
-
-The list of the populated resource attributes can be found at [IBM Cloud VPC Detector Resource Attributes](./internal/ibmcloud/vpc/documentation.md).
-
-By default, the detector queries the IBM Cloud VPC Instance Metadata Service at `http://api.metadata.cloud.ibm.com`. Set `secure: true` to use HTTPS instead.
-
-> **Note**
->
-> The `secure` option must match the instance's metadata service access mode. If the
-> [Secure access](https://cloud.ibm.com/docs/vpc?topic=vpc-imd-configure-service&interface=ui#secure-access-ui)
-> state is toggled while the collector is running, update the `secure` configuration
-> value accordingly and restart the collector.
-
-Example:
-
-```yaml
-processors:
-  resourcedetection/ibmcloud_vpc:
-    detectors: [env, ibmcloud_vpc]
-    timeout: 2s
-    override: false
-```
-
-IBM Cloud VPC custom configuration example:
-
-```yaml
-processors:
-  resourcedetection/ibmcloud_vpc:
-    detectors: ["ibmcloud_vpc"]
-    ibmcloud_vpc:
-      # Use HTTPS for the IMDS endpoint
-      secure: true
-```
-
 ### IBM Cloud Classic
 
 Queries the [IBM Cloud Classic (SoftLayer) Resource Metadata Service](https://sldn.softlayer.com/reference/services/SoftLayer_Resource_Metadata/) to retrieve resource attributes from the instance.
