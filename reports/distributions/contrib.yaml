@@ -35,9 +35,9 @@ components:
         - elasticsearch
         - faro
         - file
+        - google_cloud_storage
         - googlecloud
         - googlecloudpubsub
-        - googlecloudstorage
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
@@ -64,20 +64,21 @@ components:
     extension:
         - ack
         - asapclient
+        - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
-        - awslogs_encoding
         - awsproxy
         - azure_auth
+        - azure_encoding
         - basicauth
         - bearertokenauth
-        - cgroupruntime
+        - cgroup_runtime
         - datadog
         - db_storage
         - docker_observer
         - ecs_observer
         - file_storage
+        - google_cloud_logentry_encoding
         - googleclientauth
-        - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
@@ -138,6 +139,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awslambda
         - awss3
         - awsxray
         - azure_blob

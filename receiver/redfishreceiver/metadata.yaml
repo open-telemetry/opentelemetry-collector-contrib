@@ -13,12 +13,12 @@ status:
     active: [steven-freed, khushijain21]
 
 resource_attributes:
-  base_url:
-    description: base url.
-    type: string
-    enabled: true
-  system.host_name:
+  host.name:
     description: System host name.
+    type: string
+    enabled: true        
+  url.full:
+    description:  Full URL of Redfish API endpoint.
     type: string
     enabled: true
     

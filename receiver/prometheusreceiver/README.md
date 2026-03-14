@@ -262,6 +262,17 @@ Feature gates can be enabled using the `--feature-gates` flag:
 "--feature-gates=<feature-gate>"
 ```
 
+## Benchmark Results
+
+Current Prometheus receiver benchmark results are published on the [Collector Benchmarks page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/). The table below links directly to the current Prometheus receiver charts by scenario and metric type.
+
+| Scenario | CPU | Memory |
+| --- | --- | --- |
+| Baseline, 1k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-1k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-1k-ram-mib) |
+| Baseline, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-10k-ram-mib) |
+| Native histograms, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-nativehistogram-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-nativehistogram-10k-ram-mib) |
+| `target_info` enabled, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-withtargetinfo-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-withtargetinfo-10k-ram-mib) |
+
 ## Troubleshooting and Best Practices
 
 This section provides guidance for common issues, performance optimization, and best practices when using the Prometheus receiver in production environments.

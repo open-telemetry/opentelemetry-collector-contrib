@@ -5,406 +5,406 @@ $defs:
     type: object
     properties:
       container.cpu.time:
-        description: "ContainerCPUTimeConfig provides config for the container.cpu.time metric."
+        description: "ContainerCPUTimeMetricConfig provides config for the container.cpu.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.cpu.usage:
-        description: "ContainerCPUUsageConfig provides config for the container.cpu.usage metric."
+        description: "ContainerCPUUsageMetricConfig provides config for the container.cpu.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.filesystem.available:
-        description: "ContainerFilesystemAvailableConfig provides config for the container.filesystem.available metric."
+        description: "ContainerFilesystemAvailableMetricConfig provides config for the container.filesystem.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.filesystem.capacity:
-        description: "ContainerFilesystemCapacityConfig provides config for the container.filesystem.capacity metric."
+        description: "ContainerFilesystemCapacityMetricConfig provides config for the container.filesystem.capacity metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.filesystem.usage:
-        description: "ContainerFilesystemUsageConfig provides config for the container.filesystem.usage metric."
+        description: "ContainerFilesystemUsageMetricConfig provides config for the container.filesystem.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.memory.available:
-        description: "ContainerMemoryAvailableConfig provides config for the container.memory.available metric."
+        description: "ContainerMemoryAvailableMetricConfig provides config for the container.memory.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.memory.major_page_faults:
-        description: "ContainerMemoryMajorPageFaultsConfig provides config for the container.memory.major_page_faults metric."
+        description: "ContainerMemoryMajorPageFaultsMetricConfig provides config for the container.memory.major_page_faults metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.memory.page_faults:
-        description: "ContainerMemoryPageFaultsConfig provides config for the container.memory.page_faults metric."
+        description: "ContainerMemoryPageFaultsMetricConfig provides config for the container.memory.page_faults metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.memory.rss:
-        description: "ContainerMemoryRssConfig provides config for the container.memory.rss metric."
+        description: "ContainerMemoryRssMetricConfig provides config for the container.memory.rss metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.memory.usage:
-        description: "ContainerMemoryUsageConfig provides config for the container.memory.usage metric."
+        description: "ContainerMemoryUsageMetricConfig provides config for the container.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.memory.working_set:
-        description: "ContainerMemoryWorkingSetConfig provides config for the container.memory.working_set metric."
+        description: "ContainerMemoryWorkingSetMetricConfig provides config for the container.memory.working_set metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.uptime:
-        description: "ContainerUptimeConfig provides config for the container.uptime metric."
+        description: "ContainerUptimeMetricConfig provides config for the container.uptime metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.container.cpu.node.utilization:
-        description: "K8sContainerCPUNodeUtilizationConfig provides config for the k8s.container.cpu.node.utilization metric."
+        description: "K8sContainerCPUNodeUtilizationMetricConfig provides config for the k8s.container.cpu.node.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.container.cpu_limit_utilization:
-        description: "K8sContainerCPULimitUtilizationConfig provides config for the k8s.container.cpu_limit_utilization metric."
+        description: "K8sContainerCPULimitUtilizationMetricConfig provides config for the k8s.container.cpu_limit_utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.container.cpu_request_utilization:
-        description: "K8sContainerCPURequestUtilizationConfig provides config for the k8s.container.cpu_request_utilization metric."
+        description: "K8sContainerCPURequestUtilizationMetricConfig provides config for the k8s.container.cpu_request_utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.container.memory.node.utilization:
-        description: "K8sContainerMemoryNodeUtilizationConfig provides config for the k8s.container.memory.node.utilization metric."
+        description: "K8sContainerMemoryNodeUtilizationMetricConfig provides config for the k8s.container.memory.node.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.container.memory_limit_utilization:
-        description: "K8sContainerMemoryLimitUtilizationConfig provides config for the k8s.container.memory_limit_utilization metric."
+        description: "K8sContainerMemoryLimitUtilizationMetricConfig provides config for the k8s.container.memory_limit_utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.container.memory_request_utilization:
-        description: "K8sContainerMemoryRequestUtilizationConfig provides config for the k8s.container.memory_request_utilization metric."
+        description: "K8sContainerMemoryRequestUtilizationMetricConfig provides config for the k8s.container.memory_request_utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.node.cpu.time:
-        description: "K8sNodeCPUTimeConfig provides config for the k8s.node.cpu.time metric."
+        description: "K8sNodeCPUTimeMetricConfig provides config for the k8s.node.cpu.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.cpu.usage:
-        description: "K8sNodeCPUUsageConfig provides config for the k8s.node.cpu.usage metric."
+        description: "K8sNodeCPUUsageMetricConfig provides config for the k8s.node.cpu.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.filesystem.available:
-        description: "K8sNodeFilesystemAvailableConfig provides config for the k8s.node.filesystem.available metric."
+        description: "K8sNodeFilesystemAvailableMetricConfig provides config for the k8s.node.filesystem.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.filesystem.capacity:
-        description: "K8sNodeFilesystemCapacityConfig provides config for the k8s.node.filesystem.capacity metric."
+        description: "K8sNodeFilesystemCapacityMetricConfig provides config for the k8s.node.filesystem.capacity metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.filesystem.usage:
-        description: "K8sNodeFilesystemUsageConfig provides config for the k8s.node.filesystem.usage metric."
+        description: "K8sNodeFilesystemUsageMetricConfig provides config for the k8s.node.filesystem.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.memory.available:
-        description: "K8sNodeMemoryAvailableConfig provides config for the k8s.node.memory.available metric."
+        description: "K8sNodeMemoryAvailableMetricConfig provides config for the k8s.node.memory.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.memory.major_page_faults:
-        description: "K8sNodeMemoryMajorPageFaultsConfig provides config for the k8s.node.memory.major_page_faults metric."
+        description: "K8sNodeMemoryMajorPageFaultsMetricConfig provides config for the k8s.node.memory.major_page_faults metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.memory.page_faults:
-        description: "K8sNodeMemoryPageFaultsConfig provides config for the k8s.node.memory.page_faults metric."
+        description: "K8sNodeMemoryPageFaultsMetricConfig provides config for the k8s.node.memory.page_faults metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.memory.rss:
-        description: "K8sNodeMemoryRssConfig provides config for the k8s.node.memory.rss metric."
+        description: "K8sNodeMemoryRssMetricConfig provides config for the k8s.node.memory.rss metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.memory.usage:
-        description: "K8sNodeMemoryUsageConfig provides config for the k8s.node.memory.usage metric."
+        description: "K8sNodeMemoryUsageMetricConfig provides config for the k8s.node.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.memory.working_set:
-        description: "K8sNodeMemoryWorkingSetConfig provides config for the k8s.node.memory.working_set metric."
+        description: "K8sNodeMemoryWorkingSetMetricConfig provides config for the k8s.node.memory.working_set metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.network.errors:
-        description: "K8sNodeNetworkErrorsConfig provides config for the k8s.node.network.errors metric."
+        description: "K8sNodeNetworkErrorsMetricConfig provides config for the k8s.node.network.errors metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.network.io:
-        description: "K8sNodeNetworkIoConfig provides config for the k8s.node.network.io metric."
+        description: "K8sNodeNetworkIoMetricConfig provides config for the k8s.node.network.io metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.node.uptime:
-        description: "K8sNodeUptimeConfig provides config for the k8s.node.uptime metric."
+        description: "K8sNodeUptimeMetricConfig provides config for the k8s.node.uptime metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.pod.cpu.node.utilization:
-        description: "K8sPodCPUNodeUtilizationConfig provides config for the k8s.pod.cpu.node.utilization metric."
+        description: "K8sPodCPUNodeUtilizationMetricConfig provides config for the k8s.pod.cpu.node.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.pod.cpu.time:
-        description: "K8sPodCPUTimeConfig provides config for the k8s.pod.cpu.time metric."
+        description: "K8sPodCPUTimeMetricConfig provides config for the k8s.pod.cpu.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.cpu.usage:
-        description: "K8sPodCPUUsageConfig provides config for the k8s.pod.cpu.usage metric."
+        description: "K8sPodCPUUsageMetricConfig provides config for the k8s.pod.cpu.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.cpu_limit_utilization:
-        description: "K8sPodCPULimitUtilizationConfig provides config for the k8s.pod.cpu_limit_utilization metric."
+        description: "K8sPodCPULimitUtilizationMetricConfig provides config for the k8s.pod.cpu_limit_utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.pod.cpu_request_utilization:
-        description: "K8sPodCPURequestUtilizationConfig provides config for the k8s.pod.cpu_request_utilization metric."
+        description: "K8sPodCPURequestUtilizationMetricConfig provides config for the k8s.pod.cpu_request_utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.pod.filesystem.available:
-        description: "K8sPodFilesystemAvailableConfig provides config for the k8s.pod.filesystem.available metric."
+        description: "K8sPodFilesystemAvailableMetricConfig provides config for the k8s.pod.filesystem.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.filesystem.capacity:
-        description: "K8sPodFilesystemCapacityConfig provides config for the k8s.pod.filesystem.capacity metric."
+        description: "K8sPodFilesystemCapacityMetricConfig provides config for the k8s.pod.filesystem.capacity metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.filesystem.usage:
-        description: "K8sPodFilesystemUsageConfig provides config for the k8s.pod.filesystem.usage metric."
+        description: "K8sPodFilesystemUsageMetricConfig provides config for the k8s.pod.filesystem.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.memory.available:
-        description: "K8sPodMemoryAvailableConfig provides config for the k8s.pod.memory.available metric."
+        description: "K8sPodMemoryAvailableMetricConfig provides config for the k8s.pod.memory.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.memory.major_page_faults:
-        description: "K8sPodMemoryMajorPageFaultsConfig provides config for the k8s.pod.memory.major_page_faults metric."
+        description: "K8sPodMemoryMajorPageFaultsMetricConfig provides config for the k8s.pod.memory.major_page_faults metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.memory.node.utilization:
-        description: "K8sPodMemoryNodeUtilizationConfig provides config for the k8s.pod.memory.node.utilization metric."
+        description: "K8sPodMemoryNodeUtilizationMetricConfig provides config for the k8s.pod.memory.node.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.pod.memory.page_faults:
-        description: "K8sPodMemoryPageFaultsConfig provides config for the k8s.pod.memory.page_faults metric."
+        description: "K8sPodMemoryPageFaultsMetricConfig provides config for the k8s.pod.memory.page_faults metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.memory.rss:
-        description: "K8sPodMemoryRssConfig provides config for the k8s.pod.memory.rss metric."
+        description: "K8sPodMemoryRssMetricConfig provides config for the k8s.pod.memory.rss metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.memory.usage:
-        description: "K8sPodMemoryUsageConfig provides config for the k8s.pod.memory.usage metric."
+        description: "K8sPodMemoryUsageMetricConfig provides config for the k8s.pod.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.memory.working_set:
-        description: "K8sPodMemoryWorkingSetConfig provides config for the k8s.pod.memory.working_set metric."
+        description: "K8sPodMemoryWorkingSetMetricConfig provides config for the k8s.pod.memory.working_set metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.memory_limit_utilization:
-        description: "K8sPodMemoryLimitUtilizationConfig provides config for the k8s.pod.memory_limit_utilization metric."
+        description: "K8sPodMemoryLimitUtilizationMetricConfig provides config for the k8s.pod.memory_limit_utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.pod.memory_request_utilization:
-        description: "K8sPodMemoryRequestUtilizationConfig provides config for the k8s.pod.memory_request_utilization metric."
+        description: "K8sPodMemoryRequestUtilizationMetricConfig provides config for the k8s.pod.memory_request_utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.pod.network.errors:
-        description: "K8sPodNetworkErrorsConfig provides config for the k8s.pod.network.errors metric."
+        description: "K8sPodNetworkErrorsMetricConfig provides config for the k8s.pod.network.errors metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.network.io:
-        description: "K8sPodNetworkIoConfig provides config for the k8s.pod.network.io metric."
+        description: "K8sPodNetworkIoMetricConfig provides config for the k8s.pod.network.io metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.uptime:
-        description: "K8sPodUptimeConfig provides config for the k8s.pod.uptime metric."
+        description: "K8sPodUptimeMetricConfig provides config for the k8s.pod.uptime metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.pod.volume.usage:
-        description: "K8sPodVolumeUsageConfig provides config for the k8s.pod.volume.usage metric."
+        description: "K8sPodVolumeUsageMetricConfig provides config for the k8s.pod.volume.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       k8s.volume.available:
-        description: "K8sVolumeAvailableConfig provides config for the k8s.volume.available metric."
+        description: "K8sVolumeAvailableMetricConfig provides config for the k8s.volume.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.volume.capacity:
-        description: "K8sVolumeCapacityConfig provides config for the k8s.volume.capacity metric."
+        description: "K8sVolumeCapacityMetricConfig provides config for the k8s.volume.capacity metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.volume.inodes:
-        description: "K8sVolumeInodesConfig provides config for the k8s.volume.inodes metric."
+        description: "K8sVolumeInodesMetricConfig provides config for the k8s.volume.inodes metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.volume.inodes.free:
-        description: "K8sVolumeInodesFreeConfig provides config for the k8s.volume.inodes.free metric."
+        description: "K8sVolumeInodesFreeMetricConfig provides config for the k8s.volume.inodes.free metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.volume.inodes.used:
-        description: "K8sVolumeInodesUsedConfig provides config for the k8s.volume.inodes.used metric."
+        description: "K8sVolumeInodesUsedMetricConfig provides config for the k8s.volume.inodes.used metric."
         type: object
         properties:
           enabled:

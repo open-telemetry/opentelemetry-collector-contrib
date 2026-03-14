@@ -8,24 +8,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 )
-
-type testHeader struct {
-	Key   string
-	Value []byte
-}
-
-func makeTestHeader(key string, value []byte) testHeader {
-	return testHeader{Key: key, Value: value}
-}
 
 func TestMetadataToHeaders(t *testing.T) {
 	tests := []struct {
 		name     string
 		makeCtx  func(t *testing.T) context.Context
 		keys     []string
-		expected []testHeader
+		expected []kgo.RecordHeader
 	}{
 		{
 			name: "nil_keys",
@@ -76,7 +68,7 @@ func TestMetadataToHeaders(t *testing.T) {
 				})
 			},
 			keys: []string{"x-tenant", "x-request-id"},
-			expected: []testHeader{
+			expected: []kgo.RecordHeader{
 				{Key: "x-tenant", Value: []byte("tenant-1")},
 				{Key: "x-request-id", Value: []byte("req-42")},
 			},
@@ -91,7 +83,7 @@ func TestMetadataToHeaders(t *testing.T) {
 				})
 			},
 			keys: []string{"x-ids"},
-			expected: []testHeader{
+			expected: []kgo.RecordHeader{
 				{Key: "x-ids", Value: []byte("id-1")},
 				{Key: "x-ids", Value: []byte("id-2")},
 				{Key: "x-ids", Value: []byte("id-3")},
@@ -108,14 +100,14 @@ func TestMetadataToHeaders(t *testing.T) {
 				})
 			},
 			keys: []string{"x-tenant", "x-request-id"},
-			expected: []testHeader{
+			expected: []kgo.RecordHeader{
 				{Key: "x-tenant", Value: []byte("tenant-1")},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := metadataToHeaders(tt.makeCtx(t), tt.keys, makeTestHeader)
+			got := metadataToHeaders(tt.makeCtx(t), tt.keys)
 			if tt.expected == nil {
 				require.Nil(t, got)
 			} else {
@@ -125,45 +117,60 @@ func TestMetadataToHeaders(t *testing.T) {
 	}
 }
 
-func TestSetHeaders(t *testing.T) {
-	type msg struct {
-		headers []testHeader
-	}
-	getH := func(m *msg) []testHeader { return m.headers }
-	setH := func(m *msg, h []testHeader) { m.headers = h }
-
+func TestSetMessageHeaders(t *testing.T) {
 	tests := []struct {
 		name     string
-		messages []*msg
-		headers  []testHeader
-		expected [][]testHeader // expected headers per message after call
+		messages []*kgo.Record
+		makeCtx  func(t *testing.T) context.Context
+		keys     []string
+		expected [][]kgo.RecordHeader // expected headers per message after call
 	}{
 		{
-			name:     "nil_headers",
-			messages: []*msg{{}},
-			headers:  nil,
-			expected: [][]testHeader{nil},
+			name:     "nil_metadata_keys",
+			messages: []*kgo.Record{{}},
+			makeCtx: func(t *testing.T) context.Context {
+				return t.Context()
+			},
+			keys:     nil,
+			expected: [][]kgo.RecordHeader{nil},
 		},
 		{
 			name:     "empty_messages",
 			messages: nil,
-			headers:  []testHeader{{Key: "k", Value: []byte("v")}},
+			makeCtx: func(t *testing.T) context.Context {
+				return client.NewContext(t.Context(), client.Info{
+					Metadata: client.NewMetadata(map[string][]string{"k": {"v"}}),
+				})
+			},
+			keys:     []string{"k"},
 			expected: nil,
 		},
 		{
 			name:     "sets_on_empty_message_headers",
-			messages: []*msg{{}, {}},
-			headers:  []testHeader{{Key: "x-tenant", Value: []byte("t1")}},
-			expected: [][]testHeader{
+			messages: []*kgo.Record{{}, {}},
+			makeCtx: func(t *testing.T) context.Context {
+				return client.NewContext(t.Context(), client.Info{
+					Metadata: client.NewMetadata(map[string][]string{"x-tenant": {"t1"}}),
+				})
+			},
+			keys: []string{"x-tenant"},
+			expected: [][]kgo.RecordHeader{
 				{{Key: "x-tenant", Value: []byte("t1")}},
 				{{Key: "x-tenant", Value: []byte("t1")}},
 			},
 		},
 		{
-			name:     "appends_to_existing_headers",
-			messages: []*msg{{headers: []testHeader{{Key: "existing", Value: []byte("val")}}}},
-			headers:  []testHeader{{Key: "x-new", Value: []byte("new-val")}},
-			expected: [][]testHeader{
+			name: "appends_to_existing_headers",
+			messages: []*kgo.Record{
+				{Headers: []kgo.RecordHeader{{Key: "existing", Value: []byte("val")}}},
+			},
+			makeCtx: func(t *testing.T) context.Context {
+				return client.NewContext(t.Context(), client.Info{
+					Metadata: client.NewMetadata(map[string][]string{"x-new": {"new-val"}}),
+				})
+			},
+			keys: []string{"x-new"},
+			expected: [][]kgo.RecordHeader{
 				{
 					{Key: "existing", Value: []byte("val")},
 					{Key: "x-new", Value: []byte("new-val")},
@@ -173,9 +180,9 @@ func TestSetHeaders(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setHeaders(tt.messages, tt.headers, getH, setH)
+			setMessageHeaders(tt.makeCtx(t), tt.messages, tt.keys)
 			for i, m := range tt.messages {
-				require.Equal(t, tt.expected[i], m.headers)
+				require.Equal(t, tt.expected[i], m.Headers)
 			}
 		})
 	}

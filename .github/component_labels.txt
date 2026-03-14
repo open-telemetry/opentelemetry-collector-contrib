@@ -176,7 +176,6 @@ pkg/xstreamencoding pkg/xstreamencoding
 processor/attributesprocessor processor/attributes
 processor/coralogixprocessor processor/coralogix
 processor/cumulativetodeltaprocessor processor/cumulativetodelta
-processor/datadogsemanticsprocessor processor/datadogsemantics
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
 processor/dnslookupprocessor processor/dnslookup

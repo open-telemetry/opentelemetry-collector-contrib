@@ -49,9 +49,9 @@ components:
     - exporter/elasticsearch
     - exporter/faro
     - exporter/file
+    - exporter/google_cloud_storage
     - exporter/googlecloud
     - exporter/googlecloudpubsub
-    - exporter/googlecloudstorage
     - exporter/googlemanagedprometheus
     - exporter/honeycombmarker
     - exporter/influxdb
@@ -79,23 +79,23 @@ components:
     - extension/ack
     - extension/asapclient
     - extension/avro_log_encoding
+    - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
-    - extension/awslogs_encoding
     - extension/awsproxy
     - extension/azure_auth
     - extension/azure_encoding
     - extension/basicauth
     - extension/bearertokenauth
     - extension/cfgarden_observer
-    - extension/cgroupruntime
+    - extension/cgroup_runtime
     - extension/datadog
     - extension/db_storage
     - extension/docker_observer
     - extension/ecs_observer
     - extension/encoding
     - extension/file_storage
+    - extension/google_cloud_logentry_encoding
     - extension/googleclientauth
-    - extension/googlecloudlogentry_encoding
     - extension/headers_setter
     - extension/health_check
     - extension/healthcheckv2
@@ -185,7 +185,6 @@ components:
     - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
-    - processor/datadogsemantics
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector

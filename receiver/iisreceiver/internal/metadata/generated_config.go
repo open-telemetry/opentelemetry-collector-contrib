@@ -9,13 +9,13 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// IisApplicationPoolStateConfig provides config for the iis.application_pool.state metric.
-type IisApplicationPoolStateConfig struct {
+// IisApplicationPoolStateMetricConfig provides config for the iis.application_pool.state metric.
+type IisApplicationPoolStateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisApplicationPoolStateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisApplicationPoolStateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,13 +29,13 @@ func (ms *IisApplicationPoolStateConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// IisApplicationPoolUptimeConfig provides config for the iis.application_pool.uptime metric.
-type IisApplicationPoolUptimeConfig struct {
+// IisApplicationPoolUptimeMetricConfig provides config for the iis.application_pool.uptime metric.
+type IisApplicationPoolUptimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisApplicationPoolUptimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisApplicationPoolUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -49,13 +49,13 @@ func (ms *IisApplicationPoolUptimeConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// IisConnectionActiveConfig provides config for the iis.connection.active metric.
-type IisConnectionActiveConfig struct {
+// IisConnectionActiveMetricConfig provides config for the iis.connection.active metric.
+type IisConnectionActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisConnectionActiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisConnectionActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -69,13 +69,13 @@ func (ms *IisConnectionActiveConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// IisConnectionAnonymousConfig provides config for the iis.connection.anonymous metric.
-type IisConnectionAnonymousConfig struct {
+// IisConnectionAnonymousMetricConfig provides config for the iis.connection.anonymous metric.
+type IisConnectionAnonymousMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisConnectionAnonymousConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisConnectionAnonymousMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -89,13 +89,13 @@ func (ms *IisConnectionAnonymousConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// IisConnectionAttemptCountConfig provides config for the iis.connection.attempt.count metric.
-type IisConnectionAttemptCountConfig struct {
+// IisConnectionAttemptCountMetricConfig provides config for the iis.connection.attempt.count metric.
+type IisConnectionAttemptCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisConnectionAttemptCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisConnectionAttemptCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -109,13 +109,13 @@ func (ms *IisConnectionAttemptCountConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// IisNetworkBlockedConfig provides config for the iis.network.blocked metric.
-type IisNetworkBlockedConfig struct {
+// IisNetworkBlockedMetricConfig provides config for the iis.network.blocked metric.
+type IisNetworkBlockedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisNetworkBlockedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisNetworkBlockedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -129,23 +129,23 @@ func (ms *IisNetworkBlockedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// IisNetworkFileCountAttributeKey specifies the key of an attribute for the iis.network.file.count metric.
-type IisNetworkFileCountAttributeKey string
+// IisNetworkFileCountMetricAttributeKey specifies the key of an attribute for the iis.network.file.count metric.
+type IisNetworkFileCountMetricAttributeKey string
 
 const (
-	IisNetworkFileCountAttributeKeyDirection IisNetworkFileCountAttributeKey = "direction"
+	IisNetworkFileCountMetricAttributeKeyDirection IisNetworkFileCountMetricAttributeKey = "direction"
 )
 
-// IisNetworkFileCountConfig provides config for the iis.network.file.count metric.
-type IisNetworkFileCountConfig struct {
+// IisNetworkFileCountMetricConfig provides config for the iis.network.file.count metric.
+type IisNetworkFileCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []IisNetworkFileCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []IisNetworkFileCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *IisNetworkFileCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisNetworkFileCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -159,10 +159,10 @@ func (ms *IisNetworkFileCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *IisNetworkFileCountConfig) Validate() error {
+func (ms *IisNetworkFileCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case IisNetworkFileCountAttributeKeyDirection:
+		case IisNetworkFileCountMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric iis.network.file.count doesn't have an attribute %v, valid attributes: [direction]", val)
 		}
@@ -177,23 +177,23 @@ func (ms *IisNetworkFileCountConfig) Validate() error {
 	return nil
 }
 
-// IisNetworkIoAttributeKey specifies the key of an attribute for the iis.network.io metric.
-type IisNetworkIoAttributeKey string
+// IisNetworkIoMetricAttributeKey specifies the key of an attribute for the iis.network.io metric.
+type IisNetworkIoMetricAttributeKey string
 
 const (
-	IisNetworkIoAttributeKeyDirection IisNetworkIoAttributeKey = "direction"
+	IisNetworkIoMetricAttributeKeyDirection IisNetworkIoMetricAttributeKey = "direction"
 )
 
-// IisNetworkIoConfig provides config for the iis.network.io metric.
-type IisNetworkIoConfig struct {
+// IisNetworkIoMetricConfig provides config for the iis.network.io metric.
+type IisNetworkIoMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []IisNetworkIoAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []IisNetworkIoMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *IisNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -207,10 +207,10 @@ func (ms *IisNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *IisNetworkIoConfig) Validate() error {
+func (ms *IisNetworkIoMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case IisNetworkIoAttributeKeyDirection:
+		case IisNetworkIoMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric iis.network.io doesn't have an attribute %v, valid attributes: [direction]", val)
 		}
@@ -225,23 +225,23 @@ func (ms *IisNetworkIoConfig) Validate() error {
 	return nil
 }
 
-// IisRequestCountAttributeKey specifies the key of an attribute for the iis.request.count metric.
-type IisRequestCountAttributeKey string
+// IisRequestCountMetricAttributeKey specifies the key of an attribute for the iis.request.count metric.
+type IisRequestCountMetricAttributeKey string
 
 const (
-	IisRequestCountAttributeKeyRequest IisRequestCountAttributeKey = "request"
+	IisRequestCountMetricAttributeKeyRequest IisRequestCountMetricAttributeKey = "request"
 )
 
-// IisRequestCountConfig provides config for the iis.request.count metric.
-type IisRequestCountConfig struct {
+// IisRequestCountMetricConfig provides config for the iis.request.count metric.
+type IisRequestCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []IisRequestCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []IisRequestCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *IisRequestCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisRequestCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -255,10 +255,10 @@ func (ms *IisRequestCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *IisRequestCountConfig) Validate() error {
+func (ms *IisRequestCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case IisRequestCountAttributeKeyRequest:
+		case IisRequestCountMetricAttributeKeyRequest:
 		default:
 			return fmt.Errorf("metric iis.request.count doesn't have an attribute %v, valid attributes: [request]", val)
 		}
@@ -273,13 +273,13 @@ func (ms *IisRequestCountConfig) Validate() error {
 	return nil
 }
 
-// IisRequestQueueAgeMaxConfig provides config for the iis.request.queue.age.max metric.
-type IisRequestQueueAgeMaxConfig struct {
+// IisRequestQueueAgeMaxMetricConfig provides config for the iis.request.queue.age.max metric.
+type IisRequestQueueAgeMaxMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisRequestQueueAgeMaxConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisRequestQueueAgeMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -293,13 +293,13 @@ func (ms *IisRequestQueueAgeMaxConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// IisRequestQueueCountConfig provides config for the iis.request.queue.count metric.
-type IisRequestQueueCountConfig struct {
+// IisRequestQueueCountMetricConfig provides config for the iis.request.queue.count metric.
+type IisRequestQueueCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisRequestQueueCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisRequestQueueCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -313,13 +313,13 @@ func (ms *IisRequestQueueCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// IisRequestRejectedConfig provides config for the iis.request.rejected metric.
-type IisRequestRejectedConfig struct {
+// IisRequestRejectedMetricConfig provides config for the iis.request.rejected metric.
+type IisRequestRejectedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisRequestRejectedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisRequestRejectedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -333,13 +333,13 @@ func (ms *IisRequestRejectedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// IisThreadActiveConfig provides config for the iis.thread.active metric.
-type IisThreadActiveConfig struct {
+// IisThreadActiveMetricConfig provides config for the iis.thread.active metric.
+type IisThreadActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisThreadActiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisThreadActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -353,13 +353,13 @@ func (ms *IisThreadActiveConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// IisUptimeConfig provides config for the iis.uptime metric.
-type IisUptimeConfig struct {
+// IisUptimeMetricConfig provides config for the iis.uptime metric.
+type IisUptimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *IisUptimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *IisUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -375,70 +375,70 @@ func (ms *IisUptimeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for iis metrics.
 type MetricsConfig struct {
-	IisApplicationPoolState   IisApplicationPoolStateConfig   `mapstructure:"iis.application_pool.state"`
-	IisApplicationPoolUptime  IisApplicationPoolUptimeConfig  `mapstructure:"iis.application_pool.uptime"`
-	IisConnectionActive       IisConnectionActiveConfig       `mapstructure:"iis.connection.active"`
-	IisConnectionAnonymous    IisConnectionAnonymousConfig    `mapstructure:"iis.connection.anonymous"`
-	IisConnectionAttemptCount IisConnectionAttemptCountConfig `mapstructure:"iis.connection.attempt.count"`
-	IisNetworkBlocked         IisNetworkBlockedConfig         `mapstructure:"iis.network.blocked"`
-	IisNetworkFileCount       IisNetworkFileCountConfig       `mapstructure:"iis.network.file.count"`
-	IisNetworkIo              IisNetworkIoConfig              `mapstructure:"iis.network.io"`
-	IisRequestCount           IisRequestCountConfig           `mapstructure:"iis.request.count"`
-	IisRequestQueueAgeMax     IisRequestQueueAgeMaxConfig     `mapstructure:"iis.request.queue.age.max"`
-	IisRequestQueueCount      IisRequestQueueCountConfig      `mapstructure:"iis.request.queue.count"`
-	IisRequestRejected        IisRequestRejectedConfig        `mapstructure:"iis.request.rejected"`
-	IisThreadActive           IisThreadActiveConfig           `mapstructure:"iis.thread.active"`
-	IisUptime                 IisUptimeConfig                 `mapstructure:"iis.uptime"`
+	IisApplicationPoolState   IisApplicationPoolStateMetricConfig   `mapstructure:"iis.application_pool.state"`
+	IisApplicationPoolUptime  IisApplicationPoolUptimeMetricConfig  `mapstructure:"iis.application_pool.uptime"`
+	IisConnectionActive       IisConnectionActiveMetricConfig       `mapstructure:"iis.connection.active"`
+	IisConnectionAnonymous    IisConnectionAnonymousMetricConfig    `mapstructure:"iis.connection.anonymous"`
+	IisConnectionAttemptCount IisConnectionAttemptCountMetricConfig `mapstructure:"iis.connection.attempt.count"`
+	IisNetworkBlocked         IisNetworkBlockedMetricConfig         `mapstructure:"iis.network.blocked"`
+	IisNetworkFileCount       IisNetworkFileCountMetricConfig       `mapstructure:"iis.network.file.count"`
+	IisNetworkIo              IisNetworkIoMetricConfig              `mapstructure:"iis.network.io"`
+	IisRequestCount           IisRequestCountMetricConfig           `mapstructure:"iis.request.count"`
+	IisRequestQueueAgeMax     IisRequestQueueAgeMaxMetricConfig     `mapstructure:"iis.request.queue.age.max"`
+	IisRequestQueueCount      IisRequestQueueCountMetricConfig      `mapstructure:"iis.request.queue.count"`
+	IisRequestRejected        IisRequestRejectedMetricConfig        `mapstructure:"iis.request.rejected"`
+	IisThreadActive           IisThreadActiveMetricConfig           `mapstructure:"iis.thread.active"`
+	IisUptime                 IisUptimeMetricConfig                 `mapstructure:"iis.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		IisApplicationPoolState: IisApplicationPoolStateConfig{
+		IisApplicationPoolState: IisApplicationPoolStateMetricConfig{
 			Enabled: true,
 		},
-		IisApplicationPoolUptime: IisApplicationPoolUptimeConfig{
+		IisApplicationPoolUptime: IisApplicationPoolUptimeMetricConfig{
 			Enabled: true,
 		},
-		IisConnectionActive: IisConnectionActiveConfig{
+		IisConnectionActive: IisConnectionActiveMetricConfig{
 			Enabled: true,
 		},
-		IisConnectionAnonymous: IisConnectionAnonymousConfig{
+		IisConnectionAnonymous: IisConnectionAnonymousMetricConfig{
 			Enabled: true,
 		},
-		IisConnectionAttemptCount: IisConnectionAttemptCountConfig{
+		IisConnectionAttemptCount: IisConnectionAttemptCountMetricConfig{
 			Enabled: true,
 		},
-		IisNetworkBlocked: IisNetworkBlockedConfig{
+		IisNetworkBlocked: IisNetworkBlockedMetricConfig{
 			Enabled: true,
 		},
-		IisNetworkFileCount: IisNetworkFileCountConfig{
+		IisNetworkFileCount: IisNetworkFileCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []IisNetworkFileCountAttributeKey{IisNetworkFileCountAttributeKeyDirection},
+			EnabledAttributes:   []IisNetworkFileCountMetricAttributeKey{IisNetworkFileCountMetricAttributeKeyDirection},
 		},
-		IisNetworkIo: IisNetworkIoConfig{
+		IisNetworkIo: IisNetworkIoMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []IisNetworkIoAttributeKey{IisNetworkIoAttributeKeyDirection},
+			EnabledAttributes:   []IisNetworkIoMetricAttributeKey{IisNetworkIoMetricAttributeKeyDirection},
 		},
-		IisRequestCount: IisRequestCountConfig{
+		IisRequestCount: IisRequestCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []IisRequestCountAttributeKey{IisRequestCountAttributeKeyRequest},
+			EnabledAttributes:   []IisRequestCountMetricAttributeKey{IisRequestCountMetricAttributeKeyRequest},
 		},
-		IisRequestQueueAgeMax: IisRequestQueueAgeMaxConfig{
+		IisRequestQueueAgeMax: IisRequestQueueAgeMaxMetricConfig{
 			Enabled: true,
 		},
-		IisRequestQueueCount: IisRequestQueueCountConfig{
+		IisRequestQueueCount: IisRequestQueueCountMetricConfig{
 			Enabled: true,
 		},
-		IisRequestRejected: IisRequestRejectedConfig{
+		IisRequestRejected: IisRequestRejectedMetricConfig{
 			Enabled: true,
 		},
-		IisThreadActive: IisThreadActiveConfig{
+		IisThreadActive: IisThreadActiveMetricConfig{
 			Enabled: true,
 		},
-		IisUptime: IisUptimeConfig{
+		IisUptime: IisUptimeMetricConfig{
 			Enabled: true,
 		},
 	}
