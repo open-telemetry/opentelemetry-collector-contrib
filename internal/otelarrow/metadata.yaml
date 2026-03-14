@@ -6,7 +6,7 @@ status:
   stability:
     beta: [traces, metrics, logs]
   codeowners:
-    active: [jmacd, moh-osman3]
+    active: [jmacd, lquerel, JakeDern]
 
 telemetry:
   metrics:
