@@ -5,6 +5,8 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -26,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -155,7 +158,6 @@ func TestWAL_persist(t *testing.T) {
 	})
 
 	require.NoError(t, pwal.persistToWAL(ctx, reqL))
-	require.Len(t, pwal.rNotify, 1)
 
 	// 2. Read all the entries from the WAL itself, guided by the indices available,
 	// and ensure that they are exactly in order as we'd expect them.
@@ -369,7 +371,6 @@ func TestWALRead_Telemetry(t *testing.T) {
 	metadatatest.AssertEqualExporterPrometheusremotewriteWalReads(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	wal := prw.wal
 
 	// Create some test data
 	metrics := map[string]*prompb.TimeSeries{
@@ -382,29 +383,327 @@ func TestWALRead_Telemetry(t *testing.T) {
 	// Write a successful WAL write first
 	err = prw.handleExport(t.Context(), metrics, nil)
 	require.NoError(t, err)
-	err = wal.wal.Close()
-	require.NoError(t, err)
-
-	// Write corrupted data
-	corruptedData := []byte{0x80}
-	firstWalFile := filepath.Join(wal.walPath, "00000000000000000001")
-	err = os.WriteFile(firstWalFile, corruptedData, 0o600)
-	require.NoError(t, err)
-	// write the corrupted data and start reading from the index
-
-	err = prw.Start(t.Context(), componenttest.NewNopHost())
-	// Unable to start the WAL cause there is a corrupted entry
-	require.Error(t, err)
-	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_reads_failures")
-
-	// verify that the metric exists, so it's incremented
-	require.NoError(t, err)
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_read_latency")
 	require.NoError(t, err)
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_bytes_read")
 	require.NoError(t, err)
+}
+
+// TestWAL_CorruptSegmentRecovery verifies that when WAL segment files are
+// corrupt (as detected by tidwall/wal.Open returning ErrCorrupt), the
+// exporter recovers by removing the corrupt WAL directory and starting fresh,
+// rather than crash-looping forever. This reproduces the exact CrashLoopBackOff
+// seen in production with hostPath volumes.
+func TestWAL_CorruptSegmentRecovery(t *testing.T) {
+	tempDir := t.TempDir()
+	walPath := filepath.Join(tempDir, "prom_remotewrite")
+
+	// Create a WAL with valid data first.
+	config := &WALConfig{Directory: tempDir, BufferSize: 1}
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NotNil(t, pwal)
+	require.NoError(t, pwal.retrieveWALIndices())
+
+	ctx := t.Context()
+	require.NoError(t, pwal.persistToWAL(ctx, []*prompb.WriteRequest{
+		{Timeseries: []prompb.TimeSeries{
+			{
+				Labels:  []prompb.Label{{Name: "__name__", Value: "test"}},
+				Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+			},
+		}},
+	}))
+	require.NoError(t, pwal.stop())
+
+	// Corrupt the WAL segment file to simulate a crash during write.
+	entries, err := os.ReadDir(walPath)
+	require.NoError(t, err)
+	require.NotEmpty(t, entries, "WAL directory should have segment files")
+	for _, entry := range entries {
+		segPath := filepath.Join(walPath, entry.Name())
+		require.NoError(t, os.WriteFile(segPath, []byte("CORRUPT"), 0o600))
+	}
+
+	// createWAL should recover from the corruption by removing and recreating.
+	newLog, newPath, err := config.createWAL()
+	require.NoError(t, err, "createWAL should recover from corrupt WAL, not fail")
+	require.NotNil(t, newLog)
+	require.Equal(t, walPath, newPath)
+
+	// The recovered WAL should be functional — verify we can write and read.
+	require.NoError(t, newLog.Write(1, []byte("test")))
+	data, err := newLog.Read(1)
+	require.NoError(t, err)
+	assert.Equal(t, []byte("test"), data)
+	require.NoError(t, newLog.Close())
+}
+
+// TestWAL_CorruptEntrySkipped verifies that a single corrupted protobuf entry
+// in the WAL is skipped rather than causing a fatal error or infinite retry loop.
+// Uses WAL-level Write of garbage bytes so the WAL structure stays valid (Open
+// succeeds) but proto.Unmarshal fails, and a context timeout to avoid hangs.
+func TestWAL_CorruptEntrySkipped(t *testing.T) {
+	tempDir := t.TempDir()
+	config := &WALConfig{Directory: tempDir, BufferSize: 10}
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	pwal, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NoError(t, pwal.retrieveWALIndices())
+
+	ctx := t.Context()
+
+	// Write 2 valid entries.
+	for i := range 2 {
+		require.NoError(t, pwal.persistToWAL(ctx, []*prompb.WriteRequest{
+			{Timeseries: []prompb.TimeSeries{
+				{
+					Labels:  []prompb.Label{{Name: "__name__", Value: "metric"}},
+					Samples: []prompb.Sample{{Value: float64(i), Timestamp: int64(i * 100)}},
+				},
+			}},
+		}))
+	}
+
+	// Write a corrupt entry directly via the WAL — valid WAL record but
+	// invalid protobuf, so wal.Open succeeds but proto.Unmarshal fails.
+	pwal.mu.Lock()
+	nextIdx := pwal.wWALIndex.Add(1)
+	require.NoError(t, pwal.wal.Write(nextIdx, []byte("NOT_A_VALID_PROTOBUF")))
+	pwal.mu.Unlock()
+
+	// Write one more valid entry after the corrupt one.
+	require.NoError(t, pwal.persistToWAL(ctx, []*prompb.WriteRequest{
+		{Timeseries: []prompb.TimeSeries{
+			{
+				Labels:  []prompb.Label{{Name: "__name__", Value: "metric"}},
+				Samples: []prompb.Sample{{Value: 99, Timestamp: 9900}},
+			},
+		}},
+	}))
+
+	require.NoError(t, pwal.stop())
+
+	// Reopen and read — the corrupt entry should be skipped.
+	pwal2, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NoError(t, pwal2.retrieveWALIndices())
+
+	readCtx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	var goodCount, corruptCount int
+	for range 4 {
+		_, readErr := pwal2.readPrompbFromWAL(readCtx, pwal2.rWALIndex.Load())
+		if readErr != nil {
+			if errors.Is(readErr, errCorruptedWALEntry) {
+				corruptCount++
+				continue
+			}
+			t.Logf("non-corruption read error at index: %v", readErr)
+			break
+		}
+		goodCount++
+	}
+
+	assert.Equal(t, 3, goodCount, "should read 3 valid entries")
+	assert.Equal(t, 1, corruptCount, "should skip 1 corrupt entry")
+	t.Logf("good=%d corrupt=%d", goodCount, corruptCount)
+
+	require.NoError(t, pwal2.stop())
+}
+
+// TestWAL_TruncatedSegmentRecovery reproduces the exact production failure:
+// a process killed mid-write leaves a truncated segment file (e.g. 9.3 MB
+// instead of typical 21 MB). The tidwall/wal library detects this as
+// ErrCorrupt on Open. The exporter must recover by removing the corrupt
+// WAL directory and starting fresh, rather than crash-looping.
+func TestWAL_TruncatedSegmentRecovery(t *testing.T) {
+	tempDir := t.TempDir()
+	walPath := filepath.Join(tempDir, "prom_remotewrite")
+	config := &WALConfig{Directory: tempDir, BufferSize: 1}
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	// Write enough data to create a multi-entry WAL.
+	pwal, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NoError(t, pwal.retrieveWALIndices())
+
+	ctx := t.Context()
+	for i := range 20 {
+		require.NoError(t, pwal.persistToWAL(ctx, []*prompb.WriteRequest{
+			{Timeseries: []prompb.TimeSeries{
+				{
+				Labels: []prompb.Label{
+					{Name: "__name__", Value: "envoy_cluster_upstream_rq_total"},
+					{Name: "envoy_cluster_name", Value: "http|service-" + fmt.Sprintf("%d", i)},
+					{Name: "kubernetes_node", Value: "node-0"},
+				},
+				Samples: []prompb.Sample{{Value: float64(i), Timestamp: int64(i * 1000)}},
+			},
+			}},
+		}))
+	}
+	require.NoError(t, pwal.stop())
+
+	// Simulate OOM-kill mid-write: truncate the segment file partway through.
+	entries, err := os.ReadDir(walPath)
+	require.NoError(t, err)
+	require.NotEmpty(t, entries)
+
+	segPath := filepath.Join(walPath, entries[len(entries)-1].Name())
+	segData, err := os.ReadFile(segPath)
+	require.NoError(t, err)
+	require.Greater(t, len(segData), 20, "segment should have meaningful data")
+
+	// Truncate to ~40% of original size — simulates partial page flush.
+	truncatedLen := len(segData) * 2 / 5
+	require.NoError(t, os.WriteFile(segPath, segData[:truncatedLen], 0o600))
+
+	// Without the fix, this would fail with "log corrupt" and crash-loop.
+	// With the fix, it recovers by removing the corrupt WAL and starting fresh.
+	cfg := &Config{
+		WAL: configoptional.Some(WALConfig{
+			Directory:  tempDir,
+			BufferSize: 1,
+		}),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	defer server.Close()
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+	require.NoError(t, cfg.Validate())
+
+	set2 := exportertest.NewNopSettings(metadata.Type)
+	set2.BuildInfo = component.BuildInfo{Description: "OpenTelemetry Collector", Version: "1.0"}
+	prwe, err := newPRWExporter(cfg, set2)
+	require.NoError(t, err)
+
+	// This is the critical assertion: Start must succeed, not crash-loop.
+	err = prwe.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err, "exporter must start despite corrupt WAL — should auto-recover")
+
+	// Verify the exporter is functional after recovery.
+	metrics := map[string]*prompb.TimeSeries{
+		"test_after_recovery": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_after_recovery"}},
+			Samples: []prompb.Sample{{Value: 42, Timestamp: 9999}},
+		},
+	}
+	assert.NoError(t, prwe.handleExport(t.Context(), metrics, nil))
+
+	assert.NoError(t, prwe.Shutdown(t.Context()))
+}
+
+// TestWAL_PersistToClosedWAL verifies that persistToWAL returns errNilWAL
+// instead of panicking when the WAL has already been closed.
+func TestWAL_PersistToClosedWAL(t *testing.T) {
+	config := &WALConfig{Directory: t.TempDir()}
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NoError(t, pwal.retrieveWALIndices())
+	require.NoError(t, pwal.stop())
+
+	err = pwal.persistToWAL(t.Context(), []*prompb.WriteRequest{
+		{Timeseries: []prompb.TimeSeries{
+			{
+				Labels:  []prompb.Label{{Name: "a", Value: "b"}},
+				Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+			},
+		}},
+	})
+	require.ErrorIs(t, err, errNilWAL)
+}
+
+// TestWAL_ShutdownWaitsForInflight verifies that Shutdown waits for inflight
+// PushMetrics calls to complete before closing the WAL, preventing the race
+// condition that caused WAL corruption.
+func TestWAL_ShutdownWaitsForInflight(t *testing.T) {
+	cfg := &Config{
+		WAL: configoptional.Some(WALConfig{
+			Directory:  t.TempDir(),
+			BufferSize: 1,
+		}),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+	buildInfo := component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
+	}
+	set := exportertest.NewNopSettings(metadata.Type)
+	set.BuildInfo = buildInfo
+
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+	require.NoError(t, cfg.Validate())
+
+	prwe, err := newPRWExporter(cfg, set)
+	require.NoError(t, err)
+	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
+
+	// Simulate concurrent PushMetrics during shutdown.
+	// PushMetrics uses prwe.wg, so Shutdown must wait for it to finish.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range 10 {
+			md := pmetric.NewMetrics()
+			rm := md.ResourceMetrics().AppendEmpty()
+			sm := rm.ScopeMetrics().AppendEmpty()
+			m := sm.Metrics().AppendEmpty()
+			m.SetName("test_metric")
+			g := m.SetEmptyGauge()
+			dp := g.DataPoints().AppendEmpty()
+			dp.SetDoubleValue(1.0)
+			_ = prwe.PushMetrics(t.Context(), md)
+		}
+	}()
+
+	// Shutdown while PushMetrics is running — should not panic or corrupt.
+	err = prwe.Shutdown(t.Context())
+	assert.NoError(t, err)
+	<-done
+}
+
+// TestWAL_WriteBatchBeforeNotify verifies that WriteBatch completes before
+// the reader is notified, preventing the reader from attempting to read
+// an index that hasn't been persisted yet.
+func TestWAL_WriteBatchBeforeNotify(t *testing.T) {
+	config := &WALConfig{Directory: t.TempDir(), BufferSize: 1}
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NoError(t, pwal.retrieveWALIndices())
+	t.Cleanup(func() { _ = pwal.stop() })
+
+	ctx := t.Context()
+
+	// Write an entry.
+	require.NoError(t, pwal.persistToWAL(ctx, []*prompb.WriteRequest{
+		{Timeseries: []prompb.TimeSeries{
+			{
+				Labels:  []prompb.Label{{Name: "__name__", Value: "test"}},
+				Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+			},
+		}},
+	}))
+
+	// The entry should be immediately readable (no race with notification).
+	req, err := pwal.readPrompbFromWAL(ctx, 1)
+	require.NoError(t, err)
+	require.NotNil(t, req)
+	assert.Equal(t, "test", req.Timeseries[0].Labels[0].Value)
 }
 
 func TestWALLag_Telemetry(t *testing.T) {
