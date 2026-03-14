@@ -26,185 +26,185 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MongodbActiveReads: MongodbActiveReadsConfig{
+					MongodbActiveReads: MongodbActiveReadsMetricConfig{
 						Enabled: true,
 					},
-					MongodbActiveWrites: MongodbActiveWritesConfig{
+					MongodbActiveWrites: MongodbActiveWritesMetricConfig{
 						Enabled: true,
 					},
-					MongodbCacheOperations: MongodbCacheOperationsConfig{
+					MongodbCacheOperations: MongodbCacheOperationsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbCacheOperationsAttributeKey{MongodbCacheOperationsAttributeKeyType},
+						EnabledAttributes:   []MongodbCacheOperationsMetricAttributeKey{MongodbCacheOperationsMetricAttributeKeyType},
 					},
-					MongodbCollectionCount: MongodbCollectionCountConfig{
+					MongodbCollectionCount: MongodbCollectionCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbCollectionCountAttributeKey{MongodbCollectionCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbCollectionCountMetricAttributeKey{MongodbCollectionCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbCommandsRate: MongodbCommandsRateConfig{
+					MongodbCommandsRate: MongodbCommandsRateMetricConfig{
 						Enabled: true,
 					},
-					MongodbConnectionCount: MongodbConnectionCountConfig{
+					MongodbConnectionCount: MongodbConnectionCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbConnectionCountAttributeKey{MongodbConnectionCountAttributeKeyConnectionType, MongodbConnectionCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbConnectionCountMetricAttributeKey{MongodbConnectionCountMetricAttributeKeyConnectionType, MongodbConnectionCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbCursorCount: MongodbCursorCountConfig{
+					MongodbCursorCount: MongodbCursorCountMetricConfig{
 						Enabled: true,
 					},
-					MongodbCursorTimeoutCount: MongodbCursorTimeoutCountConfig{
+					MongodbCursorTimeoutCount: MongodbCursorTimeoutCountMetricConfig{
 						Enabled: true,
 					},
-					MongodbDataSize: MongodbDataSizeConfig{
+					MongodbDataSize: MongodbDataSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbDataSizeAttributeKey{MongodbDataSizeAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbDataSizeMetricAttributeKey{MongodbDataSizeMetricAttributeKeyDbNamespace},
 					},
-					MongodbDatabaseCount: MongodbDatabaseCountConfig{
+					MongodbDatabaseCount: MongodbDatabaseCountMetricConfig{
 						Enabled: true,
 					},
-					MongodbDeletesRate: MongodbDeletesRateConfig{
+					MongodbDeletesRate: MongodbDeletesRateMetricConfig{
 						Enabled: true,
 					},
-					MongodbDocumentOperationCount: MongodbDocumentOperationCountConfig{
+					MongodbDocumentOperationCount: MongodbDocumentOperationCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbDocumentOperationCountAttributeKey{MongodbDocumentOperationCountAttributeKeyOperation, MongodbDocumentOperationCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbDocumentOperationCountMetricAttributeKey{MongodbDocumentOperationCountMetricAttributeKeyOperation, MongodbDocumentOperationCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbExtentCount: MongodbExtentCountConfig{
+					MongodbExtentCount: MongodbExtentCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbExtentCountAttributeKey{MongodbExtentCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbExtentCountMetricAttributeKey{MongodbExtentCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbFlushesRate: MongodbFlushesRateConfig{
+					MongodbFlushesRate: MongodbFlushesRateMetricConfig{
 						Enabled: true,
 					},
-					MongodbGetmoresRate: MongodbGetmoresRateConfig{
+					MongodbGetmoresRate: MongodbGetmoresRateMetricConfig{
 						Enabled: true,
 					},
-					MongodbGlobalLockTime: MongodbGlobalLockTimeConfig{
+					MongodbGlobalLockTime: MongodbGlobalLockTimeMetricConfig{
 						Enabled: true,
 					},
-					MongodbHealth: MongodbHealthConfig{
+					MongodbHealth: MongodbHealthMetricConfig{
 						Enabled: true,
 					},
-					MongodbIndexAccessCount: MongodbIndexAccessCountConfig{
+					MongodbIndexAccessCount: MongodbIndexAccessCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbIndexAccessCountAttributeKey{MongodbIndexAccessCountAttributeKeyCollection, MongodbIndexAccessCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbIndexAccessCountMetricAttributeKey{MongodbIndexAccessCountMetricAttributeKeyCollection, MongodbIndexAccessCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbIndexCount: MongodbIndexCountConfig{
+					MongodbIndexCount: MongodbIndexCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbIndexCountAttributeKey{MongodbIndexCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbIndexCountMetricAttributeKey{MongodbIndexCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbIndexSize: MongodbIndexSizeConfig{
+					MongodbIndexSize: MongodbIndexSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbIndexSizeAttributeKey{MongodbIndexSizeAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbIndexSizeMetricAttributeKey{MongodbIndexSizeMetricAttributeKeyDbNamespace},
 					},
-					MongodbInsertsRate: MongodbInsertsRateConfig{
+					MongodbInsertsRate: MongodbInsertsRateMetricConfig{
 						Enabled: true,
 					},
-					MongodbLockAcquireCount: MongodbLockAcquireCountConfig{
+					MongodbLockAcquireCount: MongodbLockAcquireCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbLockAcquireCountAttributeKey{MongodbLockAcquireCountAttributeKeyLockType, MongodbLockAcquireCountAttributeKeyLockMode, MongodbLockAcquireCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbLockAcquireCountMetricAttributeKey{MongodbLockAcquireCountMetricAttributeKeyLockType, MongodbLockAcquireCountMetricAttributeKeyLockMode, MongodbLockAcquireCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbLockAcquireTime: MongodbLockAcquireTimeConfig{
+					MongodbLockAcquireTime: MongodbLockAcquireTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbLockAcquireTimeAttributeKey{MongodbLockAcquireTimeAttributeKeyLockType, MongodbLockAcquireTimeAttributeKeyLockMode, MongodbLockAcquireTimeAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbLockAcquireTimeMetricAttributeKey{MongodbLockAcquireTimeMetricAttributeKeyLockType, MongodbLockAcquireTimeMetricAttributeKeyLockMode, MongodbLockAcquireTimeMetricAttributeKeyDbNamespace},
 					},
-					MongodbLockAcquireWaitCount: MongodbLockAcquireWaitCountConfig{
+					MongodbLockAcquireWaitCount: MongodbLockAcquireWaitCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbLockAcquireWaitCountAttributeKey{MongodbLockAcquireWaitCountAttributeKeyLockType, MongodbLockAcquireWaitCountAttributeKeyLockMode, MongodbLockAcquireWaitCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbLockAcquireWaitCountMetricAttributeKey{MongodbLockAcquireWaitCountMetricAttributeKeyLockType, MongodbLockAcquireWaitCountMetricAttributeKeyLockMode, MongodbLockAcquireWaitCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbLockDeadlockCount: MongodbLockDeadlockCountConfig{
+					MongodbLockDeadlockCount: MongodbLockDeadlockCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbLockDeadlockCountAttributeKey{MongodbLockDeadlockCountAttributeKeyLockType, MongodbLockDeadlockCountAttributeKeyLockMode, MongodbLockDeadlockCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbLockDeadlockCountMetricAttributeKey{MongodbLockDeadlockCountMetricAttributeKeyLockType, MongodbLockDeadlockCountMetricAttributeKeyLockMode, MongodbLockDeadlockCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbMemoryUsage: MongodbMemoryUsageConfig{
+					MongodbMemoryUsage: MongodbMemoryUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbMemoryUsageAttributeKey{MongodbMemoryUsageAttributeKeyMemoryType, MongodbMemoryUsageAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbMemoryUsageMetricAttributeKey{MongodbMemoryUsageMetricAttributeKeyMemoryType, MongodbMemoryUsageMetricAttributeKeyDbNamespace},
 					},
-					MongodbNetworkIoReceive: MongodbNetworkIoReceiveConfig{
+					MongodbNetworkIoReceive: MongodbNetworkIoReceiveMetricConfig{
 						Enabled: true,
 					},
-					MongodbNetworkIoTransmit: MongodbNetworkIoTransmitConfig{
+					MongodbNetworkIoTransmit: MongodbNetworkIoTransmitMetricConfig{
 						Enabled: true,
 					},
-					MongodbNetworkRequestCount: MongodbNetworkRequestCountConfig{
+					MongodbNetworkRequestCount: MongodbNetworkRequestCountMetricConfig{
 						Enabled: true,
 					},
-					MongodbObjectCount: MongodbObjectCountConfig{
+					MongodbObjectCount: MongodbObjectCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbObjectCountAttributeKey{MongodbObjectCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbObjectCountMetricAttributeKey{MongodbObjectCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbOperationCount: MongodbOperationCountConfig{
+					MongodbOperationCount: MongodbOperationCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbOperationCountAttributeKey{MongodbOperationCountAttributeKeyOperation},
+						EnabledAttributes:   []MongodbOperationCountMetricAttributeKey{MongodbOperationCountMetricAttributeKeyOperation},
 					},
-					MongodbOperationLatencyTime: MongodbOperationLatencyTimeConfig{
+					MongodbOperationLatencyTime: MongodbOperationLatencyTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []MongodbOperationLatencyTimeAttributeKey{MongodbOperationLatencyTimeAttributeKeyOperationLatency},
+						EnabledAttributes:   []MongodbOperationLatencyTimeMetricAttributeKey{MongodbOperationLatencyTimeMetricAttributeKeyOperationLatency},
 					},
-					MongodbOperationReplCount: MongodbOperationReplCountConfig{
+					MongodbOperationReplCount: MongodbOperationReplCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbOperationReplCountAttributeKey{MongodbOperationReplCountAttributeKeyOperation},
+						EnabledAttributes:   []MongodbOperationReplCountMetricAttributeKey{MongodbOperationReplCountMetricAttributeKeyOperation},
 					},
-					MongodbOperationTime: MongodbOperationTimeConfig{
+					MongodbOperationTime: MongodbOperationTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbOperationTimeAttributeKey{MongodbOperationTimeAttributeKeyOperation},
+						EnabledAttributes:   []MongodbOperationTimeMetricAttributeKey{MongodbOperationTimeMetricAttributeKeyOperation},
 					},
-					MongodbPageFaults: MongodbPageFaultsConfig{
+					MongodbPageFaults: MongodbPageFaultsMetricConfig{
 						Enabled: true,
 					},
-					MongodbQueriesRate: MongodbQueriesRateConfig{
+					MongodbQueriesRate: MongodbQueriesRateMetricConfig{
 						Enabled: true,
 					},
-					MongodbReplCommandsPerSec: MongodbReplCommandsPerSecConfig{
+					MongodbReplCommandsPerSec: MongodbReplCommandsPerSecMetricConfig{
 						Enabled: true,
 					},
-					MongodbReplDeletesPerSec: MongodbReplDeletesPerSecConfig{
+					MongodbReplDeletesPerSec: MongodbReplDeletesPerSecMetricConfig{
 						Enabled: true,
 					},
-					MongodbReplGetmoresPerSec: MongodbReplGetmoresPerSecConfig{
+					MongodbReplGetmoresPerSec: MongodbReplGetmoresPerSecMetricConfig{
 						Enabled: true,
 					},
-					MongodbReplInsertsPerSec: MongodbReplInsertsPerSecConfig{
+					MongodbReplInsertsPerSec: MongodbReplInsertsPerSecMetricConfig{
 						Enabled: true,
 					},
-					MongodbReplQueriesPerSec: MongodbReplQueriesPerSecConfig{
+					MongodbReplQueriesPerSec: MongodbReplQueriesPerSecMetricConfig{
 						Enabled: true,
 					},
-					MongodbReplUpdatesPerSec: MongodbReplUpdatesPerSecConfig{
+					MongodbReplUpdatesPerSec: MongodbReplUpdatesPerSecMetricConfig{
 						Enabled: true,
 					},
-					MongodbSessionCount: MongodbSessionCountConfig{
+					MongodbSessionCount: MongodbSessionCountMetricConfig{
 						Enabled: true,
 					},
-					MongodbStorageSize: MongodbStorageSizeConfig{
+					MongodbStorageSize: MongodbStorageSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbStorageSizeAttributeKey{MongodbStorageSizeAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbStorageSizeMetricAttributeKey{MongodbStorageSizeMetricAttributeKeyDbNamespace},
 					},
-					MongodbUpdatesRate: MongodbUpdatesRateConfig{
+					MongodbUpdatesRate: MongodbUpdatesRateMetricConfig{
 						Enabled: true,
 					},
-					MongodbUptime: MongodbUptimeConfig{
+					MongodbUptime: MongodbUptimeMetricConfig{
 						Enabled: true,
 					},
-					MongodbWtcacheBytesRead: MongodbWtcacheBytesReadConfig{
+					MongodbWtcacheBytesRead: MongodbWtcacheBytesReadMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -219,185 +219,185 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MongodbActiveReads: MongodbActiveReadsConfig{
+					MongodbActiveReads: MongodbActiveReadsMetricConfig{
 						Enabled: false,
 					},
-					MongodbActiveWrites: MongodbActiveWritesConfig{
+					MongodbActiveWrites: MongodbActiveWritesMetricConfig{
 						Enabled: false,
 					},
-					MongodbCacheOperations: MongodbCacheOperationsConfig{
+					MongodbCacheOperations: MongodbCacheOperationsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbCacheOperationsAttributeKey{MongodbCacheOperationsAttributeKeyType},
+						EnabledAttributes:   []MongodbCacheOperationsMetricAttributeKey{MongodbCacheOperationsMetricAttributeKeyType},
 					},
-					MongodbCollectionCount: MongodbCollectionCountConfig{
+					MongodbCollectionCount: MongodbCollectionCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbCollectionCountAttributeKey{MongodbCollectionCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbCollectionCountMetricAttributeKey{MongodbCollectionCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbCommandsRate: MongodbCommandsRateConfig{
+					MongodbCommandsRate: MongodbCommandsRateMetricConfig{
 						Enabled: false,
 					},
-					MongodbConnectionCount: MongodbConnectionCountConfig{
+					MongodbConnectionCount: MongodbConnectionCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbConnectionCountAttributeKey{MongodbConnectionCountAttributeKeyConnectionType, MongodbConnectionCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbConnectionCountMetricAttributeKey{MongodbConnectionCountMetricAttributeKeyConnectionType, MongodbConnectionCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbCursorCount: MongodbCursorCountConfig{
+					MongodbCursorCount: MongodbCursorCountMetricConfig{
 						Enabled: false,
 					},
-					MongodbCursorTimeoutCount: MongodbCursorTimeoutCountConfig{
+					MongodbCursorTimeoutCount: MongodbCursorTimeoutCountMetricConfig{
 						Enabled: false,
 					},
-					MongodbDataSize: MongodbDataSizeConfig{
+					MongodbDataSize: MongodbDataSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbDataSizeAttributeKey{MongodbDataSizeAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbDataSizeMetricAttributeKey{MongodbDataSizeMetricAttributeKeyDbNamespace},
 					},
-					MongodbDatabaseCount: MongodbDatabaseCountConfig{
+					MongodbDatabaseCount: MongodbDatabaseCountMetricConfig{
 						Enabled: false,
 					},
-					MongodbDeletesRate: MongodbDeletesRateConfig{
+					MongodbDeletesRate: MongodbDeletesRateMetricConfig{
 						Enabled: false,
 					},
-					MongodbDocumentOperationCount: MongodbDocumentOperationCountConfig{
+					MongodbDocumentOperationCount: MongodbDocumentOperationCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbDocumentOperationCountAttributeKey{MongodbDocumentOperationCountAttributeKeyOperation, MongodbDocumentOperationCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbDocumentOperationCountMetricAttributeKey{MongodbDocumentOperationCountMetricAttributeKeyOperation, MongodbDocumentOperationCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbExtentCount: MongodbExtentCountConfig{
+					MongodbExtentCount: MongodbExtentCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbExtentCountAttributeKey{MongodbExtentCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbExtentCountMetricAttributeKey{MongodbExtentCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbFlushesRate: MongodbFlushesRateConfig{
+					MongodbFlushesRate: MongodbFlushesRateMetricConfig{
 						Enabled: false,
 					},
-					MongodbGetmoresRate: MongodbGetmoresRateConfig{
+					MongodbGetmoresRate: MongodbGetmoresRateMetricConfig{
 						Enabled: false,
 					},
-					MongodbGlobalLockTime: MongodbGlobalLockTimeConfig{
+					MongodbGlobalLockTime: MongodbGlobalLockTimeMetricConfig{
 						Enabled: false,
 					},
-					MongodbHealth: MongodbHealthConfig{
+					MongodbHealth: MongodbHealthMetricConfig{
 						Enabled: false,
 					},
-					MongodbIndexAccessCount: MongodbIndexAccessCountConfig{
+					MongodbIndexAccessCount: MongodbIndexAccessCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbIndexAccessCountAttributeKey{MongodbIndexAccessCountAttributeKeyCollection, MongodbIndexAccessCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbIndexAccessCountMetricAttributeKey{MongodbIndexAccessCountMetricAttributeKeyCollection, MongodbIndexAccessCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbIndexCount: MongodbIndexCountConfig{
+					MongodbIndexCount: MongodbIndexCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbIndexCountAttributeKey{MongodbIndexCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbIndexCountMetricAttributeKey{MongodbIndexCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbIndexSize: MongodbIndexSizeConfig{
+					MongodbIndexSize: MongodbIndexSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbIndexSizeAttributeKey{MongodbIndexSizeAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbIndexSizeMetricAttributeKey{MongodbIndexSizeMetricAttributeKeyDbNamespace},
 					},
-					MongodbInsertsRate: MongodbInsertsRateConfig{
+					MongodbInsertsRate: MongodbInsertsRateMetricConfig{
 						Enabled: false,
 					},
-					MongodbLockAcquireCount: MongodbLockAcquireCountConfig{
+					MongodbLockAcquireCount: MongodbLockAcquireCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbLockAcquireCountAttributeKey{MongodbLockAcquireCountAttributeKeyLockType, MongodbLockAcquireCountAttributeKeyLockMode, MongodbLockAcquireCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbLockAcquireCountMetricAttributeKey{MongodbLockAcquireCountMetricAttributeKeyLockType, MongodbLockAcquireCountMetricAttributeKeyLockMode, MongodbLockAcquireCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbLockAcquireTime: MongodbLockAcquireTimeConfig{
+					MongodbLockAcquireTime: MongodbLockAcquireTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbLockAcquireTimeAttributeKey{MongodbLockAcquireTimeAttributeKeyLockType, MongodbLockAcquireTimeAttributeKeyLockMode, MongodbLockAcquireTimeAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbLockAcquireTimeMetricAttributeKey{MongodbLockAcquireTimeMetricAttributeKeyLockType, MongodbLockAcquireTimeMetricAttributeKeyLockMode, MongodbLockAcquireTimeMetricAttributeKeyDbNamespace},
 					},
-					MongodbLockAcquireWaitCount: MongodbLockAcquireWaitCountConfig{
+					MongodbLockAcquireWaitCount: MongodbLockAcquireWaitCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbLockAcquireWaitCountAttributeKey{MongodbLockAcquireWaitCountAttributeKeyLockType, MongodbLockAcquireWaitCountAttributeKeyLockMode, MongodbLockAcquireWaitCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbLockAcquireWaitCountMetricAttributeKey{MongodbLockAcquireWaitCountMetricAttributeKeyLockType, MongodbLockAcquireWaitCountMetricAttributeKeyLockMode, MongodbLockAcquireWaitCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbLockDeadlockCount: MongodbLockDeadlockCountConfig{
+					MongodbLockDeadlockCount: MongodbLockDeadlockCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbLockDeadlockCountAttributeKey{MongodbLockDeadlockCountAttributeKeyLockType, MongodbLockDeadlockCountAttributeKeyLockMode, MongodbLockDeadlockCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbLockDeadlockCountMetricAttributeKey{MongodbLockDeadlockCountMetricAttributeKeyLockType, MongodbLockDeadlockCountMetricAttributeKeyLockMode, MongodbLockDeadlockCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbMemoryUsage: MongodbMemoryUsageConfig{
+					MongodbMemoryUsage: MongodbMemoryUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbMemoryUsageAttributeKey{MongodbMemoryUsageAttributeKeyMemoryType, MongodbMemoryUsageAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbMemoryUsageMetricAttributeKey{MongodbMemoryUsageMetricAttributeKeyMemoryType, MongodbMemoryUsageMetricAttributeKeyDbNamespace},
 					},
-					MongodbNetworkIoReceive: MongodbNetworkIoReceiveConfig{
+					MongodbNetworkIoReceive: MongodbNetworkIoReceiveMetricConfig{
 						Enabled: false,
 					},
-					MongodbNetworkIoTransmit: MongodbNetworkIoTransmitConfig{
+					MongodbNetworkIoTransmit: MongodbNetworkIoTransmitMetricConfig{
 						Enabled: false,
 					},
-					MongodbNetworkRequestCount: MongodbNetworkRequestCountConfig{
+					MongodbNetworkRequestCount: MongodbNetworkRequestCountMetricConfig{
 						Enabled: false,
 					},
-					MongodbObjectCount: MongodbObjectCountConfig{
+					MongodbObjectCount: MongodbObjectCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbObjectCountAttributeKey{MongodbObjectCountAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbObjectCountMetricAttributeKey{MongodbObjectCountMetricAttributeKeyDbNamespace},
 					},
-					MongodbOperationCount: MongodbOperationCountConfig{
+					MongodbOperationCount: MongodbOperationCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbOperationCountAttributeKey{MongodbOperationCountAttributeKeyOperation},
+						EnabledAttributes:   []MongodbOperationCountMetricAttributeKey{MongodbOperationCountMetricAttributeKeyOperation},
 					},
-					MongodbOperationLatencyTime: MongodbOperationLatencyTimeConfig{
+					MongodbOperationLatencyTime: MongodbOperationLatencyTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []MongodbOperationLatencyTimeAttributeKey{MongodbOperationLatencyTimeAttributeKeyOperationLatency},
+						EnabledAttributes:   []MongodbOperationLatencyTimeMetricAttributeKey{MongodbOperationLatencyTimeMetricAttributeKeyOperationLatency},
 					},
-					MongodbOperationReplCount: MongodbOperationReplCountConfig{
+					MongodbOperationReplCount: MongodbOperationReplCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbOperationReplCountAttributeKey{MongodbOperationReplCountAttributeKeyOperation},
+						EnabledAttributes:   []MongodbOperationReplCountMetricAttributeKey{MongodbOperationReplCountMetricAttributeKeyOperation},
 					},
-					MongodbOperationTime: MongodbOperationTimeConfig{
+					MongodbOperationTime: MongodbOperationTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbOperationTimeAttributeKey{MongodbOperationTimeAttributeKeyOperation},
+						EnabledAttributes:   []MongodbOperationTimeMetricAttributeKey{MongodbOperationTimeMetricAttributeKeyOperation},
 					},
-					MongodbPageFaults: MongodbPageFaultsConfig{
+					MongodbPageFaults: MongodbPageFaultsMetricConfig{
 						Enabled: false,
 					},
-					MongodbQueriesRate: MongodbQueriesRateConfig{
+					MongodbQueriesRate: MongodbQueriesRateMetricConfig{
 						Enabled: false,
 					},
-					MongodbReplCommandsPerSec: MongodbReplCommandsPerSecConfig{
+					MongodbReplCommandsPerSec: MongodbReplCommandsPerSecMetricConfig{
 						Enabled: false,
 					},
-					MongodbReplDeletesPerSec: MongodbReplDeletesPerSecConfig{
+					MongodbReplDeletesPerSec: MongodbReplDeletesPerSecMetricConfig{
 						Enabled: false,
 					},
-					MongodbReplGetmoresPerSec: MongodbReplGetmoresPerSecConfig{
+					MongodbReplGetmoresPerSec: MongodbReplGetmoresPerSecMetricConfig{
 						Enabled: false,
 					},
-					MongodbReplInsertsPerSec: MongodbReplInsertsPerSecConfig{
+					MongodbReplInsertsPerSec: MongodbReplInsertsPerSecMetricConfig{
 						Enabled: false,
 					},
-					MongodbReplQueriesPerSec: MongodbReplQueriesPerSecConfig{
+					MongodbReplQueriesPerSec: MongodbReplQueriesPerSecMetricConfig{
 						Enabled: false,
 					},
-					MongodbReplUpdatesPerSec: MongodbReplUpdatesPerSecConfig{
+					MongodbReplUpdatesPerSec: MongodbReplUpdatesPerSecMetricConfig{
 						Enabled: false,
 					},
-					MongodbSessionCount: MongodbSessionCountConfig{
+					MongodbSessionCount: MongodbSessionCountMetricConfig{
 						Enabled: false,
 					},
-					MongodbStorageSize: MongodbStorageSizeConfig{
+					MongodbStorageSize: MongodbStorageSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MongodbStorageSizeAttributeKey{MongodbStorageSizeAttributeKeyDbNamespace},
+						EnabledAttributes:   []MongodbStorageSizeMetricAttributeKey{MongodbStorageSizeMetricAttributeKeyDbNamespace},
 					},
-					MongodbUpdatesRate: MongodbUpdatesRateConfig{
+					MongodbUpdatesRate: MongodbUpdatesRateMetricConfig{
 						Enabled: false,
 					},
-					MongodbUptime: MongodbUptimeConfig{
+					MongodbUptime: MongodbUptimeMetricConfig{
 						Enabled: false,
 					},
-					MongodbWtcacheBytesRead: MongodbWtcacheBytesReadConfig{
+					MongodbWtcacheBytesRead: MongodbWtcacheBytesReadMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -412,7 +412,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsConfig{}, MongodbActiveWritesConfig{}, MongodbCacheOperationsConfig{}, MongodbCollectionCountConfig{}, MongodbCommandsRateConfig{}, MongodbConnectionCountConfig{}, MongodbCursorCountConfig{}, MongodbCursorTimeoutCountConfig{}, MongodbDataSizeConfig{}, MongodbDatabaseCountConfig{}, MongodbDeletesRateConfig{}, MongodbDocumentOperationCountConfig{}, MongodbExtentCountConfig{}, MongodbFlushesRateConfig{}, MongodbGetmoresRateConfig{}, MongodbGlobalLockTimeConfig{}, MongodbHealthConfig{}, MongodbIndexAccessCountConfig{}, MongodbIndexCountConfig{}, MongodbIndexSizeConfig{}, MongodbInsertsRateConfig{}, MongodbLockAcquireCountConfig{}, MongodbLockAcquireTimeConfig{}, MongodbLockAcquireWaitCountConfig{}, MongodbLockDeadlockCountConfig{}, MongodbMemoryUsageConfig{}, MongodbNetworkIoReceiveConfig{}, MongodbNetworkIoTransmitConfig{}, MongodbNetworkRequestCountConfig{}, MongodbObjectCountConfig{}, MongodbOperationCountConfig{}, MongodbOperationLatencyTimeConfig{}, MongodbOperationReplCountConfig{}, MongodbOperationTimeConfig{}, MongodbPageFaultsConfig{}, MongodbQueriesRateConfig{}, MongodbReplCommandsPerSecConfig{}, MongodbReplDeletesPerSecConfig{}, MongodbReplGetmoresPerSecConfig{}, MongodbReplInsertsPerSecConfig{}, MongodbReplQueriesPerSecConfig{}, MongodbReplUpdatesPerSecConfig{}, MongodbSessionCountConfig{}, MongodbStorageSizeConfig{}, MongodbUpdatesRateConfig{}, MongodbUptimeConfig{}, MongodbWtcacheBytesReadConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsMetricConfig{}, MongodbActiveWritesMetricConfig{}, MongodbCacheOperationsMetricConfig{}, MongodbCollectionCountMetricConfig{}, MongodbCommandsRateMetricConfig{}, MongodbConnectionCountMetricConfig{}, MongodbCursorCountMetricConfig{}, MongodbCursorTimeoutCountMetricConfig{}, MongodbDataSizeMetricConfig{}, MongodbDatabaseCountMetricConfig{}, MongodbDeletesRateMetricConfig{}, MongodbDocumentOperationCountMetricConfig{}, MongodbExtentCountMetricConfig{}, MongodbFlushesRateMetricConfig{}, MongodbGetmoresRateMetricConfig{}, MongodbGlobalLockTimeMetricConfig{}, MongodbHealthMetricConfig{}, MongodbIndexAccessCountMetricConfig{}, MongodbIndexCountMetricConfig{}, MongodbIndexSizeMetricConfig{}, MongodbInsertsRateMetricConfig{}, MongodbLockAcquireCountMetricConfig{}, MongodbLockAcquireTimeMetricConfig{}, MongodbLockAcquireWaitCountMetricConfig{}, MongodbLockDeadlockCountMetricConfig{}, MongodbMemoryUsageMetricConfig{}, MongodbNetworkIoReceiveMetricConfig{}, MongodbNetworkIoTransmitMetricConfig{}, MongodbNetworkRequestCountMetricConfig{}, MongodbObjectCountMetricConfig{}, MongodbOperationCountMetricConfig{}, MongodbOperationLatencyTimeMetricConfig{}, MongodbOperationReplCountMetricConfig{}, MongodbOperationTimeMetricConfig{}, MongodbPageFaultsMetricConfig{}, MongodbQueriesRateMetricConfig{}, MongodbReplCommandsPerSecMetricConfig{}, MongodbReplDeletesPerSecMetricConfig{}, MongodbReplGetmoresPerSecMetricConfig{}, MongodbReplInsertsPerSecMetricConfig{}, MongodbReplQueriesPerSecMetricConfig{}, MongodbReplUpdatesPerSecMetricConfig{}, MongodbSessionCountMetricConfig{}, MongodbStorageSizeMetricConfig{}, MongodbUpdatesRateMetricConfig{}, MongodbUptimeMetricConfig{}, MongodbWtcacheBytesReadMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
