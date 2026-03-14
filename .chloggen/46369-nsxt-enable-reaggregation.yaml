@@ -1,0 +1,6 @@
+change_type: 'enhancement'
+component: receiver/nsxt
+note: Enable dynamic metric reaggregation in the NSX-T receiver.
+issues: [46369]
+subtext:
+change_logs: [user]
