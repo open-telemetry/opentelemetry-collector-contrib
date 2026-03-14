@@ -86,10 +86,11 @@ func TestValidate(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Username:         tc.username,
-				Password:         configopaque.String(tc.password),
-				Hosts:            hosts,
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Username:             tc.username,
+				Password:             configopaque.String(tc.password),
+				Hosts:                hosts,
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expected == nil {
@@ -140,8 +141,9 @@ func TestBadTLSConfigs(t *testing.T) {
 						Endpoint: defaultEndpoint,
 					},
 				},
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				ClientConfig:     tc.tlsConfig,
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ClientConfig:         tc.tlsConfig,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expectError {
