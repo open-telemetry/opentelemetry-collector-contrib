@@ -8,23 +8,23 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// SystemCPUFrequencyAttributeKey specifies the key of an attribute for the system.cpu.frequency metric.
-type SystemCPUFrequencyAttributeKey string
+// SystemCPUFrequencyMetricAttributeKey specifies the key of an attribute for the system.cpu.frequency metric.
+type SystemCPUFrequencyMetricAttributeKey string
 
 const (
-	SystemCPUFrequencyAttributeKeyCpu SystemCPUFrequencyAttributeKey = "cpu"
+	SystemCPUFrequencyMetricAttributeKeyCpu SystemCPUFrequencyMetricAttributeKey = "cpu"
 )
 
-// SystemCPUFrequencyConfig provides config for the system.cpu.frequency metric.
-type SystemCPUFrequencyConfig struct {
+// SystemCPUFrequencyMetricConfig provides config for the system.cpu.frequency metric.
+type SystemCPUFrequencyMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemCPUFrequencyAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUFrequencyMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemCPUFrequencyConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPUFrequencyMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -38,10 +38,10 @@ func (ms *SystemCPUFrequencyConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SystemCPUFrequencyConfig) Validate() error {
+func (ms *SystemCPUFrequencyMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUFrequencyAttributeKeyCpu:
+		case SystemCPUFrequencyMetricAttributeKeyCpu:
 		default:
 			return fmt.Errorf("metric system.cpu.frequency doesn't have an attribute %v, valid attributes: [cpu]", val)
 		}
@@ -56,13 +56,13 @@ func (ms *SystemCPUFrequencyConfig) Validate() error {
 	return nil
 }
 
-// SystemCPULogicalCountConfig provides config for the system.cpu.logical.count metric.
-type SystemCPULogicalCountConfig struct {
+// SystemCPULogicalCountMetricConfig provides config for the system.cpu.logical.count metric.
+type SystemCPULogicalCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemCPULogicalCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPULogicalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -76,13 +76,13 @@ func (ms *SystemCPULogicalCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SystemCPUPhysicalCountConfig provides config for the system.cpu.physical.count metric.
-type SystemCPUPhysicalCountConfig struct {
+// SystemCPUPhysicalCountMetricConfig provides config for the system.cpu.physical.count metric.
+type SystemCPUPhysicalCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemCPUPhysicalCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPUPhysicalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -96,24 +96,24 @@ func (ms *SystemCPUPhysicalCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SystemCPUTimeAttributeKey specifies the key of an attribute for the system.cpu.time metric.
-type SystemCPUTimeAttributeKey string
+// SystemCPUTimeMetricAttributeKey specifies the key of an attribute for the system.cpu.time metric.
+type SystemCPUTimeMetricAttributeKey string
 
 const (
-	SystemCPUTimeAttributeKeyCpu   SystemCPUTimeAttributeKey = "cpu"
-	SystemCPUTimeAttributeKeyState SystemCPUTimeAttributeKey = "state"
+	SystemCPUTimeMetricAttributeKeyCpu   SystemCPUTimeMetricAttributeKey = "cpu"
+	SystemCPUTimeMetricAttributeKeyState SystemCPUTimeMetricAttributeKey = "state"
 )
 
-// SystemCPUTimeConfig provides config for the system.cpu.time metric.
-type SystemCPUTimeConfig struct {
+// SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.
+type SystemCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemCPUTimeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -127,10 +127,10 @@ func (ms *SystemCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SystemCPUTimeConfig) Validate() error {
+func (ms *SystemCPUTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUTimeAttributeKeyCpu, SystemCPUTimeAttributeKeyState:
+		case SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric system.cpu.time doesn't have an attribute %v, valid attributes: [cpu, state]", val)
 		}
@@ -145,24 +145,24 @@ func (ms *SystemCPUTimeConfig) Validate() error {
 	return nil
 }
 
-// SystemCPUUtilizationAttributeKey specifies the key of an attribute for the system.cpu.utilization metric.
-type SystemCPUUtilizationAttributeKey string
+// SystemCPUUtilizationMetricAttributeKey specifies the key of an attribute for the system.cpu.utilization metric.
+type SystemCPUUtilizationMetricAttributeKey string
 
 const (
-	SystemCPUUtilizationAttributeKeyCpu   SystemCPUUtilizationAttributeKey = "cpu"
-	SystemCPUUtilizationAttributeKeyState SystemCPUUtilizationAttributeKey = "state"
+	SystemCPUUtilizationMetricAttributeKeyCpu   SystemCPUUtilizationMetricAttributeKey = "cpu"
+	SystemCPUUtilizationMetricAttributeKeyState SystemCPUUtilizationMetricAttributeKey = "state"
 )
 
-// SystemCPUUtilizationConfig provides config for the system.cpu.utilization metric.
-type SystemCPUUtilizationConfig struct {
+// SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric.
+type SystemCPUUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemCPUUtilizationAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemCPUUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -176,10 +176,10 @@ func (ms *SystemCPUUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SystemCPUUtilizationConfig) Validate() error {
+func (ms *SystemCPUUtilizationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUUtilizationAttributeKeyCpu, SystemCPUUtilizationAttributeKeyState:
+		case SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric system.cpu.utilization doesn't have an attribute %v, valid attributes: [cpu, state]", val)
 		}
@@ -196,35 +196,35 @@ func (ms *SystemCPUUtilizationConfig) Validate() error {
 
 // MetricsConfig provides config for cpu metrics.
 type MetricsConfig struct {
-	SystemCPUFrequency     SystemCPUFrequencyConfig     `mapstructure:"system.cpu.frequency"`
-	SystemCPULogicalCount  SystemCPULogicalCountConfig  `mapstructure:"system.cpu.logical.count"`
-	SystemCPUPhysicalCount SystemCPUPhysicalCountConfig `mapstructure:"system.cpu.physical.count"`
-	SystemCPUTime          SystemCPUTimeConfig          `mapstructure:"system.cpu.time"`
-	SystemCPUUtilization   SystemCPUUtilizationConfig   `mapstructure:"system.cpu.utilization"`
+	SystemCPUFrequency     SystemCPUFrequencyMetricConfig     `mapstructure:"system.cpu.frequency"`
+	SystemCPULogicalCount  SystemCPULogicalCountMetricConfig  `mapstructure:"system.cpu.logical.count"`
+	SystemCPUPhysicalCount SystemCPUPhysicalCountMetricConfig `mapstructure:"system.cpu.physical.count"`
+	SystemCPUTime          SystemCPUTimeMetricConfig          `mapstructure:"system.cpu.time"`
+	SystemCPUUtilization   SystemCPUUtilizationMetricConfig   `mapstructure:"system.cpu.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemCPUFrequency: SystemCPUFrequencyConfig{
+		SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemCPUFrequencyAttributeKey{SystemCPUFrequencyAttributeKeyCpu},
+			EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCpu},
 		},
-		SystemCPULogicalCount: SystemCPULogicalCountConfig{
+		SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 			Enabled: false,
 		},
-		SystemCPUPhysicalCount: SystemCPUPhysicalCountConfig{
+		SystemCPUPhysicalCount: SystemCPUPhysicalCountMetricConfig{
 			Enabled: false,
 		},
-		SystemCPUTime: SystemCPUTimeConfig{
+		SystemCPUTime: SystemCPUTimeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemCPUTimeAttributeKey{SystemCPUTimeAttributeKeyCpu, SystemCPUTimeAttributeKeyState},
+			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState},
 		},
-		SystemCPUUtilization: SystemCPUUtilizationConfig{
+		SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemCPUUtilizationAttributeKey{SystemCPUUtilizationAttributeKeyCpu, SystemCPUUtilizationAttributeKeyState},
+			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
 		},
 	}
 }

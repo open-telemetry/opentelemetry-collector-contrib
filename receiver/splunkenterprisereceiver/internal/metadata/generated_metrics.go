@@ -234,10 +234,10 @@ type metricInfo struct {
 }
 
 type metricSplunkAggregationQueueRatio struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        SplunkAggregationQueueRatioConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SplunkAggregationQueueRatioMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []float64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.aggregation.queue.ratio metric with initial data.
@@ -258,13 +258,13 @@ func (m *metricSplunkAggregationQueueRatio) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkAggregationQueueRatioAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkAggregationQueueRatioMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -318,7 +318,7 @@ func (m *metricSplunkAggregationQueueRatio) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkAggregationQueueRatio(cfg SplunkAggregationQueueRatioConfig) metricSplunkAggregationQueueRatio {
+func newMetricSplunkAggregationQueueRatio(cfg SplunkAggregationQueueRatioMetricConfig) metricSplunkAggregationQueueRatio {
 	m := metricSplunkAggregationQueueRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -329,10 +329,10 @@ func newMetricSplunkAggregationQueueRatio(cfg SplunkAggregationQueueRatioConfig)
 }
 
 type metricSplunkBucketsSearchableStatus struct {
-	data          pmetric.Metric                      // data buffer for generated metric.
-	config        SplunkBucketsSearchableStatusConfig // metric config provided by user.
-	capacity      int                                 // max observed number of data points added to the metric.
-	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        SplunkBucketsSearchableStatusMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.buckets.searchable.status metric with initial data.
@@ -353,16 +353,16 @@ func (m *metricSplunkBucketsSearchableStatus) recordDataPoint(start pcommon.Time
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusAttributeKeySplunkIndexerSearchable) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusMetricAttributeKeySplunkIndexerSearchable) {
 		dp.Attributes().PutStr("splunk.indexer.searchable", splunkIndexerSearchableAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -416,7 +416,7 @@ func (m *metricSplunkBucketsSearchableStatus) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricSplunkBucketsSearchableStatus(cfg SplunkBucketsSearchableStatusConfig) metricSplunkBucketsSearchableStatus {
+func newMetricSplunkBucketsSearchableStatus(cfg SplunkBucketsSearchableStatusMetricConfig) metricSplunkBucketsSearchableStatus {
 	m := metricSplunkBucketsSearchableStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -427,10 +427,10 @@ func newMetricSplunkBucketsSearchableStatus(cfg SplunkBucketsSearchableStatusCon
 }
 
 type metricSplunkDataIndexesExtendedBucketCount struct {
-	data          pmetric.Metric                             // data buffer for generated metric.
-	config        SplunkDataIndexesExtendedBucketCountConfig // metric config provided by user.
-	capacity      int                                        // max observed number of data points added to the metric.
-	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedBucketCountMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.bucket.count metric with initial data.
@@ -451,13 +451,13 @@ func (m *metricSplunkDataIndexesExtendedBucketCount) recordDataPoint(start pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -511,7 +511,7 @@ func (m *metricSplunkDataIndexesExtendedBucketCount) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedBucketCount(cfg SplunkDataIndexesExtendedBucketCountConfig) metricSplunkDataIndexesExtendedBucketCount {
+func newMetricSplunkDataIndexesExtendedBucketCount(cfg SplunkDataIndexesExtendedBucketCountMetricConfig) metricSplunkDataIndexesExtendedBucketCount {
 	m := metricSplunkDataIndexesExtendedBucketCount{config: cfg}
 
 	if cfg.Enabled {
@@ -522,10 +522,10 @@ func newMetricSplunkDataIndexesExtendedBucketCount(cfg SplunkDataIndexesExtended
 }
 
 type metricSplunkDataIndexesExtendedBucketEventCount struct {
-	data          pmetric.Metric                                  // data buffer for generated metric.
-	config        SplunkDataIndexesExtendedBucketEventCountConfig // metric config provided by user.
-	capacity      int                                             // max observed number of data points added to the metric.
-	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                        // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedBucketEventCountMetricConfig // metric config provided by user.
+	capacity      int                                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.bucket.event.count metric with initial data.
@@ -546,16 +546,16 @@ func (m *metricSplunkDataIndexesExtendedBucketEventCount) recordDataPoint(start 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkBucketDir) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkBucketDir) {
 		dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -609,7 +609,7 @@ func (m *metricSplunkDataIndexesExtendedBucketEventCount) emit(metrics pmetric.M
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedBucketEventCount(cfg SplunkDataIndexesExtendedBucketEventCountConfig) metricSplunkDataIndexesExtendedBucketEventCount {
+func newMetricSplunkDataIndexesExtendedBucketEventCount(cfg SplunkDataIndexesExtendedBucketEventCountMetricConfig) metricSplunkDataIndexesExtendedBucketEventCount {
 	m := metricSplunkDataIndexesExtendedBucketEventCount{config: cfg}
 
 	if cfg.Enabled {
@@ -620,10 +620,10 @@ func newMetricSplunkDataIndexesExtendedBucketEventCount(cfg SplunkDataIndexesExt
 }
 
 type metricSplunkDataIndexesExtendedBucketHotCount struct {
-	data          pmetric.Metric                                // data buffer for generated metric.
-	config        SplunkDataIndexesExtendedBucketHotCountConfig // metric config provided by user.
-	capacity      int                                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                      // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedBucketHotCountMetricConfig // metric config provided by user.
+	capacity      int                                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.bucket.hot.count metric with initial data.
@@ -644,16 +644,16 @@ func (m *metricSplunkDataIndexesExtendedBucketHotCount) recordDataPoint(start pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkBucketDir) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkBucketDir) {
 		dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -707,7 +707,7 @@ func (m *metricSplunkDataIndexesExtendedBucketHotCount) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedBucketHotCount(cfg SplunkDataIndexesExtendedBucketHotCountConfig) metricSplunkDataIndexesExtendedBucketHotCount {
+func newMetricSplunkDataIndexesExtendedBucketHotCount(cfg SplunkDataIndexesExtendedBucketHotCountMetricConfig) metricSplunkDataIndexesExtendedBucketHotCount {
 	m := metricSplunkDataIndexesExtendedBucketHotCount{config: cfg}
 
 	if cfg.Enabled {
@@ -718,10 +718,10 @@ func newMetricSplunkDataIndexesExtendedBucketHotCount(cfg SplunkDataIndexesExten
 }
 
 type metricSplunkDataIndexesExtendedBucketWarmCount struct {
-	data          pmetric.Metric                                 // data buffer for generated metric.
-	config        SplunkDataIndexesExtendedBucketWarmCountConfig // metric config provided by user.
-	capacity      int                                            // max observed number of data points added to the metric.
-	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedBucketWarmCountMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.bucket.warm.count metric with initial data.
@@ -742,16 +742,16 @@ func (m *metricSplunkDataIndexesExtendedBucketWarmCount) recordDataPoint(start p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkBucketDir) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkBucketDir) {
 		dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -805,7 +805,7 @@ func (m *metricSplunkDataIndexesExtendedBucketWarmCount) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedBucketWarmCount(cfg SplunkDataIndexesExtendedBucketWarmCountConfig) metricSplunkDataIndexesExtendedBucketWarmCount {
+func newMetricSplunkDataIndexesExtendedBucketWarmCount(cfg SplunkDataIndexesExtendedBucketWarmCountMetricConfig) metricSplunkDataIndexesExtendedBucketWarmCount {
 	m := metricSplunkDataIndexesExtendedBucketWarmCount{config: cfg}
 
 	if cfg.Enabled {
@@ -816,10 +816,10 @@ func newMetricSplunkDataIndexesExtendedBucketWarmCount(cfg SplunkDataIndexesExte
 }
 
 type metricSplunkDataIndexesExtendedEventCount struct {
-	data          pmetric.Metric                            // data buffer for generated metric.
-	config        SplunkDataIndexesExtendedEventCountConfig // metric config provided by user.
-	capacity      int                                       // max observed number of data points added to the metric.
-	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedEventCountMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.event.count metric with initial data.
@@ -840,13 +840,13 @@ func (m *metricSplunkDataIndexesExtendedEventCount) recordDataPoint(start pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedEventCountAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -900,7 +900,7 @@ func (m *metricSplunkDataIndexesExtendedEventCount) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedEventCount(cfg SplunkDataIndexesExtendedEventCountConfig) metricSplunkDataIndexesExtendedEventCount {
+func newMetricSplunkDataIndexesExtendedEventCount(cfg SplunkDataIndexesExtendedEventCountMetricConfig) metricSplunkDataIndexesExtendedEventCount {
 	m := metricSplunkDataIndexesExtendedEventCount{config: cfg}
 
 	if cfg.Enabled {
@@ -911,10 +911,10 @@ func newMetricSplunkDataIndexesExtendedEventCount(cfg SplunkDataIndexesExtendedE
 }
 
 type metricSplunkDataIndexesExtendedRawSize struct {
-	data          pmetric.Metric                         // data buffer for generated metric.
-	config        SplunkDataIndexesExtendedRawSizeConfig // metric config provided by user.
-	capacity      int                                    // max observed number of data points added to the metric.
-	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedRawSizeMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.raw.size metric with initial data.
@@ -935,13 +935,13 @@ func (m *metricSplunkDataIndexesExtendedRawSize) recordDataPoint(start pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -995,7 +995,7 @@ func (m *metricSplunkDataIndexesExtendedRawSize) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedRawSize(cfg SplunkDataIndexesExtendedRawSizeConfig) metricSplunkDataIndexesExtendedRawSize {
+func newMetricSplunkDataIndexesExtendedRawSize(cfg SplunkDataIndexesExtendedRawSizeMetricConfig) metricSplunkDataIndexesExtendedRawSize {
 	m := metricSplunkDataIndexesExtendedRawSize{config: cfg}
 
 	if cfg.Enabled {
@@ -1006,10 +1006,10 @@ func newMetricSplunkDataIndexesExtendedRawSize(cfg SplunkDataIndexesExtendedRawS
 }
 
 type metricSplunkDataIndexesExtendedTotalSize struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SplunkDataIndexesExtendedTotalSizeConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SplunkDataIndexesExtendedTotalSizeMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.data.indexes.extended.total.size metric with initial data.
@@ -1030,13 +1030,13 @@ func (m *metricSplunkDataIndexesExtendedTotalSize) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1090,7 +1090,7 @@ func (m *metricSplunkDataIndexesExtendedTotalSize) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSplunkDataIndexesExtendedTotalSize(cfg SplunkDataIndexesExtendedTotalSizeConfig) metricSplunkDataIndexesExtendedTotalSize {
+func newMetricSplunkDataIndexesExtendedTotalSize(cfg SplunkDataIndexesExtendedTotalSizeMetricConfig) metricSplunkDataIndexesExtendedTotalSize {
 	m := metricSplunkDataIndexesExtendedTotalSize{config: cfg}
 
 	if cfg.Enabled {
@@ -1101,10 +1101,10 @@ func newMetricSplunkDataIndexesExtendedTotalSize(cfg SplunkDataIndexesExtendedTo
 }
 
 type metricSplunkHealth struct {
-	data          pmetric.Metric     // data buffer for generated metric.
-	config        SplunkHealthConfig // metric config provided by user.
-	capacity      int                // max observed number of data points added to the metric.
-	aggDataPoints []int64            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric           // data buffer for generated metric.
+	config        SplunkHealthMetricConfig // metric config provided by user.
+	capacity      int                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.health metric with initial data.
@@ -1125,16 +1125,16 @@ func (m *metricSplunkHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkHealthAttributeKeySplunkFeature) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkHealthMetricAttributeKeySplunkFeature) {
 		dp.Attributes().PutStr("splunk.feature", splunkFeatureAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkHealthAttributeKeySplunkFeatureHealth) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkHealthMetricAttributeKeySplunkFeatureHealth) {
 		dp.Attributes().PutStr("splunk.feature.health", splunkFeatureHealthAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkHealthAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkHealthMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkHealthAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkHealthMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1188,7 +1188,7 @@ func (m *metricSplunkHealth) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkHealth(cfg SplunkHealthConfig) metricSplunkHealth {
+func newMetricSplunkHealth(cfg SplunkHealthMetricConfig) metricSplunkHealth {
 	m := metricSplunkHealth{config: cfg}
 
 	if cfg.Enabled {
@@ -1199,10 +1199,10 @@ func newMetricSplunkHealth(cfg SplunkHealthConfig) metricSplunkHealth {
 }
 
 type metricSplunkIndexerAvgRate struct {
-	data          pmetric.Metric             // data buffer for generated metric.
-	config        SplunkIndexerAvgRateConfig // metric config provided by user.
-	capacity      int                        // max observed number of data points added to the metric.
-	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SplunkIndexerAvgRateMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.avg.rate metric with initial data.
@@ -1223,13 +1223,13 @@ func (m *metricSplunkIndexerAvgRate) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerAvgRateAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerAvgRateMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerAvgRateAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerAvgRateAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1283,7 +1283,7 @@ func (m *metricSplunkIndexerAvgRate) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexerAvgRate(cfg SplunkIndexerAvgRateConfig) metricSplunkIndexerAvgRate {
+func newMetricSplunkIndexerAvgRate(cfg SplunkIndexerAvgRateMetricConfig) metricSplunkIndexerAvgRate {
 	m := metricSplunkIndexerAvgRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1294,10 +1294,10 @@ func newMetricSplunkIndexerAvgRate(cfg SplunkIndexerAvgRateConfig) metricSplunkI
 }
 
 type metricSplunkIndexerCPUTime struct {
-	data          pmetric.Metric             // data buffer for generated metric.
-	config        SplunkIndexerCPUTimeConfig // metric config provided by user.
-	capacity      int                        // max observed number of data points added to the metric.
-	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SplunkIndexerCPUTimeMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.cpu.time metric with initial data.
@@ -1318,13 +1318,13 @@ func (m *metricSplunkIndexerCPUTime) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerCPUTimeAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerCPUTimeMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1378,7 +1378,7 @@ func (m *metricSplunkIndexerCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexerCPUTime(cfg SplunkIndexerCPUTimeConfig) metricSplunkIndexerCPUTime {
+func newMetricSplunkIndexerCPUTime(cfg SplunkIndexerCPUTimeMetricConfig) metricSplunkIndexerCPUTime {
 	m := metricSplunkIndexerCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -1389,10 +1389,10 @@ func newMetricSplunkIndexerCPUTime(cfg SplunkIndexerCPUTimeConfig) metricSplunkI
 }
 
 type metricSplunkIndexerQueueRatio struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        SplunkIndexerQueueRatioConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []float64                     // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SplunkIndexerQueueRatioMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.queue.ratio metric with initial data.
@@ -1413,13 +1413,13 @@ func (m *metricSplunkIndexerQueueRatio) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerQueueRatioAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerQueueRatioMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1473,7 +1473,7 @@ func (m *metricSplunkIndexerQueueRatio) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexerQueueRatio(cfg SplunkIndexerQueueRatioConfig) metricSplunkIndexerQueueRatio {
+func newMetricSplunkIndexerQueueRatio(cfg SplunkIndexerQueueRatioMetricConfig) metricSplunkIndexerQueueRatio {
 	m := metricSplunkIndexerQueueRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -1484,10 +1484,10 @@ func newMetricSplunkIndexerQueueRatio(cfg SplunkIndexerQueueRatioConfig) metricS
 }
 
 type metricSplunkIndexerRawWriteTime struct {
-	data          pmetric.Metric                  // data buffer for generated metric.
-	config        SplunkIndexerRawWriteTimeConfig // metric config provided by user.
-	capacity      int                             // max observed number of data points added to the metric.
-	aggDataPoints []float64                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        SplunkIndexerRawWriteTimeMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []float64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.raw.write.time metric with initial data.
@@ -1508,13 +1508,13 @@ func (m *metricSplunkIndexerRawWriteTime) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRawWriteTimeAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1568,7 +1568,7 @@ func (m *metricSplunkIndexerRawWriteTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexerRawWriteTime(cfg SplunkIndexerRawWriteTimeConfig) metricSplunkIndexerRawWriteTime {
+func newMetricSplunkIndexerRawWriteTime(cfg SplunkIndexerRawWriteTimeMetricConfig) metricSplunkIndexerRawWriteTime {
 	m := metricSplunkIndexerRawWriteTime{config: cfg}
 
 	if cfg.Enabled {
@@ -1579,10 +1579,10 @@ func newMetricSplunkIndexerRawWriteTime(cfg SplunkIndexerRawWriteTimeConfig) met
 }
 
 type metricSplunkIndexerRollingrestartStatus struct {
-	data          pmetric.Metric                          // data buffer for generated metric.
-	config        SplunkIndexerRollingrestartStatusConfig // metric config provided by user.
-	capacity      int                                     // max observed number of data points added to the metric.
-	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        SplunkIndexerRollingrestartStatusMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.rollingrestart.status metric with initial data.
@@ -1603,16 +1603,16 @@ func (m *metricSplunkIndexerRollingrestartStatus) recordDataPoint(start pcommon.
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusAttributeKeySplunkSearchableRestart) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSearchableRestart) {
 		dp.Attributes().PutBool("splunk.searchable.restart", splunkSearchableRestartAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusAttributeKeySplunkRollingorrestart) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkRollingorrestart) {
 		dp.Attributes().PutBool("splunk.rollingorrestart", splunkRollingorrestartAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1666,7 +1666,7 @@ func (m *metricSplunkIndexerRollingrestartStatus) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricSplunkIndexerRollingrestartStatus(cfg SplunkIndexerRollingrestartStatusConfig) metricSplunkIndexerRollingrestartStatus {
+func newMetricSplunkIndexerRollingrestartStatus(cfg SplunkIndexerRollingrestartStatusMetricConfig) metricSplunkIndexerRollingrestartStatus {
 	m := metricSplunkIndexerRollingrestartStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -1677,10 +1677,10 @@ func newMetricSplunkIndexerRollingrestartStatus(cfg SplunkIndexerRollingrestartS
 }
 
 type metricSplunkIndexerThroughput struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        SplunkIndexerThroughputConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []float64                     // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SplunkIndexerThroughputMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexer.throughput metric with initial data.
@@ -1701,13 +1701,13 @@ func (m *metricSplunkIndexerThroughput) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerThroughputAttributeKeySplunkIndexerStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerThroughputMetricAttributeKeySplunkIndexerStatus) {
 		dp.Attributes().PutStr("splunk.indexer.status", splunkIndexerStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerThroughputAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerThroughputAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1761,7 +1761,7 @@ func (m *metricSplunkIndexerThroughput) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexerThroughput(cfg SplunkIndexerThroughputConfig) metricSplunkIndexerThroughput {
+func newMetricSplunkIndexerThroughput(cfg SplunkIndexerThroughputMetricConfig) metricSplunkIndexerThroughput {
 	m := metricSplunkIndexerThroughput{config: cfg}
 
 	if cfg.Enabled {
@@ -1772,10 +1772,10 @@ func newMetricSplunkIndexerThroughput(cfg SplunkIndexerThroughputConfig) metricS
 }
 
 type metricSplunkIndexesAvgSize struct {
-	data          pmetric.Metric             // data buffer for generated metric.
-	config        SplunkIndexesAvgSizeConfig // metric config provided by user.
-	capacity      int                        // max observed number of data points added to the metric.
-	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SplunkIndexesAvgSizeMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.avg.size metric with initial data.
@@ -1796,13 +1796,13 @@ func (m *metricSplunkIndexesAvgSize) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgSizeAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgSizeMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1856,7 +1856,7 @@ func (m *metricSplunkIndexesAvgSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexesAvgSize(cfg SplunkIndexesAvgSizeConfig) metricSplunkIndexesAvgSize {
+func newMetricSplunkIndexesAvgSize(cfg SplunkIndexesAvgSizeMetricConfig) metricSplunkIndexesAvgSize {
 	m := metricSplunkIndexesAvgSize{config: cfg}
 
 	if cfg.Enabled {
@@ -1867,10 +1867,10 @@ func newMetricSplunkIndexesAvgSize(cfg SplunkIndexesAvgSizeConfig) metricSplunkI
 }
 
 type metricSplunkIndexesAvgUsage struct {
-	data          pmetric.Metric              // data buffer for generated metric.
-	config        SplunkIndexesAvgUsageConfig // metric config provided by user.
-	capacity      int                         // max observed number of data points added to the metric.
-	aggDataPoints []float64                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        SplunkIndexesAvgUsageMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.avg.usage metric with initial data.
@@ -1891,13 +1891,13 @@ func (m *metricSplunkIndexesAvgUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgUsageAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgUsageMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -1951,7 +1951,7 @@ func (m *metricSplunkIndexesAvgUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexesAvgUsage(cfg SplunkIndexesAvgUsageConfig) metricSplunkIndexesAvgUsage {
+func newMetricSplunkIndexesAvgUsage(cfg SplunkIndexesAvgUsageMetricConfig) metricSplunkIndexesAvgUsage {
 	m := metricSplunkIndexesAvgUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -1962,10 +1962,10 @@ func newMetricSplunkIndexesAvgUsage(cfg SplunkIndexesAvgUsageConfig) metricSplun
 }
 
 type metricSplunkIndexesBucketCount struct {
-	data          pmetric.Metric                 // data buffer for generated metric.
-	config        SplunkIndexesBucketCountConfig // metric config provided by user.
-	capacity      int                            // max observed number of data points added to the metric.
-	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SplunkIndexesBucketCountMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.bucket.count metric with initial data.
@@ -1986,13 +1986,13 @@ func (m *metricSplunkIndexesBucketCount) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesBucketCountAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesBucketCountMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesBucketCountAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesBucketCountAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2046,7 +2046,7 @@ func (m *metricSplunkIndexesBucketCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexesBucketCount(cfg SplunkIndexesBucketCountConfig) metricSplunkIndexesBucketCount {
+func newMetricSplunkIndexesBucketCount(cfg SplunkIndexesBucketCountMetricConfig) metricSplunkIndexesBucketCount {
 	m := metricSplunkIndexesBucketCount{config: cfg}
 
 	if cfg.Enabled {
@@ -2057,10 +2057,10 @@ func newMetricSplunkIndexesBucketCount(cfg SplunkIndexesBucketCountConfig) metri
 }
 
 type metricSplunkIndexesMedianDataAge struct {
-	data          pmetric.Metric                   // data buffer for generated metric.
-	config        SplunkIndexesMedianDataAgeConfig // metric config provided by user.
-	capacity      int                              // max observed number of data points added to the metric.
-	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        SplunkIndexesMedianDataAgeMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.median.data.age metric with initial data.
@@ -2081,13 +2081,13 @@ func (m *metricSplunkIndexesMedianDataAge) recordDataPoint(start pcommon.Timesta
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesMedianDataAgeAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2141,7 +2141,7 @@ func (m *metricSplunkIndexesMedianDataAge) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexesMedianDataAge(cfg SplunkIndexesMedianDataAgeConfig) metricSplunkIndexesMedianDataAge {
+func newMetricSplunkIndexesMedianDataAge(cfg SplunkIndexesMedianDataAgeMetricConfig) metricSplunkIndexesMedianDataAge {
 	m := metricSplunkIndexesMedianDataAge{config: cfg}
 
 	if cfg.Enabled {
@@ -2152,10 +2152,10 @@ func newMetricSplunkIndexesMedianDataAge(cfg SplunkIndexesMedianDataAgeConfig) m
 }
 
 type metricSplunkIndexesSize struct {
-	data          pmetric.Metric          // data buffer for generated metric.
-	config        SplunkIndexesSizeConfig // metric config provided by user.
-	capacity      int                     // max observed number of data points added to the metric.
-	aggDataPoints []float64               // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        SplunkIndexesSizeMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.indexes.size metric with initial data.
@@ -2176,13 +2176,13 @@ func (m *metricSplunkIndexesSize) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesSizeAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesSizeMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesSizeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesSizeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2236,7 +2236,7 @@ func (m *metricSplunkIndexesSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIndexesSize(cfg SplunkIndexesSizeConfig) metricSplunkIndexesSize {
+func newMetricSplunkIndexesSize(cfg SplunkIndexesSizeMetricConfig) metricSplunkIndexesSize {
 	m := metricSplunkIndexesSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2247,10 +2247,10 @@ func newMetricSplunkIndexesSize(cfg SplunkIndexesSizeConfig) metricSplunkIndexes
 }
 
 type metricSplunkIoAvgIops struct {
-	data          pmetric.Metric        // data buffer for generated metric.
-	config        SplunkIoAvgIopsConfig // metric config provided by user.
-	capacity      int                   // max observed number of data points added to the metric.
-	aggDataPoints []int64               // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        SplunkIoAvgIopsMetricConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.io.avg.iops metric with initial data.
@@ -2271,13 +2271,13 @@ func (m *metricSplunkIoAvgIops) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkIoAvgIopsAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIoAvgIopsMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIoAvgIopsAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkIoAvgIopsAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2331,7 +2331,7 @@ func (m *metricSplunkIoAvgIops) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkIoAvgIops(cfg SplunkIoAvgIopsConfig) metricSplunkIoAvgIops {
+func newMetricSplunkIoAvgIops(cfg SplunkIoAvgIopsMetricConfig) metricSplunkIoAvgIops {
 	m := metricSplunkIoAvgIops{config: cfg}
 
 	if cfg.Enabled {
@@ -2342,10 +2342,10 @@ func newMetricSplunkIoAvgIops(cfg SplunkIoAvgIopsConfig) metricSplunkIoAvgIops {
 }
 
 type metricSplunkKvstoreBackupStatus struct {
-	data          pmetric.Metric                  // data buffer for generated metric.
-	config        SplunkKvstoreBackupStatusConfig // metric config provided by user.
-	capacity      int                             // max observed number of data points added to the metric.
-	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        SplunkKvstoreBackupStatusMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.kvstore.backup.status metric with initial data.
@@ -2366,13 +2366,13 @@ func (m *metricSplunkKvstoreBackupStatus) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreBackupStatusAttributeKeySplunkKvstoreStatusValue) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreBackupStatusMetricAttributeKeySplunkKvstoreStatusValue) {
 		dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2426,7 +2426,7 @@ func (m *metricSplunkKvstoreBackupStatus) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkKvstoreBackupStatus(cfg SplunkKvstoreBackupStatusConfig) metricSplunkKvstoreBackupStatus {
+func newMetricSplunkKvstoreBackupStatus(cfg SplunkKvstoreBackupStatusMetricConfig) metricSplunkKvstoreBackupStatus {
 	m := metricSplunkKvstoreBackupStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -2437,10 +2437,10 @@ func newMetricSplunkKvstoreBackupStatus(cfg SplunkKvstoreBackupStatusConfig) met
 }
 
 type metricSplunkKvstoreReplicationStatus struct {
-	data          pmetric.Metric                       // data buffer for generated metric.
-	config        SplunkKvstoreReplicationStatusConfig // metric config provided by user.
-	capacity      int                                  // max observed number of data points added to the metric.
-	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        SplunkKvstoreReplicationStatusMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.kvstore.replication.status metric with initial data.
@@ -2461,13 +2461,13 @@ func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Tim
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusAttributeKeySplunkKvstoreStatusValue) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue) {
 		dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2521,7 +2521,7 @@ func (m *metricSplunkKvstoreReplicationStatus) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricSplunkKvstoreReplicationStatus(cfg SplunkKvstoreReplicationStatusConfig) metricSplunkKvstoreReplicationStatus {
+func newMetricSplunkKvstoreReplicationStatus(cfg SplunkKvstoreReplicationStatusMetricConfig) metricSplunkKvstoreReplicationStatus {
 	m := metricSplunkKvstoreReplicationStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -2532,10 +2532,10 @@ func newMetricSplunkKvstoreReplicationStatus(cfg SplunkKvstoreReplicationStatusC
 }
 
 type metricSplunkKvstoreStatus struct {
-	data          pmetric.Metric            // data buffer for generated metric.
-	config        SplunkKvstoreStatusConfig // metric config provided by user.
-	capacity      int                       // max observed number of data points added to the metric.
-	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SplunkKvstoreStatusMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.kvstore.status metric with initial data.
@@ -2556,19 +2556,19 @@ func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkKvstoreStorageEngine) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine) {
 		dp.Attributes().PutStr("splunk.kvstore.storage.engine", splunkKvstoreStorageEngineAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkKvstoreExternal) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal) {
 		dp.Attributes().PutStr("splunk.kvstore.external", splunkKvstoreExternalAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkKvstoreStatusValue) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStatusValue) {
 		dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2622,7 +2622,7 @@ func (m *metricSplunkKvstoreStatus) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkKvstoreStatus(cfg SplunkKvstoreStatusConfig) metricSplunkKvstoreStatus {
+func newMetricSplunkKvstoreStatus(cfg SplunkKvstoreStatusMetricConfig) metricSplunkKvstoreStatus {
 	m := metricSplunkKvstoreStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -2633,10 +2633,10 @@ func newMetricSplunkKvstoreStatus(cfg SplunkKvstoreStatusConfig) metricSplunkKvs
 }
 
 type metricSplunkLicenseExpirationSecondsRemaining struct {
-	data          pmetric.Metric                                // data buffer for generated metric.
-	config        SplunkLicenseExpirationSecondsRemainingConfig // metric config provided by user.
-	capacity      int                                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                      // data buffer for generated metric.
+	config        SplunkLicenseExpirationSecondsRemainingMetricConfig // metric config provided by user.
+	capacity      int                                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.license.expiration.seconds_remaining metric with initial data.
@@ -2657,19 +2657,19 @@ func (m *metricSplunkLicenseExpirationSecondsRemaining) recordDataPoint(start pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseStatus) {
 		dp.Attributes().PutStr("splunk.license.status", splunkLicenseStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseLabel) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseLabel) {
 		dp.Attributes().PutStr("splunk.license.label", splunkLicenseLabelAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseType) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseType) {
 		dp.Attributes().PutStr("splunk.license.type", splunkLicenseTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2723,7 +2723,7 @@ func (m *metricSplunkLicenseExpirationSecondsRemaining) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricSplunkLicenseExpirationSecondsRemaining(cfg SplunkLicenseExpirationSecondsRemainingConfig) metricSplunkLicenseExpirationSecondsRemaining {
+func newMetricSplunkLicenseExpirationSecondsRemaining(cfg SplunkLicenseExpirationSecondsRemainingMetricConfig) metricSplunkLicenseExpirationSecondsRemaining {
 	m := metricSplunkLicenseExpirationSecondsRemaining{config: cfg}
 
 	if cfg.Enabled {
@@ -2734,10 +2734,10 @@ func newMetricSplunkLicenseExpirationSecondsRemaining(cfg SplunkLicenseExpiratio
 }
 
 type metricSplunkLicenseIndexUsage struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        SplunkLicenseIndexUsageConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SplunkLicenseIndexUsageMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.license.index.usage metric with initial data.
@@ -2758,13 +2758,13 @@ func (m *metricSplunkLicenseIndexUsage) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseIndexUsageAttributeKeySplunkIndexName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseIndexUsageMetricAttributeKeySplunkIndexName) {
 		dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2818,7 +2818,7 @@ func (m *metricSplunkLicenseIndexUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkLicenseIndexUsage(cfg SplunkLicenseIndexUsageConfig) metricSplunkLicenseIndexUsage {
+func newMetricSplunkLicenseIndexUsage(cfg SplunkLicenseIndexUsageMetricConfig) metricSplunkLicenseIndexUsage {
 	m := metricSplunkLicenseIndexUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -2829,10 +2829,10 @@ func newMetricSplunkLicenseIndexUsage(cfg SplunkLicenseIndexUsageConfig) metricS
 }
 
 type metricSplunkParseQueueRatio struct {
-	data          pmetric.Metric              // data buffer for generated metric.
-	config        SplunkParseQueueRatioConfig // metric config provided by user.
-	capacity      int                         // max observed number of data points added to the metric.
-	aggDataPoints []float64                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        SplunkParseQueueRatioMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.parse.queue.ratio metric with initial data.
@@ -2853,13 +2853,13 @@ func (m *metricSplunkParseQueueRatio) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkParseQueueRatioAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkParseQueueRatioMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkParseQueueRatioAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkParseQueueRatioAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -2913,7 +2913,7 @@ func (m *metricSplunkParseQueueRatio) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkParseQueueRatio(cfg SplunkParseQueueRatioConfig) metricSplunkParseQueueRatio {
+func newMetricSplunkParseQueueRatio(cfg SplunkParseQueueRatioMetricConfig) metricSplunkParseQueueRatio {
 	m := metricSplunkParseQueueRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -2924,10 +2924,10 @@ func newMetricSplunkParseQueueRatio(cfg SplunkParseQueueRatioConfig) metricSplun
 }
 
 type metricSplunkPipelineSetCount struct {
-	data          pmetric.Metric               // data buffer for generated metric.
-	config        SplunkPipelineSetCountConfig // metric config provided by user.
-	capacity      int                          // max observed number of data points added to the metric.
-	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        SplunkPipelineSetCountMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.pipeline.set.count metric with initial data.
@@ -2948,13 +2948,13 @@ func (m *metricSplunkPipelineSetCount) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkPipelineSetCountAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkPipelineSetCountMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkPipelineSetCountAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkPipelineSetCountAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3008,7 +3008,7 @@ func (m *metricSplunkPipelineSetCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkPipelineSetCount(cfg SplunkPipelineSetCountConfig) metricSplunkPipelineSetCount {
+func newMetricSplunkPipelineSetCount(cfg SplunkPipelineSetCountMetricConfig) metricSplunkPipelineSetCount {
 	m := metricSplunkPipelineSetCount{config: cfg}
 
 	if cfg.Enabled {
@@ -3019,10 +3019,10 @@ func newMetricSplunkPipelineSetCount(cfg SplunkPipelineSetCountConfig) metricSpl
 }
 
 type metricSplunkSchedulerAvgExecutionLatency struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SplunkSchedulerAvgExecutionLatencyConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SplunkSchedulerAvgExecutionLatencyMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.scheduler.avg.execution.latency metric with initial data.
@@ -3043,13 +3043,13 @@ func (m *metricSplunkSchedulerAvgExecutionLatency) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3103,7 +3103,7 @@ func (m *metricSplunkSchedulerAvgExecutionLatency) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSplunkSchedulerAvgExecutionLatency(cfg SplunkSchedulerAvgExecutionLatencyConfig) metricSplunkSchedulerAvgExecutionLatency {
+func newMetricSplunkSchedulerAvgExecutionLatency(cfg SplunkSchedulerAvgExecutionLatencyMetricConfig) metricSplunkSchedulerAvgExecutionLatency {
 	m := metricSplunkSchedulerAvgExecutionLatency{config: cfg}
 
 	if cfg.Enabled {
@@ -3114,10 +3114,10 @@ func newMetricSplunkSchedulerAvgExecutionLatency(cfg SplunkSchedulerAvgExecution
 }
 
 type metricSplunkSchedulerAvgRunTime struct {
-	data          pmetric.Metric                  // data buffer for generated metric.
-	config        SplunkSchedulerAvgRunTimeConfig // metric config provided by user.
-	capacity      int                             // max observed number of data points added to the metric.
-	aggDataPoints []float64                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        SplunkSchedulerAvgRunTimeMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []float64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.scheduler.avg.run.time metric with initial data.
@@ -3138,13 +3138,13 @@ func (m *metricSplunkSchedulerAvgRunTime) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgRunTimeAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3198,7 +3198,7 @@ func (m *metricSplunkSchedulerAvgRunTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkSchedulerAvgRunTime(cfg SplunkSchedulerAvgRunTimeConfig) metricSplunkSchedulerAvgRunTime {
+func newMetricSplunkSchedulerAvgRunTime(cfg SplunkSchedulerAvgRunTimeMetricConfig) metricSplunkSchedulerAvgRunTime {
 	m := metricSplunkSchedulerAvgRunTime{config: cfg}
 
 	if cfg.Enabled {
@@ -3209,10 +3209,10 @@ func newMetricSplunkSchedulerAvgRunTime(cfg SplunkSchedulerAvgRunTimeConfig) met
 }
 
 type metricSplunkSchedulerCompletionRatio struct {
-	data          pmetric.Metric                       // data buffer for generated metric.
-	config        SplunkSchedulerCompletionRatioConfig // metric config provided by user.
-	capacity      int                                  // max observed number of data points added to the metric.
-	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        SplunkSchedulerCompletionRatioMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.scheduler.completion.ratio metric with initial data.
@@ -3233,13 +3233,13 @@ func (m *metricSplunkSchedulerCompletionRatio) recordDataPoint(start pcommon.Tim
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerCompletionRatioAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3293,7 +3293,7 @@ func (m *metricSplunkSchedulerCompletionRatio) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricSplunkSchedulerCompletionRatio(cfg SplunkSchedulerCompletionRatioConfig) metricSplunkSchedulerCompletionRatio {
+func newMetricSplunkSchedulerCompletionRatio(cfg SplunkSchedulerCompletionRatioMetricConfig) metricSplunkSchedulerCompletionRatio {
 	m := metricSplunkSchedulerCompletionRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -3304,10 +3304,10 @@ func newMetricSplunkSchedulerCompletionRatio(cfg SplunkSchedulerCompletionRatioC
 }
 
 type metricSplunkSearchDuration struct {
-	data          pmetric.Metric             // data buffer for generated metric.
-	config        SplunkSearchDurationConfig // metric config provided by user.
-	capacity      int                        // max observed number of data points added to the metric.
-	aggDataPoints []float64                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SplunkSearchDurationMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.search.duration metric with initial data.
@@ -3328,10 +3328,10 @@ func (m *metricSplunkSearchDuration) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkSearchDurationAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchDurationMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSearchDurationAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchDurationMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3385,7 +3385,7 @@ func (m *metricSplunkSearchDuration) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkSearchDuration(cfg SplunkSearchDurationConfig) metricSplunkSearchDuration {
+func newMetricSplunkSearchDuration(cfg SplunkSearchDurationMetricConfig) metricSplunkSearchDuration {
 	m := metricSplunkSearchDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -3396,10 +3396,10 @@ func newMetricSplunkSearchDuration(cfg SplunkSearchDurationConfig) metricSplunkS
 }
 
 type metricSplunkSearchInitiation struct {
-	data          pmetric.Metric               // data buffer for generated metric.
-	config        SplunkSearchInitiationConfig // metric config provided by user.
-	capacity      int                          // max observed number of data points added to the metric.
-	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        SplunkSearchInitiationMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.search.initiation metric with initial data.
@@ -3420,10 +3420,10 @@ func (m *metricSplunkSearchInitiation) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkSearchInitiationAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchInitiationMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSearchInitiationAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchInitiationMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3477,7 +3477,7 @@ func (m *metricSplunkSearchInitiation) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkSearchInitiation(cfg SplunkSearchInitiationConfig) metricSplunkSearchInitiation {
+func newMetricSplunkSearchInitiation(cfg SplunkSearchInitiationMetricConfig) metricSplunkSearchInitiation {
 	m := metricSplunkSearchInitiation{config: cfg}
 
 	if cfg.Enabled {
@@ -3488,10 +3488,10 @@ func newMetricSplunkSearchInitiation(cfg SplunkSearchInitiationConfig) metricSpl
 }
 
 type metricSplunkSearchStatus struct {
-	data          pmetric.Metric           // data buffer for generated metric.
-	config        SplunkSearchStatusConfig // metric config provided by user.
-	capacity      int                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        SplunkSearchStatusMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.search.status metric with initial data.
@@ -3512,13 +3512,13 @@ func (m *metricSplunkSearchStatus) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkSearchStatusAttributeKeySplunkSearchState) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchStatusMetricAttributeKeySplunkSearchState) {
 		dp.Attributes().PutStr("splunk.search.state", splunkSearchStateAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSearchStatusAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchStatusMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSearchStatusAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchStatusMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3572,7 +3572,7 @@ func (m *metricSplunkSearchStatus) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkSearchStatus(cfg SplunkSearchStatusConfig) metricSplunkSearchStatus {
+func newMetricSplunkSearchStatus(cfg SplunkSearchStatusMetricConfig) metricSplunkSearchStatus {
 	m := metricSplunkSearchStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -3583,10 +3583,10 @@ func newMetricSplunkSearchStatus(cfg SplunkSearchStatusConfig) metricSplunkSearc
 }
 
 type metricSplunkSearchSuccess struct {
-	data          pmetric.Metric            // data buffer for generated metric.
-	config        SplunkSearchSuccessConfig // metric config provided by user.
-	capacity      int                       // max observed number of data points added to the metric.
-	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SplunkSearchSuccessMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.search.success metric with initial data.
@@ -3607,10 +3607,10 @@ func (m *metricSplunkSearchSuccess) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkSearchSuccessAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchSuccessMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkSearchSuccessAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkSearchSuccessMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3664,7 +3664,7 @@ func (m *metricSplunkSearchSuccess) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkSearchSuccess(cfg SplunkSearchSuccessConfig) metricSplunkSearchSuccess {
+func newMetricSplunkSearchSuccess(cfg SplunkSearchSuccessMetricConfig) metricSplunkSearchSuccess {
 	m := metricSplunkSearchSuccess{config: cfg}
 
 	if cfg.Enabled {
@@ -3675,10 +3675,10 @@ func newMetricSplunkSearchSuccess(cfg SplunkSearchSuccessConfig) metricSplunkSea
 }
 
 type metricSplunkServerIntrospectionQueuesCurrent struct {
-	data          pmetric.Metric                               // data buffer for generated metric.
-	config        SplunkServerIntrospectionQueuesCurrentConfig // metric config provided by user.
-	capacity      int                                          // max observed number of data points added to the metric.
-	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                     // data buffer for generated metric.
+	config        SplunkServerIntrospectionQueuesCurrentMetricConfig // metric config provided by user.
+	capacity      int                                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.introspection.queues.current metric with initial data.
@@ -3699,13 +3699,13 @@ func (m *metricSplunkServerIntrospectionQueuesCurrent) recordDataPoint(start pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkQueueName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkQueueName) {
 		dp.Attributes().PutStr("splunk.queue.name", splunkQueueNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3759,7 +3759,7 @@ func (m *metricSplunkServerIntrospectionQueuesCurrent) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricSplunkServerIntrospectionQueuesCurrent(cfg SplunkServerIntrospectionQueuesCurrentConfig) metricSplunkServerIntrospectionQueuesCurrent {
+func newMetricSplunkServerIntrospectionQueuesCurrent(cfg SplunkServerIntrospectionQueuesCurrentMetricConfig) metricSplunkServerIntrospectionQueuesCurrent {
 	m := metricSplunkServerIntrospectionQueuesCurrent{config: cfg}
 
 	if cfg.Enabled {
@@ -3770,10 +3770,10 @@ func newMetricSplunkServerIntrospectionQueuesCurrent(cfg SplunkServerIntrospecti
 }
 
 type metricSplunkServerIntrospectionQueuesCurrentBytes struct {
-	data          pmetric.Metric                                    // data buffer for generated metric.
-	config        SplunkServerIntrospectionQueuesCurrentBytesConfig // metric config provided by user.
-	capacity      int                                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                          // data buffer for generated metric.
+	config        SplunkServerIntrospectionQueuesCurrentBytesMetricConfig // metric config provided by user.
+	capacity      int                                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.introspection.queues.current.bytes metric with initial data.
@@ -3794,13 +3794,13 @@ func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) recordDataPoint(star
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkQueueName) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkQueueName) {
 		dp.Attributes().PutStr("splunk.queue.name", splunkQueueNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3854,7 +3854,7 @@ func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) emit(metrics pmetric
 	}
 }
 
-func newMetricSplunkServerIntrospectionQueuesCurrentBytes(cfg SplunkServerIntrospectionQueuesCurrentBytesConfig) metricSplunkServerIntrospectionQueuesCurrentBytes {
+func newMetricSplunkServerIntrospectionQueuesCurrentBytes(cfg SplunkServerIntrospectionQueuesCurrentBytesMetricConfig) metricSplunkServerIntrospectionQueuesCurrentBytes {
 	m := metricSplunkServerIntrospectionQueuesCurrentBytes{config: cfg}
 
 	if cfg.Enabled {
@@ -3865,10 +3865,10 @@ func newMetricSplunkServerIntrospectionQueuesCurrentBytes(cfg SplunkServerIntros
 }
 
 type metricSplunkServerSearchartifactsAdhoc struct {
-	data          pmetric.Metric                         // data buffer for generated metric.
-	config        SplunkServerSearchartifactsAdhocConfig // metric config provided by user.
-	capacity      int                                    // max observed number of data points added to the metric.
-	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        SplunkServerSearchartifactsAdhocMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.adhoc metric with initial data.
@@ -3889,13 +3889,13 @@ func (m *metricSplunkServerSearchartifactsAdhoc) recordDataPoint(start pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -3949,7 +3949,7 @@ func (m *metricSplunkServerSearchartifactsAdhoc) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSplunkServerSearchartifactsAdhoc(cfg SplunkServerSearchartifactsAdhocConfig) metricSplunkServerSearchartifactsAdhoc {
+func newMetricSplunkServerSearchartifactsAdhoc(cfg SplunkServerSearchartifactsAdhocMetricConfig) metricSplunkServerSearchartifactsAdhoc {
 	m := metricSplunkServerSearchartifactsAdhoc{config: cfg}
 
 	if cfg.Enabled {
@@ -3960,10 +3960,10 @@ func newMetricSplunkServerSearchartifactsAdhoc(cfg SplunkServerSearchartifactsAd
 }
 
 type metricSplunkServerSearchartifactsAdhocSize struct {
-	data          pmetric.Metric                             // data buffer for generated metric.
-	config        SplunkServerSearchartifactsAdhocSizeConfig // metric config provided by user.
-	capacity      int                                        // max observed number of data points added to the metric.
-	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        SplunkServerSearchartifactsAdhocSizeMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.adhoc.size metric with initial data.
@@ -3984,13 +3984,13 @@ func (m *metricSplunkServerSearchartifactsAdhocSize) recordDataPoint(start pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4044,7 +4044,7 @@ func (m *metricSplunkServerSearchartifactsAdhocSize) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricSplunkServerSearchartifactsAdhocSize(cfg SplunkServerSearchartifactsAdhocSizeConfig) metricSplunkServerSearchartifactsAdhocSize {
+func newMetricSplunkServerSearchartifactsAdhocSize(cfg SplunkServerSearchartifactsAdhocSizeMetricConfig) metricSplunkServerSearchartifactsAdhocSize {
 	m := metricSplunkServerSearchartifactsAdhocSize{config: cfg}
 
 	if cfg.Enabled {
@@ -4055,10 +4055,10 @@ func newMetricSplunkServerSearchartifactsAdhocSize(cfg SplunkServerSearchartifac
 }
 
 type metricSplunkServerSearchartifactsCompleted struct {
-	data          pmetric.Metric                             // data buffer for generated metric.
-	config        SplunkServerSearchartifactsCompletedConfig // metric config provided by user.
-	capacity      int                                        // max observed number of data points added to the metric.
-	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        SplunkServerSearchartifactsCompletedMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.completed metric with initial data.
@@ -4079,13 +4079,13 @@ func (m *metricSplunkServerSearchartifactsCompleted) recordDataPoint(start pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4139,7 +4139,7 @@ func (m *metricSplunkServerSearchartifactsCompleted) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricSplunkServerSearchartifactsCompleted(cfg SplunkServerSearchartifactsCompletedConfig) metricSplunkServerSearchartifactsCompleted {
+func newMetricSplunkServerSearchartifactsCompleted(cfg SplunkServerSearchartifactsCompletedMetricConfig) metricSplunkServerSearchartifactsCompleted {
 	m := metricSplunkServerSearchartifactsCompleted{config: cfg}
 
 	if cfg.Enabled {
@@ -4150,10 +4150,10 @@ func newMetricSplunkServerSearchartifactsCompleted(cfg SplunkServerSearchartifac
 }
 
 type metricSplunkServerSearchartifactsCompletedSize struct {
-	data          pmetric.Metric                                 // data buffer for generated metric.
-	config        SplunkServerSearchartifactsCompletedSizeConfig // metric config provided by user.
-	capacity      int                                            // max observed number of data points added to the metric.
-	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        SplunkServerSearchartifactsCompletedSizeMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.completed.size metric with initial data.
@@ -4174,13 +4174,13 @@ func (m *metricSplunkServerSearchartifactsCompletedSize) recordDataPoint(start p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4234,7 +4234,7 @@ func (m *metricSplunkServerSearchartifactsCompletedSize) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricSplunkServerSearchartifactsCompletedSize(cfg SplunkServerSearchartifactsCompletedSizeConfig) metricSplunkServerSearchartifactsCompletedSize {
+func newMetricSplunkServerSearchartifactsCompletedSize(cfg SplunkServerSearchartifactsCompletedSizeMetricConfig) metricSplunkServerSearchartifactsCompletedSize {
 	m := metricSplunkServerSearchartifactsCompletedSize{config: cfg}
 
 	if cfg.Enabled {
@@ -4245,10 +4245,10 @@ func newMetricSplunkServerSearchartifactsCompletedSize(cfg SplunkServerSearchart
 }
 
 type metricSplunkServerSearchartifactsIncomplete struct {
-	data          pmetric.Metric                              // data buffer for generated metric.
-	config        SplunkServerSearchartifactsIncompleteConfig // metric config provided by user.
-	capacity      int                                         // max observed number of data points added to the metric.
-	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        SplunkServerSearchartifactsIncompleteMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.incomplete metric with initial data.
@@ -4269,13 +4269,13 @@ func (m *metricSplunkServerSearchartifactsIncomplete) recordDataPoint(start pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4329,7 +4329,7 @@ func (m *metricSplunkServerSearchartifactsIncomplete) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricSplunkServerSearchartifactsIncomplete(cfg SplunkServerSearchartifactsIncompleteConfig) metricSplunkServerSearchartifactsIncomplete {
+func newMetricSplunkServerSearchartifactsIncomplete(cfg SplunkServerSearchartifactsIncompleteMetricConfig) metricSplunkServerSearchartifactsIncomplete {
 	m := metricSplunkServerSearchartifactsIncomplete{config: cfg}
 
 	if cfg.Enabled {
@@ -4340,10 +4340,10 @@ func newMetricSplunkServerSearchartifactsIncomplete(cfg SplunkServerSearchartifa
 }
 
 type metricSplunkServerSearchartifactsIncompleteSize struct {
-	data          pmetric.Metric                                  // data buffer for generated metric.
-	config        SplunkServerSearchartifactsIncompleteSizeConfig // metric config provided by user.
-	capacity      int                                             // max observed number of data points added to the metric.
-	aggDataPoints []int64                                         // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                        // data buffer for generated metric.
+	config        SplunkServerSearchartifactsIncompleteSizeMetricConfig // metric config provided by user.
+	capacity      int                                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.incomplete.size metric with initial data.
@@ -4364,13 +4364,13 @@ func (m *metricSplunkServerSearchartifactsIncompleteSize) recordDataPoint(start 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4424,7 +4424,7 @@ func (m *metricSplunkServerSearchartifactsIncompleteSize) emit(metrics pmetric.M
 	}
 }
 
-func newMetricSplunkServerSearchartifactsIncompleteSize(cfg SplunkServerSearchartifactsIncompleteSizeConfig) metricSplunkServerSearchartifactsIncompleteSize {
+func newMetricSplunkServerSearchartifactsIncompleteSize(cfg SplunkServerSearchartifactsIncompleteSizeMetricConfig) metricSplunkServerSearchartifactsIncompleteSize {
 	m := metricSplunkServerSearchartifactsIncompleteSize{config: cfg}
 
 	if cfg.Enabled {
@@ -4435,10 +4435,10 @@ func newMetricSplunkServerSearchartifactsIncompleteSize(cfg SplunkServerSearchar
 }
 
 type metricSplunkServerSearchartifactsInvalid struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SplunkServerSearchartifactsInvalidConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SplunkServerSearchartifactsInvalidMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.invalid metric with initial data.
@@ -4459,13 +4459,13 @@ func (m *metricSplunkServerSearchartifactsInvalid) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsInvalidAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4519,7 +4519,7 @@ func (m *metricSplunkServerSearchartifactsInvalid) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSplunkServerSearchartifactsInvalid(cfg SplunkServerSearchartifactsInvalidConfig) metricSplunkServerSearchartifactsInvalid {
+func newMetricSplunkServerSearchartifactsInvalid(cfg SplunkServerSearchartifactsInvalidMetricConfig) metricSplunkServerSearchartifactsInvalid {
 	m := metricSplunkServerSearchartifactsInvalid{config: cfg}
 
 	if cfg.Enabled {
@@ -4530,10 +4530,10 @@ func newMetricSplunkServerSearchartifactsInvalid(cfg SplunkServerSearchartifacts
 }
 
 type metricSplunkServerSearchartifactsJobCacheCount struct {
-	data          pmetric.Metric                                 // data buffer for generated metric.
-	config        SplunkServerSearchartifactsJobCacheCountConfig // metric config provided by user.
-	capacity      int                                            // max observed number of data points added to the metric.
-	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        SplunkServerSearchartifactsJobCacheCountMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.job.cache.count metric with initial data.
@@ -4554,13 +4554,13 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4614,7 +4614,7 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricSplunkServerSearchartifactsJobCacheCount(cfg SplunkServerSearchartifactsJobCacheCountConfig) metricSplunkServerSearchartifactsJobCacheCount {
+func newMetricSplunkServerSearchartifactsJobCacheCount(cfg SplunkServerSearchartifactsJobCacheCountMetricConfig) metricSplunkServerSearchartifactsJobCacheCount {
 	m := metricSplunkServerSearchartifactsJobCacheCount{config: cfg}
 
 	if cfg.Enabled {
@@ -4625,10 +4625,10 @@ func newMetricSplunkServerSearchartifactsJobCacheCount(cfg SplunkServerSearchart
 }
 
 type metricSplunkServerSearchartifactsJobCacheSize struct {
-	data          pmetric.Metric                                // data buffer for generated metric.
-	config        SplunkServerSearchartifactsJobCacheSizeConfig // metric config provided by user.
-	capacity      int                                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                      // data buffer for generated metric.
+	config        SplunkServerSearchartifactsJobCacheSizeMetricConfig // metric config provided by user.
+	capacity      int                                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.job.cache.size metric with initial data.
@@ -4649,16 +4649,16 @@ func (m *metricSplunkServerSearchartifactsJobCacheSize) recordDataPoint(start pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSearchartifactsCacheType) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSearchartifactsCacheType) {
 		dp.Attributes().PutStr("splunk.searchartifacts.cache.type", splunkSearchartifactsCacheTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4712,7 +4712,7 @@ func (m *metricSplunkServerSearchartifactsJobCacheSize) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricSplunkServerSearchartifactsJobCacheSize(cfg SplunkServerSearchartifactsJobCacheSizeConfig) metricSplunkServerSearchartifactsJobCacheSize {
+func newMetricSplunkServerSearchartifactsJobCacheSize(cfg SplunkServerSearchartifactsJobCacheSizeMetricConfig) metricSplunkServerSearchartifactsJobCacheSize {
 	m := metricSplunkServerSearchartifactsJobCacheSize{config: cfg}
 
 	if cfg.Enabled {
@@ -4723,10 +4723,10 @@ func newMetricSplunkServerSearchartifactsJobCacheSize(cfg SplunkServerSearcharti
 }
 
 type metricSplunkServerSearchartifactsSavedsearches struct {
-	data          pmetric.Metric                                 // data buffer for generated metric.
-	config        SplunkServerSearchartifactsSavedsearchesConfig // metric config provided by user.
-	capacity      int                                            // max observed number of data points added to the metric.
-	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        SplunkServerSearchartifactsSavedsearchesMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.savedsearches metric with initial data.
@@ -4747,13 +4747,13 @@ func (m *metricSplunkServerSearchartifactsSavedsearches) recordDataPoint(start p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4807,7 +4807,7 @@ func (m *metricSplunkServerSearchartifactsSavedsearches) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricSplunkServerSearchartifactsSavedsearches(cfg SplunkServerSearchartifactsSavedsearchesConfig) metricSplunkServerSearchartifactsSavedsearches {
+func newMetricSplunkServerSearchartifactsSavedsearches(cfg SplunkServerSearchartifactsSavedsearchesMetricConfig) metricSplunkServerSearchartifactsSavedsearches {
 	m := metricSplunkServerSearchartifactsSavedsearches{config: cfg}
 
 	if cfg.Enabled {
@@ -4818,10 +4818,10 @@ func newMetricSplunkServerSearchartifactsSavedsearches(cfg SplunkServerSearchart
 }
 
 type metricSplunkServerSearchartifactsScheduled struct {
-	data          pmetric.Metric                             // data buffer for generated metric.
-	config        SplunkServerSearchartifactsScheduledConfig // metric config provided by user.
-	capacity      int                                        // max observed number of data points added to the metric.
-	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        SplunkServerSearchartifactsScheduledMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.scheduled metric with initial data.
@@ -4842,13 +4842,13 @@ func (m *metricSplunkServerSearchartifactsScheduled) recordDataPoint(start pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4902,7 +4902,7 @@ func (m *metricSplunkServerSearchartifactsScheduled) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricSplunkServerSearchartifactsScheduled(cfg SplunkServerSearchartifactsScheduledConfig) metricSplunkServerSearchartifactsScheduled {
+func newMetricSplunkServerSearchartifactsScheduled(cfg SplunkServerSearchartifactsScheduledMetricConfig) metricSplunkServerSearchartifactsScheduled {
 	m := metricSplunkServerSearchartifactsScheduled{config: cfg}
 
 	if cfg.Enabled {
@@ -4913,10 +4913,10 @@ func newMetricSplunkServerSearchartifactsScheduled(cfg SplunkServerSearchartifac
 }
 
 type metricSplunkServerSearchartifactsScheduledSize struct {
-	data          pmetric.Metric                                 // data buffer for generated metric.
-	config        SplunkServerSearchartifactsScheduledSizeConfig // metric config provided by user.
-	capacity      int                                            // max observed number of data points added to the metric.
-	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        SplunkServerSearchartifactsScheduledSizeMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.server.searchartifacts.scheduled.size metric with initial data.
@@ -4937,13 +4937,13 @@ func (m *metricSplunkServerSearchartifactsScheduledSize) recordDataPoint(start p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -4997,7 +4997,7 @@ func (m *metricSplunkServerSearchartifactsScheduledSize) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricSplunkServerSearchartifactsScheduledSize(cfg SplunkServerSearchartifactsScheduledSizeConfig) metricSplunkServerSearchartifactsScheduledSize {
+func newMetricSplunkServerSearchartifactsScheduledSize(cfg SplunkServerSearchartifactsScheduledSizeMetricConfig) metricSplunkServerSearchartifactsScheduledSize {
 	m := metricSplunkServerSearchartifactsScheduledSize{config: cfg}
 
 	if cfg.Enabled {
@@ -5008,10 +5008,10 @@ func newMetricSplunkServerSearchartifactsScheduledSize(cfg SplunkServerSearchart
 }
 
 type metricSplunkTypingQueueRatio struct {
-	data          pmetric.Metric               // data buffer for generated metric.
-	config        SplunkTypingQueueRatioConfig // metric config provided by user.
-	capacity      int                          // max observed number of data points added to the metric.
-	aggDataPoints []float64                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        SplunkTypingQueueRatioMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills splunk.typing.queue.ratio metric with initial data.
@@ -5032,13 +5032,13 @@ func (m *metricSplunkTypingQueueRatio) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SplunkTypingQueueRatioAttributeKeySplunkHost) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkTypingQueueRatioMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkTypingQueueRatioAttributeKeySplunkSplunkdBuild) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SplunkTypingQueueRatioAttributeKeySplunkSplunkdVersion) {
+	if slices.Contains(m.config.EnabledAttributes, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdVersion) {
 		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
@@ -5092,7 +5092,7 @@ func (m *metricSplunkTypingQueueRatio) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSplunkTypingQueueRatio(cfg SplunkTypingQueueRatioConfig) metricSplunkTypingQueueRatio {
+func newMetricSplunkTypingQueueRatio(cfg SplunkTypingQueueRatioMetricConfig) metricSplunkTypingQueueRatio {
 	m := metricSplunkTypingQueueRatio{config: cfg}
 
 	if cfg.Enabled {

@@ -8,25 +8,25 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// SplunkAggregationQueueRatioAttributeKey specifies the key of an attribute for the splunk.aggregation.queue.ratio metric.
-type SplunkAggregationQueueRatioAttributeKey string
+// SplunkAggregationQueueRatioMetricAttributeKey specifies the key of an attribute for the splunk.aggregation.queue.ratio metric.
+type SplunkAggregationQueueRatioMetricAttributeKey string
 
 const (
-	SplunkAggregationQueueRatioAttributeKeySplunkHost           SplunkAggregationQueueRatioAttributeKey = "splunk.host"
-	SplunkAggregationQueueRatioAttributeKeySplunkSplunkdBuild   SplunkAggregationQueueRatioAttributeKey = "splunk.splunkd.build"
-	SplunkAggregationQueueRatioAttributeKeySplunkSplunkdVersion SplunkAggregationQueueRatioAttributeKey = "splunk.splunkd.version"
+	SplunkAggregationQueueRatioMetricAttributeKeySplunkHost           SplunkAggregationQueueRatioMetricAttributeKey = "splunk.host"
+	SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdBuild   SplunkAggregationQueueRatioMetricAttributeKey = "splunk.splunkd.build"
+	SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdVersion SplunkAggregationQueueRatioMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkAggregationQueueRatioConfig provides config for the splunk.aggregation.queue.ratio metric.
-type SplunkAggregationQueueRatioConfig struct {
+// SplunkAggregationQueueRatioMetricConfig provides config for the splunk.aggregation.queue.ratio metric.
+type SplunkAggregationQueueRatioMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkAggregationQueueRatioAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkAggregationQueueRatioMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkAggregationQueueRatioConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkAggregationQueueRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -40,10 +40,10 @@ func (ms *SplunkAggregationQueueRatioConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *SplunkAggregationQueueRatioConfig) Validate() error {
+func (ms *SplunkAggregationQueueRatioMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkAggregationQueueRatioAttributeKeySplunkHost, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdVersion:
+		case SplunkAggregationQueueRatioMetricAttributeKeySplunkHost, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.aggregation.queue.ratio doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -58,26 +58,26 @@ func (ms *SplunkAggregationQueueRatioConfig) Validate() error {
 	return nil
 }
 
-// SplunkBucketsSearchableStatusAttributeKey specifies the key of an attribute for the splunk.buckets.searchable.status metric.
-type SplunkBucketsSearchableStatusAttributeKey string
+// SplunkBucketsSearchableStatusMetricAttributeKey specifies the key of an attribute for the splunk.buckets.searchable.status metric.
+type SplunkBucketsSearchableStatusMetricAttributeKey string
 
 const (
-	SplunkBucketsSearchableStatusAttributeKeySplunkHost              SplunkBucketsSearchableStatusAttributeKey = "splunk.host"
-	SplunkBucketsSearchableStatusAttributeKeySplunkIndexerSearchable SplunkBucketsSearchableStatusAttributeKey = "splunk.indexer.searchable"
-	SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdBuild      SplunkBucketsSearchableStatusAttributeKey = "splunk.splunkd.build"
-	SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdVersion    SplunkBucketsSearchableStatusAttributeKey = "splunk.splunkd.version"
+	SplunkBucketsSearchableStatusMetricAttributeKeySplunkHost              SplunkBucketsSearchableStatusMetricAttributeKey = "splunk.host"
+	SplunkBucketsSearchableStatusMetricAttributeKeySplunkIndexerSearchable SplunkBucketsSearchableStatusMetricAttributeKey = "splunk.indexer.searchable"
+	SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdBuild      SplunkBucketsSearchableStatusMetricAttributeKey = "splunk.splunkd.build"
+	SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdVersion    SplunkBucketsSearchableStatusMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkBucketsSearchableStatusConfig provides config for the splunk.buckets.searchable.status metric.
-type SplunkBucketsSearchableStatusConfig struct {
+// SplunkBucketsSearchableStatusMetricConfig provides config for the splunk.buckets.searchable.status metric.
+type SplunkBucketsSearchableStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkBucketsSearchableStatusAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkBucketsSearchableStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkBucketsSearchableStatusConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkBucketsSearchableStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -91,10 +91,10 @@ func (ms *SplunkBucketsSearchableStatusConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-func (ms *SplunkBucketsSearchableStatusConfig) Validate() error {
+func (ms *SplunkBucketsSearchableStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkBucketsSearchableStatusAttributeKeySplunkHost, SplunkBucketsSearchableStatusAttributeKeySplunkIndexerSearchable, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdBuild, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdVersion:
+		case SplunkBucketsSearchableStatusMetricAttributeKeySplunkHost, SplunkBucketsSearchableStatusMetricAttributeKeySplunkIndexerSearchable, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdBuild, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.buckets.searchable.status doesn't have an attribute %v, valid attributes: [splunk.host, splunk.indexer.searchable, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -109,25 +109,25 @@ func (ms *SplunkBucketsSearchableStatusConfig) Validate() error {
 	return nil
 }
 
-// SplunkDataIndexesExtendedBucketCountAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.bucket.count metric.
-type SplunkDataIndexesExtendedBucketCountAttributeKey string
+// SplunkDataIndexesExtendedBucketCountMetricAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.bucket.count metric.
+type SplunkDataIndexesExtendedBucketCountMetricAttributeKey string
 
 const (
-	SplunkDataIndexesExtendedBucketCountAttributeKeySplunkIndexName      SplunkDataIndexesExtendedBucketCountAttributeKey = "splunk.index.name"
-	SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedBucketCountAttributeKey = "splunk.splunkd.build"
-	SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedBucketCountAttributeKey = "splunk.splunkd.version"
+	SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkIndexName      SplunkDataIndexesExtendedBucketCountMetricAttributeKey = "splunk.index.name"
+	SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedBucketCountMetricAttributeKey = "splunk.splunkd.build"
+	SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedBucketCountMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkDataIndexesExtendedBucketCountConfig provides config for the splunk.data.indexes.extended.bucket.count metric.
-type SplunkDataIndexesExtendedBucketCountConfig struct {
+// SplunkDataIndexesExtendedBucketCountMetricConfig provides config for the splunk.data.indexes.extended.bucket.count metric.
+type SplunkDataIndexesExtendedBucketCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkDataIndexesExtendedBucketCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkDataIndexesExtendedBucketCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkDataIndexesExtendedBucketCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkDataIndexesExtendedBucketCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -141,10 +141,10 @@ func (ms *SplunkDataIndexesExtendedBucketCountConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *SplunkDataIndexesExtendedBucketCountConfig) Validate() error {
+func (ms *SplunkDataIndexesExtendedBucketCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkDataIndexesExtendedBucketCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdVersion:
+		case SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.data.indexes.extended.bucket.count doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -159,26 +159,26 @@ func (ms *SplunkDataIndexesExtendedBucketCountConfig) Validate() error {
 	return nil
 }
 
-// SplunkDataIndexesExtendedBucketEventCountAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.bucket.event.count metric.
-type SplunkDataIndexesExtendedBucketEventCountAttributeKey string
+// SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.bucket.event.count metric.
+type SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey string
 
 const (
-	SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkIndexName      SplunkDataIndexesExtendedBucketEventCountAttributeKey = "splunk.index.name"
-	SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkBucketDir      SplunkDataIndexesExtendedBucketEventCountAttributeKey = "splunk.bucket.dir"
-	SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedBucketEventCountAttributeKey = "splunk.splunkd.build"
-	SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedBucketEventCountAttributeKey = "splunk.splunkd.version"
+	SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkIndexName      SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey = "splunk.index.name"
+	SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkBucketDir      SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey = "splunk.bucket.dir"
+	SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey = "splunk.splunkd.build"
+	SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkDataIndexesExtendedBucketEventCountConfig provides config for the splunk.data.indexes.extended.bucket.event.count metric.
-type SplunkDataIndexesExtendedBucketEventCountConfig struct {
+// SplunkDataIndexesExtendedBucketEventCountMetricConfig provides config for the splunk.data.indexes.extended.bucket.event.count metric.
+type SplunkDataIndexesExtendedBucketEventCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkDataIndexesExtendedBucketEventCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkDataIndexesExtendedBucketEventCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkDataIndexesExtendedBucketEventCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -192,10 +192,10 @@ func (ms *SplunkDataIndexesExtendedBucketEventCountConfig) Unmarshal(parser *con
 	return nil
 }
 
-func (ms *SplunkDataIndexesExtendedBucketEventCountConfig) Validate() error {
+func (ms *SplunkDataIndexesExtendedBucketEventCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdVersion:
+		case SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.data.indexes.extended.bucket.event.count doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.bucket.dir, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -210,26 +210,26 @@ func (ms *SplunkDataIndexesExtendedBucketEventCountConfig) Validate() error {
 	return nil
 }
 
-// SplunkDataIndexesExtendedBucketHotCountAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.bucket.hot.count metric.
-type SplunkDataIndexesExtendedBucketHotCountAttributeKey string
+// SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.bucket.hot.count metric.
+type SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey string
 
 const (
-	SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkIndexName      SplunkDataIndexesExtendedBucketHotCountAttributeKey = "splunk.index.name"
-	SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkBucketDir      SplunkDataIndexesExtendedBucketHotCountAttributeKey = "splunk.bucket.dir"
-	SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedBucketHotCountAttributeKey = "splunk.splunkd.build"
-	SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedBucketHotCountAttributeKey = "splunk.splunkd.version"
+	SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkIndexName      SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey = "splunk.index.name"
+	SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkBucketDir      SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey = "splunk.bucket.dir"
+	SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey = "splunk.splunkd.build"
+	SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkDataIndexesExtendedBucketHotCountConfig provides config for the splunk.data.indexes.extended.bucket.hot.count metric.
-type SplunkDataIndexesExtendedBucketHotCountConfig struct {
+// SplunkDataIndexesExtendedBucketHotCountMetricConfig provides config for the splunk.data.indexes.extended.bucket.hot.count metric.
+type SplunkDataIndexesExtendedBucketHotCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkDataIndexesExtendedBucketHotCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkDataIndexesExtendedBucketHotCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkDataIndexesExtendedBucketHotCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -243,10 +243,10 @@ func (ms *SplunkDataIndexesExtendedBucketHotCountConfig) Unmarshal(parser *confm
 	return nil
 }
 
-func (ms *SplunkDataIndexesExtendedBucketHotCountConfig) Validate() error {
+func (ms *SplunkDataIndexesExtendedBucketHotCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdVersion:
+		case SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.data.indexes.extended.bucket.hot.count doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.bucket.dir, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -261,26 +261,26 @@ func (ms *SplunkDataIndexesExtendedBucketHotCountConfig) Validate() error {
 	return nil
 }
 
-// SplunkDataIndexesExtendedBucketWarmCountAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.bucket.warm.count metric.
-type SplunkDataIndexesExtendedBucketWarmCountAttributeKey string
+// SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.bucket.warm.count metric.
+type SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey string
 
 const (
-	SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkIndexName      SplunkDataIndexesExtendedBucketWarmCountAttributeKey = "splunk.index.name"
-	SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkBucketDir      SplunkDataIndexesExtendedBucketWarmCountAttributeKey = "splunk.bucket.dir"
-	SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedBucketWarmCountAttributeKey = "splunk.splunkd.build"
-	SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedBucketWarmCountAttributeKey = "splunk.splunkd.version"
+	SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkIndexName      SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey = "splunk.index.name"
+	SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkBucketDir      SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey = "splunk.bucket.dir"
+	SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey = "splunk.splunkd.build"
+	SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkDataIndexesExtendedBucketWarmCountConfig provides config for the splunk.data.indexes.extended.bucket.warm.count metric.
-type SplunkDataIndexesExtendedBucketWarmCountConfig struct {
+// SplunkDataIndexesExtendedBucketWarmCountMetricConfig provides config for the splunk.data.indexes.extended.bucket.warm.count metric.
+type SplunkDataIndexesExtendedBucketWarmCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkDataIndexesExtendedBucketWarmCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkDataIndexesExtendedBucketWarmCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkDataIndexesExtendedBucketWarmCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -294,10 +294,10 @@ func (ms *SplunkDataIndexesExtendedBucketWarmCountConfig) Unmarshal(parser *conf
 	return nil
 }
 
-func (ms *SplunkDataIndexesExtendedBucketWarmCountConfig) Validate() error {
+func (ms *SplunkDataIndexesExtendedBucketWarmCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdVersion:
+		case SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.data.indexes.extended.bucket.warm.count doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.bucket.dir, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -312,25 +312,25 @@ func (ms *SplunkDataIndexesExtendedBucketWarmCountConfig) Validate() error {
 	return nil
 }
 
-// SplunkDataIndexesExtendedEventCountAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.event.count metric.
-type SplunkDataIndexesExtendedEventCountAttributeKey string
+// SplunkDataIndexesExtendedEventCountMetricAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.event.count metric.
+type SplunkDataIndexesExtendedEventCountMetricAttributeKey string
 
 const (
-	SplunkDataIndexesExtendedEventCountAttributeKeySplunkIndexName      SplunkDataIndexesExtendedEventCountAttributeKey = "splunk.index.name"
-	SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedEventCountAttributeKey = "splunk.splunkd.build"
-	SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedEventCountAttributeKey = "splunk.splunkd.version"
+	SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkIndexName      SplunkDataIndexesExtendedEventCountMetricAttributeKey = "splunk.index.name"
+	SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedEventCountMetricAttributeKey = "splunk.splunkd.build"
+	SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedEventCountMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkDataIndexesExtendedEventCountConfig provides config for the splunk.data.indexes.extended.event.count metric.
-type SplunkDataIndexesExtendedEventCountConfig struct {
+// SplunkDataIndexesExtendedEventCountMetricConfig provides config for the splunk.data.indexes.extended.event.count metric.
+type SplunkDataIndexesExtendedEventCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkDataIndexesExtendedEventCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkDataIndexesExtendedEventCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkDataIndexesExtendedEventCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkDataIndexesExtendedEventCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -344,10 +344,10 @@ func (ms *SplunkDataIndexesExtendedEventCountConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-func (ms *SplunkDataIndexesExtendedEventCountConfig) Validate() error {
+func (ms *SplunkDataIndexesExtendedEventCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkDataIndexesExtendedEventCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdVersion:
+		case SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.data.indexes.extended.event.count doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -362,25 +362,25 @@ func (ms *SplunkDataIndexesExtendedEventCountConfig) Validate() error {
 	return nil
 }
 
-// SplunkDataIndexesExtendedRawSizeAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.raw.size metric.
-type SplunkDataIndexesExtendedRawSizeAttributeKey string
+// SplunkDataIndexesExtendedRawSizeMetricAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.raw.size metric.
+type SplunkDataIndexesExtendedRawSizeMetricAttributeKey string
 
 const (
-	SplunkDataIndexesExtendedRawSizeAttributeKeySplunkIndexName      SplunkDataIndexesExtendedRawSizeAttributeKey = "splunk.index.name"
-	SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedRawSizeAttributeKey = "splunk.splunkd.build"
-	SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedRawSizeAttributeKey = "splunk.splunkd.version"
+	SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkIndexName      SplunkDataIndexesExtendedRawSizeMetricAttributeKey = "splunk.index.name"
+	SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedRawSizeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedRawSizeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkDataIndexesExtendedRawSizeConfig provides config for the splunk.data.indexes.extended.raw.size metric.
-type SplunkDataIndexesExtendedRawSizeConfig struct {
+// SplunkDataIndexesExtendedRawSizeMetricConfig provides config for the splunk.data.indexes.extended.raw.size metric.
+type SplunkDataIndexesExtendedRawSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkDataIndexesExtendedRawSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkDataIndexesExtendedRawSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkDataIndexesExtendedRawSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkDataIndexesExtendedRawSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -394,10 +394,10 @@ func (ms *SplunkDataIndexesExtendedRawSizeConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *SplunkDataIndexesExtendedRawSizeConfig) Validate() error {
+func (ms *SplunkDataIndexesExtendedRawSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkDataIndexesExtendedRawSizeAttributeKeySplunkIndexName, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdVersion:
+		case SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.data.indexes.extended.raw.size doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -412,25 +412,25 @@ func (ms *SplunkDataIndexesExtendedRawSizeConfig) Validate() error {
 	return nil
 }
 
-// SplunkDataIndexesExtendedTotalSizeAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.total.size metric.
-type SplunkDataIndexesExtendedTotalSizeAttributeKey string
+// SplunkDataIndexesExtendedTotalSizeMetricAttributeKey specifies the key of an attribute for the splunk.data.indexes.extended.total.size metric.
+type SplunkDataIndexesExtendedTotalSizeMetricAttributeKey string
 
 const (
-	SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkIndexName      SplunkDataIndexesExtendedTotalSizeAttributeKey = "splunk.index.name"
-	SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedTotalSizeAttributeKey = "splunk.splunkd.build"
-	SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedTotalSizeAttributeKey = "splunk.splunkd.version"
+	SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkIndexName      SplunkDataIndexesExtendedTotalSizeMetricAttributeKey = "splunk.index.name"
+	SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdBuild   SplunkDataIndexesExtendedTotalSizeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdVersion SplunkDataIndexesExtendedTotalSizeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkDataIndexesExtendedTotalSizeConfig provides config for the splunk.data.indexes.extended.total.size metric.
-type SplunkDataIndexesExtendedTotalSizeConfig struct {
+// SplunkDataIndexesExtendedTotalSizeMetricConfig provides config for the splunk.data.indexes.extended.total.size metric.
+type SplunkDataIndexesExtendedTotalSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkDataIndexesExtendedTotalSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkDataIndexesExtendedTotalSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkDataIndexesExtendedTotalSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkDataIndexesExtendedTotalSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -444,10 +444,10 @@ func (ms *SplunkDataIndexesExtendedTotalSizeConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *SplunkDataIndexesExtendedTotalSizeConfig) Validate() error {
+func (ms *SplunkDataIndexesExtendedTotalSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkIndexName, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdVersion:
+		case SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.data.indexes.extended.total.size doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -462,26 +462,26 @@ func (ms *SplunkDataIndexesExtendedTotalSizeConfig) Validate() error {
 	return nil
 }
 
-// SplunkHealthAttributeKey specifies the key of an attribute for the splunk.health metric.
-type SplunkHealthAttributeKey string
+// SplunkHealthMetricAttributeKey specifies the key of an attribute for the splunk.health metric.
+type SplunkHealthMetricAttributeKey string
 
 const (
-	SplunkHealthAttributeKeySplunkFeature        SplunkHealthAttributeKey = "splunk.feature"
-	SplunkHealthAttributeKeySplunkFeatureHealth  SplunkHealthAttributeKey = "splunk.feature.health"
-	SplunkHealthAttributeKeySplunkSplunkdBuild   SplunkHealthAttributeKey = "splunk.splunkd.build"
-	SplunkHealthAttributeKeySplunkSplunkdVersion SplunkHealthAttributeKey = "splunk.splunkd.version"
+	SplunkHealthMetricAttributeKeySplunkFeature        SplunkHealthMetricAttributeKey = "splunk.feature"
+	SplunkHealthMetricAttributeKeySplunkFeatureHealth  SplunkHealthMetricAttributeKey = "splunk.feature.health"
+	SplunkHealthMetricAttributeKeySplunkSplunkdBuild   SplunkHealthMetricAttributeKey = "splunk.splunkd.build"
+	SplunkHealthMetricAttributeKeySplunkSplunkdVersion SplunkHealthMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkHealthConfig provides config for the splunk.health metric.
-type SplunkHealthConfig struct {
+// SplunkHealthMetricConfig provides config for the splunk.health metric.
+type SplunkHealthMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkHealthAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkHealthMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkHealthConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkHealthMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -495,10 +495,10 @@ func (ms *SplunkHealthConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkHealthConfig) Validate() error {
+func (ms *SplunkHealthMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkHealthAttributeKeySplunkFeature, SplunkHealthAttributeKeySplunkFeatureHealth, SplunkHealthAttributeKeySplunkSplunkdBuild, SplunkHealthAttributeKeySplunkSplunkdVersion:
+		case SplunkHealthMetricAttributeKeySplunkFeature, SplunkHealthMetricAttributeKeySplunkFeatureHealth, SplunkHealthMetricAttributeKeySplunkSplunkdBuild, SplunkHealthMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.health doesn't have an attribute %v, valid attributes: [splunk.feature, splunk.feature.health, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -513,25 +513,25 @@ func (ms *SplunkHealthConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexerAvgRateAttributeKey specifies the key of an attribute for the splunk.indexer.avg.rate metric.
-type SplunkIndexerAvgRateAttributeKey string
+// SplunkIndexerAvgRateMetricAttributeKey specifies the key of an attribute for the splunk.indexer.avg.rate metric.
+type SplunkIndexerAvgRateMetricAttributeKey string
 
 const (
-	SplunkIndexerAvgRateAttributeKeySplunkHost           SplunkIndexerAvgRateAttributeKey = "splunk.host"
-	SplunkIndexerAvgRateAttributeKeySplunkSplunkdBuild   SplunkIndexerAvgRateAttributeKey = "splunk.splunkd.build"
-	SplunkIndexerAvgRateAttributeKeySplunkSplunkdVersion SplunkIndexerAvgRateAttributeKey = "splunk.splunkd.version"
+	SplunkIndexerAvgRateMetricAttributeKeySplunkHost           SplunkIndexerAvgRateMetricAttributeKey = "splunk.host"
+	SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdBuild   SplunkIndexerAvgRateMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdVersion SplunkIndexerAvgRateMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexerAvgRateConfig provides config for the splunk.indexer.avg.rate metric.
-type SplunkIndexerAvgRateConfig struct {
+// SplunkIndexerAvgRateMetricConfig provides config for the splunk.indexer.avg.rate metric.
+type SplunkIndexerAvgRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexerAvgRateAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexerAvgRateMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexerAvgRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexerAvgRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -545,10 +545,10 @@ func (ms *SplunkIndexerAvgRateConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkIndexerAvgRateConfig) Validate() error {
+func (ms *SplunkIndexerAvgRateMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexerAvgRateAttributeKeySplunkHost, SplunkIndexerAvgRateAttributeKeySplunkSplunkdBuild, SplunkIndexerAvgRateAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexerAvgRateMetricAttributeKeySplunkHost, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexer.avg.rate doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -563,25 +563,25 @@ func (ms *SplunkIndexerAvgRateConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexerCPUTimeAttributeKey specifies the key of an attribute for the splunk.indexer.cpu.time metric.
-type SplunkIndexerCPUTimeAttributeKey string
+// SplunkIndexerCPUTimeMetricAttributeKey specifies the key of an attribute for the splunk.indexer.cpu.time metric.
+type SplunkIndexerCPUTimeMetricAttributeKey string
 
 const (
-	SplunkIndexerCPUTimeAttributeKeySplunkHost           SplunkIndexerCPUTimeAttributeKey = "splunk.host"
-	SplunkIndexerCPUTimeAttributeKeySplunkSplunkdBuild   SplunkIndexerCPUTimeAttributeKey = "splunk.splunkd.build"
-	SplunkIndexerCPUTimeAttributeKeySplunkSplunkdVersion SplunkIndexerCPUTimeAttributeKey = "splunk.splunkd.version"
+	SplunkIndexerCPUTimeMetricAttributeKeySplunkHost           SplunkIndexerCPUTimeMetricAttributeKey = "splunk.host"
+	SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdBuild   SplunkIndexerCPUTimeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdVersion SplunkIndexerCPUTimeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexerCPUTimeConfig provides config for the splunk.indexer.cpu.time metric.
-type SplunkIndexerCPUTimeConfig struct {
+// SplunkIndexerCPUTimeMetricConfig provides config for the splunk.indexer.cpu.time metric.
+type SplunkIndexerCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexerCPUTimeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexerCPUTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexerCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexerCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -595,10 +595,10 @@ func (ms *SplunkIndexerCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkIndexerCPUTimeConfig) Validate() error {
+func (ms *SplunkIndexerCPUTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexerCPUTimeAttributeKeySplunkHost, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdBuild, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexerCPUTimeMetricAttributeKeySplunkHost, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexer.cpu.time doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -613,25 +613,25 @@ func (ms *SplunkIndexerCPUTimeConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexerQueueRatioAttributeKey specifies the key of an attribute for the splunk.indexer.queue.ratio metric.
-type SplunkIndexerQueueRatioAttributeKey string
+// SplunkIndexerQueueRatioMetricAttributeKey specifies the key of an attribute for the splunk.indexer.queue.ratio metric.
+type SplunkIndexerQueueRatioMetricAttributeKey string
 
 const (
-	SplunkIndexerQueueRatioAttributeKeySplunkHost           SplunkIndexerQueueRatioAttributeKey = "splunk.host"
-	SplunkIndexerQueueRatioAttributeKeySplunkSplunkdBuild   SplunkIndexerQueueRatioAttributeKey = "splunk.splunkd.build"
-	SplunkIndexerQueueRatioAttributeKeySplunkSplunkdVersion SplunkIndexerQueueRatioAttributeKey = "splunk.splunkd.version"
+	SplunkIndexerQueueRatioMetricAttributeKeySplunkHost           SplunkIndexerQueueRatioMetricAttributeKey = "splunk.host"
+	SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdBuild   SplunkIndexerQueueRatioMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdVersion SplunkIndexerQueueRatioMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexerQueueRatioConfig provides config for the splunk.indexer.queue.ratio metric.
-type SplunkIndexerQueueRatioConfig struct {
+// SplunkIndexerQueueRatioMetricConfig provides config for the splunk.indexer.queue.ratio metric.
+type SplunkIndexerQueueRatioMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexerQueueRatioAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexerQueueRatioMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexerQueueRatioConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexerQueueRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -645,10 +645,10 @@ func (ms *SplunkIndexerQueueRatioConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkIndexerQueueRatioConfig) Validate() error {
+func (ms *SplunkIndexerQueueRatioMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexerQueueRatioAttributeKeySplunkHost, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdBuild, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexerQueueRatioMetricAttributeKeySplunkHost, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexer.queue.ratio doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -663,25 +663,25 @@ func (ms *SplunkIndexerQueueRatioConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexerRawWriteTimeAttributeKey specifies the key of an attribute for the splunk.indexer.raw.write.time metric.
-type SplunkIndexerRawWriteTimeAttributeKey string
+// SplunkIndexerRawWriteTimeMetricAttributeKey specifies the key of an attribute for the splunk.indexer.raw.write.time metric.
+type SplunkIndexerRawWriteTimeMetricAttributeKey string
 
 const (
-	SplunkIndexerRawWriteTimeAttributeKeySplunkHost           SplunkIndexerRawWriteTimeAttributeKey = "splunk.host"
-	SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdBuild   SplunkIndexerRawWriteTimeAttributeKey = "splunk.splunkd.build"
-	SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdVersion SplunkIndexerRawWriteTimeAttributeKey = "splunk.splunkd.version"
+	SplunkIndexerRawWriteTimeMetricAttributeKeySplunkHost           SplunkIndexerRawWriteTimeMetricAttributeKey = "splunk.host"
+	SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdBuild   SplunkIndexerRawWriteTimeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdVersion SplunkIndexerRawWriteTimeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexerRawWriteTimeConfig provides config for the splunk.indexer.raw.write.time metric.
-type SplunkIndexerRawWriteTimeConfig struct {
+// SplunkIndexerRawWriteTimeMetricConfig provides config for the splunk.indexer.raw.write.time metric.
+type SplunkIndexerRawWriteTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexerRawWriteTimeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexerRawWriteTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexerRawWriteTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexerRawWriteTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -695,10 +695,10 @@ func (ms *SplunkIndexerRawWriteTimeConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-func (ms *SplunkIndexerRawWriteTimeConfig) Validate() error {
+func (ms *SplunkIndexerRawWriteTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexerRawWriteTimeAttributeKeySplunkHost, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdBuild, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexerRawWriteTimeMetricAttributeKeySplunkHost, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexer.raw.write.time doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -713,26 +713,26 @@ func (ms *SplunkIndexerRawWriteTimeConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexerRollingrestartStatusAttributeKey specifies the key of an attribute for the splunk.indexer.rollingrestart.status metric.
-type SplunkIndexerRollingrestartStatusAttributeKey string
+// SplunkIndexerRollingrestartStatusMetricAttributeKey specifies the key of an attribute for the splunk.indexer.rollingrestart.status metric.
+type SplunkIndexerRollingrestartStatusMetricAttributeKey string
 
 const (
-	SplunkIndexerRollingrestartStatusAttributeKeySplunkSearchableRestart SplunkIndexerRollingrestartStatusAttributeKey = "splunk.searchable.restart"
-	SplunkIndexerRollingrestartStatusAttributeKeySplunkRollingorrestart  SplunkIndexerRollingrestartStatusAttributeKey = "splunk.rollingorrestart"
-	SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdBuild      SplunkIndexerRollingrestartStatusAttributeKey = "splunk.splunkd.build"
-	SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdVersion    SplunkIndexerRollingrestartStatusAttributeKey = "splunk.splunkd.version"
+	SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSearchableRestart SplunkIndexerRollingrestartStatusMetricAttributeKey = "splunk.searchable.restart"
+	SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkRollingorrestart  SplunkIndexerRollingrestartStatusMetricAttributeKey = "splunk.rollingorrestart"
+	SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdBuild      SplunkIndexerRollingrestartStatusMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdVersion    SplunkIndexerRollingrestartStatusMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexerRollingrestartStatusConfig provides config for the splunk.indexer.rollingrestart.status metric.
-type SplunkIndexerRollingrestartStatusConfig struct {
+// SplunkIndexerRollingrestartStatusMetricConfig provides config for the splunk.indexer.rollingrestart.status metric.
+type SplunkIndexerRollingrestartStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexerRollingrestartStatusAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexerRollingrestartStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexerRollingrestartStatusConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexerRollingrestartStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -746,10 +746,10 @@ func (ms *SplunkIndexerRollingrestartStatusConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-func (ms *SplunkIndexerRollingrestartStatusConfig) Validate() error {
+func (ms *SplunkIndexerRollingrestartStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexerRollingrestartStatusAttributeKeySplunkSearchableRestart, SplunkIndexerRollingrestartStatusAttributeKeySplunkRollingorrestart, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdBuild, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSearchableRestart, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkRollingorrestart, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexer.rollingrestart.status doesn't have an attribute %v, valid attributes: [splunk.searchable.restart, splunk.rollingorrestart, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -764,25 +764,25 @@ func (ms *SplunkIndexerRollingrestartStatusConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexerThroughputAttributeKey specifies the key of an attribute for the splunk.indexer.throughput metric.
-type SplunkIndexerThroughputAttributeKey string
+// SplunkIndexerThroughputMetricAttributeKey specifies the key of an attribute for the splunk.indexer.throughput metric.
+type SplunkIndexerThroughputMetricAttributeKey string
 
 const (
-	SplunkIndexerThroughputAttributeKeySplunkIndexerStatus  SplunkIndexerThroughputAttributeKey = "splunk.indexer.status"
-	SplunkIndexerThroughputAttributeKeySplunkSplunkdBuild   SplunkIndexerThroughputAttributeKey = "splunk.splunkd.build"
-	SplunkIndexerThroughputAttributeKeySplunkSplunkdVersion SplunkIndexerThroughputAttributeKey = "splunk.splunkd.version"
+	SplunkIndexerThroughputMetricAttributeKeySplunkIndexerStatus  SplunkIndexerThroughputMetricAttributeKey = "splunk.indexer.status"
+	SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdBuild   SplunkIndexerThroughputMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdVersion SplunkIndexerThroughputMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexerThroughputConfig provides config for the splunk.indexer.throughput metric.
-type SplunkIndexerThroughputConfig struct {
+// SplunkIndexerThroughputMetricConfig provides config for the splunk.indexer.throughput metric.
+type SplunkIndexerThroughputMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexerThroughputAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexerThroughputMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexerThroughputConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexerThroughputMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -796,10 +796,10 @@ func (ms *SplunkIndexerThroughputConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkIndexerThroughputConfig) Validate() error {
+func (ms *SplunkIndexerThroughputMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexerThroughputAttributeKeySplunkIndexerStatus, SplunkIndexerThroughputAttributeKeySplunkSplunkdBuild, SplunkIndexerThroughputAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexerThroughputMetricAttributeKeySplunkIndexerStatus, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexer.throughput doesn't have an attribute %v, valid attributes: [splunk.indexer.status, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -814,25 +814,25 @@ func (ms *SplunkIndexerThroughputConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexesAvgSizeAttributeKey specifies the key of an attribute for the splunk.indexes.avg.size metric.
-type SplunkIndexesAvgSizeAttributeKey string
+// SplunkIndexesAvgSizeMetricAttributeKey specifies the key of an attribute for the splunk.indexes.avg.size metric.
+type SplunkIndexesAvgSizeMetricAttributeKey string
 
 const (
-	SplunkIndexesAvgSizeAttributeKeySplunkIndexName      SplunkIndexesAvgSizeAttributeKey = "splunk.index.name"
-	SplunkIndexesAvgSizeAttributeKeySplunkSplunkdBuild   SplunkIndexesAvgSizeAttributeKey = "splunk.splunkd.build"
-	SplunkIndexesAvgSizeAttributeKeySplunkSplunkdVersion SplunkIndexesAvgSizeAttributeKey = "splunk.splunkd.version"
+	SplunkIndexesAvgSizeMetricAttributeKeySplunkIndexName      SplunkIndexesAvgSizeMetricAttributeKey = "splunk.index.name"
+	SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdBuild   SplunkIndexesAvgSizeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdVersion SplunkIndexesAvgSizeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexesAvgSizeConfig provides config for the splunk.indexes.avg.size metric.
-type SplunkIndexesAvgSizeConfig struct {
+// SplunkIndexesAvgSizeMetricConfig provides config for the splunk.indexes.avg.size metric.
+type SplunkIndexesAvgSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexesAvgSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexesAvgSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexesAvgSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexesAvgSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -846,10 +846,10 @@ func (ms *SplunkIndexesAvgSizeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkIndexesAvgSizeConfig) Validate() error {
+func (ms *SplunkIndexesAvgSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexesAvgSizeAttributeKeySplunkIndexName, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexesAvgSizeMetricAttributeKeySplunkIndexName, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexes.avg.size doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -864,25 +864,25 @@ func (ms *SplunkIndexesAvgSizeConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexesAvgUsageAttributeKey specifies the key of an attribute for the splunk.indexes.avg.usage metric.
-type SplunkIndexesAvgUsageAttributeKey string
+// SplunkIndexesAvgUsageMetricAttributeKey specifies the key of an attribute for the splunk.indexes.avg.usage metric.
+type SplunkIndexesAvgUsageMetricAttributeKey string
 
 const (
-	SplunkIndexesAvgUsageAttributeKeySplunkIndexName      SplunkIndexesAvgUsageAttributeKey = "splunk.index.name"
-	SplunkIndexesAvgUsageAttributeKeySplunkSplunkdBuild   SplunkIndexesAvgUsageAttributeKey = "splunk.splunkd.build"
-	SplunkIndexesAvgUsageAttributeKeySplunkSplunkdVersion SplunkIndexesAvgUsageAttributeKey = "splunk.splunkd.version"
+	SplunkIndexesAvgUsageMetricAttributeKeySplunkIndexName      SplunkIndexesAvgUsageMetricAttributeKey = "splunk.index.name"
+	SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdBuild   SplunkIndexesAvgUsageMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdVersion SplunkIndexesAvgUsageMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexesAvgUsageConfig provides config for the splunk.indexes.avg.usage metric.
-type SplunkIndexesAvgUsageConfig struct {
+// SplunkIndexesAvgUsageMetricConfig provides config for the splunk.indexes.avg.usage metric.
+type SplunkIndexesAvgUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexesAvgUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexesAvgUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexesAvgUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexesAvgUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -896,10 +896,10 @@ func (ms *SplunkIndexesAvgUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkIndexesAvgUsageConfig) Validate() error {
+func (ms *SplunkIndexesAvgUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexesAvgUsageAttributeKeySplunkIndexName, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexesAvgUsageMetricAttributeKeySplunkIndexName, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexes.avg.usage doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -914,25 +914,25 @@ func (ms *SplunkIndexesAvgUsageConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexesBucketCountAttributeKey specifies the key of an attribute for the splunk.indexes.bucket.count metric.
-type SplunkIndexesBucketCountAttributeKey string
+// SplunkIndexesBucketCountMetricAttributeKey specifies the key of an attribute for the splunk.indexes.bucket.count metric.
+type SplunkIndexesBucketCountMetricAttributeKey string
 
 const (
-	SplunkIndexesBucketCountAttributeKeySplunkIndexName      SplunkIndexesBucketCountAttributeKey = "splunk.index.name"
-	SplunkIndexesBucketCountAttributeKeySplunkSplunkdBuild   SplunkIndexesBucketCountAttributeKey = "splunk.splunkd.build"
-	SplunkIndexesBucketCountAttributeKeySplunkSplunkdVersion SplunkIndexesBucketCountAttributeKey = "splunk.splunkd.version"
+	SplunkIndexesBucketCountMetricAttributeKeySplunkIndexName      SplunkIndexesBucketCountMetricAttributeKey = "splunk.index.name"
+	SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdBuild   SplunkIndexesBucketCountMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdVersion SplunkIndexesBucketCountMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexesBucketCountConfig provides config for the splunk.indexes.bucket.count metric.
-type SplunkIndexesBucketCountConfig struct {
+// SplunkIndexesBucketCountMetricConfig provides config for the splunk.indexes.bucket.count metric.
+type SplunkIndexesBucketCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexesBucketCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexesBucketCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexesBucketCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexesBucketCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -946,10 +946,10 @@ func (ms *SplunkIndexesBucketCountConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-func (ms *SplunkIndexesBucketCountConfig) Validate() error {
+func (ms *SplunkIndexesBucketCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexesBucketCountAttributeKeySplunkIndexName, SplunkIndexesBucketCountAttributeKeySplunkSplunkdBuild, SplunkIndexesBucketCountAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexesBucketCountMetricAttributeKeySplunkIndexName, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexes.bucket.count doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -964,25 +964,25 @@ func (ms *SplunkIndexesBucketCountConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexesMedianDataAgeAttributeKey specifies the key of an attribute for the splunk.indexes.median.data.age metric.
-type SplunkIndexesMedianDataAgeAttributeKey string
+// SplunkIndexesMedianDataAgeMetricAttributeKey specifies the key of an attribute for the splunk.indexes.median.data.age metric.
+type SplunkIndexesMedianDataAgeMetricAttributeKey string
 
 const (
-	SplunkIndexesMedianDataAgeAttributeKeySplunkIndexName      SplunkIndexesMedianDataAgeAttributeKey = "splunk.index.name"
-	SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdBuild   SplunkIndexesMedianDataAgeAttributeKey = "splunk.splunkd.build"
-	SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdVersion SplunkIndexesMedianDataAgeAttributeKey = "splunk.splunkd.version"
+	SplunkIndexesMedianDataAgeMetricAttributeKeySplunkIndexName      SplunkIndexesMedianDataAgeMetricAttributeKey = "splunk.index.name"
+	SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdBuild   SplunkIndexesMedianDataAgeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdVersion SplunkIndexesMedianDataAgeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexesMedianDataAgeConfig provides config for the splunk.indexes.median.data.age metric.
-type SplunkIndexesMedianDataAgeConfig struct {
+// SplunkIndexesMedianDataAgeMetricConfig provides config for the splunk.indexes.median.data.age metric.
+type SplunkIndexesMedianDataAgeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexesMedianDataAgeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexesMedianDataAgeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexesMedianDataAgeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexesMedianDataAgeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -996,10 +996,10 @@ func (ms *SplunkIndexesMedianDataAgeConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *SplunkIndexesMedianDataAgeConfig) Validate() error {
+func (ms *SplunkIndexesMedianDataAgeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexesMedianDataAgeAttributeKeySplunkIndexName, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdBuild, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexesMedianDataAgeMetricAttributeKeySplunkIndexName, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexes.median.data.age doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1014,25 +1014,25 @@ func (ms *SplunkIndexesMedianDataAgeConfig) Validate() error {
 	return nil
 }
 
-// SplunkIndexesSizeAttributeKey specifies the key of an attribute for the splunk.indexes.size metric.
-type SplunkIndexesSizeAttributeKey string
+// SplunkIndexesSizeMetricAttributeKey specifies the key of an attribute for the splunk.indexes.size metric.
+type SplunkIndexesSizeMetricAttributeKey string
 
 const (
-	SplunkIndexesSizeAttributeKeySplunkIndexName      SplunkIndexesSizeAttributeKey = "splunk.index.name"
-	SplunkIndexesSizeAttributeKeySplunkSplunkdBuild   SplunkIndexesSizeAttributeKey = "splunk.splunkd.build"
-	SplunkIndexesSizeAttributeKeySplunkSplunkdVersion SplunkIndexesSizeAttributeKey = "splunk.splunkd.version"
+	SplunkIndexesSizeMetricAttributeKeySplunkIndexName      SplunkIndexesSizeMetricAttributeKey = "splunk.index.name"
+	SplunkIndexesSizeMetricAttributeKeySplunkSplunkdBuild   SplunkIndexesSizeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIndexesSizeMetricAttributeKeySplunkSplunkdVersion SplunkIndexesSizeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIndexesSizeConfig provides config for the splunk.indexes.size metric.
-type SplunkIndexesSizeConfig struct {
+// SplunkIndexesSizeMetricConfig provides config for the splunk.indexes.size metric.
+type SplunkIndexesSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIndexesSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIndexesSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIndexesSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIndexesSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1046,10 +1046,10 @@ func (ms *SplunkIndexesSizeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkIndexesSizeConfig) Validate() error {
+func (ms *SplunkIndexesSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIndexesSizeAttributeKeySplunkIndexName, SplunkIndexesSizeAttributeKeySplunkSplunkdBuild, SplunkIndexesSizeAttributeKeySplunkSplunkdVersion:
+		case SplunkIndexesSizeMetricAttributeKeySplunkIndexName, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.indexes.size doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1064,25 +1064,25 @@ func (ms *SplunkIndexesSizeConfig) Validate() error {
 	return nil
 }
 
-// SplunkIoAvgIopsAttributeKey specifies the key of an attribute for the splunk.io.avg.iops metric.
-type SplunkIoAvgIopsAttributeKey string
+// SplunkIoAvgIopsMetricAttributeKey specifies the key of an attribute for the splunk.io.avg.iops metric.
+type SplunkIoAvgIopsMetricAttributeKey string
 
 const (
-	SplunkIoAvgIopsAttributeKeySplunkHost           SplunkIoAvgIopsAttributeKey = "splunk.host"
-	SplunkIoAvgIopsAttributeKeySplunkSplunkdBuild   SplunkIoAvgIopsAttributeKey = "splunk.splunkd.build"
-	SplunkIoAvgIopsAttributeKeySplunkSplunkdVersion SplunkIoAvgIopsAttributeKey = "splunk.splunkd.version"
+	SplunkIoAvgIopsMetricAttributeKeySplunkHost           SplunkIoAvgIopsMetricAttributeKey = "splunk.host"
+	SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdBuild   SplunkIoAvgIopsMetricAttributeKey = "splunk.splunkd.build"
+	SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdVersion SplunkIoAvgIopsMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkIoAvgIopsConfig provides config for the splunk.io.avg.iops metric.
-type SplunkIoAvgIopsConfig struct {
+// SplunkIoAvgIopsMetricConfig provides config for the splunk.io.avg.iops metric.
+type SplunkIoAvgIopsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkIoAvgIopsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkIoAvgIopsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkIoAvgIopsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkIoAvgIopsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1096,10 +1096,10 @@ func (ms *SplunkIoAvgIopsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkIoAvgIopsConfig) Validate() error {
+func (ms *SplunkIoAvgIopsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkIoAvgIopsAttributeKeySplunkHost, SplunkIoAvgIopsAttributeKeySplunkSplunkdBuild, SplunkIoAvgIopsAttributeKeySplunkSplunkdVersion:
+		case SplunkIoAvgIopsMetricAttributeKeySplunkHost, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdBuild, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.io.avg.iops doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1114,25 +1114,25 @@ func (ms *SplunkIoAvgIopsConfig) Validate() error {
 	return nil
 }
 
-// SplunkKvstoreBackupStatusAttributeKey specifies the key of an attribute for the splunk.kvstore.backup.status metric.
-type SplunkKvstoreBackupStatusAttributeKey string
+// SplunkKvstoreBackupStatusMetricAttributeKey specifies the key of an attribute for the splunk.kvstore.backup.status metric.
+type SplunkKvstoreBackupStatusMetricAttributeKey string
 
 const (
-	SplunkKvstoreBackupStatusAttributeKeySplunkKvstoreStatusValue SplunkKvstoreBackupStatusAttributeKey = "splunk.kvstore.status.value"
-	SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdBuild       SplunkKvstoreBackupStatusAttributeKey = "splunk.splunkd.build"
-	SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdVersion     SplunkKvstoreBackupStatusAttributeKey = "splunk.splunkd.version"
+	SplunkKvstoreBackupStatusMetricAttributeKeySplunkKvstoreStatusValue SplunkKvstoreBackupStatusMetricAttributeKey = "splunk.kvstore.status.value"
+	SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdBuild       SplunkKvstoreBackupStatusMetricAttributeKey = "splunk.splunkd.build"
+	SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdVersion     SplunkKvstoreBackupStatusMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkKvstoreBackupStatusConfig provides config for the splunk.kvstore.backup.status metric.
-type SplunkKvstoreBackupStatusConfig struct {
+// SplunkKvstoreBackupStatusMetricConfig provides config for the splunk.kvstore.backup.status metric.
+type SplunkKvstoreBackupStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkKvstoreBackupStatusAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkKvstoreBackupStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkKvstoreBackupStatusConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkKvstoreBackupStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1146,10 +1146,10 @@ func (ms *SplunkKvstoreBackupStatusConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-func (ms *SplunkKvstoreBackupStatusConfig) Validate() error {
+func (ms *SplunkKvstoreBackupStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkKvstoreBackupStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdVersion:
+		case SplunkKvstoreBackupStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.kvstore.backup.status doesn't have an attribute %v, valid attributes: [splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1164,25 +1164,25 @@ func (ms *SplunkKvstoreBackupStatusConfig) Validate() error {
 	return nil
 }
 
-// SplunkKvstoreReplicationStatusAttributeKey specifies the key of an attribute for the splunk.kvstore.replication.status metric.
-type SplunkKvstoreReplicationStatusAttributeKey string
+// SplunkKvstoreReplicationStatusMetricAttributeKey specifies the key of an attribute for the splunk.kvstore.replication.status metric.
+type SplunkKvstoreReplicationStatusMetricAttributeKey string
 
 const (
-	SplunkKvstoreReplicationStatusAttributeKeySplunkKvstoreStatusValue SplunkKvstoreReplicationStatusAttributeKey = "splunk.kvstore.status.value"
-	SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdBuild       SplunkKvstoreReplicationStatusAttributeKey = "splunk.splunkd.build"
-	SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdVersion     SplunkKvstoreReplicationStatusAttributeKey = "splunk.splunkd.version"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.kvstore.status.value"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild       SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.build"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion     SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkKvstoreReplicationStatusConfig provides config for the splunk.kvstore.replication.status metric.
-type SplunkKvstoreReplicationStatusConfig struct {
+// SplunkKvstoreReplicationStatusMetricConfig provides config for the splunk.kvstore.replication.status metric.
+type SplunkKvstoreReplicationStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkKvstoreReplicationStatusAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkKvstoreReplicationStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkKvstoreReplicationStatusConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkKvstoreReplicationStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1196,10 +1196,10 @@ func (ms *SplunkKvstoreReplicationStatusConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *SplunkKvstoreReplicationStatusConfig) Validate() error {
+func (ms *SplunkKvstoreReplicationStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkKvstoreReplicationStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdVersion:
+		case SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.kvstore.replication.status doesn't have an attribute %v, valid attributes: [splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1214,27 +1214,27 @@ func (ms *SplunkKvstoreReplicationStatusConfig) Validate() error {
 	return nil
 }
 
-// SplunkKvstoreStatusAttributeKey specifies the key of an attribute for the splunk.kvstore.status metric.
-type SplunkKvstoreStatusAttributeKey string
+// SplunkKvstoreStatusMetricAttributeKey specifies the key of an attribute for the splunk.kvstore.status metric.
+type SplunkKvstoreStatusMetricAttributeKey string
 
 const (
-	SplunkKvstoreStatusAttributeKeySplunkKvstoreStorageEngine SplunkKvstoreStatusAttributeKey = "splunk.kvstore.storage.engine"
-	SplunkKvstoreStatusAttributeKeySplunkKvstoreExternal      SplunkKvstoreStatusAttributeKey = "splunk.kvstore.external"
-	SplunkKvstoreStatusAttributeKeySplunkKvstoreStatusValue   SplunkKvstoreStatusAttributeKey = "splunk.kvstore.status.value"
-	SplunkKvstoreStatusAttributeKeySplunkSplunkdBuild         SplunkKvstoreStatusAttributeKey = "splunk.splunkd.build"
-	SplunkKvstoreStatusAttributeKeySplunkSplunkdVersion       SplunkKvstoreStatusAttributeKey = "splunk.splunkd.version"
+	SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine SplunkKvstoreStatusMetricAttributeKey = "splunk.kvstore.storage.engine"
+	SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal      SplunkKvstoreStatusMetricAttributeKey = "splunk.kvstore.external"
+	SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStatusValue   SplunkKvstoreStatusMetricAttributeKey = "splunk.kvstore.status.value"
+	SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdBuild         SplunkKvstoreStatusMetricAttributeKey = "splunk.splunkd.build"
+	SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdVersion       SplunkKvstoreStatusMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkKvstoreStatusConfig provides config for the splunk.kvstore.status metric.
-type SplunkKvstoreStatusConfig struct {
+// SplunkKvstoreStatusMetricConfig provides config for the splunk.kvstore.status metric.
+type SplunkKvstoreStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkKvstoreStatusAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkKvstoreStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkKvstoreStatusConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkKvstoreStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1248,10 +1248,10 @@ func (ms *SplunkKvstoreStatusConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkKvstoreStatusConfig) Validate() error {
+func (ms *SplunkKvstoreStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkKvstoreStatusAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreStatusAttributeKeySplunkKvstoreExternal, SplunkKvstoreStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreStatusAttributeKeySplunkSplunkdVersion:
+		case SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.kvstore.status doesn't have an attribute %v, valid attributes: [splunk.kvstore.storage.engine, splunk.kvstore.external, splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1266,27 +1266,27 @@ func (ms *SplunkKvstoreStatusConfig) Validate() error {
 	return nil
 }
 
-// SplunkLicenseExpirationSecondsRemainingAttributeKey specifies the key of an attribute for the splunk.license.expiration.seconds_remaining metric.
-type SplunkLicenseExpirationSecondsRemainingAttributeKey string
+// SplunkLicenseExpirationSecondsRemainingMetricAttributeKey specifies the key of an attribute for the splunk.license.expiration.seconds_remaining metric.
+type SplunkLicenseExpirationSecondsRemainingMetricAttributeKey string
 
 const (
-	SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseStatus  SplunkLicenseExpirationSecondsRemainingAttributeKey = "splunk.license.status"
-	SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseLabel   SplunkLicenseExpirationSecondsRemainingAttributeKey = "splunk.license.label"
-	SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseType    SplunkLicenseExpirationSecondsRemainingAttributeKey = "splunk.license.type"
-	SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdBuild   SplunkLicenseExpirationSecondsRemainingAttributeKey = "splunk.splunkd.build"
-	SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdVersion SplunkLicenseExpirationSecondsRemainingAttributeKey = "splunk.splunkd.version"
+	SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseStatus  SplunkLicenseExpirationSecondsRemainingMetricAttributeKey = "splunk.license.status"
+	SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseLabel   SplunkLicenseExpirationSecondsRemainingMetricAttributeKey = "splunk.license.label"
+	SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseType    SplunkLicenseExpirationSecondsRemainingMetricAttributeKey = "splunk.license.type"
+	SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdBuild   SplunkLicenseExpirationSecondsRemainingMetricAttributeKey = "splunk.splunkd.build"
+	SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdVersion SplunkLicenseExpirationSecondsRemainingMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkLicenseExpirationSecondsRemainingConfig provides config for the splunk.license.expiration.seconds_remaining metric.
-type SplunkLicenseExpirationSecondsRemainingConfig struct {
+// SplunkLicenseExpirationSecondsRemainingMetricConfig provides config for the splunk.license.expiration.seconds_remaining metric.
+type SplunkLicenseExpirationSecondsRemainingMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkLicenseExpirationSecondsRemainingAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkLicenseExpirationSecondsRemainingMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkLicenseExpirationSecondsRemainingConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkLicenseExpirationSecondsRemainingMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1300,10 +1300,10 @@ func (ms *SplunkLicenseExpirationSecondsRemainingConfig) Unmarshal(parser *confm
 	return nil
 }
 
-func (ms *SplunkLicenseExpirationSecondsRemainingConfig) Validate() error {
+func (ms *SplunkLicenseExpirationSecondsRemainingMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseStatus, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseLabel, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseType, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdBuild, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdVersion:
+		case SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseStatus, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseLabel, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseType, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdBuild, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.license.expiration.seconds_remaining doesn't have an attribute %v, valid attributes: [splunk.license.status, splunk.license.label, splunk.license.type, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1318,25 +1318,25 @@ func (ms *SplunkLicenseExpirationSecondsRemainingConfig) Validate() error {
 	return nil
 }
 
-// SplunkLicenseIndexUsageAttributeKey specifies the key of an attribute for the splunk.license.index.usage metric.
-type SplunkLicenseIndexUsageAttributeKey string
+// SplunkLicenseIndexUsageMetricAttributeKey specifies the key of an attribute for the splunk.license.index.usage metric.
+type SplunkLicenseIndexUsageMetricAttributeKey string
 
 const (
-	SplunkLicenseIndexUsageAttributeKeySplunkIndexName      SplunkLicenseIndexUsageAttributeKey = "splunk.index.name"
-	SplunkLicenseIndexUsageAttributeKeySplunkSplunkdBuild   SplunkLicenseIndexUsageAttributeKey = "splunk.splunkd.build"
-	SplunkLicenseIndexUsageAttributeKeySplunkSplunkdVersion SplunkLicenseIndexUsageAttributeKey = "splunk.splunkd.version"
+	SplunkLicenseIndexUsageMetricAttributeKeySplunkIndexName      SplunkLicenseIndexUsageMetricAttributeKey = "splunk.index.name"
+	SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdBuild   SplunkLicenseIndexUsageMetricAttributeKey = "splunk.splunkd.build"
+	SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdVersion SplunkLicenseIndexUsageMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkLicenseIndexUsageConfig provides config for the splunk.license.index.usage metric.
-type SplunkLicenseIndexUsageConfig struct {
+// SplunkLicenseIndexUsageMetricConfig provides config for the splunk.license.index.usage metric.
+type SplunkLicenseIndexUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkLicenseIndexUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkLicenseIndexUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkLicenseIndexUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkLicenseIndexUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1350,10 +1350,10 @@ func (ms *SplunkLicenseIndexUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkLicenseIndexUsageConfig) Validate() error {
+func (ms *SplunkLicenseIndexUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkLicenseIndexUsageAttributeKeySplunkIndexName, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdBuild, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdVersion:
+		case SplunkLicenseIndexUsageMetricAttributeKeySplunkIndexName, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdBuild, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.license.index.usage doesn't have an attribute %v, valid attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1368,25 +1368,25 @@ func (ms *SplunkLicenseIndexUsageConfig) Validate() error {
 	return nil
 }
 
-// SplunkParseQueueRatioAttributeKey specifies the key of an attribute for the splunk.parse.queue.ratio metric.
-type SplunkParseQueueRatioAttributeKey string
+// SplunkParseQueueRatioMetricAttributeKey specifies the key of an attribute for the splunk.parse.queue.ratio metric.
+type SplunkParseQueueRatioMetricAttributeKey string
 
 const (
-	SplunkParseQueueRatioAttributeKeySplunkHost           SplunkParseQueueRatioAttributeKey = "splunk.host"
-	SplunkParseQueueRatioAttributeKeySplunkSplunkdBuild   SplunkParseQueueRatioAttributeKey = "splunk.splunkd.build"
-	SplunkParseQueueRatioAttributeKeySplunkSplunkdVersion SplunkParseQueueRatioAttributeKey = "splunk.splunkd.version"
+	SplunkParseQueueRatioMetricAttributeKeySplunkHost           SplunkParseQueueRatioMetricAttributeKey = "splunk.host"
+	SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdBuild   SplunkParseQueueRatioMetricAttributeKey = "splunk.splunkd.build"
+	SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdVersion SplunkParseQueueRatioMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkParseQueueRatioConfig provides config for the splunk.parse.queue.ratio metric.
-type SplunkParseQueueRatioConfig struct {
+// SplunkParseQueueRatioMetricConfig provides config for the splunk.parse.queue.ratio metric.
+type SplunkParseQueueRatioMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkParseQueueRatioAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkParseQueueRatioMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkParseQueueRatioConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkParseQueueRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1400,10 +1400,10 @@ func (ms *SplunkParseQueueRatioConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkParseQueueRatioConfig) Validate() error {
+func (ms *SplunkParseQueueRatioMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkParseQueueRatioAttributeKeySplunkHost, SplunkParseQueueRatioAttributeKeySplunkSplunkdBuild, SplunkParseQueueRatioAttributeKeySplunkSplunkdVersion:
+		case SplunkParseQueueRatioMetricAttributeKeySplunkHost, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.parse.queue.ratio doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1418,25 +1418,25 @@ func (ms *SplunkParseQueueRatioConfig) Validate() error {
 	return nil
 }
 
-// SplunkPipelineSetCountAttributeKey specifies the key of an attribute for the splunk.pipeline.set.count metric.
-type SplunkPipelineSetCountAttributeKey string
+// SplunkPipelineSetCountMetricAttributeKey specifies the key of an attribute for the splunk.pipeline.set.count metric.
+type SplunkPipelineSetCountMetricAttributeKey string
 
 const (
-	SplunkPipelineSetCountAttributeKeySplunkHost           SplunkPipelineSetCountAttributeKey = "splunk.host"
-	SplunkPipelineSetCountAttributeKeySplunkSplunkdBuild   SplunkPipelineSetCountAttributeKey = "splunk.splunkd.build"
-	SplunkPipelineSetCountAttributeKeySplunkSplunkdVersion SplunkPipelineSetCountAttributeKey = "splunk.splunkd.version"
+	SplunkPipelineSetCountMetricAttributeKeySplunkHost           SplunkPipelineSetCountMetricAttributeKey = "splunk.host"
+	SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdBuild   SplunkPipelineSetCountMetricAttributeKey = "splunk.splunkd.build"
+	SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdVersion SplunkPipelineSetCountMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkPipelineSetCountConfig provides config for the splunk.pipeline.set.count metric.
-type SplunkPipelineSetCountConfig struct {
+// SplunkPipelineSetCountMetricConfig provides config for the splunk.pipeline.set.count metric.
+type SplunkPipelineSetCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkPipelineSetCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkPipelineSetCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkPipelineSetCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkPipelineSetCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1450,10 +1450,10 @@ func (ms *SplunkPipelineSetCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkPipelineSetCountConfig) Validate() error {
+func (ms *SplunkPipelineSetCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkPipelineSetCountAttributeKeySplunkHost, SplunkPipelineSetCountAttributeKeySplunkSplunkdBuild, SplunkPipelineSetCountAttributeKeySplunkSplunkdVersion:
+		case SplunkPipelineSetCountMetricAttributeKeySplunkHost, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdBuild, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.pipeline.set.count doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1468,25 +1468,25 @@ func (ms *SplunkPipelineSetCountConfig) Validate() error {
 	return nil
 }
 
-// SplunkSchedulerAvgExecutionLatencyAttributeKey specifies the key of an attribute for the splunk.scheduler.avg.execution.latency metric.
-type SplunkSchedulerAvgExecutionLatencyAttributeKey string
+// SplunkSchedulerAvgExecutionLatencyMetricAttributeKey specifies the key of an attribute for the splunk.scheduler.avg.execution.latency metric.
+type SplunkSchedulerAvgExecutionLatencyMetricAttributeKey string
 
 const (
-	SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkHost           SplunkSchedulerAvgExecutionLatencyAttributeKey = "splunk.host"
-	SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdBuild   SplunkSchedulerAvgExecutionLatencyAttributeKey = "splunk.splunkd.build"
-	SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdVersion SplunkSchedulerAvgExecutionLatencyAttributeKey = "splunk.splunkd.version"
+	SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkHost           SplunkSchedulerAvgExecutionLatencyMetricAttributeKey = "splunk.host"
+	SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdBuild   SplunkSchedulerAvgExecutionLatencyMetricAttributeKey = "splunk.splunkd.build"
+	SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdVersion SplunkSchedulerAvgExecutionLatencyMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkSchedulerAvgExecutionLatencyConfig provides config for the splunk.scheduler.avg.execution.latency metric.
-type SplunkSchedulerAvgExecutionLatencyConfig struct {
+// SplunkSchedulerAvgExecutionLatencyMetricConfig provides config for the splunk.scheduler.avg.execution.latency metric.
+type SplunkSchedulerAvgExecutionLatencyMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkSchedulerAvgExecutionLatencyAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkSchedulerAvgExecutionLatencyMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkSchedulerAvgExecutionLatencyConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkSchedulerAvgExecutionLatencyMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1500,10 +1500,10 @@ func (ms *SplunkSchedulerAvgExecutionLatencyConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *SplunkSchedulerAvgExecutionLatencyConfig) Validate() error {
+func (ms *SplunkSchedulerAvgExecutionLatencyMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkHost, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdVersion:
+		case SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkHost, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.scheduler.avg.execution.latency doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1518,25 +1518,25 @@ func (ms *SplunkSchedulerAvgExecutionLatencyConfig) Validate() error {
 	return nil
 }
 
-// SplunkSchedulerAvgRunTimeAttributeKey specifies the key of an attribute for the splunk.scheduler.avg.run.time metric.
-type SplunkSchedulerAvgRunTimeAttributeKey string
+// SplunkSchedulerAvgRunTimeMetricAttributeKey specifies the key of an attribute for the splunk.scheduler.avg.run.time metric.
+type SplunkSchedulerAvgRunTimeMetricAttributeKey string
 
 const (
-	SplunkSchedulerAvgRunTimeAttributeKeySplunkHost           SplunkSchedulerAvgRunTimeAttributeKey = "splunk.host"
-	SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdBuild   SplunkSchedulerAvgRunTimeAttributeKey = "splunk.splunkd.build"
-	SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdVersion SplunkSchedulerAvgRunTimeAttributeKey = "splunk.splunkd.version"
+	SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkHost           SplunkSchedulerAvgRunTimeMetricAttributeKey = "splunk.host"
+	SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdBuild   SplunkSchedulerAvgRunTimeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdVersion SplunkSchedulerAvgRunTimeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkSchedulerAvgRunTimeConfig provides config for the splunk.scheduler.avg.run.time metric.
-type SplunkSchedulerAvgRunTimeConfig struct {
+// SplunkSchedulerAvgRunTimeMetricConfig provides config for the splunk.scheduler.avg.run.time metric.
+type SplunkSchedulerAvgRunTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkSchedulerAvgRunTimeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkSchedulerAvgRunTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkSchedulerAvgRunTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkSchedulerAvgRunTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1550,10 +1550,10 @@ func (ms *SplunkSchedulerAvgRunTimeConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-func (ms *SplunkSchedulerAvgRunTimeConfig) Validate() error {
+func (ms *SplunkSchedulerAvgRunTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkSchedulerAvgRunTimeAttributeKeySplunkHost, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdVersion:
+		case SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkHost, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.scheduler.avg.run.time doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1568,25 +1568,25 @@ func (ms *SplunkSchedulerAvgRunTimeConfig) Validate() error {
 	return nil
 }
 
-// SplunkSchedulerCompletionRatioAttributeKey specifies the key of an attribute for the splunk.scheduler.completion.ratio metric.
-type SplunkSchedulerCompletionRatioAttributeKey string
+// SplunkSchedulerCompletionRatioMetricAttributeKey specifies the key of an attribute for the splunk.scheduler.completion.ratio metric.
+type SplunkSchedulerCompletionRatioMetricAttributeKey string
 
 const (
-	SplunkSchedulerCompletionRatioAttributeKeySplunkHost           SplunkSchedulerCompletionRatioAttributeKey = "splunk.host"
-	SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdBuild   SplunkSchedulerCompletionRatioAttributeKey = "splunk.splunkd.build"
-	SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdVersion SplunkSchedulerCompletionRatioAttributeKey = "splunk.splunkd.version"
+	SplunkSchedulerCompletionRatioMetricAttributeKeySplunkHost           SplunkSchedulerCompletionRatioMetricAttributeKey = "splunk.host"
+	SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdBuild   SplunkSchedulerCompletionRatioMetricAttributeKey = "splunk.splunkd.build"
+	SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdVersion SplunkSchedulerCompletionRatioMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkSchedulerCompletionRatioConfig provides config for the splunk.scheduler.completion.ratio metric.
-type SplunkSchedulerCompletionRatioConfig struct {
+// SplunkSchedulerCompletionRatioMetricConfig provides config for the splunk.scheduler.completion.ratio metric.
+type SplunkSchedulerCompletionRatioMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkSchedulerCompletionRatioAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkSchedulerCompletionRatioMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkSchedulerCompletionRatioConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkSchedulerCompletionRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1600,10 +1600,10 @@ func (ms *SplunkSchedulerCompletionRatioConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *SplunkSchedulerCompletionRatioConfig) Validate() error {
+func (ms *SplunkSchedulerCompletionRatioMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkSchedulerCompletionRatioAttributeKeySplunkHost, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdBuild, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdVersion:
+		case SplunkSchedulerCompletionRatioMetricAttributeKeySplunkHost, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.scheduler.completion.ratio doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1618,24 +1618,24 @@ func (ms *SplunkSchedulerCompletionRatioConfig) Validate() error {
 	return nil
 }
 
-// SplunkSearchDurationAttributeKey specifies the key of an attribute for the splunk.search.duration metric.
-type SplunkSearchDurationAttributeKey string
+// SplunkSearchDurationMetricAttributeKey specifies the key of an attribute for the splunk.search.duration metric.
+type SplunkSearchDurationMetricAttributeKey string
 
 const (
-	SplunkSearchDurationAttributeKeySplunkSplunkdBuild   SplunkSearchDurationAttributeKey = "splunk.splunkd.build"
-	SplunkSearchDurationAttributeKeySplunkSplunkdVersion SplunkSearchDurationAttributeKey = "splunk.splunkd.version"
+	SplunkSearchDurationMetricAttributeKeySplunkSplunkdBuild   SplunkSearchDurationMetricAttributeKey = "splunk.splunkd.build"
+	SplunkSearchDurationMetricAttributeKeySplunkSplunkdVersion SplunkSearchDurationMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkSearchDurationConfig provides config for the splunk.search.duration metric.
-type SplunkSearchDurationConfig struct {
+// SplunkSearchDurationMetricConfig provides config for the splunk.search.duration metric.
+type SplunkSearchDurationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkSearchDurationAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkSearchDurationMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkSearchDurationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkSearchDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1649,10 +1649,10 @@ func (ms *SplunkSearchDurationConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkSearchDurationConfig) Validate() error {
+func (ms *SplunkSearchDurationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkSearchDurationAttributeKeySplunkSplunkdBuild, SplunkSearchDurationAttributeKeySplunkSplunkdVersion:
+		case SplunkSearchDurationMetricAttributeKeySplunkSplunkdBuild, SplunkSearchDurationMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.search.duration doesn't have an attribute %v, valid attributes: [splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1667,24 +1667,24 @@ func (ms *SplunkSearchDurationConfig) Validate() error {
 	return nil
 }
 
-// SplunkSearchInitiationAttributeKey specifies the key of an attribute for the splunk.search.initiation metric.
-type SplunkSearchInitiationAttributeKey string
+// SplunkSearchInitiationMetricAttributeKey specifies the key of an attribute for the splunk.search.initiation metric.
+type SplunkSearchInitiationMetricAttributeKey string
 
 const (
-	SplunkSearchInitiationAttributeKeySplunkSplunkdBuild   SplunkSearchInitiationAttributeKey = "splunk.splunkd.build"
-	SplunkSearchInitiationAttributeKeySplunkSplunkdVersion SplunkSearchInitiationAttributeKey = "splunk.splunkd.version"
+	SplunkSearchInitiationMetricAttributeKeySplunkSplunkdBuild   SplunkSearchInitiationMetricAttributeKey = "splunk.splunkd.build"
+	SplunkSearchInitiationMetricAttributeKeySplunkSplunkdVersion SplunkSearchInitiationMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkSearchInitiationConfig provides config for the splunk.search.initiation metric.
-type SplunkSearchInitiationConfig struct {
+// SplunkSearchInitiationMetricConfig provides config for the splunk.search.initiation metric.
+type SplunkSearchInitiationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkSearchInitiationAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkSearchInitiationMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkSearchInitiationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkSearchInitiationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1698,10 +1698,10 @@ func (ms *SplunkSearchInitiationConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkSearchInitiationConfig) Validate() error {
+func (ms *SplunkSearchInitiationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkSearchInitiationAttributeKeySplunkSplunkdBuild, SplunkSearchInitiationAttributeKeySplunkSplunkdVersion:
+		case SplunkSearchInitiationMetricAttributeKeySplunkSplunkdBuild, SplunkSearchInitiationMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.search.initiation doesn't have an attribute %v, valid attributes: [splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1716,25 +1716,25 @@ func (ms *SplunkSearchInitiationConfig) Validate() error {
 	return nil
 }
 
-// SplunkSearchStatusAttributeKey specifies the key of an attribute for the splunk.search.status metric.
-type SplunkSearchStatusAttributeKey string
+// SplunkSearchStatusMetricAttributeKey specifies the key of an attribute for the splunk.search.status metric.
+type SplunkSearchStatusMetricAttributeKey string
 
 const (
-	SplunkSearchStatusAttributeKeySplunkSearchState    SplunkSearchStatusAttributeKey = "splunk.search.state"
-	SplunkSearchStatusAttributeKeySplunkSplunkdBuild   SplunkSearchStatusAttributeKey = "splunk.splunkd.build"
-	SplunkSearchStatusAttributeKeySplunkSplunkdVersion SplunkSearchStatusAttributeKey = "splunk.splunkd.version"
+	SplunkSearchStatusMetricAttributeKeySplunkSearchState    SplunkSearchStatusMetricAttributeKey = "splunk.search.state"
+	SplunkSearchStatusMetricAttributeKeySplunkSplunkdBuild   SplunkSearchStatusMetricAttributeKey = "splunk.splunkd.build"
+	SplunkSearchStatusMetricAttributeKeySplunkSplunkdVersion SplunkSearchStatusMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkSearchStatusConfig provides config for the splunk.search.status metric.
-type SplunkSearchStatusConfig struct {
+// SplunkSearchStatusMetricConfig provides config for the splunk.search.status metric.
+type SplunkSearchStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkSearchStatusAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkSearchStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkSearchStatusConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkSearchStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1748,10 +1748,10 @@ func (ms *SplunkSearchStatusConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkSearchStatusConfig) Validate() error {
+func (ms *SplunkSearchStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkSearchStatusAttributeKeySplunkSearchState, SplunkSearchStatusAttributeKeySplunkSplunkdBuild, SplunkSearchStatusAttributeKeySplunkSplunkdVersion:
+		case SplunkSearchStatusMetricAttributeKeySplunkSearchState, SplunkSearchStatusMetricAttributeKeySplunkSplunkdBuild, SplunkSearchStatusMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.search.status doesn't have an attribute %v, valid attributes: [splunk.search.state, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1766,24 +1766,24 @@ func (ms *SplunkSearchStatusConfig) Validate() error {
 	return nil
 }
 
-// SplunkSearchSuccessAttributeKey specifies the key of an attribute for the splunk.search.success metric.
-type SplunkSearchSuccessAttributeKey string
+// SplunkSearchSuccessMetricAttributeKey specifies the key of an attribute for the splunk.search.success metric.
+type SplunkSearchSuccessMetricAttributeKey string
 
 const (
-	SplunkSearchSuccessAttributeKeySplunkSplunkdBuild   SplunkSearchSuccessAttributeKey = "splunk.splunkd.build"
-	SplunkSearchSuccessAttributeKeySplunkSplunkdVersion SplunkSearchSuccessAttributeKey = "splunk.splunkd.version"
+	SplunkSearchSuccessMetricAttributeKeySplunkSplunkdBuild   SplunkSearchSuccessMetricAttributeKey = "splunk.splunkd.build"
+	SplunkSearchSuccessMetricAttributeKeySplunkSplunkdVersion SplunkSearchSuccessMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkSearchSuccessConfig provides config for the splunk.search.success metric.
-type SplunkSearchSuccessConfig struct {
+// SplunkSearchSuccessMetricConfig provides config for the splunk.search.success metric.
+type SplunkSearchSuccessMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkSearchSuccessAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkSearchSuccessMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkSearchSuccessConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkSearchSuccessMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1797,10 +1797,10 @@ func (ms *SplunkSearchSuccessConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkSearchSuccessConfig) Validate() error {
+func (ms *SplunkSearchSuccessMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkSearchSuccessAttributeKeySplunkSplunkdBuild, SplunkSearchSuccessAttributeKeySplunkSplunkdVersion:
+		case SplunkSearchSuccessMetricAttributeKeySplunkSplunkdBuild, SplunkSearchSuccessMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.search.success doesn't have an attribute %v, valid attributes: [splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1815,25 +1815,25 @@ func (ms *SplunkSearchSuccessConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerIntrospectionQueuesCurrentAttributeKey specifies the key of an attribute for the splunk.server.introspection.queues.current metric.
-type SplunkServerIntrospectionQueuesCurrentAttributeKey string
+// SplunkServerIntrospectionQueuesCurrentMetricAttributeKey specifies the key of an attribute for the splunk.server.introspection.queues.current metric.
+type SplunkServerIntrospectionQueuesCurrentMetricAttributeKey string
 
 const (
-	SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkQueueName      SplunkServerIntrospectionQueuesCurrentAttributeKey = "splunk.queue.name"
-	SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdBuild   SplunkServerIntrospectionQueuesCurrentAttributeKey = "splunk.splunkd.build"
-	SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdVersion SplunkServerIntrospectionQueuesCurrentAttributeKey = "splunk.splunkd.version"
+	SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkQueueName      SplunkServerIntrospectionQueuesCurrentMetricAttributeKey = "splunk.queue.name"
+	SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdBuild   SplunkServerIntrospectionQueuesCurrentMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdVersion SplunkServerIntrospectionQueuesCurrentMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerIntrospectionQueuesCurrentConfig provides config for the splunk.server.introspection.queues.current metric.
-type SplunkServerIntrospectionQueuesCurrentConfig struct {
+// SplunkServerIntrospectionQueuesCurrentMetricConfig provides config for the splunk.server.introspection.queues.current metric.
+type SplunkServerIntrospectionQueuesCurrentMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerIntrospectionQueuesCurrentAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerIntrospectionQueuesCurrentMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerIntrospectionQueuesCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerIntrospectionQueuesCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1847,10 +1847,10 @@ func (ms *SplunkServerIntrospectionQueuesCurrentConfig) Unmarshal(parser *confma
 	return nil
 }
 
-func (ms *SplunkServerIntrospectionQueuesCurrentConfig) Validate() error {
+func (ms *SplunkServerIntrospectionQueuesCurrentMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdVersion:
+		case SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.introspection.queues.current doesn't have an attribute %v, valid attributes: [splunk.queue.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1865,25 +1865,25 @@ func (ms *SplunkServerIntrospectionQueuesCurrentConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerIntrospectionQueuesCurrentBytesAttributeKey specifies the key of an attribute for the splunk.server.introspection.queues.current.bytes metric.
-type SplunkServerIntrospectionQueuesCurrentBytesAttributeKey string
+// SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKey specifies the key of an attribute for the splunk.server.introspection.queues.current.bytes metric.
+type SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKey string
 
 const (
-	SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkQueueName      SplunkServerIntrospectionQueuesCurrentBytesAttributeKey = "splunk.queue.name"
-	SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdBuild   SplunkServerIntrospectionQueuesCurrentBytesAttributeKey = "splunk.splunkd.build"
-	SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdVersion SplunkServerIntrospectionQueuesCurrentBytesAttributeKey = "splunk.splunkd.version"
+	SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkQueueName      SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKey = "splunk.queue.name"
+	SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdBuild   SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdVersion SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerIntrospectionQueuesCurrentBytesConfig provides config for the splunk.server.introspection.queues.current.bytes metric.
-type SplunkServerIntrospectionQueuesCurrentBytesConfig struct {
+// SplunkServerIntrospectionQueuesCurrentBytesMetricConfig provides config for the splunk.server.introspection.queues.current.bytes metric.
+type SplunkServerIntrospectionQueuesCurrentBytesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerIntrospectionQueuesCurrentBytesAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerIntrospectionQueuesCurrentBytesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerIntrospectionQueuesCurrentBytesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1897,10 +1897,10 @@ func (ms *SplunkServerIntrospectionQueuesCurrentBytesConfig) Unmarshal(parser *c
 	return nil
 }
 
-func (ms *SplunkServerIntrospectionQueuesCurrentBytesConfig) Validate() error {
+func (ms *SplunkServerIntrospectionQueuesCurrentBytesMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdVersion:
+		case SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.introspection.queues.current.bytes doesn't have an attribute %v, valid attributes: [splunk.queue.name, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1915,25 +1915,25 @@ func (ms *SplunkServerIntrospectionQueuesCurrentBytesConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsAdhocAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.adhoc metric.
-type SplunkServerSearchartifactsAdhocAttributeKey string
+// SplunkServerSearchartifactsAdhocMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.adhoc metric.
+type SplunkServerSearchartifactsAdhocMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsAdhocAttributeKeySplunkHost           SplunkServerSearchartifactsAdhocAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsAdhocAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsAdhocAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkHost           SplunkServerSearchartifactsAdhocMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsAdhocMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsAdhocMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsAdhocConfig provides config for the splunk.server.searchartifacts.adhoc metric.
-type SplunkServerSearchartifactsAdhocConfig struct {
+// SplunkServerSearchartifactsAdhocMetricConfig provides config for the splunk.server.searchartifacts.adhoc metric.
+type SplunkServerSearchartifactsAdhocMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsAdhocAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsAdhocMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsAdhocConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsAdhocMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1947,10 +1947,10 @@ func (ms *SplunkServerSearchartifactsAdhocConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsAdhocConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsAdhocMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsAdhocAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.adhoc doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -1965,25 +1965,25 @@ func (ms *SplunkServerSearchartifactsAdhocConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsAdhocSizeAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.adhoc.size metric.
-type SplunkServerSearchartifactsAdhocSizeAttributeKey string
+// SplunkServerSearchartifactsAdhocSizeMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.adhoc.size metric.
+type SplunkServerSearchartifactsAdhocSizeMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkHost           SplunkServerSearchartifactsAdhocSizeAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsAdhocSizeAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsAdhocSizeAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkHost           SplunkServerSearchartifactsAdhocSizeMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsAdhocSizeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsAdhocSizeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsAdhocSizeConfig provides config for the splunk.server.searchartifacts.adhoc.size metric.
-type SplunkServerSearchartifactsAdhocSizeConfig struct {
+// SplunkServerSearchartifactsAdhocSizeMetricConfig provides config for the splunk.server.searchartifacts.adhoc.size metric.
+type SplunkServerSearchartifactsAdhocSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsAdhocSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsAdhocSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsAdhocSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsAdhocSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1997,10 +1997,10 @@ func (ms *SplunkServerSearchartifactsAdhocSizeConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsAdhocSizeConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsAdhocSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.adhoc.size doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2015,25 +2015,25 @@ func (ms *SplunkServerSearchartifactsAdhocSizeConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsCompletedAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.completed metric.
-type SplunkServerSearchartifactsCompletedAttributeKey string
+// SplunkServerSearchartifactsCompletedMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.completed metric.
+type SplunkServerSearchartifactsCompletedMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsCompletedAttributeKeySplunkHost           SplunkServerSearchartifactsCompletedAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsCompletedAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsCompletedAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkHost           SplunkServerSearchartifactsCompletedMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsCompletedMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsCompletedMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsCompletedConfig provides config for the splunk.server.searchartifacts.completed metric.
-type SplunkServerSearchartifactsCompletedConfig struct {
+// SplunkServerSearchartifactsCompletedMetricConfig provides config for the splunk.server.searchartifacts.completed metric.
+type SplunkServerSearchartifactsCompletedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsCompletedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsCompletedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsCompletedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsCompletedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2047,10 +2047,10 @@ func (ms *SplunkServerSearchartifactsCompletedConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsCompletedConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsCompletedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsCompletedAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.completed doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2065,25 +2065,25 @@ func (ms *SplunkServerSearchartifactsCompletedConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsCompletedSizeAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.completed.size metric.
-type SplunkServerSearchartifactsCompletedSizeAttributeKey string
+// SplunkServerSearchartifactsCompletedSizeMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.completed.size metric.
+type SplunkServerSearchartifactsCompletedSizeMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkHost           SplunkServerSearchartifactsCompletedSizeAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsCompletedSizeAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsCompletedSizeAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkHost           SplunkServerSearchartifactsCompletedSizeMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsCompletedSizeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsCompletedSizeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsCompletedSizeConfig provides config for the splunk.server.searchartifacts.completed.size metric.
-type SplunkServerSearchartifactsCompletedSizeConfig struct {
+// SplunkServerSearchartifactsCompletedSizeMetricConfig provides config for the splunk.server.searchartifacts.completed.size metric.
+type SplunkServerSearchartifactsCompletedSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsCompletedSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsCompletedSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsCompletedSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsCompletedSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2097,10 +2097,10 @@ func (ms *SplunkServerSearchartifactsCompletedSizeConfig) Unmarshal(parser *conf
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsCompletedSizeConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsCompletedSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.completed.size doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2115,25 +2115,25 @@ func (ms *SplunkServerSearchartifactsCompletedSizeConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsIncompleteAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.incomplete metric.
-type SplunkServerSearchartifactsIncompleteAttributeKey string
+// SplunkServerSearchartifactsIncompleteMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.incomplete metric.
+type SplunkServerSearchartifactsIncompleteMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsIncompleteAttributeKeySplunkHost           SplunkServerSearchartifactsIncompleteAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsIncompleteAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsIncompleteAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkHost           SplunkServerSearchartifactsIncompleteMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsIncompleteMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsIncompleteMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsIncompleteConfig provides config for the splunk.server.searchartifacts.incomplete metric.
-type SplunkServerSearchartifactsIncompleteConfig struct {
+// SplunkServerSearchartifactsIncompleteMetricConfig provides config for the splunk.server.searchartifacts.incomplete metric.
+type SplunkServerSearchartifactsIncompleteMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsIncompleteAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsIncompleteMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsIncompleteConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsIncompleteMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2147,10 +2147,10 @@ func (ms *SplunkServerSearchartifactsIncompleteConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsIncompleteConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsIncompleteMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsIncompleteAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.incomplete doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2165,25 +2165,25 @@ func (ms *SplunkServerSearchartifactsIncompleteConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsIncompleteSizeAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.incomplete.size metric.
-type SplunkServerSearchartifactsIncompleteSizeAttributeKey string
+// SplunkServerSearchartifactsIncompleteSizeMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.incomplete.size metric.
+type SplunkServerSearchartifactsIncompleteSizeMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkHost           SplunkServerSearchartifactsIncompleteSizeAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsIncompleteSizeAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsIncompleteSizeAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkHost           SplunkServerSearchartifactsIncompleteSizeMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsIncompleteSizeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsIncompleteSizeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsIncompleteSizeConfig provides config for the splunk.server.searchartifacts.incomplete.size metric.
-type SplunkServerSearchartifactsIncompleteSizeConfig struct {
+// SplunkServerSearchartifactsIncompleteSizeMetricConfig provides config for the splunk.server.searchartifacts.incomplete.size metric.
+type SplunkServerSearchartifactsIncompleteSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsIncompleteSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsIncompleteSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsIncompleteSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsIncompleteSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2197,10 +2197,10 @@ func (ms *SplunkServerSearchartifactsIncompleteSizeConfig) Unmarshal(parser *con
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsIncompleteSizeConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsIncompleteSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.incomplete.size doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2215,25 +2215,25 @@ func (ms *SplunkServerSearchartifactsIncompleteSizeConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsInvalidAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.invalid metric.
-type SplunkServerSearchartifactsInvalidAttributeKey string
+// SplunkServerSearchartifactsInvalidMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.invalid metric.
+type SplunkServerSearchartifactsInvalidMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsInvalidAttributeKeySplunkHost           SplunkServerSearchartifactsInvalidAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsInvalidAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsInvalidAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkHost           SplunkServerSearchartifactsInvalidMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsInvalidMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsInvalidMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsInvalidConfig provides config for the splunk.server.searchartifacts.invalid metric.
-type SplunkServerSearchartifactsInvalidConfig struct {
+// SplunkServerSearchartifactsInvalidMetricConfig provides config for the splunk.server.searchartifacts.invalid metric.
+type SplunkServerSearchartifactsInvalidMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsInvalidAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsInvalidMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsInvalidConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsInvalidMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2247,10 +2247,10 @@ func (ms *SplunkServerSearchartifactsInvalidConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsInvalidConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsInvalidMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsInvalidAttributeKeySplunkHost, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkHost, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.invalid doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2265,25 +2265,25 @@ func (ms *SplunkServerSearchartifactsInvalidConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsJobCacheCountAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.job.cache.count metric.
-type SplunkServerSearchartifactsJobCacheCountAttributeKey string
+// SplunkServerSearchartifactsJobCacheCountMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.job.cache.count metric.
+type SplunkServerSearchartifactsJobCacheCountMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkHost           SplunkServerSearchartifactsJobCacheCountAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsJobCacheCountAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsJobCacheCountAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkHost           SplunkServerSearchartifactsJobCacheCountMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsJobCacheCountMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsJobCacheCountMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsJobCacheCountConfig provides config for the splunk.server.searchartifacts.job.cache.count metric.
-type SplunkServerSearchartifactsJobCacheCountConfig struct {
+// SplunkServerSearchartifactsJobCacheCountMetricConfig provides config for the splunk.server.searchartifacts.job.cache.count metric.
+type SplunkServerSearchartifactsJobCacheCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsJobCacheCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsJobCacheCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsJobCacheCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsJobCacheCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2297,10 +2297,10 @@ func (ms *SplunkServerSearchartifactsJobCacheCountConfig) Unmarshal(parser *conf
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsJobCacheCountConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsJobCacheCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.job.cache.count doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2315,26 +2315,26 @@ func (ms *SplunkServerSearchartifactsJobCacheCountConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsJobCacheSizeAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.job.cache.size metric.
-type SplunkServerSearchartifactsJobCacheSizeAttributeKey string
+// SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.job.cache.size metric.
+type SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkHost                     SplunkServerSearchartifactsJobCacheSizeAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSearchartifactsCacheType SplunkServerSearchartifactsJobCacheSizeAttributeKey = "splunk.searchartifacts.cache.type"
-	SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdBuild             SplunkServerSearchartifactsJobCacheSizeAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdVersion           SplunkServerSearchartifactsJobCacheSizeAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkHost                     SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSearchartifactsCacheType SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey = "splunk.searchartifacts.cache.type"
+	SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdBuild             SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdVersion           SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsJobCacheSizeConfig provides config for the splunk.server.searchartifacts.job.cache.size metric.
-type SplunkServerSearchartifactsJobCacheSizeConfig struct {
+// SplunkServerSearchartifactsJobCacheSizeMetricConfig provides config for the splunk.server.searchartifacts.job.cache.size metric.
+type SplunkServerSearchartifactsJobCacheSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsJobCacheSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsJobCacheSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsJobCacheSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2348,10 +2348,10 @@ func (ms *SplunkServerSearchartifactsJobCacheSizeConfig) Unmarshal(parser *confm
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsJobCacheSizeConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsJobCacheSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSearchartifactsCacheType, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSearchartifactsCacheType, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.job.cache.size doesn't have an attribute %v, valid attributes: [splunk.host, splunk.searchartifacts.cache.type, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2366,25 +2366,25 @@ func (ms *SplunkServerSearchartifactsJobCacheSizeConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsSavedsearchesAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.savedsearches metric.
-type SplunkServerSearchartifactsSavedsearchesAttributeKey string
+// SplunkServerSearchartifactsSavedsearchesMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.savedsearches metric.
+type SplunkServerSearchartifactsSavedsearchesMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkHost           SplunkServerSearchartifactsSavedsearchesAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsSavedsearchesAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsSavedsearchesAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkHost           SplunkServerSearchartifactsSavedsearchesMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsSavedsearchesMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsSavedsearchesMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsSavedsearchesConfig provides config for the splunk.server.searchartifacts.savedsearches metric.
-type SplunkServerSearchartifactsSavedsearchesConfig struct {
+// SplunkServerSearchartifactsSavedsearchesMetricConfig provides config for the splunk.server.searchartifacts.savedsearches metric.
+type SplunkServerSearchartifactsSavedsearchesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsSavedsearchesAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsSavedsearchesMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsSavedsearchesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsSavedsearchesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2398,10 +2398,10 @@ func (ms *SplunkServerSearchartifactsSavedsearchesConfig) Unmarshal(parser *conf
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsSavedsearchesConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsSavedsearchesMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkHost, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkHost, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.savedsearches doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2416,25 +2416,25 @@ func (ms *SplunkServerSearchartifactsSavedsearchesConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsScheduledAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.scheduled metric.
-type SplunkServerSearchartifactsScheduledAttributeKey string
+// SplunkServerSearchartifactsScheduledMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.scheduled metric.
+type SplunkServerSearchartifactsScheduledMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsScheduledAttributeKeySplunkHost           SplunkServerSearchartifactsScheduledAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsScheduledAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsScheduledAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkHost           SplunkServerSearchartifactsScheduledMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsScheduledMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsScheduledMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsScheduledConfig provides config for the splunk.server.searchartifacts.scheduled metric.
-type SplunkServerSearchartifactsScheduledConfig struct {
+// SplunkServerSearchartifactsScheduledMetricConfig provides config for the splunk.server.searchartifacts.scheduled metric.
+type SplunkServerSearchartifactsScheduledMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsScheduledAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsScheduledMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsScheduledConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsScheduledMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2448,10 +2448,10 @@ func (ms *SplunkServerSearchartifactsScheduledConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsScheduledConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsScheduledMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsScheduledAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.scheduled doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2466,25 +2466,25 @@ func (ms *SplunkServerSearchartifactsScheduledConfig) Validate() error {
 	return nil
 }
 
-// SplunkServerSearchartifactsScheduledSizeAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.scheduled.size metric.
-type SplunkServerSearchartifactsScheduledSizeAttributeKey string
+// SplunkServerSearchartifactsScheduledSizeMetricAttributeKey specifies the key of an attribute for the splunk.server.searchartifacts.scheduled.size metric.
+type SplunkServerSearchartifactsScheduledSizeMetricAttributeKey string
 
 const (
-	SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkHost           SplunkServerSearchartifactsScheduledSizeAttributeKey = "splunk.host"
-	SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsScheduledSizeAttributeKey = "splunk.splunkd.build"
-	SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsScheduledSizeAttributeKey = "splunk.splunkd.version"
+	SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkHost           SplunkServerSearchartifactsScheduledSizeMetricAttributeKey = "splunk.host"
+	SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdBuild   SplunkServerSearchartifactsScheduledSizeMetricAttributeKey = "splunk.splunkd.build"
+	SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdVersion SplunkServerSearchartifactsScheduledSizeMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkServerSearchartifactsScheduledSizeConfig provides config for the splunk.server.searchartifacts.scheduled.size metric.
-type SplunkServerSearchartifactsScheduledSizeConfig struct {
+// SplunkServerSearchartifactsScheduledSizeMetricConfig provides config for the splunk.server.searchartifacts.scheduled.size metric.
+type SplunkServerSearchartifactsScheduledSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkServerSearchartifactsScheduledSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkServerSearchartifactsScheduledSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkServerSearchartifactsScheduledSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkServerSearchartifactsScheduledSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2498,10 +2498,10 @@ func (ms *SplunkServerSearchartifactsScheduledSizeConfig) Unmarshal(parser *conf
 	return nil
 }
 
-func (ms *SplunkServerSearchartifactsScheduledSizeConfig) Validate() error {
+func (ms *SplunkServerSearchartifactsScheduledSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdVersion:
+		case SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.server.searchartifacts.scheduled.size doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2516,25 +2516,25 @@ func (ms *SplunkServerSearchartifactsScheduledSizeConfig) Validate() error {
 	return nil
 }
 
-// SplunkTypingQueueRatioAttributeKey specifies the key of an attribute for the splunk.typing.queue.ratio metric.
-type SplunkTypingQueueRatioAttributeKey string
+// SplunkTypingQueueRatioMetricAttributeKey specifies the key of an attribute for the splunk.typing.queue.ratio metric.
+type SplunkTypingQueueRatioMetricAttributeKey string
 
 const (
-	SplunkTypingQueueRatioAttributeKeySplunkHost           SplunkTypingQueueRatioAttributeKey = "splunk.host"
-	SplunkTypingQueueRatioAttributeKeySplunkSplunkdBuild   SplunkTypingQueueRatioAttributeKey = "splunk.splunkd.build"
-	SplunkTypingQueueRatioAttributeKeySplunkSplunkdVersion SplunkTypingQueueRatioAttributeKey = "splunk.splunkd.version"
+	SplunkTypingQueueRatioMetricAttributeKeySplunkHost           SplunkTypingQueueRatioMetricAttributeKey = "splunk.host"
+	SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdBuild   SplunkTypingQueueRatioMetricAttributeKey = "splunk.splunkd.build"
+	SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdVersion SplunkTypingQueueRatioMetricAttributeKey = "splunk.splunkd.version"
 )
 
-// SplunkTypingQueueRatioConfig provides config for the splunk.typing.queue.ratio metric.
-type SplunkTypingQueueRatioConfig struct {
+// SplunkTypingQueueRatioMetricConfig provides config for the splunk.typing.queue.ratio metric.
+type SplunkTypingQueueRatioMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SplunkTypingQueueRatioAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkTypingQueueRatioMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SplunkTypingQueueRatioConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SplunkTypingQueueRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2548,10 +2548,10 @@ func (ms *SplunkTypingQueueRatioConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SplunkTypingQueueRatioConfig) Validate() error {
+func (ms *SplunkTypingQueueRatioMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkTypingQueueRatioAttributeKeySplunkHost, SplunkTypingQueueRatioAttributeKeySplunkSplunkdBuild, SplunkTypingQueueRatioAttributeKeySplunkSplunkdVersion:
+		case SplunkTypingQueueRatioMetricAttributeKeySplunkHost, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdVersion:
 		default:
 			return fmt.Errorf("metric splunk.typing.queue.ratio doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
@@ -2568,315 +2568,315 @@ func (ms *SplunkTypingQueueRatioConfig) Validate() error {
 
 // MetricsConfig provides config for splunkenterprise metrics.
 type MetricsConfig struct {
-	SplunkAggregationQueueRatio                 SplunkAggregationQueueRatioConfig                 `mapstructure:"splunk.aggregation.queue.ratio"`
-	SplunkBucketsSearchableStatus               SplunkBucketsSearchableStatusConfig               `mapstructure:"splunk.buckets.searchable.status"`
-	SplunkDataIndexesExtendedBucketCount        SplunkDataIndexesExtendedBucketCountConfig        `mapstructure:"splunk.data.indexes.extended.bucket.count"`
-	SplunkDataIndexesExtendedBucketEventCount   SplunkDataIndexesExtendedBucketEventCountConfig   `mapstructure:"splunk.data.indexes.extended.bucket.event.count"`
-	SplunkDataIndexesExtendedBucketHotCount     SplunkDataIndexesExtendedBucketHotCountConfig     `mapstructure:"splunk.data.indexes.extended.bucket.hot.count"`
-	SplunkDataIndexesExtendedBucketWarmCount    SplunkDataIndexesExtendedBucketWarmCountConfig    `mapstructure:"splunk.data.indexes.extended.bucket.warm.count"`
-	SplunkDataIndexesExtendedEventCount         SplunkDataIndexesExtendedEventCountConfig         `mapstructure:"splunk.data.indexes.extended.event.count"`
-	SplunkDataIndexesExtendedRawSize            SplunkDataIndexesExtendedRawSizeConfig            `mapstructure:"splunk.data.indexes.extended.raw.size"`
-	SplunkDataIndexesExtendedTotalSize          SplunkDataIndexesExtendedTotalSizeConfig          `mapstructure:"splunk.data.indexes.extended.total.size"`
-	SplunkHealth                                SplunkHealthConfig                                `mapstructure:"splunk.health"`
-	SplunkIndexerAvgRate                        SplunkIndexerAvgRateConfig                        `mapstructure:"splunk.indexer.avg.rate"`
-	SplunkIndexerCPUTime                        SplunkIndexerCPUTimeConfig                        `mapstructure:"splunk.indexer.cpu.time"`
-	SplunkIndexerQueueRatio                     SplunkIndexerQueueRatioConfig                     `mapstructure:"splunk.indexer.queue.ratio"`
-	SplunkIndexerRawWriteTime                   SplunkIndexerRawWriteTimeConfig                   `mapstructure:"splunk.indexer.raw.write.time"`
-	SplunkIndexerRollingrestartStatus           SplunkIndexerRollingrestartStatusConfig           `mapstructure:"splunk.indexer.rollingrestart.status"`
-	SplunkIndexerThroughput                     SplunkIndexerThroughputConfig                     `mapstructure:"splunk.indexer.throughput"`
-	SplunkIndexesAvgSize                        SplunkIndexesAvgSizeConfig                        `mapstructure:"splunk.indexes.avg.size"`
-	SplunkIndexesAvgUsage                       SplunkIndexesAvgUsageConfig                       `mapstructure:"splunk.indexes.avg.usage"`
-	SplunkIndexesBucketCount                    SplunkIndexesBucketCountConfig                    `mapstructure:"splunk.indexes.bucket.count"`
-	SplunkIndexesMedianDataAge                  SplunkIndexesMedianDataAgeConfig                  `mapstructure:"splunk.indexes.median.data.age"`
-	SplunkIndexesSize                           SplunkIndexesSizeConfig                           `mapstructure:"splunk.indexes.size"`
-	SplunkIoAvgIops                             SplunkIoAvgIopsConfig                             `mapstructure:"splunk.io.avg.iops"`
-	SplunkKvstoreBackupStatus                   SplunkKvstoreBackupStatusConfig                   `mapstructure:"splunk.kvstore.backup.status"`
-	SplunkKvstoreReplicationStatus              SplunkKvstoreReplicationStatusConfig              `mapstructure:"splunk.kvstore.replication.status"`
-	SplunkKvstoreStatus                         SplunkKvstoreStatusConfig                         `mapstructure:"splunk.kvstore.status"`
-	SplunkLicenseExpirationSecondsRemaining     SplunkLicenseExpirationSecondsRemainingConfig     `mapstructure:"splunk.license.expiration.seconds_remaining"`
-	SplunkLicenseIndexUsage                     SplunkLicenseIndexUsageConfig                     `mapstructure:"splunk.license.index.usage"`
-	SplunkParseQueueRatio                       SplunkParseQueueRatioConfig                       `mapstructure:"splunk.parse.queue.ratio"`
-	SplunkPipelineSetCount                      SplunkPipelineSetCountConfig                      `mapstructure:"splunk.pipeline.set.count"`
-	SplunkSchedulerAvgExecutionLatency          SplunkSchedulerAvgExecutionLatencyConfig          `mapstructure:"splunk.scheduler.avg.execution.latency"`
-	SplunkSchedulerAvgRunTime                   SplunkSchedulerAvgRunTimeConfig                   `mapstructure:"splunk.scheduler.avg.run.time"`
-	SplunkSchedulerCompletionRatio              SplunkSchedulerCompletionRatioConfig              `mapstructure:"splunk.scheduler.completion.ratio"`
-	SplunkSearchDuration                        SplunkSearchDurationConfig                        `mapstructure:"splunk.search.duration"`
-	SplunkSearchInitiation                      SplunkSearchInitiationConfig                      `mapstructure:"splunk.search.initiation"`
-	SplunkSearchStatus                          SplunkSearchStatusConfig                          `mapstructure:"splunk.search.status"`
-	SplunkSearchSuccess                         SplunkSearchSuccessConfig                         `mapstructure:"splunk.search.success"`
-	SplunkServerIntrospectionQueuesCurrent      SplunkServerIntrospectionQueuesCurrentConfig      `mapstructure:"splunk.server.introspection.queues.current"`
-	SplunkServerIntrospectionQueuesCurrentBytes SplunkServerIntrospectionQueuesCurrentBytesConfig `mapstructure:"splunk.server.introspection.queues.current.bytes"`
-	SplunkServerSearchartifactsAdhoc            SplunkServerSearchartifactsAdhocConfig            `mapstructure:"splunk.server.searchartifacts.adhoc"`
-	SplunkServerSearchartifactsAdhocSize        SplunkServerSearchartifactsAdhocSizeConfig        `mapstructure:"splunk.server.searchartifacts.adhoc.size"`
-	SplunkServerSearchartifactsCompleted        SplunkServerSearchartifactsCompletedConfig        `mapstructure:"splunk.server.searchartifacts.completed"`
-	SplunkServerSearchartifactsCompletedSize    SplunkServerSearchartifactsCompletedSizeConfig    `mapstructure:"splunk.server.searchartifacts.completed.size"`
-	SplunkServerSearchartifactsIncomplete       SplunkServerSearchartifactsIncompleteConfig       `mapstructure:"splunk.server.searchartifacts.incomplete"`
-	SplunkServerSearchartifactsIncompleteSize   SplunkServerSearchartifactsIncompleteSizeConfig   `mapstructure:"splunk.server.searchartifacts.incomplete.size"`
-	SplunkServerSearchartifactsInvalid          SplunkServerSearchartifactsInvalidConfig          `mapstructure:"splunk.server.searchartifacts.invalid"`
-	SplunkServerSearchartifactsJobCacheCount    SplunkServerSearchartifactsJobCacheCountConfig    `mapstructure:"splunk.server.searchartifacts.job.cache.count"`
-	SplunkServerSearchartifactsJobCacheSize     SplunkServerSearchartifactsJobCacheSizeConfig     `mapstructure:"splunk.server.searchartifacts.job.cache.size"`
-	SplunkServerSearchartifactsSavedsearches    SplunkServerSearchartifactsSavedsearchesConfig    `mapstructure:"splunk.server.searchartifacts.savedsearches"`
-	SplunkServerSearchartifactsScheduled        SplunkServerSearchartifactsScheduledConfig        `mapstructure:"splunk.server.searchartifacts.scheduled"`
-	SplunkServerSearchartifactsScheduledSize    SplunkServerSearchartifactsScheduledSizeConfig    `mapstructure:"splunk.server.searchartifacts.scheduled.size"`
-	SplunkTypingQueueRatio                      SplunkTypingQueueRatioConfig                      `mapstructure:"splunk.typing.queue.ratio"`
+	SplunkAggregationQueueRatio                 SplunkAggregationQueueRatioMetricConfig                 `mapstructure:"splunk.aggregation.queue.ratio"`
+	SplunkBucketsSearchableStatus               SplunkBucketsSearchableStatusMetricConfig               `mapstructure:"splunk.buckets.searchable.status"`
+	SplunkDataIndexesExtendedBucketCount        SplunkDataIndexesExtendedBucketCountMetricConfig        `mapstructure:"splunk.data.indexes.extended.bucket.count"`
+	SplunkDataIndexesExtendedBucketEventCount   SplunkDataIndexesExtendedBucketEventCountMetricConfig   `mapstructure:"splunk.data.indexes.extended.bucket.event.count"`
+	SplunkDataIndexesExtendedBucketHotCount     SplunkDataIndexesExtendedBucketHotCountMetricConfig     `mapstructure:"splunk.data.indexes.extended.bucket.hot.count"`
+	SplunkDataIndexesExtendedBucketWarmCount    SplunkDataIndexesExtendedBucketWarmCountMetricConfig    `mapstructure:"splunk.data.indexes.extended.bucket.warm.count"`
+	SplunkDataIndexesExtendedEventCount         SplunkDataIndexesExtendedEventCountMetricConfig         `mapstructure:"splunk.data.indexes.extended.event.count"`
+	SplunkDataIndexesExtendedRawSize            SplunkDataIndexesExtendedRawSizeMetricConfig            `mapstructure:"splunk.data.indexes.extended.raw.size"`
+	SplunkDataIndexesExtendedTotalSize          SplunkDataIndexesExtendedTotalSizeMetricConfig          `mapstructure:"splunk.data.indexes.extended.total.size"`
+	SplunkHealth                                SplunkHealthMetricConfig                                `mapstructure:"splunk.health"`
+	SplunkIndexerAvgRate                        SplunkIndexerAvgRateMetricConfig                        `mapstructure:"splunk.indexer.avg.rate"`
+	SplunkIndexerCPUTime                        SplunkIndexerCPUTimeMetricConfig                        `mapstructure:"splunk.indexer.cpu.time"`
+	SplunkIndexerQueueRatio                     SplunkIndexerQueueRatioMetricConfig                     `mapstructure:"splunk.indexer.queue.ratio"`
+	SplunkIndexerRawWriteTime                   SplunkIndexerRawWriteTimeMetricConfig                   `mapstructure:"splunk.indexer.raw.write.time"`
+	SplunkIndexerRollingrestartStatus           SplunkIndexerRollingrestartStatusMetricConfig           `mapstructure:"splunk.indexer.rollingrestart.status"`
+	SplunkIndexerThroughput                     SplunkIndexerThroughputMetricConfig                     `mapstructure:"splunk.indexer.throughput"`
+	SplunkIndexesAvgSize                        SplunkIndexesAvgSizeMetricConfig                        `mapstructure:"splunk.indexes.avg.size"`
+	SplunkIndexesAvgUsage                       SplunkIndexesAvgUsageMetricConfig                       `mapstructure:"splunk.indexes.avg.usage"`
+	SplunkIndexesBucketCount                    SplunkIndexesBucketCountMetricConfig                    `mapstructure:"splunk.indexes.bucket.count"`
+	SplunkIndexesMedianDataAge                  SplunkIndexesMedianDataAgeMetricConfig                  `mapstructure:"splunk.indexes.median.data.age"`
+	SplunkIndexesSize                           SplunkIndexesSizeMetricConfig                           `mapstructure:"splunk.indexes.size"`
+	SplunkIoAvgIops                             SplunkIoAvgIopsMetricConfig                             `mapstructure:"splunk.io.avg.iops"`
+	SplunkKvstoreBackupStatus                   SplunkKvstoreBackupStatusMetricConfig                   `mapstructure:"splunk.kvstore.backup.status"`
+	SplunkKvstoreReplicationStatus              SplunkKvstoreReplicationStatusMetricConfig              `mapstructure:"splunk.kvstore.replication.status"`
+	SplunkKvstoreStatus                         SplunkKvstoreStatusMetricConfig                         `mapstructure:"splunk.kvstore.status"`
+	SplunkLicenseExpirationSecondsRemaining     SplunkLicenseExpirationSecondsRemainingMetricConfig     `mapstructure:"splunk.license.expiration.seconds_remaining"`
+	SplunkLicenseIndexUsage                     SplunkLicenseIndexUsageMetricConfig                     `mapstructure:"splunk.license.index.usage"`
+	SplunkParseQueueRatio                       SplunkParseQueueRatioMetricConfig                       `mapstructure:"splunk.parse.queue.ratio"`
+	SplunkPipelineSetCount                      SplunkPipelineSetCountMetricConfig                      `mapstructure:"splunk.pipeline.set.count"`
+	SplunkSchedulerAvgExecutionLatency          SplunkSchedulerAvgExecutionLatencyMetricConfig          `mapstructure:"splunk.scheduler.avg.execution.latency"`
+	SplunkSchedulerAvgRunTime                   SplunkSchedulerAvgRunTimeMetricConfig                   `mapstructure:"splunk.scheduler.avg.run.time"`
+	SplunkSchedulerCompletionRatio              SplunkSchedulerCompletionRatioMetricConfig              `mapstructure:"splunk.scheduler.completion.ratio"`
+	SplunkSearchDuration                        SplunkSearchDurationMetricConfig                        `mapstructure:"splunk.search.duration"`
+	SplunkSearchInitiation                      SplunkSearchInitiationMetricConfig                      `mapstructure:"splunk.search.initiation"`
+	SplunkSearchStatus                          SplunkSearchStatusMetricConfig                          `mapstructure:"splunk.search.status"`
+	SplunkSearchSuccess                         SplunkSearchSuccessMetricConfig                         `mapstructure:"splunk.search.success"`
+	SplunkServerIntrospectionQueuesCurrent      SplunkServerIntrospectionQueuesCurrentMetricConfig      `mapstructure:"splunk.server.introspection.queues.current"`
+	SplunkServerIntrospectionQueuesCurrentBytes SplunkServerIntrospectionQueuesCurrentBytesMetricConfig `mapstructure:"splunk.server.introspection.queues.current.bytes"`
+	SplunkServerSearchartifactsAdhoc            SplunkServerSearchartifactsAdhocMetricConfig            `mapstructure:"splunk.server.searchartifacts.adhoc"`
+	SplunkServerSearchartifactsAdhocSize        SplunkServerSearchartifactsAdhocSizeMetricConfig        `mapstructure:"splunk.server.searchartifacts.adhoc.size"`
+	SplunkServerSearchartifactsCompleted        SplunkServerSearchartifactsCompletedMetricConfig        `mapstructure:"splunk.server.searchartifacts.completed"`
+	SplunkServerSearchartifactsCompletedSize    SplunkServerSearchartifactsCompletedSizeMetricConfig    `mapstructure:"splunk.server.searchartifacts.completed.size"`
+	SplunkServerSearchartifactsIncomplete       SplunkServerSearchartifactsIncompleteMetricConfig       `mapstructure:"splunk.server.searchartifacts.incomplete"`
+	SplunkServerSearchartifactsIncompleteSize   SplunkServerSearchartifactsIncompleteSizeMetricConfig   `mapstructure:"splunk.server.searchartifacts.incomplete.size"`
+	SplunkServerSearchartifactsInvalid          SplunkServerSearchartifactsInvalidMetricConfig          `mapstructure:"splunk.server.searchartifacts.invalid"`
+	SplunkServerSearchartifactsJobCacheCount    SplunkServerSearchartifactsJobCacheCountMetricConfig    `mapstructure:"splunk.server.searchartifacts.job.cache.count"`
+	SplunkServerSearchartifactsJobCacheSize     SplunkServerSearchartifactsJobCacheSizeMetricConfig     `mapstructure:"splunk.server.searchartifacts.job.cache.size"`
+	SplunkServerSearchartifactsSavedsearches    SplunkServerSearchartifactsSavedsearchesMetricConfig    `mapstructure:"splunk.server.searchartifacts.savedsearches"`
+	SplunkServerSearchartifactsScheduled        SplunkServerSearchartifactsScheduledMetricConfig        `mapstructure:"splunk.server.searchartifacts.scheduled"`
+	SplunkServerSearchartifactsScheduledSize    SplunkServerSearchartifactsScheduledSizeMetricConfig    `mapstructure:"splunk.server.searchartifacts.scheduled.size"`
+	SplunkTypingQueueRatio                      SplunkTypingQueueRatioMetricConfig                      `mapstructure:"splunk.typing.queue.ratio"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SplunkAggregationQueueRatio: SplunkAggregationQueueRatioConfig{
+		SplunkAggregationQueueRatio: SplunkAggregationQueueRatioMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkAggregationQueueRatioAttributeKey{SplunkAggregationQueueRatioAttributeKeySplunkHost, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkAggregationQueueRatioMetricAttributeKey{SplunkAggregationQueueRatioMetricAttributeKeySplunkHost, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusConfig{
+		SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkBucketsSearchableStatusAttributeKey{SplunkBucketsSearchableStatusAttributeKeySplunkHost, SplunkBucketsSearchableStatusAttributeKeySplunkIndexerSearchable, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdBuild, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkBucketsSearchableStatusMetricAttributeKey{SplunkBucketsSearchableStatusMetricAttributeKeySplunkHost, SplunkBucketsSearchableStatusMetricAttributeKeySplunkIndexerSearchable, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdBuild, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkDataIndexesExtendedBucketCount: SplunkDataIndexesExtendedBucketCountConfig{
+		SplunkDataIndexesExtendedBucketCount: SplunkDataIndexesExtendedBucketCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkDataIndexesExtendedBucketCountAttributeKey{SplunkDataIndexesExtendedBucketCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkDataIndexesExtendedBucketCountMetricAttributeKey{SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkDataIndexesExtendedBucketEventCount: SplunkDataIndexesExtendedBucketEventCountConfig{
+		SplunkDataIndexesExtendedBucketEventCount: SplunkDataIndexesExtendedBucketEventCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkDataIndexesExtendedBucketEventCountAttributeKey{SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey{SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkDataIndexesExtendedBucketHotCount: SplunkDataIndexesExtendedBucketHotCountConfig{
+		SplunkDataIndexesExtendedBucketHotCount: SplunkDataIndexesExtendedBucketHotCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkDataIndexesExtendedBucketHotCountAttributeKey{SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey{SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkDataIndexesExtendedBucketWarmCount: SplunkDataIndexesExtendedBucketWarmCountConfig{
+		SplunkDataIndexesExtendedBucketWarmCount: SplunkDataIndexesExtendedBucketWarmCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkDataIndexesExtendedBucketWarmCountAttributeKey{SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey{SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkDataIndexesExtendedEventCount: SplunkDataIndexesExtendedEventCountConfig{
+		SplunkDataIndexesExtendedEventCount: SplunkDataIndexesExtendedEventCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkDataIndexesExtendedEventCountAttributeKey{SplunkDataIndexesExtendedEventCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkDataIndexesExtendedEventCountMetricAttributeKey{SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkDataIndexesExtendedRawSize: SplunkDataIndexesExtendedRawSizeConfig{
+		SplunkDataIndexesExtendedRawSize: SplunkDataIndexesExtendedRawSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkDataIndexesExtendedRawSizeAttributeKey{SplunkDataIndexesExtendedRawSizeAttributeKeySplunkIndexName, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkDataIndexesExtendedRawSizeMetricAttributeKey{SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkDataIndexesExtendedTotalSize: SplunkDataIndexesExtendedTotalSizeConfig{
+		SplunkDataIndexesExtendedTotalSize: SplunkDataIndexesExtendedTotalSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkDataIndexesExtendedTotalSizeAttributeKey{SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkIndexName, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkDataIndexesExtendedTotalSizeMetricAttributeKey{SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkHealth: SplunkHealthConfig{
+		SplunkHealth: SplunkHealthMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkHealthAttributeKey{SplunkHealthAttributeKeySplunkFeature, SplunkHealthAttributeKeySplunkFeatureHealth, SplunkHealthAttributeKeySplunkSplunkdBuild, SplunkHealthAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkHealthMetricAttributeKey{SplunkHealthMetricAttributeKeySplunkFeature, SplunkHealthMetricAttributeKeySplunkFeatureHealth, SplunkHealthMetricAttributeKeySplunkSplunkdBuild, SplunkHealthMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexerAvgRate: SplunkIndexerAvgRateConfig{
+		SplunkIndexerAvgRate: SplunkIndexerAvgRateMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexerAvgRateAttributeKey{SplunkIndexerAvgRateAttributeKeySplunkHost, SplunkIndexerAvgRateAttributeKeySplunkSplunkdBuild, SplunkIndexerAvgRateAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexerAvgRateMetricAttributeKey{SplunkIndexerAvgRateMetricAttributeKeySplunkHost, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexerCPUTime: SplunkIndexerCPUTimeConfig{
+		SplunkIndexerCPUTime: SplunkIndexerCPUTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexerCPUTimeAttributeKey{SplunkIndexerCPUTimeAttributeKeySplunkHost, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdBuild, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexerCPUTimeMetricAttributeKey{SplunkIndexerCPUTimeMetricAttributeKeySplunkHost, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexerQueueRatio: SplunkIndexerQueueRatioConfig{
+		SplunkIndexerQueueRatio: SplunkIndexerQueueRatioMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexerQueueRatioAttributeKey{SplunkIndexerQueueRatioAttributeKeySplunkHost, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdBuild, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexerQueueRatioMetricAttributeKey{SplunkIndexerQueueRatioMetricAttributeKeySplunkHost, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexerRawWriteTime: SplunkIndexerRawWriteTimeConfig{
+		SplunkIndexerRawWriteTime: SplunkIndexerRawWriteTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexerRawWriteTimeAttributeKey{SplunkIndexerRawWriteTimeAttributeKeySplunkHost, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdBuild, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexerRawWriteTimeMetricAttributeKey{SplunkIndexerRawWriteTimeMetricAttributeKeySplunkHost, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexerRollingrestartStatus: SplunkIndexerRollingrestartStatusConfig{
+		SplunkIndexerRollingrestartStatus: SplunkIndexerRollingrestartStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexerRollingrestartStatusAttributeKey{SplunkIndexerRollingrestartStatusAttributeKeySplunkSearchableRestart, SplunkIndexerRollingrestartStatusAttributeKeySplunkRollingorrestart, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdBuild, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexerRollingrestartStatusMetricAttributeKey{SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSearchableRestart, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkRollingorrestart, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexerThroughput: SplunkIndexerThroughputConfig{
+		SplunkIndexerThroughput: SplunkIndexerThroughputMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexerThroughputAttributeKey{SplunkIndexerThroughputAttributeKeySplunkIndexerStatus, SplunkIndexerThroughputAttributeKeySplunkSplunkdBuild, SplunkIndexerThroughputAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexerThroughputMetricAttributeKey{SplunkIndexerThroughputMetricAttributeKeySplunkIndexerStatus, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexesAvgSize: SplunkIndexesAvgSizeConfig{
+		SplunkIndexesAvgSize: SplunkIndexesAvgSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexesAvgSizeAttributeKey{SplunkIndexesAvgSizeAttributeKeySplunkIndexName, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexesAvgSizeMetricAttributeKey{SplunkIndexesAvgSizeMetricAttributeKeySplunkIndexName, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexesAvgUsage: SplunkIndexesAvgUsageConfig{
+		SplunkIndexesAvgUsage: SplunkIndexesAvgUsageMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexesAvgUsageAttributeKey{SplunkIndexesAvgUsageAttributeKeySplunkIndexName, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexesAvgUsageMetricAttributeKey{SplunkIndexesAvgUsageMetricAttributeKeySplunkIndexName, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexesBucketCount: SplunkIndexesBucketCountConfig{
+		SplunkIndexesBucketCount: SplunkIndexesBucketCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexesBucketCountAttributeKey{SplunkIndexesBucketCountAttributeKeySplunkIndexName, SplunkIndexesBucketCountAttributeKeySplunkSplunkdBuild, SplunkIndexesBucketCountAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexesBucketCountMetricAttributeKey{SplunkIndexesBucketCountMetricAttributeKeySplunkIndexName, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexesMedianDataAge: SplunkIndexesMedianDataAgeConfig{
+		SplunkIndexesMedianDataAge: SplunkIndexesMedianDataAgeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexesMedianDataAgeAttributeKey{SplunkIndexesMedianDataAgeAttributeKeySplunkIndexName, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdBuild, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexesMedianDataAgeMetricAttributeKey{SplunkIndexesMedianDataAgeMetricAttributeKeySplunkIndexName, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIndexesSize: SplunkIndexesSizeConfig{
+		SplunkIndexesSize: SplunkIndexesSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIndexesSizeAttributeKey{SplunkIndexesSizeAttributeKeySplunkIndexName, SplunkIndexesSizeAttributeKeySplunkSplunkdBuild, SplunkIndexesSizeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIndexesSizeMetricAttributeKey{SplunkIndexesSizeMetricAttributeKeySplunkIndexName, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkIoAvgIops: SplunkIoAvgIopsConfig{
+		SplunkIoAvgIops: SplunkIoAvgIopsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkIoAvgIopsAttributeKey{SplunkIoAvgIopsAttributeKeySplunkHost, SplunkIoAvgIopsAttributeKeySplunkSplunkdBuild, SplunkIoAvgIopsAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkIoAvgIopsMetricAttributeKey{SplunkIoAvgIopsMetricAttributeKeySplunkHost, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdBuild, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkKvstoreBackupStatus: SplunkKvstoreBackupStatusConfig{
+		SplunkKvstoreBackupStatus: SplunkKvstoreBackupStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkKvstoreBackupStatusAttributeKey{SplunkKvstoreBackupStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkKvstoreBackupStatusMetricAttributeKey{SplunkKvstoreBackupStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusConfig{
+		SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkKvstoreReplicationStatusAttributeKey{SplunkKvstoreReplicationStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkKvstoreStatus: SplunkKvstoreStatusConfig{
+		SplunkKvstoreStatus: SplunkKvstoreStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkKvstoreStatusAttributeKey{SplunkKvstoreStatusAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreStatusAttributeKeySplunkKvstoreExternal, SplunkKvstoreStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreStatusAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkKvstoreStatusMetricAttributeKey{SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkLicenseExpirationSecondsRemaining: SplunkLicenseExpirationSecondsRemainingConfig{
+		SplunkLicenseExpirationSecondsRemaining: SplunkLicenseExpirationSecondsRemainingMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkLicenseExpirationSecondsRemainingAttributeKey{SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseStatus, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseLabel, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseType, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdBuild, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkLicenseExpirationSecondsRemainingMetricAttributeKey{SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseStatus, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseLabel, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseType, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdBuild, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkLicenseIndexUsage: SplunkLicenseIndexUsageConfig{
+		SplunkLicenseIndexUsage: SplunkLicenseIndexUsageMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkLicenseIndexUsageAttributeKey{SplunkLicenseIndexUsageAttributeKeySplunkIndexName, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdBuild, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkLicenseIndexUsageMetricAttributeKey{SplunkLicenseIndexUsageMetricAttributeKeySplunkIndexName, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdBuild, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkParseQueueRatio: SplunkParseQueueRatioConfig{
+		SplunkParseQueueRatio: SplunkParseQueueRatioMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkParseQueueRatioAttributeKey{SplunkParseQueueRatioAttributeKeySplunkHost, SplunkParseQueueRatioAttributeKeySplunkSplunkdBuild, SplunkParseQueueRatioAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkParseQueueRatioMetricAttributeKey{SplunkParseQueueRatioMetricAttributeKeySplunkHost, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkPipelineSetCount: SplunkPipelineSetCountConfig{
+		SplunkPipelineSetCount: SplunkPipelineSetCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkPipelineSetCountAttributeKey{SplunkPipelineSetCountAttributeKeySplunkHost, SplunkPipelineSetCountAttributeKeySplunkSplunkdBuild, SplunkPipelineSetCountAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkPipelineSetCountMetricAttributeKey{SplunkPipelineSetCountMetricAttributeKeySplunkHost, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdBuild, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkSchedulerAvgExecutionLatency: SplunkSchedulerAvgExecutionLatencyConfig{
+		SplunkSchedulerAvgExecutionLatency: SplunkSchedulerAvgExecutionLatencyMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkSchedulerAvgExecutionLatencyAttributeKey{SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkHost, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkSchedulerAvgExecutionLatencyMetricAttributeKey{SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkHost, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkSchedulerAvgRunTime: SplunkSchedulerAvgRunTimeConfig{
+		SplunkSchedulerAvgRunTime: SplunkSchedulerAvgRunTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkSchedulerAvgRunTimeAttributeKey{SplunkSchedulerAvgRunTimeAttributeKeySplunkHost, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkSchedulerAvgRunTimeMetricAttributeKey{SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkHost, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkSchedulerCompletionRatio: SplunkSchedulerCompletionRatioConfig{
+		SplunkSchedulerCompletionRatio: SplunkSchedulerCompletionRatioMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkSchedulerCompletionRatioAttributeKey{SplunkSchedulerCompletionRatioAttributeKeySplunkHost, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdBuild, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkSchedulerCompletionRatioMetricAttributeKey{SplunkSchedulerCompletionRatioMetricAttributeKeySplunkHost, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkSearchDuration: SplunkSearchDurationConfig{
+		SplunkSearchDuration: SplunkSearchDurationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkSearchDurationAttributeKey{SplunkSearchDurationAttributeKeySplunkSplunkdBuild, SplunkSearchDurationAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkSearchDurationMetricAttributeKey{SplunkSearchDurationMetricAttributeKeySplunkSplunkdBuild, SplunkSearchDurationMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkSearchInitiation: SplunkSearchInitiationConfig{
+		SplunkSearchInitiation: SplunkSearchInitiationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkSearchInitiationAttributeKey{SplunkSearchInitiationAttributeKeySplunkSplunkdBuild, SplunkSearchInitiationAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkSearchInitiationMetricAttributeKey{SplunkSearchInitiationMetricAttributeKeySplunkSplunkdBuild, SplunkSearchInitiationMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkSearchStatus: SplunkSearchStatusConfig{
+		SplunkSearchStatus: SplunkSearchStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkSearchStatusAttributeKey{SplunkSearchStatusAttributeKeySplunkSearchState, SplunkSearchStatusAttributeKeySplunkSplunkdBuild, SplunkSearchStatusAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkSearchStatusMetricAttributeKey{SplunkSearchStatusMetricAttributeKeySplunkSearchState, SplunkSearchStatusMetricAttributeKeySplunkSplunkdBuild, SplunkSearchStatusMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkSearchSuccess: SplunkSearchSuccessConfig{
+		SplunkSearchSuccess: SplunkSearchSuccessMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkSearchSuccessAttributeKey{SplunkSearchSuccessAttributeKeySplunkSplunkdBuild, SplunkSearchSuccessAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkSearchSuccessMetricAttributeKey{SplunkSearchSuccessMetricAttributeKeySplunkSplunkdBuild, SplunkSearchSuccessMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerIntrospectionQueuesCurrent: SplunkServerIntrospectionQueuesCurrentConfig{
+		SplunkServerIntrospectionQueuesCurrent: SplunkServerIntrospectionQueuesCurrentMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentAttributeKey{SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentMetricAttributeKey{SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerIntrospectionQueuesCurrentBytes: SplunkServerIntrospectionQueuesCurrentBytesConfig{
+		SplunkServerIntrospectionQueuesCurrentBytes: SplunkServerIntrospectionQueuesCurrentBytesMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentBytesAttributeKey{SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKey{SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsAdhoc: SplunkServerSearchartifactsAdhocConfig{
+		SplunkServerSearchartifactsAdhoc: SplunkServerSearchartifactsAdhocMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsAdhocAttributeKey{SplunkServerSearchartifactsAdhocAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsAdhocMetricAttributeKey{SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsAdhocSize: SplunkServerSearchartifactsAdhocSizeConfig{
+		SplunkServerSearchartifactsAdhocSize: SplunkServerSearchartifactsAdhocSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsAdhocSizeAttributeKey{SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsAdhocSizeMetricAttributeKey{SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsCompleted: SplunkServerSearchartifactsCompletedConfig{
+		SplunkServerSearchartifactsCompleted: SplunkServerSearchartifactsCompletedMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsCompletedAttributeKey{SplunkServerSearchartifactsCompletedAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsCompletedMetricAttributeKey{SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsCompletedSize: SplunkServerSearchartifactsCompletedSizeConfig{
+		SplunkServerSearchartifactsCompletedSize: SplunkServerSearchartifactsCompletedSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsCompletedSizeAttributeKey{SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsCompletedSizeMetricAttributeKey{SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsIncomplete: SplunkServerSearchartifactsIncompleteConfig{
+		SplunkServerSearchartifactsIncomplete: SplunkServerSearchartifactsIncompleteMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsIncompleteAttributeKey{SplunkServerSearchartifactsIncompleteAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsIncompleteMetricAttributeKey{SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsIncompleteSize: SplunkServerSearchartifactsIncompleteSizeConfig{
+		SplunkServerSearchartifactsIncompleteSize: SplunkServerSearchartifactsIncompleteSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsIncompleteSizeAttributeKey{SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsIncompleteSizeMetricAttributeKey{SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsInvalid: SplunkServerSearchartifactsInvalidConfig{
+		SplunkServerSearchartifactsInvalid: SplunkServerSearchartifactsInvalidMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsInvalidAttributeKey{SplunkServerSearchartifactsInvalidAttributeKeySplunkHost, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsInvalidMetricAttributeKey{SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkHost, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsJobCacheCount: SplunkServerSearchartifactsJobCacheCountConfig{
+		SplunkServerSearchartifactsJobCacheCount: SplunkServerSearchartifactsJobCacheCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsJobCacheCountAttributeKey{SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsJobCacheCountMetricAttributeKey{SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsJobCacheSize: SplunkServerSearchartifactsJobCacheSizeConfig{
+		SplunkServerSearchartifactsJobCacheSize: SplunkServerSearchartifactsJobCacheSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsJobCacheSizeAttributeKey{SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSearchartifactsCacheType, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey{SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSearchartifactsCacheType, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsSavedsearches: SplunkServerSearchartifactsSavedsearchesConfig{
+		SplunkServerSearchartifactsSavedsearches: SplunkServerSearchartifactsSavedsearchesMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsSavedsearchesAttributeKey{SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkHost, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsSavedsearchesMetricAttributeKey{SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkHost, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsScheduled: SplunkServerSearchartifactsScheduledConfig{
+		SplunkServerSearchartifactsScheduled: SplunkServerSearchartifactsScheduledMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsScheduledAttributeKey{SplunkServerSearchartifactsScheduledAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsScheduledMetricAttributeKey{SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkServerSearchartifactsScheduledSize: SplunkServerSearchartifactsScheduledSizeConfig{
+		SplunkServerSearchartifactsScheduledSize: SplunkServerSearchartifactsScheduledSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkServerSearchartifactsScheduledSizeAttributeKey{SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkServerSearchartifactsScheduledSizeMetricAttributeKey{SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdVersion},
 		},
-		SplunkTypingQueueRatio: SplunkTypingQueueRatioConfig{
+		SplunkTypingQueueRatio: SplunkTypingQueueRatioMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkTypingQueueRatioAttributeKey{SplunkTypingQueueRatioAttributeKeySplunkHost, SplunkTypingQueueRatioAttributeKeySplunkSplunkdBuild, SplunkTypingQueueRatioAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkTypingQueueRatioMetricAttributeKey{SplunkTypingQueueRatioMetricAttributeKeySplunkHost, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 		},
 	}
 }
