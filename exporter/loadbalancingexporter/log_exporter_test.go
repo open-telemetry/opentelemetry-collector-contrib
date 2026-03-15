@@ -2049,6 +2049,434 @@ func TestDataIntegrityLogCountPreserved(t *testing.T) {
 	}
 }
 
+// Multi-endpoint routing tests
+
+func TestConsumeLogsMissingServiceMultipleEndpoints(t *testing.T) {
+	// Mixed valid and missing service.name with multiple endpoints:
+	// both records are exported, and deterministic backend assignment.
+	ts, tb := getTelemetryAssets(t)
+
+	var mu sync.Mutex
+	receivedByEndpoint := map[string]int{}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			mu.Lock()
+			receivedByEndpoint[endpoint] += ld.LogRecordCount()
+			mu.Unlock()
+			return nil
+		}), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey: svcRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	ld := plog.NewLogs()
+	rl1 := ld.ResourceLogs().AppendEmpty()
+	rl1.Resource().Attributes().PutStr("service.name", "svc-1")
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("valid service")
+	// missing service.name
+	rl2 := ld.ResourceLogs().AppendEmpty()
+	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("no service")
+
+	err = p.ConsumeLogs(t.Context(), ld)
+	assert.NoError(t, err)
+
+	mu.Lock()
+	totalRecords := 0
+	for _, count := range receivedByEndpoint {
+		totalRecords += count
+	}
+	mu.Unlock()
+	assert.Equal(t, 2, totalRecords, "both log records should be exported")
+
+	// Verify determinism: send same batch again, total should double proportionally
+	mu.Lock()
+	firstRound := make(map[string]int, len(receivedByEndpoint))
+	for k, v := range receivedByEndpoint {
+		firstRound[k] = v
+	}
+	mu.Unlock()
+
+	ld2 := plog.NewLogs()
+	rl3 := ld2.ResourceLogs().AppendEmpty()
+	rl3.Resource().Attributes().PutStr("service.name", "svc-1")
+	rl3.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("valid service")
+	rl4 := ld2.ResourceLogs().AppendEmpty()
+	rl4.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("no service")
+
+	err = p.ConsumeLogs(t.Context(), ld2)
+	assert.NoError(t, err)
+
+	mu.Lock()
+	for ep, count := range receivedByEndpoint {
+		prev := firstRound[ep]
+		assert.Equal(t, prev*2, count,
+			"endpoint %s should receive exactly double after second identical batch", ep)
+	}
+	mu.Unlock()
+}
+
+func TestSplitLogsByTraceIDEmptyAndNonEmptyMixed(t *testing.T) {
+	// traceID routing with empty and non-empty trace IDs mixed in same scope:
+	// empty grouped together, non-empty isolated.
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "svc-1")
+	sl := rl.ScopeLogs().AppendEmpty()
+
+	// 2 records with empty traceID
+	lr1 := sl.LogRecords().AppendEmpty()
+	lr1.Body().SetStr("no trace 1")
+	lr2 := sl.LogRecords().AppendEmpty()
+	lr2.Body().SetStr("no trace 2")
+	// 1 record with a real traceID
+	lr3 := sl.LogRecords().AppendEmpty()
+	lr3.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	lr3.Body().SetStr("with trace")
+	// 1 record with a different traceID
+	lr4 := sl.LogRecords().AppendEmpty()
+	lr4.SetTraceID(pcommon.TraceID([16]byte{5, 6, 7, 8}))
+	lr4.Body().SetStr("different trace")
+
+	batches := splitLogsByTraceID(ld)
+
+	// 3 batches: empty traceID, {1,2,3,4}, {5,6,7,8}
+	emptyKey := pcommon.TraceID([16]byte{}).String()
+	tid1 := pcommon.TraceID([16]byte{1, 2, 3, 4}).String()
+	tid2 := pcommon.TraceID([16]byte{5, 6, 7, 8}).String()
+
+	require.Len(t, batches, 3)
+	require.Contains(t, batches, emptyKey)
+	require.Contains(t, batches, tid1)
+	require.Contains(t, batches, tid2)
+
+	// Empty traceID batch should have 2 records
+	emptyBatch := batches[emptyKey]
+	emptyCount := 0
+	for i := 0; i < emptyBatch.ResourceLogs().Len(); i++ {
+		for j := 0; j < emptyBatch.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			emptyCount += emptyBatch.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+		}
+	}
+	assert.Equal(t, 2, emptyCount, "empty traceID records should be grouped together")
+
+	// Non-empty traceID batches should each have 1 record
+	for _, key := range []string{tid1, tid2} {
+		b := batches[key]
+		count := 0
+		for i := 0; i < b.ResourceLogs().Len(); i++ {
+			for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+				count += b.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+			}
+		}
+		assert.Equal(t, 1, count, "traceID %s should have exactly 1 record", key)
+	}
+}
+
+func TestSplitLogsByTraceIDPreservesSchemaURLAndScopeMetadata(t *testing.T) {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "svc-1")
+	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("my.library")
+	sl.Scope().SetVersion("2.0.0")
+	sl.Scope().Attributes().PutStr("scope.attr", "val")
+	sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1/scope")
+
+	lr := sl.LogRecords().AppendEmpty()
+	lr.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	lr.Body().SetStr("test log")
+
+	batches := splitLogsByTraceID(ld)
+	require.Len(t, batches, 1)
+
+	tid := pcommon.TraceID([16]byte{1, 2, 3, 4}).String()
+	b := batches[tid]
+
+	resultRL := b.ResourceLogs().At(0)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.6.1", resultRL.SchemaUrl())
+
+	resultSL := resultRL.ScopeLogs().At(0)
+	assert.Equal(t, "my.library", resultSL.Scope().Name())
+	assert.Equal(t, "2.0.0", resultSL.Scope().Version())
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.6.1/scope", resultSL.SchemaUrl())
+
+	v, ok := resultSL.Scope().Attributes().Get("scope.attr")
+	require.True(t, ok)
+	assert.Equal(t, "val", v.Str())
+}
+
+func TestSplitLogsByAttributesBothPseudoAttrs(t *testing.T) {
+	// Attributes routing with log.severity and log.body pseudo attributes
+	// mixed in same scope: per-record split.
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+
+	lr1 := sl.LogRecords().AppendEmpty()
+	lr1.SetSeverityText("ERROR")
+	lr1.Body().SetStr("disk full")
+
+	lr2 := sl.LogRecords().AppendEmpty()
+	lr2.SetSeverityText("ERROR")
+	lr2.Body().SetStr("disk full") // same severity + body → same key
+
+	lr3 := sl.LogRecords().AppendEmpty()
+	lr3.SetSeverityText("WARN")
+	lr3.Body().SetStr("disk full") // different severity → different key
+
+	lr4 := sl.LogRecords().AppendEmpty()
+	lr4.SetSeverityText("ERROR")
+	lr4.Body().SetStr("oom killed") // different body → different key
+
+	batches := splitLogsByAttributes(ld, []string{"log.severity", "log.body"})
+
+	// 3 unique combinations: ERROR+disk full, WARN+disk full, ERROR+oom killed
+	require.Len(t, batches, 3)
+	require.Contains(t, batches, "ERRORdisk full")
+	require.Contains(t, batches, "WARNdisk full")
+	require.Contains(t, batches, "ERRORoom killed")
+
+	// ERROR+disk full should have 2 records
+	b := batches["ERRORdisk full"]
+	count := 0
+	for i := 0; i < b.ResourceLogs().Len(); i++ {
+		for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			count += b.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+		}
+	}
+	assert.Equal(t, 2, count)
+}
+
+func TestSplitLogsByAttributesMultipleScopeLogsNoCrossContamination(t *testing.T) {
+	// Multiple ScopeLogs in one ResourceLogs with different scope attributes:
+	// verify no cross-scope contamination.
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+
+	// scope 1 has "library" attr at scope level
+	sl1 := rl.ScopeLogs().AppendEmpty()
+	sl1.Scope().SetName("lib-a")
+	sl1.Scope().Attributes().PutStr("team", "alpha")
+	lr1 := sl1.LogRecords().AppendEmpty()
+	lr1.Body().SetStr("log from alpha")
+
+	// scope 2 has different "library" attr at scope level
+	sl2 := rl.ScopeLogs().AppendEmpty()
+	sl2.Scope().SetName("lib-b")
+	sl2.Scope().Attributes().PutStr("team", "beta")
+	lr2 := sl2.LogRecords().AppendEmpty()
+	lr2.Body().SetStr("log from beta")
+
+	batches := splitLogsByAttributes(ld, []string{"team"})
+
+	// Two different scope-level "team" values → two batches
+	require.Len(t, batches, 2)
+	require.Contains(t, batches, "alpha")
+	require.Contains(t, batches, "beta")
+
+	// Verify each batch has the correct scope name (no mixing)
+	for key, b := range batches {
+		for i := 0; i < b.ResourceLogs().Len(); i++ {
+			for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+				sl := b.ResourceLogs().At(i).ScopeLogs().At(j)
+				teamVal, ok := sl.Scope().Attributes().Get("team")
+				require.True(t, ok)
+				assert.Equal(t, key, teamVal.Str(),
+					"scope with team=%s ended up in batch for key=%s — cross-scope contamination",
+					teamVal.Str(), key)
+			}
+		}
+	}
+}
+
+func TestConsumeLogsPartialBackendFailure(t *testing.T) {
+	// One exporter fails, others still receive and process their data correctly.
+	ts, tb := getTelemetryAssets(t)
+
+	var mu sync.Mutex
+	successReceived := []plog.Logs{}
+	failEndpoint := "endpoint-2:4317"
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		if endpoint == failEndpoint {
+			return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+				return errors.New("backend unavailable")
+			}), nil
+		}
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			clone := plog.NewLogs()
+			ld.CopyTo(clone)
+			mu.Lock()
+			successReceived = append(successReceived, clone)
+			mu.Unlock()
+			return nil
+		}), nil
+	}
+
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey: svcRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Send many distinct services so at least some route to the failing backend
+	// and some to the healthy ones
+	ld := plog.NewLogs()
+	for i := range 20 {
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", fmt.Sprintf("svc-%d", i))
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(
+			fmt.Sprintf("log-%d", i))
+	}
+
+	err = p.ConsumeLogs(t.Context(), ld)
+	// Should return error (from the failing backend) but still process others
+	assert.Error(t, err, "partial failure should surface as error")
+	assert.Contains(t, err.Error(), "backend unavailable")
+
+	// Healthy backends should have received their share of logs
+	mu.Lock()
+	totalSuccessRecords := 0
+	for _, l := range successReceived {
+		totalSuccessRecords += l.LogRecordCount()
+	}
+	mu.Unlock()
+	assert.Positive(t, totalSuccessRecords,
+		"healthy backends should still receive their logs despite partial failure")
+}
+
+func TestSplitLogsByAttributesScopeLevelResolution(t *testing.T) {
+	// Test that attribute resolved at scope level correctly routes
+	// all records in that scope together (no per-record split needed).
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().Attributes().PutStr("env", "prod")
+	sl.LogRecords().AppendEmpty().Body().SetStr("log-1")
+	sl.LogRecords().AppendEmpty().Body().SetStr("log-2")
+	sl.LogRecords().AppendEmpty().Body().SetStr("log-3")
+
+	batches := splitLogsByAttributes(ld, []string{"env"})
+
+	require.Len(t, batches, 1)
+	require.Contains(t, batches, "prod")
+
+	// All 3 records should stay together — no per-record split needed
+	b := batches["prod"]
+	totalRecords := 0
+	for i := 0; i < b.ResourceLogs().Len(); i++ {
+		for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			totalRecords += b.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+		}
+	}
+	assert.Equal(t, 3, totalRecords)
+}
+
+func TestHighCardinalityAttributeRouting(t *testing.T) {
+	// Stress test: many distinct attribute values to verify no allocation
+	// issues or incorrect merging.
+	ts, tb := getTelemetryAssets(t)
+
+	var totalReceived atomic.Int64
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			totalReceived.Add(int64(ld.LogRecordCount()))
+			return nil
+		}), nil
+	}
+
+	cfg := &Config{
+		Resolver:          ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey:        attrRoutingStr,
+		RoutingAttributes: []string{"request.id"},
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// 500 log records, each with a unique request.id
+	const numLogs = 500
+	ld := plog.NewLogs()
+	for i := range numLogs {
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "high-card-svc")
+		lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		lr.Body().SetStr(fmt.Sprintf("request log %d", i))
+		lr.Attributes().PutStr("request.id", fmt.Sprintf("req-%05d", i))
+	}
+
+	err = p.ConsumeLogs(t.Context(), ld)
+	require.NoError(t, err)
+	assert.Equal(t, int64(numLogs), totalReceived.Load(),
+		"all high-cardinality logs should be delivered without loss")
+}
+
 // Benchmark tests
 
 func benchConsumeLogs(b *testing.B, routingKey string, endpointsCount, rlCount, slCount, logCount int) {
