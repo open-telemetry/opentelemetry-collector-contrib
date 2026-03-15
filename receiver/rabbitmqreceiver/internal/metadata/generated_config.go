@@ -9,13 +9,13 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// RabbitmqConsumerCountConfig provides config for the rabbitmq.consumer.count metric.
-type RabbitmqConsumerCountConfig struct {
+// RabbitmqConsumerCountMetricConfig provides config for the rabbitmq.consumer.count metric.
+type RabbitmqConsumerCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqConsumerCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqConsumerCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,13 +29,13 @@ func (ms *RabbitmqConsumerCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqMessageAcknowledgedConfig provides config for the rabbitmq.message.acknowledged metric.
-type RabbitmqMessageAcknowledgedConfig struct {
+// RabbitmqMessageAcknowledgedMetricConfig provides config for the rabbitmq.message.acknowledged metric.
+type RabbitmqMessageAcknowledgedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqMessageAcknowledgedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqMessageAcknowledgedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -49,23 +49,23 @@ func (ms *RabbitmqMessageAcknowledgedConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// RabbitmqMessageCurrentAttributeKey specifies the key of an attribute for the rabbitmq.message.current metric.
-type RabbitmqMessageCurrentAttributeKey string
+// RabbitmqMessageCurrentMetricAttributeKey specifies the key of an attribute for the rabbitmq.message.current metric.
+type RabbitmqMessageCurrentMetricAttributeKey string
 
 const (
-	RabbitmqMessageCurrentAttributeKeyMessageState RabbitmqMessageCurrentAttributeKey = "state"
+	RabbitmqMessageCurrentMetricAttributeKeyMessageState RabbitmqMessageCurrentMetricAttributeKey = "state"
 )
 
-// RabbitmqMessageCurrentConfig provides config for the rabbitmq.message.current metric.
-type RabbitmqMessageCurrentConfig struct {
+// RabbitmqMessageCurrentMetricConfig provides config for the rabbitmq.message.current metric.
+type RabbitmqMessageCurrentMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []RabbitmqMessageCurrentAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RabbitmqMessageCurrentMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *RabbitmqMessageCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqMessageCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -79,10 +79,10 @@ func (ms *RabbitmqMessageCurrentConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *RabbitmqMessageCurrentConfig) Validate() error {
+func (ms *RabbitmqMessageCurrentMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case RabbitmqMessageCurrentAttributeKeyMessageState:
+		case RabbitmqMessageCurrentMetricAttributeKeyMessageState:
 		default:
 			return fmt.Errorf("metric rabbitmq.message.current doesn't have an attribute %v, valid attributes: [state]", val)
 		}
@@ -97,13 +97,13 @@ func (ms *RabbitmqMessageCurrentConfig) Validate() error {
 	return nil
 }
 
-// RabbitmqMessageDeliveredConfig provides config for the rabbitmq.message.delivered metric.
-type RabbitmqMessageDeliveredConfig struct {
+// RabbitmqMessageDeliveredMetricConfig provides config for the rabbitmq.message.delivered metric.
+type RabbitmqMessageDeliveredMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqMessageDeliveredConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqMessageDeliveredMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -117,13 +117,13 @@ func (ms *RabbitmqMessageDeliveredConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// RabbitmqMessageDroppedConfig provides config for the rabbitmq.message.dropped metric.
-type RabbitmqMessageDroppedConfig struct {
+// RabbitmqMessageDroppedMetricConfig provides config for the rabbitmq.message.dropped metric.
+type RabbitmqMessageDroppedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqMessageDroppedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqMessageDroppedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -137,13 +137,13 @@ func (ms *RabbitmqMessageDroppedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqMessagePublishedConfig provides config for the rabbitmq.message.published metric.
-type RabbitmqMessagePublishedConfig struct {
+// RabbitmqMessagePublishedMetricConfig provides config for the rabbitmq.message.published metric.
+type RabbitmqMessagePublishedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqMessagePublishedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqMessagePublishedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -157,13 +157,13 @@ func (ms *RabbitmqMessagePublishedConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// RabbitmqNodeChannelClosedConfig provides config for the rabbitmq.node.channel_closed metric.
-type RabbitmqNodeChannelClosedConfig struct {
+// RabbitmqNodeChannelClosedMetricConfig provides config for the rabbitmq.node.channel_closed metric.
+type RabbitmqNodeChannelClosedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeChannelClosedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeChannelClosedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -177,13 +177,13 @@ func (ms *RabbitmqNodeChannelClosedConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// RabbitmqNodeChannelClosedDetailsRateConfig provides config for the rabbitmq.node.channel_closed_details.rate metric.
-type RabbitmqNodeChannelClosedDetailsRateConfig struct {
+// RabbitmqNodeChannelClosedDetailsRateMetricConfig provides config for the rabbitmq.node.channel_closed_details.rate metric.
+type RabbitmqNodeChannelClosedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeChannelClosedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeChannelClosedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -197,13 +197,13 @@ func (ms *RabbitmqNodeChannelClosedDetailsRateConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-// RabbitmqNodeChannelCreatedConfig provides config for the rabbitmq.node.channel_created metric.
-type RabbitmqNodeChannelCreatedConfig struct {
+// RabbitmqNodeChannelCreatedMetricConfig provides config for the rabbitmq.node.channel_created metric.
+type RabbitmqNodeChannelCreatedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeChannelCreatedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeChannelCreatedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -217,13 +217,13 @@ func (ms *RabbitmqNodeChannelCreatedConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// RabbitmqNodeChannelCreatedDetailsRateConfig provides config for the rabbitmq.node.channel_created_details.rate metric.
-type RabbitmqNodeChannelCreatedDetailsRateConfig struct {
+// RabbitmqNodeChannelCreatedDetailsRateMetricConfig provides config for the rabbitmq.node.channel_created_details.rate metric.
+type RabbitmqNodeChannelCreatedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeChannelCreatedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeChannelCreatedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -237,13 +237,13 @@ func (ms *RabbitmqNodeChannelCreatedDetailsRateConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-// RabbitmqNodeConnectionClosedConfig provides config for the rabbitmq.node.connection_closed metric.
-type RabbitmqNodeConnectionClosedConfig struct {
+// RabbitmqNodeConnectionClosedMetricConfig provides config for the rabbitmq.node.connection_closed metric.
+type RabbitmqNodeConnectionClosedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeConnectionClosedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeConnectionClosedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -257,13 +257,13 @@ func (ms *RabbitmqNodeConnectionClosedConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// RabbitmqNodeConnectionClosedDetailsRateConfig provides config for the rabbitmq.node.connection_closed_details.rate metric.
-type RabbitmqNodeConnectionClosedDetailsRateConfig struct {
+// RabbitmqNodeConnectionClosedDetailsRateMetricConfig provides config for the rabbitmq.node.connection_closed_details.rate metric.
+type RabbitmqNodeConnectionClosedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeConnectionClosedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeConnectionClosedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -277,13 +277,13 @@ func (ms *RabbitmqNodeConnectionClosedDetailsRateConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// RabbitmqNodeConnectionCreatedConfig provides config for the rabbitmq.node.connection_created metric.
-type RabbitmqNodeConnectionCreatedConfig struct {
+// RabbitmqNodeConnectionCreatedMetricConfig provides config for the rabbitmq.node.connection_created metric.
+type RabbitmqNodeConnectionCreatedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeConnectionCreatedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeConnectionCreatedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -297,13 +297,13 @@ func (ms *RabbitmqNodeConnectionCreatedConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// RabbitmqNodeConnectionCreatedDetailsRateConfig provides config for the rabbitmq.node.connection_created_details.rate metric.
-type RabbitmqNodeConnectionCreatedDetailsRateConfig struct {
+// RabbitmqNodeConnectionCreatedDetailsRateMetricConfig provides config for the rabbitmq.node.connection_created_details.rate metric.
+type RabbitmqNodeConnectionCreatedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeConnectionCreatedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeConnectionCreatedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -317,13 +317,13 @@ func (ms *RabbitmqNodeConnectionCreatedDetailsRateConfig) Unmarshal(parser *conf
 	return nil
 }
 
-// RabbitmqNodeContextSwitchesConfig provides config for the rabbitmq.node.context_switches metric.
-type RabbitmqNodeContextSwitchesConfig struct {
+// RabbitmqNodeContextSwitchesMetricConfig provides config for the rabbitmq.node.context_switches metric.
+type RabbitmqNodeContextSwitchesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeContextSwitchesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeContextSwitchesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -337,13 +337,13 @@ func (ms *RabbitmqNodeContextSwitchesConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// RabbitmqNodeContextSwitchesDetailsRateConfig provides config for the rabbitmq.node.context_switches_details.rate metric.
-type RabbitmqNodeContextSwitchesDetailsRateConfig struct {
+// RabbitmqNodeContextSwitchesDetailsRateMetricConfig provides config for the rabbitmq.node.context_switches_details.rate metric.
+type RabbitmqNodeContextSwitchesDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeContextSwitchesDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeContextSwitchesDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -357,13 +357,13 @@ func (ms *RabbitmqNodeContextSwitchesDetailsRateConfig) Unmarshal(parser *confma
 	return nil
 }
 
-// RabbitmqNodeDiskFreeConfig provides config for the rabbitmq.node.disk_free metric.
-type RabbitmqNodeDiskFreeConfig struct {
+// RabbitmqNodeDiskFreeMetricConfig provides config for the rabbitmq.node.disk_free metric.
+type RabbitmqNodeDiskFreeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeDiskFreeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeDiskFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -377,13 +377,13 @@ func (ms *RabbitmqNodeDiskFreeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeDiskFreeAlarmConfig provides config for the rabbitmq.node.disk_free_alarm metric.
-type RabbitmqNodeDiskFreeAlarmConfig struct {
+// RabbitmqNodeDiskFreeAlarmMetricConfig provides config for the rabbitmq.node.disk_free_alarm metric.
+type RabbitmqNodeDiskFreeAlarmMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeDiskFreeAlarmConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeDiskFreeAlarmMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -397,13 +397,13 @@ func (ms *RabbitmqNodeDiskFreeAlarmConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// RabbitmqNodeDiskFreeDetailsRateConfig provides config for the rabbitmq.node.disk_free_details.rate metric.
-type RabbitmqNodeDiskFreeDetailsRateConfig struct {
+// RabbitmqNodeDiskFreeDetailsRateMetricConfig provides config for the rabbitmq.node.disk_free_details.rate metric.
+type RabbitmqNodeDiskFreeDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeDiskFreeDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeDiskFreeDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -417,13 +417,13 @@ func (ms *RabbitmqNodeDiskFreeDetailsRateConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// RabbitmqNodeDiskFreeLimitConfig provides config for the rabbitmq.node.disk_free_limit metric.
-type RabbitmqNodeDiskFreeLimitConfig struct {
+// RabbitmqNodeDiskFreeLimitMetricConfig provides config for the rabbitmq.node.disk_free_limit metric.
+type RabbitmqNodeDiskFreeLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeDiskFreeLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeDiskFreeLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -437,13 +437,13 @@ func (ms *RabbitmqNodeDiskFreeLimitConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// RabbitmqNodeFdTotalConfig provides config for the rabbitmq.node.fd_total metric.
-type RabbitmqNodeFdTotalConfig struct {
+// RabbitmqNodeFdTotalMetricConfig provides config for the rabbitmq.node.fd_total metric.
+type RabbitmqNodeFdTotalMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeFdTotalConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeFdTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -457,13 +457,13 @@ func (ms *RabbitmqNodeFdTotalConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeFdUsedConfig provides config for the rabbitmq.node.fd_used metric.
-type RabbitmqNodeFdUsedConfig struct {
+// RabbitmqNodeFdUsedMetricConfig provides config for the rabbitmq.node.fd_used metric.
+type RabbitmqNodeFdUsedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeFdUsedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeFdUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -477,13 +477,13 @@ func (ms *RabbitmqNodeFdUsedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeFdUsedDetailsRateConfig provides config for the rabbitmq.node.fd_used_details.rate metric.
-type RabbitmqNodeFdUsedDetailsRateConfig struct {
+// RabbitmqNodeFdUsedDetailsRateMetricConfig provides config for the rabbitmq.node.fd_used_details.rate metric.
+type RabbitmqNodeFdUsedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeFdUsedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeFdUsedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -497,13 +497,13 @@ func (ms *RabbitmqNodeFdUsedDetailsRateConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// RabbitmqNodeGcBytesReclaimedConfig provides config for the rabbitmq.node.gc_bytes_reclaimed metric.
-type RabbitmqNodeGcBytesReclaimedConfig struct {
+// RabbitmqNodeGcBytesReclaimedMetricConfig provides config for the rabbitmq.node.gc_bytes_reclaimed metric.
+type RabbitmqNodeGcBytesReclaimedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeGcBytesReclaimedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeGcBytesReclaimedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -517,13 +517,13 @@ func (ms *RabbitmqNodeGcBytesReclaimedConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// RabbitmqNodeGcBytesReclaimedDetailsRateConfig provides config for the rabbitmq.node.gc_bytes_reclaimed_details.rate metric.
-type RabbitmqNodeGcBytesReclaimedDetailsRateConfig struct {
+// RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig provides config for the rabbitmq.node.gc_bytes_reclaimed_details.rate metric.
+type RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeGcBytesReclaimedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -537,13 +537,13 @@ func (ms *RabbitmqNodeGcBytesReclaimedDetailsRateConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// RabbitmqNodeGcNumConfig provides config for the rabbitmq.node.gc_num metric.
-type RabbitmqNodeGcNumConfig struct {
+// RabbitmqNodeGcNumMetricConfig provides config for the rabbitmq.node.gc_num metric.
+type RabbitmqNodeGcNumMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeGcNumConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeGcNumMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -557,13 +557,13 @@ func (ms *RabbitmqNodeGcNumConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeGcNumDetailsRateConfig provides config for the rabbitmq.node.gc_num_details.rate metric.
-type RabbitmqNodeGcNumDetailsRateConfig struct {
+// RabbitmqNodeGcNumDetailsRateMetricConfig provides config for the rabbitmq.node.gc_num_details.rate metric.
+type RabbitmqNodeGcNumDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeGcNumDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeGcNumDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -577,13 +577,13 @@ func (ms *RabbitmqNodeGcNumDetailsRateConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// RabbitmqNodeIoReadAvgTimeConfig provides config for the rabbitmq.node.io_read_avg_time metric.
-type RabbitmqNodeIoReadAvgTimeConfig struct {
+// RabbitmqNodeIoReadAvgTimeMetricConfig provides config for the rabbitmq.node.io_read_avg_time metric.
+type RabbitmqNodeIoReadAvgTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoReadAvgTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoReadAvgTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -597,13 +597,13 @@ func (ms *RabbitmqNodeIoReadAvgTimeConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// RabbitmqNodeIoReadAvgTimeDetailsRateConfig provides config for the rabbitmq.node.io_read_avg_time_details.rate metric.
-type RabbitmqNodeIoReadAvgTimeDetailsRateConfig struct {
+// RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig provides config for the rabbitmq.node.io_read_avg_time_details.rate metric.
+type RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoReadAvgTimeDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -617,13 +617,13 @@ func (ms *RabbitmqNodeIoReadAvgTimeDetailsRateConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-// RabbitmqNodeIoReadBytesConfig provides config for the rabbitmq.node.io_read_bytes metric.
-type RabbitmqNodeIoReadBytesConfig struct {
+// RabbitmqNodeIoReadBytesMetricConfig provides config for the rabbitmq.node.io_read_bytes metric.
+type RabbitmqNodeIoReadBytesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoReadBytesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoReadBytesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -637,13 +637,13 @@ func (ms *RabbitmqNodeIoReadBytesConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeIoReadBytesDetailsRateConfig provides config for the rabbitmq.node.io_read_bytes_details.rate metric.
-type RabbitmqNodeIoReadBytesDetailsRateConfig struct {
+// RabbitmqNodeIoReadBytesDetailsRateMetricConfig provides config for the rabbitmq.node.io_read_bytes_details.rate metric.
+type RabbitmqNodeIoReadBytesDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoReadBytesDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoReadBytesDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -657,13 +657,13 @@ func (ms *RabbitmqNodeIoReadBytesDetailsRateConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// RabbitmqNodeIoReadCountConfig provides config for the rabbitmq.node.io_read_count metric.
-type RabbitmqNodeIoReadCountConfig struct {
+// RabbitmqNodeIoReadCountMetricConfig provides config for the rabbitmq.node.io_read_count metric.
+type RabbitmqNodeIoReadCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoReadCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoReadCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -677,13 +677,13 @@ func (ms *RabbitmqNodeIoReadCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeIoReadCountDetailsRateConfig provides config for the rabbitmq.node.io_read_count_details.rate metric.
-type RabbitmqNodeIoReadCountDetailsRateConfig struct {
+// RabbitmqNodeIoReadCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_read_count_details.rate metric.
+type RabbitmqNodeIoReadCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoReadCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoReadCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -697,13 +697,13 @@ func (ms *RabbitmqNodeIoReadCountDetailsRateConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// RabbitmqNodeIoReopenCountConfig provides config for the rabbitmq.node.io_reopen_count metric.
-type RabbitmqNodeIoReopenCountConfig struct {
+// RabbitmqNodeIoReopenCountMetricConfig provides config for the rabbitmq.node.io_reopen_count metric.
+type RabbitmqNodeIoReopenCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoReopenCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoReopenCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -717,13 +717,13 @@ func (ms *RabbitmqNodeIoReopenCountConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// RabbitmqNodeIoReopenCountDetailsRateConfig provides config for the rabbitmq.node.io_reopen_count_details.rate metric.
-type RabbitmqNodeIoReopenCountDetailsRateConfig struct {
+// RabbitmqNodeIoReopenCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_reopen_count_details.rate metric.
+type RabbitmqNodeIoReopenCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoReopenCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoReopenCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -737,13 +737,13 @@ func (ms *RabbitmqNodeIoReopenCountDetailsRateConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-// RabbitmqNodeIoSeekAvgTimeConfig provides config for the rabbitmq.node.io_seek_avg_time metric.
-type RabbitmqNodeIoSeekAvgTimeConfig struct {
+// RabbitmqNodeIoSeekAvgTimeMetricConfig provides config for the rabbitmq.node.io_seek_avg_time metric.
+type RabbitmqNodeIoSeekAvgTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoSeekAvgTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoSeekAvgTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -757,13 +757,13 @@ func (ms *RabbitmqNodeIoSeekAvgTimeConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// RabbitmqNodeIoSeekAvgTimeDetailsRateConfig provides config for the rabbitmq.node.io_seek_avg_time_details.rate metric.
-type RabbitmqNodeIoSeekAvgTimeDetailsRateConfig struct {
+// RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig provides config for the rabbitmq.node.io_seek_avg_time_details.rate metric.
+type RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoSeekAvgTimeDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -777,13 +777,13 @@ func (ms *RabbitmqNodeIoSeekAvgTimeDetailsRateConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-// RabbitmqNodeIoSeekCountConfig provides config for the rabbitmq.node.io_seek_count metric.
-type RabbitmqNodeIoSeekCountConfig struct {
+// RabbitmqNodeIoSeekCountMetricConfig provides config for the rabbitmq.node.io_seek_count metric.
+type RabbitmqNodeIoSeekCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoSeekCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoSeekCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -797,13 +797,13 @@ func (ms *RabbitmqNodeIoSeekCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeIoSeekCountDetailsRateConfig provides config for the rabbitmq.node.io_seek_count_details.rate metric.
-type RabbitmqNodeIoSeekCountDetailsRateConfig struct {
+// RabbitmqNodeIoSeekCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_seek_count_details.rate metric.
+type RabbitmqNodeIoSeekCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoSeekCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoSeekCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -817,13 +817,13 @@ func (ms *RabbitmqNodeIoSeekCountDetailsRateConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// RabbitmqNodeIoSyncAvgTimeConfig provides config for the rabbitmq.node.io_sync_avg_time metric.
-type RabbitmqNodeIoSyncAvgTimeConfig struct {
+// RabbitmqNodeIoSyncAvgTimeMetricConfig provides config for the rabbitmq.node.io_sync_avg_time metric.
+type RabbitmqNodeIoSyncAvgTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoSyncAvgTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoSyncAvgTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -837,13 +837,13 @@ func (ms *RabbitmqNodeIoSyncAvgTimeConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// RabbitmqNodeIoSyncAvgTimeDetailsRateConfig provides config for the rabbitmq.node.io_sync_avg_time_details.rate metric.
-type RabbitmqNodeIoSyncAvgTimeDetailsRateConfig struct {
+// RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig provides config for the rabbitmq.node.io_sync_avg_time_details.rate metric.
+type RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoSyncAvgTimeDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -857,13 +857,13 @@ func (ms *RabbitmqNodeIoSyncAvgTimeDetailsRateConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-// RabbitmqNodeIoSyncCountConfig provides config for the rabbitmq.node.io_sync_count metric.
-type RabbitmqNodeIoSyncCountConfig struct {
+// RabbitmqNodeIoSyncCountMetricConfig provides config for the rabbitmq.node.io_sync_count metric.
+type RabbitmqNodeIoSyncCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoSyncCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoSyncCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -877,13 +877,13 @@ func (ms *RabbitmqNodeIoSyncCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeIoSyncCountDetailsRateConfig provides config for the rabbitmq.node.io_sync_count_details.rate metric.
-type RabbitmqNodeIoSyncCountDetailsRateConfig struct {
+// RabbitmqNodeIoSyncCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_sync_count_details.rate metric.
+type RabbitmqNodeIoSyncCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoSyncCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoSyncCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -897,13 +897,13 @@ func (ms *RabbitmqNodeIoSyncCountDetailsRateConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// RabbitmqNodeIoWriteAvgTimeConfig provides config for the rabbitmq.node.io_write_avg_time metric.
-type RabbitmqNodeIoWriteAvgTimeConfig struct {
+// RabbitmqNodeIoWriteAvgTimeMetricConfig provides config for the rabbitmq.node.io_write_avg_time metric.
+type RabbitmqNodeIoWriteAvgTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoWriteAvgTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoWriteAvgTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -917,13 +917,13 @@ func (ms *RabbitmqNodeIoWriteAvgTimeConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// RabbitmqNodeIoWriteAvgTimeDetailsRateConfig provides config for the rabbitmq.node.io_write_avg_time_details.rate metric.
-type RabbitmqNodeIoWriteAvgTimeDetailsRateConfig struct {
+// RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig provides config for the rabbitmq.node.io_write_avg_time_details.rate metric.
+type RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoWriteAvgTimeDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -937,13 +937,13 @@ func (ms *RabbitmqNodeIoWriteAvgTimeDetailsRateConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-// RabbitmqNodeIoWriteBytesConfig provides config for the rabbitmq.node.io_write_bytes metric.
-type RabbitmqNodeIoWriteBytesConfig struct {
+// RabbitmqNodeIoWriteBytesMetricConfig provides config for the rabbitmq.node.io_write_bytes metric.
+type RabbitmqNodeIoWriteBytesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoWriteBytesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoWriteBytesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -957,13 +957,13 @@ func (ms *RabbitmqNodeIoWriteBytesConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// RabbitmqNodeIoWriteBytesDetailsRateConfig provides config for the rabbitmq.node.io_write_bytes_details.rate metric.
-type RabbitmqNodeIoWriteBytesDetailsRateConfig struct {
+// RabbitmqNodeIoWriteBytesDetailsRateMetricConfig provides config for the rabbitmq.node.io_write_bytes_details.rate metric.
+type RabbitmqNodeIoWriteBytesDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoWriteBytesDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoWriteBytesDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -977,13 +977,13 @@ func (ms *RabbitmqNodeIoWriteBytesDetailsRateConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// RabbitmqNodeIoWriteCountConfig provides config for the rabbitmq.node.io_write_count metric.
-type RabbitmqNodeIoWriteCountConfig struct {
+// RabbitmqNodeIoWriteCountMetricConfig provides config for the rabbitmq.node.io_write_count metric.
+type RabbitmqNodeIoWriteCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoWriteCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoWriteCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -997,13 +997,13 @@ func (ms *RabbitmqNodeIoWriteCountConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// RabbitmqNodeIoWriteCountDetailsRateConfig provides config for the rabbitmq.node.io_write_count_details.rate metric.
-type RabbitmqNodeIoWriteCountDetailsRateConfig struct {
+// RabbitmqNodeIoWriteCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_write_count_details.rate metric.
+type RabbitmqNodeIoWriteCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeIoWriteCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeIoWriteCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1017,13 +1017,13 @@ func (ms *RabbitmqNodeIoWriteCountDetailsRateConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// RabbitmqNodeMemAlarmConfig provides config for the rabbitmq.node.mem_alarm metric.
-type RabbitmqNodeMemAlarmConfig struct {
+// RabbitmqNodeMemAlarmMetricConfig provides config for the rabbitmq.node.mem_alarm metric.
+type RabbitmqNodeMemAlarmMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMemAlarmConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMemAlarmMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1037,13 +1037,13 @@ func (ms *RabbitmqNodeMemAlarmConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeMemLimitConfig provides config for the rabbitmq.node.mem_limit metric.
-type RabbitmqNodeMemLimitConfig struct {
+// RabbitmqNodeMemLimitMetricConfig provides config for the rabbitmq.node.mem_limit metric.
+type RabbitmqNodeMemLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMemLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMemLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1057,13 +1057,13 @@ func (ms *RabbitmqNodeMemLimitConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeMemUsedConfig provides config for the rabbitmq.node.mem_used metric.
-type RabbitmqNodeMemUsedConfig struct {
+// RabbitmqNodeMemUsedMetricConfig provides config for the rabbitmq.node.mem_used metric.
+type RabbitmqNodeMemUsedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMemUsedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMemUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1077,13 +1077,13 @@ func (ms *RabbitmqNodeMemUsedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeMemUsedDetailsRateConfig provides config for the rabbitmq.node.mem_used_details.rate metric.
-type RabbitmqNodeMemUsedDetailsRateConfig struct {
+// RabbitmqNodeMemUsedDetailsRateMetricConfig provides config for the rabbitmq.node.mem_used_details.rate metric.
+type RabbitmqNodeMemUsedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMemUsedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMemUsedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1097,13 +1097,13 @@ func (ms *RabbitmqNodeMemUsedDetailsRateConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// RabbitmqNodeMnesiaDiskTxCountConfig provides config for the rabbitmq.node.mnesia_disk_tx_count metric.
-type RabbitmqNodeMnesiaDiskTxCountConfig struct {
+// RabbitmqNodeMnesiaDiskTxCountMetricConfig provides config for the rabbitmq.node.mnesia_disk_tx_count metric.
+type RabbitmqNodeMnesiaDiskTxCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMnesiaDiskTxCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMnesiaDiskTxCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1117,13 +1117,13 @@ func (ms *RabbitmqNodeMnesiaDiskTxCountConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig provides config for the rabbitmq.node.mnesia_disk_tx_count_details.rate metric.
-type RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig struct {
+// RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig provides config for the rabbitmq.node.mnesia_disk_tx_count_details.rate metric.
+type RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1137,13 +1137,13 @@ func (ms *RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig) Unmarshal(parser *conf
 	return nil
 }
 
-// RabbitmqNodeMnesiaRAMTxCountConfig provides config for the rabbitmq.node.mnesia_ram_tx_count metric.
-type RabbitmqNodeMnesiaRAMTxCountConfig struct {
+// RabbitmqNodeMnesiaRAMTxCountMetricConfig provides config for the rabbitmq.node.mnesia_ram_tx_count metric.
+type RabbitmqNodeMnesiaRAMTxCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMnesiaRAMTxCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMnesiaRAMTxCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1157,13 +1157,13 @@ func (ms *RabbitmqNodeMnesiaRAMTxCountConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig provides config for the rabbitmq.node.mnesia_ram_tx_count_details.rate metric.
-type RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig struct {
+// RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig provides config for the rabbitmq.node.mnesia_ram_tx_count_details.rate metric.
+type RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1177,13 +1177,13 @@ func (ms *RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// RabbitmqNodeMsgStoreReadCountConfig provides config for the rabbitmq.node.msg_store_read_count metric.
-type RabbitmqNodeMsgStoreReadCountConfig struct {
+// RabbitmqNodeMsgStoreReadCountMetricConfig provides config for the rabbitmq.node.msg_store_read_count metric.
+type RabbitmqNodeMsgStoreReadCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMsgStoreReadCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMsgStoreReadCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1197,13 +1197,13 @@ func (ms *RabbitmqNodeMsgStoreReadCountConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// RabbitmqNodeMsgStoreReadCountDetailsRateConfig provides config for the rabbitmq.node.msg_store_read_count_details.rate metric.
-type RabbitmqNodeMsgStoreReadCountDetailsRateConfig struct {
+// RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig provides config for the rabbitmq.node.msg_store_read_count_details.rate metric.
+type RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMsgStoreReadCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1217,13 +1217,13 @@ func (ms *RabbitmqNodeMsgStoreReadCountDetailsRateConfig) Unmarshal(parser *conf
 	return nil
 }
 
-// RabbitmqNodeMsgStoreWriteCountConfig provides config for the rabbitmq.node.msg_store_write_count metric.
-type RabbitmqNodeMsgStoreWriteCountConfig struct {
+// RabbitmqNodeMsgStoreWriteCountMetricConfig provides config for the rabbitmq.node.msg_store_write_count metric.
+type RabbitmqNodeMsgStoreWriteCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMsgStoreWriteCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMsgStoreWriteCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1237,13 +1237,13 @@ func (ms *RabbitmqNodeMsgStoreWriteCountConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// RabbitmqNodeMsgStoreWriteCountDetailsRateConfig provides config for the rabbitmq.node.msg_store_write_count_details.rate metric.
-type RabbitmqNodeMsgStoreWriteCountDetailsRateConfig struct {
+// RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig provides config for the rabbitmq.node.msg_store_write_count_details.rate metric.
+type RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeMsgStoreWriteCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1257,13 +1257,13 @@ func (ms *RabbitmqNodeMsgStoreWriteCountDetailsRateConfig) Unmarshal(parser *con
 	return nil
 }
 
-// RabbitmqNodeProcTotalConfig provides config for the rabbitmq.node.proc_total metric.
-type RabbitmqNodeProcTotalConfig struct {
+// RabbitmqNodeProcTotalMetricConfig provides config for the rabbitmq.node.proc_total metric.
+type RabbitmqNodeProcTotalMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeProcTotalConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeProcTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1277,13 +1277,13 @@ func (ms *RabbitmqNodeProcTotalConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeProcUsedConfig provides config for the rabbitmq.node.proc_used metric.
-type RabbitmqNodeProcUsedConfig struct {
+// RabbitmqNodeProcUsedMetricConfig provides config for the rabbitmq.node.proc_used metric.
+type RabbitmqNodeProcUsedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeProcUsedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeProcUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1297,13 +1297,13 @@ func (ms *RabbitmqNodeProcUsedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeProcUsedDetailsRateConfig provides config for the rabbitmq.node.proc_used_details.rate metric.
-type RabbitmqNodeProcUsedDetailsRateConfig struct {
+// RabbitmqNodeProcUsedDetailsRateMetricConfig provides config for the rabbitmq.node.proc_used_details.rate metric.
+type RabbitmqNodeProcUsedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeProcUsedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeProcUsedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1317,13 +1317,13 @@ func (ms *RabbitmqNodeProcUsedDetailsRateConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// RabbitmqNodeProcessorsConfig provides config for the rabbitmq.node.processors metric.
-type RabbitmqNodeProcessorsConfig struct {
+// RabbitmqNodeProcessorsMetricConfig provides config for the rabbitmq.node.processors metric.
+type RabbitmqNodeProcessorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeProcessorsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeProcessorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1337,13 +1337,13 @@ func (ms *RabbitmqNodeProcessorsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeQueueCreatedConfig provides config for the rabbitmq.node.queue_created metric.
-type RabbitmqNodeQueueCreatedConfig struct {
+// RabbitmqNodeQueueCreatedMetricConfig provides config for the rabbitmq.node.queue_created metric.
+type RabbitmqNodeQueueCreatedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueCreatedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueCreatedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1357,13 +1357,13 @@ func (ms *RabbitmqNodeQueueCreatedConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// RabbitmqNodeQueueCreatedDetailsRateConfig provides config for the rabbitmq.node.queue_created_details.rate metric.
-type RabbitmqNodeQueueCreatedDetailsRateConfig struct {
+// RabbitmqNodeQueueCreatedDetailsRateMetricConfig provides config for the rabbitmq.node.queue_created_details.rate metric.
+type RabbitmqNodeQueueCreatedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueCreatedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueCreatedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1377,13 +1377,13 @@ func (ms *RabbitmqNodeQueueCreatedDetailsRateConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// RabbitmqNodeQueueDeclaredConfig provides config for the rabbitmq.node.queue_declared metric.
-type RabbitmqNodeQueueDeclaredConfig struct {
+// RabbitmqNodeQueueDeclaredMetricConfig provides config for the rabbitmq.node.queue_declared metric.
+type RabbitmqNodeQueueDeclaredMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueDeclaredConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueDeclaredMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1397,13 +1397,13 @@ func (ms *RabbitmqNodeQueueDeclaredConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// RabbitmqNodeQueueDeclaredDetailsRateConfig provides config for the rabbitmq.node.queue_declared_details.rate metric.
-type RabbitmqNodeQueueDeclaredDetailsRateConfig struct {
+// RabbitmqNodeQueueDeclaredDetailsRateMetricConfig provides config for the rabbitmq.node.queue_declared_details.rate metric.
+type RabbitmqNodeQueueDeclaredDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueDeclaredDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueDeclaredDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1417,13 +1417,13 @@ func (ms *RabbitmqNodeQueueDeclaredDetailsRateConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-// RabbitmqNodeQueueDeletedConfig provides config for the rabbitmq.node.queue_deleted metric.
-type RabbitmqNodeQueueDeletedConfig struct {
+// RabbitmqNodeQueueDeletedMetricConfig provides config for the rabbitmq.node.queue_deleted metric.
+type RabbitmqNodeQueueDeletedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueDeletedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueDeletedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1437,13 +1437,13 @@ func (ms *RabbitmqNodeQueueDeletedConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// RabbitmqNodeQueueDeletedDetailsRateConfig provides config for the rabbitmq.node.queue_deleted_details.rate metric.
-type RabbitmqNodeQueueDeletedDetailsRateConfig struct {
+// RabbitmqNodeQueueDeletedDetailsRateMetricConfig provides config for the rabbitmq.node.queue_deleted_details.rate metric.
+type RabbitmqNodeQueueDeletedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueDeletedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueDeletedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1457,13 +1457,13 @@ func (ms *RabbitmqNodeQueueDeletedDetailsRateConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// RabbitmqNodeQueueIndexReadCountConfig provides config for the rabbitmq.node.queue_index_read_count metric.
-type RabbitmqNodeQueueIndexReadCountConfig struct {
+// RabbitmqNodeQueueIndexReadCountMetricConfig provides config for the rabbitmq.node.queue_index_read_count metric.
+type RabbitmqNodeQueueIndexReadCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueIndexReadCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueIndexReadCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1477,13 +1477,13 @@ func (ms *RabbitmqNodeQueueIndexReadCountConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// RabbitmqNodeQueueIndexReadCountDetailsRateConfig provides config for the rabbitmq.node.queue_index_read_count_details.rate metric.
-type RabbitmqNodeQueueIndexReadCountDetailsRateConfig struct {
+// RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig provides config for the rabbitmq.node.queue_index_read_count_details.rate metric.
+type RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueIndexReadCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1497,13 +1497,13 @@ func (ms *RabbitmqNodeQueueIndexReadCountDetailsRateConfig) Unmarshal(parser *co
 	return nil
 }
 
-// RabbitmqNodeQueueIndexWriteCountConfig provides config for the rabbitmq.node.queue_index_write_count metric.
-type RabbitmqNodeQueueIndexWriteCountConfig struct {
+// RabbitmqNodeQueueIndexWriteCountMetricConfig provides config for the rabbitmq.node.queue_index_write_count metric.
+type RabbitmqNodeQueueIndexWriteCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueIndexWriteCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueIndexWriteCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1517,13 +1517,13 @@ func (ms *RabbitmqNodeQueueIndexWriteCountConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// RabbitmqNodeQueueIndexWriteCountDetailsRateConfig provides config for the rabbitmq.node.queue_index_write_count_details.rate metric.
-type RabbitmqNodeQueueIndexWriteCountDetailsRateConfig struct {
+// RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig provides config for the rabbitmq.node.queue_index_write_count_details.rate metric.
+type RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeQueueIndexWriteCountDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1537,13 +1537,13 @@ func (ms *RabbitmqNodeQueueIndexWriteCountDetailsRateConfig) Unmarshal(parser *c
 	return nil
 }
 
-// RabbitmqNodeRunQueueConfig provides config for the rabbitmq.node.run_queue metric.
-type RabbitmqNodeRunQueueConfig struct {
+// RabbitmqNodeRunQueueMetricConfig provides config for the rabbitmq.node.run_queue metric.
+type RabbitmqNodeRunQueueMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeRunQueueConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeRunQueueMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1557,13 +1557,13 @@ func (ms *RabbitmqNodeRunQueueConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeSocketsTotalConfig provides config for the rabbitmq.node.sockets_total metric.
-type RabbitmqNodeSocketsTotalConfig struct {
+// RabbitmqNodeSocketsTotalMetricConfig provides config for the rabbitmq.node.sockets_total metric.
+type RabbitmqNodeSocketsTotalMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeSocketsTotalConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeSocketsTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1577,13 +1577,13 @@ func (ms *RabbitmqNodeSocketsTotalConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// RabbitmqNodeSocketsUsedConfig provides config for the rabbitmq.node.sockets_used metric.
-type RabbitmqNodeSocketsUsedConfig struct {
+// RabbitmqNodeSocketsUsedMetricConfig provides config for the rabbitmq.node.sockets_used metric.
+type RabbitmqNodeSocketsUsedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeSocketsUsedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeSocketsUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1597,13 +1597,13 @@ func (ms *RabbitmqNodeSocketsUsedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// RabbitmqNodeSocketsUsedDetailsRateConfig provides config for the rabbitmq.node.sockets_used_details.rate metric.
-type RabbitmqNodeSocketsUsedDetailsRateConfig struct {
+// RabbitmqNodeSocketsUsedDetailsRateMetricConfig provides config for the rabbitmq.node.sockets_used_details.rate metric.
+type RabbitmqNodeSocketsUsedDetailsRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeSocketsUsedDetailsRateConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeSocketsUsedDetailsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1617,13 +1617,13 @@ func (ms *RabbitmqNodeSocketsUsedDetailsRateConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// RabbitmqNodeUptimeConfig provides config for the rabbitmq.node.uptime metric.
-type RabbitmqNodeUptimeConfig struct {
+// RabbitmqNodeUptimeMetricConfig provides config for the rabbitmq.node.uptime metric.
+type RabbitmqNodeUptimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *RabbitmqNodeUptimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RabbitmqNodeUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1639,330 +1639,330 @@ func (ms *RabbitmqNodeUptimeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for rabbitmq metrics.
 type MetricsConfig struct {
-	RabbitmqConsumerCount                       RabbitmqConsumerCountConfig                       `mapstructure:"rabbitmq.consumer.count"`
-	RabbitmqMessageAcknowledged                 RabbitmqMessageAcknowledgedConfig                 `mapstructure:"rabbitmq.message.acknowledged"`
-	RabbitmqMessageCurrent                      RabbitmqMessageCurrentConfig                      `mapstructure:"rabbitmq.message.current"`
-	RabbitmqMessageDelivered                    RabbitmqMessageDeliveredConfig                    `mapstructure:"rabbitmq.message.delivered"`
-	RabbitmqMessageDropped                      RabbitmqMessageDroppedConfig                      `mapstructure:"rabbitmq.message.dropped"`
-	RabbitmqMessagePublished                    RabbitmqMessagePublishedConfig                    `mapstructure:"rabbitmq.message.published"`
-	RabbitmqNodeChannelClosed                   RabbitmqNodeChannelClosedConfig                   `mapstructure:"rabbitmq.node.channel_closed"`
-	RabbitmqNodeChannelClosedDetailsRate        RabbitmqNodeChannelClosedDetailsRateConfig        `mapstructure:"rabbitmq.node.channel_closed_details.rate"`
-	RabbitmqNodeChannelCreated                  RabbitmqNodeChannelCreatedConfig                  `mapstructure:"rabbitmq.node.channel_created"`
-	RabbitmqNodeChannelCreatedDetailsRate       RabbitmqNodeChannelCreatedDetailsRateConfig       `mapstructure:"rabbitmq.node.channel_created_details.rate"`
-	RabbitmqNodeConnectionClosed                RabbitmqNodeConnectionClosedConfig                `mapstructure:"rabbitmq.node.connection_closed"`
-	RabbitmqNodeConnectionClosedDetailsRate     RabbitmqNodeConnectionClosedDetailsRateConfig     `mapstructure:"rabbitmq.node.connection_closed_details.rate"`
-	RabbitmqNodeConnectionCreated               RabbitmqNodeConnectionCreatedConfig               `mapstructure:"rabbitmq.node.connection_created"`
-	RabbitmqNodeConnectionCreatedDetailsRate    RabbitmqNodeConnectionCreatedDetailsRateConfig    `mapstructure:"rabbitmq.node.connection_created_details.rate"`
-	RabbitmqNodeContextSwitches                 RabbitmqNodeContextSwitchesConfig                 `mapstructure:"rabbitmq.node.context_switches"`
-	RabbitmqNodeContextSwitchesDetailsRate      RabbitmqNodeContextSwitchesDetailsRateConfig      `mapstructure:"rabbitmq.node.context_switches_details.rate"`
-	RabbitmqNodeDiskFree                        RabbitmqNodeDiskFreeConfig                        `mapstructure:"rabbitmq.node.disk_free"`
-	RabbitmqNodeDiskFreeAlarm                   RabbitmqNodeDiskFreeAlarmConfig                   `mapstructure:"rabbitmq.node.disk_free_alarm"`
-	RabbitmqNodeDiskFreeDetailsRate             RabbitmqNodeDiskFreeDetailsRateConfig             `mapstructure:"rabbitmq.node.disk_free_details.rate"`
-	RabbitmqNodeDiskFreeLimit                   RabbitmqNodeDiskFreeLimitConfig                   `mapstructure:"rabbitmq.node.disk_free_limit"`
-	RabbitmqNodeFdTotal                         RabbitmqNodeFdTotalConfig                         `mapstructure:"rabbitmq.node.fd_total"`
-	RabbitmqNodeFdUsed                          RabbitmqNodeFdUsedConfig                          `mapstructure:"rabbitmq.node.fd_used"`
-	RabbitmqNodeFdUsedDetailsRate               RabbitmqNodeFdUsedDetailsRateConfig               `mapstructure:"rabbitmq.node.fd_used_details.rate"`
-	RabbitmqNodeGcBytesReclaimed                RabbitmqNodeGcBytesReclaimedConfig                `mapstructure:"rabbitmq.node.gc_bytes_reclaimed"`
-	RabbitmqNodeGcBytesReclaimedDetailsRate     RabbitmqNodeGcBytesReclaimedDetailsRateConfig     `mapstructure:"rabbitmq.node.gc_bytes_reclaimed_details.rate"`
-	RabbitmqNodeGcNum                           RabbitmqNodeGcNumConfig                           `mapstructure:"rabbitmq.node.gc_num"`
-	RabbitmqNodeGcNumDetailsRate                RabbitmqNodeGcNumDetailsRateConfig                `mapstructure:"rabbitmq.node.gc_num_details.rate"`
-	RabbitmqNodeIoReadAvgTime                   RabbitmqNodeIoReadAvgTimeConfig                   `mapstructure:"rabbitmq.node.io_read_avg_time"`
-	RabbitmqNodeIoReadAvgTimeDetailsRate        RabbitmqNodeIoReadAvgTimeDetailsRateConfig        `mapstructure:"rabbitmq.node.io_read_avg_time_details.rate"`
-	RabbitmqNodeIoReadBytes                     RabbitmqNodeIoReadBytesConfig                     `mapstructure:"rabbitmq.node.io_read_bytes"`
-	RabbitmqNodeIoReadBytesDetailsRate          RabbitmqNodeIoReadBytesDetailsRateConfig          `mapstructure:"rabbitmq.node.io_read_bytes_details.rate"`
-	RabbitmqNodeIoReadCount                     RabbitmqNodeIoReadCountConfig                     `mapstructure:"rabbitmq.node.io_read_count"`
-	RabbitmqNodeIoReadCountDetailsRate          RabbitmqNodeIoReadCountDetailsRateConfig          `mapstructure:"rabbitmq.node.io_read_count_details.rate"`
-	RabbitmqNodeIoReopenCount                   RabbitmqNodeIoReopenCountConfig                   `mapstructure:"rabbitmq.node.io_reopen_count"`
-	RabbitmqNodeIoReopenCountDetailsRate        RabbitmqNodeIoReopenCountDetailsRateConfig        `mapstructure:"rabbitmq.node.io_reopen_count_details.rate"`
-	RabbitmqNodeIoSeekAvgTime                   RabbitmqNodeIoSeekAvgTimeConfig                   `mapstructure:"rabbitmq.node.io_seek_avg_time"`
-	RabbitmqNodeIoSeekAvgTimeDetailsRate        RabbitmqNodeIoSeekAvgTimeDetailsRateConfig        `mapstructure:"rabbitmq.node.io_seek_avg_time_details.rate"`
-	RabbitmqNodeIoSeekCount                     RabbitmqNodeIoSeekCountConfig                     `mapstructure:"rabbitmq.node.io_seek_count"`
-	RabbitmqNodeIoSeekCountDetailsRate          RabbitmqNodeIoSeekCountDetailsRateConfig          `mapstructure:"rabbitmq.node.io_seek_count_details.rate"`
-	RabbitmqNodeIoSyncAvgTime                   RabbitmqNodeIoSyncAvgTimeConfig                   `mapstructure:"rabbitmq.node.io_sync_avg_time"`
-	RabbitmqNodeIoSyncAvgTimeDetailsRate        RabbitmqNodeIoSyncAvgTimeDetailsRateConfig        `mapstructure:"rabbitmq.node.io_sync_avg_time_details.rate"`
-	RabbitmqNodeIoSyncCount                     RabbitmqNodeIoSyncCountConfig                     `mapstructure:"rabbitmq.node.io_sync_count"`
-	RabbitmqNodeIoSyncCountDetailsRate          RabbitmqNodeIoSyncCountDetailsRateConfig          `mapstructure:"rabbitmq.node.io_sync_count_details.rate"`
-	RabbitmqNodeIoWriteAvgTime                  RabbitmqNodeIoWriteAvgTimeConfig                  `mapstructure:"rabbitmq.node.io_write_avg_time"`
-	RabbitmqNodeIoWriteAvgTimeDetailsRate       RabbitmqNodeIoWriteAvgTimeDetailsRateConfig       `mapstructure:"rabbitmq.node.io_write_avg_time_details.rate"`
-	RabbitmqNodeIoWriteBytes                    RabbitmqNodeIoWriteBytesConfig                    `mapstructure:"rabbitmq.node.io_write_bytes"`
-	RabbitmqNodeIoWriteBytesDetailsRate         RabbitmqNodeIoWriteBytesDetailsRateConfig         `mapstructure:"rabbitmq.node.io_write_bytes_details.rate"`
-	RabbitmqNodeIoWriteCount                    RabbitmqNodeIoWriteCountConfig                    `mapstructure:"rabbitmq.node.io_write_count"`
-	RabbitmqNodeIoWriteCountDetailsRate         RabbitmqNodeIoWriteCountDetailsRateConfig         `mapstructure:"rabbitmq.node.io_write_count_details.rate"`
-	RabbitmqNodeMemAlarm                        RabbitmqNodeMemAlarmConfig                        `mapstructure:"rabbitmq.node.mem_alarm"`
-	RabbitmqNodeMemLimit                        RabbitmqNodeMemLimitConfig                        `mapstructure:"rabbitmq.node.mem_limit"`
-	RabbitmqNodeMemUsed                         RabbitmqNodeMemUsedConfig                         `mapstructure:"rabbitmq.node.mem_used"`
-	RabbitmqNodeMemUsedDetailsRate              RabbitmqNodeMemUsedDetailsRateConfig              `mapstructure:"rabbitmq.node.mem_used_details.rate"`
-	RabbitmqNodeMnesiaDiskTxCount               RabbitmqNodeMnesiaDiskTxCountConfig               `mapstructure:"rabbitmq.node.mnesia_disk_tx_count"`
-	RabbitmqNodeMnesiaDiskTxCountDetailsRate    RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig    `mapstructure:"rabbitmq.node.mnesia_disk_tx_count_details.rate"`
-	RabbitmqNodeMnesiaRAMTxCount                RabbitmqNodeMnesiaRAMTxCountConfig                `mapstructure:"rabbitmq.node.mnesia_ram_tx_count"`
-	RabbitmqNodeMnesiaRAMTxCountDetailsRate     RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig     `mapstructure:"rabbitmq.node.mnesia_ram_tx_count_details.rate"`
-	RabbitmqNodeMsgStoreReadCount               RabbitmqNodeMsgStoreReadCountConfig               `mapstructure:"rabbitmq.node.msg_store_read_count"`
-	RabbitmqNodeMsgStoreReadCountDetailsRate    RabbitmqNodeMsgStoreReadCountDetailsRateConfig    `mapstructure:"rabbitmq.node.msg_store_read_count_details.rate"`
-	RabbitmqNodeMsgStoreWriteCount              RabbitmqNodeMsgStoreWriteCountConfig              `mapstructure:"rabbitmq.node.msg_store_write_count"`
-	RabbitmqNodeMsgStoreWriteCountDetailsRate   RabbitmqNodeMsgStoreWriteCountDetailsRateConfig   `mapstructure:"rabbitmq.node.msg_store_write_count_details.rate"`
-	RabbitmqNodeProcTotal                       RabbitmqNodeProcTotalConfig                       `mapstructure:"rabbitmq.node.proc_total"`
-	RabbitmqNodeProcUsed                        RabbitmqNodeProcUsedConfig                        `mapstructure:"rabbitmq.node.proc_used"`
-	RabbitmqNodeProcUsedDetailsRate             RabbitmqNodeProcUsedDetailsRateConfig             `mapstructure:"rabbitmq.node.proc_used_details.rate"`
-	RabbitmqNodeProcessors                      RabbitmqNodeProcessorsConfig                      `mapstructure:"rabbitmq.node.processors"`
-	RabbitmqNodeQueueCreated                    RabbitmqNodeQueueCreatedConfig                    `mapstructure:"rabbitmq.node.queue_created"`
-	RabbitmqNodeQueueCreatedDetailsRate         RabbitmqNodeQueueCreatedDetailsRateConfig         `mapstructure:"rabbitmq.node.queue_created_details.rate"`
-	RabbitmqNodeQueueDeclared                   RabbitmqNodeQueueDeclaredConfig                   `mapstructure:"rabbitmq.node.queue_declared"`
-	RabbitmqNodeQueueDeclaredDetailsRate        RabbitmqNodeQueueDeclaredDetailsRateConfig        `mapstructure:"rabbitmq.node.queue_declared_details.rate"`
-	RabbitmqNodeQueueDeleted                    RabbitmqNodeQueueDeletedConfig                    `mapstructure:"rabbitmq.node.queue_deleted"`
-	RabbitmqNodeQueueDeletedDetailsRate         RabbitmqNodeQueueDeletedDetailsRateConfig         `mapstructure:"rabbitmq.node.queue_deleted_details.rate"`
-	RabbitmqNodeQueueIndexReadCount             RabbitmqNodeQueueIndexReadCountConfig             `mapstructure:"rabbitmq.node.queue_index_read_count"`
-	RabbitmqNodeQueueIndexReadCountDetailsRate  RabbitmqNodeQueueIndexReadCountDetailsRateConfig  `mapstructure:"rabbitmq.node.queue_index_read_count_details.rate"`
-	RabbitmqNodeQueueIndexWriteCount            RabbitmqNodeQueueIndexWriteCountConfig            `mapstructure:"rabbitmq.node.queue_index_write_count"`
-	RabbitmqNodeQueueIndexWriteCountDetailsRate RabbitmqNodeQueueIndexWriteCountDetailsRateConfig `mapstructure:"rabbitmq.node.queue_index_write_count_details.rate"`
-	RabbitmqNodeRunQueue                        RabbitmqNodeRunQueueConfig                        `mapstructure:"rabbitmq.node.run_queue"`
-	RabbitmqNodeSocketsTotal                    RabbitmqNodeSocketsTotalConfig                    `mapstructure:"rabbitmq.node.sockets_total"`
-	RabbitmqNodeSocketsUsed                     RabbitmqNodeSocketsUsedConfig                     `mapstructure:"rabbitmq.node.sockets_used"`
-	RabbitmqNodeSocketsUsedDetailsRate          RabbitmqNodeSocketsUsedDetailsRateConfig          `mapstructure:"rabbitmq.node.sockets_used_details.rate"`
-	RabbitmqNodeUptime                          RabbitmqNodeUptimeConfig                          `mapstructure:"rabbitmq.node.uptime"`
+	RabbitmqConsumerCount                       RabbitmqConsumerCountMetricConfig                       `mapstructure:"rabbitmq.consumer.count"`
+	RabbitmqMessageAcknowledged                 RabbitmqMessageAcknowledgedMetricConfig                 `mapstructure:"rabbitmq.message.acknowledged"`
+	RabbitmqMessageCurrent                      RabbitmqMessageCurrentMetricConfig                      `mapstructure:"rabbitmq.message.current"`
+	RabbitmqMessageDelivered                    RabbitmqMessageDeliveredMetricConfig                    `mapstructure:"rabbitmq.message.delivered"`
+	RabbitmqMessageDropped                      RabbitmqMessageDroppedMetricConfig                      `mapstructure:"rabbitmq.message.dropped"`
+	RabbitmqMessagePublished                    RabbitmqMessagePublishedMetricConfig                    `mapstructure:"rabbitmq.message.published"`
+	RabbitmqNodeChannelClosed                   RabbitmqNodeChannelClosedMetricConfig                   `mapstructure:"rabbitmq.node.channel_closed"`
+	RabbitmqNodeChannelClosedDetailsRate        RabbitmqNodeChannelClosedDetailsRateMetricConfig        `mapstructure:"rabbitmq.node.channel_closed_details.rate"`
+	RabbitmqNodeChannelCreated                  RabbitmqNodeChannelCreatedMetricConfig                  `mapstructure:"rabbitmq.node.channel_created"`
+	RabbitmqNodeChannelCreatedDetailsRate       RabbitmqNodeChannelCreatedDetailsRateMetricConfig       `mapstructure:"rabbitmq.node.channel_created_details.rate"`
+	RabbitmqNodeConnectionClosed                RabbitmqNodeConnectionClosedMetricConfig                `mapstructure:"rabbitmq.node.connection_closed"`
+	RabbitmqNodeConnectionClosedDetailsRate     RabbitmqNodeConnectionClosedDetailsRateMetricConfig     `mapstructure:"rabbitmq.node.connection_closed_details.rate"`
+	RabbitmqNodeConnectionCreated               RabbitmqNodeConnectionCreatedMetricConfig               `mapstructure:"rabbitmq.node.connection_created"`
+	RabbitmqNodeConnectionCreatedDetailsRate    RabbitmqNodeConnectionCreatedDetailsRateMetricConfig    `mapstructure:"rabbitmq.node.connection_created_details.rate"`
+	RabbitmqNodeContextSwitches                 RabbitmqNodeContextSwitchesMetricConfig                 `mapstructure:"rabbitmq.node.context_switches"`
+	RabbitmqNodeContextSwitchesDetailsRate      RabbitmqNodeContextSwitchesDetailsRateMetricConfig      `mapstructure:"rabbitmq.node.context_switches_details.rate"`
+	RabbitmqNodeDiskFree                        RabbitmqNodeDiskFreeMetricConfig                        `mapstructure:"rabbitmq.node.disk_free"`
+	RabbitmqNodeDiskFreeAlarm                   RabbitmqNodeDiskFreeAlarmMetricConfig                   `mapstructure:"rabbitmq.node.disk_free_alarm"`
+	RabbitmqNodeDiskFreeDetailsRate             RabbitmqNodeDiskFreeDetailsRateMetricConfig             `mapstructure:"rabbitmq.node.disk_free_details.rate"`
+	RabbitmqNodeDiskFreeLimit                   RabbitmqNodeDiskFreeLimitMetricConfig                   `mapstructure:"rabbitmq.node.disk_free_limit"`
+	RabbitmqNodeFdTotal                         RabbitmqNodeFdTotalMetricConfig                         `mapstructure:"rabbitmq.node.fd_total"`
+	RabbitmqNodeFdUsed                          RabbitmqNodeFdUsedMetricConfig                          `mapstructure:"rabbitmq.node.fd_used"`
+	RabbitmqNodeFdUsedDetailsRate               RabbitmqNodeFdUsedDetailsRateMetricConfig               `mapstructure:"rabbitmq.node.fd_used_details.rate"`
+	RabbitmqNodeGcBytesReclaimed                RabbitmqNodeGcBytesReclaimedMetricConfig                `mapstructure:"rabbitmq.node.gc_bytes_reclaimed"`
+	RabbitmqNodeGcBytesReclaimedDetailsRate     RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig     `mapstructure:"rabbitmq.node.gc_bytes_reclaimed_details.rate"`
+	RabbitmqNodeGcNum                           RabbitmqNodeGcNumMetricConfig                           `mapstructure:"rabbitmq.node.gc_num"`
+	RabbitmqNodeGcNumDetailsRate                RabbitmqNodeGcNumDetailsRateMetricConfig                `mapstructure:"rabbitmq.node.gc_num_details.rate"`
+	RabbitmqNodeIoReadAvgTime                   RabbitmqNodeIoReadAvgTimeMetricConfig                   `mapstructure:"rabbitmq.node.io_read_avg_time"`
+	RabbitmqNodeIoReadAvgTimeDetailsRate        RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig        `mapstructure:"rabbitmq.node.io_read_avg_time_details.rate"`
+	RabbitmqNodeIoReadBytes                     RabbitmqNodeIoReadBytesMetricConfig                     `mapstructure:"rabbitmq.node.io_read_bytes"`
+	RabbitmqNodeIoReadBytesDetailsRate          RabbitmqNodeIoReadBytesDetailsRateMetricConfig          `mapstructure:"rabbitmq.node.io_read_bytes_details.rate"`
+	RabbitmqNodeIoReadCount                     RabbitmqNodeIoReadCountMetricConfig                     `mapstructure:"rabbitmq.node.io_read_count"`
+	RabbitmqNodeIoReadCountDetailsRate          RabbitmqNodeIoReadCountDetailsRateMetricConfig          `mapstructure:"rabbitmq.node.io_read_count_details.rate"`
+	RabbitmqNodeIoReopenCount                   RabbitmqNodeIoReopenCountMetricConfig                   `mapstructure:"rabbitmq.node.io_reopen_count"`
+	RabbitmqNodeIoReopenCountDetailsRate        RabbitmqNodeIoReopenCountDetailsRateMetricConfig        `mapstructure:"rabbitmq.node.io_reopen_count_details.rate"`
+	RabbitmqNodeIoSeekAvgTime                   RabbitmqNodeIoSeekAvgTimeMetricConfig                   `mapstructure:"rabbitmq.node.io_seek_avg_time"`
+	RabbitmqNodeIoSeekAvgTimeDetailsRate        RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig        `mapstructure:"rabbitmq.node.io_seek_avg_time_details.rate"`
+	RabbitmqNodeIoSeekCount                     RabbitmqNodeIoSeekCountMetricConfig                     `mapstructure:"rabbitmq.node.io_seek_count"`
+	RabbitmqNodeIoSeekCountDetailsRate          RabbitmqNodeIoSeekCountDetailsRateMetricConfig          `mapstructure:"rabbitmq.node.io_seek_count_details.rate"`
+	RabbitmqNodeIoSyncAvgTime                   RabbitmqNodeIoSyncAvgTimeMetricConfig                   `mapstructure:"rabbitmq.node.io_sync_avg_time"`
+	RabbitmqNodeIoSyncAvgTimeDetailsRate        RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig        `mapstructure:"rabbitmq.node.io_sync_avg_time_details.rate"`
+	RabbitmqNodeIoSyncCount                     RabbitmqNodeIoSyncCountMetricConfig                     `mapstructure:"rabbitmq.node.io_sync_count"`
+	RabbitmqNodeIoSyncCountDetailsRate          RabbitmqNodeIoSyncCountDetailsRateMetricConfig          `mapstructure:"rabbitmq.node.io_sync_count_details.rate"`
+	RabbitmqNodeIoWriteAvgTime                  RabbitmqNodeIoWriteAvgTimeMetricConfig                  `mapstructure:"rabbitmq.node.io_write_avg_time"`
+	RabbitmqNodeIoWriteAvgTimeDetailsRate       RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig       `mapstructure:"rabbitmq.node.io_write_avg_time_details.rate"`
+	RabbitmqNodeIoWriteBytes                    RabbitmqNodeIoWriteBytesMetricConfig                    `mapstructure:"rabbitmq.node.io_write_bytes"`
+	RabbitmqNodeIoWriteBytesDetailsRate         RabbitmqNodeIoWriteBytesDetailsRateMetricConfig         `mapstructure:"rabbitmq.node.io_write_bytes_details.rate"`
+	RabbitmqNodeIoWriteCount                    RabbitmqNodeIoWriteCountMetricConfig                    `mapstructure:"rabbitmq.node.io_write_count"`
+	RabbitmqNodeIoWriteCountDetailsRate         RabbitmqNodeIoWriteCountDetailsRateMetricConfig         `mapstructure:"rabbitmq.node.io_write_count_details.rate"`
+	RabbitmqNodeMemAlarm                        RabbitmqNodeMemAlarmMetricConfig                        `mapstructure:"rabbitmq.node.mem_alarm"`
+	RabbitmqNodeMemLimit                        RabbitmqNodeMemLimitMetricConfig                        `mapstructure:"rabbitmq.node.mem_limit"`
+	RabbitmqNodeMemUsed                         RabbitmqNodeMemUsedMetricConfig                         `mapstructure:"rabbitmq.node.mem_used"`
+	RabbitmqNodeMemUsedDetailsRate              RabbitmqNodeMemUsedDetailsRateMetricConfig              `mapstructure:"rabbitmq.node.mem_used_details.rate"`
+	RabbitmqNodeMnesiaDiskTxCount               RabbitmqNodeMnesiaDiskTxCountMetricConfig               `mapstructure:"rabbitmq.node.mnesia_disk_tx_count"`
+	RabbitmqNodeMnesiaDiskTxCountDetailsRate    RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig    `mapstructure:"rabbitmq.node.mnesia_disk_tx_count_details.rate"`
+	RabbitmqNodeMnesiaRAMTxCount                RabbitmqNodeMnesiaRAMTxCountMetricConfig                `mapstructure:"rabbitmq.node.mnesia_ram_tx_count"`
+	RabbitmqNodeMnesiaRAMTxCountDetailsRate     RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig     `mapstructure:"rabbitmq.node.mnesia_ram_tx_count_details.rate"`
+	RabbitmqNodeMsgStoreReadCount               RabbitmqNodeMsgStoreReadCountMetricConfig               `mapstructure:"rabbitmq.node.msg_store_read_count"`
+	RabbitmqNodeMsgStoreReadCountDetailsRate    RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig    `mapstructure:"rabbitmq.node.msg_store_read_count_details.rate"`
+	RabbitmqNodeMsgStoreWriteCount              RabbitmqNodeMsgStoreWriteCountMetricConfig              `mapstructure:"rabbitmq.node.msg_store_write_count"`
+	RabbitmqNodeMsgStoreWriteCountDetailsRate   RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig   `mapstructure:"rabbitmq.node.msg_store_write_count_details.rate"`
+	RabbitmqNodeProcTotal                       RabbitmqNodeProcTotalMetricConfig                       `mapstructure:"rabbitmq.node.proc_total"`
+	RabbitmqNodeProcUsed                        RabbitmqNodeProcUsedMetricConfig                        `mapstructure:"rabbitmq.node.proc_used"`
+	RabbitmqNodeProcUsedDetailsRate             RabbitmqNodeProcUsedDetailsRateMetricConfig             `mapstructure:"rabbitmq.node.proc_used_details.rate"`
+	RabbitmqNodeProcessors                      RabbitmqNodeProcessorsMetricConfig                      `mapstructure:"rabbitmq.node.processors"`
+	RabbitmqNodeQueueCreated                    RabbitmqNodeQueueCreatedMetricConfig                    `mapstructure:"rabbitmq.node.queue_created"`
+	RabbitmqNodeQueueCreatedDetailsRate         RabbitmqNodeQueueCreatedDetailsRateMetricConfig         `mapstructure:"rabbitmq.node.queue_created_details.rate"`
+	RabbitmqNodeQueueDeclared                   RabbitmqNodeQueueDeclaredMetricConfig                   `mapstructure:"rabbitmq.node.queue_declared"`
+	RabbitmqNodeQueueDeclaredDetailsRate        RabbitmqNodeQueueDeclaredDetailsRateMetricConfig        `mapstructure:"rabbitmq.node.queue_declared_details.rate"`
+	RabbitmqNodeQueueDeleted                    RabbitmqNodeQueueDeletedMetricConfig                    `mapstructure:"rabbitmq.node.queue_deleted"`
+	RabbitmqNodeQueueDeletedDetailsRate         RabbitmqNodeQueueDeletedDetailsRateMetricConfig         `mapstructure:"rabbitmq.node.queue_deleted_details.rate"`
+	RabbitmqNodeQueueIndexReadCount             RabbitmqNodeQueueIndexReadCountMetricConfig             `mapstructure:"rabbitmq.node.queue_index_read_count"`
+	RabbitmqNodeQueueIndexReadCountDetailsRate  RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig  `mapstructure:"rabbitmq.node.queue_index_read_count_details.rate"`
+	RabbitmqNodeQueueIndexWriteCount            RabbitmqNodeQueueIndexWriteCountMetricConfig            `mapstructure:"rabbitmq.node.queue_index_write_count"`
+	RabbitmqNodeQueueIndexWriteCountDetailsRate RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig `mapstructure:"rabbitmq.node.queue_index_write_count_details.rate"`
+	RabbitmqNodeRunQueue                        RabbitmqNodeRunQueueMetricConfig                        `mapstructure:"rabbitmq.node.run_queue"`
+	RabbitmqNodeSocketsTotal                    RabbitmqNodeSocketsTotalMetricConfig                    `mapstructure:"rabbitmq.node.sockets_total"`
+	RabbitmqNodeSocketsUsed                     RabbitmqNodeSocketsUsedMetricConfig                     `mapstructure:"rabbitmq.node.sockets_used"`
+	RabbitmqNodeSocketsUsedDetailsRate          RabbitmqNodeSocketsUsedDetailsRateMetricConfig          `mapstructure:"rabbitmq.node.sockets_used_details.rate"`
+	RabbitmqNodeUptime                          RabbitmqNodeUptimeMetricConfig                          `mapstructure:"rabbitmq.node.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		RabbitmqConsumerCount: RabbitmqConsumerCountConfig{
+		RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 			Enabled: true,
 		},
-		RabbitmqMessageAcknowledged: RabbitmqMessageAcknowledgedConfig{
+		RabbitmqMessageAcknowledged: RabbitmqMessageAcknowledgedMetricConfig{
 			Enabled: true,
 		},
-		RabbitmqMessageCurrent: RabbitmqMessageCurrentConfig{
+		RabbitmqMessageCurrent: RabbitmqMessageCurrentMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []RabbitmqMessageCurrentAttributeKey{RabbitmqMessageCurrentAttributeKeyMessageState},
+			EnabledAttributes:   []RabbitmqMessageCurrentMetricAttributeKey{RabbitmqMessageCurrentMetricAttributeKeyMessageState},
 		},
-		RabbitmqMessageDelivered: RabbitmqMessageDeliveredConfig{
+		RabbitmqMessageDelivered: RabbitmqMessageDeliveredMetricConfig{
 			Enabled: true,
 		},
-		RabbitmqMessageDropped: RabbitmqMessageDroppedConfig{
+		RabbitmqMessageDropped: RabbitmqMessageDroppedMetricConfig{
 			Enabled: true,
 		},
-		RabbitmqMessagePublished: RabbitmqMessagePublishedConfig{
+		RabbitmqMessagePublished: RabbitmqMessagePublishedMetricConfig{
 			Enabled: true,
 		},
-		RabbitmqNodeChannelClosed: RabbitmqNodeChannelClosedConfig{
+		RabbitmqNodeChannelClosed: RabbitmqNodeChannelClosedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeChannelClosedDetailsRate: RabbitmqNodeChannelClosedDetailsRateConfig{
+		RabbitmqNodeChannelClosedDetailsRate: RabbitmqNodeChannelClosedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeChannelCreated: RabbitmqNodeChannelCreatedConfig{
+		RabbitmqNodeChannelCreated: RabbitmqNodeChannelCreatedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeChannelCreatedDetailsRate: RabbitmqNodeChannelCreatedDetailsRateConfig{
+		RabbitmqNodeChannelCreatedDetailsRate: RabbitmqNodeChannelCreatedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeConnectionClosed: RabbitmqNodeConnectionClosedConfig{
+		RabbitmqNodeConnectionClosed: RabbitmqNodeConnectionClosedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeConnectionClosedDetailsRate: RabbitmqNodeConnectionClosedDetailsRateConfig{
+		RabbitmqNodeConnectionClosedDetailsRate: RabbitmqNodeConnectionClosedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeConnectionCreated: RabbitmqNodeConnectionCreatedConfig{
+		RabbitmqNodeConnectionCreated: RabbitmqNodeConnectionCreatedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeConnectionCreatedDetailsRate: RabbitmqNodeConnectionCreatedDetailsRateConfig{
+		RabbitmqNodeConnectionCreatedDetailsRate: RabbitmqNodeConnectionCreatedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeContextSwitches: RabbitmqNodeContextSwitchesConfig{
+		RabbitmqNodeContextSwitches: RabbitmqNodeContextSwitchesMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeContextSwitchesDetailsRate: RabbitmqNodeContextSwitchesDetailsRateConfig{
+		RabbitmqNodeContextSwitchesDetailsRate: RabbitmqNodeContextSwitchesDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeDiskFree: RabbitmqNodeDiskFreeConfig{
+		RabbitmqNodeDiskFree: RabbitmqNodeDiskFreeMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeDiskFreeAlarm: RabbitmqNodeDiskFreeAlarmConfig{
+		RabbitmqNodeDiskFreeAlarm: RabbitmqNodeDiskFreeAlarmMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeDiskFreeDetailsRate: RabbitmqNodeDiskFreeDetailsRateConfig{
+		RabbitmqNodeDiskFreeDetailsRate: RabbitmqNodeDiskFreeDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeDiskFreeLimit: RabbitmqNodeDiskFreeLimitConfig{
+		RabbitmqNodeDiskFreeLimit: RabbitmqNodeDiskFreeLimitMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeFdTotal: RabbitmqNodeFdTotalConfig{
+		RabbitmqNodeFdTotal: RabbitmqNodeFdTotalMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeFdUsed: RabbitmqNodeFdUsedConfig{
+		RabbitmqNodeFdUsed: RabbitmqNodeFdUsedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeFdUsedDetailsRate: RabbitmqNodeFdUsedDetailsRateConfig{
+		RabbitmqNodeFdUsedDetailsRate: RabbitmqNodeFdUsedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeGcBytesReclaimed: RabbitmqNodeGcBytesReclaimedConfig{
+		RabbitmqNodeGcBytesReclaimed: RabbitmqNodeGcBytesReclaimedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeGcBytesReclaimedDetailsRate: RabbitmqNodeGcBytesReclaimedDetailsRateConfig{
+		RabbitmqNodeGcBytesReclaimedDetailsRate: RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeGcNum: RabbitmqNodeGcNumConfig{
+		RabbitmqNodeGcNum: RabbitmqNodeGcNumMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeGcNumDetailsRate: RabbitmqNodeGcNumDetailsRateConfig{
+		RabbitmqNodeGcNumDetailsRate: RabbitmqNodeGcNumDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoReadAvgTime: RabbitmqNodeIoReadAvgTimeConfig{
+		RabbitmqNodeIoReadAvgTime: RabbitmqNodeIoReadAvgTimeMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoReadAvgTimeDetailsRate: RabbitmqNodeIoReadAvgTimeDetailsRateConfig{
+		RabbitmqNodeIoReadAvgTimeDetailsRate: RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoReadBytes: RabbitmqNodeIoReadBytesConfig{
+		RabbitmqNodeIoReadBytes: RabbitmqNodeIoReadBytesMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoReadBytesDetailsRate: RabbitmqNodeIoReadBytesDetailsRateConfig{
+		RabbitmqNodeIoReadBytesDetailsRate: RabbitmqNodeIoReadBytesDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoReadCount: RabbitmqNodeIoReadCountConfig{
+		RabbitmqNodeIoReadCount: RabbitmqNodeIoReadCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoReadCountDetailsRate: RabbitmqNodeIoReadCountDetailsRateConfig{
+		RabbitmqNodeIoReadCountDetailsRate: RabbitmqNodeIoReadCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoReopenCount: RabbitmqNodeIoReopenCountConfig{
+		RabbitmqNodeIoReopenCount: RabbitmqNodeIoReopenCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoReopenCountDetailsRate: RabbitmqNodeIoReopenCountDetailsRateConfig{
+		RabbitmqNodeIoReopenCountDetailsRate: RabbitmqNodeIoReopenCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoSeekAvgTime: RabbitmqNodeIoSeekAvgTimeConfig{
+		RabbitmqNodeIoSeekAvgTime: RabbitmqNodeIoSeekAvgTimeMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoSeekAvgTimeDetailsRate: RabbitmqNodeIoSeekAvgTimeDetailsRateConfig{
+		RabbitmqNodeIoSeekAvgTimeDetailsRate: RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoSeekCount: RabbitmqNodeIoSeekCountConfig{
+		RabbitmqNodeIoSeekCount: RabbitmqNodeIoSeekCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoSeekCountDetailsRate: RabbitmqNodeIoSeekCountDetailsRateConfig{
+		RabbitmqNodeIoSeekCountDetailsRate: RabbitmqNodeIoSeekCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoSyncAvgTime: RabbitmqNodeIoSyncAvgTimeConfig{
+		RabbitmqNodeIoSyncAvgTime: RabbitmqNodeIoSyncAvgTimeMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoSyncAvgTimeDetailsRate: RabbitmqNodeIoSyncAvgTimeDetailsRateConfig{
+		RabbitmqNodeIoSyncAvgTimeDetailsRate: RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoSyncCount: RabbitmqNodeIoSyncCountConfig{
+		RabbitmqNodeIoSyncCount: RabbitmqNodeIoSyncCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoSyncCountDetailsRate: RabbitmqNodeIoSyncCountDetailsRateConfig{
+		RabbitmqNodeIoSyncCountDetailsRate: RabbitmqNodeIoSyncCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoWriteAvgTime: RabbitmqNodeIoWriteAvgTimeConfig{
+		RabbitmqNodeIoWriteAvgTime: RabbitmqNodeIoWriteAvgTimeMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoWriteAvgTimeDetailsRate: RabbitmqNodeIoWriteAvgTimeDetailsRateConfig{
+		RabbitmqNodeIoWriteAvgTimeDetailsRate: RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoWriteBytes: RabbitmqNodeIoWriteBytesConfig{
+		RabbitmqNodeIoWriteBytes: RabbitmqNodeIoWriteBytesMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoWriteBytesDetailsRate: RabbitmqNodeIoWriteBytesDetailsRateConfig{
+		RabbitmqNodeIoWriteBytesDetailsRate: RabbitmqNodeIoWriteBytesDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoWriteCount: RabbitmqNodeIoWriteCountConfig{
+		RabbitmqNodeIoWriteCount: RabbitmqNodeIoWriteCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeIoWriteCountDetailsRate: RabbitmqNodeIoWriteCountDetailsRateConfig{
+		RabbitmqNodeIoWriteCountDetailsRate: RabbitmqNodeIoWriteCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMemAlarm: RabbitmqNodeMemAlarmConfig{
+		RabbitmqNodeMemAlarm: RabbitmqNodeMemAlarmMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMemLimit: RabbitmqNodeMemLimitConfig{
+		RabbitmqNodeMemLimit: RabbitmqNodeMemLimitMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMemUsed: RabbitmqNodeMemUsedConfig{
+		RabbitmqNodeMemUsed: RabbitmqNodeMemUsedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMemUsedDetailsRate: RabbitmqNodeMemUsedDetailsRateConfig{
+		RabbitmqNodeMemUsedDetailsRate: RabbitmqNodeMemUsedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMnesiaDiskTxCount: RabbitmqNodeMnesiaDiskTxCountConfig{
+		RabbitmqNodeMnesiaDiskTxCount: RabbitmqNodeMnesiaDiskTxCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMnesiaDiskTxCountDetailsRate: RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig{
+		RabbitmqNodeMnesiaDiskTxCountDetailsRate: RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMnesiaRAMTxCount: RabbitmqNodeMnesiaRAMTxCountConfig{
+		RabbitmqNodeMnesiaRAMTxCount: RabbitmqNodeMnesiaRAMTxCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMnesiaRAMTxCountDetailsRate: RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig{
+		RabbitmqNodeMnesiaRAMTxCountDetailsRate: RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMsgStoreReadCount: RabbitmqNodeMsgStoreReadCountConfig{
+		RabbitmqNodeMsgStoreReadCount: RabbitmqNodeMsgStoreReadCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMsgStoreReadCountDetailsRate: RabbitmqNodeMsgStoreReadCountDetailsRateConfig{
+		RabbitmqNodeMsgStoreReadCountDetailsRate: RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMsgStoreWriteCount: RabbitmqNodeMsgStoreWriteCountConfig{
+		RabbitmqNodeMsgStoreWriteCount: RabbitmqNodeMsgStoreWriteCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeMsgStoreWriteCountDetailsRate: RabbitmqNodeMsgStoreWriteCountDetailsRateConfig{
+		RabbitmqNodeMsgStoreWriteCountDetailsRate: RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeProcTotal: RabbitmqNodeProcTotalConfig{
+		RabbitmqNodeProcTotal: RabbitmqNodeProcTotalMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeProcUsed: RabbitmqNodeProcUsedConfig{
+		RabbitmqNodeProcUsed: RabbitmqNodeProcUsedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeProcUsedDetailsRate: RabbitmqNodeProcUsedDetailsRateConfig{
+		RabbitmqNodeProcUsedDetailsRate: RabbitmqNodeProcUsedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeProcessors: RabbitmqNodeProcessorsConfig{
+		RabbitmqNodeProcessors: RabbitmqNodeProcessorsMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueCreated: RabbitmqNodeQueueCreatedConfig{
+		RabbitmqNodeQueueCreated: RabbitmqNodeQueueCreatedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueCreatedDetailsRate: RabbitmqNodeQueueCreatedDetailsRateConfig{
+		RabbitmqNodeQueueCreatedDetailsRate: RabbitmqNodeQueueCreatedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueDeclared: RabbitmqNodeQueueDeclaredConfig{
+		RabbitmqNodeQueueDeclared: RabbitmqNodeQueueDeclaredMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueDeclaredDetailsRate: RabbitmqNodeQueueDeclaredDetailsRateConfig{
+		RabbitmqNodeQueueDeclaredDetailsRate: RabbitmqNodeQueueDeclaredDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueDeleted: RabbitmqNodeQueueDeletedConfig{
+		RabbitmqNodeQueueDeleted: RabbitmqNodeQueueDeletedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueDeletedDetailsRate: RabbitmqNodeQueueDeletedDetailsRateConfig{
+		RabbitmqNodeQueueDeletedDetailsRate: RabbitmqNodeQueueDeletedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueIndexReadCount: RabbitmqNodeQueueIndexReadCountConfig{
+		RabbitmqNodeQueueIndexReadCount: RabbitmqNodeQueueIndexReadCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueIndexReadCountDetailsRate: RabbitmqNodeQueueIndexReadCountDetailsRateConfig{
+		RabbitmqNodeQueueIndexReadCountDetailsRate: RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueIndexWriteCount: RabbitmqNodeQueueIndexWriteCountConfig{
+		RabbitmqNodeQueueIndexWriteCount: RabbitmqNodeQueueIndexWriteCountMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeQueueIndexWriteCountDetailsRate: RabbitmqNodeQueueIndexWriteCountDetailsRateConfig{
+		RabbitmqNodeQueueIndexWriteCountDetailsRate: RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeRunQueue: RabbitmqNodeRunQueueConfig{
+		RabbitmqNodeRunQueue: RabbitmqNodeRunQueueMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeSocketsTotal: RabbitmqNodeSocketsTotalConfig{
+		RabbitmqNodeSocketsTotal: RabbitmqNodeSocketsTotalMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeSocketsUsed: RabbitmqNodeSocketsUsedConfig{
+		RabbitmqNodeSocketsUsed: RabbitmqNodeSocketsUsedMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeSocketsUsedDetailsRate: RabbitmqNodeSocketsUsedDetailsRateConfig{
+		RabbitmqNodeSocketsUsedDetailsRate: RabbitmqNodeSocketsUsedDetailsRateMetricConfig{
 			Enabled: false,
 		},
-		RabbitmqNodeUptime: RabbitmqNodeUptimeConfig{
+		RabbitmqNodeUptime: RabbitmqNodeUptimeMetricConfig{
 			Enabled: false,
 		},
 	}

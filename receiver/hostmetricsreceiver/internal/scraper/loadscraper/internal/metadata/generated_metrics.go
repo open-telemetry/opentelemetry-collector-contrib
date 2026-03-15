@@ -42,9 +42,9 @@ type metricInfo struct {
 }
 
 type metricSystemCPULoadAverage15m struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   SystemCPULoadAverage15mConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   SystemCPULoadAverage15mMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills system.cpu.load_average.15m metric with initial data.
@@ -81,7 +81,7 @@ func (m *metricSystemCPULoadAverage15m) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemCPULoadAverage15m(cfg SystemCPULoadAverage15mConfig) metricSystemCPULoadAverage15m {
+func newMetricSystemCPULoadAverage15m(cfg SystemCPULoadAverage15mMetricConfig) metricSystemCPULoadAverage15m {
 	m := metricSystemCPULoadAverage15m{config: cfg}
 
 	if cfg.Enabled {
@@ -92,9 +92,9 @@ func newMetricSystemCPULoadAverage15m(cfg SystemCPULoadAverage15mConfig) metricS
 }
 
 type metricSystemCPULoadAverage1m struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   SystemCPULoadAverage1mConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SystemCPULoadAverage1mMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills system.cpu.load_average.1m metric with initial data.
@@ -131,7 +131,7 @@ func (m *metricSystemCPULoadAverage1m) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemCPULoadAverage1m(cfg SystemCPULoadAverage1mConfig) metricSystemCPULoadAverage1m {
+func newMetricSystemCPULoadAverage1m(cfg SystemCPULoadAverage1mMetricConfig) metricSystemCPULoadAverage1m {
 	m := metricSystemCPULoadAverage1m{config: cfg}
 
 	if cfg.Enabled {
@@ -142,9 +142,9 @@ func newMetricSystemCPULoadAverage1m(cfg SystemCPULoadAverage1mConfig) metricSys
 }
 
 type metricSystemCPULoadAverage5m struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   SystemCPULoadAverage5mConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SystemCPULoadAverage5mMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills system.cpu.load_average.5m metric with initial data.
@@ -181,7 +181,7 @@ func (m *metricSystemCPULoadAverage5m) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemCPULoadAverage5m(cfg SystemCPULoadAverage5mConfig) metricSystemCPULoadAverage5m {
+func newMetricSystemCPULoadAverage5m(cfg SystemCPULoadAverage5mMetricConfig) metricSystemCPULoadAverage5m {
 	m := metricSystemCPULoadAverage5m{config: cfg}
 
 	if cfg.Enabled {

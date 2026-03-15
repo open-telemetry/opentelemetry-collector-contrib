@@ -119,10 +119,10 @@ type metricInfo struct {
 }
 
 type metricSystemdServiceCPUTime struct {
-	data          pmetric.Metric              // data buffer for generated metric.
-	config        SystemdServiceCPUTimeConfig // metric config provided by user.
-	capacity      int                         // max observed number of data points added to the metric.
-	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        SystemdServiceCPUTimeMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills systemd.service.cpu.time metric with initial data.
@@ -145,7 +145,7 @@ func (m *metricSystemdServiceCPUTime) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemdServiceCPUTimeAttributeKeyCPUMode) {
+	if slices.Contains(m.config.EnabledAttributes, SystemdServiceCPUTimeMetricAttributeKeyCPUMode) {
 		dp.Attributes().PutStr("cpu.mode", cpuModeAttributeValue)
 	}
 
@@ -199,7 +199,7 @@ func (m *metricSystemdServiceCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemdServiceCPUTime(cfg SystemdServiceCPUTimeConfig) metricSystemdServiceCPUTime {
+func newMetricSystemdServiceCPUTime(cfg SystemdServiceCPUTimeMetricConfig) metricSystemdServiceCPUTime {
 	m := metricSystemdServiceCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -210,9 +210,9 @@ func newMetricSystemdServiceCPUTime(cfg SystemdServiceCPUTimeConfig) metricSyste
 }
 
 type metricSystemdServiceRestarts struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   SystemdServiceRestartsConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SystemdServiceRestartsMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills systemd.service.restarts metric with initial data.
@@ -251,7 +251,7 @@ func (m *metricSystemdServiceRestarts) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemdServiceRestarts(cfg SystemdServiceRestartsConfig) metricSystemdServiceRestarts {
+func newMetricSystemdServiceRestarts(cfg SystemdServiceRestartsMetricConfig) metricSystemdServiceRestarts {
 	m := metricSystemdServiceRestarts{config: cfg}
 
 	if cfg.Enabled {
@@ -262,10 +262,10 @@ func newMetricSystemdServiceRestarts(cfg SystemdServiceRestartsConfig) metricSys
 }
 
 type metricSystemdUnitState struct {
-	data          pmetric.Metric         // data buffer for generated metric.
-	config        SystemdUnitStateConfig // metric config provided by user.
-	capacity      int                    // max observed number of data points added to the metric.
-	aggDataPoints []int64                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        SystemdUnitStateMetricConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills systemd.unit.state metric with initial data.
@@ -288,7 +288,7 @@ func (m *metricSystemdUnitState) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemdUnitStateAttributeKeySystemdUnitActiveState) {
+	if slices.Contains(m.config.EnabledAttributes, SystemdUnitStateMetricAttributeKeySystemdUnitActiveState) {
 		dp.Attributes().PutStr("systemd.unit.active_state", systemdUnitActiveStateAttributeValue)
 	}
 
@@ -342,7 +342,7 @@ func (m *metricSystemdUnitState) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemdUnitState(cfg SystemdUnitStateConfig) metricSystemdUnitState {
+func newMetricSystemdUnitState(cfg SystemdUnitStateMetricConfig) metricSystemdUnitState {
 	m := metricSystemdUnitState{config: cfg}
 
 	if cfg.Enabled {

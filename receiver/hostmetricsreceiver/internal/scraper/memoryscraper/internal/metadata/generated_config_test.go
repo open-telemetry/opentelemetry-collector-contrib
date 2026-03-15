@@ -26,52 +26,52 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemLinuxMemoryAvailable: SystemLinuxMemoryAvailableConfig{
+					SystemLinuxMemoryAvailable: SystemLinuxMemoryAvailableMetricConfig{
 						Enabled: true,
 					},
-					SystemLinuxMemoryDirty: SystemLinuxMemoryDirtyConfig{
+					SystemLinuxMemoryDirty: SystemLinuxMemoryDirtyMetricConfig{
 						Enabled: true,
 					},
-					SystemMemoryLimit: SystemMemoryLimitConfig{
+					SystemMemoryLimit: SystemMemoryLimitMetricConfig{
 						Enabled: true,
 					},
-					SystemMemoryLinuxHugepagesLimit: SystemMemoryLinuxHugepagesLimitConfig{
+					SystemMemoryLinuxHugepagesLimit: SystemMemoryLinuxHugepagesLimitMetricConfig{
 						Enabled: true,
 					},
-					SystemMemoryLinuxHugepagesPageSize: SystemMemoryLinuxHugepagesPageSizeConfig{
+					SystemMemoryLinuxHugepagesPageSize: SystemMemoryLinuxHugepagesPageSizeMetricConfig{
 						Enabled: true,
 					},
-					SystemMemoryLinuxHugepagesReserved: SystemMemoryLinuxHugepagesReservedConfig{
+					SystemMemoryLinuxHugepagesReserved: SystemMemoryLinuxHugepagesReservedMetricConfig{
 						Enabled: true,
 					},
-					SystemMemoryLinuxHugepagesSurplus: SystemMemoryLinuxHugepagesSurplusConfig{
+					SystemMemoryLinuxHugepagesSurplus: SystemMemoryLinuxHugepagesSurplusMetricConfig{
 						Enabled: true,
 					},
-					SystemMemoryLinuxHugepagesUsage: SystemMemoryLinuxHugepagesUsageConfig{
+					SystemMemoryLinuxHugepagesUsage: SystemMemoryLinuxHugepagesUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemMemoryLinuxHugepagesUsageAttributeKey{SystemMemoryLinuxHugepagesUsageAttributeKeySystemMemoryLinuxHugepagesState},
+						EnabledAttributes:   []SystemMemoryLinuxHugepagesUsageMetricAttributeKey{SystemMemoryLinuxHugepagesUsageMetricAttributeKeySystemMemoryLinuxHugepagesState},
 					},
-					SystemMemoryLinuxHugepagesUtilization: SystemMemoryLinuxHugepagesUtilizationConfig{
+					SystemMemoryLinuxHugepagesUtilization: SystemMemoryLinuxHugepagesUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemMemoryLinuxHugepagesUtilizationAttributeKey{SystemMemoryLinuxHugepagesUtilizationAttributeKeySystemMemoryLinuxHugepagesState},
+						EnabledAttributes:   []SystemMemoryLinuxHugepagesUtilizationMetricAttributeKey{SystemMemoryLinuxHugepagesUtilizationMetricAttributeKeySystemMemoryLinuxHugepagesState},
 					},
-					SystemMemoryLinuxShared: SystemMemoryLinuxSharedConfig{
+					SystemMemoryLinuxShared: SystemMemoryLinuxSharedMetricConfig{
 						Enabled: true,
 					},
-					SystemMemoryPageSize: SystemMemoryPageSizeConfig{
+					SystemMemoryPageSize: SystemMemoryPageSizeMetricConfig{
 						Enabled: true,
 					},
-					SystemMemoryUsage: SystemMemoryUsageConfig{
+					SystemMemoryUsage: SystemMemoryUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemMemoryUsageAttributeKey{SystemMemoryUsageAttributeKeyState},
+						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 					},
-					SystemMemoryUtilization: SystemMemoryUtilizationConfig{
+					SystemMemoryUtilization: SystemMemoryUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemMemoryUtilizationAttributeKey{SystemMemoryUtilizationAttributeKeyState},
+						EnabledAttributes:   []SystemMemoryUtilizationMetricAttributeKey{SystemMemoryUtilizationMetricAttributeKeyState},
 					},
 				},
 			},
@@ -80,52 +80,52 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemLinuxMemoryAvailable: SystemLinuxMemoryAvailableConfig{
+					SystemLinuxMemoryAvailable: SystemLinuxMemoryAvailableMetricConfig{
 						Enabled: false,
 					},
-					SystemLinuxMemoryDirty: SystemLinuxMemoryDirtyConfig{
+					SystemLinuxMemoryDirty: SystemLinuxMemoryDirtyMetricConfig{
 						Enabled: false,
 					},
-					SystemMemoryLimit: SystemMemoryLimitConfig{
+					SystemMemoryLimit: SystemMemoryLimitMetricConfig{
 						Enabled: false,
 					},
-					SystemMemoryLinuxHugepagesLimit: SystemMemoryLinuxHugepagesLimitConfig{
+					SystemMemoryLinuxHugepagesLimit: SystemMemoryLinuxHugepagesLimitMetricConfig{
 						Enabled: false,
 					},
-					SystemMemoryLinuxHugepagesPageSize: SystemMemoryLinuxHugepagesPageSizeConfig{
+					SystemMemoryLinuxHugepagesPageSize: SystemMemoryLinuxHugepagesPageSizeMetricConfig{
 						Enabled: false,
 					},
-					SystemMemoryLinuxHugepagesReserved: SystemMemoryLinuxHugepagesReservedConfig{
+					SystemMemoryLinuxHugepagesReserved: SystemMemoryLinuxHugepagesReservedMetricConfig{
 						Enabled: false,
 					},
-					SystemMemoryLinuxHugepagesSurplus: SystemMemoryLinuxHugepagesSurplusConfig{
+					SystemMemoryLinuxHugepagesSurplus: SystemMemoryLinuxHugepagesSurplusMetricConfig{
 						Enabled: false,
 					},
-					SystemMemoryLinuxHugepagesUsage: SystemMemoryLinuxHugepagesUsageConfig{
+					SystemMemoryLinuxHugepagesUsage: SystemMemoryLinuxHugepagesUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemMemoryLinuxHugepagesUsageAttributeKey{SystemMemoryLinuxHugepagesUsageAttributeKeySystemMemoryLinuxHugepagesState},
+						EnabledAttributes:   []SystemMemoryLinuxHugepagesUsageMetricAttributeKey{SystemMemoryLinuxHugepagesUsageMetricAttributeKeySystemMemoryLinuxHugepagesState},
 					},
-					SystemMemoryLinuxHugepagesUtilization: SystemMemoryLinuxHugepagesUtilizationConfig{
+					SystemMemoryLinuxHugepagesUtilization: SystemMemoryLinuxHugepagesUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemMemoryLinuxHugepagesUtilizationAttributeKey{SystemMemoryLinuxHugepagesUtilizationAttributeKeySystemMemoryLinuxHugepagesState},
+						EnabledAttributes:   []SystemMemoryLinuxHugepagesUtilizationMetricAttributeKey{SystemMemoryLinuxHugepagesUtilizationMetricAttributeKeySystemMemoryLinuxHugepagesState},
 					},
-					SystemMemoryLinuxShared: SystemMemoryLinuxSharedConfig{
+					SystemMemoryLinuxShared: SystemMemoryLinuxSharedMetricConfig{
 						Enabled: false,
 					},
-					SystemMemoryPageSize: SystemMemoryPageSizeConfig{
+					SystemMemoryPageSize: SystemMemoryPageSizeMetricConfig{
 						Enabled: false,
 					},
-					SystemMemoryUsage: SystemMemoryUsageConfig{
+					SystemMemoryUsage: SystemMemoryUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemMemoryUsageAttributeKey{SystemMemoryUsageAttributeKeyState},
+						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 					},
-					SystemMemoryUtilization: SystemMemoryUtilizationConfig{
+					SystemMemoryUtilization: SystemMemoryUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemMemoryUtilizationAttributeKey{SystemMemoryUtilizationAttributeKeyState},
+						EnabledAttributes:   []SystemMemoryUtilizationMetricAttributeKey{SystemMemoryUtilizationMetricAttributeKeyState},
 					},
 				},
 			},
@@ -134,7 +134,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemLinuxMemoryAvailableConfig{}, SystemLinuxMemoryDirtyConfig{}, SystemMemoryLimitConfig{}, SystemMemoryLinuxHugepagesLimitConfig{}, SystemMemoryLinuxHugepagesPageSizeConfig{}, SystemMemoryLinuxHugepagesReservedConfig{}, SystemMemoryLinuxHugepagesSurplusConfig{}, SystemMemoryLinuxHugepagesUsageConfig{}, SystemMemoryLinuxHugepagesUtilizationConfig{}, SystemMemoryLinuxSharedConfig{}, SystemMemoryPageSizeConfig{}, SystemMemoryUsageConfig{}, SystemMemoryUtilizationConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemLinuxMemoryAvailableMetricConfig{}, SystemLinuxMemoryDirtyMetricConfig{}, SystemMemoryLimitMetricConfig{}, SystemMemoryLinuxHugepagesLimitMetricConfig{}, SystemMemoryLinuxHugepagesPageSizeMetricConfig{}, SystemMemoryLinuxHugepagesReservedMetricConfig{}, SystemMemoryLinuxHugepagesSurplusMetricConfig{}, SystemMemoryLinuxHugepagesUsageMetricConfig{}, SystemMemoryLinuxHugepagesUtilizationMetricConfig{}, SystemMemoryLinuxSharedMetricConfig{}, SystemMemoryPageSizeMetricConfig{}, SystemMemoryUsageMetricConfig{}, SystemMemoryUtilizationMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

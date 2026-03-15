@@ -5,49 +5,49 @@ $defs:
     type: object
     properties:
       ntp.frequency.offset:
-        description: "NtpFrequencyOffsetConfig provides config for the ntp.frequency.offset metric."
+        description: "NtpFrequencyOffsetMetricConfig provides config for the ntp.frequency.offset metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       ntp.skew:
-        description: "NtpSkewConfig provides config for the ntp.skew metric."
+        description: "NtpSkewMetricConfig provides config for the ntp.skew metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       ntp.stratum:
-        description: "NtpStratumConfig provides config for the ntp.stratum metric."
+        description: "NtpStratumMetricConfig provides config for the ntp.stratum metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       ntp.time.correction:
-        description: "NtpTimeCorrectionConfig provides config for the ntp.time.correction metric."
+        description: "NtpTimeCorrectionMetricConfig provides config for the ntp.time.correction metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       ntp.time.last_offset:
-        description: "NtpTimeLastOffsetConfig provides config for the ntp.time.last_offset metric."
+        description: "NtpTimeLastOffsetMetricConfig provides config for the ntp.time.last_offset metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       ntp.time.rms_offset:
-        description: "NtpTimeRmsOffsetConfig provides config for the ntp.time.rms_offset metric."
+        description: "NtpTimeRmsOffsetMetricConfig provides config for the ntp.time.rms_offset metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       ntp.time.root_delay:
-        description: "NtpTimeRootDelayConfig provides config for the ntp.time.root_delay metric."
+        description: "NtpTimeRootDelayMetricConfig provides config for the ntp.time.root_delay metric."
         type: object
         properties:
           enabled:
