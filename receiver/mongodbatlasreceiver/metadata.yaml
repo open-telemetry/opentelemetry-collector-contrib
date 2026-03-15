@@ -1,5 +1,6 @@
 display_name: MongoDB Atlas Receiver
 type: mongodb_atlas
+deprecated_type: mongodbatlas
 
 description: |
   The MongoDB Atlas Receiver receives metrics from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) 

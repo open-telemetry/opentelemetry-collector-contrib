@@ -517,6 +517,7 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 			"ROWS_PROCESSED": "500", "SQL_FULLTEXT": "SELECT 1 FROM DUAL",
 			"SQL_ID": "abc123", "USER_IO_WAIT_TIME": "0",
 			"PROGRAM_ID": "", "PROCEDURE_NAME": "", "PROCEDURE_TYPE": "", "PROCEDURE_EXECUTIONS": "0",
+			"COMMAND_TYPE": "3",
 		},
 		{
 			"APPLICATION_WAIT_TIME": "0", "BUFFER_GETS": "5000000", "CHILD_ADDRESS": "ADDR2",
@@ -527,6 +528,7 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 			"ROWS_PROCESSED": "600", "SQL_FULLTEXT": "SELECT * FROM ADMIN.EMP",
 			"SQL_ID": "def456", "USER_IO_WAIT_TIME": "0",
 			"PROGRAM_ID": "98765", "PROCEDURE_NAME": "ADMIN.MY_PROC", "PROCEDURE_TYPE": "PROCEDURE", "PROCEDURE_EXECUTIONS": "600",
+			"COMMAND_TYPE": "3",
 		},
 	}
 

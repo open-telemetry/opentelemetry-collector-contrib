@@ -1,4 +1,7 @@
+display_name: Syslog Receiver
 type: syslog
+
+description: Parses Syslogs received over TCP or UDP.
 
 status:
   class: receiver
