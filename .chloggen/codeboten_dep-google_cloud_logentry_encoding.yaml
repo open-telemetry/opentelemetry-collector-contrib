@@ -1,0 +1,4 @@
+change_type: 'deprecation'
+component: extension/google_cloud_logentry_encoding
+note: Introduce new snake case compliant name `google_cloud_logentry_encoding`
+issues: [46778]

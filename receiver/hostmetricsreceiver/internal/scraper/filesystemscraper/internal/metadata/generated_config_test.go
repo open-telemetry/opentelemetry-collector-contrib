@@ -26,9 +26,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{Enabled: true},
-					SystemFilesystemUsage:       MetricConfig{Enabled: true},
-					SystemFilesystemUtilization: MetricConfig{Enabled: true},
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemInodesUsageMetricAttributeKey{SystemFilesystemInodesUsageMetricAttributeKeyDevice, SystemFilesystemInodesUsageMetricAttributeKeyMode, SystemFilesystemInodesUsageMetricAttributeKeyMountpoint, SystemFilesystemInodesUsageMetricAttributeKeyType, SystemFilesystemInodesUsageMetricAttributeKeyState},
+					},
+					SystemFilesystemUsage: SystemFilesystemUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemUsageMetricAttributeKey{SystemFilesystemUsageMetricAttributeKeyDevice, SystemFilesystemUsageMetricAttributeKeyMode, SystemFilesystemUsageMetricAttributeKeyMountpoint, SystemFilesystemUsageMetricAttributeKeyType, SystemFilesystemUsageMetricAttributeKeyState},
+					},
+					SystemFilesystemUtilization: SystemFilesystemUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemFilesystemUtilizationMetricAttributeKey{SystemFilesystemUtilizationMetricAttributeKeyDevice, SystemFilesystemUtilizationMetricAttributeKeyMode, SystemFilesystemUtilizationMetricAttributeKeyMountpoint, SystemFilesystemUtilizationMetricAttributeKeyType},
+					},
 				},
 			},
 		},
@@ -36,9 +48,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{Enabled: false},
-					SystemFilesystemUsage:       MetricConfig{Enabled: false},
-					SystemFilesystemUtilization: MetricConfig{Enabled: false},
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemInodesUsageMetricAttributeKey{SystemFilesystemInodesUsageMetricAttributeKeyDevice, SystemFilesystemInodesUsageMetricAttributeKeyMode, SystemFilesystemInodesUsageMetricAttributeKeyMountpoint, SystemFilesystemInodesUsageMetricAttributeKeyType, SystemFilesystemInodesUsageMetricAttributeKeyState},
+					},
+					SystemFilesystemUsage: SystemFilesystemUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemUsageMetricAttributeKey{SystemFilesystemUsageMetricAttributeKeyDevice, SystemFilesystemUsageMetricAttributeKeyMode, SystemFilesystemUsageMetricAttributeKeyMountpoint, SystemFilesystemUsageMetricAttributeKeyType, SystemFilesystemUsageMetricAttributeKeyState},
+					},
+					SystemFilesystemUtilization: SystemFilesystemUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemFilesystemUtilizationMetricAttributeKey{SystemFilesystemUtilizationMetricAttributeKeyDevice, SystemFilesystemUtilizationMetricAttributeKeyMode, SystemFilesystemUtilizationMetricAttributeKeyMountpoint, SystemFilesystemUtilizationMetricAttributeKeyType},
+					},
 				},
 			},
 		},
@@ -46,7 +70,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemFilesystemInodesUsageMetricConfig{}, SystemFilesystemUsageMetricConfig{}, SystemFilesystemUtilizationMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

@@ -5,7 +5,6 @@ package azureencodingextension // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -22,20 +21,22 @@ var (
 )
 
 type azureExtension struct {
-	config         *Config
-	logUnmarshaler plog.Unmarshaler
+	config            *Config
+	logUnmarshaler    plog.Unmarshaler
+	traceUnmarshaler  ptrace.Unmarshaler
+	metricUnmarshaler pmetric.Unmarshaler
 }
 
-func (*azureExtension) UnmarshalTraces(_ []byte) (ptrace.Traces, error) {
-	return ptrace.Traces{}, errors.New("not implemented yet")
+func (ex *azureExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
+	return ex.traceUnmarshaler.UnmarshalTraces(buf)
 }
 
 func (ex *azureExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return ex.logUnmarshaler.UnmarshalLogs(buf)
 }
 
-func (*azureExtension) UnmarshalMetrics(_ []byte) (pmetric.Metrics, error) {
-	return pmetric.Metrics{}, errors.New("not implemented yet")
+func (ex *azureExtension) UnmarshalMetrics(buf []byte) (pmetric.Metrics, error) {
+	return ex.metricUnmarshaler.UnmarshalMetrics(buf)
 }
 
 func (*azureExtension) Start(context.Context, component.Host) error {

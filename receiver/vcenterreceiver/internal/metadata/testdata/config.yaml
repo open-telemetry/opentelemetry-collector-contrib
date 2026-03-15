@@ -3,28 +3,22 @@ all_set:
   metrics:
     vcenter.cluster.cpu.effective:
       enabled: true
-      attributes: []
     vcenter.cluster.cpu.limit:
       enabled: true
-      attributes: []
     vcenter.cluster.host.count:
       enabled: true
       attributes: ["effective"]
     vcenter.cluster.memory.effective:
       enabled: true
-      attributes: []
     vcenter.cluster.memory.limit:
       enabled: true
-      attributes: []
     vcenter.cluster.vm.count:
       enabled: true
       attributes: ["power_state"]
     vcenter.cluster.vm_template.count:
       enabled: true
-      attributes: []
     vcenter.cluster.vsan.congestions:
       enabled: true
-      attributes: []
     vcenter.cluster.vsan.latency.avg:
       enabled: true
       attributes: ["type"]
@@ -39,10 +33,8 @@ all_set:
       attributes: ["status"]
     vcenter.datacenter.cpu.limit:
       enabled: true
-      attributes: []
     vcenter.datacenter.datastore.count:
       enabled: true
-      attributes: []
     vcenter.datacenter.disk.space:
       enabled: true
       attributes: ["disk_state"]
@@ -51,7 +43,6 @@ all_set:
       attributes: ["status","power_state"]
     vcenter.datacenter.memory.limit:
       enabled: true
-      attributes: []
     vcenter.datacenter.vm.count:
       enabled: true
       attributes: ["status","power_state"]
@@ -60,19 +51,15 @@ all_set:
       attributes: ["disk_state"]
     vcenter.datastore.disk.utilization:
       enabled: true
-      attributes: []
     vcenter.host.cpu.capacity:
       enabled: true
-      attributes: []
     vcenter.host.cpu.reserved:
       enabled: true
       attributes: ["cpu_reservation_type"]
     vcenter.host.cpu.usage:
       enabled: true
-      attributes: []
     vcenter.host.cpu.utilization:
       enabled: true
-      attributes: []
     vcenter.host.disk.latency.avg:
       enabled: true
       attributes: ["direction","object"]
@@ -84,13 +71,10 @@ all_set:
       attributes: ["direction","object"]
     vcenter.host.memory.capacity:
       enabled: true
-      attributes: []
     vcenter.host.memory.usage:
       enabled: true
-      attributes: []
     vcenter.host.memory.utilization:
       enabled: true
-      attributes: []
     vcenter.host.network.packet.drop.rate:
       enabled: true
       attributes: ["direction","object"]
@@ -108,10 +92,8 @@ all_set:
       attributes: ["object"]
     vcenter.host.vsan.cache.hit_rate:
       enabled: true
-      attributes: []
     vcenter.host.vsan.congestions:
       enabled: true
-      attributes: []
     vcenter.host.vsan.latency.avg:
       enabled: true
       attributes: ["type"]
@@ -123,37 +105,29 @@ all_set:
       attributes: ["direction"]
     vcenter.resource_pool.cpu.shares:
       enabled: true
-      attributes: []
     vcenter.resource_pool.cpu.usage:
       enabled: true
-      attributes: []
     vcenter.resource_pool.memory.ballooned:
       enabled: true
-      attributes: []
     vcenter.resource_pool.memory.granted:
       enabled: true
       attributes: ["type"]
     vcenter.resource_pool.memory.shares:
       enabled: true
-      attributes: []
     vcenter.resource_pool.memory.swapped:
       enabled: true
-      attributes: []
     vcenter.resource_pool.memory.usage:
       enabled: true
       attributes: ["type"]
     vcenter.vm.cpu.readiness:
       enabled: true
-      attributes: []
     vcenter.vm.cpu.time:
       enabled: true
       attributes: ["cpu_state","object"]
     vcenter.vm.cpu.usage:
       enabled: true
-      attributes: []
     vcenter.vm.cpu.utilization:
       enabled: true
-      attributes: []
     vcenter.vm.disk.latency.avg:
       enabled: true
       attributes: ["direction","disk_type","object"]
@@ -168,25 +142,18 @@ all_set:
       attributes: ["disk_state"]
     vcenter.vm.disk.utilization:
       enabled: true
-      attributes: []
     vcenter.vm.memory.ballooned:
       enabled: true
-      attributes: []
     vcenter.vm.memory.granted:
       enabled: true
-      attributes: []
     vcenter.vm.memory.swapped:
       enabled: true
-      attributes: []
     vcenter.vm.memory.swapped_ssd:
       enabled: true
-      attributes: []
     vcenter.vm.memory.usage:
       enabled: true
-      attributes: []
     vcenter.vm.memory.utilization:
       enabled: true
-      attributes: []
     vcenter.vm.network.broadcast.packet.rate:
       enabled: true
       attributes: ["direction","object"]
@@ -243,28 +210,22 @@ reaggregate_set:
   metrics:
     vcenter.cluster.cpu.effective:
       enabled: true
-      attributes: []
     vcenter.cluster.cpu.limit:
       enabled: true
-      attributes: []
     vcenter.cluster.host.count:
       enabled: true
       attributes: []
     vcenter.cluster.memory.effective:
       enabled: true
-      attributes: []
     vcenter.cluster.memory.limit:
       enabled: true
-      attributes: []
     vcenter.cluster.vm.count:
       enabled: true
       attributes: []
     vcenter.cluster.vm_template.count:
       enabled: true
-      attributes: []
     vcenter.cluster.vsan.congestions:
       enabled: true
-      attributes: []
     vcenter.cluster.vsan.latency.avg:
       enabled: true
       attributes: []
@@ -279,10 +240,8 @@ reaggregate_set:
       attributes: []
     vcenter.datacenter.cpu.limit:
       enabled: true
-      attributes: []
     vcenter.datacenter.datastore.count:
       enabled: true
-      attributes: []
     vcenter.datacenter.disk.space:
       enabled: true
       attributes: []
@@ -291,7 +250,6 @@ reaggregate_set:
       attributes: []
     vcenter.datacenter.memory.limit:
       enabled: true
-      attributes: []
     vcenter.datacenter.vm.count:
       enabled: true
       attributes: []
@@ -300,19 +258,15 @@ reaggregate_set:
       attributes: []
     vcenter.datastore.disk.utilization:
       enabled: true
-      attributes: []
     vcenter.host.cpu.capacity:
       enabled: true
-      attributes: []
     vcenter.host.cpu.reserved:
       enabled: true
       attributes: []
     vcenter.host.cpu.usage:
       enabled: true
-      attributes: []
     vcenter.host.cpu.utilization:
       enabled: true
-      attributes: []
     vcenter.host.disk.latency.avg:
       enabled: true
       attributes: []
@@ -324,13 +278,10 @@ reaggregate_set:
       attributes: []
     vcenter.host.memory.capacity:
       enabled: true
-      attributes: []
     vcenter.host.memory.usage:
       enabled: true
-      attributes: []
     vcenter.host.memory.utilization:
       enabled: true
-      attributes: []
     vcenter.host.network.packet.drop.rate:
       enabled: true
       attributes: []
@@ -348,10 +299,8 @@ reaggregate_set:
       attributes: []
     vcenter.host.vsan.cache.hit_rate:
       enabled: true
-      attributes: []
     vcenter.host.vsan.congestions:
       enabled: true
-      attributes: []
     vcenter.host.vsan.latency.avg:
       enabled: true
       attributes: []
@@ -363,37 +312,29 @@ reaggregate_set:
       attributes: []
     vcenter.resource_pool.cpu.shares:
       enabled: true
-      attributes: []
     vcenter.resource_pool.cpu.usage:
       enabled: true
-      attributes: []
     vcenter.resource_pool.memory.ballooned:
       enabled: true
-      attributes: []
     vcenter.resource_pool.memory.granted:
       enabled: true
       attributes: []
     vcenter.resource_pool.memory.shares:
       enabled: true
-      attributes: []
     vcenter.resource_pool.memory.swapped:
       enabled: true
-      attributes: []
     vcenter.resource_pool.memory.usage:
       enabled: true
       attributes: []
     vcenter.vm.cpu.readiness:
       enabled: true
-      attributes: []
     vcenter.vm.cpu.time:
       enabled: true
       attributes: []
     vcenter.vm.cpu.usage:
       enabled: true
-      attributes: []
     vcenter.vm.cpu.utilization:
       enabled: true
-      attributes: []
     vcenter.vm.disk.latency.avg:
       enabled: true
       attributes: []
@@ -408,25 +349,18 @@ reaggregate_set:
       attributes: []
     vcenter.vm.disk.utilization:
       enabled: true
-      attributes: []
     vcenter.vm.memory.ballooned:
       enabled: true
-      attributes: []
     vcenter.vm.memory.granted:
       enabled: true
-      attributes: []
     vcenter.vm.memory.swapped:
       enabled: true
-      attributes: []
     vcenter.vm.memory.swapped_ssd:
       enabled: true
-      attributes: []
     vcenter.vm.memory.usage:
       enabled: true
-      attributes: []
     vcenter.vm.memory.utilization:
       enabled: true
-      attributes: []
     vcenter.vm.network.broadcast.packet.rate:
       enabled: true
       attributes: []
@@ -483,28 +417,22 @@ none_set:
   metrics:
     vcenter.cluster.cpu.effective:
       enabled: false
-      attributes: []
     vcenter.cluster.cpu.limit:
       enabled: false
-      attributes: []
     vcenter.cluster.host.count:
       enabled: false
       attributes: ["effective"]
     vcenter.cluster.memory.effective:
       enabled: false
-      attributes: []
     vcenter.cluster.memory.limit:
       enabled: false
-      attributes: []
     vcenter.cluster.vm.count:
       enabled: false
       attributes: ["power_state"]
     vcenter.cluster.vm_template.count:
       enabled: false
-      attributes: []
     vcenter.cluster.vsan.congestions:
       enabled: false
-      attributes: []
     vcenter.cluster.vsan.latency.avg:
       enabled: false
       attributes: ["type"]
@@ -519,10 +447,8 @@ none_set:
       attributes: ["status"]
     vcenter.datacenter.cpu.limit:
       enabled: false
-      attributes: []
     vcenter.datacenter.datastore.count:
       enabled: false
-      attributes: []
     vcenter.datacenter.disk.space:
       enabled: false
       attributes: ["disk_state"]
@@ -531,7 +457,6 @@ none_set:
       attributes: ["status","power_state"]
     vcenter.datacenter.memory.limit:
       enabled: false
-      attributes: []
     vcenter.datacenter.vm.count:
       enabled: false
       attributes: ["status","power_state"]
@@ -540,19 +465,15 @@ none_set:
       attributes: ["disk_state"]
     vcenter.datastore.disk.utilization:
       enabled: false
-      attributes: []
     vcenter.host.cpu.capacity:
       enabled: false
-      attributes: []
     vcenter.host.cpu.reserved:
       enabled: false
       attributes: ["cpu_reservation_type"]
     vcenter.host.cpu.usage:
       enabled: false
-      attributes: []
     vcenter.host.cpu.utilization:
       enabled: false
-      attributes: []
     vcenter.host.disk.latency.avg:
       enabled: false
       attributes: ["direction","object"]
@@ -564,13 +485,10 @@ none_set:
       attributes: ["direction","object"]
     vcenter.host.memory.capacity:
       enabled: false
-      attributes: []
     vcenter.host.memory.usage:
       enabled: false
-      attributes: []
     vcenter.host.memory.utilization:
       enabled: false
-      attributes: []
     vcenter.host.network.packet.drop.rate:
       enabled: false
       attributes: ["direction","object"]
@@ -588,10 +506,8 @@ none_set:
       attributes: ["object"]
     vcenter.host.vsan.cache.hit_rate:
       enabled: false
-      attributes: []
     vcenter.host.vsan.congestions:
       enabled: false
-      attributes: []
     vcenter.host.vsan.latency.avg:
       enabled: false
       attributes: ["type"]
@@ -603,37 +519,29 @@ none_set:
       attributes: ["direction"]
     vcenter.resource_pool.cpu.shares:
       enabled: false
-      attributes: []
     vcenter.resource_pool.cpu.usage:
       enabled: false
-      attributes: []
     vcenter.resource_pool.memory.ballooned:
       enabled: false
-      attributes: []
     vcenter.resource_pool.memory.granted:
       enabled: false
       attributes: ["type"]
     vcenter.resource_pool.memory.shares:
       enabled: false
-      attributes: []
     vcenter.resource_pool.memory.swapped:
       enabled: false
-      attributes: []
     vcenter.resource_pool.memory.usage:
       enabled: false
       attributes: ["type"]
     vcenter.vm.cpu.readiness:
       enabled: false
-      attributes: []
     vcenter.vm.cpu.time:
       enabled: false
       attributes: ["cpu_state","object"]
     vcenter.vm.cpu.usage:
       enabled: false
-      attributes: []
     vcenter.vm.cpu.utilization:
       enabled: false
-      attributes: []
     vcenter.vm.disk.latency.avg:
       enabled: false
       attributes: ["direction","disk_type","object"]
@@ -648,25 +556,18 @@ none_set:
       attributes: ["disk_state"]
     vcenter.vm.disk.utilization:
       enabled: false
-      attributes: []
     vcenter.vm.memory.ballooned:
       enabled: false
-      attributes: []
     vcenter.vm.memory.granted:
       enabled: false
-      attributes: []
     vcenter.vm.memory.swapped:
       enabled: false
-      attributes: []
     vcenter.vm.memory.swapped_ssd:
       enabled: false
-      attributes: []
     vcenter.vm.memory.usage:
       enabled: false
-      attributes: []
     vcenter.vm.memory.utilization:
       enabled: false
-      attributes: []
     vcenter.vm.network.broadcast.packet.rate:
       enabled: false
       attributes: ["direction","object"]

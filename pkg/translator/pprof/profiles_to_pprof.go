@@ -78,11 +78,23 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		si := s.StackIndex()
 		stack := src.Dictionary().StackTable().At(int(si))
 
+		// By convention, pprof uses the last sample type as default, while OTel Profiles
+		// uses the first profile as default. Therefore, swap first and last.
 		for i := range numProfiles {
-			if sp.At(0).Profiles().At(i).Samples().At(sampleIdx).Values().Len() != 1 {
+			// Swap first and last: first OTel profile becomes last pprof sample type
+			var mappedIdx int
+			switch i {
+			case 0:
+				mappedIdx = numProfiles - 1
+			case numProfiles - 1:
+				mappedIdx = 0
+			default:
+				mappedIdx = i
+			}
+			if sp.At(0).Profiles().At(mappedIdx).Samples().At(sampleIdx).Values().Len() != 1 {
 				return nil, errors.New("invalid number of values per sample")
 			}
-			pprofSample.Value = append(pprofSample.Value, pprofiles.At(i).Samples().At(sampleIdx).Values().At(0))
+			pprofSample.Value = append(pprofSample.Value, pprofiles.At(mappedIdx).Samples().At(sampleIdx).Values().At(0))
 		}
 
 		for _, li := range stack.LocationIndices().All() {
@@ -125,16 +137,27 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	}
 
 	// Set pprof values that should be common across all profiles.
+	// By convention, pprof uses the last sample type as default, while OTel Profiles
+	// uses the first profile as default. Therefore, swap first and last.
 	for i := range numProfiles {
+		// Swap first and last: first OTel profile becomes last pprof sample type
+		var mappedIdx int
+		switch i {
+		case 0:
+			mappedIdx = numProfiles - 1
+		case numProfiles - 1:
+			mappedIdx = 0
+		default:
+			mappedIdx = i
+		}
 		dst.SampleType = append(dst.SampleType, &profile.ValueType{
-			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(i).SampleType().TypeStrindex())),
-			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(i).SampleType().UnitStrindex())),
+			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().TypeStrindex())),
+			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().UnitStrindex())),
 		})
 	}
 
 	var commentStrs []string
-	commentStrs, attrErr = getAttributeStringWithPrefix(src.Dictionary(),
-		string(semconv.PprofProfileCommentKey))
+	commentStrs, attrErr = getAttributeStringWithPrefix(src.Dictionary())
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
@@ -197,10 +220,11 @@ func getAttributeString(dic pprofile.ProfilesDictionary, key string) (string, er
 }
 
 // getAttributeStringWithPrefix walks the attribute_table and returns a string array
-// for all keys that start with the given prefix.
+// for all keys that start with the prefix pprof.profile.comment.
 // It returns errNotFound if the key can not be found in attribute_table.
-func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary, keyprefix string) ([]string, error) {
+func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary) ([]string, error) {
 	tmp := make(map[int]string)
+	keyprefix := string(semconv.PprofProfileCommentKey)
 
 	for _, attr := range dic.AttributeTable().All() {
 		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
