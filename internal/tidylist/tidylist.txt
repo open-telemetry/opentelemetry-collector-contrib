@@ -246,6 +246,7 @@ receiver/awss3receiver
 receiver/awsxrayreceiver
 receiver/azureblobreceiver
 receiver/azureeventhubreceiver
+receiver/azurefunctionsreceiver
 receiver/azuremonitorreceiver
 receiver/chronyreceiver
 receiver/ciscoosreceiver
