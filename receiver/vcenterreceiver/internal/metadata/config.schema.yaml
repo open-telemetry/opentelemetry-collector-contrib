@@ -25,6 +25,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "effective"
+            default:
+              - "effective"
       vcenter.cluster.memory.effective:
         description: "VcenterClusterMemoryEffectiveMetricConfig provides config for the vcenter.cluster.memory.effective metric."
         type: object
@@ -46,6 +62,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "power_state"
+            default:
+              - "power_state"
       vcenter.cluster.vm_template.count:
         description: "VcenterClusterVMTemplateCountMetricConfig provides config for the vcenter.cluster.vm_template.count metric."
         type: object
@@ -67,6 +99,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.cluster.vsan.operations:
         description: "VcenterClusterVsanOperationsMetricConfig provides config for the vcenter.cluster.vsan.operations metric."
         type: object
@@ -74,6 +122,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.cluster.vsan.throughput:
         description: "VcenterClusterVsanThroughputMetricConfig provides config for the vcenter.cluster.vsan.throughput metric."
         type: object
@@ -81,6 +145,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       vcenter.datacenter.cluster.count:
         description: "VcenterDatacenterClusterCountMetricConfig provides config for the vcenter.datacenter.cluster.count metric."
         type: object
@@ -88,6 +168,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+            default:
+              - "status"
       vcenter.datacenter.cpu.limit:
         description: "VcenterDatacenterCPULimitMetricConfig provides config for the vcenter.datacenter.cpu.limit metric."
         type: object
@@ -109,6 +205,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_state"
+            default:
+              - "disk_state"
       vcenter.datacenter.host.count:
         description: "VcenterDatacenterHostCountMetricConfig provides config for the vcenter.datacenter.host.count metric."
         type: object
@@ -116,6 +228,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+                - "power_state"
+            default:
+              - "status"
+              - "power_state"
       vcenter.datacenter.memory.limit:
         description: "VcenterDatacenterMemoryLimitMetricConfig provides config for the vcenter.datacenter.memory.limit metric."
         type: object
@@ -130,6 +260,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+                - "power_state"
+            default:
+              - "status"
+              - "power_state"
       vcenter.datastore.disk.usage:
         description: "VcenterDatastoreDiskUsageMetricConfig provides config for the vcenter.datastore.disk.usage metric."
         type: object
@@ -137,6 +285,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_state"
+            default:
+              - "disk_state"
       vcenter.datastore.disk.utilization:
         description: "VcenterDatastoreDiskUtilizationMetricConfig provides config for the vcenter.datastore.disk.utilization metric."
         type: object
@@ -158,6 +322,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_reservation_type"
+            default:
+              - "cpu_reservation_type"
       vcenter.host.cpu.usage:
         description: "VcenterHostCPUUsageMetricConfig provides config for the vcenter.host.cpu.usage metric."
         type: object
@@ -179,6 +359,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.disk.latency.max:
         description: "VcenterHostDiskLatencyMaxMetricConfig provides config for the vcenter.host.disk.latency.max metric."
         type: object
@@ -186,6 +384,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object"
+            default:
+              - "object"
       vcenter.host.disk.throughput:
         description: "VcenterHostDiskThroughputMetricConfig provides config for the vcenter.host.disk.throughput metric."
         type: object
@@ -193,6 +407,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.memory.capacity:
         description: "VcenterHostMemoryCapacityMetricConfig provides config for the vcenter.host.memory.capacity metric."
         type: object
@@ -221,6 +453,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.network.packet.error.rate:
         description: "VcenterHostNetworkPacketErrorRateMetricConfig provides config for the vcenter.host.network.packet.error.rate metric."
         type: object
@@ -228,6 +478,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.network.packet.rate:
         description: "VcenterHostNetworkPacketRateMetricConfig provides config for the vcenter.host.network.packet.rate metric."
         type: object
@@ -235,6 +503,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.network.throughput:
         description: "VcenterHostNetworkThroughputMetricConfig provides config for the vcenter.host.network.throughput metric."
         type: object
@@ -242,6 +528,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.network.usage:
         description: "VcenterHostNetworkUsageMetricConfig provides config for the vcenter.host.network.usage metric."
         type: object
@@ -249,6 +553,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object"
+            default:
+              - "object"
       vcenter.host.vsan.cache.hit_rate:
         description: "VcenterHostVsanCacheHitRateMetricConfig provides config for the vcenter.host.vsan.cache.hit_rate metric."
         type: object
@@ -270,6 +590,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.host.vsan.operations:
         description: "VcenterHostVsanOperationsMetricConfig provides config for the vcenter.host.vsan.operations metric."
         type: object
@@ -277,6 +613,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.host.vsan.throughput:
         description: "VcenterHostVsanThroughputMetricConfig provides config for the vcenter.host.vsan.throughput metric."
         type: object
@@ -284,6 +636,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       vcenter.resource_pool.cpu.shares:
         description: "VcenterResourcePoolCPUSharesMetricConfig provides config for the vcenter.resource_pool.cpu.shares metric."
         type: object
@@ -312,6 +680,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.resource_pool.memory.shares:
         description: "VcenterResourcePoolMemorySharesMetricConfig provides config for the vcenter.resource_pool.memory.shares metric."
         type: object
@@ -333,6 +717,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.vm.cpu.readiness:
         description: "VcenterVMCPUReadinessMetricConfig provides config for the vcenter.vm.cpu.readiness metric."
         type: object
@@ -347,6 +747,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+                - "object"
+            default:
+              - "cpu_state"
+              - "object"
       vcenter.vm.cpu.usage:
         description: "VcenterVMCPUUsageMetricConfig provides config for the vcenter.vm.cpu.usage metric."
         type: object
@@ -368,6 +786,26 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "disk_type"
+                - "object"
+            default:
+              - "direction"
+              - "disk_type"
+              - "object"
       vcenter.vm.disk.latency.max:
         description: "VcenterVMDiskLatencyMaxMetricConfig provides config for the vcenter.vm.disk.latency.max metric."
         type: object
@@ -375,6 +813,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object"
+            default:
+              - "object"
       vcenter.vm.disk.throughput:
         description: "VcenterVMDiskThroughputMetricConfig provides config for the vcenter.vm.disk.throughput metric."
         type: object
@@ -382,6 +836,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.disk.usage:
         description: "VcenterVMDiskUsageMetricConfig provides config for the vcenter.vm.disk.usage metric."
         type: object
@@ -389,6 +861,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_state"
+            default:
+              - "disk_state"
       vcenter.vm.disk.utilization:
         description: "VcenterVMDiskUtilizationMetricConfig provides config for the vcenter.vm.disk.utilization metric."
         type: object
@@ -445,6 +933,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.multicast.packet.rate:
         description: "VcenterVMNetworkMulticastPacketRateMetricConfig provides config for the vcenter.vm.network.multicast.packet.rate metric."
         type: object
@@ -452,6 +958,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.packet.drop.rate:
         description: "VcenterVMNetworkPacketDropRateMetricConfig provides config for the vcenter.vm.network.packet.drop.rate metric."
         type: object
@@ -459,6 +983,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.packet.rate:
         description: "VcenterVMNetworkPacketRateMetricConfig provides config for the vcenter.vm.network.packet.rate metric."
         type: object
@@ -466,6 +1008,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.throughput:
         description: "VcenterVMNetworkThroughputMetricConfig provides config for the vcenter.vm.network.throughput metric."
         type: object
@@ -473,6 +1033,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.usage:
         description: "VcenterVMNetworkUsageMetricConfig provides config for the vcenter.vm.network.usage metric."
         type: object
@@ -480,6 +1058,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object"
+            default:
+              - "object"
       vcenter.vm.vsan.latency.avg:
         description: "VcenterVMVsanLatencyAvgMetricConfig provides config for the vcenter.vm.vsan.latency.avg metric."
         type: object
@@ -487,6 +1081,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.vm.vsan.operations:
         description: "VcenterVMVsanOperationsMetricConfig provides config for the vcenter.vm.vsan.operations metric."
         type: object
@@ -494,6 +1104,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.vm.vsan.throughput:
         description: "VcenterVMVsanThroughputMetricConfig provides config for the vcenter.vm.vsan.throughput metric."
         type: object
@@ -501,6 +1127,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for vcenter resource attributes.
     type: object
