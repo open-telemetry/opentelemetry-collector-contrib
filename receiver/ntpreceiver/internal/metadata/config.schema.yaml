@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       ntp.offset:
-        description: "NtpOffsetConfig provides config for the ntp.offset metric."
+        description: "NtpOffsetMetricConfig provides config for the ntp.offset metric."
         type: object
         properties:
           enabled:
