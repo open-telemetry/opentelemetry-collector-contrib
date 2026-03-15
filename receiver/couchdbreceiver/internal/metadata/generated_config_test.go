@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -27,14 +26,30 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CouchdbAverageRequestTime: MetricConfig{Enabled: true},
-					CouchdbDatabaseOpen:       MetricConfig{Enabled: true},
-					CouchdbDatabaseOperations: MetricConfig{Enabled: true},
-					CouchdbFileDescriptorOpen: MetricConfig{Enabled: true},
-					CouchdbHttpdBulkRequests:  MetricConfig{Enabled: true},
-					CouchdbHttpdRequests:      MetricConfig{Enabled: true},
-					CouchdbHttpdResponses:     MetricConfig{Enabled: true},
-					CouchdbHttpdViews:         MetricConfig{Enabled: true},
+					CouchdbAverageRequestTime: MetricConfig{
+						Enabled: true,
+					},
+					CouchdbDatabaseOpen: MetricConfig{
+						Enabled: true,
+					},
+					CouchdbDatabaseOperations: MetricConfig{
+						Enabled: true,
+					},
+					CouchdbFileDescriptorOpen: MetricConfig{
+						Enabled: true,
+					},
+					CouchdbHttpdBulkRequests: MetricConfig{
+						Enabled: true,
+					},
+					CouchdbHttpdRequests: MetricConfig{
+						Enabled: true,
+					},
+					CouchdbHttpdResponses: MetricConfig{
+						Enabled: true,
+					},
+					CouchdbHttpdViews: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					CouchdbNodeName: ResourceAttributeConfig{Enabled: true},
@@ -45,14 +60,30 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CouchdbAverageRequestTime: MetricConfig{Enabled: false},
-					CouchdbDatabaseOpen:       MetricConfig{Enabled: false},
-					CouchdbDatabaseOperations: MetricConfig{Enabled: false},
-					CouchdbFileDescriptorOpen: MetricConfig{Enabled: false},
-					CouchdbHttpdBulkRequests:  MetricConfig{Enabled: false},
-					CouchdbHttpdRequests:      MetricConfig{Enabled: false},
-					CouchdbHttpdResponses:     MetricConfig{Enabled: false},
-					CouchdbHttpdViews:         MetricConfig{Enabled: false},
+					CouchdbAverageRequestTime: MetricConfig{
+						Enabled: false,
+					},
+					CouchdbDatabaseOpen: MetricConfig{
+						Enabled: false,
+					},
+					CouchdbDatabaseOperations: MetricConfig{
+						Enabled: false,
+					},
+					CouchdbFileDescriptorOpen: MetricConfig{
+						Enabled: false,
+					},
+					CouchdbHttpdBulkRequests: MetricConfig{
+						Enabled: false,
+					},
+					CouchdbHttpdRequests: MetricConfig{
+						Enabled: false,
+					},
+					CouchdbHttpdResponses: MetricConfig{
+						Enabled: false,
+					},
+					CouchdbHttpdViews: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					CouchdbNodeName: ResourceAttributeConfig{Enabled: false},

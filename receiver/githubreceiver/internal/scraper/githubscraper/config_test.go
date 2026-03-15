@@ -26,6 +26,7 @@ func TestConfig(t *testing.T) {
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ClientConfig:         clientConfig,
 		ConcurrencyLimit:     50,
+		MergedPRLookbackDays: 30,
 	}
 
 	assert.Equal(t, expectedConfig, defaultConfig)
@@ -55,6 +56,30 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid config with negative concurrency",
 			config: Config{
 				ConcurrencyLimit: -1,
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid config with lookback days",
+			config: Config{
+				ConcurrencyLimit:     50,
+				MergedPRLookbackDays: 30,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid config with zero lookback (unlimited)",
+			config: Config{
+				ConcurrencyLimit:     50,
+				MergedPRLookbackDays: 0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid config with negative lookback",
+			config: Config{
+				ConcurrencyLimit:     50,
+				MergedPRLookbackDays: -5,
 			},
 			wantErr: true,
 		},

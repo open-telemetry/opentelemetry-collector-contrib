@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 // Transform transforms a [pprofile.Profile] into our own
@@ -218,17 +218,17 @@ func isFrameSymbolized(frame StackFrame) bool {
 func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, frequency int64, hostMetadata map[string]string) StackTraceEvent {
 	event := StackTraceEvent{
 		EcsVersion:       EcsVersion{V: EcsVersionString},
-		HostID:           hostMetadata[string(semconv.HostIDKey)],
+		HostID:           hostMetadata[string(conventions.HostIDKey)],
 		StackTraceID:     traceID,
-		ContainerID:      hostMetadata[string(semconv.ContainerIDKey)],
-		ContainerName:    hostMetadata[string(semconv.ContainerNameKey)],
-		PodName:          hostMetadata[string(semconv.K8SPodNameKey)],
-		K8sNamespaceName: hostMetadata[string(semconv.K8SNamespaceNameKey)],
+		ContainerID:      hostMetadata[string(conventions.ContainerIDKey)],
+		ContainerName:    hostMetadata[string(conventions.ContainerNameKey)],
+		PodName:          hostMetadata[string(conventions.K8SPodNameKey)],
+		K8sNamespaceName: hostMetadata[string(conventions.K8SNamespaceNameKey)],
 		Count:            1, // Elasticsearch v9.2+ doesn't read the count value any more.
 		Frequency:        frequency,
-		HostName:         hostMetadata[string(semconv.HostNameKey)],
+		HostName:         hostMetadata[string(conventions.HostNameKey)],
 		ProjectID:        2, // Use a project ID other than 1 to not conflict with ECH default value.
-		ServiceName:      hostMetadata[string(semconv.ServiceNameKey)],
+		ServiceName:      hostMetadata[string(conventions.ServiceNameKey)],
 	}
 
 	// Store event-specific attributes.
@@ -240,11 +240,11 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 		key := dic.StringTable().At(int(attr.KeyStrindex()))
 
 		switch attribute.Key(key) {
-		case semconv.ThreadNameKey:
+		case conventions.ThreadNameKey:
 			event.ThreadName = attr.Value().AsString()
-		case semconv.ProcessExecutableNameKey:
+		case conventions.ProcessExecutableNameKey:
 			event.ExecutableName = attr.Value().AsString()
-		case semconv.ServiceNameKey:
+		case conventions.ServiceNameKey:
 			event.ServiceName = attr.Value().AsString()
 		}
 	}
@@ -293,7 +293,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 			continue
 		}
 
-		frameTypeStr, err := getStringFromAttribute(dic, location, string(semconv.ProfileFrameTypeKey))
+		frameTypeStr, err := getStringFromAttribute(dic, location, string(conventions.ProfileFrameTypeKey))
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -398,7 +398,7 @@ func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable
 // If the build ID attribute is missing, returns a zero FileID and no error.
 func getBuildID(dic pprofile.ProfilesDictionary, mapping pprofile.Mapping) (libpf.FileID, error) {
 	// Fetch build ID from profiles.attribute_table.
-	buildIDStr, err := getStringFromAttribute(dic, mapping, string(semconv.ProcessExecutableBuildIDHtlhashKey))
+	buildIDStr, err := getStringFromAttribute(dic, mapping, string(conventions.ProcessExecutableBuildIDHtlhashKey))
 	switch {
 	case err == nil:
 		return libpf.FileIDFromString(buildIDStr)
@@ -534,7 +534,7 @@ func populateHostResourceData(resource pcommon.Resource, scope pcommon.Instrumen
 	addEventHostData(hrd.Data, scope.Attributes())
 
 	// Special case handling for host.id
-	hostID := hrd.Data[string(semconv.HostIDKey)]
+	hostID := hrd.Data[string(conventions.HostIDKey)]
 	if hostID == "" {
 		// In further processing host.id is used as unique key.
 		// So if this key is not present, hosts can not be compared.
@@ -547,7 +547,7 @@ func populateHostResourceData(resource pcommon.Resource, scope pcommon.Instrumen
 
 	// Avoid duplicate keys when JSON marshaling this struct
 	// by removing host.ID from hrd.Data
-	delete(hrd.Data, string(semconv.HostIDKey))
+	delete(hrd.Data, string(conventions.HostIDKey))
 
 	return hrd
 }

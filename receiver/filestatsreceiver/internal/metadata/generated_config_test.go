@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -27,11 +26,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					FileAtime: MetricConfig{Enabled: true},
-					FileCount: MetricConfig{Enabled: true},
-					FileCtime: MetricConfig{Enabled: true},
-					FileMtime: MetricConfig{Enabled: true},
-					FileSize:  MetricConfig{Enabled: true},
+					FileAtime: MetricConfig{
+						Enabled: true,
+					},
+					FileCount: MetricConfig{
+						Enabled: true,
+					},
+					FileCtime: MetricConfig{
+						Enabled: true,
+					},
+					FileMtime: MetricConfig{
+						Enabled: true,
+					},
+					FileSize: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					FileName: ResourceAttributeConfig{Enabled: true},
@@ -43,11 +52,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					FileAtime: MetricConfig{Enabled: false},
-					FileCount: MetricConfig{Enabled: false},
-					FileCtime: MetricConfig{Enabled: false},
-					FileMtime: MetricConfig{Enabled: false},
-					FileSize:  MetricConfig{Enabled: false},
+					FileAtime: MetricConfig{
+						Enabled: false,
+					},
+					FileCount: MetricConfig{
+						Enabled: false,
+					},
+					FileCtime: MetricConfig{
+						Enabled: false,
+					},
+					FileMtime: MetricConfig{
+						Enabled: false,
+					},
+					FileSize: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					FileName: ResourceAttributeConfig{Enabled: false},

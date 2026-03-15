@@ -7,10 +7,11 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("macosunifiedlogging")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedloggingreceiver"
+	Type           = component.MustNewType("macos_unified_logging")
+	DeprecatedType = component.MustNewType("macosunifiedlogging")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosunifiedloggingreceiver"
 )
 
 const (
-	LogsStability = component.StabilityLevelDevelopment
+	LogsStability = component.StabilityLevelAlpha
 )

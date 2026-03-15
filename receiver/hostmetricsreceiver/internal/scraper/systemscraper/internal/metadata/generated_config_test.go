@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -27,7 +26,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemUptime: MetricConfig{Enabled: true},
+					SystemUptime: MetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -35,7 +36,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemUptime: MetricConfig{Enabled: false},
+					SystemUptime: MetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},

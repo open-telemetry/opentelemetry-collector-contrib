@@ -5,7 +5,6 @@ package idbatcher
 
 import (
 	"encoding/binary"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -20,16 +19,14 @@ func TestBatcherNew(t *testing.T) {
 		name                      string
 		numBatches                uint64
 		newBatchesInitialCapacity uint64
-		batchChannelSize          uint64
 		wantErr                   error
 	}{
-		{"invalid numBatches", 0, 0, 1, ErrInvalidNumBatches},
-		{"invalid batchChannelSize", 1, 0, 0, ErrInvalidBatchChannelSize},
-		{"valid", 1, 0, 1, nil},
+		{"invalid numBatches", 0, 0, ErrInvalidNumBatches},
+		{"valid", 1, 0, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.numBatches, tt.newBatchesInitialCapacity, tt.batchChannelSize)
+			got, err := New(tt.numBatches, tt.newBatchesInitialCapacity)
 			require.ErrorIs(t, err, tt.wantErr)
 			if got != nil {
 				got.Stop()
@@ -39,19 +36,149 @@ func TestBatcherNew(t *testing.T) {
 }
 
 func TestTypicalConfig(t *testing.T) {
-	concurrencyTest(t, 10, 100, uint64(4*runtime.NumCPU()))
+	concurrencyTest(t, 10, 100)
 }
 
 func TestMinBufferedChannels(t *testing.T) {
-	concurrencyTest(t, 1, 0, 1)
+	concurrencyTest(t, 1, 0)
+}
+
+func TestMoveToEarlierBatch(t *testing.T) {
+	batcher, err := New(2, 10)
+	require.NoError(t, err, "Failed to create Batcher: %v", err)
+
+	ids := generateSequentialIDs(3)
+	// ids[0] will be fail to be moved (not earlier) after the batcher advances once
+	batchID0 := batcher.AddToCurrentBatch(ids[0])
+	require.EqualValues(t, 2, batchID0)
+
+	// ids[1] will be moved while still in the current batch.
+	batchID1 := batcher.AddToCurrentBatch(ids[1])
+	batchID1 = batcher.MoveToEarlierBatch(ids[1], batchID1, 1)
+	require.EqualValues(t, 1, batchID1)
+
+	// ids[2] will be moved after the batcher advances once
+	batchID2 := batcher.AddToCurrentBatch(ids[2])
+
+	batch, more := batcher.CloseCurrentAndTakeFirstBatch()
+	require.True(t, more)
+	require.Empty(t, batch)
+
+	// Fail to move ids[0]
+	id0Moved := batcher.MoveToEarlierBatch(ids[0], batchID0, 2)
+	require.Equal(t, batchID0, id0Moved)
+
+	// Successfully move ids[2] to the next batch
+	id2Moved := batcher.MoveToEarlierBatch(ids[2], batchID2, 0)
+	require.EqualValues(t, 1, id2Moved)
+
+	batcher.Stop()
+
+	// Second batch contains id[1] and id[2]
+	batch, more = batcher.CloseCurrentAndTakeFirstBatch()
+	require.True(t, more)
+	require.Equal(t, Batch{
+		ids[1]: struct{}{},
+		ids[2]: struct{}{},
+	}, batch)
+
+	// Third batch contains ids[0] (failed to be moved).
+	batch, more = batcher.CloseCurrentAndTakeFirstBatch()
+	require.True(t, more)
+	require.Equal(t, Batch{ids[0]: struct{}{}}, batch)
+
+	// Any remaining batches should be empty as we have processed all ids.
+	for {
+		batch, more = batcher.CloseCurrentAndTakeFirstBatch()
+		require.Empty(t, batch)
+		if !more {
+			break
+		}
+	}
+}
+
+func TestMoveToEarlierBatch_Randomized(t *testing.T) {
+	var (
+		batches        uint64 = 10
+		tracesPerBatch uint64 = 100
+		// Make sure we fill more than the initial batches.
+		traceIDs = 10 * batches * tracesPerBatch
+	)
+	batcher, err := New(batches, tracesPerBatch)
+	require.NoError(t, err, "Failed to create batcher: %v", err)
+	ids := generateSequentialIDs(traceIDs)
+
+	got := Batch{}
+	duplicateIDs := 0
+	processBatch := func() bool {
+		batch, more := batcher.CloseCurrentAndTakeFirstBatch()
+		for id := range batch {
+			if _, ok := got[id]; ok {
+				duplicateIDs++
+			}
+			got[id] = struct{}{}
+		}
+		return more
+	}
+
+	for i, id := range ids {
+		batchID := batcher.AddToCurrentBatch(id)
+		// Spread the ids randomly across all batches including the current batch (+1)
+		batcher.MoveToEarlierBatch(id, batchID, uint64(i)%(batches+1))
+
+		if uint64(i)%tracesPerBatch == tracesPerBatch-1 {
+			require.True(t, processBatch())
+		}
+	}
+	batcher.Stop()
+
+	for processBatch() {
+	}
+
+	require.Zero(t, duplicateIDs, "Found duplicate ids in batcher")
+	require.Len(t, got, len(ids), "Batcher got incorrect count of traces from batches")
+
+	for _, id := range ids {
+		_, ok := got[id]
+		require.True(t, ok, "want id %v but id was not seen", id)
+	}
+}
+
+func TestRemoveFromBatch(t *testing.T) {
+	batcher, err := New(1, 10)
+	require.NoError(t, err, "Failed to create Batcher: %v", err)
+
+	ids := generateSequentialIDs(3)
+	// ids[0] should remain in the batcher.
+	batcher.AddToCurrentBatch(ids[0])
+
+	// ids[1] is moved to an earlier batch and then deleted.
+	batchID := batcher.AddToCurrentBatch(ids[1])
+	batchID = batcher.MoveToEarlierBatch(ids[1], batchID, 0)
+	batcher.RemoveFromBatch(ids[1], batchID)
+
+	// ids[2] is removed from the current batch.
+	batchID = batcher.AddToCurrentBatch(ids[2])
+	batcher.RemoveFromBatch(ids[2], batchID)
+
+	batcher.Stop()
+	// First batch should contain no ids
+	batch, more := batcher.CloseCurrentAndTakeFirstBatch()
+	require.Empty(t, batch)
+	require.True(t, more)
+
+	// Second and final batch should only contain id[0].
+	batch, more = batcher.CloseCurrentAndTakeFirstBatch()
+	require.Equal(t, Batch{ids[0]: struct{}{}}, batch)
+	require.False(t, more)
 }
 
 func BenchmarkConcurrentEnqueue(b *testing.B) {
 	ids := generateSequentialIDs(1)
-	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
+	batcher, err := New(10, 100)
 	require.NoError(b, err, "Failed to create Batcher")
 
-	ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(time.Millisecond)
 	var wg sync.WaitGroup
 	defer func() {
 		batcher.Stop()
@@ -60,9 +187,7 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 	}()
 	ticked := &atomic.Int64{}
 	received := &atomic.Int64{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for range ticker.C {
 			batch, more := batcher.CloseCurrentAndTakeFirstBatch()
 			ticked.Add(1)
@@ -71,7 +196,7 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 				return
 			}
 		}
-	}()
+	})
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -82,28 +207,35 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 	})
 }
 
-func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchChannelSize uint64) {
-	batcher, err := New(numBatches, newBatchesInitialCapacity, batchChannelSize)
+func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity uint64) {
+	batcher, err := New(numBatches, newBatchesInitialCapacity)
 	require.NoError(t, err, "Failed to create Batcher: %v", err)
 
-	ticker := time.NewTicker(100 * time.Millisecond)
-	stopTicker := make(chan bool)
-	var got Batch
+	ticker := time.NewTicker(time.Millisecond)
+	got := Batch{}
+	duplicateIDs := 0
+	asyncDequesComplete := make(chan bool)
 	go func() {
+		defer func() {
+			asyncDequesComplete <- true
+		}()
+
 		var completedDequeues uint64
-	outer:
-		for {
-			select {
-			case <-ticker.C:
-				g, _ := batcher.CloseCurrentAndTakeFirstBatch()
-				completedDequeues++
-				if completedDequeues <= numBatches && len(g) != 0 {
-					t.Error("Some of the first batches were not empty")
-					return
+		for range ticker.C {
+			g, more := batcher.CloseCurrentAndTakeFirstBatch()
+			completedDequeues++
+			if completedDequeues <= numBatches && len(g) != 0 {
+				t.Error("Some of the first batches were not empty")
+				return
+			}
+			for id := range g {
+				if _, ok := got[id]; ok {
+					duplicateIDs++
 				}
-				got = append(got, g...)
-			case <-stopTicker:
-				break outer
+				got[id] = struct{}{}
+			}
+			if !more {
+				return
 			}
 		}
 	}()
@@ -125,28 +257,17 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	}
 
 	wg.Wait()
-	stopTicker <- true
-	ticker.Stop()
 	batcher.Stop()
+	// Wait for async process to be complete which will process all traces.
+	<-asyncDequesComplete
+	ticker.Stop()
 
-	// Get all ids added to the batcher
-	for {
-		batch, ok := batcher.CloseCurrentAndTakeFirstBatch()
-		got = append(got, batch...)
-		if !ok {
-			break
-		}
-	}
-
+	require.Zero(t, duplicateIDs, "Found duplicate ids in batcher")
 	require.Len(t, got, len(ids), "Batcher got incorrect count of traces from batches")
 
-	idSeen := make(map[[16]byte]bool, len(ids))
-	for _, id := range got {
-		idSeen[id] = true
-	}
-
-	for i := range ids {
-		require.True(t, idSeen[ids[i]], "want id %v but id was not seen", ids[i])
+	for _, id := range ids {
+		_, ok := got[id]
+		require.True(t, ok, "want id %v but id was not seen", id)
 	}
 }
 

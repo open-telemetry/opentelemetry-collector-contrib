@@ -3,77 +3,310 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+// ContainerBlockioIoServiceBytesRecursiveReadMetricConfig provides config for the container.blockio.io_service_bytes_recursive.read metric.
+type ContainerBlockioIoServiceBytesRecursiveReadMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerBlockioIoServiceBytesRecursiveReadMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig provides config for the container.blockio.io_service_bytes_recursive.write metric.
+type ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerCPUPercentMetricConfig provides config for the container.cpu.percent metric.
+type ContainerCPUPercentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerCPUPercentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerCPUUsagePercpuMetricAttributeKey specifies the key of an attribute for the container.cpu.usage.percpu metric.
+type ContainerCPUUsagePercpuMetricAttributeKey string
+
+const (
+	ContainerCPUUsagePercpuMetricAttributeKeyCore ContainerCPUUsagePercpuMetricAttributeKey = "core"
+)
+
+// ContainerCPUUsagePercpuMetricConfig provides config for the container.cpu.usage.percpu metric.
+type ContainerCPUUsagePercpuMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerCPUUsagePercpuMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ContainerCPUUsagePercpuMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ContainerCPUUsagePercpuMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ContainerCPUUsagePercpuMetricAttributeKeyCore:
+		default:
+			return fmt.Errorf("metric container.cpu.usage.percpu doesn't have an attribute %v, valid attributes: [core]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ContainerCPUUsageSystemMetricConfig provides config for the container.cpu.usage.system metric.
+type ContainerCPUUsageSystemMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerCPUUsageSystemMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerCPUUsageTotalMetricConfig provides config for the container.cpu.usage.total metric.
+type ContainerCPUUsageTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerCPUUsageTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerMemoryPercentMetricConfig provides config for the container.memory.percent metric.
+type ContainerMemoryPercentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryPercentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerMemoryUsageLimitMetricConfig provides config for the container.memory.usage.limit metric.
+type ContainerMemoryUsageLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryUsageLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerMemoryUsageTotalMetricConfig provides config for the container.memory.usage.total metric.
+type ContainerMemoryUsageTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryUsageTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerNetworkIoUsageRxBytesMetricConfig provides config for the container.network.io.usage.rx_bytes metric.
+type ContainerNetworkIoUsageRxBytesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerNetworkIoUsageRxBytesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerNetworkIoUsageTxBytesMetricConfig provides config for the container.network.io.usage.tx_bytes metric.
+type ContainerNetworkIoUsageTxBytesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerNetworkIoUsageTxBytesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
 // MetricsConfig provides config for podman_stats metrics.
 type MetricsConfig struct {
-	ContainerBlockioIoServiceBytesRecursiveRead  MetricConfig `mapstructure:"container.blockio.io_service_bytes_recursive.read"`
-	ContainerBlockioIoServiceBytesRecursiveWrite MetricConfig `mapstructure:"container.blockio.io_service_bytes_recursive.write"`
-	ContainerCPUPercent                          MetricConfig `mapstructure:"container.cpu.percent"`
-	ContainerCPUUsagePercpu                      MetricConfig `mapstructure:"container.cpu.usage.percpu"`
-	ContainerCPUUsageSystem                      MetricConfig `mapstructure:"container.cpu.usage.system"`
-	ContainerCPUUsageTotal                       MetricConfig `mapstructure:"container.cpu.usage.total"`
-	ContainerMemoryPercent                       MetricConfig `mapstructure:"container.memory.percent"`
-	ContainerMemoryUsageLimit                    MetricConfig `mapstructure:"container.memory.usage.limit"`
-	ContainerMemoryUsageTotal                    MetricConfig `mapstructure:"container.memory.usage.total"`
-	ContainerNetworkIoUsageRxBytes               MetricConfig `mapstructure:"container.network.io.usage.rx_bytes"`
-	ContainerNetworkIoUsageTxBytes               MetricConfig `mapstructure:"container.network.io.usage.tx_bytes"`
+	ContainerBlockioIoServiceBytesRecursiveRead  ContainerBlockioIoServiceBytesRecursiveReadMetricConfig  `mapstructure:"container.blockio.io_service_bytes_recursive.read"`
+	ContainerBlockioIoServiceBytesRecursiveWrite ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig `mapstructure:"container.blockio.io_service_bytes_recursive.write"`
+	ContainerCPUPercent                          ContainerCPUPercentMetricConfig                          `mapstructure:"container.cpu.percent"`
+	ContainerCPUUsagePercpu                      ContainerCPUUsagePercpuMetricConfig                      `mapstructure:"container.cpu.usage.percpu"`
+	ContainerCPUUsageSystem                      ContainerCPUUsageSystemMetricConfig                      `mapstructure:"container.cpu.usage.system"`
+	ContainerCPUUsageTotal                       ContainerCPUUsageTotalMetricConfig                       `mapstructure:"container.cpu.usage.total"`
+	ContainerMemoryPercent                       ContainerMemoryPercentMetricConfig                       `mapstructure:"container.memory.percent"`
+	ContainerMemoryUsageLimit                    ContainerMemoryUsageLimitMetricConfig                    `mapstructure:"container.memory.usage.limit"`
+	ContainerMemoryUsageTotal                    ContainerMemoryUsageTotalMetricConfig                    `mapstructure:"container.memory.usage.total"`
+	ContainerNetworkIoUsageRxBytes               ContainerNetworkIoUsageRxBytesMetricConfig               `mapstructure:"container.network.io.usage.rx_bytes"`
+	ContainerNetworkIoUsageTxBytes               ContainerNetworkIoUsageTxBytesMetricConfig               `mapstructure:"container.network.io.usage.tx_bytes"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		ContainerBlockioIoServiceBytesRecursiveRead: MetricConfig{
+		ContainerBlockioIoServiceBytesRecursiveRead: ContainerBlockioIoServiceBytesRecursiveReadMetricConfig{
 			Enabled: true,
 		},
-		ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{
+		ContainerBlockioIoServiceBytesRecursiveWrite: ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig{
 			Enabled: true,
 		},
-		ContainerCPUPercent: MetricConfig{
+		ContainerCPUPercent: ContainerCPUPercentMetricConfig{
 			Enabled: true,
 		},
-		ContainerCPUUsagePercpu: MetricConfig{
+		ContainerCPUUsagePercpu: ContainerCPUUsagePercpuMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ContainerCPUUsagePercpuMetricAttributeKey{ContainerCPUUsagePercpuMetricAttributeKeyCore},
+		},
+		ContainerCPUUsageSystem: ContainerCPUUsageSystemMetricConfig{
 			Enabled: true,
 		},
-		ContainerCPUUsageSystem: MetricConfig{
+		ContainerCPUUsageTotal: ContainerCPUUsageTotalMetricConfig{
 			Enabled: true,
 		},
-		ContainerCPUUsageTotal: MetricConfig{
+		ContainerMemoryPercent: ContainerMemoryPercentMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryPercent: MetricConfig{
+		ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryUsageLimit: MetricConfig{
+		ContainerMemoryUsageTotal: ContainerMemoryUsageTotalMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryUsageTotal: MetricConfig{
+		ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesMetricConfig{
 			Enabled: true,
 		},
-		ContainerNetworkIoUsageRxBytes: MetricConfig{
-			Enabled: true,
-		},
-		ContainerNetworkIoUsageTxBytes: MetricConfig{
+		ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesMetricConfig{
 			Enabled: true,
 		},
 	}

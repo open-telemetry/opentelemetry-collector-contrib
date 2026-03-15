@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"regexp"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -25,6 +24,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	commonconfig "github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/promslog"
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/common/version"
@@ -46,6 +46,7 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
@@ -74,7 +75,6 @@ type pReceiver struct {
 	registry               *prometheus.Registry
 	registerer             prometheus.Registerer
 	unregisterMetrics      func()
-	skipOffsetting         bool // for testing only
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -82,6 +82,7 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 	if err := cfg.PrometheusConfig.Reload(); err != nil {
 		return nil, fmt.Errorf("failed to reload Prometheus config: %w", err)
 	}
+
 	baseCfg := promconfig.Config(*cfg.PrometheusConfig)
 	registry := prometheus.NewRegistry()
 	registerer := prometheus.WrapRegistererWith(
@@ -98,7 +99,6 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 			set,
 			cfg.TargetAllocator.Get(),
 			&baseCfg,
-			cfg.enableNativeHistograms,
 		),
 	}
 	return pr, nil
@@ -107,12 +107,16 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 // Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
 func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
+	return r.start(ctx, host, prometheusComponentTestOptions{})
+}
+
+func (r *pReceiver) start(ctx context.Context, host component.Host, opts prometheusComponentTestOptions) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
 	logger := slog.New(zapslog.NewHandler(r.settings.Logger.Core()))
 
-	err := r.initPrometheusComponents(discoveryCtx, logger, host)
+	err := r.initPrometheusComponents(discoveryCtx, logger, host, opts)
 	if err != nil {
 		r.settings.Logger.Error("Failed to initPrometheusComponents Prometheus components", zap.Error(err))
 		return err
@@ -137,7 +141,10 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.Logger, host component.Host) error {
+func (r *pReceiver) initPrometheusComponents(
+	ctx context.Context, logger *slog.Logger, host component.Host,
+	opts prometheusComponentTestOptions,
+) error {
 	// Some SD mechanisms use the "refresh" package, which has its own metrics.
 	refreshSdMetrics := discovery.NewRefreshMetrics(r.registerer)
 
@@ -146,7 +153,12 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 	if err != nil {
 		return fmt.Errorf("failed to register service discovery metrics: %w", err)
 	}
-	r.discoveryManager = discovery.NewManager(ctx, logger, r.registerer, sdMetrics)
+
+	var discoveryManagerTestOptions []func(*discovery.Manager)
+	if opts.discovery.updatert > 0 {
+		discoveryManagerTestOptions = append(discoveryManagerTestOptions, discovery.Updatert(opts.discovery.updatert))
+	}
+	r.discoveryManager = discovery.NewManager(ctx, logger, r.registerer, sdMetrics, discoveryManagerTestOptions...)
 	if r.discoveryManager == nil {
 		// NewManager can sometimes return nil if it encountered an error, but
 		// the error message is logged separately.
@@ -161,22 +173,9 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		}
 	}()
 
-	var startTimeMetricRegex *regexp.Regexp
-	if r.cfg.StartTimeMetricRegex != "" {
-		startTimeMetricRegex, err = regexp.Compile(r.cfg.StartTimeMetricRegex)
-		if err != nil {
-			return err
-		}
-	}
-
 	store, err := internal.NewAppendable(
 		r.consumer,
 		r.settings,
-		gcInterval(r.cfg.PrometheusConfig),
-		r.cfg.UseStartTimeMetric,
-		startTimeMetricRegex,
-		useCreatedMetricGate.IsEnabled(),
-		r.cfg.enableNativeHistograms,
 		!r.cfg.ignoreMetadata,
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
@@ -185,18 +184,18 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		return err
 	}
 
-	opts := r.initScrapeOptions()
+	scrapeOpts := r.initScrapeOptions(opts.scrape)
 
 	// for testing only
-	if r.skipOffsetting {
-		optsValue := reflect.ValueOf(opts).Elem()
+	if r.cfg.skipOffsetting {
+		optsValue := reflect.ValueOf(scrapeOpts).Elem()
 		field := optsValue.FieldByName("skipOffsetting")
 		reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).
 			Elem().
 			Set(reflect.ValueOf(true))
 	}
 
-	scrapeManager, err := scrape.NewManager(opts, logger, nil, store, r.registerer)
+	scrapeManager, err := scrape.NewManager(scrapeOpts, logger, nil, store, nil, r.registerer)
 	if err != nil {
 		return err
 	}
@@ -224,15 +223,14 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 	return nil
 }
 
-func (r *pReceiver) initScrapeOptions() *scrape.Options {
+func (r *pReceiver) initScrapeOptions(o prometheusScrapeTestOptions) *scrape.Options {
 	opts := &scrape.Options{
-		PassMetadataInContext: true,
-		ExtraMetrics:          enableReportExtraScrapeMetricsGate.IsEnabled() || r.cfg.ReportExtraScrapeMetrics,
+		DiscoveryReloadInterval: model.Duration(o.discoveryReloadInterval),
+		PassMetadataInContext:   true,
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
-		EnableCreatedTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
-		EnableNativeHistogramsIngestion:     r.cfg.enableNativeHistograms,
+		EnableStartTimestampZeroIngestion: metadata.ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate.IsEnabled(),
 	}
 
 	return opts
@@ -266,10 +264,10 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	o := &web.Options{
 		ScrapeManager:   r.scrapeManager,
 		Context:         ctx,
-		ListenAddresses: []string{r.cfg.APIServer.ServerConfig.Endpoint},
+		ListenAddresses: []string{r.cfg.APIServer.ServerConfig.NetAddr.Endpoint},
 		ExternalURL: &url.URL{
 			Scheme: "http",
-			Host:   r.cfg.APIServer.ServerConfig.Endpoint,
+			Host:   r.cfg.APIServer.ServerConfig.NetAddr.Endpoint,
 			Path:   "",
 		},
 		RoutePrefix:    "/",
@@ -290,9 +288,10 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	factoryAr := func(_ context.Context) api_v1.AlertmanagerRetriever { return nil }
 	factoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
 	var app storage.Appendable
+	var appV2 storage.AppendableV2
 	logger := promslog.NewNopLogger()
 
-	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
+	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, appV2, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
 
 		// This ensures that any changes to the config made, even by the target allocator, are reflected in the API.
 		func() promconfig.Config {
@@ -330,7 +329,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 
 			return status, nil
 		},
-		&web.PrometheusVersion{
+		&api_v1.PrometheusVersion{
 			Version:   version.Version,
 			Revision:  version.Revision,
 			Branch:    version.Branch,
@@ -342,16 +341,19 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.NotificationsSub,
 		o.Gatherer,
 		o.Registerer,
-		nil,
+		nil, // StatsRenderer
 		o.EnableRemoteWriteReceiver,
 		o.AcceptRemoteWriteProtoMsgs,
 		o.EnableOTLPWriteReceiver,
 		o.ConvertOTLPDelta,
 		o.NativeOTLPDeltaIngestion,
-		o.CTZeroIngestionEnabled,
+		o.STZeroIngestionEnabled,
 		5*time.Minute, // LookbackDelta - Using the default value of 5 minutes
 		o.EnableTypeAndUnitLabels,
-		nil, // OverrideErrorCode
+		false, // appendMetadata from remote write
+		nil,   // OverrideErrorCode
+		nil,   // FeatureRegistry
+		api_v1.OpenAPIOptions{},
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
@@ -441,4 +443,26 @@ func (r *pReceiver) Shutdown(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+type prometheusComponentTestOptions struct {
+	discovery prometheusDiscoveryTestOptions
+	scrape    prometheusScrapeTestOptions
+}
+
+type prometheusDiscoveryTestOptions struct {
+	// updatert is the interval for updating targets.
+	//
+	// If zero, the default (5s) from Prometheus is used.
+	// This option is primarily for testing.
+	updatert time.Duration
+}
+
+type prometheusScrapeTestOptions struct {
+	// discoveryReloadInterval is the interval for reloading
+	// scrape configurations.
+	//
+	// If zero, the default (5s) from Prometheus is used.
+	// This option is primarily for testing.
+	discoveryReloadInterval time.Duration
 }

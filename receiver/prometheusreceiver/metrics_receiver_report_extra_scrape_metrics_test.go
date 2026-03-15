@@ -5,15 +5,13 @@ package prometheusreceiver
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
@@ -28,9 +26,9 @@ foo_gauge_total{method="get",port="6380"} 13
 # EOF
 `
 
-// TestReportExtraScrapeMetrics validates 3 extra scrape metrics are reported when flag is set to true.
+// TestReportExtraScrapeMetrics validates extra scrape metrics enablement via the Prometheus scrape configuration.
 func TestReportExtraScrapeMetrics(t *testing.T) {
-	target := func(reportExtraScrapeMetrics bool) *testData {
+	target := func(expectExtraScrapeMetrics bool) *testData {
 		return &testData{
 			name: "target1",
 			pages: []mockPrometheusResponse{
@@ -38,49 +36,77 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 			},
 			normalizedName: false,
 			validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
-				verifyMetrics(t, td, result, reportExtraScrapeMetrics)
+				verifyMetrics(t, td, result, expectExtraScrapeMetrics)
 			},
 		}
 	}
 
-	testScraperMetrics(t, []*testData{target(false)}, false) // extraScrapeMetrics flag is false
-	testScraperMetrics(t, []*testData{target(true)}, true)   // extraScrapeMetrics flag is true
+	testCases := []struct {
+		name        string
+		globalExtra *bool
+		scrapeExtra *bool
+		expectExtra bool
+	}{
+		{
+			name:        "global_true",
+			globalExtra: boolPtr(true),
+			scrapeExtra: nil,
+			expectExtra: true,
+		},
+		{
+			name:        "scrape_true",
+			globalExtra: boolPtr(false),
+			scrapeExtra: boolPtr(true),
+			expectExtra: true,
+		},
+		{
+			name:        "scrape_false_overrides_global",
+			globalExtra: boolPtr(true),
+			scrapeExtra: boolPtr(false),
+			expectExtra: false,
+		},
+		{
+			name:        "global_false",
+			globalExtra: boolPtr(false),
+			scrapeExtra: nil,
+			expectExtra: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testScraperMetrics(t, []*testData{target(tc.expectExtra)}, tc.globalExtra, tc.scrapeExtra, tc.expectExtra)
+		})
+	}
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetrics bool) {
-	defer testutil.SetFeatureGateForTest(t, enableReportExtraScrapeMetricsGate, reportExtraScrapeMetrics)()
-
-	ctx := t.Context()
-	mp, cfg, err := setupMockPrometheus(targets...)
+func testScraperMetrics(t *testing.T, targets []*testData, globalExtra, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
+	mp, cfg, err := setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra, targets...)
 	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
-	cms := new(consumertest.MetricsSink)
-	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
-		PrometheusConfig:     cfg,
-		UseStartTimeMetric:   false,
-		StartTimeMetricRegex: "",
-	}, cms)
-	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
+	// Calculate expected scrapes (pages that will return metrics, not 404s).
+	expectedScrapes := countExpectedScrapes(targets)
 
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-	// verify state after shutdown is called
-	t.Cleanup(func() {
-		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, receiver.Shutdown(t.Context()))
-		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
-	})
+	// Use signaling sink for deterministic synchronization.
+	cms := newSignalingSink(expectedScrapes)
+	set := receivertest.NewNopSettings(metadata.Type)
+	receiver := newTestReceiverSettingsConsumer(t, &Config{PrometheusConfig: cfg}, set, cms)
+	defer func() {
+		// Check targets prior to shutdown. The cleanup installed by newTestReceiver
+		// will check that there are no running targets after shutdown.
+		assert.Lenf(t,
+			flattenTargets(receiver.scrapeManager.TargetsAll()),
+			len(targets), "expected %v targets to be running", len(targets),
+		)
+	}()
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
 	mp.wg.Wait()
 
-	// Note:waitForScrapeResult is an attempt to address a possible race between waitgroup Done() being called in the ServerHTTP function
-	//      and when the receiver actually processes the http request responses into metrics.
-	//      this is a eventually timeout,tick that just waits for some condition.
-	//      however the condition to wait for may be suboptimal and may need to be adjusted.
-	waitForScrapeResults(t, targets, cms)
+	// Wait for consumer to receive all expected scrapes (deterministic, replaces polling).
+	cms.Wait(t, 30*time.Second)
 
 	// This begins the processing of the scrapes collected by the receiver
 	metrics := cms.AllMetrics()
@@ -100,7 +126,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 			if !target.validateScrapes {
 				scrapes = getValidScrapes(t, pResults[name], target)
 				assert.GreaterOrEqual(t, 1, len(scrapes))
-				if reportExtraScrapeMetrics {
+				if expectExtraScrapeMetrics {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics + 3 internal extra scraper metrics = 10
 					// scrape_sample_limit, scrape_timeout_seconds, scrape_body_size_bytes
 					assert.Equal(t, 2+expectedExtraScrapeMetricCount, metricsCount(scrapes[0]))
@@ -196,4 +222,8 @@ func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	}
 
 	doCompare(t, "scrape-reportExtraScrapeMetrics-1", wantAttributes, m1, e1)
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }

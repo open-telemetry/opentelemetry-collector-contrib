@@ -7,7 +7,7 @@ before you begin your work with the contrib Collector.
 ## Local Testing
 
 To manually test your changes, follow these steps to build and run the contrib
-Collector locally. Ensure that you execute these commands from the root of the 
+Collector locally. Ensure that you execute these commands from the root of the
 repository:
 
 1. Build the Collector:
@@ -115,13 +115,16 @@ change. For instance:
 
     [processor/tailsampling] fix AND policy
 
+Alternatively, if you have already written a changelog entry, you can set your PR title to `as per changelog` and a
+GitHub Action will automatically generate the PR title and description from your changelog entry YAML file(s). This
+avoids duplicating effort between the changelog entry and the PR description.
+
 ### Description guidelines
 
 When linking to an open issue, if your PR is meant to close said issue, please prefix your issue with one of the
 following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this functionality (and more keyword options) can be found
 [here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
 This will automatically close the issue once your PR has been merged.
-
 
 ## Issue Triaging
 
@@ -151,6 +154,7 @@ The following general labels are supported:
 | `priority:p3`             | `priority:p3`             |
 | `Stale`                   | `stale`                   |
 | `never stale`             | `never-stale`             |
+| `Skip Changelog`          | `skip-changelog`          |
 
 To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
 
@@ -160,11 +164,31 @@ Example label comment:
 /label receiver/prometheus help-wanted -exporter/prometheus
 ```
 
+### Rerunning Failed Workflows
+
+PR authors can rerun failed GitHub Actions workflows by commenting `/rerun` on the pull request. This will automatically rerun all failed workflow runs for the PR's latest commit.
+
+Example rerun comment:
+
+```
+/rerun
+```
+
+### Approving Workflows for Outside Contributors
+
+Members of the [triagers](./README.md#triagers), [approvers](./README.md#approvers), or [maintainers](./README.md#maintainers) teams can approve pending GitHub Actions workflow runs for outside contributors by commenting `/workflow-approve` on the pull request. This will approve all workflow runs with an `action_required` conclusion for the PR's latest commit.
+
+Example approve comment:
+
+```
+/workflow-approve
+```
+
 ## Portable Code
 
 In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
 
-* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions. 
+* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions.
 
 * Avoid hard-coding platform-specific values. Use environment variables or configuration files for storing platform-specific values.
 
@@ -182,156 +206,17 @@ In order to ensure compatibility with different operating systems, code should b
     filePath := Configuration.Get("data_file_path")
     ```
 
-* Be mindful of 
-  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths. 
+* Be mindful of
+  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths.
   - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
 
-* Test your implementation thoroughly on different platforms if possible and fix any issues. 
+* Test your implementation thoroughly on different platforms if possible and fix any issues.
 
-With above guidelines, you can write code that is more portable and easier to maintain across different platforms. 
+With above guidelines, you can write code that is more portable and easier to maintain across different platforms.
 
-## Adding New Components
+## Donating New Components
 
-> [!NOTE]  
-> The OpenTelemetry Collector has a pluggable architecture that allows you to build your own
-> [distribution](https://opentelemetry.io/docs/collector/distributions/) with your own [custom
-> components](https://opentelemetry.io/docs/collector/building/) using the [OpenTelemetry Collector
-> Builder](https://opentelemetry.io/docs/collector/custom-collector/). You **don't need** to include
-> your component in this repository to be able to use or distribute your component: you can just 
-> host it in your own repository as a Go module and [add it to the OpenTelemetry registry](https://opentelemetry.io/ecosystem/registry/).
-
-You may donate an existing component or propose a whole new one. If you are writing a new component from scratch, **before** any code is written, [open an
-issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
-providing the following information:
-
-* Who's the sponsor for your component. A sponsor is an approver or maintainer who will be the official reviewer of the code and a code owner
-  for the component. You will need to find a sponsor for the component in order for it to be accepted.
-* Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
-  anything else you think is relevant for us to make a decision about accepting the component.
-* The configuration options your component will accept. This will give us a better understanding of what it does, and 
-  how it may be implemented.
-
-Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
-
-* Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
-* Provide a configuration structure which defines the configuration of the component
-* Provide the implementation which performs the component operation
-* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md)).
-
-Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
-[Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
-
-> [!IMPORTANT]  
-> The Collector is in Beta stage and as such the interfaces may undergo breaking changes. Component creators
-> must be available to update or review their components when such changes happen, otherwise the component will be
-> excluded from the default builds.
-
-Generally, maintenance of components is the responsibility of contributors who authored them. If the original author or
-some other contributor does not maintain the component it may be excluded from the default build. The component **will**
-be excluded if it causes build problems, has failing tests, or otherwise causes problems to the rest of the repository
-and its contributors.
-
-- Create your component under the proper folder and use Go standard package naming recommendations.
-- Use a boiler-plate Makefile that just references the one at top level, ie.: `include ../../Makefile.Common` - this
-  allows you to build your component with required build configurations for the contrib repo while avoiding building the
-  full repo during development.
-- Each component has its own go.mod file. This allows custom builds of the collector to take a limited sets of
-  dependencies - so run `go mod` commands as appropriate for your component.
-- Implement the needed interface on your component by importing the appropriate component from the core repo. Follow the
-  pattern of existing components regarding config and factory source files and tests.
-- Implement your component as appropriate. Provide end-to-end tests (or mock backend/client as appropriate). Target is
-  to get 80% or more of code coverage.
-- Add a README.md on the root of your component describing its configuration and usage, likely referencing some of the
-  yaml files used in the component tests. We also suggest that the yaml files used in tests have comments for all
-  available configuration settings so users can copy and modify them as needed.
-- Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
-- Add your component to `versions.yaml`.
-- All components included in the distribution must be included in
-  [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml)
-  and in the respective testing harnesses. To align with the test goal of the
-  project, components must be testable within the framework defined within the
-  folder. If a component can not be properly tested within the existing
-  framework, it must increase the non testable components number with a comment
-  within the PR explaining as to why it can not be tested. **(Note: this does
-  not automatically include any components in official release binaries. See
-  [Releasing new components](#releasing-new-components).)**
-
-- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml).
-Here is a minimal representation:
-```
-type: <name of your component, such as apache, http, haproxy, postgresql>
-
-status:
-  class: <class of component, one of cmd, connector, exporter, extension, processor or receiver>
-  stability:
-    development: [<pick the signals supported: logs, metrics, traces. For extension, use "extension">]
-  codeowners:
-    active: [<github account of the sponsor, such as alice>, <your GitHub account if you are already an OpenTelemetry member>]
-```
-- Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
-- For README.md, you can start with the following:
-```
-# <Title of your component>
-<!-- status autogenerated section -->
-<!-- end autogenerated section -->
-```
-- Create a `doc.go` file with a generate pragma. For a `fooreceiver`, the file will look like:
-```
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-//go:generate mdatagen metadata.yaml
-
-// Package fooreceiver bars.
-package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"
-```
-- Type `make generate`. This will trigger the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
-- Type `make gencodeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file. 
-
-When submitting a component to the community, consider breaking it down into separate PRs as follows:
-
-* **First PR** should include the overall structure of the new component:
-  * Readme, configuration, and factory implementation usually using the helper
-    factory structs.
-  * This PR is usually trivial to review, so the size limit does not apply to
-    it.
-  * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
-  * Before submitting a PR, run the following commands from the root of the repository to ensure your new component is meeting the repo linting expectations:
-    * `make checkdoc`
-    * `make checkmetadata`
-    * `make checkapi`
-    * `make goporto`
-    * `make crosslink`
-    * `make gotidy`
-    * `make genotelcontribcol`
-    * `make genoteltestbedcol`
-    * `make generate`
-    * `make multimod-verify`
-    * `make generate-gh-issue-templates`
-    * `make gengithub`
-    * `make addlicense`
-* **Second PR** should include the concrete implementation of the component. If the
-  size of this PR is larger than the recommended size consider splitting it in
-  multiple PRs.
-* **Last PR** should mark the new component as `Alpha` stability.
-  * Update its `metadata.yaml` file.
-    * Mark the stability as `alpha`
-    * Add `contrib` to the list of distributions
-  * Add it to the `cmd/otelcontribcol` binary by updating the `cmd/otelcontribcol/builder-config.yaml` file.
-  * Please also run:
-    - `make generate`
-    - `make genotelcontribcol`
- 
-  * The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha).
-* Once your component has reached `Alpha` stability, you may also submit a PR to the [OpenTelemetry Collector Releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository to include your component in future releases of the OpenTelemetry Collector `contrib` distribution.
-* Once a new component has been added to the executable:
-  * Please add the component
-    to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
-
-### Releasing New Components
-After a component has been merged it must be added to the
-[OpenTelemetry Collector Contrib's release manifest.yaml](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml)
-to be included in the distributed otelcol-contrib binaries and docker images.
+See the ['Donating new components' document](docs/new-components.md).
 
 ## Semantic Conventions compatibility
 
@@ -376,8 +261,7 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 
 - The existing Code Owners are actively looking for more help.
 - A previous Code Owner stepped down.
-- An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
-- The component was never assigned a Code Owner.
+- An existing Code Owner has become unresponsive.
 
 Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
@@ -403,11 +287,25 @@ Be sure to tag the existing Code Owners, if any, within the PR to ensure they re
 
 ### Emeritus roles
 
-Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github.
+Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github. In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via GitHub, the CNCF Slack, or other available communication channels (such as email or through a coworker) to confirm their status.
 
-In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via both Github and the CNCF Slack to confirm their status. After two weeks, if the contributor is an approver or maintainer, they may be removed from the Github review auto-assignment.
+#### Approvers and maintainers
 
-If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
+If the contributor has not replied to maintainer communications after two weeks, they may be removed from the Github review auto-assignment. If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
+
+#### Code Owners
+
+The OpenTelemetry community strives to foster and maintain a high-trust community. As result, rules below are more discretionary than strictly procedural.
+
+It's highly encouraged for Code Owners who know they will be unavailable for a prolonged period of time (1+ months) to inform other Code Owners for their components in advance. If a Code Owner expects they may be unavailable for a long, undetermined period of time, they should consider moving themselves to emeritus status, and may request to be made active again once they can devote time to maintaining the component.
+
+If a Code Owner has not replied to communications from a maintainer or another Code Owner after two weeks, they may be moved to emeritus status following the majority vote of other Code Owners and with the agreement of a maintainer. If a majority cannot be reached because of unresponsive Code Owners, the active Code Owners can move the unresponsive Code Owners to emeritus status after a 6 week period with no reply, following a majority vote of known-active Code Owners and the agreement of a maintainer.
+
+If a component is seen as at risk of being unmaintained by maintainers, the maintainers may reach out to Code Owners to ensure they are still active. If none of a component's Code Owners respond to communication after a two week period, maintainers may add a new Code Owner to the component at their discretion. Similar to the policy in the preceding paragraph, the unresponsive Code Owners may be removed if a response has not been received after an additional four weeks. This is to ensure the ongoing maintenance of components within the repository.
+
+Following the steps outlined in the documentation for the [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#unmaintained), if no code owners are responsive for the documented period of time and there is not another contributor available to become a Code Owner, the component may be marked as unmaintained. In this situation, all existing code owners will be moved to emeritus status and the component will be open for new Code Owners.
+
+Code Owners who are moved to emeritus status without their direct involvement are welcome to request to be moved back to an active status.
 
 ## Makefile Guidelines
 

@@ -3,40 +3,47 @@
 package awslambdareceiver
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"reflect"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal/metadata"
 )
 
 func TestCreateLogs(t *testing.T) {
 	// Set Lambda environment variables required by Start()
-	t.Setenv("_LAMBDA_SERVER_PORT", "9001")
-	t.Setenv("AWS_LAMBDA_RUNTIME_API", "localhost:9001")
+	t.Setenv("AWS_EXECUTION_ENV", "AWS_Lambda_python3.12")
 
 	// Create receiver using factory with S3 encoding config.
 	// Note: The S3Encoding value must match the component ID used when registering the extension.
+
+	s3Encoding := "aws_logs_encoding"
+
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.S3Encoding = awsLogsEncoding
+	cfg.S3.Encoding = s3Encoding
+	settings := receivertest.NewNopSettings(metadata.Type)
+
 	sink := consumertest.LogsSink{}
 	receiver, err := factory.CreateLogs(
 		t.Context(),
-		receivertest.NewNopSettings(metadata.Type),
+		settings,
 		cfg,
 		&sink,
 	)
@@ -50,30 +57,22 @@ func TestCreateLogs(t *testing.T) {
 
 	// Test data - mock S3 file content
 	testData := []byte("version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status\n2 627286350134 eni-0377aa710071c557e 172.31.31.124 140.82.121.6 52718 443 6 13 3777 1751375679 ENDTIME ACCEPT OK\n")
-	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(testData, nil)
+	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(io.NopCloser(bytes.NewReader(testData)), nil)
 
 	// Register the extension with the same component ID as S3Encoding
 	// This is required: the extension ID must match cfg.S3Encoding
 	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
-			component.MustNewID(awsLogsEncoding): &mockExtensionWithPLogUnmarshaler{
-				Unmarshaler: unmarshalLogsFunc(func(data []byte) (plog.Logs, error) {
-					require.Equal(t, string(testData), string(data))
-					logs := plog.NewLogs()
-					rl := logs.ResourceLogs().AppendEmpty()
-					sl := rl.ScopeLogs().AppendEmpty()
-					sl.LogRecords().AppendEmpty()
-					return logs, nil
-				}),
-			},
+			component.MustNewID(s3Encoding): &mockExtensionWithPLogUnmarshaler{},
 		}
 	}}
 
-	// Initialize the handler manually (without starting Lambda runtime to avoid goroutine leaks in tests)
+	// Initialize the handlerProvider manually (without starting Lambda runtime to avoid goroutine leaks in tests)
 	awsReceiver := receiver.(*awsLambdaReceiver)
-	handler, err := awsReceiver.newHandler(t.Context(), host, s3Provider)
+	awsReceiver.hp, err = newLogsHandler(t.Context(), cfg, settings, host, &sink, s3Provider)
 	require.NoError(t, err)
-	awsReceiver.handler = handler
 
 	// Process an S3 event notification.
 	lambdaEvent, err := json.Marshal(events.S3Event{
@@ -95,17 +94,21 @@ func TestCreateLogs(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	// Set Lambda environment variables required by Start()
-	t.Setenv("_LAMBDA_SERVER_PORT", "9001")
-	t.Setenv("AWS_LAMBDA_RUNTIME_API", "localhost:9001")
+	t.Setenv("AWS_EXECUTION_ENV", "AWS_Lambda_python3.12")
+
+	// Custom encoder name for the test
+	encoderName := "dummy_metric_encoding"
 
 	// Create receiver using factory with a dummy encoding extension.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.S3Encoding = "dummy_metric_encoding"
+	cfg.S3.Encoding = encoderName
+	settings := receivertest.NewNopSettings(metadata.Type)
+
 	sink := consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetrics(
 		t.Context(),
-		receivertest.NewNopSettings(metadata.Type),
+		settings,
 		cfg,
 		&sink,
 	)
@@ -116,31 +119,20 @@ func TestCreateMetrics(t *testing.T) {
 	s3Service := internal.NewMockS3Service(goMock)
 	s3Provider := internal.NewMockS3Provider(goMock)
 	s3Provider.EXPECT().GetService(gomock.Any()).AnyTimes().Return(s3Service, nil)
-	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(
-		[]byte("dummy data"), nil,
-	)
+	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(io.NopCloser(bytes.NewReader([]byte("dummy data"))), nil)
 
 	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
-			component.MustNewID("dummy_metric_encoding"): &mockExtensionWithPMetricUnmarshaler{
-				Unmarshaler: unmarshalMetricsFunc(func(data []byte) (pmetric.Metrics, error) {
-					require.Equal(t, "dummy data", string(data))
-					metrics := pmetric.NewMetrics()
-					rm := metrics.ResourceMetrics().AppendEmpty()
-					ilm := rm.ScopeMetrics().AppendEmpty()
-					dp := ilm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-					dp.SetIntValue(123)
-					return metrics, nil
-				}),
-			},
+			component.MustNewID(encoderName): &mockExtensionWithPMetricUnmarshaler{},
 		}
 	}}
 
-	// Initialize the handler manually (without starting Lambda runtime to avoid goroutine leaks in tests)
+	// Initialize the handlerProvider manually (without starting Lambda runtime to avoid goroutine leaks in tests)
 	awsReceiver := receiver.(*awsLambdaReceiver)
-	handler, err := awsReceiver.newHandler(t.Context(), host, s3Provider)
+	awsReceiver.hp, err = newMetricsHandler(t.Context(), cfg, settings, host, &sink, s3Provider)
 	require.NoError(t, err)
-	awsReceiver.handler = handler
 
 	// Process an S3 event notification.
 	lambdaEvent, err := json.Marshal(events.S3Event{
@@ -160,25 +152,13 @@ func TestCreateMetrics(t *testing.T) {
 	require.NotZero(t, sink.DataPointCount(), "Expected metrics to be sent to sink")
 }
 
-func TestCreateMetricsRequiresS3Encoding(t *testing.T) {
-	factory := NewFactory()
-	_, err := factory.CreateMetrics(
-		t.Context(),
-		receivertest.NewNopSettings(metadata.Type),
-		factory.CreateDefaultConfig(),
-		consumertest.NewNop(),
-	)
-	require.EqualError(t, err, "s3_encoding is required for metrics")
-}
-
 func TestStartRequiresLambdaEnvironment(t *testing.T) {
 	// Ensure Lambda environment variables are not set
-	t.Setenv("_LAMBDA_SERVER_PORT", "")
-	t.Setenv("AWS_LAMBDA_RUNTIME_API", "")
+	t.Setenv("AWS_EXECUTION_ENV", "")
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.S3Encoding = "test_encoding"
+	cfg.S3.Encoding = "test_encoding"
 
 	receiver, err := factory.CreateLogs(
 		t.Context(),
@@ -201,7 +181,9 @@ func TestStartRequiresLambdaEnvironment(t *testing.T) {
 
 func TestProcessLambdaEvent(t *testing.T) {
 	commonCfg := Config{
-		S3Encoding: "alb",
+		S3: sharedConfig{
+			Encoding: "awslogs",
+		},
 	}
 
 	commonLogger := zap.NewNop()
@@ -229,11 +211,13 @@ func TestProcessLambdaEvent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockHandler := mockPlogEventHandler{event: tt.eventType}
+			mockHandler := &mockPlogEventHandler{}
+			hpMock := &mockHandlerProvider{mockHandler}
+
 			receiver := awsLambdaReceiver{
-				cfg:     &commonCfg,
-				logger:  commonLogger,
-				handler: &mockHandler,
+				cfg:    &commonCfg,
+				logger: commonLogger,
+				hp:     hpMock,
 			}
 
 			err := receiver.processLambdaEvent(t.Context(), tt.event)
@@ -249,70 +233,6 @@ func TestProcessLambdaEvent(t *testing.T) {
 			}
 
 			require.Equal(t, 1, mockHandler.handleCount)
-		})
-	}
-}
-
-func TestLoadLogsHandler(t *testing.T) {
-	tests := []struct {
-		name                string
-		s3Encoding          string
-		factoryMock         func(ctx context.Context, settings extension.Settings, config component.Config) (extension.Extension, error)
-		hostMock            func() map[component.ID]component.Component
-		expectedHandlerType reflect.Type
-		isErr               bool
-	}{
-		{
-			name:       "Prioritize ID based loading - success",
-			s3Encoding: "my_encoding",
-			hostMock: func() map[component.ID]component.Component {
-				id := component.NewID(component.MustNewType("my_encoding"))
-
-				return map[component.ID]component.Component{
-					id: &mockExtensionWithPLogUnmarshaler{},
-				}
-			},
-			isErr:               false,
-			expectedHandlerType: reflect.TypeFor[*s3Handler[plog.Logs]](),
-		},
-		{
-			name:       "Error if handler loading fails",
-			s3Encoding: "custom_encoding",
-			hostMock: func() map[component.ID]component.Component {
-				// no registered extensions matching s3Encoding
-				return map[component.ID]component.Component{}
-			},
-			isErr: true,
-		},
-	}
-
-	ctr := gomock.NewController(t)
-	s3Service := internal.NewMockS3Service(ctr)
-	s3Provider := internal.NewMockS3Provider(ctr)
-	s3Provider.EXPECT().GetService(gomock.Any()).AnyTimes().Return(s3Service, nil)
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// construct mocks
-			host := mockHost{GetFunc: tt.hostMock}
-
-			// load handler and validate
-			handler, err := newLogsHandler(
-				t.Context(),
-				&Config{S3Encoding: tt.s3Encoding},
-				receivertest.NewNopSettings(metadata.Type),
-				host,
-				consumertest.NewNop(),
-				s3Provider)
-			if tt.isErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				// validate handler type
-				if reflect.TypeOf(handler) != tt.expectedHandlerType {
-					t.Errorf("expected handler to be of type %v; got %v", tt.expectedHandlerType, reflect.TypeOf(handler))
-				}
-			}
 		})
 	}
 }
@@ -498,14 +418,187 @@ func TestDetectTriggerType(t *testing.T) {
 	}
 }
 
+func TestHandleCustomTrigger(t *testing.T) {
+	commonCfg := Config{FailureBucketARN: "aws:s3:::my-bucket"}
+
+	commonLogger := zap.NewNop()
+	goMock := gomock.NewController(t)
+
+	s3Provider := internal.NewMockS3Provider(goMock)
+
+	tests := []struct {
+		name              string
+		handlerFunc       func() internal.CustomTriggerHandler
+		expectHandleCount int
+		expectError       string
+	}{
+		{
+			name: "Successful event handling - two events",
+			handlerFunc: func() internal.CustomTriggerHandler {
+				handler := internal.NewMockCustomTriggerHandler(goMock)
+				handler.EXPECT().HasNext(t.Context()).Times(2).Return(true)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
+				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
+				handler.EXPECT().IsDryRun().AnyTimes().Return(false)
+				handler.EXPECT().Error().AnyTimes().Return(nil)
+
+				handler.EXPECT().
+					GetNext(gomock.Any()).Times(2).
+					Return([]byte(`{"Records": "S3 event content"}`), nil)
+
+				return handler
+			},
+			expectHandleCount: 2,
+		},
+		{
+			name: "Event handling is skipped for dry-run mode",
+			handlerFunc: func() internal.CustomTriggerHandler {
+				handler := internal.NewMockCustomTriggerHandler(goMock)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(true)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
+				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
+				handler.EXPECT().Error().AnyTimes().Return(nil)
+
+				// set dry-run mode to true
+				handler.EXPECT().IsDryRun().AnyTimes().Return(true)
+
+				handler.EXPECT().
+					GetNext(gomock.Any()).Times(1).
+					Return([]byte(`{"Records": "S3 event content"}`), nil)
+
+				return handler
+			},
+			expectHandleCount: 0,
+		},
+		{
+			name: "Event handling fails for unknown event type",
+			handlerFunc: func() internal.CustomTriggerHandler {
+				handler := internal.NewMockCustomTriggerHandler(goMock)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(true)
+				handler.EXPECT().PostProcess(gomock.Any()).AnyTimes()
+				handler.EXPECT().IsDryRun().AnyTimes().Return(false)
+				handler.EXPECT().Error().AnyTimes().Return(nil)
+
+				handler.EXPECT().
+					GetNext(gomock.Any()).Times(1).
+					Return([]byte(`{"test": "unknown trigger"}`), nil)
+
+				return handler
+			},
+			expectHandleCount: 0,
+			expectError:       "unknown event type with key: test",
+		},
+		{
+			name: "Event handling ends with error when handler returns error",
+			handlerFunc: func() internal.CustomTriggerHandler {
+				handler := internal.NewMockCustomTriggerHandler(goMock)
+				handler.EXPECT().HasNext(t.Context()).Times(1).Return(false)
+
+				// set error on the handler
+				handler.EXPECT().Error().Return(errors.New("some error from handler"))
+
+				return handler
+			},
+			expectHandleCount: 0,
+			expectError:       "some error from handler",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := tt.handlerFunc()
+
+			mockHandler := mockPlogEventHandler{event: s3Event}
+			hp := mockHandlerProvider{&mockHandler}
+
+			receiver := awsLambdaReceiver{
+				cfg:        &commonCfg,
+				logger:     commonLogger,
+				hp:         &hp,
+				s3Provider: s3Provider,
+			}
+
+			err := receiver.handleCustomTriggers(t.Context(), handler)
+
+			if tt.expectError != "" {
+				require.ErrorContains(t, err, tt.expectError)
+			}
+
+			require.Equal(t, tt.expectHandleCount, mockHandler.handleCount)
+		})
+	}
+}
+
 type mockExtensionWithPLogUnmarshaler struct {
 	mockExtension    // Embed the base mock implementation.
 	plog.Unmarshaler // Add the unmarshaler interface when needed.
 }
 
+func (mockExtensionWithPLogUnmarshaler) UnmarshalLogs(_ []byte) (plog.Logs, error) {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
+	return logs, nil
+}
+
+func (mockExtensionWithPLogUnmarshaler) NewLogsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	isEOF := false
+	return xstreamencoding.NewLogsDecoderAdapter(
+			func() (plog.Logs, error) {
+				if isEOF {
+					return plog.Logs{}, io.EOF
+				}
+
+				logs := plog.NewLogs()
+				rl := logs.ResourceLogs().AppendEmpty()
+				sl := rl.ScopeLogs().AppendEmpty()
+				sl.LogRecords().AppendEmpty()
+
+				isEOF = true
+				return logs, nil
+			},
+			func() int64 {
+				return 0
+			}),
+		nil
+}
+
 type mockExtensionWithPMetricUnmarshaler struct {
 	mockExtension       // Embed the base mock implementation.
 	pmetric.Unmarshaler // Add the unmarshaler interface when needed.
+}
+
+func (mockExtensionWithPMetricUnmarshaler) UnmarshalMetrics(_ []byte) (pmetric.Metrics, error) {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	dp := ilm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(123)
+	return metrics, nil
+}
+
+func (mockExtensionWithPMetricUnmarshaler) NewMetricsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.MetricsDecoder, error) {
+	isEOF := false
+	return xstreamencoding.NewMetricsDecoderAdapter(
+			func() (pmetric.Metrics, error) {
+				if isEOF {
+					return pmetric.Metrics{}, io.EOF
+				}
+
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
+				dp := ilm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetIntValue(123)
+
+				isEOF = true
+				return metrics, nil
+			},
+			func() int64 {
+				return 0
+			}),
+		nil
 }
 
 type mockExtension struct{}
@@ -527,16 +620,4 @@ type mockHost struct {
 
 func (m mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.GetFunc()
-}
-
-type unmarshalLogsFunc func([]byte) (plog.Logs, error)
-
-func (f unmarshalLogsFunc) UnmarshalLogs(data []byte) (plog.Logs, error) {
-	return f(data)
-}
-
-type unmarshalMetricsFunc func([]byte) (pmetric.Metrics, error)
-
-func (f unmarshalMetricsFunc) UnmarshalMetrics(data []byte) (pmetric.Metrics, error) {
-	return f(data)
 }

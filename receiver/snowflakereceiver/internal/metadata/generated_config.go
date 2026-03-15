@@ -3,174 +3,1933 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+// SnowflakeBillingCloudServiceTotalMetricAttributeKey specifies the key of an attribute for the snowflake.billing.cloud_service.total metric.
+type SnowflakeBillingCloudServiceTotalMetricAttributeKey string
 
+const (
+	SnowflakeBillingCloudServiceTotalMetricAttributeKeyServiceType SnowflakeBillingCloudServiceTotalMetricAttributeKey = "service_type"
+)
+
+// SnowflakeBillingCloudServiceTotalMetricConfig provides config for the snowflake.billing.cloud_service.total metric.
+type SnowflakeBillingCloudServiceTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeBillingCloudServiceTotalMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SnowflakeBillingCloudServiceTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeBillingCloudServiceTotalMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeBillingCloudServiceTotalMetricAttributeKeyServiceType:
+		default:
+			return fmt.Errorf("metric snowflake.billing.cloud_service.total doesn't have an attribute %v, valid attributes: [service_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeBillingTotalCreditTotalMetricAttributeKey specifies the key of an attribute for the snowflake.billing.total_credit.total metric.
+type SnowflakeBillingTotalCreditTotalMetricAttributeKey string
+
+const (
+	SnowflakeBillingTotalCreditTotalMetricAttributeKeyServiceType SnowflakeBillingTotalCreditTotalMetricAttributeKey = "service_type"
+)
+
+// SnowflakeBillingTotalCreditTotalMetricConfig provides config for the snowflake.billing.total_credit.total metric.
+type SnowflakeBillingTotalCreditTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeBillingTotalCreditTotalMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeBillingTotalCreditTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeBillingTotalCreditTotalMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeBillingTotalCreditTotalMetricAttributeKeyServiceType:
+		default:
+			return fmt.Errorf("metric snowflake.billing.total_credit.total doesn't have an attribute %v, valid attributes: [service_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey specifies the key of an attribute for the snowflake.billing.virtual_warehouse.total metric.
+type SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey string
+
+const (
+	SnowflakeBillingVirtualWarehouseTotalMetricAttributeKeyServiceType SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey = "service_type"
+)
+
+// SnowflakeBillingVirtualWarehouseTotalMetricConfig provides config for the snowflake.billing.virtual_warehouse.total metric.
+type SnowflakeBillingVirtualWarehouseTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeBillingVirtualWarehouseTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeBillingVirtualWarehouseTotalMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeBillingVirtualWarehouseTotalMetricAttributeKeyServiceType:
+		default:
+			return fmt.Errorf("metric snowflake.billing.virtual_warehouse.total doesn't have an attribute %v, valid attributes: [service_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey specifies the key of an attribute for the snowflake.billing.warehouse.cloud_service.total metric.
+type SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey string
+
+const (
+	SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKeyWarehouseName SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey = "warehouse_name"
+)
+
+// SnowflakeBillingWarehouseCloudServiceTotalMetricConfig provides config for the snowflake.billing.warehouse.cloud_service.total metric.
+type SnowflakeBillingWarehouseCloudServiceTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeBillingWarehouseCloudServiceTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeBillingWarehouseCloudServiceTotalMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKeyWarehouseName:
+		default:
+			return fmt.Errorf("metric snowflake.billing.warehouse.cloud_service.total doesn't have an attribute %v, valid attributes: [warehouse_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey specifies the key of an attribute for the snowflake.billing.warehouse.total_credit.total metric.
+type SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey string
+
+const (
+	SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKeyWarehouseName SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey = "warehouse_name"
+)
+
+// SnowflakeBillingWarehouseTotalCreditTotalMetricConfig provides config for the snowflake.billing.warehouse.total_credit.total metric.
+type SnowflakeBillingWarehouseTotalCreditTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeBillingWarehouseTotalCreditTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeBillingWarehouseTotalCreditTotalMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKeyWarehouseName:
+		default:
+			return fmt.Errorf("metric snowflake.billing.warehouse.total_credit.total doesn't have an attribute %v, valid attributes: [warehouse_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey specifies the key of an attribute for the snowflake.billing.warehouse.virtual_warehouse.total metric.
+type SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey string
+
+const (
+	SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKeyWarehouseName SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey = "warehouse_name"
+)
+
+// SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig provides config for the snowflake.billing.warehouse.virtual_warehouse.total metric.
+type SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKeyWarehouseName:
+		default:
+			return fmt.Errorf("metric snowflake.billing.warehouse.virtual_warehouse.total doesn't have an attribute %v, valid attributes: [warehouse_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeDatabaseBytesScannedAvgMetricAttributeKey specifies the key of an attribute for the snowflake.database.bytes_scanned.avg metric.
+type SnowflakeDatabaseBytesScannedAvgMetricAttributeKey string
+
+const (
+	SnowflakeDatabaseBytesScannedAvgMetricAttributeKeySchemaName      SnowflakeDatabaseBytesScannedAvgMetricAttributeKey = "schema_name"
+	SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyExecutionStatus SnowflakeDatabaseBytesScannedAvgMetricAttributeKey = "execution_status"
+	SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyErrorMessage    SnowflakeDatabaseBytesScannedAvgMetricAttributeKey = "error_message"
+	SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyQueryType       SnowflakeDatabaseBytesScannedAvgMetricAttributeKey = "query_type"
+	SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseName   SnowflakeDatabaseBytesScannedAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyDatabaseName    SnowflakeDatabaseBytesScannedAvgMetricAttributeKey = "database_name"
+	SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseSize   SnowflakeDatabaseBytesScannedAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeDatabaseBytesScannedAvgMetricConfig provides config for the snowflake.database.bytes_scanned.avg metric.
+type SnowflakeDatabaseBytesScannedAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeDatabaseBytesScannedAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeDatabaseBytesScannedAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeDatabaseBytesScannedAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeDatabaseBytesScannedAvgMetricAttributeKeySchemaName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyErrorMessage, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyQueryType, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyDatabaseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.database.bytes_scanned.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeDatabaseQueryCountMetricAttributeKey specifies the key of an attribute for the snowflake.database.query.count metric.
+type SnowflakeDatabaseQueryCountMetricAttributeKey string
+
+const (
+	SnowflakeDatabaseQueryCountMetricAttributeKeySchemaName      SnowflakeDatabaseQueryCountMetricAttributeKey = "schema_name"
+	SnowflakeDatabaseQueryCountMetricAttributeKeyExecutionStatus SnowflakeDatabaseQueryCountMetricAttributeKey = "execution_status"
+	SnowflakeDatabaseQueryCountMetricAttributeKeyErrorMessage    SnowflakeDatabaseQueryCountMetricAttributeKey = "error_message"
+	SnowflakeDatabaseQueryCountMetricAttributeKeyQueryType       SnowflakeDatabaseQueryCountMetricAttributeKey = "query_type"
+	SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseName   SnowflakeDatabaseQueryCountMetricAttributeKey = "warehouse_name"
+	SnowflakeDatabaseQueryCountMetricAttributeKeyDatabaseName    SnowflakeDatabaseQueryCountMetricAttributeKey = "database_name"
+	SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseSize   SnowflakeDatabaseQueryCountMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeDatabaseQueryCountMetricConfig provides config for the snowflake.database.query.count metric.
+type SnowflakeDatabaseQueryCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeDatabaseQueryCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeDatabaseQueryCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeDatabaseQueryCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeDatabaseQueryCountMetricAttributeKeySchemaName, SnowflakeDatabaseQueryCountMetricAttributeKeyExecutionStatus, SnowflakeDatabaseQueryCountMetricAttributeKeyErrorMessage, SnowflakeDatabaseQueryCountMetricAttributeKeyQueryType, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseName, SnowflakeDatabaseQueryCountMetricAttributeKeyDatabaseName, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.database.query.count doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeLoginsTotalMetricAttributeKey specifies the key of an attribute for the snowflake.logins.total metric.
+type SnowflakeLoginsTotalMetricAttributeKey string
+
+const (
+	SnowflakeLoginsTotalMetricAttributeKeyErrorMessage       SnowflakeLoginsTotalMetricAttributeKey = "error_message"
+	SnowflakeLoginsTotalMetricAttributeKeyReportedClientType SnowflakeLoginsTotalMetricAttributeKey = "reported_client_type"
+	SnowflakeLoginsTotalMetricAttributeKeyIsSuccess          SnowflakeLoginsTotalMetricAttributeKey = "is_success"
+)
+
+// SnowflakeLoginsTotalMetricConfig provides config for the snowflake.logins.total metric.
+type SnowflakeLoginsTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeLoginsTotalMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeLoginsTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeLoginsTotalMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeLoginsTotalMetricAttributeKeyErrorMessage, SnowflakeLoginsTotalMetricAttributeKeyReportedClientType, SnowflakeLoginsTotalMetricAttributeKeyIsSuccess:
+		default:
+			return fmt.Errorf("metric snowflake.logins.total doesn't have an attribute %v, valid attributes: [error_message, reported_client_type, is_success]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakePipeCreditsUsedTotalMetricAttributeKey specifies the key of an attribute for the snowflake.pipe.credits_used.total metric.
+type SnowflakePipeCreditsUsedTotalMetricAttributeKey string
+
+const (
+	SnowflakePipeCreditsUsedTotalMetricAttributeKeyPipeName SnowflakePipeCreditsUsedTotalMetricAttributeKey = "pipe_name"
+)
+
+// SnowflakePipeCreditsUsedTotalMetricConfig provides config for the snowflake.pipe.credits_used.total metric.
+type SnowflakePipeCreditsUsedTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakePipeCreditsUsedTotalMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakePipeCreditsUsedTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakePipeCreditsUsedTotalMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakePipeCreditsUsedTotalMetricAttributeKeyPipeName:
+		default:
+			return fmt.Errorf("metric snowflake.pipe.credits_used.total doesn't have an attribute %v, valid attributes: [pipe_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryBlockedMetricAttributeKey specifies the key of an attribute for the snowflake.query.blocked metric.
+type SnowflakeQueryBlockedMetricAttributeKey string
+
+const (
+	SnowflakeQueryBlockedMetricAttributeKeyWarehouseName SnowflakeQueryBlockedMetricAttributeKey = "warehouse_name"
+)
+
+// SnowflakeQueryBlockedMetricConfig provides config for the snowflake.query.blocked metric.
+type SnowflakeQueryBlockedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryBlockedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryBlockedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryBlockedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryBlockedMetricAttributeKeyWarehouseName:
+		default:
+			return fmt.Errorf("metric snowflake.query.blocked doesn't have an attribute %v, valid attributes: [warehouse_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryBytesDeletedAvgMetricAttributeKey specifies the key of an attribute for the snowflake.query.bytes_deleted.avg metric.
+type SnowflakeQueryBytesDeletedAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueryBytesDeletedAvgMetricAttributeKeySchemaName      SnowflakeQueryBytesDeletedAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueryBytesDeletedAvgMetricAttributeKeyExecutionStatus SnowflakeQueryBytesDeletedAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueryBytesDeletedAvgMetricAttributeKeyErrorMessage    SnowflakeQueryBytesDeletedAvgMetricAttributeKey = "error_message"
+	SnowflakeQueryBytesDeletedAvgMetricAttributeKeyQueryType       SnowflakeQueryBytesDeletedAvgMetricAttributeKey = "query_type"
+	SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseName   SnowflakeQueryBytesDeletedAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueryBytesDeletedAvgMetricAttributeKeyDatabaseName    SnowflakeQueryBytesDeletedAvgMetricAttributeKey = "database_name"
+	SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseSize   SnowflakeQueryBytesDeletedAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueryBytesDeletedAvgMetricConfig provides config for the snowflake.query.bytes_deleted.avg metric.
+type SnowflakeQueryBytesDeletedAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryBytesDeletedAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryBytesDeletedAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryBytesDeletedAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryBytesDeletedAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.query.bytes_deleted.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey specifies the key of an attribute for the snowflake.query.bytes_spilled.local.avg metric.
+type SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeySchemaName      SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyExecutionStatus SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyErrorMessage    SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey = "error_message"
+	SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyQueryType       SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey = "query_type"
+	SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseName   SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyDatabaseName    SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey = "database_name"
+	SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseSize   SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueryBytesSpilledLocalAvgMetricConfig provides config for the snowflake.query.bytes_spilled.local.avg metric.
+type SnowflakeQueryBytesSpilledLocalAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryBytesSpilledLocalAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryBytesSpilledLocalAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.query.bytes_spilled.local.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey specifies the key of an attribute for the snowflake.query.bytes_spilled.remote.avg metric.
+type SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeySchemaName      SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyExecutionStatus SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyErrorMessage    SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey = "error_message"
+	SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyQueryType       SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey = "query_type"
+	SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseName   SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyDatabaseName    SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey = "database_name"
+	SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseSize   SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueryBytesSpilledRemoteAvgMetricConfig provides config for the snowflake.query.bytes_spilled.remote.avg metric.
+type SnowflakeQueryBytesSpilledRemoteAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryBytesSpilledRemoteAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryBytesSpilledRemoteAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.query.bytes_spilled.remote.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryBytesWrittenAvgMetricAttributeKey specifies the key of an attribute for the snowflake.query.bytes_written.avg metric.
+type SnowflakeQueryBytesWrittenAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueryBytesWrittenAvgMetricAttributeKeySchemaName      SnowflakeQueryBytesWrittenAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueryBytesWrittenAvgMetricAttributeKeyExecutionStatus SnowflakeQueryBytesWrittenAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueryBytesWrittenAvgMetricAttributeKeyErrorMessage    SnowflakeQueryBytesWrittenAvgMetricAttributeKey = "error_message"
+	SnowflakeQueryBytesWrittenAvgMetricAttributeKeyQueryType       SnowflakeQueryBytesWrittenAvgMetricAttributeKey = "query_type"
+	SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseName   SnowflakeQueryBytesWrittenAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueryBytesWrittenAvgMetricAttributeKeyDatabaseName    SnowflakeQueryBytesWrittenAvgMetricAttributeKey = "database_name"
+	SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseSize   SnowflakeQueryBytesWrittenAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueryBytesWrittenAvgMetricConfig provides config for the snowflake.query.bytes_written.avg metric.
+type SnowflakeQueryBytesWrittenAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryBytesWrittenAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryBytesWrittenAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryBytesWrittenAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryBytesWrittenAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.query.bytes_written.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryCompilationTimeAvgMetricAttributeKey specifies the key of an attribute for the snowflake.query.compilation_time.avg metric.
+type SnowflakeQueryCompilationTimeAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueryCompilationTimeAvgMetricAttributeKeySchemaName      SnowflakeQueryCompilationTimeAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueryCompilationTimeAvgMetricAttributeKeyExecutionStatus SnowflakeQueryCompilationTimeAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueryCompilationTimeAvgMetricAttributeKeyErrorMessage    SnowflakeQueryCompilationTimeAvgMetricAttributeKey = "error_message"
+	SnowflakeQueryCompilationTimeAvgMetricAttributeKeyQueryType       SnowflakeQueryCompilationTimeAvgMetricAttributeKey = "query_type"
+	SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseName   SnowflakeQueryCompilationTimeAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueryCompilationTimeAvgMetricAttributeKeyDatabaseName    SnowflakeQueryCompilationTimeAvgMetricAttributeKey = "database_name"
+	SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseSize   SnowflakeQueryCompilationTimeAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueryCompilationTimeAvgMetricConfig provides config for the snowflake.query.compilation_time.avg metric.
+type SnowflakeQueryCompilationTimeAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryCompilationTimeAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryCompilationTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryCompilationTimeAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryCompilationTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.query.compilation_time.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryDataScannedCacheAvgMetricAttributeKey specifies the key of an attribute for the snowflake.query.data_scanned_cache.avg metric.
+type SnowflakeQueryDataScannedCacheAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueryDataScannedCacheAvgMetricAttributeKeySchemaName      SnowflakeQueryDataScannedCacheAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyExecutionStatus SnowflakeQueryDataScannedCacheAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyErrorMessage    SnowflakeQueryDataScannedCacheAvgMetricAttributeKey = "error_message"
+	SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyQueryType       SnowflakeQueryDataScannedCacheAvgMetricAttributeKey = "query_type"
+	SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseName   SnowflakeQueryDataScannedCacheAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyDatabaseName    SnowflakeQueryDataScannedCacheAvgMetricAttributeKey = "database_name"
+	SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseSize   SnowflakeQueryDataScannedCacheAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueryDataScannedCacheAvgMetricConfig provides config for the snowflake.query.data_scanned_cache.avg metric.
+type SnowflakeQueryDataScannedCacheAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryDataScannedCacheAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryDataScannedCacheAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryDataScannedCacheAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryDataScannedCacheAvgMetricAttributeKeySchemaName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyErrorMessage, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyQueryType, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyDatabaseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.query.data_scanned_cache.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryExecutedMetricAttributeKey specifies the key of an attribute for the snowflake.query.executed metric.
+type SnowflakeQueryExecutedMetricAttributeKey string
+
+const (
+	SnowflakeQueryExecutedMetricAttributeKeyWarehouseName SnowflakeQueryExecutedMetricAttributeKey = "warehouse_name"
+)
+
+// SnowflakeQueryExecutedMetricConfig provides config for the snowflake.query.executed metric.
+type SnowflakeQueryExecutedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryExecutedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryExecutedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryExecutedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryExecutedMetricAttributeKeyWarehouseName:
+		default:
+			return fmt.Errorf("metric snowflake.query.executed doesn't have an attribute %v, valid attributes: [warehouse_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryExecutionTimeAvgMetricAttributeKey specifies the key of an attribute for the snowflake.query.execution_time.avg metric.
+type SnowflakeQueryExecutionTimeAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueryExecutionTimeAvgMetricAttributeKeySchemaName      SnowflakeQueryExecutionTimeAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueryExecutionTimeAvgMetricAttributeKeyExecutionStatus SnowflakeQueryExecutionTimeAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueryExecutionTimeAvgMetricAttributeKeyErrorMessage    SnowflakeQueryExecutionTimeAvgMetricAttributeKey = "error_message"
+	SnowflakeQueryExecutionTimeAvgMetricAttributeKeyQueryType       SnowflakeQueryExecutionTimeAvgMetricAttributeKey = "query_type"
+	SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseName   SnowflakeQueryExecutionTimeAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueryExecutionTimeAvgMetricAttributeKeyDatabaseName    SnowflakeQueryExecutionTimeAvgMetricAttributeKey = "database_name"
+	SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseSize   SnowflakeQueryExecutionTimeAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueryExecutionTimeAvgMetricConfig provides config for the snowflake.query.execution_time.avg metric.
+type SnowflakeQueryExecutionTimeAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryExecutionTimeAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryExecutionTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryExecutionTimeAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryExecutionTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.query.execution_time.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryPartitionsScannedAvgMetricAttributeKey specifies the key of an attribute for the snowflake.query.partitions_scanned.avg metric.
+type SnowflakeQueryPartitionsScannedAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueryPartitionsScannedAvgMetricAttributeKeySchemaName      SnowflakeQueryPartitionsScannedAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyExecutionStatus SnowflakeQueryPartitionsScannedAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyErrorMessage    SnowflakeQueryPartitionsScannedAvgMetricAttributeKey = "error_message"
+	SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyQueryType       SnowflakeQueryPartitionsScannedAvgMetricAttributeKey = "query_type"
+	SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseName   SnowflakeQueryPartitionsScannedAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyDatabaseName    SnowflakeQueryPartitionsScannedAvgMetricAttributeKey = "database_name"
+	SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseSize   SnowflakeQueryPartitionsScannedAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueryPartitionsScannedAvgMetricConfig provides config for the snowflake.query.partitions_scanned.avg metric.
+type SnowflakeQueryPartitionsScannedAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryPartitionsScannedAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryPartitionsScannedAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryPartitionsScannedAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryPartitionsScannedAvgMetricAttributeKeySchemaName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyQueryType, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.query.partitions_scanned.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryQueuedOverloadMetricAttributeKey specifies the key of an attribute for the snowflake.query.queued_overload metric.
+type SnowflakeQueryQueuedOverloadMetricAttributeKey string
+
+const (
+	SnowflakeQueryQueuedOverloadMetricAttributeKeyWarehouseName SnowflakeQueryQueuedOverloadMetricAttributeKey = "warehouse_name"
+)
+
+// SnowflakeQueryQueuedOverloadMetricConfig provides config for the snowflake.query.queued_overload metric.
+type SnowflakeQueryQueuedOverloadMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryQueuedOverloadMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryQueuedOverloadMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryQueuedOverloadMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryQueuedOverloadMetricAttributeKeyWarehouseName:
+		default:
+			return fmt.Errorf("metric snowflake.query.queued_overload doesn't have an attribute %v, valid attributes: [warehouse_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueryQueuedProvisionMetricAttributeKey specifies the key of an attribute for the snowflake.query.queued_provision metric.
+type SnowflakeQueryQueuedProvisionMetricAttributeKey string
+
+const (
+	SnowflakeQueryQueuedProvisionMetricAttributeKeyWarehouseName SnowflakeQueryQueuedProvisionMetricAttributeKey = "warehouse_name"
+)
+
+// SnowflakeQueryQueuedProvisionMetricConfig provides config for the snowflake.query.queued_provision metric.
+type SnowflakeQueryQueuedProvisionMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueryQueuedProvisionMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueryQueuedProvisionMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueryQueuedProvisionMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueryQueuedProvisionMetricAttributeKeyWarehouseName:
+		default:
+			return fmt.Errorf("metric snowflake.query.queued_provision doesn't have an attribute %v, valid attributes: [warehouse_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueuedOverloadTimeAvgMetricAttributeKey specifies the key of an attribute for the snowflake.queued_overload_time.avg metric.
+type SnowflakeQueuedOverloadTimeAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueuedOverloadTimeAvgMetricAttributeKeySchemaName      SnowflakeQueuedOverloadTimeAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyExecutionStatus SnowflakeQueuedOverloadTimeAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyErrorMessage    SnowflakeQueuedOverloadTimeAvgMetricAttributeKey = "error_message"
+	SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyQueryType       SnowflakeQueuedOverloadTimeAvgMetricAttributeKey = "query_type"
+	SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseName   SnowflakeQueuedOverloadTimeAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyDatabaseName    SnowflakeQueuedOverloadTimeAvgMetricAttributeKey = "database_name"
+	SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseSize   SnowflakeQueuedOverloadTimeAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueuedOverloadTimeAvgMetricConfig provides config for the snowflake.queued_overload_time.avg metric.
+type SnowflakeQueuedOverloadTimeAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueuedOverloadTimeAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueuedOverloadTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueuedOverloadTimeAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueuedOverloadTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.queued_overload_time.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey specifies the key of an attribute for the snowflake.queued_provisioning_time.avg metric.
+type SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeySchemaName      SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyExecutionStatus SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyErrorMessage    SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey = "error_message"
+	SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyQueryType       SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey = "query_type"
+	SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseName   SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyDatabaseName    SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey = "database_name"
+	SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseSize   SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueuedProvisioningTimeAvgMetricConfig provides config for the snowflake.queued_provisioning_time.avg metric.
+type SnowflakeQueuedProvisioningTimeAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueuedProvisioningTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueuedProvisioningTimeAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.queued_provisioning_time.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeQueuedRepairTimeAvgMetricAttributeKey specifies the key of an attribute for the snowflake.queued_repair_time.avg metric.
+type SnowflakeQueuedRepairTimeAvgMetricAttributeKey string
+
+const (
+	SnowflakeQueuedRepairTimeAvgMetricAttributeKeySchemaName      SnowflakeQueuedRepairTimeAvgMetricAttributeKey = "schema_name"
+	SnowflakeQueuedRepairTimeAvgMetricAttributeKeyExecutionStatus SnowflakeQueuedRepairTimeAvgMetricAttributeKey = "execution_status"
+	SnowflakeQueuedRepairTimeAvgMetricAttributeKeyErrorMessage    SnowflakeQueuedRepairTimeAvgMetricAttributeKey = "error_message"
+	SnowflakeQueuedRepairTimeAvgMetricAttributeKeyQueryType       SnowflakeQueuedRepairTimeAvgMetricAttributeKey = "query_type"
+	SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseName   SnowflakeQueuedRepairTimeAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeQueuedRepairTimeAvgMetricAttributeKeyDatabaseName    SnowflakeQueuedRepairTimeAvgMetricAttributeKey = "database_name"
+	SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseSize   SnowflakeQueuedRepairTimeAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeQueuedRepairTimeAvgMetricConfig provides config for the snowflake.queued_repair_time.avg metric.
+type SnowflakeQueuedRepairTimeAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeQueuedRepairTimeAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeQueuedRepairTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeQueuedRepairTimeAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeQueuedRepairTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.queued_repair_time.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeRowsDeletedAvgMetricAttributeKey specifies the key of an attribute for the snowflake.rows_deleted.avg metric.
+type SnowflakeRowsDeletedAvgMetricAttributeKey string
+
+const (
+	SnowflakeRowsDeletedAvgMetricAttributeKeySchemaName      SnowflakeRowsDeletedAvgMetricAttributeKey = "schema_name"
+	SnowflakeRowsDeletedAvgMetricAttributeKeyExecutionStatus SnowflakeRowsDeletedAvgMetricAttributeKey = "execution_status"
+	SnowflakeRowsDeletedAvgMetricAttributeKeyErrorMessage    SnowflakeRowsDeletedAvgMetricAttributeKey = "error_message"
+	SnowflakeRowsDeletedAvgMetricAttributeKeyQueryType       SnowflakeRowsDeletedAvgMetricAttributeKey = "query_type"
+	SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseName   SnowflakeRowsDeletedAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeRowsDeletedAvgMetricAttributeKeyDatabaseName    SnowflakeRowsDeletedAvgMetricAttributeKey = "database_name"
+	SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseSize   SnowflakeRowsDeletedAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeRowsDeletedAvgMetricConfig provides config for the snowflake.rows_deleted.avg metric.
+type SnowflakeRowsDeletedAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeRowsDeletedAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeRowsDeletedAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeRowsDeletedAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeRowsDeletedAvgMetricAttributeKeySchemaName, SnowflakeRowsDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsDeletedAvgMetricAttributeKeyQueryType, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.rows_deleted.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeRowsInsertedAvgMetricAttributeKey specifies the key of an attribute for the snowflake.rows_inserted.avg metric.
+type SnowflakeRowsInsertedAvgMetricAttributeKey string
+
+const (
+	SnowflakeRowsInsertedAvgMetricAttributeKeySchemaName      SnowflakeRowsInsertedAvgMetricAttributeKey = "schema_name"
+	SnowflakeRowsInsertedAvgMetricAttributeKeyExecutionStatus SnowflakeRowsInsertedAvgMetricAttributeKey = "execution_status"
+	SnowflakeRowsInsertedAvgMetricAttributeKeyErrorMessage    SnowflakeRowsInsertedAvgMetricAttributeKey = "error_message"
+	SnowflakeRowsInsertedAvgMetricAttributeKeyQueryType       SnowflakeRowsInsertedAvgMetricAttributeKey = "query_type"
+	SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseName   SnowflakeRowsInsertedAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeRowsInsertedAvgMetricAttributeKeyDatabaseName    SnowflakeRowsInsertedAvgMetricAttributeKey = "database_name"
+	SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseSize   SnowflakeRowsInsertedAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeRowsInsertedAvgMetricConfig provides config for the snowflake.rows_inserted.avg metric.
+type SnowflakeRowsInsertedAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeRowsInsertedAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeRowsInsertedAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeRowsInsertedAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeRowsInsertedAvgMetricAttributeKeySchemaName, SnowflakeRowsInsertedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsInsertedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsInsertedAvgMetricAttributeKeyQueryType, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsInsertedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.rows_inserted.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeRowsProducedAvgMetricAttributeKey specifies the key of an attribute for the snowflake.rows_produced.avg metric.
+type SnowflakeRowsProducedAvgMetricAttributeKey string
+
+const (
+	SnowflakeRowsProducedAvgMetricAttributeKeySchemaName      SnowflakeRowsProducedAvgMetricAttributeKey = "schema_name"
+	SnowflakeRowsProducedAvgMetricAttributeKeyExecutionStatus SnowflakeRowsProducedAvgMetricAttributeKey = "execution_status"
+	SnowflakeRowsProducedAvgMetricAttributeKeyErrorMessage    SnowflakeRowsProducedAvgMetricAttributeKey = "error_message"
+	SnowflakeRowsProducedAvgMetricAttributeKeyQueryType       SnowflakeRowsProducedAvgMetricAttributeKey = "query_type"
+	SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseName   SnowflakeRowsProducedAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeRowsProducedAvgMetricAttributeKeyDatabaseName    SnowflakeRowsProducedAvgMetricAttributeKey = "database_name"
+	SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseSize   SnowflakeRowsProducedAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeRowsProducedAvgMetricConfig provides config for the snowflake.rows_produced.avg metric.
+type SnowflakeRowsProducedAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeRowsProducedAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeRowsProducedAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeRowsProducedAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeRowsProducedAvgMetricAttributeKeySchemaName, SnowflakeRowsProducedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsProducedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsProducedAvgMetricAttributeKeyQueryType, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsProducedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.rows_produced.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeRowsUnloadedAvgMetricAttributeKey specifies the key of an attribute for the snowflake.rows_unloaded.avg metric.
+type SnowflakeRowsUnloadedAvgMetricAttributeKey string
+
+const (
+	SnowflakeRowsUnloadedAvgMetricAttributeKeySchemaName      SnowflakeRowsUnloadedAvgMetricAttributeKey = "schema_name"
+	SnowflakeRowsUnloadedAvgMetricAttributeKeyExecutionStatus SnowflakeRowsUnloadedAvgMetricAttributeKey = "execution_status"
+	SnowflakeRowsUnloadedAvgMetricAttributeKeyErrorMessage    SnowflakeRowsUnloadedAvgMetricAttributeKey = "error_message"
+	SnowflakeRowsUnloadedAvgMetricAttributeKeyQueryType       SnowflakeRowsUnloadedAvgMetricAttributeKey = "query_type"
+	SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseName   SnowflakeRowsUnloadedAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeRowsUnloadedAvgMetricAttributeKeyDatabaseName    SnowflakeRowsUnloadedAvgMetricAttributeKey = "database_name"
+	SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseSize   SnowflakeRowsUnloadedAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeRowsUnloadedAvgMetricConfig provides config for the snowflake.rows_unloaded.avg metric.
+type SnowflakeRowsUnloadedAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeRowsUnloadedAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeRowsUnloadedAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeRowsUnloadedAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeRowsUnloadedAvgMetricAttributeKeySchemaName, SnowflakeRowsUnloadedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUnloadedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUnloadedAvgMetricAttributeKeyQueryType, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.rows_unloaded.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeRowsUpdatedAvgMetricAttributeKey specifies the key of an attribute for the snowflake.rows_updated.avg metric.
+type SnowflakeRowsUpdatedAvgMetricAttributeKey string
+
+const (
+	SnowflakeRowsUpdatedAvgMetricAttributeKeySchemaName      SnowflakeRowsUpdatedAvgMetricAttributeKey = "schema_name"
+	SnowflakeRowsUpdatedAvgMetricAttributeKeyExecutionStatus SnowflakeRowsUpdatedAvgMetricAttributeKey = "execution_status"
+	SnowflakeRowsUpdatedAvgMetricAttributeKeyErrorMessage    SnowflakeRowsUpdatedAvgMetricAttributeKey = "error_message"
+	SnowflakeRowsUpdatedAvgMetricAttributeKeyQueryType       SnowflakeRowsUpdatedAvgMetricAttributeKey = "query_type"
+	SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseName   SnowflakeRowsUpdatedAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeRowsUpdatedAvgMetricAttributeKeyDatabaseName    SnowflakeRowsUpdatedAvgMetricAttributeKey = "database_name"
+	SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseSize   SnowflakeRowsUpdatedAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeRowsUpdatedAvgMetricConfig provides config for the snowflake.rows_updated.avg metric.
+type SnowflakeRowsUpdatedAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeRowsUpdatedAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeRowsUpdatedAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeRowsUpdatedAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeRowsUpdatedAvgMetricAttributeKeySchemaName, SnowflakeRowsUpdatedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUpdatedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUpdatedAvgMetricAttributeKeyQueryType, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.rows_updated.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeSessionIDCountMetricAttributeKey specifies the key of an attribute for the snowflake.session_id.count metric.
+type SnowflakeSessionIDCountMetricAttributeKey string
+
+const (
+	SnowflakeSessionIDCountMetricAttributeKeyUserName SnowflakeSessionIDCountMetricAttributeKey = "user_name"
+)
+
+// SnowflakeSessionIDCountMetricConfig provides config for the snowflake.session_id.count metric.
+type SnowflakeSessionIDCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeSessionIDCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeSessionIDCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeSessionIDCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeSessionIDCountMetricAttributeKeyUserName:
+		default:
+			return fmt.Errorf("metric snowflake.session_id.count doesn't have an attribute %v, valid attributes: [user_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SnowflakeStorageFailsafeBytesTotalMetricConfig provides config for the snowflake.storage.failsafe_bytes.total metric.
+type SnowflakeStorageFailsafeBytesTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SnowflakeStorageFailsafeBytesTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SnowflakeStorageStageBytesTotalMetricConfig provides config for the snowflake.storage.stage_bytes.total metric.
+type SnowflakeStorageStageBytesTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SnowflakeStorageStageBytesTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SnowflakeStorageStorageBytesTotalMetricConfig provides config for the snowflake.storage.storage_bytes.total metric.
+type SnowflakeStorageStorageBytesTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SnowflakeStorageStorageBytesTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SnowflakeTotalElapsedTimeAvgMetricAttributeKey specifies the key of an attribute for the snowflake.total_elapsed_time.avg metric.
+type SnowflakeTotalElapsedTimeAvgMetricAttributeKey string
+
+const (
+	SnowflakeTotalElapsedTimeAvgMetricAttributeKeySchemaName      SnowflakeTotalElapsedTimeAvgMetricAttributeKey = "schema_name"
+	SnowflakeTotalElapsedTimeAvgMetricAttributeKeyExecutionStatus SnowflakeTotalElapsedTimeAvgMetricAttributeKey = "execution_status"
+	SnowflakeTotalElapsedTimeAvgMetricAttributeKeyErrorMessage    SnowflakeTotalElapsedTimeAvgMetricAttributeKey = "error_message"
+	SnowflakeTotalElapsedTimeAvgMetricAttributeKeyQueryType       SnowflakeTotalElapsedTimeAvgMetricAttributeKey = "query_type"
+	SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseName   SnowflakeTotalElapsedTimeAvgMetricAttributeKey = "warehouse_name"
+	SnowflakeTotalElapsedTimeAvgMetricAttributeKeyDatabaseName    SnowflakeTotalElapsedTimeAvgMetricAttributeKey = "database_name"
+	SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseSize   SnowflakeTotalElapsedTimeAvgMetricAttributeKey = "warehouse_size"
+)
+
+// SnowflakeTotalElapsedTimeAvgMetricConfig provides config for the snowflake.total_elapsed_time.avg metric.
+type SnowflakeTotalElapsedTimeAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SnowflakeTotalElapsedTimeAvgMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SnowflakeTotalElapsedTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SnowflakeTotalElapsedTimeAvgMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SnowflakeTotalElapsedTimeAvgMetricAttributeKeySchemaName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyErrorMessage, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyQueryType, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyDatabaseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseSize:
+		default:
+			return fmt.Errorf("metric snowflake.total_elapsed_time.avg doesn't have an attribute %v, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
 // MetricsConfig provides config for snowflake metrics.
 type MetricsConfig struct {
-	SnowflakeBillingCloudServiceTotal              MetricConfig `mapstructure:"snowflake.billing.cloud_service.total"`
-	SnowflakeBillingTotalCreditTotal               MetricConfig `mapstructure:"snowflake.billing.total_credit.total"`
-	SnowflakeBillingVirtualWarehouseTotal          MetricConfig `mapstructure:"snowflake.billing.virtual_warehouse.total"`
-	SnowflakeBillingWarehouseCloudServiceTotal     MetricConfig `mapstructure:"snowflake.billing.warehouse.cloud_service.total"`
-	SnowflakeBillingWarehouseTotalCreditTotal      MetricConfig `mapstructure:"snowflake.billing.warehouse.total_credit.total"`
-	SnowflakeBillingWarehouseVirtualWarehouseTotal MetricConfig `mapstructure:"snowflake.billing.warehouse.virtual_warehouse.total"`
-	SnowflakeDatabaseBytesScannedAvg               MetricConfig `mapstructure:"snowflake.database.bytes_scanned.avg"`
-	SnowflakeDatabaseQueryCount                    MetricConfig `mapstructure:"snowflake.database.query.count"`
-	SnowflakeLoginsTotal                           MetricConfig `mapstructure:"snowflake.logins.total"`
-	SnowflakePipeCreditsUsedTotal                  MetricConfig `mapstructure:"snowflake.pipe.credits_used.total"`
-	SnowflakeQueryBlocked                          MetricConfig `mapstructure:"snowflake.query.blocked"`
-	SnowflakeQueryBytesDeletedAvg                  MetricConfig `mapstructure:"snowflake.query.bytes_deleted.avg"`
-	SnowflakeQueryBytesSpilledLocalAvg             MetricConfig `mapstructure:"snowflake.query.bytes_spilled.local.avg"`
-	SnowflakeQueryBytesSpilledRemoteAvg            MetricConfig `mapstructure:"snowflake.query.bytes_spilled.remote.avg"`
-	SnowflakeQueryBytesWrittenAvg                  MetricConfig `mapstructure:"snowflake.query.bytes_written.avg"`
-	SnowflakeQueryCompilationTimeAvg               MetricConfig `mapstructure:"snowflake.query.compilation_time.avg"`
-	SnowflakeQueryDataScannedCacheAvg              MetricConfig `mapstructure:"snowflake.query.data_scanned_cache.avg"`
-	SnowflakeQueryExecuted                         MetricConfig `mapstructure:"snowflake.query.executed"`
-	SnowflakeQueryExecutionTimeAvg                 MetricConfig `mapstructure:"snowflake.query.execution_time.avg"`
-	SnowflakeQueryPartitionsScannedAvg             MetricConfig `mapstructure:"snowflake.query.partitions_scanned.avg"`
-	SnowflakeQueryQueuedOverload                   MetricConfig `mapstructure:"snowflake.query.queued_overload"`
-	SnowflakeQueryQueuedProvision                  MetricConfig `mapstructure:"snowflake.query.queued_provision"`
-	SnowflakeQueuedOverloadTimeAvg                 MetricConfig `mapstructure:"snowflake.queued_overload_time.avg"`
-	SnowflakeQueuedProvisioningTimeAvg             MetricConfig `mapstructure:"snowflake.queued_provisioning_time.avg"`
-	SnowflakeQueuedRepairTimeAvg                   MetricConfig `mapstructure:"snowflake.queued_repair_time.avg"`
-	SnowflakeRowsDeletedAvg                        MetricConfig `mapstructure:"snowflake.rows_deleted.avg"`
-	SnowflakeRowsInsertedAvg                       MetricConfig `mapstructure:"snowflake.rows_inserted.avg"`
-	SnowflakeRowsProducedAvg                       MetricConfig `mapstructure:"snowflake.rows_produced.avg"`
-	SnowflakeRowsUnloadedAvg                       MetricConfig `mapstructure:"snowflake.rows_unloaded.avg"`
-	SnowflakeRowsUpdatedAvg                        MetricConfig `mapstructure:"snowflake.rows_updated.avg"`
-	SnowflakeSessionIDCount                        MetricConfig `mapstructure:"snowflake.session_id.count"`
-	SnowflakeStorageFailsafeBytesTotal             MetricConfig `mapstructure:"snowflake.storage.failsafe_bytes.total"`
-	SnowflakeStorageStageBytesTotal                MetricConfig `mapstructure:"snowflake.storage.stage_bytes.total"`
-	SnowflakeStorageStorageBytesTotal              MetricConfig `mapstructure:"snowflake.storage.storage_bytes.total"`
-	SnowflakeTotalElapsedTimeAvg                   MetricConfig `mapstructure:"snowflake.total_elapsed_time.avg"`
+	SnowflakeBillingCloudServiceTotal              SnowflakeBillingCloudServiceTotalMetricConfig              `mapstructure:"snowflake.billing.cloud_service.total"`
+	SnowflakeBillingTotalCreditTotal               SnowflakeBillingTotalCreditTotalMetricConfig               `mapstructure:"snowflake.billing.total_credit.total"`
+	SnowflakeBillingVirtualWarehouseTotal          SnowflakeBillingVirtualWarehouseTotalMetricConfig          `mapstructure:"snowflake.billing.virtual_warehouse.total"`
+	SnowflakeBillingWarehouseCloudServiceTotal     SnowflakeBillingWarehouseCloudServiceTotalMetricConfig     `mapstructure:"snowflake.billing.warehouse.cloud_service.total"`
+	SnowflakeBillingWarehouseTotalCreditTotal      SnowflakeBillingWarehouseTotalCreditTotalMetricConfig      `mapstructure:"snowflake.billing.warehouse.total_credit.total"`
+	SnowflakeBillingWarehouseVirtualWarehouseTotal SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig `mapstructure:"snowflake.billing.warehouse.virtual_warehouse.total"`
+	SnowflakeDatabaseBytesScannedAvg               SnowflakeDatabaseBytesScannedAvgMetricConfig               `mapstructure:"snowflake.database.bytes_scanned.avg"`
+	SnowflakeDatabaseQueryCount                    SnowflakeDatabaseQueryCountMetricConfig                    `mapstructure:"snowflake.database.query.count"`
+	SnowflakeLoginsTotal                           SnowflakeLoginsTotalMetricConfig                           `mapstructure:"snowflake.logins.total"`
+	SnowflakePipeCreditsUsedTotal                  SnowflakePipeCreditsUsedTotalMetricConfig                  `mapstructure:"snowflake.pipe.credits_used.total"`
+	SnowflakeQueryBlocked                          SnowflakeQueryBlockedMetricConfig                          `mapstructure:"snowflake.query.blocked"`
+	SnowflakeQueryBytesDeletedAvg                  SnowflakeQueryBytesDeletedAvgMetricConfig                  `mapstructure:"snowflake.query.bytes_deleted.avg"`
+	SnowflakeQueryBytesSpilledLocalAvg             SnowflakeQueryBytesSpilledLocalAvgMetricConfig             `mapstructure:"snowflake.query.bytes_spilled.local.avg"`
+	SnowflakeQueryBytesSpilledRemoteAvg            SnowflakeQueryBytesSpilledRemoteAvgMetricConfig            `mapstructure:"snowflake.query.bytes_spilled.remote.avg"`
+	SnowflakeQueryBytesWrittenAvg                  SnowflakeQueryBytesWrittenAvgMetricConfig                  `mapstructure:"snowflake.query.bytes_written.avg"`
+	SnowflakeQueryCompilationTimeAvg               SnowflakeQueryCompilationTimeAvgMetricConfig               `mapstructure:"snowflake.query.compilation_time.avg"`
+	SnowflakeQueryDataScannedCacheAvg              SnowflakeQueryDataScannedCacheAvgMetricConfig              `mapstructure:"snowflake.query.data_scanned_cache.avg"`
+	SnowflakeQueryExecuted                         SnowflakeQueryExecutedMetricConfig                         `mapstructure:"snowflake.query.executed"`
+	SnowflakeQueryExecutionTimeAvg                 SnowflakeQueryExecutionTimeAvgMetricConfig                 `mapstructure:"snowflake.query.execution_time.avg"`
+	SnowflakeQueryPartitionsScannedAvg             SnowflakeQueryPartitionsScannedAvgMetricConfig             `mapstructure:"snowflake.query.partitions_scanned.avg"`
+	SnowflakeQueryQueuedOverload                   SnowflakeQueryQueuedOverloadMetricConfig                   `mapstructure:"snowflake.query.queued_overload"`
+	SnowflakeQueryQueuedProvision                  SnowflakeQueryQueuedProvisionMetricConfig                  `mapstructure:"snowflake.query.queued_provision"`
+	SnowflakeQueuedOverloadTimeAvg                 SnowflakeQueuedOverloadTimeAvgMetricConfig                 `mapstructure:"snowflake.queued_overload_time.avg"`
+	SnowflakeQueuedProvisioningTimeAvg             SnowflakeQueuedProvisioningTimeAvgMetricConfig             `mapstructure:"snowflake.queued_provisioning_time.avg"`
+	SnowflakeQueuedRepairTimeAvg                   SnowflakeQueuedRepairTimeAvgMetricConfig                   `mapstructure:"snowflake.queued_repair_time.avg"`
+	SnowflakeRowsDeletedAvg                        SnowflakeRowsDeletedAvgMetricConfig                        `mapstructure:"snowflake.rows_deleted.avg"`
+	SnowflakeRowsInsertedAvg                       SnowflakeRowsInsertedAvgMetricConfig                       `mapstructure:"snowflake.rows_inserted.avg"`
+	SnowflakeRowsProducedAvg                       SnowflakeRowsProducedAvgMetricConfig                       `mapstructure:"snowflake.rows_produced.avg"`
+	SnowflakeRowsUnloadedAvg                       SnowflakeRowsUnloadedAvgMetricConfig                       `mapstructure:"snowflake.rows_unloaded.avg"`
+	SnowflakeRowsUpdatedAvg                        SnowflakeRowsUpdatedAvgMetricConfig                        `mapstructure:"snowflake.rows_updated.avg"`
+	SnowflakeSessionIDCount                        SnowflakeSessionIDCountMetricConfig                        `mapstructure:"snowflake.session_id.count"`
+	SnowflakeStorageFailsafeBytesTotal             SnowflakeStorageFailsafeBytesTotalMetricConfig             `mapstructure:"snowflake.storage.failsafe_bytes.total"`
+	SnowflakeStorageStageBytesTotal                SnowflakeStorageStageBytesTotalMetricConfig                `mapstructure:"snowflake.storage.stage_bytes.total"`
+	SnowflakeStorageStorageBytesTotal              SnowflakeStorageStorageBytesTotalMetricConfig              `mapstructure:"snowflake.storage.storage_bytes.total"`
+	SnowflakeTotalElapsedTimeAvg                   SnowflakeTotalElapsedTimeAvgMetricConfig                   `mapstructure:"snowflake.total_elapsed_time.avg"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SnowflakeBillingCloudServiceTotal: MetricConfig{
+		SnowflakeBillingCloudServiceTotal: SnowflakeBillingCloudServiceTotalMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeBillingCloudServiceTotalMetricAttributeKey{SnowflakeBillingCloudServiceTotalMetricAttributeKeyServiceType},
+		},
+		SnowflakeBillingTotalCreditTotal: SnowflakeBillingTotalCreditTotalMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeBillingTotalCreditTotalMetricAttributeKey{SnowflakeBillingTotalCreditTotalMetricAttributeKeyServiceType},
+		},
+		SnowflakeBillingVirtualWarehouseTotal: SnowflakeBillingVirtualWarehouseTotalMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingVirtualWarehouseTotalMetricAttributeKeyServiceType},
+		},
+		SnowflakeBillingWarehouseCloudServiceTotal: SnowflakeBillingWarehouseCloudServiceTotalMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey{SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKeyWarehouseName},
+		},
+		SnowflakeBillingWarehouseTotalCreditTotal: SnowflakeBillingWarehouseTotalCreditTotalMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey{SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKeyWarehouseName},
+		},
+		SnowflakeBillingWarehouseVirtualWarehouseTotal: SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKeyWarehouseName},
+		},
+		SnowflakeDatabaseBytesScannedAvg: SnowflakeDatabaseBytesScannedAvgMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeDatabaseBytesScannedAvgMetricAttributeKey{SnowflakeDatabaseBytesScannedAvgMetricAttributeKeySchemaName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyErrorMessage, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyQueryType, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyDatabaseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeDatabaseQueryCount: SnowflakeDatabaseQueryCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeDatabaseQueryCountMetricAttributeKey{SnowflakeDatabaseQueryCountMetricAttributeKeySchemaName, SnowflakeDatabaseQueryCountMetricAttributeKeyExecutionStatus, SnowflakeDatabaseQueryCountMetricAttributeKeyErrorMessage, SnowflakeDatabaseQueryCountMetricAttributeKeyQueryType, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseName, SnowflakeDatabaseQueryCountMetricAttributeKeyDatabaseName, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeLoginsTotal: SnowflakeLoginsTotalMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeLoginsTotalMetricAttributeKey{SnowflakeLoginsTotalMetricAttributeKeyErrorMessage, SnowflakeLoginsTotalMetricAttributeKeyReportedClientType, SnowflakeLoginsTotalMetricAttributeKeyIsSuccess},
+		},
+		SnowflakePipeCreditsUsedTotal: SnowflakePipeCreditsUsedTotalMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakePipeCreditsUsedTotalMetricAttributeKey{SnowflakePipeCreditsUsedTotalMetricAttributeKeyPipeName},
+		},
+		SnowflakeQueryBlocked: SnowflakeQueryBlockedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryBlockedMetricAttributeKey{SnowflakeQueryBlockedMetricAttributeKeyWarehouseName},
+		},
+		SnowflakeQueryBytesDeletedAvg: SnowflakeQueryBytesDeletedAvgMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryBytesDeletedAvgMetricAttributeKey{SnowflakeQueryBytesDeletedAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueryBytesSpilledLocalAvg: SnowflakeQueryBytesSpilledLocalAvgMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey{SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueryBytesSpilledRemoteAvg: SnowflakeQueryBytesSpilledRemoteAvgMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey{SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueryBytesWrittenAvg: SnowflakeQueryBytesWrittenAvgMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryBytesWrittenAvgMetricAttributeKey{SnowflakeQueryBytesWrittenAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueryCompilationTimeAvg: SnowflakeQueryCompilationTimeAvgMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryCompilationTimeAvgMetricAttributeKey{SnowflakeQueryCompilationTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueryDataScannedCacheAvg: SnowflakeQueryDataScannedCacheAvgMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryDataScannedCacheAvgMetricAttributeKey{SnowflakeQueryDataScannedCacheAvgMetricAttributeKeySchemaName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyErrorMessage, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyQueryType, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyDatabaseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueryExecuted: SnowflakeQueryExecutedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryExecutedMetricAttributeKey{SnowflakeQueryExecutedMetricAttributeKeyWarehouseName},
+		},
+		SnowflakeQueryExecutionTimeAvg: SnowflakeQueryExecutionTimeAvgMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryExecutionTimeAvgMetricAttributeKey{SnowflakeQueryExecutionTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueryPartitionsScannedAvg: SnowflakeQueryPartitionsScannedAvgMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryPartitionsScannedAvgMetricAttributeKey{SnowflakeQueryPartitionsScannedAvgMetricAttributeKeySchemaName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyQueryType, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueryQueuedOverload: SnowflakeQueryQueuedOverloadMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryQueuedOverloadMetricAttributeKey{SnowflakeQueryQueuedOverloadMetricAttributeKeyWarehouseName},
+		},
+		SnowflakeQueryQueuedProvision: SnowflakeQueryQueuedProvisionMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueryQueuedProvisionMetricAttributeKey{SnowflakeQueryQueuedProvisionMetricAttributeKeyWarehouseName},
+		},
+		SnowflakeQueuedOverloadTimeAvg: SnowflakeQueuedOverloadTimeAvgMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueuedOverloadTimeAvgMetricAttributeKey{SnowflakeQueuedOverloadTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueuedProvisioningTimeAvg: SnowflakeQueuedProvisioningTimeAvgMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey{SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeQueuedRepairTimeAvg: SnowflakeQueuedRepairTimeAvgMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeQueuedRepairTimeAvgMetricAttributeKey{SnowflakeQueuedRepairTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeRowsDeletedAvg: SnowflakeRowsDeletedAvgMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeRowsDeletedAvgMetricAttributeKey{SnowflakeRowsDeletedAvgMetricAttributeKeySchemaName, SnowflakeRowsDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsDeletedAvgMetricAttributeKeyQueryType, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeRowsInsertedAvg: SnowflakeRowsInsertedAvgMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeRowsInsertedAvgMetricAttributeKey{SnowflakeRowsInsertedAvgMetricAttributeKeySchemaName, SnowflakeRowsInsertedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsInsertedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsInsertedAvgMetricAttributeKeyQueryType, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsInsertedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeRowsProducedAvg: SnowflakeRowsProducedAvgMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeRowsProducedAvgMetricAttributeKey{SnowflakeRowsProducedAvgMetricAttributeKeySchemaName, SnowflakeRowsProducedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsProducedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsProducedAvgMetricAttributeKeyQueryType, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsProducedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeRowsUnloadedAvg: SnowflakeRowsUnloadedAvgMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeRowsUnloadedAvgMetricAttributeKey{SnowflakeRowsUnloadedAvgMetricAttributeKeySchemaName, SnowflakeRowsUnloadedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUnloadedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUnloadedAvgMetricAttributeKeyQueryType, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeRowsUpdatedAvg: SnowflakeRowsUpdatedAvgMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeRowsUpdatedAvgMetricAttributeKey{SnowflakeRowsUpdatedAvgMetricAttributeKeySchemaName, SnowflakeRowsUpdatedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUpdatedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUpdatedAvgMetricAttributeKeyQueryType, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseSize},
+		},
+		SnowflakeSessionIDCount: SnowflakeSessionIDCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeSessionIDCountMetricAttributeKey{SnowflakeSessionIDCountMetricAttributeKeyUserName},
+		},
+		SnowflakeStorageFailsafeBytesTotal: SnowflakeStorageFailsafeBytesTotalMetricConfig{
 			Enabled: false,
 		},
-		SnowflakeBillingTotalCreditTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeBillingVirtualWarehouseTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeBillingWarehouseCloudServiceTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeBillingWarehouseTotalCreditTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeBillingWarehouseVirtualWarehouseTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeDatabaseBytesScannedAvg: MetricConfig{
+		SnowflakeStorageStageBytesTotal: SnowflakeStorageStageBytesTotalMetricConfig{
 			Enabled: true,
 		},
-		SnowflakeDatabaseQueryCount: MetricConfig{
+		SnowflakeStorageStorageBytesTotal: SnowflakeStorageStorageBytesTotalMetricConfig{
 			Enabled: true,
 		},
-		SnowflakeLoginsTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakePipeCreditsUsedTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryBlocked: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryBytesDeletedAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryBytesSpilledLocalAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryBytesSpilledRemoteAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryBytesWrittenAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryCompilationTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryDataScannedCacheAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryExecuted: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryExecutionTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryPartitionsScannedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryQueuedOverload: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryQueuedProvision: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueuedOverloadTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueuedProvisioningTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueuedRepairTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeRowsDeletedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeRowsInsertedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeRowsProducedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeRowsUnloadedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeRowsUpdatedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeSessionIDCount: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeStorageFailsafeBytesTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeStorageStageBytesTotal: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeStorageStorageBytesTotal: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeTotalElapsedTimeAvg: MetricConfig{
-			Enabled: true,
+		SnowflakeTotalElapsedTimeAvg: SnowflakeTotalElapsedTimeAvgMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SnowflakeTotalElapsedTimeAvgMetricAttributeKey{SnowflakeTotalElapsedTimeAvgMetricAttributeKeySchemaName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyErrorMessage, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyQueryType, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyDatabaseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseSize},
 		},
 	}
 }

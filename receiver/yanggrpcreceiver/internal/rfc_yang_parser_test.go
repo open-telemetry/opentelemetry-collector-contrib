@@ -5,6 +5,7 @@ package internal
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -187,13 +188,7 @@ module test-semantics {
 	// Check counter classification
 	expectedCounters := []string{"/stats/byte-counter", "/stats/error-count"}
 	for _, path := range expectedCounters {
-		found := false
-		for _, counter := range module.Counters {
-			if counter == path {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(module.Counters, path)
 		if !found {
 			t.Errorf("Expected counter path %s not found in counters: %v", path, module.Counters)
 		}
@@ -212,13 +207,7 @@ module test-semantics {
 	// Check gauge classification
 	expectedGauges := []string{"/stats/packet-rate", "/stats/cpu-percent"}
 	for _, path := range expectedGauges {
-		found := false
-		for _, gauge := range module.Gauges {
-			if gauge == path {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(module.Gauges, path)
 		if !found {
 			t.Errorf("Expected gauge path %s not found in gauges: %v", path, module.Gauges)
 		}

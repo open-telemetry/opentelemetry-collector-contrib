@@ -1,0 +1,10 @@
+type: object
+properties:
+  replay_file:
+    type: boolean
+  storage:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer.config

@@ -249,6 +249,7 @@ func (m *metricMemcachedBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedBytes(cfg MetricConfig) metricMemcachedBytes {
 	m := metricMemcachedBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -302,6 +303,7 @@ func (m *metricMemcachedCommands) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedCommands(cfg MetricConfig) metricMemcachedCommands {
 	m := metricMemcachedCommands{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -353,6 +355,7 @@ func (m *metricMemcachedConnectionsCurrent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedConnectionsCurrent(cfg MetricConfig) metricMemcachedConnectionsCurrent {
 	m := metricMemcachedConnectionsCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -404,6 +407,7 @@ func (m *metricMemcachedConnectionsTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedConnectionsTotal(cfg MetricConfig) metricMemcachedConnectionsTotal {
 	m := metricMemcachedConnectionsTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -457,6 +461,7 @@ func (m *metricMemcachedCPUUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedCPUUsage(cfg MetricConfig) metricMemcachedCPUUsage {
 	m := metricMemcachedCPUUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -508,6 +513,7 @@ func (m *metricMemcachedCurrentItems) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedCurrentItems(cfg MetricConfig) metricMemcachedCurrentItems {
 	m := metricMemcachedCurrentItems{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -559,6 +565,7 @@ func (m *metricMemcachedEvictions) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedEvictions(cfg MetricConfig) metricMemcachedEvictions {
 	m := metricMemcachedEvictions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -612,6 +619,7 @@ func (m *metricMemcachedNetwork) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedNetwork(cfg MetricConfig) metricMemcachedNetwork {
 	m := metricMemcachedNetwork{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -663,6 +671,7 @@ func (m *metricMemcachedOperationHitRatio) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedOperationHitRatio(cfg MetricConfig) metricMemcachedOperationHitRatio {
 	m := metricMemcachedOperationHitRatio{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -717,6 +726,7 @@ func (m *metricMemcachedOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedOperations(cfg MetricConfig) metricMemcachedOperations {
 	m := metricMemcachedOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -768,6 +778,7 @@ func (m *metricMemcachedThreads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMemcachedThreads(cfg MetricConfig) metricMemcachedThreads {
 	m := metricMemcachedThreads{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

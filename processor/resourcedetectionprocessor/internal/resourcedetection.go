@@ -11,21 +11,15 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	backoff "github.com/cenkalti/backoff/v5"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
-)
 
-var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.resourcedetection.propagateerrors",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, allows errors returned from resource detectors to propagate in the Start() method and stop the collector."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961"),
-	featuregate.WithRegisterFromVersion("v0.121.0"),
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 type DetectorType string
@@ -89,8 +83,7 @@ type ResourceProvider struct {
 	logger           *zap.Logger
 	timeout          time.Duration
 	detectors        []Detector
-	detectedResource *resourceResult
-	mu               sync.RWMutex
+	detectedResource atomic.Pointer[resourceResult]
 
 	// Refresh loop control
 	refreshInterval time.Duration
@@ -114,20 +107,11 @@ func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ..
 }
 
 func (p *ResourceProvider) Get(_ context.Context, _ *http.Client) (pcommon.Resource, string, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	resource := pcommon.NewResource()
-	schemaURL := ""
-	var err error
-
-	if p.detectedResource != nil {
-		resource = p.detectedResource.resource
-		schemaURL = p.detectedResource.schemaURL
-		err = p.detectedResource.err
+	result := p.detectedResource.Load()
+	if result != nil {
+		return result.resource, result.schemaURL, result.err
 	}
-
-	return resource, schemaURL, err
+	return pcommon.NewResource(), "", nil
 }
 
 // Refresh recomputes the resource, replacing any previous result.
@@ -136,9 +120,7 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) err
 	defer cancel()
 
 	res, schemaURL, err := p.detectResource(ctx)
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	prev := p.detectedResource
+	prev := p.detectedResource.Load()
 
 	// Check if we have a previous successful snapshot
 	hadPrevSuccess := prev != nil && prev.err == nil && !IsEmptyResource(prev.resource)
@@ -153,7 +135,12 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) err
 	}
 
 	// Accept the new snapshot (even if empty, as long as there was no error).
-	p.detectedResource = &resourceResult{resource: res, schemaURL: schemaURL, err: err}
+	p.detectedResource.Store(&resourceResult{
+		resource:  res,
+		schemaURL: schemaURL,
+		err:       err,
+	})
+
 	return err
 }
 
@@ -210,7 +197,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 	for _, ch := range resultsChan {
 		result := <-ch
 		if result.err != nil {
-			if allowErrorPropagationFeatureGate.IsEnabled() {
+			if metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
 				joinedErr = errors.Join(joinedErr, result.err)
 			}
 			continue
@@ -224,7 +211,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 
 	// Determine the error to return based on feature gate setting.
 	var returnErr error
-	if allowErrorPropagationFeatureGate.IsEnabled() {
+	if metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
 		// Feature gate enabled: return joined errors (if any)
 		if successes == 0 && joinedErr == nil {
 			returnErr = errors.New("resource detection failed: no detectors succeeded")
@@ -235,7 +222,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 
 	// If all detectors failed, return empty resource.
 	if successes == 0 {
-		if !allowErrorPropagationFeatureGate.IsEnabled() {
+		if !metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
 			p.logger.Warn("resource detection failed but error propagation is disabled")
 		}
 		return pcommon.NewResource(), "", returnErr
@@ -266,18 +253,28 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 	}
 
 	toAttr := to.Attributes()
-	for k, v := range from.Attributes().All() {
+	fromAttr := from.Attributes()
+	if toAttr.Len() == 0 {
+		toAttr.EnsureCapacity(fromAttr.Len())
+		fromAttr.CopyTo(toAttr)
+		return
+	}
+
+	for k, v := range fromAttr.All() {
 		if overrideTo {
 			v.CopyTo(toAttr.PutEmpty(k))
 		} else {
-			if _, found := toAttr.Get(k); !found {
-				v.CopyTo(toAttr.PutEmpty(k))
+			if targetVal, found := toAttr.GetOrPutEmpty(k); !found {
+				v.CopyTo(targetVal)
 			}
 		}
 	}
 }
 
 func IsEmptyResource(res pcommon.Resource) bool {
+	if res == (pcommon.Resource{}) {
+		return true
+	}
 	return res.Attributes().Len() == 0
 }
 

@@ -11,28 +11,25 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 )
-
-type mode string
 
 const (
-	PullMode  mode = "pull"
-	WatchMode mode = "watch"
-
-	defaultPullInterval    time.Duration = time.Hour
-	defaultMode            mode          = PullMode
-	defaultResourceVersion               = "1"
+	defaultPullInterval    time.Duration     = time.Hour
+	defaultMode            k8sinventory.Mode = k8sinventory.PullMode
+	defaultResourceVersion                   = "1"
 )
 
-var modeMap = map[mode]bool{
-	PullMode:  true,
-	WatchMode: true,
+var modeMap = map[k8sinventory.Mode]bool{
+	k8sinventory.PullMode:  true,
+	k8sinventory.WatchMode: true,
 }
 
 type ErrorMode string
@@ -44,17 +41,18 @@ const (
 )
 
 type K8sObjectsConfig struct {
-	Name             string               `mapstructure:"name"`
-	Group            string               `mapstructure:"group"`
-	Namespaces       []string             `mapstructure:"namespaces"`
-	Mode             mode                 `mapstructure:"mode"`
-	LabelSelector    string               `mapstructure:"label_selector"`
-	FieldSelector    string               `mapstructure:"field_selector"`
-	Interval         time.Duration        `mapstructure:"interval"`
-	ResourceVersion  string               `mapstructure:"resource_version"`
-	ExcludeWatchType []apiWatch.EventType `mapstructure:"exclude_watch_type"`
-	exclude          map[apiWatch.EventType]bool
-	gvr              *schema.GroupVersionResource
+	Name              string               `mapstructure:"name"`
+	Group             string               `mapstructure:"group"`
+	Namespaces        []string             `mapstructure:"namespaces"`
+	ExcludeNamespaces []filter.Config      `mapstructure:"exclude_namespaces"`
+	Mode              k8sinventory.Mode    `mapstructure:"mode"`
+	LabelSelector     string               `mapstructure:"label_selector"`
+	FieldSelector     string               `mapstructure:"field_selector"`
+	Interval          time.Duration        `mapstructure:"interval"`
+	ResourceVersion   string               `mapstructure:"resource_version"`
+	ExcludeWatchType  []apiWatch.EventType `mapstructure:"exclude_watch_type"`
+	exclude           map[apiWatch.EventType]bool
+	gvr               *schema.GroupVersionResource
 }
 
 type Config struct {
@@ -85,16 +83,19 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("invalid mode: %v", object.Mode)
 		}
 
-		if object.Mode == PullMode && object.Interval == 0 {
+		if object.Mode == k8sinventory.PullMode && object.Interval == 0 {
 			object.Interval = defaultPullInterval
 		}
 
-		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
+		if object.Mode == k8sinventory.PullMode && len(object.ExcludeWatchType) != 0 {
 			return errors.New("the Exclude config can only be used with watch mode")
 		}
 
-		if object.Mode == PullMode && c.IncludeInitialState {
+		if object.Mode == k8sinventory.PullMode && c.IncludeInitialState {
 			return errors.New("include_initial_state can only be used with watch mode")
+		}
+		if len(object.ExcludeNamespaces) != 0 && len(object.Namespaces) != 0 {
+			return errors.New("namespaces and exclude_namespaces cannot both be set at the same time")
 		}
 	}
 	return nil
@@ -157,13 +158,14 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 
 func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 	copied := &K8sObjectsConfig{
-		Name:            k.Name,
-		Group:           k.Group,
-		Mode:            k.Mode,
-		LabelSelector:   k.LabelSelector,
-		FieldSelector:   k.FieldSelector,
-		Interval:        k.Interval,
-		ResourceVersion: k.ResourceVersion,
+		Name:              k.Name,
+		Group:             k.Group,
+		Mode:              k.Mode,
+		LabelSelector:     k.LabelSelector,
+		FieldSelector:     k.FieldSelector,
+		Interval:          k.Interval,
+		ResourceVersion:   k.ResourceVersion,
+		ExcludeNamespaces: k.ExcludeNamespaces,
 	}
 
 	copied.Namespaces = make([]string, len(k.Namespaces))

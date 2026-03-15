@@ -175,6 +175,72 @@ func TestOptions(t *testing.T) {
 	require.Equal(t, "rs-1", *clientOptions.ReplicaSet)
 }
 
+func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: defaultEndpoint,
+			},
+		},
+		Username:      "uname",
+		Password:      "password",
+		AuthMechanism: "SCRAM-SHA-256",
+		AuthSource:    "admin",
+		AuthMechanismProperties: map[string]string{
+			"SERVICE_NAME": "mongodb",
+		},
+		Timeout:    2 * time.Minute,
+		ReplicaSet: "rs-1",
+	}
+
+	// Test primary connection options
+	clientOptions := cfg.ClientOptions(false)
+	require.Equal(t, clientOptions.Auth.Username, cfg.Username)
+	require.Equal(t, clientOptions.Auth.AuthMechanism, cfg.AuthMechanism)
+	require.Equal(t, clientOptions.Auth.AuthSource, cfg.AuthSource)
+	require.Equal(t, clientOptions.Auth.AuthMechanismProperties, cfg.AuthMechanismProperties)
+	require.Equal(t,
+		clientOptions.ConnectTimeout.Milliseconds(),
+		(2 * time.Minute).Milliseconds(),
+	)
+	require.Equal(t, "rs-1", *clientOptions.ReplicaSet)
+
+	// Test secondary connection options
+	secondaryOptions := cfg.ClientOptions(true)
+	require.Equal(t, secondaryOptions.Auth.Username, cfg.Username)
+	require.Equal(t, secondaryOptions.Auth.AuthMechanism, cfg.AuthMechanism)
+	require.Equal(t, secondaryOptions.Auth.AuthSource, cfg.AuthSource)
+	require.Equal(t, secondaryOptions.Auth.AuthMechanismProperties, cfg.AuthMechanismProperties)
+}
+
+func TestOptionsWithAuthMechanismOnly(t *testing.T) {
+	// Test auth mechanisms that don't require username/password (e.g., MONGODB-X509, MONGODB-AWS with IAM)
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: defaultEndpoint,
+			},
+		},
+		AuthMechanism: "MONGODB-X509",
+		AuthSource:    "$external",
+		Timeout:       2 * time.Minute,
+	}
+
+	// Test primary connection options
+	clientOptions := cfg.ClientOptions(false)
+	require.Empty(t, clientOptions.Auth.Username)
+	require.Empty(t, clientOptions.Auth.Password)
+	require.Equal(t, "MONGODB-X509", clientOptions.Auth.AuthMechanism)
+	require.Equal(t, "$external", clientOptions.Auth.AuthSource)
+
+	// Test secondary connection options
+	secondaryOptions := cfg.ClientOptions(true)
+	require.Empty(t, secondaryOptions.Auth.Username)
+	require.Empty(t, secondaryOptions.Auth.Password)
+	require.Equal(t, "MONGODB-X509", secondaryOptions.Auth.AuthMechanism)
+	require.Equal(t, "$external", secondaryOptions.Auth.AuthSource)
+}
+
 func TestOptionsTLS(t *testing.T) {
 	// loading valid ca file
 	caFile := filepath.Join("testdata", "certs", "ca.crt")
@@ -216,6 +282,11 @@ func TestLoadConfig(t *testing.T) {
 	expected.Username = "otel"
 	expected.Password = "${env:MONGO_PASSWORD}"
 	expected.CollectionInterval = time.Minute
+	expected.AuthMechanism = "SCRAM-SHA-256"
+	expected.AuthSource = "admin"
+	expected.AuthMechanismProperties = map[string]string{
+		"SERVICE_NAME": "mongodb",
+	}
 
 	require.Equal(t, expected, cfg)
 }

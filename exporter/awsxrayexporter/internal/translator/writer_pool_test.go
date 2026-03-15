@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 )
 
@@ -67,9 +66,9 @@ func BenchmarkWithPool(b *testing.B) {
 
 func constructWriterPoolSpan() ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
-	attributes[string(conventionsv112.HTTPURLKey)] = "https://api.example.com/users/junit"
-	attributes[string(conventionsv112.HTTPClientIPKey)] = "192.168.15.32"
-	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	return constructHTTPServerSpan(attributes)
 }

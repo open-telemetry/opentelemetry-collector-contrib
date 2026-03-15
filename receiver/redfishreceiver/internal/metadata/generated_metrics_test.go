@@ -42,6 +42,15 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetNone,
 			expectEmpty: true,
 		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,7 +62,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -61,53 +69,56 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordChassisPowerstateDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
+			mb.RecordChassisPowerstateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordChassisStatusHealthDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
+			mb.RecordChassisStatusHealthDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordChassisStatusStateDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
+			mb.RecordChassisStatusStateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFanReadingDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "fan.name-val", "fan.reading_units-val")
+			mb.RecordFanReadingDataPoint(ts, 1, "chassis.id-val", "fan.name-val", "fan.reading_units-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFanStatusHealthDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "fan.name-val")
+			mb.RecordFanStatusHealthDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFanStatusStateDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "fan.name-val")
+			mb.RecordFanStatusStateDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemPowerstateDataPoint(ts, 1, "base_url-val", "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.host_name-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
+			mb.RecordSystemPowerstateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemStatusHealthDataPoint(ts, 1, "base_url-val", "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.host_name-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
+			mb.RecordSystemStatusHealthDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemStatusStateDataPoint(ts, 1, "base_url-val", "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.host_name-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
+			mb.RecordSystemStatusStateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTemperatureReadingDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "temperature.name-val")
+			mb.RecordTemperatureReadingDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTemperatureStatusHealthDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "temperature.name-val")
+			mb.RecordTemperatureStatusHealthDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTemperatureStatusStateDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "temperature.name-val")
+			mb.RecordTemperatureStatusStateDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 
-			res := pcommon.NewResource()
+			rb := mb.NewResourceBuilder()
+			rb.SetHostName("host.name-val")
+			rb.SetURLFull("url.full-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if tt.expectEmpty {
@@ -115,39 +126,39 @@ func TestMetricsBuilder(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "chassis.powerstate":
 					assert.False(t, validatedMetrics["chassis.powerstate"], "Found a duplicate in the metrics slice: chassis.powerstate")
 					validatedMetrics["chassis.powerstate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the power state of a chassis (-1 unknown, 0 off, 1 on).", ms.At(i).Description())
-					assert.Equal(t, "{powerstate}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the power state of a chassis (-1 unknown, 0 off, 1 on).", mi.Description())
+					assert.Equal(t, "{powerstate}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("chassis.asset_tag")
@@ -174,22 +185,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "chassis.status.health":
 					assert.False(t, validatedMetrics["chassis.status.health"], "Found a duplicate in the metrics slice: chassis.status.health")
 					validatedMetrics["chassis.status.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).", ms.At(i).Description())
-					assert.Equal(t, "{statushealth}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+					assert.Equal(t, "{statushealth}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("chassis.asset_tag")
@@ -216,22 +221,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "chassis.status.state":
 					assert.False(t, validatedMetrics["chassis.status.state"], "Found a duplicate in the metrics slice: chassis.status.state")
 					validatedMetrics["chassis.status.state"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).", ms.At(i).Description())
-					assert.Equal(t, "{statusstate}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+					assert.Equal(t, "{statusstate}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("chassis.asset_tag")
@@ -258,22 +257,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "fan.reading":
 					assert.False(t, validatedMetrics["fan.reading"], "Found a duplicate in the metrics slice: fan.reading")
 					validatedMetrics["fan.reading"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the reading of a chassis fan.", ms.At(i).Description())
-					assert.Equal(t, "{}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the reading of a chassis fan.", mi.Description())
+					assert.Equal(t, "{}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("fan.name")
@@ -285,22 +278,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "fan.status.health":
 					assert.False(t, validatedMetrics["fan.status.health"], "Found a duplicate in the metrics slice: fan.status.health")
 					validatedMetrics["fan.status.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).", ms.At(i).Description())
-					assert.Equal(t, "{statushealth}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+					assert.Equal(t, "{statushealth}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("fan.name")
@@ -309,22 +296,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "fan.status.state":
 					assert.False(t, validatedMetrics["fan.status.state"], "Found a duplicate in the metrics slice: fan.status.state")
 					validatedMetrics["fan.status.state"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).", ms.At(i).Description())
-					assert.Equal(t, "{statusstate}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+					assert.Equal(t, "{statusstate}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("fan.name")
@@ -333,19 +314,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.powerstate":
 					assert.False(t, validatedMetrics["system.powerstate"], "Found a duplicate in the metrics slice: system.powerstate")
 					validatedMetrics["system.powerstate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the power state of a system (-1 unknown, 0 off, 1 on).", ms.At(i).Description())
-					assert.Equal(t, "{powerstate}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the power state of a system (-1 unknown, 0 off, 1 on).", mi.Description())
+					assert.Equal(t, "{powerstate}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.id")
+					attrVal, ok := dp.Attributes().Get("system.id")
 					assert.True(t, ok)
 					assert.Equal(t, "system.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.asset_tag")
@@ -354,9 +332,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("system.bios_version")
 					assert.True(t, ok)
 					assert.Equal(t, "system.bios_version-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.model")
 					assert.True(t, ok)
 					assert.Equal(t, "system.model-val", attrVal.Str())
@@ -378,19 +353,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.status.health":
 					assert.False(t, validatedMetrics["system.status.health"], "Found a duplicate in the metrics slice: system.status.health")
 					validatedMetrics["system.status.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).", ms.At(i).Description())
-					assert.Equal(t, "{statushealth}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+					assert.Equal(t, "{statushealth}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.id")
+					attrVal, ok := dp.Attributes().Get("system.id")
 					assert.True(t, ok)
 					assert.Equal(t, "system.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.asset_tag")
@@ -399,9 +371,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("system.bios_version")
 					assert.True(t, ok)
 					assert.Equal(t, "system.bios_version-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.model")
 					assert.True(t, ok)
 					assert.Equal(t, "system.model-val", attrVal.Str())
@@ -423,19 +392,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "system.status.state":
 					assert.False(t, validatedMetrics["system.status.state"], "Found a duplicate in the metrics slice: system.status.state")
 					validatedMetrics["system.status.state"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).", ms.At(i).Description())
-					assert.Equal(t, "{statusstate}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+					assert.Equal(t, "{statusstate}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.id")
+					attrVal, ok := dp.Attributes().Get("system.id")
 					assert.True(t, ok)
 					assert.Equal(t, "system.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.asset_tag")
@@ -444,9 +410,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("system.bios_version")
 					assert.True(t, ok)
 					assert.Equal(t, "system.bios_version-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.model")
 					assert.True(t, ok)
 					assert.Equal(t, "system.model-val", attrVal.Str())
@@ -468,22 +431,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "temperature.reading":
 					assert.False(t, validatedMetrics["temperature.reading"], "Found a duplicate in the metrics slice: temperature.reading")
 					validatedMetrics["temperature.reading"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the reading of a chassis temperature.", ms.At(i).Description())
-					assert.Equal(t, "°C", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the reading of a chassis temperature.", mi.Description())
+					assert.Equal(t, "°C", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("temperature.name")
@@ -492,22 +449,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "temperature.status.health":
 					assert.False(t, validatedMetrics["temperature.status.health"], "Found a duplicate in the metrics slice: temperature.status.health")
 					validatedMetrics["temperature.status.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).", ms.At(i).Description())
-					assert.Equal(t, "{statushealth}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
+					assert.Equal(t, "{statushealth}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("temperature.name")
@@ -516,22 +467,16 @@ func TestMetricsBuilder(t *testing.T) {
 				case "temperature.status.state":
 					assert.False(t, validatedMetrics["temperature.status.state"], "Found a duplicate in the metrics slice: temperature.status.state")
 					validatedMetrics["temperature.status.state"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).", ms.At(i).Description())
-					assert.Equal(t, "{statusstate}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
+					assert.Equal(t, "{statusstate}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("temperature.name")

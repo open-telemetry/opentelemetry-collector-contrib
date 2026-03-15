@@ -61,7 +61,8 @@ func TestS3ServiceReadObject(t *testing.T) {
 		client := s3ServiceClient{api: mockAPI}
 		_, err := client.ReadObject(t.Context(), bucketName, objectKey)
 		require.Error(t, err)
-		require.IsType(t, &consumererror.Error{}, err)
+		var consumerErr *consumererror.Error
+		require.ErrorAs(t, err, &consumerErr)
 	})
 }
 

@@ -432,7 +432,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		assert.Equal(t, context.Canceled, err)
 	})
 
-	t.Run("handles S3 object retrieval error", func(t *testing.T) {
+	t.Run("does not delete message on S3 retrieval error", func(t *testing.T) {
 		mockS3 := new(mockS3ClientSQS)
 		mockSQS := new(mockSQSClient)
 
@@ -506,23 +506,216 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 			errors.New("object retrieval failed"),
 		)
 
-		// Mock message deletion
-		mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
-			return *input.QueueUrl == cfg.SQS.QueueURL &&
-				*input.ReceiptHandle == "test-receipt-handle"
-		})).Return(
-			&sqs.DeleteMessageOutput{},
-			nil,
-		)
+		// NOTE: DeleteMessage should NOT be called when S3 retrieval fails
+		// The message should remain in the queue for retry
 
 		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer cancel()
-		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
+		err = reader.readAll(ctx, "test-telemetry", func(context.Context, string, []byte) error {
 			t.Fatal("Callback should not be called when S3 retrieval fails")
 			return nil
 		})
-
 		assert.Error(t, err)
+		mockS3.AssertExpectations(t)
+		mockSQS.AssertExpectations(t)
+		mockSQS.AssertNotCalled(t, "DeleteMessage", mock.Anything, mock.Anything)
+	})
+
+	t.Run("does not delete message on partial failure", func(t *testing.T) {
+		mockS3 := new(mockS3ClientSQS)
+		mockSQS := new(mockSQSClient)
+
+		reader := &s3SQSNotificationReader{
+			logger:              logger,
+			s3Client:            mockS3,
+			sqsClient:           mockSQS,
+			queueURL:            cfg.SQS.QueueURL,
+			s3Bucket:            cfg.S3Downloader.S3Bucket,
+			s3Prefix:            cfg.S3Downloader.S3Prefix,
+			maxNumberOfMessages: 10,
+			waitTimeSeconds:     20,
+		}
+
+		// Create S3 event notification with THREE objects:
+		// - First will succeed
+		// - Second will fail S3 retrieval
+		// - Third will fail callback processing
+		s3Event := s3EventNotification{
+			Records: []s3EventRecord{
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "success-key"},
+					},
+				},
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "s3-failure-key"},
+					},
+				},
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "callback-failure-key"},
+					},
+				},
+			},
+		}
+
+		eventJSON, err := json.Marshal(s3Event)
+		require.NoError(t, err)
+
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+			&sqs.ReceiveMessageOutput{
+				Messages: []types.Message{
+					{
+						Body:          aws.String(string(eventJSON)),
+						ReceiptHandle: aws.String("test-receipt-handle"),
+					},
+				},
+			},
+			nil,
+		).Once()
+
+		// After processing one message, return empty results to exit the loop.
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+			&sqs.ReceiveMessageOutput{
+				Messages: []types.Message{},
+			},
+			nil,
+		)
+
+		// First S3 object succeeds.
+		mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
+			Bucket: aws.String("test-bucket"),
+			Key:    aws.String("success-key"),
+		}).Return([]byte("success-content"), nil)
+
+		// Second S3 object FAILS to retrieve.
+		mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
+			Bucket: aws.String("test-bucket"),
+			Key:    aws.String("s3-failure-key"),
+		}).Return([]byte{}, errors.New("S3 GetObject failed"))
+
+		// Third S3 object retrieves successfully.
+		mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
+			Bucket: aws.String("test-bucket"),
+			Key:    aws.String("callback-failure-key"),
+		}).Return([]byte("callback-content"), nil)
+
+		// NOTE: DeleteMessage should NOT be called when any record fails.
+		// The message should remain in the queue for retry.
+
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+		defer cancel()
+
+		successfulCallbacks := 0
+		failedCallbacks := 0
+
+		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, _ []byte) error {
+			if key == "callback-failure-key" {
+				failedCallbacks++
+				return errors.New("callback processing failed")
+			}
+			successfulCallbacks++
+			return nil
+		})
+
+		assert.Error(t, err) // Context timeout expected.
+
+		// Verify that only 1 out of 3 objects was successfully processed.
+		assert.Equal(t, 1, successfulCallbacks, "Only 1 object should have been successfully processed")
+		assert.Equal(t, 1, failedCallbacks, "1 object should have had callback failure")
+
+		mockS3.AssertExpectations(t)
+		mockSQS.AssertExpectations(t)
+		// Verify DeleteMessage was never called - message should remain for retry.
+		mockSQS.AssertNotCalled(t, "DeleteMessage", mock.Anything, mock.Anything)
+	})
+
+	t.Run("does not delete message on callback error", func(t *testing.T) {
+		mockS3 := new(mockS3ClientSQS)
+		mockSQS := new(mockSQSClient)
+
+		reader := &s3SQSNotificationReader{
+			logger:              logger,
+			s3Client:            mockS3,
+			sqsClient:           mockSQS,
+			queueURL:            cfg.SQS.QueueURL,
+			s3Bucket:            cfg.S3Downloader.S3Bucket,
+			s3Prefix:            cfg.S3Downloader.S3Prefix,
+			maxNumberOfMessages: 10,
+			waitTimeSeconds:     20,
+		}
+
+		s3Event := s3EventNotification{
+			Records: []s3EventRecord{
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "test-key"},
+					},
+				},
+			},
+		}
+
+		eventJSON, err := json.Marshal(s3Event)
+		require.NoError(t, err)
+
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+			&sqs.ReceiveMessageOutput{
+				Messages: []types.Message{
+					{
+						Body:          aws.String(string(eventJSON)),
+						ReceiptHandle: aws.String("test-receipt-handle"),
+					},
+				},
+			},
+			nil,
+		).Once()
+
+		// After processing one message, return empty results to exit the loop.
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+			&sqs.ReceiveMessageOutput{
+				Messages: []types.Message{},
+			},
+			nil,
+		)
+
+		// S3 object retrieves successfully.
+		mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
+			Bucket: aws.String("test-bucket"),
+			Key:    aws.String("test-key"),
+		}).Return([]byte("test-content"), nil)
+
+		// NOTE: DeleteMessage should NOT be called when callback fails.
+		// The message should remain in the queue for retry.
+
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+		defer cancel()
+
+		callbackCalled := false
+		err = reader.readAll(ctx, "test-telemetry", func(context.Context, string, []byte) error {
+			callbackCalled = true
+			return errors.New("callback processing failed")
+		})
+
+		assert.Error(t, err) // Context timeout expected.
+		assert.True(t, callbackCalled, "Callback should have been called")
+
+		mockS3.AssertExpectations(t)
+		mockSQS.AssertExpectations(t)
+		// Verify DeleteMessage was never called - message should remain for retry.
+		mockSQS.AssertNotCalled(t, "DeleteMessage", mock.Anything, mock.Anything)
 	})
 }
 

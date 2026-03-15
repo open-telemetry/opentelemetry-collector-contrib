@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -20,13 +21,19 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/otel/propagation"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
-const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
+const (
+	lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
+	querySampleTraceContextKey       = "_otel_trace_context"
+)
 
 var preciseLagMetricsFg = featuregate.GlobalRegistry().MustRegister(
 	lagMetricsInSecondsFeatureGateID,
@@ -79,35 +86,90 @@ type postgreSQLClient struct {
 	closeFn func() error
 }
 
-// explainQuery implements client.
-func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logger) (string, error) {
-	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
-	var queryBuilder strings.Builder
-	var nulls []string
-	counter := 1
+// explainableStatements is a whitelist of SQL statements that PostgreSQL can EXPLAIN.
+var explainableStatements = map[string]struct{}{
+	"SELECT": {},
+	"TABLE":  {}, // TABLE is shorthand for SELECT * FROM
+	"DELETE": {},
+	"INSERT": {},
+	"UPDATE": {},
+	"WITH":   {}, // CTEs
+	"MERGE":  {}, // PostgreSQL 15+
+	"VALUES": {},
+}
 
-	for _, ch := range query {
-		if ch == '?' {
-			queryBuilder.WriteString(fmt.Sprintf("$%d", counter))
-			counter++
-			nulls = append(nulls, "null")
-		} else {
-			queryBuilder.WriteRune(ch)
+// isExplainableQuery checks if a query can be explained by PostgreSQL.
+// Uses a whitelist approach, only allows known DML statements.
+func isExplainableQuery(query string) bool {
+	trimmed := strings.TrimSpace(query)
+
+	// Remove leading comments (both -- and /* */ style)
+	for {
+		switch {
+		case strings.HasPrefix(trimmed, "--"):
+			idx := strings.Index(trimmed, "\n")
+			if idx == -1 {
+				return false
+			}
+			trimmed = strings.TrimSpace(trimmed[idx+1:])
+			continue
+		case strings.HasPrefix(trimmed, "/*"):
+			idx := strings.Index(trimmed, "*/")
+			if idx == -1 {
+				return false
+			}
+			trimmed = strings.TrimSpace(trimmed[idx+2:])
+			continue
 		}
+		break
 	}
 
-	preparedQuery := queryBuilder.String()
+	if trimmed == "" {
+		return false
+	}
 
-	//nolint:errcheck
-	defer c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+	// Extract and uppercase only the first word to check against the whitelist
+	firstWord := trimmed
+	if idx := strings.IndexAny(trimmed, " \t\n("); idx != -1 {
+		firstWord = trimmed[:idx]
+	}
+
+	_, ok := explainableStatements[strings.ToUpper(firstWord)]
+	return ok
+}
+
+// explainQuery implements client.
+func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logger) (string, error) {
+	// Check if the query is explainable before attempting EXPLAIN
+	if !isExplainableQuery(query) {
+		logger.Debug("skipping EXPLAIN for non-explainable query", zap.String("queryID", queryID))
+		return "", nil
+	}
+
+	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
+
+	// PostgreSQL's pg_stat_statements returns queries with $1, $2 placeholders
+	paramRegex := regexp.MustCompile(`\$\d+`)
+	matches := paramRegex.FindAllString(query, -1)
+
+	// Build nulls array for placeholders
+	nulls := make([]string, len(matches))
+	for i := range nulls {
+		nulls[i] = "null"
+	}
+
+	defer func() {
+		_, _ = c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+	}()
 
 	// if there is no parameter needed, we can not put an empty bracket
+
 	nullsString := ""
 	if len(nulls) > 0 {
 		nullsString = "(" + strings.Join(nulls, ", ") + ")"
 	}
 	setPlanCacheMode := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;"
-	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, preparedQuery)
+	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, query)
 	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
@@ -117,7 +179,14 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 		logger.Error("failed to explain statement", zap.Error(err))
 		return "", err
 	}
-	return obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
+
+	plan, err := obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
+	if err != nil {
+		logger.Error("failed to obfuscate explain plan", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
+	}
+
+	return plan, nil
 }
 
 var _ client = (*postgreSQLClient)(nil)
@@ -880,47 +949,63 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 
 	errs := make([]error, 0)
 	finalAttributes := make([]map[string]any, 0)
-	dbPrefix := "postgresql."
+	propagator := propagation.TraceContext{}
 	for _, row := range rows {
-		if row["query"] == "<insufficient privilege>" {
+		if row[querySampleColumnQuery] == insufficientPrivilegeQuerySampleText {
 			logger.Warn("skipping query sample due to insufficient privileges")
 			errs = append(errs, errors.New("skipping query sample due to insufficient privileges"))
 			continue
 		}
 		currentAttributes := make(map[string]any)
-		simpleColumns := []string{
-			"client_hostname",
-			"query_start",
-			"wait_event_type",
-			"wait_event",
-			"query_id",
-			"state",
-			"application_name",
+		var traceCtx context.Context
+		querySampleSimpleColumns := []string{
+			querySampleColumnClientHostname,
+			querySampleColumnQueryStart,
+			querySampleColumnWaitEventType,
+			querySampleColumnWaitEvent,
+			querySampleColumnQueryID,
+			querySampleColumnState,
+			querySampleColumnApplicationName,
 		}
 
-		for _, col := range simpleColumns {
-			currentAttributes[dbPrefix+col] = row[col]
+		for _, col := range querySampleSimpleColumns {
+			currentAttributes[dbAttributePrefix+col] = row[col]
+			if col == querySampleColumnApplicationName && row[col] != "" {
+				// Use a background context so we don't accidentally inherit cancellation or span context
+				// from the scrape context; the only trace linkage should come from the extracted traceparent.
+				ctxFromQuery := propagator.Extract(context.Background(), propagation.MapCarrier{
+					traceparentCarrierKey: row[col],
+				})
+
+				if trace.SpanContextFromContext(ctxFromQuery).IsValid() {
+					traceCtx = ctxFromQuery
+				}
+			}
+		}
+
+		if traceCtx != nil {
+			currentAttributes[querySampleTraceContextKey] = traceCtx
 		}
 
 		clientPort := int64(0)
-		if row["client_port"] != "" {
-			clientPort, err = strconv.ParseInt(row["client_port"], 10, 64)
+		if row[querySampleColumnClientPort] != "" {
+			clientPort, err = strconv.ParseInt(row[querySampleColumnClientPort], 10, 64)
 			if err != nil {
 				logger.Warn("failed to convert client_port to int", zap.Error(err))
 				errs = append(errs, err)
 			}
 		}
 		pid := int64(0)
-		if row["pid"] != "" {
-			pid, err = strconv.ParseInt(row["pid"], 10, 64)
+		if row[querySampleColumnPID] != "" {
+			pid, err = strconv.ParseInt(row[querySampleColumnPID], 10, 64)
 			if err != nil {
 				logger.Warn("failed to convert pid to int64", zap.Error(err))
 				errs = append(errs, err)
 			}
 		}
 		_queryStartTimestamp := float64(0)
-		if row["_query_start_timestamp"] != "" {
-			_queryStartTimestamp, err = strconv.ParseFloat(row["_query_start_timestamp"], 64)
+		if row[querySampleColumnQueryStartTimestamp] != "" {
+			_queryStartTimestamp, err = strconv.ParseFloat(row[querySampleColumnQueryStartTimestamp], 64)
 			if err != nil {
 				logger.Warn("failed to convert _query_start_timestamp", zap.Error(err))
 				errs = append(errs, err)
@@ -929,8 +1014,8 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		newestQueryTimestamp = math.Max(newestQueryTimestamp, _queryStartTimestamp)
 
 		duration := float64(0)
-		if row["_query_start_timestamp"] != "" {
-			duration, err = strconv.ParseFloat(row["duration_ms"], 64)
+		if row[querySampleColumnDurationMilliseconds] != "" {
+			duration, err = strconv.ParseFloat(row[querySampleColumnDurationMilliseconds], 64)
 			if err != nil {
 				logger.Warn("failed to convert duration", zap.Error(err))
 				errs = append(errs, err)
@@ -938,19 +1023,18 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		}
 
 		// TODO: check if the query is truncated.
-		obfuscated, err := obfuscateSQL(row["query"])
+		obfuscated, err := obfuscateSQL(row[querySampleColumnQuery])
 		if err != nil {
-			logger.Warn("failed to obfuscate query", zap.String("query", row["query"]))
+			logger.Warn("failed to obfuscate query", zap.String("query", row[querySampleColumnQuery]))
 			obfuscated = ""
 		}
-		currentAttributes[dbPrefix+"pid"] = pid
-		currentAttributes["network.peer.port"] = clientPort
-		currentAttributes["network.peer.address"] = row["client_addr"]
-		currentAttributes["db.query.text"] = obfuscated
-		currentAttributes["db.namespace"] = row["datname"]
-		currentAttributes["user.name"] = row["usename"]
-		currentAttributes["duration"] = duration
-		currentAttributes["db.system.name"] = "postgresql"
+		currentAttributes[dbAttributePrefix+querySampleColumnPID] = pid
+		currentAttributes[string(semconv.NetworkPeerPortKey)] = clientPort
+		currentAttributes[string(semconv.NetworkPeerAddressKey)] = row[querySampleColumnClientAddr]
+		currentAttributes[string(semconv.DBQueryTextKey)] = obfuscated
+		currentAttributes[string(semconv.DBNamespaceKey)] = row[querySampleColumnDatname]
+		currentAttributes[string(semconv.UserNameKey)] = row[querySampleColumnUsename]
+		currentAttributes[postgresqlTotalExecTimeAttributeName] = duration
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 
@@ -1016,8 +1100,8 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 
 	for _, row := range rows {
 		hasConvention := map[string]string{
-			"datname": "db.namespace",
-			"query":   QueryTextAttributeName,
+			"datname": string(semconv.DBNamespaceKey),
+			"query":   string(semconv.DBQueryTextKey),
 		}
 
 		needConversion := map[string]func(string, string, *zap.Logger) (any, error){
@@ -1031,29 +1115,34 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 			tempBlksWrittenColumnName:   convertToInt,
 			totalExecTimeColumnName:     convertMillisecondToSecond,
 			totalPlanTimeColumnName:     convertMillisecondToSecond,
-			"query": func(_, val string, logger *zap.Logger) (any, error) {
-				// TODO: check if it is truncated.
-				result, err := obfuscateSQL(val)
-				if err != nil {
-					logger.Error("failed to obfuscate query", zap.String("query", val))
-					return "", err
-				}
-				return result, nil
-			},
 		}
 		currentAttributes := make(map[string]any)
+
+		// Store raw query before obfuscation (needed for EXPLAIN with $N placeholders)
+		if rawQuery, ok := row["query"]; ok {
+			currentAttributes[dbAttributePrefix+"raw_query"] = rawQuery
+		}
 
 		for col := range row {
 			var val any
 			var err error
 			converter, ok := needConversion[col]
-			if ok {
+			switch {
+			case ok:
 				val, err = converter(col, row[col], logger)
 				if err != nil {
 					logger.Warn("failed to convert column to int", zap.String("column", col), zap.Error(err))
 					errs = append(errs, err)
 				}
-			} else {
+			case col == "query":
+				// Obfuscate query for display/logging (converts $1,$2 to ?)
+				// Raw query is already stored separately for EXPLAIN
+				val, err = obfuscateSQL(row[col])
+				if err != nil {
+					logger.Error("failed to obfuscate query", zap.String("query", row[col]))
+					val = ""
+				}
+			default:
 				val = row[col]
 			}
 			if hasConvention[col] != "" {

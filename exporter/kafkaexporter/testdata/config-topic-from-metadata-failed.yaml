@@ -1,0 +1,5 @@
+kafka:
+  brokers:
+    - "foo:123"
+  logs:
+    topic_from_metadata_key: missing_metadata_key

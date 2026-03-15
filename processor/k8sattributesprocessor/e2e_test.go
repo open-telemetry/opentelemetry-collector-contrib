@@ -1024,9 +1024,9 @@ func TestE2E_MixRBAC(t *testing.T) {
 }
 
 // Test with `filter::namespace` set and only role binding to collector's SA. We can't get node and namespace labels/annotations.
-// While `k8s.pod.ip` is not set in `k8sattributes:extract:metadata` and the `pod_association` is not `connection`
+// While `k8s.pod.ip` is not set in `k8s_attributes:extract:metadata` and the `pod_association` is not `connection`
 // we expect that the `k8s.pod.ip` metadata is not added.
-// While `container.image.repo_digests` is not set in `k8sattributes::extract::metadata`, we expect
+// While `container.image.repo_digests` is not set in `k8s_attributes::extract::metadata`, we expect
 // that the `container.image.repo_digests` metadata is not added.
 // The telemetrygen image has neither a tag nor digest (implicitly latest version)
 func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {

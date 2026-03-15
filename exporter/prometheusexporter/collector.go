@@ -18,7 +18,7 @@ import (
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -226,9 +226,11 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 
 	schema := dp.Scale()
 
-	// TODO: implement custom bucket native histograms #43981
+	// Schema -53 (CBNH) is already supported via the classic histogram path.
+	// The Prometheus receiver converts NHCB to OTLP classic Histogram (not ExponentialHistogram),
+	// which is then handled by convertDoubleHistogram.
 	if schema == cbnhScale {
-		return nil, errors.New("custom bucket native histograms (CBNH) are still not implemented")
+		return nil, errors.New("unexpected ExponentialHistogram with schema -53; CBNH is supported via classic histogram")
 	}
 	if schema < -4 {
 		return nil, fmt.Errorf("cannot convert exponential to native histogram: scale must be >= -4, was %d", schema)

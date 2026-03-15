@@ -20,11 +20,11 @@ type convertSummarySumValToSumArguments struct {
 	Suffix        ottl.Optional[string]
 }
 
-func newConvertSummarySumValToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
+func newConvertSummarySumValToSumFactory() ottl.Factory[*ottldatapoint.TransformContext] {
 	return ottl.NewFactory("convert_summary_sum_val_to_sum", &convertSummarySumValToSumArguments{}, createConvertSummarySumValToSumFunction)
 }
 
-func createConvertSummarySumValToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func createConvertSummarySumValToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottldatapoint.TransformContext], error) {
 	args, ok := oArgs.(*convertSummarySumValToSumArguments)
 
 	if !ok {
@@ -34,7 +34,7 @@ func createConvertSummarySumValToSumFunction(_ ottl.FunctionContext, oArgs ottl.
 	return convertSummarySumValToSum(args.StringAggTemp, args.Monotonic, args.Suffix)
 }
 
-func convertSummarySumValToSum(stringAggTemp string, monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func convertSummarySumValToSum(stringAggTemp string, monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[*ottldatapoint.TransformContext], error) {
 	metricNameSuffix := "_sum"
 	if !suffix.IsEmpty() {
 		metricNameSuffix = suffix.Get()
@@ -48,7 +48,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool, suffix ottl
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
-	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx *ottldatapoint.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSummary {
 			return nil, nil

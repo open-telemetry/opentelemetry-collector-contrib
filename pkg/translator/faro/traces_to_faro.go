@@ -18,7 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 )
 
@@ -95,25 +96,25 @@ func extractMetaFromResourceAttributes(resourceAttributes pcommon.Map) faroTypes
 	var app faroTypes.App
 	var sdk faroTypes.SDK
 
-	if appName, ok := resourceAttributes.Get(string(semconv.ServiceNameKey)); ok {
+	if appName, ok := resourceAttributes.Get(string(conventions.ServiceNameKey)); ok {
 		app.Name = appName.Str()
 	}
-	if appNamespace, ok := resourceAttributes.Get(string(semconv.ServiceNamespaceKey)); ok {
+	if appNamespace, ok := resourceAttributes.Get(string(conventions.ServiceNamespaceKey)); ok {
 		app.Namespace = appNamespace.Str()
 	}
-	if version, ok := resourceAttributes.Get(string(semconv.ServiceVersionKey)); ok {
+	if version, ok := resourceAttributes.Get(string(conventions.ServiceVersionKey)); ok {
 		app.Version = version.Str()
 	}
-	if environment, ok := resourceAttributes.Get(string(semconv.DeploymentEnvironmentKey)); ok {
+	if environment, ok := resourceAttributes.Get(string(conventionsv126.DeploymentEnvironmentKey)); ok {
 		app.Environment = environment.Str()
 	}
 	if appBundleID, ok := resourceAttributes.Get(faroAppBundleID); ok {
 		app.BundleID = appBundleID.Str()
 	}
-	if sdkName, ok := resourceAttributes.Get(string(semconv.TelemetrySDKNameKey)); ok {
+	if sdkName, ok := resourceAttributes.Get(string(conventions.TelemetrySDKNameKey)); ok {
 		sdk.Name = sdkName.Str()
 	}
-	if sdkVersion, ok := resourceAttributes.Get(string(semconv.TelemetrySDKVersionKey)); ok {
+	if sdkVersion, ok := resourceAttributes.Get(string(conventions.TelemetrySDKVersionKey)); ok {
 		sdk.Version = sdkVersion.Str()
 	}
 

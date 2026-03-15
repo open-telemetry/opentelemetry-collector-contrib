@@ -8,10 +8,11 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
@@ -44,7 +45,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
-	resourceAttrs.PutStr(string(semconv.K8SNodeNameKey), ev.Source.Host)
+	resourceAttrs.PutStr(string(conventions.K8SNodeNameKey), ev.Source.Host)
 
 	// Attributes related to the object causing the event.
 	resourceAttrs.PutStr("k8s.object.kind", ev.InvolvedObject.Kind)
@@ -54,7 +55,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	resourceAttrs.PutStr("k8s.object.api_version", ev.InvolvedObject.APIVersion)
 	resourceAttrs.PutStr("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)
 
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(getEventTimestamp(ev)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(k8sinventory.GetEventTimestamp(ev)))
 
 	// The Message field contains description about the event,
 	// which is best suited for the "Body" of the LogRecordSlice.
@@ -77,7 +78,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	attrs.PutStr("k8s.event.start_time", ev.CreationTimestamp.String())
 	attrs.PutStr("k8s.event.name", ev.Name)
 	attrs.PutStr("k8s.event.uid", string(ev.UID))
-	attrs.PutStr(string(semconv.K8SNamespaceNameKey), ev.InvolvedObject.Namespace)
+	attrs.PutStr(string(conventions.K8SNamespaceNameKey), ev.InvolvedObject.Namespace)
 
 	// "Count" field of k8s event will be '0' in case it is
 	// not present in the collected event from k8s.

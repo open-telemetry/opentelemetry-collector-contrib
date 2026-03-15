@@ -10,7 +10,9 @@ import (
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler/traces"
 )
 
 func NewFactory() extension.Factory {
@@ -22,16 +24,33 @@ func NewFactory() extension.Factory {
 	)
 }
 
-func createExtension(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, settings extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 
 	return &azureExtension{
 		config: config,
+		logUnmarshaler: logs.NewAzureResourceLogsUnmarshaler(
+			settings.BuildInfo,
+			settings.Logger,
+			config.Logs,
+		),
+		traceUnmarshaler: traces.NewAzureResourceTracesUnmarshaler(
+			settings.BuildInfo,
+			settings.Logger,
+			config.Traces,
+		),
+		metricUnmarshaler: metrics.NewAzureResourceMetricsUnmarshaler(
+			settings.BuildInfo,
+			settings.Logger,
+			config.Metrics,
+		),
 	}, nil
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Format: unmarshaler.FormatEventHub,
+		Logs: logs.LogsConfig{
+			TimeFormats: logs.DefaultTimeFormats(),
+		},
 	}
 }

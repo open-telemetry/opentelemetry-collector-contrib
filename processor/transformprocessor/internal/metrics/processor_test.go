@@ -2063,8 +2063,8 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		name               string
 		statements         []common.ContextStatements
 		wantErrorWith      string
-		metricFunctions    map[string]ottl.Factory[ottlmetric.TransformContext]
-		dataPointFunctions map[string]ottl.Factory[ottldatapoint.TransformContext]
+		metricFunctions    map[string]ottl.Factory[*ottlmetric.TransformContext]
+		dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
 	}
 
 	tests := []testCase{
@@ -2076,9 +2076,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
-			metricFunctions: map[string]ottl.Factory[ottlmetric.TransformContext]{
+			metricFunctions: map[string]ottl.Factory[*ottlmetric.TransformContext]{
 				"set":            DefaultMetricFunctions["set"],
-				"TestMetricFunc": NewTestMetricFuncFactory[ottlmetric.TransformContext](),
+				"TestMetricFunc": NewTestMetricFuncFactory[*ottlmetric.TransformContext](),
 			},
 			dataPointFunctions: DefaultDataPointFunctions,
 		},
@@ -2103,9 +2103,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 				},
 			},
 			metricFunctions: DefaultMetricFunctions,
-			dataPointFunctions: map[string]ottl.Factory[ottldatapoint.TransformContext]{
+			dataPointFunctions: map[string]ottl.Factory[*ottldatapoint.TransformContext]{
 				"set":               DefaultDataPointFunctions["set"],
-				"TestDataPointFunc": NewTestDataPointFuncFactory[ottldatapoint.TransformContext](),
+				"TestDataPointFunc": NewTestDataPointFuncFactory[*ottldatapoint.TransformContext](),
 			},
 		},
 		{

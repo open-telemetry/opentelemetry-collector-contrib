@@ -22,7 +22,7 @@ func TestSpanFunctions(t *testing.T) {
 	funcs := spanFunctions()
 	assertStandardFunctions(t, funcs)
 
-	isRouteFuncName := ottlfuncs.NewIsRootSpanFactory().Name()
+	isRouteFuncName := ottlfuncs.NewIsRootSpanFactoryNew().Name()
 	val, ok := funcs[isRouteFuncName]
 
 	require.True(t, ok)

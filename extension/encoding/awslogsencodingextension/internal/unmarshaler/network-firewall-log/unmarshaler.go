@@ -4,7 +4,6 @@
 package networkfirewall // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/network-firewall-log"
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -14,19 +13,23 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 )
 
-type networkFirewallLogUnmarshaler struct {
+var _ unmarshaler.StreamingLogsUnmarshaler = (*NetworkFirewallLogUnmarshaler)(nil)
+
+type NetworkFirewallLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 }
 
-func NewNetworkFirewallLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
-	return &networkFirewallLogUnmarshaler{
+func NewNetworkFirewallLogUnmarshaler(buildInfo component.BuildInfo) *NetworkFirewallLogUnmarshaler {
+	return &NetworkFirewallLogUnmarshaler{
 		buildInfo: buildInfo,
 	}
 }
@@ -98,57 +101,107 @@ type networkFirewallLog struct {
 	} `json:"event"`
 }
 
-func (n *networkFirewallLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	logs := plog.NewLogs()
-
-	resourceLogs := logs.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(
-		string(semconv.CloudProviderKey),
-		semconv.CloudProviderAWS.Value.AsString(),
-	)
-
-	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName(metadata.ScopeName)
-	scopeLogs.Scope().SetVersion(n.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatNetworkFirewallLog)
-
-	firewallName := ""
-	availabilityZone := ""
-
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		logLine := scanner.Bytes()
-
-		var log networkFirewallLog
-		if err := gojson.Unmarshal(logLine, &log); err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to unmarshal Network Firewall log: %w", err)
-		}
-		if log.FirewallName == "" {
-			return plog.Logs{}, errors.New("invalid Network Firewall log: empty firewall_name field")
-		}
-		if firewallName == "" {
-			firewallName = log.FirewallName
-			availabilityZone = log.AvailabilityZone
-		}
-		if firewallName != log.FirewallName {
-			return plog.Logs{}, fmt.Errorf(
-				"unexpected: new firewall_name %q is different than previous one %q",
-				log.FirewallName,
-				firewallName,
-			)
-		}
-
-		record := scopeLogs.LogRecords().AppendEmpty()
-		if err := n.addNetworkFirewallLog(log, record); err != nil {
-			return plog.Logs{}, err
-		}
+func (n *NetworkFirewallLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+	// Decode as a stream but flush all at once using flush options
+	streamUnmarshaler, err := n.NewLogsDecoder(reader, encoding.WithFlushItems(0), encoding.WithFlushBytes(0))
+	if err != nil {
+		return plog.Logs{}, err
 	}
 
-	if err := setResourceAttributes(resourceLogs, firewallName, availabilityZone); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to set resource attributes: %w", err)
+	logs, err := streamUnmarshaler.DecodeLogs()
+	if err != nil {
+		// we must check for EOF with direct comparison and avoid wrapped EOF that can come from stream itself
+		//nolint:errorlint
+		if err == io.EOF {
+			// EOF indicates no logs were found, return any logs that's available
+			return logs, nil
+		}
+
+		return plog.Logs{}, err
 	}
 
 	return logs, nil
+}
+
+// NewLogsDecoder returns a LogsDecoder that processes AWS Network Firewall logs from the provided reader.
+// Supports offset-based streaming; offset tracks bytes processed.
+func (n *NetworkFirewallLogUnmarshaler) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	scannerHelper, err := xstreamencoding.NewScannerHelper(reader, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	decodeF := func() (plog.Logs, error) {
+		logs := plog.NewLogs()
+
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		resourceLogs.Resource().Attributes().PutStr(
+			string(conventions.CloudProviderKey),
+			conventions.CloudProviderAWS.Value.AsString(),
+		)
+
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		scopeLogs.Scope().SetName(metadata.ScopeName)
+		scopeLogs.Scope().SetVersion(n.buildInfo.Version)
+		scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatNetworkFirewallLog)
+
+		firewallName := ""
+		availabilityZone := ""
+
+		for {
+			logBytes, flush, err := scannerHelper.ScanBytes()
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					return plog.Logs{}, fmt.Errorf("failed to unmarshal Network Firewall log: %w", err)
+				}
+
+				if len(logBytes) == 0 {
+					break
+				}
+			}
+
+			var log networkFirewallLog
+			if err := gojson.Unmarshal(logBytes, &log); err != nil {
+				return plog.Logs{}, fmt.Errorf("failed to unmarshal Network Firewall log: %w", err)
+			}
+			if log.FirewallName == "" {
+				return plog.Logs{}, errors.New("invalid Network Firewall log: empty firewall_name field")
+			}
+			if firewallName == "" {
+				firewallName = log.FirewallName
+				availabilityZone = log.AvailabilityZone
+			}
+			if firewallName != log.FirewallName {
+				return plog.Logs{}, fmt.Errorf(
+					"unexpected: new firewall_name %q is different than previous one %q",
+					log.FirewallName,
+					firewallName,
+				)
+			}
+
+			record := scopeLogs.LogRecords().AppendEmpty()
+			if err := n.addNetworkFirewallLog(log, record); err != nil {
+				return plog.Logs{}, err
+			}
+
+			if flush {
+				break
+			}
+		}
+
+		if firewallName == "" {
+			// This means there is no log to process, return EOF to indicate no logs.
+			return plog.NewLogs(), io.EOF
+		}
+
+		if err := setResourceAttributes(resourceLogs, firewallName, availabilityZone); err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to set resource attributes: %w", err)
+		}
+
+		return logs, nil
+	}
+
+	return xstreamencoding.NewLogsDecoderAdapter(decodeF, scannerHelper.Offset), nil
 }
 
 func setResourceAttributes(resourceLogs plog.ResourceLogs, firewallName, availabilityZone string) error {
@@ -159,13 +212,13 @@ func setResourceAttributes(resourceLogs plog.ResourceLogs, firewallName, availab
 	resourceLogs.Resource().Attributes().PutStr("aws.networkfirewall.name", firewallName)
 
 	if availabilityZone != "" {
-		resourceLogs.Resource().Attributes().PutStr(string(semconv.CloudAvailabilityZoneKey), availabilityZone)
+		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAvailabilityZoneKey), availabilityZone)
 	}
 
 	return nil
 }
 
-func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallLog, record plog.LogRecord) error {
+func (*NetworkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallLog, record plog.LogRecord) error {
 	// Parse event timestamp
 	timestamp, err := time.Parse(time.RFC3339, log.EventTimestamp)
 	if err != nil {
@@ -208,16 +261,16 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 
 	// Add network fields
 	if log.Event.Src != "" {
-		putStr(string(semconv.SourceAddressKey), log.Event.Src)
+		putStr(string(conventions.SourceAddressKey), log.Event.Src)
 	}
 	if log.Event.SrcPort != 0 {
-		putInt(string(semconv.SourcePortKey), log.Event.SrcPort)
+		putInt(string(conventions.SourcePortKey), log.Event.SrcPort)
 	}
 	if log.Event.Dest != "" {
-		putStr(string(semconv.DestinationAddressKey), log.Event.Dest)
+		putStr(string(conventions.DestinationAddressKey), log.Event.Dest)
 	}
 	if log.Event.DestPort != 0 {
-		putInt(string(semconv.DestinationPortKey), log.Event.DestPort)
+		putInt(string(conventions.DestinationPortKey), log.Event.DestPort)
 	}
 	if log.Event.Proto != "" {
 		putStr("network.transport", log.Event.Proto)
@@ -303,7 +356,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 
 	// SNI can be at event level
 	if log.Event.SNI != "" {
-		putStr(string(semconv.ServerAddressKey), log.Event.SNI)
+		putStr(string(conventions.ServerAddressKey), log.Event.SNI)
 	}
 
 	// Revocation check fields (check each field individually)
@@ -340,10 +393,10 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putStr("url.domain", log.Event.HTTP.Hostname)
 	}
 	if log.Event.HTTP.URL != "" {
-		putStr(string(semconv.URLPathKey), log.Event.HTTP.URL)
+		putStr(string(conventions.URLPathKey), log.Event.HTTP.URL)
 	}
 	if log.Event.HTTP.HTTPUserAgent != "" {
-		putStr(string(semconv.UserAgentOriginalKey), log.Event.HTTP.HTTPUserAgent)
+		putStr(string(conventions.UserAgentOriginalKey), log.Event.HTTP.HTTPUserAgent)
 	}
 	if log.Event.HTTP.HTTPContentType != "" {
 		putStr("http.request.header.content-type", log.Event.HTTP.HTTPContentType)

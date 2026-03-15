@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -100,11 +99,11 @@ func TestMetadataFromAttributes(t *testing.T) {
 		{
 			name: "AWS",
 			attrs: testutil.NewAttributeMap(map[string]string{
-				string(conventions.CloudProviderKey): conventions.CloudProviderAWS.Value.AsString(),
-				string(conventions.HostIDKey):        "host-id",
-				string(conventions.HostNameKey):      "ec2amaz-host-name",
-				"ec2.tag.tag1":                       "val1",
-				"ec2.tag.tag2":                       "val2",
+				"cloud.provider": "aws",
+				"host.id":        "host-id",
+				"host.name":      "ec2amaz-host-name",
+				"ec2.tag.tag1":   "val1",
+				"ec2.tag.tag2":   "val2",
 			}),
 			expected: &payload.HostMetadata{
 				InternalHostname: "host-id",
@@ -119,12 +118,12 @@ func TestMetadataFromAttributes(t *testing.T) {
 		{
 			name: "GCP",
 			attrs: testutil.NewAttributeMap(map[string]string{
-				string(conventions.CloudProviderKey):         conventions.CloudProviderGCP.Value.AsString(),
-				string(conventions.HostIDKey):                "host-id",
-				string(conventions.CloudAccountIDKey):        "project-id",
-				string(conventions.HostNameKey):              "host-name",
-				string(conventions.HostTypeKey):              "host-type",
-				string(conventions.CloudAvailabilityZoneKey): "cloud-zone",
+				"cloud.provider":          "gcp",
+				"host.id":                 "host-id",
+				"cloud.account.id":        "project-id",
+				"host.name":               "host-name",
+				"host.type":               "host-type",
+				"cloud.availability_zone": "cloud-zone",
 			}),
 			expected: &payload.HostMetadata{
 				InternalHostname: "host-name.project-id",
@@ -139,12 +138,12 @@ func TestMetadataFromAttributes(t *testing.T) {
 		{
 			name: "Azure",
 			attrs: testutil.NewAttributeMap(map[string]string{
-				string(conventions.CloudProviderKey):  conventions.CloudProviderAzure.Value.AsString(),
-				string(conventions.HostNameKey):       "azure-host-name",
-				string(conventions.CloudRegionKey):    "location",
-				string(conventions.HostIDKey):         "azure-vm-id",
-				string(conventions.CloudAccountIDKey): "subscriptionID",
-				azure.AttributeResourceGroupName:      "resourceGroup",
+				"cloud.provider":                 "azure",
+				"host.name":                      "azure-host-name",
+				"cloud.region":                   "location",
+				"host.id":                        "azure-vm-id",
+				"cloud.account.id":               "subscriptionID",
+				azure.AttributeResourceGroupName: "resourceGroup",
 			}),
 			expected: &payload.HostMetadata{
 				InternalHostname: "azure-vm-id",
@@ -260,4 +259,43 @@ func TestPusher(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.Meta.SocketHostname, hostname)
+}
+
+func TestDeepCopyHostMetadata(t *testing.T) {
+	// Create a host metadata payload with gohai data
+	original := payload.HostMetadata{
+		InternalHostname: "test-hostname",
+		Flavor:           "otelcontribcol",
+		Version:          "1.0",
+		Tags:             &payload.HostTags{OTel: []string{"key1:val1"}},
+		Meta: &payload.Meta{
+			Hostname: "test-hostname",
+		},
+	}
+
+	// Deep copy the payload
+	copied := deepCopyHostMetadata(original)
+
+	// Verify the copy has the same values
+	assert.Equal(t, original.InternalHostname, copied.InternalHostname)
+	assert.Equal(t, original.Flavor, copied.Flavor)
+	assert.Equal(t, original.Version, copied.Version)
+	assert.Equal(t, original.Meta.Hostname, copied.Meta.Hostname)
+	assert.Equal(t, original.Tags.OTel, copied.Tags.OTel)
+
+	// Modify the original
+	original.InternalHostname = "modified-hostname"
+	original.Flavor = "modified-flavor"
+	original.Meta.Hostname = "modified-hostname"
+	original.Tags.OTel = append(original.Tags.OTel, "new:tag")
+
+	// Verify the copy is not affected
+	assert.NotEqual(t, original.InternalHostname, copied.InternalHostname)
+	assert.NotEqual(t, original.Flavor, copied.Flavor)
+	assert.NotEqual(t, original.Meta.Hostname, copied.Meta.Hostname)
+	assert.NotEqual(t, len(original.Tags.OTel), len(copied.Tags.OTel))
+	assert.Equal(t, "test-hostname", copied.InternalHostname)
+	assert.Equal(t, "otelcontribcol", copied.Flavor)
+	assert.Equal(t, "test-hostname", copied.Meta.Hostname)
+	assert.Equal(t, []string{"key1:val1"}, copied.Tags.OTel)
 }

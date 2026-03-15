@@ -1,4 +1,5 @@
 type: awscloudwatchlogs
+display_name: AWS CloudWatch Logs Exporter
 
 status:
   class: exporter

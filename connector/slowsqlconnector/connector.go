@@ -5,19 +5,19 @@ package slowsqlconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 const (
 	serviceNameKey        = string(conventions.ServiceNameKey)
-	dbSystemKey           = string(conventions.DBSystemKey)
-	statementExecDuration = conventions.DBClientOperationDurationName
-	spanKindKey           = "span.kind"    // OpenTelemetry non-standard constant.
-	spanNameKey           = "span.name"    // OpenTelemetry non-standard constant.
-	statusCodeKey         = "status.code"  // OpenTelemetry non-standard constant.
-	dbStatementKey        = "db.statement" // OpenTelemetry non-standard constant.
+	dbSystemKey           = string(conventions.DBSystemNameKey)
+	statementExecDuration = "db.client.operation.duration" // OpenTelemetry non-standard constant.
+	spanKindKey           = "span.kind"                    // OpenTelemetry non-standard constant.
+	spanNameKey           = "span.name"                    // OpenTelemetry non-standard constant.
+	statusCodeKey         = "status.code"                  // OpenTelemetry non-standard constant.
+	dbStatementKey        = "db.statement"                 // OpenTelemetry non-standard constant.
 )
 
 func newDimensions(cfgDims []Dimension) []pdatautil.Dimension {

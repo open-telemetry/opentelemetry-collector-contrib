@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -125,18 +124,20 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualMetrics := pmetric.NewMetricSlice()
-			tt.input.CopyTo(actualMetrics.AppendEmpty())
+			sMetrics := pmetric.NewScopeMetrics()
+			tt.input.CopyTo(sMetrics.Metrics().AppendEmpty())
 
 			evaluate, err := convertSummarySumValToSum(tt.temporality, tt.monotonicity, tt.suffix)
 			require.NoError(t, err)
 
-			_, err = evaluate(nil, ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			tCtx := ottldatapoint.NewTransformContextPtr(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0), pmetric.NewNumberDataPoint())
+			defer tCtx.Close()
+			_, err = evaluate(t.Context(), tCtx)
 			require.NoError(t, err)
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
-			assert.Equal(t, expected, actualMetrics)
+			assert.Equal(t, expected, sMetrics.Metrics())
 		})
 	}
 }

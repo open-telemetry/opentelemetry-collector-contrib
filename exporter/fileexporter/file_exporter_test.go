@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DeRuina/timberjack"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -539,6 +539,13 @@ func TestFileProfilesExporter(t *testing.T) {
 				assert.NoError(t, fe.Shutdown(t.Context()))
 			}()
 
+			// Create expected by marshaling and unmarshaling pd the same way
+			// This ensures the internal dictionary structure matches
+			expectedBuf, err := profilesMarshalers[tt.args.conf.FormatType].MarshalProfiles(testdata.GenerateProfilesTwoProfilesSameResource())
+			assert.NoError(t, err)
+			expected, err := tt.args.unmarshaler.UnmarshalProfiles(expectedBuf)
+			assert.NoError(t, err)
+
 			fi, err := os.Open(fe.writer.path)
 			assert.NoError(t, err)
 			defer fi.Close()
@@ -559,7 +566,7 @@ func TestFileProfilesExporter(t *testing.T) {
 				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalProfiles(buf)
 				assert.NoError(t, err)
-				assert.Equal(t, pd, got)
+				assert.Equal(t, expected, got)
 			}
 		})
 	}
@@ -595,7 +602,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 		},
 		writer: &fileWriter{
 			path: path,
-			file: &lumberjack.Logger{
+			file: &timberjack.Logger{
 				Filename: path,
 				MaxSize:  1,
 			},
@@ -738,7 +745,12 @@ func TestConcurrentlyCompress(t *testing.T) {
 	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
 	gotPd, err := profilesUnmarshaler.UnmarshalProfiles(buf)
 	assert.NoError(t, err)
-	assert.Equal(t, pd, gotPd)
+	// Create expected by marshaling and unmarshaling pd the same way
+	expectedBuf, err := profilesMarshalers[formatTypeJSON].MarshalProfiles(testdata.GenerateProfilesTwoProfilesSameResource())
+	assert.NoError(t, err)
+	expectedPd, err := profilesUnmarshaler.UnmarshalProfiles(expectedBuf)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedPd, gotPd)
 }
 
 // tsBuffer is a thread safe buffer to prevent race conditions in the CI/CD.

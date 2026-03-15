@@ -24,8 +24,10 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"github.com/twmb/franz-go/plugin/kzap"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -35,10 +37,18 @@ const (
 	SCRAMSHA256          = "SCRAM-SHA-256"
 	PLAIN                = "PLAIN"
 	AWSMSKIAMOAUTHBEARER = "AWS_MSK_IAM_OAUTHBEARER" //nolint:gosec // These aren't credentials.
+	OAUTHBEARER          = "OAUTHBEARER"
 )
 
+type contextTokenSource interface {
+	Token(context.Context) (*oauth2.Token, error)
+}
+
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
-func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfig,
+func NewFranzSyncProducer(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	cfg configkafka.ProducerConfig,
 	timeout time.Duration,
 	logger *zap.Logger,
@@ -50,7 +60,7 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 	default:
 		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
 	}
-	opts, err := commonOpts(ctx, clientCfg, logger, append(
+	opts, err := commonOpts(ctx, host, clientCfg, logger, append(
 		opts,
 		kgo.ProduceRequestTimeout(timeout),
 		kgo.ProducerBatchCompression(codec),
@@ -59,6 +69,8 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		// partitions in case partitioning is enabled.
 		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
 		kgo.ProducerLinger(cfg.Linger),
+		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
+		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
 	)...)
 	if err != nil {
 		return nil, err
@@ -75,16 +87,6 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.LeaderAck()))
 	}
 
-	// Configure max message size
-	if cfg.MaxMessageBytes > 0 {
-		opts = append(opts, kgo.ProducerBatchMaxBytes(
-			int32(cfg.MaxMessageBytes),
-		))
-	}
-	// Configure batch size
-	if cfg.FlushMaxMessages > 0 {
-		opts = append(opts, kgo.MaxBufferedRecords(cfg.FlushMaxMessages))
-	}
 	// Configure auto topic creation
 	if cfg.AllowAutoTopicCreation {
 		opts = append(opts, kgo.AllowAutoTopicCreation())
@@ -94,16 +96,25 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 }
 
 // NewFranzConsumerGroup creates a new Kafka consumer client using the franz-go library.
-func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConfig,
+func NewFranzConsumerGroup(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	consumerCfg configkafka.ConsumerConfig,
 	topics []string,
 	excludeTopics []string,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
+	opts, err := commonOpts(ctx, host, clientCfg, logger, append([]kgo.Opt{
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumerGroup(consumerCfg.GroupID),
+		kgo.SessionTimeout(consumerCfg.SessionTimeout),
+		kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval),
+		kgo.FetchMinBytes(consumerCfg.MinFetchSize),
+		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
+		kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize),
+		kgo.FetchMaxWait(consumerCfg.MaxFetchWait),
 	}, opts...)...)
 	if err != nil {
 		return nil, err
@@ -124,32 +135,6 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 	// Add exclude topics only when regex consumption is enabled
 	if len(excludeTopics) > 0 && isRegex {
 		opts = append(opts, kgo.ConsumeExcludeTopics(excludeTopics...))
-	}
-
-	// Configure session timeout
-	if consumerCfg.SessionTimeout > 0 {
-		opts = append(opts, kgo.SessionTimeout(consumerCfg.SessionTimeout))
-	}
-
-	// Configure heartbeat interval
-	if consumerCfg.HeartbeatInterval > 0 {
-		opts = append(opts, kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval))
-	}
-
-	// Configure fetch sizes
-	if consumerCfg.MinFetchSize > 0 {
-		opts = append(opts, kgo.FetchMinBytes(consumerCfg.MinFetchSize))
-	}
-	if consumerCfg.DefaultFetchSize > 0 {
-		opts = append(opts, kgo.FetchMaxBytes(consumerCfg.DefaultFetchSize))
-	}
-	if consumerCfg.MaxPartitionFetchSize > 0 {
-		opts = append(opts, kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize))
-	}
-
-	// Configure max fetch wait
-	if consumerCfg.MaxFetchWait > 0 {
-		opts = append(opts, kgo.FetchMaxWait(consumerCfg.MaxFetchWait))
 	}
 
 	interval := consumerCfg.AutoCommit.Interval
@@ -180,13 +165,12 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 
 	// Configure rebalance strategy
 	switch consumerCfg.GroupRebalanceStrategy {
-	case "range": // Sarama default.
+	case "range":
 		opts = append(opts, kgo.Balancers(kgo.RangeBalancer()))
 	case "roundrobin":
 		opts = append(opts, kgo.Balancers(kgo.RoundRobinBalancer()))
 	case "sticky":
 		opts = append(opts, kgo.Balancers(kgo.StickyBalancer()))
-	// NOTE(marclop): This is a new type of balancer, document accordingly.
 	case "cooperative-sticky":
 		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
 	}
@@ -196,11 +180,12 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 // NewFranzClient creates a franz-go client using the same commonOpts used for producer/consumer.
 func NewFranzClient(
 	ctx context.Context,
+	host component.Host,
 	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts, err := commonOpts(ctx, clientCfg, logger, opts...)
+	opts, err := commonOpts(ctx, host, clientCfg, logger, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -210,23 +195,22 @@ func NewFranzClient(
 // NewFranzClusterAdminClient creates a kadm admin client from a freshly created franz client.
 func NewFranzClusterAdminClient(
 	ctx context.Context,
+	host component.Host,
 	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kadm.Client, *kgo.Client, error) {
-	cl, err := NewFranzClient(ctx, clientCfg, logger, opts...)
+	cl, err := NewFranzClient(ctx, host, clientCfg, logger, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
 	return kadm.NewClient(cl), cl, nil
 }
 
-// NewFranzAdminFromClient returns a kadm admin bound to an existing kgo client.
-func NewFranzAdminFromClient(cl *kgo.Client) *kadm.Client {
-	return kadm.NewClient(cl)
-}
-
-func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
+func commonOpts(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) ([]kgo.Opt, error) {
@@ -261,7 +245,7 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 		opts = append(opts, kgo.SASL(auth.AsMechanism()))
 	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL)
+		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -286,6 +270,10 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	if clientCfg.Metadata.RefreshInterval > 0 {
 		opts = append(opts, kgo.MetadataMaxAge(clientCfg.Metadata.RefreshInterval))
 	}
+	// Configure connection idle timeout
+	if clientCfg.ConnIdleTimeout > 0 {
+		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnIdleTimeout))
+	}
 	// Configure the min/max protocol version if provided
 	if clientCfg.ProtocolVersion != "" {
 		keyVersions := make(map[string]any)
@@ -304,7 +292,7 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	return opts, nil
 }
 
-func configureKgoSASL(cfg *configkafka.SASLConfig) (kgo.Opt, error) {
+func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -317,6 +305,22 @@ func configureKgoSASL(cfg *configkafka.SASLConfig) (kgo.Opt, error) {
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
 			token, _, err := signer.GenerateAuthToken(ctx, cfg.AWSMSK.Region)
 			return oauth.Auth{Token: token}, err
+		})
+	case OAUTHBEARER:
+		extMap := host.GetExtensions()
+		oauthExt, exists := extMap[cfg.OAuthBearerTokenSource]
+		if !exists {
+			return nil, fmt.Errorf("extension %s is not configured", cfg.OAuthBearerTokenSource)
+		}
+
+		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
+			ts := oauthExt.(contextTokenSource)
+
+			token, err := ts.Token(ctx)
+			if err != nil {
+				return oauth.Auth{}, err
+			}
+			return oauth.Auth{Token: token.AccessToken}, nil
 		})
 	default:
 		return nil, fmt.Errorf("unsupported SASL mechanism: %s", cfg.Mechanism)

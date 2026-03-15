@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -27,16 +26,36 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					VcsChangeCount:          MetricConfig{Enabled: true},
-					VcsChangeDuration:       MetricConfig{Enabled: true},
-					VcsChangeTimeToApproval: MetricConfig{Enabled: true},
-					VcsChangeTimeToMerge:    MetricConfig{Enabled: true},
-					VcsContributorCount:     MetricConfig{Enabled: true},
-					VcsRefCount:             MetricConfig{Enabled: true},
-					VcsRefLinesDelta:        MetricConfig{Enabled: true},
-					VcsRefRevisionsDelta:    MetricConfig{Enabled: true},
-					VcsRefTime:              MetricConfig{Enabled: true},
-					VcsRepositoryCount:      MetricConfig{Enabled: true},
+					VcsChangeCount: MetricConfig{
+						Enabled: true,
+					},
+					VcsChangeDuration: MetricConfig{
+						Enabled: true,
+					},
+					VcsChangeTimeToApproval: MetricConfig{
+						Enabled: true,
+					},
+					VcsChangeTimeToMerge: MetricConfig{
+						Enabled: true,
+					},
+					VcsContributorCount: MetricConfig{
+						Enabled: true,
+					},
+					VcsRefCount: MetricConfig{
+						Enabled: true,
+					},
+					VcsRefLinesDelta: MetricConfig{
+						Enabled: true,
+					},
+					VcsRefRevisionsDelta: MetricConfig{
+						Enabled: true,
+					},
+					VcsRefTime: MetricConfig{
+						Enabled: true,
+					},
+					VcsRepositoryCount: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					VcsOwnerName:    ResourceAttributeConfig{Enabled: true},
@@ -48,16 +67,36 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					VcsChangeCount:          MetricConfig{Enabled: false},
-					VcsChangeDuration:       MetricConfig{Enabled: false},
-					VcsChangeTimeToApproval: MetricConfig{Enabled: false},
-					VcsChangeTimeToMerge:    MetricConfig{Enabled: false},
-					VcsContributorCount:     MetricConfig{Enabled: false},
-					VcsRefCount:             MetricConfig{Enabled: false},
-					VcsRefLinesDelta:        MetricConfig{Enabled: false},
-					VcsRefRevisionsDelta:    MetricConfig{Enabled: false},
-					VcsRefTime:              MetricConfig{Enabled: false},
-					VcsRepositoryCount:      MetricConfig{Enabled: false},
+					VcsChangeCount: MetricConfig{
+						Enabled: false,
+					},
+					VcsChangeDuration: MetricConfig{
+						Enabled: false,
+					},
+					VcsChangeTimeToApproval: MetricConfig{
+						Enabled: false,
+					},
+					VcsChangeTimeToMerge: MetricConfig{
+						Enabled: false,
+					},
+					VcsContributorCount: MetricConfig{
+						Enabled: false,
+					},
+					VcsRefCount: MetricConfig{
+						Enabled: false,
+					},
+					VcsRefLinesDelta: MetricConfig{
+						Enabled: false,
+					},
+					VcsRefRevisionsDelta: MetricConfig{
+						Enabled: false,
+					},
+					VcsRefTime: MetricConfig{
+						Enabled: false,
+					},
+					VcsRepositoryCount: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					VcsOwnerName:    ResourceAttributeConfig{Enabled: false},

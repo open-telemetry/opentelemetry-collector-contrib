@@ -24,8 +24,6 @@ import (
 
 const userAgent = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
 
-var minimumRequiredDockerAPIVersion = MustNewAPIVersion("1.44")
-
 // Container is client.ContainerInspect() response container
 // stats and translated environment string map for potential labels.
 type Container struct {
@@ -47,20 +45,27 @@ type Client struct {
 }
 
 func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
-	version := minimumRequiredDockerAPIVersion
+	clientOpts := []docker.Opt{
+		docker.WithHost(config.Endpoint),
+		docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
+	}
+
 	if config.DockerAPIVersion != "" {
-		var err error
-		if version, err = NewAPIVersion(config.DockerAPIVersion); err != nil {
+		version, err := NewAPIVersion(config.DockerAPIVersion)
+		if err != nil {
 			return nil, err
 		}
+		clientOpts = append(clientOpts, docker.WithVersion(version))
+		logger.Debug("Using explicitly configured Docker API version", zap.String("version", version))
+	} else {
+		clientOpts = append(clientOpts, docker.WithAPIVersionNegotiation())
+		logger.Debug("Docker API version not specified, using automatic version negotiation")
 	}
-	client, err := docker.NewClientWithOpts(
-		append([]docker.Opt{
-			docker.WithHost(config.Endpoint),
-			docker.WithVersion(version),
-			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
-		}, opts...)...,
-	)
+
+	// Append any additional opts passed by caller
+	clientOpts = append(clientOpts, opts...)
+
+	client, err := docker.NewClientWithOpts(clientOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("could not create docker client: %w", err)
 	}
@@ -138,7 +143,10 @@ func (dc *Client) FetchContainerStatsAsJSON(
 	ctx context.Context,
 	container Container,
 ) (*ctypes.StatsResponse, error) {
-	containerStats, err := dc.FetchContainerStats(ctx, container)
+	statsCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
+	defer cancel()
+
+	containerStats, err := dc.FetchContainerStats(statsCtx, container)
 	if err != nil {
 		return nil, err
 	}
@@ -158,9 +166,7 @@ func (dc *Client) FetchContainerStats(
 	container Container,
 ) (ctypes.StatsResponseReader, error) {
 	dc.logger.Debug("Fetching container stats.", zap.String("id", container.ID))
-	statsCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
-	containerStats, err := dc.client.ContainerStats(statsCtx, container.ID, false)
-	defer cancel()
+	containerStats, err := dc.client.ContainerStats(ctx, container.ID, false)
 	if err != nil {
 		if cerrdefs.IsNotFound(err) {
 			dc.logger.Debug(

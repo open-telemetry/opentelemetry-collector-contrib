@@ -612,6 +612,404 @@ func TestGetParentID(t *testing.T) {
 	}
 }
 
+func TestToPLogRecord_IntegerTypeHandling(t *testing.T) {
+	logger := zap.NewNop()
+	now := time.Now()
+
+	tests := []struct {
+		name              string
+		event             LibhoneyEvent
+		alreadyUsedFields []string
+		checkFunc         func(t *testing.T, lr plog.LogRecord)
+	}{
+		{
+			name: "severity_code as int64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"severity_code": int64(5),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.SeverityNumber(5), lr.SeverityNumber())
+			},
+		},
+		{
+			name: "severity_code as uint64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"severity_code": uint64(5),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.SeverityNumber(5), lr.SeverityNumber())
+			},
+		},
+		{
+			name: "flags as int64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"flags": int64(1),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.LogRecordFlags(1), lr.Flags())
+			},
+		},
+		{
+			name: "flags as uint64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"flags": uint64(1),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.LogRecordFlags(1), lr.Flags())
+			},
+		},
+		{
+			name: "attribute as int64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"my_int_attr": int64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				val, ok := lr.Attributes().Get("my_int_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "attribute as uint64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"my_uint_attr": uint64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				val, ok := lr.Attributes().Get("my_uint_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "large uint64 attribute",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"large_uint": uint64(18446744073709551615), // max uint64
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				val, ok := lr.Attributes().Get("large_uint")
+				assert.True(t, ok)
+				// When converted to int64, this will overflow but should not panic
+				assert.Equal(t, int64(-1), val.Int())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			newLog := plog.NewLogRecord()
+			err := tt.event.ToPLogRecord(&newLog, &tt.alreadyUsedFields, *logger)
+			require.NoError(t, err)
+			tt.checkFunc(t, newLog)
+		})
+	}
+}
+
+func TestToPTraceSpan_IntegerTypeHandling(t *testing.T) {
+	now := time.Now()
+	alreadyUsedFields := []string{"name", "trace.span_id", "trace.trace_id", "duration_ms"}
+	testCfg := FieldMapConfig{
+		Attributes: AttributesConfig{
+			Name:           "name",
+			TraceID:        "trace.trace_id",
+			SpanID:         "trace.span_id",
+			ParentID:       "trace.parent_id",
+			Error:          "error",
+			SpanKind:       "kind",
+			DurationFields: []string{"duration_ms"},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		event     LibhoneyEvent
+		checkFunc func(t *testing.T, span ptrace.Span)
+	}{
+		{
+			name: "attribute as int64",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":           "test-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    100.0,
+					"my_int_attr":    int64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, span ptrace.Span) {
+				val, ok := span.Attributes().Get("my_int_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "attribute as uint64",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":           "test-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    100.0,
+					"my_uint_attr":   uint64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, span ptrace.Span) {
+				val, ok := span.Attributes().Get("my_uint_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			err := tt.event.ToPTraceSpan(&span, &alreadyUsedFields, testCfg, *zap.NewNop())
+			require.NoError(t, err)
+			tt.checkFunc(t, span)
+		})
+	}
+}
+
+// TestToPTraceSpan_TimestampPreservation validates that when multiple spans in a batch
+// have different timestamps, the resulting OTLP spans preserve the distinct start/end times.
+// This test reproduces the issue where spans sent through Refinery → libhoneyreceiver
+// end up with identical start timestamps (all spans start at the same time).
+func TestToPTraceSpan_TimestampPreservation(t *testing.T) {
+	alreadyUsedFields := []string{"name", "trace.span_id", "trace.trace_id", "trace.parent_id", "duration_ms"}
+	testCfg := FieldMapConfig{
+		Attributes: AttributesConfig{
+			Name:           "name",
+			TraceID:        "trace.trace_id",
+			SpanID:         "trace.span_id",
+			ParentID:       "trace.parent_id",
+			Error:          "error",
+			SpanKind:       "kind",
+			DurationFields: []string{"duration_ms"},
+		},
+		Resources: ResourcesConfig{
+			ServiceName: "service.name",
+		},
+		Scopes: ScopesConfig{
+			LibraryName:    "library.name",
+			LibraryVersion: "library.version",
+		},
+	}
+
+	// These timestamps mirror the user's script: START_TIME=1769767008
+	// Span 1: start=T, end=T+1s (duration=1000ms)
+	// Span 2: start=T+1, end=T+3s (duration=2000ms)
+	// Span 3: start=T+3, end=T+4s (duration=1000ms)
+	// Root:   start=T, end=T+4s (duration=4000ms)
+	baseTime := time.Unix(1769767008, 0).UTC()
+	span1Time := baseTime
+	span2Time := baseTime.Add(1 * time.Second)
+	span3Time := baseTime.Add(3 * time.Second)
+	rootTime := baseTime
+
+	traceID := "854b46f148a643a2ed4075f240556292"
+	rootSpanID := "b8d1d0affba3d6c2"
+
+	t.Run("events with RFC3339 time strings preserve distinct timestamps", func(t *testing.T) {
+		events := []LibhoneyEvent{
+			{
+				Time:             span1Time.Format(time.RFC3339Nano),
+				MsgPackTimestamp: &span1Time,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":            "test-span",
+					"trace.trace_id":  traceID,
+					"trace.span_id":   "aaaaaaaaaaaaaaaa",
+					"trace.parent_id": rootSpanID,
+					"duration_ms":     1000.0,
+					"service.name":    "demo-svc",
+				},
+			},
+			{
+				Time:             span2Time.Format(time.RFC3339Nano),
+				MsgPackTimestamp: &span2Time,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":            "test-span",
+					"trace.trace_id":  traceID,
+					"trace.span_id":   "bbbbbbbbbbbbbbbb",
+					"trace.parent_id": rootSpanID,
+					"duration_ms":     2000.0,
+					"service.name":    "demo-svc",
+				},
+			},
+			{
+				Time:             span3Time.Format(time.RFC3339Nano),
+				MsgPackTimestamp: &span3Time,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":            "test-span",
+					"trace.trace_id":  traceID,
+					"trace.span_id":   "cccccccccccccccc",
+					"trace.parent_id": rootSpanID,
+					"duration_ms":     1000.0,
+					"service.name":    "demo-svc",
+				},
+			},
+			{
+				Time:             rootTime.Format(time.RFC3339Nano),
+				MsgPackTimestamp: &rootTime,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":           "test-span",
+					"trace.trace_id": traceID,
+					"trace.span_id":  rootSpanID,
+					"duration_ms":    4000.0,
+					"service.name":   "demo-svc",
+				},
+			},
+		}
+
+		spans := make([]ptrace.Span, len(events))
+		for i, event := range events {
+			spans[i] = ptrace.NewSpan()
+			err := event.ToPTraceSpan(&spans[i], &alreadyUsedFields, testCfg, *zap.NewNop())
+			require.NoError(t, err)
+		}
+
+		// Verify spans have DIFFERENT start timestamps (the core issue)
+		assert.NotEqual(t, spans[0].StartTimestamp(), spans[1].StartTimestamp(),
+			"span 1 and span 2 should have different start timestamps")
+		assert.NotEqual(t, spans[1].StartTimestamp(), spans[2].StartTimestamp(),
+			"span 2 and span 3 should have different start timestamps")
+
+		// Verify exact timestamps
+		assert.Equal(t, pcommon.NewTimestampFromTime(span1Time), spans[0].StartTimestamp(),
+			"span 1 start should be T")
+		assert.Equal(t, pcommon.NewTimestampFromTime(span1Time.Add(1*time.Second)), spans[0].EndTimestamp(),
+			"span 1 end should be T+1s")
+
+		assert.Equal(t, pcommon.NewTimestampFromTime(span2Time), spans[1].StartTimestamp(),
+			"span 2 start should be T+1s")
+		assert.Equal(t, pcommon.NewTimestampFromTime(span2Time.Add(2*time.Second)), spans[1].EndTimestamp(),
+			"span 2 end should be T+3s")
+
+		assert.Equal(t, pcommon.NewTimestampFromTime(span3Time), spans[2].StartTimestamp(),
+			"span 3 start should be T+3s")
+		assert.Equal(t, pcommon.NewTimestampFromTime(span3Time.Add(1*time.Second)), spans[2].EndTimestamp(),
+			"span 3 end should be T+4s")
+
+		assert.Equal(t, pcommon.NewTimestampFromTime(rootTime), spans[3].StartTimestamp(),
+			"root span start should be T")
+		assert.Equal(t, pcommon.NewTimestampFromTime(rootTime.Add(4*time.Second)), spans[3].EndTimestamp(),
+			"root span end should be T+4s")
+	})
+
+	t.Run("JSON batch events without time field get time.Now and lose timestamp info", func(t *testing.T) {
+		// This test demonstrates the bug: when events arrive without a "time" field
+		// (or with an unparseable time), all events in the batch get time.Now(),
+		// causing all spans to start at approximately the same time.
+		jsonBatch := `[
+			{"samplerate": 1, "data": {"name": "test-span", "trace.trace_id": "854b46f148a643a2ed4075f240556292", "trace.span_id": "aaaaaaaaaaaaaaaa", "trace.parent_id": "b8d1d0affba3d6c2", "duration_ms": 1000, "service.name": "demo-svc"}},
+			{"samplerate": 1, "data": {"name": "test-span", "trace.trace_id": "854b46f148a643a2ed4075f240556292", "trace.span_id": "bbbbbbbbbbbbbbbb", "trace.parent_id": "b8d1d0affba3d6c2", "duration_ms": 2000, "service.name": "demo-svc"}},
+			{"samplerate": 1, "data": {"name": "test-span", "trace.trace_id": "854b46f148a643a2ed4075f240556292", "trace.span_id": "cccccccccccccccc", "trace.parent_id": "b8d1d0affba3d6c2", "duration_ms": 1000, "service.name": "demo-svc"}},
+			{"samplerate": 1, "data": {"name": "test-span", "trace.trace_id": "854b46f148a643a2ed4075f240556292", "trace.span_id": "b8d1d0affba3d6c2", "duration_ms": 4000, "service.name": "demo-svc"}}
+		]`
+
+		var events []LibhoneyEvent
+		err := json.Unmarshal([]byte(jsonBatch), &events)
+		require.NoError(t, err)
+		require.Len(t, events, 4)
+
+		spans := make([]ptrace.Span, len(events))
+		for i, event := range events {
+			spans[i] = ptrace.NewSpan()
+			err := event.ToPTraceSpan(&spans[i], &alreadyUsedFields, testCfg, *zap.NewNop())
+			require.NoError(t, err)
+		}
+
+		// BUG: Without time fields, all events get time.Now() and have the same start.
+		// All four spans will have approximately the same start timestamp.
+		// In a correct trace, span 2 should start 1s after span 1, etc.
+		startDiff := int64(spans[1].StartTimestamp()) - int64(spans[0].StartTimestamp())
+		assert.Less(t, startDiff, int64(100*time.Millisecond),
+			"BUG CONFIRMED: without time fields, spans have nearly identical start timestamps (diff: %v)", time.Duration(startDiff))
+	})
+
+	t.Run("JSON batch events WITH time fields preserve distinct timestamps", func(t *testing.T) {
+		jsonBatch := `[
+			{"time": "2026-01-30T09:36:48Z", "samplerate": 1, "data": {"name": "test-span", "trace.trace_id": "854b46f148a643a2ed4075f240556292", "trace.span_id": "aaaaaaaaaaaaaaaa", "trace.parent_id": "b8d1d0affba3d6c2", "duration_ms": 1000, "service.name": "demo-svc"}},
+			{"time": "2026-01-30T09:36:49Z", "samplerate": 1, "data": {"name": "test-span", "trace.trace_id": "854b46f148a643a2ed4075f240556292", "trace.span_id": "bbbbbbbbbbbbbbbb", "trace.parent_id": "b8d1d0affba3d6c2", "duration_ms": 2000, "service.name": "demo-svc"}},
+			{"time": "2026-01-30T09:36:51Z", "samplerate": 1, "data": {"name": "test-span", "trace.trace_id": "854b46f148a643a2ed4075f240556292", "trace.span_id": "cccccccccccccccc", "trace.parent_id": "b8d1d0affba3d6c2", "duration_ms": 1000, "service.name": "demo-svc"}},
+			{"time": "2026-01-30T09:36:48Z", "samplerate": 1, "data": {"name": "test-span", "trace.trace_id": "854b46f148a643a2ed4075f240556292", "trace.span_id": "b8d1d0affba3d6c2", "duration_ms": 4000, "service.name": "demo-svc"}}
+		]`
+
+		var events []LibhoneyEvent
+		err := json.Unmarshal([]byte(jsonBatch), &events)
+		require.NoError(t, err)
+		require.Len(t, events, 4)
+
+		spans := make([]ptrace.Span, len(events))
+		for i, event := range events {
+			spans[i] = ptrace.NewSpan()
+			err := event.ToPTraceSpan(&spans[i], &alreadyUsedFields, testCfg, *zap.NewNop())
+			require.NoError(t, err)
+		}
+
+		expectedT := time.Date(2026, 1, 30, 9, 36, 48, 0, time.UTC)
+
+		// Span 1: start=T, end=T+1s
+		assert.Equal(t, pcommon.NewTimestampFromTime(expectedT), spans[0].StartTimestamp())
+		assert.Equal(t, pcommon.NewTimestampFromTime(expectedT.Add(1*time.Second)), spans[0].EndTimestamp())
+
+		// Span 2: start=T+1s, end=T+3s
+		assert.Equal(t, pcommon.NewTimestampFromTime(expectedT.Add(1*time.Second)), spans[1].StartTimestamp())
+		assert.Equal(t, pcommon.NewTimestampFromTime(expectedT.Add(3*time.Second)), spans[1].EndTimestamp())
+
+		// Span 3: start=T+3s, end=T+4s
+		assert.Equal(t, pcommon.NewTimestampFromTime(expectedT.Add(3*time.Second)), spans[2].StartTimestamp())
+		assert.Equal(t, pcommon.NewTimestampFromTime(expectedT.Add(4*time.Second)), spans[2].EndTimestamp())
+
+		// Root: start=T, end=T+4s
+		assert.Equal(t, pcommon.NewTimestampFromTime(expectedT), spans[3].StartTimestamp())
+		assert.Equal(t, pcommon.NewTimestampFromTime(expectedT.Add(4*time.Second)), spans[3].EndTimestamp())
+
+		// The key assertion: spans should have DIFFERENT start timestamps
+		assert.NotEqual(t, spans[0].StartTimestamp(), spans[1].StartTimestamp(),
+			"span 1 and span 2 should have different start timestamps")
+		assert.NotEqual(t, spans[1].StartTimestamp(), spans[2].StartTimestamp(),
+			"span 2 and span 3 should have different start timestamps")
+	})
+}
+
 func TestLibhoneyEvent_UnmarshalMsgpack(t *testing.T) {
 	tests := []struct {
 		name                  string

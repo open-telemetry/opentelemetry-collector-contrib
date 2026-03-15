@@ -72,12 +72,6 @@ var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustR
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
 )
 
-var inferIntervalDeltaFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.InferIntervalForDeltaMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic."),
-)
-
 func init() {
 	log.SetupLogger(log.Disabled(), "off")
 }
@@ -164,11 +158,9 @@ func (*factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params expor
 	if err != nil {
 		return nil, err
 	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		agnt.Run()
-	}()
+	})
 	return agnt, nil
 }
 
@@ -201,9 +193,7 @@ func (*factory) createDefaultConfig() component.Config {
 
 func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				select {
 				case <-ctx.Done():
@@ -226,7 +216,7 @@ func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, sta
 					statsWriter.Write(sp)
 				}
 			}
-		}()
+		})
 	}
 }
 

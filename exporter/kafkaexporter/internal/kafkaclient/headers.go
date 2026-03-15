@@ -6,67 +6,39 @@ package kafkaclient // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 )
 
-// metadataToHeaders converts metadata from the context into a slice of headers using the provided header constructor.
-// This function is generic and can be used for both Sarama and Franz-go header types.
-func metadataToHeaders[H any](ctx context.Context, keys []string,
-	makeHeader func(key string, value []byte) H,
-) []H {
+// metadataToHeaders converts context metadata into a kgo.RecordHeader slice.
+func metadataToHeaders(ctx context.Context, keys []string) []kgo.RecordHeader {
 	if len(keys) == 0 {
 		return nil
 	}
 	info := client.FromContext(ctx)
-	headers := make([]H, 0, len(keys))
+	var headers []kgo.RecordHeader
 	for _, key := range keys {
-		valueSlice := info.Metadata.Get(key)
-		for _, v := range valueSlice {
-			headers = append(headers, makeHeader(key, []byte(v)))
+		for _, v := range info.Metadata.Get(key) {
+			if headers == nil {
+				headers = make([]kgo.RecordHeader, 0, len(keys))
+			}
+			headers = append(headers, kgo.RecordHeader{Key: key, Value: []byte(v)})
 		}
 	}
 	return headers
 }
 
-// setMessageHeaders is a generic helper for setting headers on a slice of messages.
-// - messages: the messages to set headers on
-// - ctx: context for extracting metadata
-// - metadataKeys: which metadata keys to extract
-// - makeHeader: constructs the header type for the target client (Sarama/Franz-go)
-// - getHeaders: gets the headers from a message
-// - setHeaders: sets the headers on a message
-// Usage example (Sarama):
-//
-//	setMessageHeaders(ctx, allMessages, keys, makeHeader, getHeaders, setHeaders)
-func setMessageHeaders[M, H any](ctx context.Context,
-	messages []M,
-	metadataKeys []string,
-	makeHeader func(key string, value []byte) H,
-	getHeaders func(M) []H,
-	setHeadersFunc func(M, []H),
-) {
-	setHeaders(
-		messages,
-		metadataToHeaders(ctx, metadataKeys, makeHeader),
-		getHeaders,
-		setHeadersFunc,
-	)
-}
-
-// setHeaders sets or appends headers on each message in messages using the provided get/set functions.
-func setHeaders[M, H any](messages []M, headers []H,
-	getHeaders func(M) []H,
-	setHeaders func(M, []H),
-) {
+// setMessageHeaders extracts metadata from context and sets headers on all messages.
+func setMessageHeaders(ctx context.Context, messages []*kgo.Record, metadataKeys []string) {
+	headers := metadataToHeaders(ctx, metadataKeys)
 	if len(headers) == 0 || len(messages) == 0 {
 		return
 	}
-	for i := range messages {
-		h := getHeaders(messages[i])
-		if len(h) == 0 {
-			setHeaders(messages[i], headers)
+	for _, msg := range messages {
+		if len(msg.Headers) == 0 {
+			msg.Headers = headers
 		} else {
-			setHeaders(messages[i], append(h, headers...))
+			msg.Headers = append(msg.Headers, headers...)
 		}
 	}
 }

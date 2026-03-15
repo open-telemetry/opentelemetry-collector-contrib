@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
@@ -173,8 +174,8 @@ func (s *grpcService) processTelemetryData(req *pb.MdtDialoutArgs) error {
 // extractYANGModule extracts the YANG module name from encoding path
 func (*grpcService) extractYANGModule(encodingPath string) string {
 	// Example: "Cisco-IOS-XE-interfaces-oper:interfaces/interface/statistics"
-	if idx := strings.Index(encodingPath, ":"); idx != -1 {
-		return encodingPath[:idx]
+	if before, _, ok := strings.Cut(encodingPath, ":"); ok {
+		return before
 	}
 	return "unknown"
 }
@@ -311,13 +312,7 @@ func (*grpcService) isKeyField(fieldName string, analysis *internal.PathAnalysis
 
 	// Additional heuristics for common key patterns
 	commonKeys := []string{"name", "id", "index", "interface-name", "neighbor-id", "router-id"}
-	for _, commonKey := range commonKeys {
-		if fieldName == commonKey {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(commonKeys, fieldName)
 }
 
 // extractFieldName extracts the field name from a metric name path

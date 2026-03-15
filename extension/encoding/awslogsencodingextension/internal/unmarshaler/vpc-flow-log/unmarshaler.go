@@ -12,25 +12,46 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-lambda-go/events"
+	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 )
 
-var supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
+var (
+	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
+	defaultFormat                 = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+)
 
-type vpcFlowLogUnmarshaler struct {
-	// VPC flow logs can be sent in plain text
-	// or parquet files to S3.
-	//
+var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
+
+type Config struct {
+	// fileFormat - VPC flow logs can be sent in plain text or parquet files to S3.
 	// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3-path.html.
-	fileFormat string
+	FileFormat string `mapstructure:"file_format"`
+
+	// Format defines the custom field format of the VPC flow logs.
+	// When defined, this is used for parsing CloudWatch bound VPC flow logs.
+	Format string `mapstructure:"format"`
+
+	// parsedFormat holds the parsed fields from Format.
+	parsedFormat []string
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+type VPCFlowLogUnmarshaler struct {
+	cfg Config
 
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
@@ -40,12 +61,18 @@ type vpcFlowLogUnmarshaler struct {
 }
 
 func NewVPCFlowLogUnmarshaler(
-	format string,
+	cfg Config,
 	buildInfo component.BuildInfo,
 	logger *zap.Logger,
 	vpcFlowStartISO8601FormatEnabled bool,
-) (unmarshaler.AWSUnmarshaler, error) {
-	switch format {
+) (*VPCFlowLogUnmarshaler, error) {
+	cfg.parsedFormat = defaultFormat
+	if cfg.Format != "" {
+		cfg.parsedFormat = strings.Fields(cfg.Format)
+		logger.Debug("Using custom format for VPC flow log unmarshaling", zap.Strings("fields", cfg.parsedFormat))
+	}
+
+	switch cfg.FileFormat {
 	case constants.FileFormatParquet:
 		// TODO
 		return nil, errors.New("still needs to be implemented")
@@ -53,22 +80,39 @@ func NewVPCFlowLogUnmarshaler(
 	default:
 		return nil, fmt.Errorf(
 			"unsupported file fileFormat %q for VPC flow log, expected one of %q",
-			format,
+			cfg.FileFormat,
 			supportedVPCFlowLogFileFormat,
 		)
 	}
-	return &vpcFlowLogUnmarshaler{
-		fileFormat:                       format,
+
+	return &VPCFlowLogUnmarshaler{
+		cfg:                              cfg,
 		buildInfo:                        buildInfo,
 		logger:                           logger,
 		vpcFlowStartISO8601FormatEnabled: vpcFlowStartISO8601FormatEnabled,
 	}, nil
 }
 
-func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	switch v.fileFormat {
+func (v *VPCFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+	switch v.cfg.FileFormat {
 	case constants.FileFormatPlainText:
-		return v.unmarshalPlainTextLogs(reader)
+		// Decode as a stream but flush all at once using flush options
+		streamUnmarshaler, err := v.NewLogsDecoder(reader, encoding.WithFlushItems(0), encoding.WithFlushBytes(0))
+		if err != nil {
+			return plog.Logs{}, err
+		}
+		logs, err := streamUnmarshaler.DecodeLogs()
+		if err != nil {
+			//nolint:errorlint
+			if err == io.EOF {
+				// EOF indicates no logs were found, return any logs that's available
+				return logs, nil
+			}
+
+			return plog.Logs{}, err
+		}
+
+		return logs, nil
 	case constants.FileFormatParquet:
 		// TODO
 		return plog.Logs{}, errors.New("still needs to be implemented")
@@ -78,47 +122,176 @@ func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, e
 	}
 }
 
-// resourceKey stores the account id and region
-// of the flow logs. All log lines inside the
-// same S3 file come from the same account and
-// region.
-//
-// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3-path.html.
-type resourceKey struct {
-	accountID string
-	region    string
+// NewLogsDecoder returns a LogsDecoder that processes VPC flow logs from the provided reader.
+// Auto-detects the source format (S3 plain text or CloudWatch subscription filter) from the first byte.
+// Supported sub formats:
+//   - S3 plain text logs: Supports offset-based streaming; offset tracked by bytes processed
+//   - CloudWatch subscription filter: Processes full payload; offset tracked by bytes processed
+//   - Parquet format: Not yet implemented
+func (v *VPCFlowLogUnmarshaler) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	if v.cfg.FileFormat == constants.FileFormatParquet {
+		return nil, errors.New("streaming parquet VPC flow logs is not yet implemented")
+	}
+
+	// use buffered reader for efficiency and to avoid any size restrictions
+	bufReader := bufio.NewReader(reader)
+
+	var err error
+	firstByte, err := bufReader.Peek(1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read first byte: %w", err)
+	}
+
+	if firstByte[0] == '{' {
+		// Dealing with a JSON log message, so check for CloudWatch bound trigger
+
+		decoderOpts := encoding.DecoderOptions{}
+		for _, op := range options {
+			op(&decoderOpts)
+		}
+
+		// If offset is set, return EOF after consuming the whole record.
+		// This confirms to our contract - process full payload
+		// However, we cannot skip the offset bytes as we need full record unmarshaling.
+		if decoderOpts.Offset > 0 {
+			var l int64
+			l, err = io.Copy(io.Discard, bufReader)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read the input stream: %w", err)
+			}
+
+			return xstreamencoding.NewLogsDecoderAdapter(
+				func() (plog.Logs, error) {
+					return plog.NewLogs(), io.EOF
+				},
+				func() int64 {
+					return l
+				},
+			), nil
+		}
+
+		var cwLogs plog.Logs
+		var offset int64
+		cwLogs, offset, err = v.fromCloudWatch(v.cfg.parsedFormat, bufReader)
+		if err != nil {
+			return nil, err
+		}
+
+		var isEOF bool
+		return xstreamencoding.NewLogsDecoderAdapter(
+			func() (plog.Logs, error) {
+				if isEOF {
+					return plog.Logs{}, io.EOF
+				}
+
+				isEOF = true
+				return cwLogs, nil
+			},
+			func() int64 {
+				return offset
+			},
+		), nil
+	}
+
+	var offset int64
+	line, err := bufReader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read first line of VPC logs from S3: %w", err)
+	}
+
+	offset += int64(len(line))
+
+	fields := strings.Fields(line)
+	batchHelper := xstreamencoding.NewBatchHelper(options...)
+
+	if batchHelper.Options().Offset > 0 {
+		// discard bytes, ignoring the first line
+		var discarded int
+		discarded, err = bufReader.Discard(int(batchHelper.Options().Offset - offset))
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, fmt.Errorf("EOF reached before offset %d bytes were discarded", batchHelper.Options().Offset)
+			}
+			return nil, err
+		}
+		offset += int64(discarded)
+	}
+
+	offsetF := func() int64 {
+		return offset
+	}
+
+	decodeF := func() (plog.Logs, error) {
+		logs, resourceLogs, scopeLogs := v.createLogs()
+		for {
+			line, err = bufReader.ReadString('\n')
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					return plog.Logs{}, fmt.Errorf("error reading VPC logs: %w", err)
+				}
+
+				if line == "" {
+					break
+				}
+			}
+			batchHelper.IncrementBytes(int64(len(line)))
+			batchHelper.IncrementItems(1)
+			offset += int64(len(line))
+
+			// Trim spaces and new lines
+			line = strings.TrimSpace(line)
+			if err := v.addToLogs(resourceLogs, scopeLogs, fields, line); err != nil {
+				return plog.Logs{}, err
+			}
+
+			if batchHelper.ShouldFlush() {
+				batchHelper.Reset()
+				break
+			}
+		}
+
+		if scopeLogs.LogRecords().Len() == 0 {
+			return logs, io.EOF
+		}
+
+		return logs, nil
+	}
+
+	return xstreamencoding.NewLogsDecoderAdapter(decodeF, offsetF), nil
 }
 
-func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.Logs, error) {
-	scanner := bufio.NewScanner(reader)
+// fromCloudWatch expects VPC logs from CloudWatch Logs subscription filter trigger
+func (v *VPCFlowLogUnmarshaler) fromCloudWatch(fields []string, reader *bufio.Reader) (plog.Logs, int64, error) {
+	var cwLog events.CloudwatchLogsData
 
-	var fields []string
-	if scanner.Scan() {
-		firstLine := scanner.Text()
-		fields = strings.Split(firstLine, " ")
+	decoder := gojson.NewDecoder(reader)
+	err := decoder.Decode(&cwLog)
+	if err != nil {
+		return plog.Logs{}, 0, fmt.Errorf("failed to unmarshal data as cloudwatch logs event: %w", err)
 	}
 
 	logs, resourceLogs, scopeLogs := v.createLogs()
-	key := &resourceKey{}
-	for scanner.Scan() {
-		line := scanner.Text()
-		if err := v.addToLogs(key, scopeLogs, fields, line); err != nil {
-			return plog.Logs{}, err
+
+	resourceAttrs := resourceLogs.Resource().Attributes()
+	resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwLog.LogGroup)
+	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
+
+	for _, event := range cwLog.LogEvents {
+		err := v.addToLogs(resourceLogs, scopeLogs, fields, event.Message)
+		if err != nil {
+			return plog.Logs{}, 0, err
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, fmt.Errorf("error reading log line: %w", err)
-	}
-
-	v.setResourceAttributes(key, resourceLogs)
-	return logs, nil
+	return logs, decoder.InputOffset(), nil
 }
 
-// createLogs with the expected fields for the scope logs
-func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog.ScopeLogs) {
+// createLogs is a helper to create prefilled plog.Logs, plog.ResourceLogs, plog.ScopeLogs
+func (v *VPCFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog.ScopeLogs) {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(v.buildInfo.Version)
@@ -126,43 +299,17 @@ func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog
 	return logs, resourceLogs, scopeLogs
 }
 
-// setResourceAttributes based on the resourceKey
-func (*vpcFlowLogUnmarshaler) setResourceAttributes(key *resourceKey, logs plog.ResourceLogs) {
-	attr := logs.Resource().Attributes()
-	attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
-	if key.accountID != "" {
-		attr.PutStr(string(conventions.CloudAccountIDKey), key.accountID)
-	}
-	if key.region != "" {
-		attr.PutStr(string(conventions.CloudRegionKey), key.region)
-	}
-}
-
-// address stores the four fields related to the address
-// of a VPC flow log: srcaddr, pkt-srcaddr, dstaddr, and
-// pkt-dstaddr. We save these fields in a struct, so we
-// can use the right naming conventions in the end.
-//
-// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat.
-type address struct {
-	source         string
-	pktSource      string
-	destination    string
-	pktDestination string
-}
-
 // addToLogs parses the log line and creates
 // a new record log. The record log is added
 // to the scope logs of the resource identified
 // by the resourceKey created from the values.
-func (v *vpcFlowLogUnmarshaler) addToLogs(
-	key *resourceKey,
+func (v *VPCFlowLogUnmarshaler) addToLogs(
+	resourceLogs plog.ResourceLogs,
 	scopeLogs plog.ScopeLogs,
 	fields []string,
 	logLine string,
 ) error {
-	record := plog.NewLogRecord()
-
+	record := scopeLogs.LogRecords().AppendEmpty()
 	addr := &address{}
 	for _, field := range fields {
 		if logLine == "" {
@@ -184,7 +331,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 			continue
 		}
 
-		found, err := v.handleField(field, value, record, addr, key)
+		found, err := v.handleField(field, value, resourceLogs, record, addr)
 		if err != nil {
 			return err
 		}
@@ -200,17 +347,13 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 		return errors.New("log line has more fields than the ones expected")
 	}
 
-	// add the address fields with the correct conventions
-	// to the log record
+	// Add the address fields with the correct conventions to the log record
 	v.handleAddresses(addr, record)
-	rScope := scopeLogs.LogRecords().AppendEmpty()
-	record.MoveTo(rScope)
-
 	return nil
 }
 
 // handleAddresses creates adds the addresses to the log record
-func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRecord) {
+func (v *VPCFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRecord) {
 	localAddrSet := false
 	// see example in
 	// https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat
@@ -247,12 +390,12 @@ func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRe
 // adds its value to the resourceKey or puts the
 // field and its value in the attributes map. If the
 // field is not recognized, it returns false.
-func (v *vpcFlowLogUnmarshaler) handleField(
+func (v *VPCFlowLogUnmarshaler) handleField(
 	field string,
 	value string,
+	resourceLogs plog.ResourceLogs,
 	record plog.LogRecord,
 	addr *address,
-	key *resourceKey,
 ) (bool, error) {
 	// convert string to number
 	getNumber := func(value string) (int64, error) {
@@ -289,7 +432,7 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 		addr.pktDestination = value
 
 	case "account-id":
-		key.accountID = value
+		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAccountIDKey), value)
 	case "vpc-id":
 		record.Attributes().PutStr("aws.vpc.id", value)
 	case "subnet-id":
@@ -322,13 +465,13 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 	case "type":
 		record.Attributes().PutStr(string(conventions.NetworkTypeKey), strings.ToLower(value))
 	case "region":
-		key.region = value
+		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudRegionKey), value)
 	case "flow-direction":
 		switch value {
 		case "ingress":
-			record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "receive")
+			record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "receive")
 		case "egress":
-			record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "transmit")
+			record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "transmit")
 		default:
 			return true, fmt.Errorf("value %s not valid for field %s", value, field)
 		}
@@ -407,4 +550,17 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 	}
 
 	return true, nil
+}
+
+// address stores the four fields related to the address
+// of a VPC flow log: srcaddr, pkt-srcaddr, dstaddr, and
+// pkt-dstaddr. We save these fields in a struct, so we
+// can use the right naming conventions in the end.
+//
+// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat.
+type address struct {
+	source         string
+	pktSource      string
+	destination    string
+	pktDestination string
 }

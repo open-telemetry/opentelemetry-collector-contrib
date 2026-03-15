@@ -43,6 +43,9 @@ resourceLogs:
               - key: oracledb.cluster_wait_time
                 value:
                   doubleValue: 0.001
+              - key: oracledb.command_type
+                value:
+                  intValue: "3"
               - key: oracledb.concurrency_wait_time
                 value:
                   doubleValue: 1e-05
@@ -82,6 +85,18 @@ resourceLogs:
               - key: oracledb.user_io_wait_time
                 value:
                   doubleValue: 2e-05
+              - key: oracledb.procedure_execution_count
+                value:
+                  intValue: "100000"
+              - key: oracledb.procedure_id
+                value:
+                  intValue: "98765"
+              - key: oracledb.procedure_name
+                value:
+                  stringValue: ADMIN.MY_PROCEDURE
+              - key: oracledb.procedure_type
+                value:
+                  stringValue: PROCEDURE
             body: {}
             eventName: db.server.top_query
             timeUnixNano: "1759142512777891000"

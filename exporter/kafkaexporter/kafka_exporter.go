@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -31,21 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-const franzGoClientFeatureGateName = "exporter.kafkaexporter.UseFranzGo"
-
-// franzGoClientFeatureGate is a feature gate that controls whether the Kafka exporter
-// uses the franz-go client or the Sarama client. When enabled, the Kafka exporter
-// will use the franz-go client, which is more performant and has better support for
-// modern Kafka features.
-var franzGoClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	franzGoClientFeatureGateName, featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the Kafka exporter will use the franz-go client to produce messages to Kafka."),
-	featuregate.WithRegisterFromVersion("v0.128.0"),
-	featuregate.WithRegisterToVersion("v0.143.0"),
-)
-
 // producer is an interface that abstracts the Kafka producer operations
-// to allow for different implementations (e.g., Sarama, franz-go)
 type producer interface {
 	// ExportData sends a batch of messages to Kafka
 	ExportData(ctx context.Context, messages kafkaclient.Messages) error
@@ -100,32 +85,19 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		return err
 	}
 
-	if franzGoClientFeatureGate.IsEnabled() {
-		producer, ferr := kafka.NewFranzSyncProducer(
-			ctx,
-			e.cfg.ClientConfig,
-			e.cfg.Producer,
-			e.cfg.TimeoutSettings.Timeout,
-			e.logger,
-			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
-		)
-		if ferr != nil {
-			return ferr
-		}
-		e.producer = kafkaclient.NewFranzSyncProducer(producer,
-			e.cfg.IncludeMetadataKeys,
-		)
-		return nil
-	}
-	producer, err := kafka.NewSaramaSyncProducer(ctx, e.cfg.ClientConfig,
-		e.cfg.Producer, e.cfg.TimeoutSettings.Timeout,
+	producer, err := kafka.NewFranzSyncProducer(
+		ctx,
+		host,
+		e.cfg.ClientConfig,
+		e.cfg.Producer,
+		e.cfg.TimeoutSettings.Timeout,
+		e.logger,
+		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
 	)
 	if err != nil {
 		return err
 	}
-	e.producer = kafkaclient.NewSaramaSyncProducer(
-		producer,
-		kafkaclient.NewSaramaProducerMetrics(tb),
+	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
 	)
 	return nil
@@ -272,10 +244,14 @@ func (e *kafkaLogsMessenger) getTopic(ctx context.Context, ld plog.Logs) string 
 func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
 	return func(yield func([]byte, plog.Logs) bool) {
 		if e.config.PartitionLogsByResourceAttributes {
+			newLogs := plog.NewLogs()
+			target := newLogs.ResourceLogs().AppendEmpty()
 			for _, resourceLogs := range ld.ResourceLogs().All() {
 				hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
-				newLogs := plog.NewLogs()
-				resourceLogs.CopyTo(newLogs.ResourceLogs().AppendEmpty())
+				resourceLogs.CopyTo(target)
+				// NOTE: The same plog.Logs instance (newLogs) is reused and mutated on each iteration.
+				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+				// the current callback/iteration, as its contents will be overwritten on the next yield.
 				if !yield(hash[:], newLogs) {
 					return
 				}
@@ -331,10 +307,14 @@ func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]by
 			yield(nil, md)
 			return
 		}
+		newMetrics := pmetric.NewMetrics()
+		target := newMetrics.ResourceMetrics().AppendEmpty()
 		for _, resourceMetrics := range md.ResourceMetrics().All() {
 			hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
-			newMetrics := pmetric.NewMetrics()
-			resourceMetrics.CopyTo(newMetrics.ResourceMetrics().AppendEmpty())
+			resourceMetrics.CopyTo(target)
+			// NOTE: The same pmetric.Metrics instance (newMetrics) is reused and mutated on each iteration.
+			// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+			// the current callback/iteration, as its contents will be overwritten on the next yield.
 			if !yield(hash[:], newMetrics) {
 				return
 			}

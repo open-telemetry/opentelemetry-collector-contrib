@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("signaltometrics")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector"
+	Type           = component.MustNewType("signal_to_metrics")
+	DeprecatedType = component.MustNewType("signaltometrics")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector"
 )
 
 const (

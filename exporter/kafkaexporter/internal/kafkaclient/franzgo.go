@@ -8,7 +8,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // FranzSyncProducer is a wrapper around the franz-go client that implements
@@ -32,21 +34,18 @@ func NewFranzSyncProducer(client *kgo.Client,
 // ExportData sends a batch of messages to Kafka
 func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
 	messages := makeFranzMessages(msgs)
-	setMessageHeaders(ctx, messages, p.metadataKeys,
-		func(key string, value []byte) kgo.RecordHeader {
-			return kgo.RecordHeader{Key: key, Value: value}
-		},
-		func(m *kgo.Record) []kgo.RecordHeader { return m.Headers },
-		func(m *kgo.Record, h []kgo.RecordHeader) { m.Headers = h },
-	)
+	setMessageHeaders(ctx, messages, p.metadataKeys)
 	result := p.client.ProduceSync(ctx, messages...)
 	var errs []error
 	for _, r := range result {
 		if r.Err != nil {
-			errs = append(
-				errs,
-				fmt.Errorf("error exporting to topic %q: %w", r.Record.Topic, r.Err),
-			)
+			err := fmt.Errorf("error exporting to topic %q: %w", r.Record.Topic, r.Err)
+			// check if its defined as a non-retriable error by franzgo
+			kgoErr := &kerr.Error{}
+			if errors.As(r.Err, &kgoErr) && !kgoErr.Retriable {
+				err = consumererror.NewPermanent(err)
+			}
+			errs = append(errs, err)
 		}
 	}
 	return errors.Join(errs...)

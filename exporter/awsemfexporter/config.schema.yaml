@@ -1,0 +1,110 @@
+$defs:
+  label_matcher:
+    description: LabelMatcher defines a label filtering rule against the labels of incoming metrics. Only metrics that match the rules will be used by the surrounding MetricDeclaration.
+    type: object
+    properties:
+      label_names:
+        description: List of label names to filter by. Their corresponding values are concatenated using the separator and matched against the specified regular expression.
+        type: array
+        items:
+          type: string
+      regex:
+        description: Regex string to be used to match against values of the concatenated labels.
+        type: string
+      separator:
+        description: '(Optional) Separator placed between concatenated source label values. (Default: '';'')'
+        type: string
+  metric_declaration:
+    description: MetricDeclaration characterizes a rule to be used to set dimensions for certain incoming metrics, filtered by their metric names.
+    type: object
+    properties:
+      dimensions:
+        description: Dimensions is a list of dimension sets (which are lists of dimension names) to be included in exported metrics. If the metric does not contain any of the specified dimensions, the metric would be dropped (will only show up in logs).
+        type: array
+        items:
+          type: array
+          items:
+            type: string
+      label_matchers:
+        description: (Optional) List of label matchers that define matching rules to filter against the labels of incoming metrics.
+        type: array
+        items:
+          x-pointer: true
+          $ref: label_matcher
+      metric_name_selectors:
+        description: MetricNameSelectors is a list of regex strings to be matched against metric names to determine which metrics should be included with this metric declaration rule.
+        type: array
+        items:
+          type: string
+  metric_descriptor:
+    type: object
+    properties:
+      metric_name:
+        description: MetricName is the name of the metric
+        type: string
+      overwrite:
+        description: Overwrite set to true means the existing metric descriptor will be overwritten or a new metric descriptor will be created; false means the descriptor will only be configured if empty.
+        type: boolean
+      unit:
+        description: Unit defines the override value of metric descriptor `unit`
+        type: string
+description: Config defines configuration for AWS EMF exporter.
+type: object
+properties:
+  detailed_metrics:
+    description: DetailedMetrics is an option for retaining detailed datapoint values in exported metrics (e.g instead of exporting a quantile as a statistical value, preserve the quantile's population)
+    type: boolean
+  dimension_rollup_option:
+    description: DimensionRollupOption is the option for metrics dimension rollup. Three options are available, default option is "ZeroAndSingleDimensionRollup". "ZeroAndSingleDimensionRollup" - Enable both zero dimension rollup and single dimension rollup "SingleDimensionRollupOnly" - Enable single dimension rollup "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
+    type: string
+  eks_fargate_container_insights_enabled:
+    description: EKSFargateContainerInsightsEnabled is an option to reformat certin metric labels so that they take the form of a high level object The end result will make the labels look like those coming out of ECS and be more easily injected into cloudwatch Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
+    type: boolean
+  log_group_name:
+    description: LogGroupName is the name of CloudWatch log group which defines group of log streams that share the same retention, monitoring, and access control settings.
+    type: string
+  log_retention:
+    description: LogRetention is the option to set the log retention policy for the CloudWatch Log Group. Defaults to Never Expire if not specified or set to 0 Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
+    type: integer
+    x-customType: int32
+  log_stream_name:
+    description: LogStreamName is the name of CloudWatch log stream which is a sequence of log events that share the same source.
+    type: string
+  metric_declarations:
+    description: MetricDeclarations is the list of rules to be used to set dimensions for exported metrics.
+    type: array
+    items:
+      x-pointer: true
+      $ref: metric_declaration
+  metric_descriptors:
+    description: MetricDescriptors is the list of override metric descriptors that are sent to the CloudWatch
+    type: array
+    items:
+      $ref: metric_descriptor
+  namespace:
+    description: Namespace is a container for CloudWatch metrics. Metrics in different namespaces are isolated from each other.
+    type: string
+  output_destination:
+    description: 'OutputDestination is an option to specify the EMFExporter output. Default option is "cloudwatch" "cloudwatch" - direct the exporter output to CloudWatch backend "stdout" - direct the exporter output to stdout TODO: we can support directing output to a file (in the future) while customer specifies a file path here.'
+    type: string
+  parse_json_encoded_attr_values:
+    description: ParseJSONEncodedAttributeValues is an array of attribute keys whose corresponding values are JSON-encoded as strings. Those strings will be decoded to its original json structure.
+    type: array
+    items:
+      type: string
+  resource_to_telemetry_conversion:
+    description: ResourceToTelemetrySettings is an option for converting resource attributes to telemetry attributes. "Enabled" - A boolean field to enable/disable this option. Default is `false`. If enabled, all the resource attributes will be converted to metric labels by default.
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry.settings
+  retain_initial_value_of_delta_metric:
+    description: RetainInitialValueOfDeltaMetric is the flag to signal that the initial value of a metric is a valid datapoint. The default behavior is that the first value occurrence of a metric is set as the baseline for the calculation of the delta to the next occurrence. With this flag set to true the exporter will instead use this first value as the initial delta value. This is especially useful when handling low frequency metrics.
+    type: boolean
+  tags:
+    description: 'Tags is the option to set tags for the CloudWatch Log Group.  If specified, please add at most 50 tags.  Input is a string to string map like so: { ''key'': ''value'' } Keys must be between 1-128 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$ Values must be between 1-256 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$'
+    type: object
+    additionalProperties:
+      type: string
+  version:
+    description: Version is an option for sending metrics to CloudWatchLogs with Embedded Metric Format in selected version  (with "_aws") https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure Otherwise, sending metrics as Embedded Metric Format version 0 (without "_aws")
+    type: string
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil.aws_session_settings

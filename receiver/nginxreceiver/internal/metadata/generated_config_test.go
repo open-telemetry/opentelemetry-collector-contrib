@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -27,10 +26,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NginxConnectionsAccepted: MetricConfig{Enabled: true},
-					NginxConnectionsCurrent:  MetricConfig{Enabled: true},
-					NginxConnectionsHandled:  MetricConfig{Enabled: true},
-					NginxRequests:            MetricConfig{Enabled: true},
+					NginxConnectionsAccepted: MetricConfig{
+						Enabled: true,
+					},
+					NginxConnectionsCurrent: MetricConfig{
+						Enabled: true,
+					},
+					NginxConnectionsHandled: MetricConfig{
+						Enabled: true,
+					},
+					NginxRequests: MetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -38,10 +45,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NginxConnectionsAccepted: MetricConfig{Enabled: false},
-					NginxConnectionsCurrent:  MetricConfig{Enabled: false},
-					NginxConnectionsHandled:  MetricConfig{Enabled: false},
-					NginxRequests:            MetricConfig{Enabled: false},
+					NginxConnectionsAccepted: MetricConfig{
+						Enabled: false,
+					},
+					NginxConnectionsCurrent: MetricConfig{
+						Enabled: false,
+					},
+					NginxConnectionsHandled: MetricConfig{
+						Enabled: false,
+					},
+					NginxRequests: MetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},
