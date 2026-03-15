@@ -9,13 +9,13 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// ContainerCPUTimeConfig provides config for the container.cpu.time metric.
-type ContainerCPUTimeConfig struct {
+// ContainerCPUTimeMetricConfig provides config for the container.cpu.time metric.
+type ContainerCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,13 +29,13 @@ func (ms *ContainerCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerCPUUsageConfig provides config for the container.cpu.usage metric.
-type ContainerCPUUsageConfig struct {
+// ContainerCPUUsageMetricConfig provides config for the container.cpu.usage metric.
+type ContainerCPUUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -49,13 +49,13 @@ func (ms *ContainerCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerFilesystemAvailableConfig provides config for the container.filesystem.available metric.
-type ContainerFilesystemAvailableConfig struct {
+// ContainerFilesystemAvailableMetricConfig provides config for the container.filesystem.available metric.
+type ContainerFilesystemAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerFilesystemAvailableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerFilesystemAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -69,13 +69,13 @@ func (ms *ContainerFilesystemAvailableConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// ContainerFilesystemCapacityConfig provides config for the container.filesystem.capacity metric.
-type ContainerFilesystemCapacityConfig struct {
+// ContainerFilesystemCapacityMetricConfig provides config for the container.filesystem.capacity metric.
+type ContainerFilesystemCapacityMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerFilesystemCapacityConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerFilesystemCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -89,13 +89,13 @@ func (ms *ContainerFilesystemCapacityConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ContainerFilesystemUsageConfig provides config for the container.filesystem.usage metric.
-type ContainerFilesystemUsageConfig struct {
+// ContainerFilesystemUsageMetricConfig provides config for the container.filesystem.usage metric.
+type ContainerFilesystemUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -109,13 +109,13 @@ func (ms *ContainerFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// ContainerMemoryAvailableConfig provides config for the container.memory.available metric.
-type ContainerMemoryAvailableConfig struct {
+// ContainerMemoryAvailableMetricConfig provides config for the container.memory.available metric.
+type ContainerMemoryAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryAvailableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -129,13 +129,13 @@ func (ms *ContainerMemoryAvailableConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// ContainerMemoryMajorPageFaultsConfig provides config for the container.memory.major_page_faults metric.
-type ContainerMemoryMajorPageFaultsConfig struct {
+// ContainerMemoryMajorPageFaultsMetricConfig provides config for the container.memory.major_page_faults metric.
+type ContainerMemoryMajorPageFaultsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryMajorPageFaultsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryMajorPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -149,13 +149,13 @@ func (ms *ContainerMemoryMajorPageFaultsConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// ContainerMemoryPageFaultsConfig provides config for the container.memory.page_faults metric.
-type ContainerMemoryPageFaultsConfig struct {
+// ContainerMemoryPageFaultsMetricConfig provides config for the container.memory.page_faults metric.
+type ContainerMemoryPageFaultsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryPageFaultsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -169,13 +169,13 @@ func (ms *ContainerMemoryPageFaultsConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerMemoryRssConfig provides config for the container.memory.rss metric.
-type ContainerMemoryRssConfig struct {
+// ContainerMemoryRssMetricConfig provides config for the container.memory.rss metric.
+type ContainerMemoryRssMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryRssConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryRssMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -189,13 +189,13 @@ func (ms *ContainerMemoryRssConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryUsageConfig provides config for the container.memory.usage metric.
-type ContainerMemoryUsageConfig struct {
+// ContainerMemoryUsageMetricConfig provides config for the container.memory.usage metric.
+type ContainerMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -209,13 +209,13 @@ func (ms *ContainerMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryWorkingSetConfig provides config for the container.memory.working_set metric.
-type ContainerMemoryWorkingSetConfig struct {
+// ContainerMemoryWorkingSetMetricConfig provides config for the container.memory.working_set metric.
+type ContainerMemoryWorkingSetMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryWorkingSetConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryWorkingSetMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -229,13 +229,13 @@ func (ms *ContainerMemoryWorkingSetConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerUptimeConfig provides config for the container.uptime metric.
-type ContainerUptimeConfig struct {
+// ContainerUptimeMetricConfig provides config for the container.uptime metric.
+type ContainerUptimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerUptimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -249,13 +249,13 @@ func (ms *ContainerUptimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sContainerCPUNodeUtilizationConfig provides config for the k8s.container.cpu.node.utilization metric.
-type K8sContainerCPUNodeUtilizationConfig struct {
+// K8sContainerCPUNodeUtilizationMetricConfig provides config for the k8s.container.cpu.node.utilization metric.
+type K8sContainerCPUNodeUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sContainerCPUNodeUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sContainerCPUNodeUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -269,13 +269,13 @@ func (ms *K8sContainerCPUNodeUtilizationConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// K8sContainerCPULimitUtilizationConfig provides config for the k8s.container.cpu_limit_utilization metric.
-type K8sContainerCPULimitUtilizationConfig struct {
+// K8sContainerCPULimitUtilizationMetricConfig provides config for the k8s.container.cpu_limit_utilization metric.
+type K8sContainerCPULimitUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sContainerCPULimitUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sContainerCPULimitUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -289,13 +289,13 @@ func (ms *K8sContainerCPULimitUtilizationConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// K8sContainerCPURequestUtilizationConfig provides config for the k8s.container.cpu_request_utilization metric.
-type K8sContainerCPURequestUtilizationConfig struct {
+// K8sContainerCPURequestUtilizationMetricConfig provides config for the k8s.container.cpu_request_utilization metric.
+type K8sContainerCPURequestUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sContainerCPURequestUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sContainerCPURequestUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -309,13 +309,13 @@ func (ms *K8sContainerCPURequestUtilizationConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// K8sContainerMemoryNodeUtilizationConfig provides config for the k8s.container.memory.node.utilization metric.
-type K8sContainerMemoryNodeUtilizationConfig struct {
+// K8sContainerMemoryNodeUtilizationMetricConfig provides config for the k8s.container.memory.node.utilization metric.
+type K8sContainerMemoryNodeUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sContainerMemoryNodeUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sContainerMemoryNodeUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -329,13 +329,13 @@ func (ms *K8sContainerMemoryNodeUtilizationConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// K8sContainerMemoryLimitUtilizationConfig provides config for the k8s.container.memory_limit_utilization metric.
-type K8sContainerMemoryLimitUtilizationConfig struct {
+// K8sContainerMemoryLimitUtilizationMetricConfig provides config for the k8s.container.memory_limit_utilization metric.
+type K8sContainerMemoryLimitUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sContainerMemoryLimitUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sContainerMemoryLimitUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -349,13 +349,13 @@ func (ms *K8sContainerMemoryLimitUtilizationConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// K8sContainerMemoryRequestUtilizationConfig provides config for the k8s.container.memory_request_utilization metric.
-type K8sContainerMemoryRequestUtilizationConfig struct {
+// K8sContainerMemoryRequestUtilizationMetricConfig provides config for the k8s.container.memory_request_utilization metric.
+type K8sContainerMemoryRequestUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sContainerMemoryRequestUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sContainerMemoryRequestUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -369,13 +369,13 @@ func (ms *K8sContainerMemoryRequestUtilizationConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-// K8sNodeCPUTimeConfig provides config for the k8s.node.cpu.time metric.
-type K8sNodeCPUTimeConfig struct {
+// K8sNodeCPUTimeMetricConfig provides config for the k8s.node.cpu.time metric.
+type K8sNodeCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -389,13 +389,13 @@ func (ms *K8sNodeCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sNodeCPUUsageConfig provides config for the k8s.node.cpu.usage metric.
-type K8sNodeCPUUsageConfig struct {
+// K8sNodeCPUUsageMetricConfig provides config for the k8s.node.cpu.usage metric.
+type K8sNodeCPUUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeCPUUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -409,13 +409,13 @@ func (ms *K8sNodeCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sNodeFilesystemAvailableConfig provides config for the k8s.node.filesystem.available metric.
-type K8sNodeFilesystemAvailableConfig struct {
+// K8sNodeFilesystemAvailableMetricConfig provides config for the k8s.node.filesystem.available metric.
+type K8sNodeFilesystemAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeFilesystemAvailableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeFilesystemAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -429,13 +429,13 @@ func (ms *K8sNodeFilesystemAvailableConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// K8sNodeFilesystemCapacityConfig provides config for the k8s.node.filesystem.capacity metric.
-type K8sNodeFilesystemCapacityConfig struct {
+// K8sNodeFilesystemCapacityMetricConfig provides config for the k8s.node.filesystem.capacity metric.
+type K8sNodeFilesystemCapacityMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeFilesystemCapacityConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeFilesystemCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -449,13 +449,13 @@ func (ms *K8sNodeFilesystemCapacityConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// K8sNodeFilesystemUsageConfig provides config for the k8s.node.filesystem.usage metric.
-type K8sNodeFilesystemUsageConfig struct {
+// K8sNodeFilesystemUsageMetricConfig provides config for the k8s.node.filesystem.usage metric.
+type K8sNodeFilesystemUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -469,13 +469,13 @@ func (ms *K8sNodeFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sNodeMemoryAvailableConfig provides config for the k8s.node.memory.available metric.
-type K8sNodeMemoryAvailableConfig struct {
+// K8sNodeMemoryAvailableMetricConfig provides config for the k8s.node.memory.available metric.
+type K8sNodeMemoryAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeMemoryAvailableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeMemoryAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -489,13 +489,13 @@ func (ms *K8sNodeMemoryAvailableConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sNodeMemoryMajorPageFaultsConfig provides config for the k8s.node.memory.major_page_faults metric.
-type K8sNodeMemoryMajorPageFaultsConfig struct {
+// K8sNodeMemoryMajorPageFaultsMetricConfig provides config for the k8s.node.memory.major_page_faults metric.
+type K8sNodeMemoryMajorPageFaultsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeMemoryMajorPageFaultsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeMemoryMajorPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -509,13 +509,13 @@ func (ms *K8sNodeMemoryMajorPageFaultsConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// K8sNodeMemoryPageFaultsConfig provides config for the k8s.node.memory.page_faults metric.
-type K8sNodeMemoryPageFaultsConfig struct {
+// K8sNodeMemoryPageFaultsMetricConfig provides config for the k8s.node.memory.page_faults metric.
+type K8sNodeMemoryPageFaultsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeMemoryPageFaultsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeMemoryPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -529,13 +529,13 @@ func (ms *K8sNodeMemoryPageFaultsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sNodeMemoryRssConfig provides config for the k8s.node.memory.rss metric.
-type K8sNodeMemoryRssConfig struct {
+// K8sNodeMemoryRssMetricConfig provides config for the k8s.node.memory.rss metric.
+type K8sNodeMemoryRssMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeMemoryRssConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeMemoryRssMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -549,13 +549,13 @@ func (ms *K8sNodeMemoryRssConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sNodeMemoryUsageConfig provides config for the k8s.node.memory.usage metric.
-type K8sNodeMemoryUsageConfig struct {
+// K8sNodeMemoryUsageMetricConfig provides config for the k8s.node.memory.usage metric.
+type K8sNodeMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -569,13 +569,13 @@ func (ms *K8sNodeMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sNodeMemoryWorkingSetConfig provides config for the k8s.node.memory.working_set metric.
-type K8sNodeMemoryWorkingSetConfig struct {
+// K8sNodeMemoryWorkingSetMetricConfig provides config for the k8s.node.memory.working_set metric.
+type K8sNodeMemoryWorkingSetMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeMemoryWorkingSetConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeMemoryWorkingSetMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -589,24 +589,24 @@ func (ms *K8sNodeMemoryWorkingSetConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sNodeNetworkErrorsAttributeKey specifies the key of an attribute for the k8s.node.network.errors metric.
-type K8sNodeNetworkErrorsAttributeKey string
+// K8sNodeNetworkErrorsMetricAttributeKey specifies the key of an attribute for the k8s.node.network.errors metric.
+type K8sNodeNetworkErrorsMetricAttributeKey string
 
 const (
-	K8sNodeNetworkErrorsAttributeKeyInterface K8sNodeNetworkErrorsAttributeKey = "interface"
-	K8sNodeNetworkErrorsAttributeKeyDirection K8sNodeNetworkErrorsAttributeKey = "direction"
+	K8sNodeNetworkErrorsMetricAttributeKeyInterface K8sNodeNetworkErrorsMetricAttributeKey = "interface"
+	K8sNodeNetworkErrorsMetricAttributeKeyDirection K8sNodeNetworkErrorsMetricAttributeKey = "direction"
 )
 
-// K8sNodeNetworkErrorsConfig provides config for the k8s.node.network.errors metric.
-type K8sNodeNetworkErrorsConfig struct {
+// K8sNodeNetworkErrorsMetricConfig provides config for the k8s.node.network.errors metric.
+type K8sNodeNetworkErrorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sNodeNetworkErrorsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sNodeNetworkErrorsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sNodeNetworkErrorsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeNetworkErrorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -620,10 +620,10 @@ func (ms *K8sNodeNetworkErrorsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *K8sNodeNetworkErrorsConfig) Validate() error {
+func (ms *K8sNodeNetworkErrorsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sNodeNetworkErrorsAttributeKeyInterface, K8sNodeNetworkErrorsAttributeKeyDirection:
+		case K8sNodeNetworkErrorsMetricAttributeKeyInterface, K8sNodeNetworkErrorsMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric k8s.node.network.errors doesn't have an attribute %v, valid attributes: [interface, direction]", val)
 		}
@@ -638,24 +638,24 @@ func (ms *K8sNodeNetworkErrorsConfig) Validate() error {
 	return nil
 }
 
-// K8sNodeNetworkIoAttributeKey specifies the key of an attribute for the k8s.node.network.io metric.
-type K8sNodeNetworkIoAttributeKey string
+// K8sNodeNetworkIoMetricAttributeKey specifies the key of an attribute for the k8s.node.network.io metric.
+type K8sNodeNetworkIoMetricAttributeKey string
 
 const (
-	K8sNodeNetworkIoAttributeKeyInterface K8sNodeNetworkIoAttributeKey = "interface"
-	K8sNodeNetworkIoAttributeKeyDirection K8sNodeNetworkIoAttributeKey = "direction"
+	K8sNodeNetworkIoMetricAttributeKeyInterface K8sNodeNetworkIoMetricAttributeKey = "interface"
+	K8sNodeNetworkIoMetricAttributeKeyDirection K8sNodeNetworkIoMetricAttributeKey = "direction"
 )
 
-// K8sNodeNetworkIoConfig provides config for the k8s.node.network.io metric.
-type K8sNodeNetworkIoConfig struct {
+// K8sNodeNetworkIoMetricConfig provides config for the k8s.node.network.io metric.
+type K8sNodeNetworkIoMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sNodeNetworkIoAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sNodeNetworkIoMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sNodeNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -669,10 +669,10 @@ func (ms *K8sNodeNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *K8sNodeNetworkIoConfig) Validate() error {
+func (ms *K8sNodeNetworkIoMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sNodeNetworkIoAttributeKeyInterface, K8sNodeNetworkIoAttributeKeyDirection:
+		case K8sNodeNetworkIoMetricAttributeKeyInterface, K8sNodeNetworkIoMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric k8s.node.network.io doesn't have an attribute %v, valid attributes: [interface, direction]", val)
 		}
@@ -687,13 +687,13 @@ func (ms *K8sNodeNetworkIoConfig) Validate() error {
 	return nil
 }
 
-// K8sNodeUptimeConfig provides config for the k8s.node.uptime metric.
-type K8sNodeUptimeConfig struct {
+// K8sNodeUptimeMetricConfig provides config for the k8s.node.uptime metric.
+type K8sNodeUptimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sNodeUptimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -707,13 +707,13 @@ func (ms *K8sNodeUptimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodCPUNodeUtilizationConfig provides config for the k8s.pod.cpu.node.utilization metric.
-type K8sPodCPUNodeUtilizationConfig struct {
+// K8sPodCPUNodeUtilizationMetricConfig provides config for the k8s.pod.cpu.node.utilization metric.
+type K8sPodCPUNodeUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodCPUNodeUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodCPUNodeUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -727,13 +727,13 @@ func (ms *K8sPodCPUNodeUtilizationConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// K8sPodCPUTimeConfig provides config for the k8s.pod.cpu.time metric.
-type K8sPodCPUTimeConfig struct {
+// K8sPodCPUTimeMetricConfig provides config for the k8s.pod.cpu.time metric.
+type K8sPodCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -747,13 +747,13 @@ func (ms *K8sPodCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodCPUUsageConfig provides config for the k8s.pod.cpu.usage metric.
-type K8sPodCPUUsageConfig struct {
+// K8sPodCPUUsageMetricConfig provides config for the k8s.pod.cpu.usage metric.
+type K8sPodCPUUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodCPUUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -767,13 +767,13 @@ func (ms *K8sPodCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodCPULimitUtilizationConfig provides config for the k8s.pod.cpu_limit_utilization metric.
-type K8sPodCPULimitUtilizationConfig struct {
+// K8sPodCPULimitUtilizationMetricConfig provides config for the k8s.pod.cpu_limit_utilization metric.
+type K8sPodCPULimitUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodCPULimitUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodCPULimitUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -787,13 +787,13 @@ func (ms *K8sPodCPULimitUtilizationConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// K8sPodCPURequestUtilizationConfig provides config for the k8s.pod.cpu_request_utilization metric.
-type K8sPodCPURequestUtilizationConfig struct {
+// K8sPodCPURequestUtilizationMetricConfig provides config for the k8s.pod.cpu_request_utilization metric.
+type K8sPodCPURequestUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodCPURequestUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodCPURequestUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -807,13 +807,13 @@ func (ms *K8sPodCPURequestUtilizationConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// K8sPodFilesystemAvailableConfig provides config for the k8s.pod.filesystem.available metric.
-type K8sPodFilesystemAvailableConfig struct {
+// K8sPodFilesystemAvailableMetricConfig provides config for the k8s.pod.filesystem.available metric.
+type K8sPodFilesystemAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodFilesystemAvailableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodFilesystemAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -827,13 +827,13 @@ func (ms *K8sPodFilesystemAvailableConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// K8sPodFilesystemCapacityConfig provides config for the k8s.pod.filesystem.capacity metric.
-type K8sPodFilesystemCapacityConfig struct {
+// K8sPodFilesystemCapacityMetricConfig provides config for the k8s.pod.filesystem.capacity metric.
+type K8sPodFilesystemCapacityMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodFilesystemCapacityConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodFilesystemCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -847,13 +847,13 @@ func (ms *K8sPodFilesystemCapacityConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// K8sPodFilesystemUsageConfig provides config for the k8s.pod.filesystem.usage metric.
-type K8sPodFilesystemUsageConfig struct {
+// K8sPodFilesystemUsageMetricConfig provides config for the k8s.pod.filesystem.usage metric.
+type K8sPodFilesystemUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -867,13 +867,13 @@ func (ms *K8sPodFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodMemoryAvailableConfig provides config for the k8s.pod.memory.available metric.
-type K8sPodMemoryAvailableConfig struct {
+// K8sPodMemoryAvailableMetricConfig provides config for the k8s.pod.memory.available metric.
+type K8sPodMemoryAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodMemoryAvailableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -887,13 +887,13 @@ func (ms *K8sPodMemoryAvailableConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodMemoryMajorPageFaultsConfig provides config for the k8s.pod.memory.major_page_faults metric.
-type K8sPodMemoryMajorPageFaultsConfig struct {
+// K8sPodMemoryMajorPageFaultsMetricConfig provides config for the k8s.pod.memory.major_page_faults metric.
+type K8sPodMemoryMajorPageFaultsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodMemoryMajorPageFaultsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryMajorPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -907,13 +907,13 @@ func (ms *K8sPodMemoryMajorPageFaultsConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// K8sPodMemoryNodeUtilizationConfig provides config for the k8s.pod.memory.node.utilization metric.
-type K8sPodMemoryNodeUtilizationConfig struct {
+// K8sPodMemoryNodeUtilizationMetricConfig provides config for the k8s.pod.memory.node.utilization metric.
+type K8sPodMemoryNodeUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodMemoryNodeUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryNodeUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -927,13 +927,13 @@ func (ms *K8sPodMemoryNodeUtilizationConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// K8sPodMemoryPageFaultsConfig provides config for the k8s.pod.memory.page_faults metric.
-type K8sPodMemoryPageFaultsConfig struct {
+// K8sPodMemoryPageFaultsMetricConfig provides config for the k8s.pod.memory.page_faults metric.
+type K8sPodMemoryPageFaultsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodMemoryPageFaultsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -947,13 +947,13 @@ func (ms *K8sPodMemoryPageFaultsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodMemoryRssConfig provides config for the k8s.pod.memory.rss metric.
-type K8sPodMemoryRssConfig struct {
+// K8sPodMemoryRssMetricConfig provides config for the k8s.pod.memory.rss metric.
+type K8sPodMemoryRssMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodMemoryRssConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryRssMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -967,13 +967,13 @@ func (ms *K8sPodMemoryRssConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodMemoryUsageConfig provides config for the k8s.pod.memory.usage metric.
-type K8sPodMemoryUsageConfig struct {
+// K8sPodMemoryUsageMetricConfig provides config for the k8s.pod.memory.usage metric.
+type K8sPodMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -987,13 +987,13 @@ func (ms *K8sPodMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodMemoryWorkingSetConfig provides config for the k8s.pod.memory.working_set metric.
-type K8sPodMemoryWorkingSetConfig struct {
+// K8sPodMemoryWorkingSetMetricConfig provides config for the k8s.pod.memory.working_set metric.
+type K8sPodMemoryWorkingSetMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodMemoryWorkingSetConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryWorkingSetMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1007,13 +1007,13 @@ func (ms *K8sPodMemoryWorkingSetConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodMemoryLimitUtilizationConfig provides config for the k8s.pod.memory_limit_utilization metric.
-type K8sPodMemoryLimitUtilizationConfig struct {
+// K8sPodMemoryLimitUtilizationMetricConfig provides config for the k8s.pod.memory_limit_utilization metric.
+type K8sPodMemoryLimitUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodMemoryLimitUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryLimitUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1027,13 +1027,13 @@ func (ms *K8sPodMemoryLimitUtilizationConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// K8sPodMemoryRequestUtilizationConfig provides config for the k8s.pod.memory_request_utilization metric.
-type K8sPodMemoryRequestUtilizationConfig struct {
+// K8sPodMemoryRequestUtilizationMetricConfig provides config for the k8s.pod.memory_request_utilization metric.
+type K8sPodMemoryRequestUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodMemoryRequestUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryRequestUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1047,24 +1047,24 @@ func (ms *K8sPodMemoryRequestUtilizationConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// K8sPodNetworkErrorsAttributeKey specifies the key of an attribute for the k8s.pod.network.errors metric.
-type K8sPodNetworkErrorsAttributeKey string
+// K8sPodNetworkErrorsMetricAttributeKey specifies the key of an attribute for the k8s.pod.network.errors metric.
+type K8sPodNetworkErrorsMetricAttributeKey string
 
 const (
-	K8sPodNetworkErrorsAttributeKeyInterface K8sPodNetworkErrorsAttributeKey = "interface"
-	K8sPodNetworkErrorsAttributeKeyDirection K8sPodNetworkErrorsAttributeKey = "direction"
+	K8sPodNetworkErrorsMetricAttributeKeyInterface K8sPodNetworkErrorsMetricAttributeKey = "interface"
+	K8sPodNetworkErrorsMetricAttributeKeyDirection K8sPodNetworkErrorsMetricAttributeKey = "direction"
 )
 
-// K8sPodNetworkErrorsConfig provides config for the k8s.pod.network.errors metric.
-type K8sPodNetworkErrorsConfig struct {
+// K8sPodNetworkErrorsMetricConfig provides config for the k8s.pod.network.errors metric.
+type K8sPodNetworkErrorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sPodNetworkErrorsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sPodNetworkErrorsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sPodNetworkErrorsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodNetworkErrorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1078,10 +1078,10 @@ func (ms *K8sPodNetworkErrorsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *K8sPodNetworkErrorsConfig) Validate() error {
+func (ms *K8sPodNetworkErrorsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sPodNetworkErrorsAttributeKeyInterface, K8sPodNetworkErrorsAttributeKeyDirection:
+		case K8sPodNetworkErrorsMetricAttributeKeyInterface, K8sPodNetworkErrorsMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric k8s.pod.network.errors doesn't have an attribute %v, valid attributes: [interface, direction]", val)
 		}
@@ -1096,24 +1096,24 @@ func (ms *K8sPodNetworkErrorsConfig) Validate() error {
 	return nil
 }
 
-// K8sPodNetworkIoAttributeKey specifies the key of an attribute for the k8s.pod.network.io metric.
-type K8sPodNetworkIoAttributeKey string
+// K8sPodNetworkIoMetricAttributeKey specifies the key of an attribute for the k8s.pod.network.io metric.
+type K8sPodNetworkIoMetricAttributeKey string
 
 const (
-	K8sPodNetworkIoAttributeKeyInterface K8sPodNetworkIoAttributeKey = "interface"
-	K8sPodNetworkIoAttributeKeyDirection K8sPodNetworkIoAttributeKey = "direction"
+	K8sPodNetworkIoMetricAttributeKeyInterface K8sPodNetworkIoMetricAttributeKey = "interface"
+	K8sPodNetworkIoMetricAttributeKeyDirection K8sPodNetworkIoMetricAttributeKey = "direction"
 )
 
-// K8sPodNetworkIoConfig provides config for the k8s.pod.network.io metric.
-type K8sPodNetworkIoConfig struct {
+// K8sPodNetworkIoMetricConfig provides config for the k8s.pod.network.io metric.
+type K8sPodNetworkIoMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sPodNetworkIoAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sPodNetworkIoMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sPodNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1127,10 +1127,10 @@ func (ms *K8sPodNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *K8sPodNetworkIoConfig) Validate() error {
+func (ms *K8sPodNetworkIoMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sPodNetworkIoAttributeKeyInterface, K8sPodNetworkIoAttributeKeyDirection:
+		case K8sPodNetworkIoMetricAttributeKeyInterface, K8sPodNetworkIoMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric k8s.pod.network.io doesn't have an attribute %v, valid attributes: [interface, direction]", val)
 		}
@@ -1145,13 +1145,13 @@ func (ms *K8sPodNetworkIoConfig) Validate() error {
 	return nil
 }
 
-// K8sPodUptimeConfig provides config for the k8s.pod.uptime metric.
-type K8sPodUptimeConfig struct {
+// K8sPodUptimeMetricConfig provides config for the k8s.pod.uptime metric.
+type K8sPodUptimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodUptimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1165,13 +1165,13 @@ func (ms *K8sPodUptimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sPodVolumeUsageConfig provides config for the k8s.pod.volume.usage metric.
-type K8sPodVolumeUsageConfig struct {
+// K8sPodVolumeUsageMetricConfig provides config for the k8s.pod.volume.usage metric.
+type K8sPodVolumeUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sPodVolumeUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodVolumeUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1185,13 +1185,13 @@ func (ms *K8sPodVolumeUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sVolumeAvailableConfig provides config for the k8s.volume.available metric.
-type K8sVolumeAvailableConfig struct {
+// K8sVolumeAvailableMetricConfig provides config for the k8s.volume.available metric.
+type K8sVolumeAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sVolumeAvailableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sVolumeAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1205,13 +1205,13 @@ func (ms *K8sVolumeAvailableConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sVolumeCapacityConfig provides config for the k8s.volume.capacity metric.
-type K8sVolumeCapacityConfig struct {
+// K8sVolumeCapacityMetricConfig provides config for the k8s.volume.capacity metric.
+type K8sVolumeCapacityMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sVolumeCapacityConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sVolumeCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1225,13 +1225,13 @@ func (ms *K8sVolumeCapacityConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sVolumeInodesConfig provides config for the k8s.volume.inodes metric.
-type K8sVolumeInodesConfig struct {
+// K8sVolumeInodesMetricConfig provides config for the k8s.volume.inodes metric.
+type K8sVolumeInodesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sVolumeInodesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sVolumeInodesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1245,13 +1245,13 @@ func (ms *K8sVolumeInodesConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sVolumeInodesFreeConfig provides config for the k8s.volume.inodes.free metric.
-type K8sVolumeInodesFreeConfig struct {
+// K8sVolumeInodesFreeMetricConfig provides config for the k8s.volume.inodes.free metric.
+type K8sVolumeInodesFreeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sVolumeInodesFreeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sVolumeInodesFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1265,13 +1265,13 @@ func (ms *K8sVolumeInodesFreeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// K8sVolumeInodesUsedConfig provides config for the k8s.volume.inodes.used metric.
-type K8sVolumeInodesUsedConfig struct {
+// K8sVolumeInodesUsedMetricConfig provides config for the k8s.volume.inodes.used metric.
+type K8sVolumeInodesUsedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *K8sVolumeInodesUsedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sVolumeInodesUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1287,248 +1287,248 @@ func (ms *K8sVolumeInodesUsedConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for kubeletstats metrics.
 type MetricsConfig struct {
-	ContainerCPUTime                     ContainerCPUTimeConfig                     `mapstructure:"container.cpu.time"`
-	ContainerCPUUsage                    ContainerCPUUsageConfig                    `mapstructure:"container.cpu.usage"`
-	ContainerFilesystemAvailable         ContainerFilesystemAvailableConfig         `mapstructure:"container.filesystem.available"`
-	ContainerFilesystemCapacity          ContainerFilesystemCapacityConfig          `mapstructure:"container.filesystem.capacity"`
-	ContainerFilesystemUsage             ContainerFilesystemUsageConfig             `mapstructure:"container.filesystem.usage"`
-	ContainerMemoryAvailable             ContainerMemoryAvailableConfig             `mapstructure:"container.memory.available"`
-	ContainerMemoryMajorPageFaults       ContainerMemoryMajorPageFaultsConfig       `mapstructure:"container.memory.major_page_faults"`
-	ContainerMemoryPageFaults            ContainerMemoryPageFaultsConfig            `mapstructure:"container.memory.page_faults"`
-	ContainerMemoryRss                   ContainerMemoryRssConfig                   `mapstructure:"container.memory.rss"`
-	ContainerMemoryUsage                 ContainerMemoryUsageConfig                 `mapstructure:"container.memory.usage"`
-	ContainerMemoryWorkingSet            ContainerMemoryWorkingSetConfig            `mapstructure:"container.memory.working_set"`
-	ContainerUptime                      ContainerUptimeConfig                      `mapstructure:"container.uptime"`
-	K8sContainerCPUNodeUtilization       K8sContainerCPUNodeUtilizationConfig       `mapstructure:"k8s.container.cpu.node.utilization"`
-	K8sContainerCPULimitUtilization      K8sContainerCPULimitUtilizationConfig      `mapstructure:"k8s.container.cpu_limit_utilization"`
-	K8sContainerCPURequestUtilization    K8sContainerCPURequestUtilizationConfig    `mapstructure:"k8s.container.cpu_request_utilization"`
-	K8sContainerMemoryNodeUtilization    K8sContainerMemoryNodeUtilizationConfig    `mapstructure:"k8s.container.memory.node.utilization"`
-	K8sContainerMemoryLimitUtilization   K8sContainerMemoryLimitUtilizationConfig   `mapstructure:"k8s.container.memory_limit_utilization"`
-	K8sContainerMemoryRequestUtilization K8sContainerMemoryRequestUtilizationConfig `mapstructure:"k8s.container.memory_request_utilization"`
-	K8sNodeCPUTime                       K8sNodeCPUTimeConfig                       `mapstructure:"k8s.node.cpu.time"`
-	K8sNodeCPUUsage                      K8sNodeCPUUsageConfig                      `mapstructure:"k8s.node.cpu.usage"`
-	K8sNodeFilesystemAvailable           K8sNodeFilesystemAvailableConfig           `mapstructure:"k8s.node.filesystem.available"`
-	K8sNodeFilesystemCapacity            K8sNodeFilesystemCapacityConfig            `mapstructure:"k8s.node.filesystem.capacity"`
-	K8sNodeFilesystemUsage               K8sNodeFilesystemUsageConfig               `mapstructure:"k8s.node.filesystem.usage"`
-	K8sNodeMemoryAvailable               K8sNodeMemoryAvailableConfig               `mapstructure:"k8s.node.memory.available"`
-	K8sNodeMemoryMajorPageFaults         K8sNodeMemoryMajorPageFaultsConfig         `mapstructure:"k8s.node.memory.major_page_faults"`
-	K8sNodeMemoryPageFaults              K8sNodeMemoryPageFaultsConfig              `mapstructure:"k8s.node.memory.page_faults"`
-	K8sNodeMemoryRss                     K8sNodeMemoryRssConfig                     `mapstructure:"k8s.node.memory.rss"`
-	K8sNodeMemoryUsage                   K8sNodeMemoryUsageConfig                   `mapstructure:"k8s.node.memory.usage"`
-	K8sNodeMemoryWorkingSet              K8sNodeMemoryWorkingSetConfig              `mapstructure:"k8s.node.memory.working_set"`
-	K8sNodeNetworkErrors                 K8sNodeNetworkErrorsConfig                 `mapstructure:"k8s.node.network.errors"`
-	K8sNodeNetworkIo                     K8sNodeNetworkIoConfig                     `mapstructure:"k8s.node.network.io"`
-	K8sNodeUptime                        K8sNodeUptimeConfig                        `mapstructure:"k8s.node.uptime"`
-	K8sPodCPUNodeUtilization             K8sPodCPUNodeUtilizationConfig             `mapstructure:"k8s.pod.cpu.node.utilization"`
-	K8sPodCPUTime                        K8sPodCPUTimeConfig                        `mapstructure:"k8s.pod.cpu.time"`
-	K8sPodCPUUsage                       K8sPodCPUUsageConfig                       `mapstructure:"k8s.pod.cpu.usage"`
-	K8sPodCPULimitUtilization            K8sPodCPULimitUtilizationConfig            `mapstructure:"k8s.pod.cpu_limit_utilization"`
-	K8sPodCPURequestUtilization          K8sPodCPURequestUtilizationConfig          `mapstructure:"k8s.pod.cpu_request_utilization"`
-	K8sPodFilesystemAvailable            K8sPodFilesystemAvailableConfig            `mapstructure:"k8s.pod.filesystem.available"`
-	K8sPodFilesystemCapacity             K8sPodFilesystemCapacityConfig             `mapstructure:"k8s.pod.filesystem.capacity"`
-	K8sPodFilesystemUsage                K8sPodFilesystemUsageConfig                `mapstructure:"k8s.pod.filesystem.usage"`
-	K8sPodMemoryAvailable                K8sPodMemoryAvailableConfig                `mapstructure:"k8s.pod.memory.available"`
-	K8sPodMemoryMajorPageFaults          K8sPodMemoryMajorPageFaultsConfig          `mapstructure:"k8s.pod.memory.major_page_faults"`
-	K8sPodMemoryNodeUtilization          K8sPodMemoryNodeUtilizationConfig          `mapstructure:"k8s.pod.memory.node.utilization"`
-	K8sPodMemoryPageFaults               K8sPodMemoryPageFaultsConfig               `mapstructure:"k8s.pod.memory.page_faults"`
-	K8sPodMemoryRss                      K8sPodMemoryRssConfig                      `mapstructure:"k8s.pod.memory.rss"`
-	K8sPodMemoryUsage                    K8sPodMemoryUsageConfig                    `mapstructure:"k8s.pod.memory.usage"`
-	K8sPodMemoryWorkingSet               K8sPodMemoryWorkingSetConfig               `mapstructure:"k8s.pod.memory.working_set"`
-	K8sPodMemoryLimitUtilization         K8sPodMemoryLimitUtilizationConfig         `mapstructure:"k8s.pod.memory_limit_utilization"`
-	K8sPodMemoryRequestUtilization       K8sPodMemoryRequestUtilizationConfig       `mapstructure:"k8s.pod.memory_request_utilization"`
-	K8sPodNetworkErrors                  K8sPodNetworkErrorsConfig                  `mapstructure:"k8s.pod.network.errors"`
-	K8sPodNetworkIo                      K8sPodNetworkIoConfig                      `mapstructure:"k8s.pod.network.io"`
-	K8sPodUptime                         K8sPodUptimeConfig                         `mapstructure:"k8s.pod.uptime"`
-	K8sPodVolumeUsage                    K8sPodVolumeUsageConfig                    `mapstructure:"k8s.pod.volume.usage"`
-	K8sVolumeAvailable                   K8sVolumeAvailableConfig                   `mapstructure:"k8s.volume.available"`
-	K8sVolumeCapacity                    K8sVolumeCapacityConfig                    `mapstructure:"k8s.volume.capacity"`
-	K8sVolumeInodes                      K8sVolumeInodesConfig                      `mapstructure:"k8s.volume.inodes"`
-	K8sVolumeInodesFree                  K8sVolumeInodesFreeConfig                  `mapstructure:"k8s.volume.inodes.free"`
-	K8sVolumeInodesUsed                  K8sVolumeInodesUsedConfig                  `mapstructure:"k8s.volume.inodes.used"`
+	ContainerCPUTime                     ContainerCPUTimeMetricConfig                     `mapstructure:"container.cpu.time"`
+	ContainerCPUUsage                    ContainerCPUUsageMetricConfig                    `mapstructure:"container.cpu.usage"`
+	ContainerFilesystemAvailable         ContainerFilesystemAvailableMetricConfig         `mapstructure:"container.filesystem.available"`
+	ContainerFilesystemCapacity          ContainerFilesystemCapacityMetricConfig          `mapstructure:"container.filesystem.capacity"`
+	ContainerFilesystemUsage             ContainerFilesystemUsageMetricConfig             `mapstructure:"container.filesystem.usage"`
+	ContainerMemoryAvailable             ContainerMemoryAvailableMetricConfig             `mapstructure:"container.memory.available"`
+	ContainerMemoryMajorPageFaults       ContainerMemoryMajorPageFaultsMetricConfig       `mapstructure:"container.memory.major_page_faults"`
+	ContainerMemoryPageFaults            ContainerMemoryPageFaultsMetricConfig            `mapstructure:"container.memory.page_faults"`
+	ContainerMemoryRss                   ContainerMemoryRssMetricConfig                   `mapstructure:"container.memory.rss"`
+	ContainerMemoryUsage                 ContainerMemoryUsageMetricConfig                 `mapstructure:"container.memory.usage"`
+	ContainerMemoryWorkingSet            ContainerMemoryWorkingSetMetricConfig            `mapstructure:"container.memory.working_set"`
+	ContainerUptime                      ContainerUptimeMetricConfig                      `mapstructure:"container.uptime"`
+	K8sContainerCPUNodeUtilization       K8sContainerCPUNodeUtilizationMetricConfig       `mapstructure:"k8s.container.cpu.node.utilization"`
+	K8sContainerCPULimitUtilization      K8sContainerCPULimitUtilizationMetricConfig      `mapstructure:"k8s.container.cpu_limit_utilization"`
+	K8sContainerCPURequestUtilization    K8sContainerCPURequestUtilizationMetricConfig    `mapstructure:"k8s.container.cpu_request_utilization"`
+	K8sContainerMemoryNodeUtilization    K8sContainerMemoryNodeUtilizationMetricConfig    `mapstructure:"k8s.container.memory.node.utilization"`
+	K8sContainerMemoryLimitUtilization   K8sContainerMemoryLimitUtilizationMetricConfig   `mapstructure:"k8s.container.memory_limit_utilization"`
+	K8sContainerMemoryRequestUtilization K8sContainerMemoryRequestUtilizationMetricConfig `mapstructure:"k8s.container.memory_request_utilization"`
+	K8sNodeCPUTime                       K8sNodeCPUTimeMetricConfig                       `mapstructure:"k8s.node.cpu.time"`
+	K8sNodeCPUUsage                      K8sNodeCPUUsageMetricConfig                      `mapstructure:"k8s.node.cpu.usage"`
+	K8sNodeFilesystemAvailable           K8sNodeFilesystemAvailableMetricConfig           `mapstructure:"k8s.node.filesystem.available"`
+	K8sNodeFilesystemCapacity            K8sNodeFilesystemCapacityMetricConfig            `mapstructure:"k8s.node.filesystem.capacity"`
+	K8sNodeFilesystemUsage               K8sNodeFilesystemUsageMetricConfig               `mapstructure:"k8s.node.filesystem.usage"`
+	K8sNodeMemoryAvailable               K8sNodeMemoryAvailableMetricConfig               `mapstructure:"k8s.node.memory.available"`
+	K8sNodeMemoryMajorPageFaults         K8sNodeMemoryMajorPageFaultsMetricConfig         `mapstructure:"k8s.node.memory.major_page_faults"`
+	K8sNodeMemoryPageFaults              K8sNodeMemoryPageFaultsMetricConfig              `mapstructure:"k8s.node.memory.page_faults"`
+	K8sNodeMemoryRss                     K8sNodeMemoryRssMetricConfig                     `mapstructure:"k8s.node.memory.rss"`
+	K8sNodeMemoryUsage                   K8sNodeMemoryUsageMetricConfig                   `mapstructure:"k8s.node.memory.usage"`
+	K8sNodeMemoryWorkingSet              K8sNodeMemoryWorkingSetMetricConfig              `mapstructure:"k8s.node.memory.working_set"`
+	K8sNodeNetworkErrors                 K8sNodeNetworkErrorsMetricConfig                 `mapstructure:"k8s.node.network.errors"`
+	K8sNodeNetworkIo                     K8sNodeNetworkIoMetricConfig                     `mapstructure:"k8s.node.network.io"`
+	K8sNodeUptime                        K8sNodeUptimeMetricConfig                        `mapstructure:"k8s.node.uptime"`
+	K8sPodCPUNodeUtilization             K8sPodCPUNodeUtilizationMetricConfig             `mapstructure:"k8s.pod.cpu.node.utilization"`
+	K8sPodCPUTime                        K8sPodCPUTimeMetricConfig                        `mapstructure:"k8s.pod.cpu.time"`
+	K8sPodCPUUsage                       K8sPodCPUUsageMetricConfig                       `mapstructure:"k8s.pod.cpu.usage"`
+	K8sPodCPULimitUtilization            K8sPodCPULimitUtilizationMetricConfig            `mapstructure:"k8s.pod.cpu_limit_utilization"`
+	K8sPodCPURequestUtilization          K8sPodCPURequestUtilizationMetricConfig          `mapstructure:"k8s.pod.cpu_request_utilization"`
+	K8sPodFilesystemAvailable            K8sPodFilesystemAvailableMetricConfig            `mapstructure:"k8s.pod.filesystem.available"`
+	K8sPodFilesystemCapacity             K8sPodFilesystemCapacityMetricConfig             `mapstructure:"k8s.pod.filesystem.capacity"`
+	K8sPodFilesystemUsage                K8sPodFilesystemUsageMetricConfig                `mapstructure:"k8s.pod.filesystem.usage"`
+	K8sPodMemoryAvailable                K8sPodMemoryAvailableMetricConfig                `mapstructure:"k8s.pod.memory.available"`
+	K8sPodMemoryMajorPageFaults          K8sPodMemoryMajorPageFaultsMetricConfig          `mapstructure:"k8s.pod.memory.major_page_faults"`
+	K8sPodMemoryNodeUtilization          K8sPodMemoryNodeUtilizationMetricConfig          `mapstructure:"k8s.pod.memory.node.utilization"`
+	K8sPodMemoryPageFaults               K8sPodMemoryPageFaultsMetricConfig               `mapstructure:"k8s.pod.memory.page_faults"`
+	K8sPodMemoryRss                      K8sPodMemoryRssMetricConfig                      `mapstructure:"k8s.pod.memory.rss"`
+	K8sPodMemoryUsage                    K8sPodMemoryUsageMetricConfig                    `mapstructure:"k8s.pod.memory.usage"`
+	K8sPodMemoryWorkingSet               K8sPodMemoryWorkingSetMetricConfig               `mapstructure:"k8s.pod.memory.working_set"`
+	K8sPodMemoryLimitUtilization         K8sPodMemoryLimitUtilizationMetricConfig         `mapstructure:"k8s.pod.memory_limit_utilization"`
+	K8sPodMemoryRequestUtilization       K8sPodMemoryRequestUtilizationMetricConfig       `mapstructure:"k8s.pod.memory_request_utilization"`
+	K8sPodNetworkErrors                  K8sPodNetworkErrorsMetricConfig                  `mapstructure:"k8s.pod.network.errors"`
+	K8sPodNetworkIo                      K8sPodNetworkIoMetricConfig                      `mapstructure:"k8s.pod.network.io"`
+	K8sPodUptime                         K8sPodUptimeMetricConfig                         `mapstructure:"k8s.pod.uptime"`
+	K8sPodVolumeUsage                    K8sPodVolumeUsageMetricConfig                    `mapstructure:"k8s.pod.volume.usage"`
+	K8sVolumeAvailable                   K8sVolumeAvailableMetricConfig                   `mapstructure:"k8s.volume.available"`
+	K8sVolumeCapacity                    K8sVolumeCapacityMetricConfig                    `mapstructure:"k8s.volume.capacity"`
+	K8sVolumeInodes                      K8sVolumeInodesMetricConfig                      `mapstructure:"k8s.volume.inodes"`
+	K8sVolumeInodesFree                  K8sVolumeInodesFreeMetricConfig                  `mapstructure:"k8s.volume.inodes.free"`
+	K8sVolumeInodesUsed                  K8sVolumeInodesUsedMetricConfig                  `mapstructure:"k8s.volume.inodes.used"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		ContainerCPUTime: ContainerCPUTimeConfig{
+		ContainerCPUTime: ContainerCPUTimeMetricConfig{
 			Enabled: true,
 		},
-		ContainerCPUUsage: ContainerCPUUsageConfig{
+		ContainerCPUUsage: ContainerCPUUsageMetricConfig{
 			Enabled: true,
 		},
-		ContainerFilesystemAvailable: ContainerFilesystemAvailableConfig{
+		ContainerFilesystemAvailable: ContainerFilesystemAvailableMetricConfig{
 			Enabled: true,
 		},
-		ContainerFilesystemCapacity: ContainerFilesystemCapacityConfig{
+		ContainerFilesystemCapacity: ContainerFilesystemCapacityMetricConfig{
 			Enabled: true,
 		},
-		ContainerFilesystemUsage: ContainerFilesystemUsageConfig{
+		ContainerFilesystemUsage: ContainerFilesystemUsageMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryAvailable: ContainerMemoryAvailableConfig{
+		ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryMajorPageFaults: ContainerMemoryMajorPageFaultsConfig{
+		ContainerMemoryMajorPageFaults: ContainerMemoryMajorPageFaultsMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryPageFaults: ContainerMemoryPageFaultsConfig{
+		ContainerMemoryPageFaults: ContainerMemoryPageFaultsMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryRss: ContainerMemoryRssConfig{
+		ContainerMemoryRss: ContainerMemoryRssMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryUsage: ContainerMemoryUsageConfig{
+		ContainerMemoryUsage: ContainerMemoryUsageMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryWorkingSet: ContainerMemoryWorkingSetConfig{
+		ContainerMemoryWorkingSet: ContainerMemoryWorkingSetMetricConfig{
 			Enabled: true,
 		},
-		ContainerUptime: ContainerUptimeConfig{
+		ContainerUptime: ContainerUptimeMetricConfig{
 			Enabled: false,
 		},
-		K8sContainerCPUNodeUtilization: K8sContainerCPUNodeUtilizationConfig{
+		K8sContainerCPUNodeUtilization: K8sContainerCPUNodeUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sContainerCPULimitUtilization: K8sContainerCPULimitUtilizationConfig{
+		K8sContainerCPULimitUtilization: K8sContainerCPULimitUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sContainerCPURequestUtilization: K8sContainerCPURequestUtilizationConfig{
+		K8sContainerCPURequestUtilization: K8sContainerCPURequestUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sContainerMemoryNodeUtilization: K8sContainerMemoryNodeUtilizationConfig{
+		K8sContainerMemoryNodeUtilization: K8sContainerMemoryNodeUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sContainerMemoryLimitUtilization: K8sContainerMemoryLimitUtilizationConfig{
+		K8sContainerMemoryLimitUtilization: K8sContainerMemoryLimitUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sContainerMemoryRequestUtilization: K8sContainerMemoryRequestUtilizationConfig{
+		K8sContainerMemoryRequestUtilization: K8sContainerMemoryRequestUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sNodeCPUTime: K8sNodeCPUTimeConfig{
+		K8sNodeCPUTime: K8sNodeCPUTimeMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeCPUUsage: K8sNodeCPUUsageConfig{
+		K8sNodeCPUUsage: K8sNodeCPUUsageMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeFilesystemAvailable: K8sNodeFilesystemAvailableConfig{
+		K8sNodeFilesystemAvailable: K8sNodeFilesystemAvailableMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeFilesystemCapacity: K8sNodeFilesystemCapacityConfig{
+		K8sNodeFilesystemCapacity: K8sNodeFilesystemCapacityMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeFilesystemUsage: K8sNodeFilesystemUsageConfig{
+		K8sNodeFilesystemUsage: K8sNodeFilesystemUsageMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeMemoryAvailable: K8sNodeMemoryAvailableConfig{
+		K8sNodeMemoryAvailable: K8sNodeMemoryAvailableMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeMemoryMajorPageFaults: K8sNodeMemoryMajorPageFaultsConfig{
+		K8sNodeMemoryMajorPageFaults: K8sNodeMemoryMajorPageFaultsMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeMemoryPageFaults: K8sNodeMemoryPageFaultsConfig{
+		K8sNodeMemoryPageFaults: K8sNodeMemoryPageFaultsMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeMemoryRss: K8sNodeMemoryRssConfig{
+		K8sNodeMemoryRss: K8sNodeMemoryRssMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeMemoryUsage: K8sNodeMemoryUsageConfig{
+		K8sNodeMemoryUsage: K8sNodeMemoryUsageMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeMemoryWorkingSet: K8sNodeMemoryWorkingSetConfig{
+		K8sNodeMemoryWorkingSet: K8sNodeMemoryWorkingSetMetricConfig{
 			Enabled: true,
 		},
-		K8sNodeNetworkErrors: K8sNodeNetworkErrorsConfig{
+		K8sNodeNetworkErrors: K8sNodeNetworkErrorsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sNodeNetworkErrorsAttributeKey{K8sNodeNetworkErrorsAttributeKeyInterface, K8sNodeNetworkErrorsAttributeKeyDirection},
+			EnabledAttributes:   []K8sNodeNetworkErrorsMetricAttributeKey{K8sNodeNetworkErrorsMetricAttributeKeyInterface, K8sNodeNetworkErrorsMetricAttributeKeyDirection},
 		},
-		K8sNodeNetworkIo: K8sNodeNetworkIoConfig{
+		K8sNodeNetworkIo: K8sNodeNetworkIoMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sNodeNetworkIoAttributeKey{K8sNodeNetworkIoAttributeKeyInterface, K8sNodeNetworkIoAttributeKeyDirection},
+			EnabledAttributes:   []K8sNodeNetworkIoMetricAttributeKey{K8sNodeNetworkIoMetricAttributeKeyInterface, K8sNodeNetworkIoMetricAttributeKeyDirection},
 		},
-		K8sNodeUptime: K8sNodeUptimeConfig{
+		K8sNodeUptime: K8sNodeUptimeMetricConfig{
 			Enabled: false,
 		},
-		K8sPodCPUNodeUtilization: K8sPodCPUNodeUtilizationConfig{
+		K8sPodCPUNodeUtilization: K8sPodCPUNodeUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sPodCPUTime: K8sPodCPUTimeConfig{
+		K8sPodCPUTime: K8sPodCPUTimeMetricConfig{
 			Enabled: true,
 		},
-		K8sPodCPUUsage: K8sPodCPUUsageConfig{
+		K8sPodCPUUsage: K8sPodCPUUsageMetricConfig{
 			Enabled: true,
 		},
-		K8sPodCPULimitUtilization: K8sPodCPULimitUtilizationConfig{
+		K8sPodCPULimitUtilization: K8sPodCPULimitUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sPodCPURequestUtilization: K8sPodCPURequestUtilizationConfig{
+		K8sPodCPURequestUtilization: K8sPodCPURequestUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sPodFilesystemAvailable: K8sPodFilesystemAvailableConfig{
+		K8sPodFilesystemAvailable: K8sPodFilesystemAvailableMetricConfig{
 			Enabled: true,
 		},
-		K8sPodFilesystemCapacity: K8sPodFilesystemCapacityConfig{
+		K8sPodFilesystemCapacity: K8sPodFilesystemCapacityMetricConfig{
 			Enabled: true,
 		},
-		K8sPodFilesystemUsage: K8sPodFilesystemUsageConfig{
+		K8sPodFilesystemUsage: K8sPodFilesystemUsageMetricConfig{
 			Enabled: true,
 		},
-		K8sPodMemoryAvailable: K8sPodMemoryAvailableConfig{
+		K8sPodMemoryAvailable: K8sPodMemoryAvailableMetricConfig{
 			Enabled: true,
 		},
-		K8sPodMemoryMajorPageFaults: K8sPodMemoryMajorPageFaultsConfig{
+		K8sPodMemoryMajorPageFaults: K8sPodMemoryMajorPageFaultsMetricConfig{
 			Enabled: true,
 		},
-		K8sPodMemoryNodeUtilization: K8sPodMemoryNodeUtilizationConfig{
+		K8sPodMemoryNodeUtilization: K8sPodMemoryNodeUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sPodMemoryPageFaults: K8sPodMemoryPageFaultsConfig{
+		K8sPodMemoryPageFaults: K8sPodMemoryPageFaultsMetricConfig{
 			Enabled: true,
 		},
-		K8sPodMemoryRss: K8sPodMemoryRssConfig{
+		K8sPodMemoryRss: K8sPodMemoryRssMetricConfig{
 			Enabled: true,
 		},
-		K8sPodMemoryUsage: K8sPodMemoryUsageConfig{
+		K8sPodMemoryUsage: K8sPodMemoryUsageMetricConfig{
 			Enabled: true,
 		},
-		K8sPodMemoryWorkingSet: K8sPodMemoryWorkingSetConfig{
+		K8sPodMemoryWorkingSet: K8sPodMemoryWorkingSetMetricConfig{
 			Enabled: true,
 		},
-		K8sPodMemoryLimitUtilization: K8sPodMemoryLimitUtilizationConfig{
+		K8sPodMemoryLimitUtilization: K8sPodMemoryLimitUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sPodMemoryRequestUtilization: K8sPodMemoryRequestUtilizationConfig{
+		K8sPodMemoryRequestUtilization: K8sPodMemoryRequestUtilizationMetricConfig{
 			Enabled: false,
 		},
-		K8sPodNetworkErrors: K8sPodNetworkErrorsConfig{
+		K8sPodNetworkErrors: K8sPodNetworkErrorsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sPodNetworkErrorsAttributeKey{K8sPodNetworkErrorsAttributeKeyInterface, K8sPodNetworkErrorsAttributeKeyDirection},
+			EnabledAttributes:   []K8sPodNetworkErrorsMetricAttributeKey{K8sPodNetworkErrorsMetricAttributeKeyInterface, K8sPodNetworkErrorsMetricAttributeKeyDirection},
 		},
-		K8sPodNetworkIo: K8sPodNetworkIoConfig{
+		K8sPodNetworkIo: K8sPodNetworkIoMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sPodNetworkIoAttributeKey{K8sPodNetworkIoAttributeKeyInterface, K8sPodNetworkIoAttributeKeyDirection},
+			EnabledAttributes:   []K8sPodNetworkIoMetricAttributeKey{K8sPodNetworkIoMetricAttributeKeyInterface, K8sPodNetworkIoMetricAttributeKeyDirection},
 		},
-		K8sPodUptime: K8sPodUptimeConfig{
+		K8sPodUptime: K8sPodUptimeMetricConfig{
 			Enabled: false,
 		},
-		K8sPodVolumeUsage: K8sPodVolumeUsageConfig{
+		K8sPodVolumeUsage: K8sPodVolumeUsageMetricConfig{
 			Enabled: false,
 		},
-		K8sVolumeAvailable: K8sVolumeAvailableConfig{
+		K8sVolumeAvailable: K8sVolumeAvailableMetricConfig{
 			Enabled: true,
 		},
-		K8sVolumeCapacity: K8sVolumeCapacityConfig{
+		K8sVolumeCapacity: K8sVolumeCapacityMetricConfig{
 			Enabled: true,
 		},
-		K8sVolumeInodes: K8sVolumeInodesConfig{
+		K8sVolumeInodes: K8sVolumeInodesMetricConfig{
 			Enabled: true,
 		},
-		K8sVolumeInodesFree: K8sVolumeInodesFreeConfig{
+		K8sVolumeInodesFree: K8sVolumeInodesFreeMetricConfig{
 			Enabled: true,
 		},
-		K8sVolumeInodesUsed: K8sVolumeInodesUsedConfig{
+		K8sVolumeInodesUsed: K8sVolumeInodesUsedMetricConfig{
 			Enabled: true,
 		},
 	}
