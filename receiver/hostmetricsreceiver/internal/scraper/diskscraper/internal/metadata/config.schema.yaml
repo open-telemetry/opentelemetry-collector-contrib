@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       system.disk.io:
-        description: "SystemDiskIoConfig provides config for the system.disk.io metric."
+        description: "SystemDiskIoMetricConfig provides config for the system.disk.io metric."
         type: object
         properties:
           enabled:
@@ -30,7 +30,7 @@ $defs:
               - "device"
               - "direction"
       system.disk.io_time:
-        description: "SystemDiskIoTimeConfig provides config for the system.disk.io_time metric."
+        description: "SystemDiskIoTimeMetricConfig provides config for the system.disk.io_time metric."
         type: object
         properties:
           enabled:
@@ -53,7 +53,7 @@ $defs:
             default:
               - "device"
       system.disk.merged:
-        description: "SystemDiskMergedConfig provides config for the system.disk.merged metric."
+        description: "SystemDiskMergedMetricConfig provides config for the system.disk.merged metric."
         type: object
         properties:
           enabled:
@@ -78,7 +78,7 @@ $defs:
               - "device"
               - "direction"
       system.disk.operation_time:
-        description: "SystemDiskOperationTimeConfig provides config for the system.disk.operation_time metric."
+        description: "SystemDiskOperationTimeMetricConfig provides config for the system.disk.operation_time metric."
         type: object
         properties:
           enabled:
@@ -103,7 +103,7 @@ $defs:
               - "device"
               - "direction"
       system.disk.operations:
-        description: "SystemDiskOperationsConfig provides config for the system.disk.operations metric."
+        description: "SystemDiskOperationsMetricConfig provides config for the system.disk.operations metric."
         type: object
         properties:
           enabled:
@@ -128,7 +128,7 @@ $defs:
               - "device"
               - "direction"
       system.disk.pending_operations:
-        description: "SystemDiskPendingOperationsConfig provides config for the system.disk.pending_operations metric."
+        description: "SystemDiskPendingOperationsMetricConfig provides config for the system.disk.pending_operations metric."
         type: object
         properties:
           enabled:
@@ -151,7 +151,7 @@ $defs:
             default:
               - "device"
       system.disk.weighted_io_time:
-        description: "SystemDiskWeightedIoTimeConfig provides config for the system.disk.weighted_io_time metric."
+        description: "SystemDiskWeightedIoTimeMetricConfig provides config for the system.disk.weighted_io_time metric."
         type: object
         properties:
           enabled:

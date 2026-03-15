@@ -5,70 +5,70 @@ $defs:
     type: object
     properties:
       vcs.change.count:
-        description: "VcsChangeCountConfig provides config for the vcs.change.count metric."
+        description: "VcsChangeCountMetricConfig provides config for the vcs.change.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcs.change.duration:
-        description: "VcsChangeDurationConfig provides config for the vcs.change.duration metric."
+        description: "VcsChangeDurationMetricConfig provides config for the vcs.change.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcs.change.time_to_approval:
-        description: "VcsChangeTimeToApprovalConfig provides config for the vcs.change.time_to_approval metric."
+        description: "VcsChangeTimeToApprovalMetricConfig provides config for the vcs.change.time_to_approval metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcs.change.time_to_merge:
-        description: "VcsChangeTimeToMergeConfig provides config for the vcs.change.time_to_merge metric."
+        description: "VcsChangeTimeToMergeMetricConfig provides config for the vcs.change.time_to_merge metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcs.contributor.count:
-        description: "VcsContributorCountConfig provides config for the vcs.contributor.count metric."
+        description: "VcsContributorCountMetricConfig provides config for the vcs.contributor.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       vcs.ref.count:
-        description: "VcsRefCountConfig provides config for the vcs.ref.count metric."
+        description: "VcsRefCountMetricConfig provides config for the vcs.ref.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcs.ref.lines_delta:
-        description: "VcsRefLinesDeltaConfig provides config for the vcs.ref.lines_delta metric."
+        description: "VcsRefLinesDeltaMetricConfig provides config for the vcs.ref.lines_delta metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcs.ref.revisions_delta:
-        description: "VcsRefRevisionsDeltaConfig provides config for the vcs.ref.revisions_delta metric."
+        description: "VcsRefRevisionsDeltaMetricConfig provides config for the vcs.ref.revisions_delta metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcs.ref.time:
-        description: "VcsRefTimeConfig provides config for the vcs.ref.time metric."
+        description: "VcsRefTimeMetricConfig provides config for the vcs.ref.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcs.repository.count:
-        description: "VcsRepositoryCountConfig provides config for the vcs.repository.count metric."
+        description: "VcsRepositoryCountMetricConfig provides config for the vcs.repository.count metric."
         type: object
         properties:
           enabled:

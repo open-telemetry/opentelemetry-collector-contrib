@@ -35,9 +35,9 @@ components:
         - elasticsearch
         - faro
         - file
+        - google_cloud_storage
         - googlecloud
         - googlecloudpubsub
-        - googlecloudstorage
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
@@ -68,6 +68,7 @@ components:
         - awscloudwatchmetricstreams_encoding
         - awsproxy
         - azure_auth
+        - azure_encoding
         - basicauth
         - bearertokenauth
         - cgroup_runtime
@@ -138,6 +139,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awslambda
         - awss3
         - awsxray
         - azure_blob

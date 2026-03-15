@@ -134,8 +134,54 @@ func TestConfigValidate_InvalidEndpoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				CollectorID: tt.collectorID,
+				Interval:    30 * time.Second,
 			}
 			cfg.Endpoint = tt.endpoint
+			err := xconfmap.Validate(cfg)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigValidate_InvalidInterval(t *testing.T) {
+	tests := []struct {
+		name        string
+		interval    time.Duration
+		expectError bool
+	}{
+		{
+			name:        "valid interval",
+			interval:    30 * time.Second,
+			expectError: false,
+		},
+		{
+			name:        "valid interval - 1 nanosecond",
+			interval:    1 * time.Nanosecond,
+			expectError: false,
+		},
+		{
+			name:        "invalid interval - zero",
+			interval:    0,
+			expectError: true,
+		},
+		{
+			name:        "invalid interval - negative",
+			interval:    -1 * time.Second,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Interval:    tt.interval,
+				CollectorID: "collector-1",
+			}
+			cfg.Endpoint = "http://localhost:8080"
 			err := xconfmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -237,6 +283,7 @@ func TestCheckTLSConfig(t *testing.T) {
 			}
 			cfg := &Config{
 				CollectorID: "collector-1",
+				Interval:    30 * time.Second,
 				HTTPScrapeConfig: &PromHTTPClientConfig{
 					TLSConfig: tlsConfig,
 				},
