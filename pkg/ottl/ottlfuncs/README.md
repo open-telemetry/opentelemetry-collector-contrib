@@ -137,8 +137,7 @@ All keys whose values match the pattern will be deleted from the map.
 
 Examples:
 
-- `delete_matching_values(log.attributes, "^$")` // deletes entries with an empty string
-
+- `delete_matching_values(log.attributes, "^$")`
 - `delete_matching_values(resource.attributes, "(?i).*redacted.*")`
 
 ### keep_matching_keys
