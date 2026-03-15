@@ -197,6 +197,7 @@ components:
         - otlpjsonfile
         - podman_stats
         - postgresql
+        - pprof
         - prometheus
         - prometheus_remote_write
         - prometheus_simple
