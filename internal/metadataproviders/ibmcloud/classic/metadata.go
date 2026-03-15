@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -57,40 +59,32 @@ func newProvider(endpoint string) Provider {
 }
 
 // InstanceMetadata retrieves instance metadata from the SoftLayer Resource Metadata API.
-// It makes individual GET requests for each metadata field using the plain-text (.txt)
+// It makes parallel GET requests for each metadata field using the plain-text (.txt)
 // format, which returns unquoted values directly.
 func (c *metadataClient) InstanceMetadata(ctx context.Context) (*InstanceMetadata, error) {
+	g, ctx := errgroup.WithContext(ctx)
 	var meta InstanceMetadata
 
-	id, err := fetchText(ctx, c, "getId.txt")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance ID: %w", err)
+	fetch := func(dst *string, method, label string) {
+		g.Go(func() error {
+			val, err := fetchText(ctx, c, method)
+			if err != nil {
+				return fmt.Errorf("failed to get %s: %w", label, err)
+			}
+			*dst = val
+			return nil
+		})
 	}
-	meta.ID = id
 
-	hostname, err := fetchText(ctx, c, "getHostname.txt")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get hostname: %w", err)
-	}
-	meta.Hostname = hostname
+	fetch(&meta.ID, "getId.txt", "instance ID")
+	fetch(&meta.Hostname, "getHostname.txt", "hostname")
+	fetch(&meta.Datacenter, "getDatacenter.txt", "datacenter")
+	fetch(&meta.AccountID, "getAccountId.txt", "account ID")
+	fetch(&meta.GlobalIdentifier, "getGlobalIdentifier.txt", "global identifier")
 
-	datacenter, err := fetchText(ctx, c, "getDatacenter.txt")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get datacenter: %w", err)
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
-	meta.Datacenter = datacenter
-
-	accountID, err := fetchText(ctx, c, "getAccountId.txt")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get account ID: %w", err)
-	}
-	meta.AccountID = accountID
-
-	globalID, err := fetchText(ctx, c, "getGlobalIdentifier.txt")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get global identifier: %w", err)
-	}
-	meta.GlobalIdentifier = globalID
 
 	return &meta, nil
 }

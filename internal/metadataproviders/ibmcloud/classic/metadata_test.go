@@ -99,7 +99,8 @@ func TestEmptyResponse(t *testing.T) {
 }
 
 func TestPartialFailure(t *testing.T) {
-	// getId succeeds but getHostname fails
+	// getId succeeds but getHostname fails; other endpoints return 404.
+	// With parallel execution, errgroup returns whichever error completes first.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/getId.txt":
@@ -118,7 +119,6 @@ func TestPartialFailure(t *testing.T) {
 
 	require.Error(t, err)
 	require.Nil(t, meta)
-	require.Contains(t, err.Error(), "failed to get hostname")
 }
 
 func TestContextCancellation(t *testing.T) {
