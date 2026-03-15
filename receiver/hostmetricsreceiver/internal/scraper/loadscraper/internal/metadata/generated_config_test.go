@@ -26,13 +26,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPULoadAverage15m: SystemCPULoadAverage15mConfig{
+					SystemCPULoadAverage15m: SystemCPULoadAverage15mMetricConfig{
 						Enabled: true,
 					},
-					SystemCPULoadAverage1m: SystemCPULoadAverage1mConfig{
+					SystemCPULoadAverage1m: SystemCPULoadAverage1mMetricConfig{
 						Enabled: true,
 					},
-					SystemCPULoadAverage5m: SystemCPULoadAverage5mConfig{
+					SystemCPULoadAverage5m: SystemCPULoadAverage5mMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -42,13 +42,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPULoadAverage15m: SystemCPULoadAverage15mConfig{
+					SystemCPULoadAverage15m: SystemCPULoadAverage15mMetricConfig{
 						Enabled: false,
 					},
-					SystemCPULoadAverage1m: SystemCPULoadAverage1mConfig{
+					SystemCPULoadAverage1m: SystemCPULoadAverage1mMetricConfig{
 						Enabled: false,
 					},
-					SystemCPULoadAverage5m: SystemCPULoadAverage5mConfig{
+					SystemCPULoadAverage5m: SystemCPULoadAverage5mMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -58,7 +58,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemCPULoadAverage15mConfig{}, SystemCPULoadAverage1mConfig{}, SystemCPULoadAverage5mConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemCPULoadAverage15mMetricConfig{}, SystemCPULoadAverage1mMetricConfig{}, SystemCPULoadAverage5mMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

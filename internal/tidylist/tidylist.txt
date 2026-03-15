@@ -212,7 +212,6 @@ pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
-processor/datadogsemanticsprocessor
 processor/deltatorateprocessor
 processor/dnslookupprocessor
 processor/filterprocessor
