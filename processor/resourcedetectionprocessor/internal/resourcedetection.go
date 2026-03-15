@@ -89,6 +89,8 @@ type ResourceProvider struct {
 	refreshInterval time.Duration
 	stopCh          chan struct{}
 	wg              sync.WaitGroup
+	startOnce       sync.Once
+	stopOnce        sync.Once
 }
 
 type resourceResult struct {
@@ -278,24 +280,30 @@ func IsEmptyResource(res pcommon.Resource) bool {
 	return res.Attributes().Len() == 0
 }
 
-// StartRefreshing begins periodic resource refresh if refreshInterval > 0
+// StartRefreshing begins periodic resource refresh if refreshInterval > 0.
+// It is safe to call multiple times; only the first call starts the goroutine.
 func (p *ResourceProvider) StartRefreshing(refreshInterval time.Duration, client *http.Client) {
-	p.refreshInterval = refreshInterval
-	if p.refreshInterval <= 0 {
-		return
-	}
+	p.startOnce.Do(func() {
+		p.refreshInterval = refreshInterval
+		if p.refreshInterval <= 0 {
+			return
+		}
 
-	p.stopCh = make(chan struct{})
-	p.wg.Add(1)
-	go p.refreshLoop(client)
+		p.stopCh = make(chan struct{})
+		p.wg.Add(1)
+		go p.refreshLoop(client)
+	})
 }
 
-// StopRefreshing stops the periodic refresh goroutine
+// StopRefreshing stops the periodic refresh goroutine.
+// It is safe to call multiple times; only the first call stops the goroutine.
 func (p *ResourceProvider) StopRefreshing() {
-	if p.stopCh != nil {
-		close(p.stopCh)
-		p.wg.Wait()
-	}
+	p.stopOnce.Do(func() {
+		if p.stopCh != nil {
+			close(p.stopCh)
+			p.wg.Wait()
+		}
+	})
 }
 
 func (p *ResourceProvider) refreshLoop(client *http.Client) {
