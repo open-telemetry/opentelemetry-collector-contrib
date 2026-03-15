@@ -498,109 +498,99 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 }
 
 // TestOnTruncateReadWholeFile tests that when on_truncate is set to "read_whole_file",
-// the whole file is read from the beginning after a copytruncate rotation
+// the whole file is read from the beginning after truncation is detected
+// (i.e. when the stored offset exceeds the current file size).
 func TestOnTruncateReadWholeFile(t *testing.T) {
 	t.Parallel()
+
+	identicalPrefix := string(bytes.Repeat([]byte("x"), 100)) // 100 bytes of 'x'
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.OnTruncate = OnTruncateReadWholeFile
-	cfg.PollInterval = 100 * time.Millisecond
+	cfg.FingerprintSize = 100 // Match the prefix size
 
+	operator, sink := testManager(t, cfg)
+	operator.persister = testutil.NewUnscopedMockPersister()
+
+	// Create file and write initial logs (same prefix ensures fingerprint match after truncation)
 	temp := filetest.OpenTemp(t, tempDir)
-	tempCopy := filetest.OpenTempWithPattern(t, tempDir, "*.copy.log")
-
-	// Write initial logs
-	log1 := []byte("log line 1")
-	log2 := []byte("log line 2")
+	log1 := []byte(identicalPrefix + " - log line 1")
+	log2 := []byte(identicalPrefix + " - log line 2")
 	filetest.WriteString(t, temp, string(log1)+"\n")
 	filetest.WriteString(t, temp, string(log2)+"\n")
 
-	// Start the operator and expect initial logs
-	operator, sink := testManager(t, cfg)
-	persister := testutil.NewUnscopedMockPersister()
-	require.NoError(t, operator.Start(persister))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
+	// First poll: read the existing logs
+	operator.poll(t.Context())
 	sink.ExpectTokens(t, log1, log2)
 
-	// Perform copytruncate: copy file to backup and truncate original
-	require.NoError(t, temp.Sync())
+	// Truncate the file and write shorter content (same fingerprint prefix)
+	require.NoError(t, temp.Truncate(0))
 	_, err := temp.Seek(0, 0)
 	require.NoError(t, err)
-	_, err = io.Copy(tempCopy, temp)
-	require.NoError(t, err)
-	require.NoError(t, tempCopy.Close())
-	require.NoError(t, temp.Truncate(0))
-	_, err = temp.Seek(0, 0)
-	require.NoError(t, err)
 
-	// Write new logs to the truncated file
-	log3 := []byte("log line 3")
-	log4 := []byte("log line 4")
+	log3 := []byte(identicalPrefix + " - new log 3")
 	filetest.WriteString(t, temp, string(log3)+"\n")
-	filetest.WriteString(t, temp, string(log4)+"\n")
 
-	// With read_whole_file, we should see log3 and log4
-	// (the file is re-read from the beginning after truncation)
-	sink.ExpectTokens(t, log3, log4)
+	// Second poll: file has same fingerprint but smaller size than stored offset.
+	// With read_whole_file, offset resets to 0, so log3 should be read.
+	operator.poll(t.Context())
+	sink.ExpectTokens(t, log3)
+
+	// Verify continued reading works after truncation detection
+	log4 := []byte(identicalPrefix + " - new log 4")
+	filetest.WriteString(t, temp, string(log4)+"\n")
+	operator.poll(t.Context())
+	sink.ExpectTokens(t, log4)
 }
 
 // TestOnTruncateReadNew tests that when on_truncate is set to "read_new",
-// only new data added after the truncation point is read
+// the offset is set to the current file size when truncation is detected,
+// so only data written after that point is read.
 func TestOnTruncateReadNew(t *testing.T) {
 	t.Parallel()
+
+	identicalPrefix := string(bytes.Repeat([]byte("x"), 100)) // 100 bytes of 'x'
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.OnTruncate = OnTruncateReadNew
-	cfg.PollInterval = 100 * time.Millisecond
+	cfg.FingerprintSize = 100 // Match the prefix size
 
+	operator, sink := testManager(t, cfg)
+	operator.persister = testutil.NewUnscopedMockPersister()
+
+	// Create file and write initial logs (same prefix ensures fingerprint match after truncation)
 	temp := filetest.OpenTemp(t, tempDir)
-	tempCopy := filetest.OpenTempWithPattern(t, tempDir, "*.copy.log")
-
-	// Write initial logs
-	log1 := []byte("log line 1")
-	log2 := []byte("log line 2")
+	log1 := []byte(identicalPrefix + " - log line 1")
+	log2 := []byte(identicalPrefix + " - log line 2")
 	filetest.WriteString(t, temp, string(log1)+"\n")
 	filetest.WriteString(t, temp, string(log2)+"\n")
 
-	// Start the operator and expect initial logs
-	operator, sink := testManager(t, cfg)
-	persister := testutil.NewUnscopedMockPersister()
-	require.NoError(t, operator.Start(persister))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
+	// First poll: read the existing logs
+	operator.poll(t.Context())
 	sink.ExpectTokens(t, log1, log2)
 
-	// Perform copytruncate: copy file to backup and truncate original
-	require.NoError(t, temp.Sync())
+	// Truncate the file and write shorter content (same fingerprint prefix)
+	require.NoError(t, temp.Truncate(0))
 	_, err := temp.Seek(0, 0)
 	require.NoError(t, err)
-	_, err = io.Copy(tempCopy, temp)
-	require.NoError(t, err)
-	require.NoError(t, tempCopy.Close())
-	require.NoError(t, temp.Truncate(0))
-	_, err = temp.Seek(0, 0)
-	require.NoError(t, err)
 
-	// Write new logs to the truncated file (less than the previous offset)
-	log3 := []byte("log3")
+	log3 := []byte(identicalPrefix + " - new log 3")
 	filetest.WriteString(t, temp, string(log3)+"\n")
 
-	// With read_new, we should see log3 because offset is reset to current file size (0)
-	// So when log3 is written, it will be read
-	sink.ExpectTokens(t, log3)
+	// Second poll: file has same fingerprint but smaller size than stored offset.
+	// With read_new, offset is set to current file size, so log3 is NOT read
+	// (it was written before the truncation was detected).
+	operator.poll(t.Context())
+	sink.ExpectNoCalls(t)
 
-	// Write more data to verify continued reading
-	log4 := []byte("log line 4")
+	// Write more data after the detection - only this should be read
+	log4 := []byte(identicalPrefix + " - new log 4")
 	filetest.WriteString(t, temp, string(log4)+"\n")
+	operator.poll(t.Context())
 	sink.ExpectTokens(t, log4)
 }
 
@@ -656,6 +646,22 @@ func TestOnTruncateIgnore(t *testing.T) {
 	// Since the file is smaller than the old offset, nothing should be read
 	op2.poll(t.Context())
 	sink2.ExpectNoCalls(t)
+
+	// Now grow the file past the stored offset by rewriting the original content
+	// (log1 + log2, which is exactly the stored offset size) followed by new data.
+	// This ensures the new data starts exactly at the stored offset boundary,
+	// avoiding partial token issues.
+	require.NoError(t, temp.Truncate(0))
+	_, err = temp.Seek(0, 0)
+	require.NoError(t, err)
+	filetest.WriteString(t, temp, string(log1)+"\n")
+	filetest.WriteString(t, temp, string(log2)+"\n")
+	log4 := []byte(identicalPrefix + " - log line 4")
+	filetest.WriteString(t, temp, string(log4)+"\n")
+
+	op2.poll(t.Context())
+	// Only data after the stored offset should be read
+	sink2.ExpectTokens(t, log4)
 
 	require.NoError(t, op2.Stop())
 }

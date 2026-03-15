@@ -1680,6 +1680,7 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.FingerprintSize = 1000 // identical prefix across rotations
+	cfg.OnTruncate = OnTruncateReadWholeFile
 
 	// Manager #1 (manual polling, no background goroutine)
 	op1, sink1 := testManager(t, cfg)
@@ -1697,7 +1698,12 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 		sink1.ExpectToken(t, []byte(line))
 	}
 
-	// Simulate copytruncate
+	// Grab metadata before truncation -- this captures the stale offset
+	// from reading the original 20 lines.
+	metadata := op1.tracker.GetMetadata()
+	require.NotEmpty(t, metadata)
+
+	// Simulate copytruncate while op1 is "down" (no more polls)
 	rotated := log.Name() + ".1"
 	origData, err := os.ReadFile(log.Name())
 	require.NoError(t, err)
@@ -1709,17 +1715,15 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 		filetest.WriteString(t, log, line+"\n")
 	}
 
-	// Persist metadata as if we were running; then stop op1.
-	// (poll() already saves checkpoints when persister is set.)
-	// Ensure any internal rotations are finalized.
-	op1.poll(t.Context())
-	require.NoError(t, op1.Stop())
-
 	// Manager #2 (manual polling) resumes from persisted metadata
 	op2, sink2 := testManager(t, cfg)
-	op2.persister = op1.persister
+	op2.persister = testutil.NewUnscopedMockPersister()
 
-	// On poll, offset > current size is detected and reset to 0.
+	// Load stale metadata so op2 sees the old (large) offset
+	op2.tracker.LoadMetadata(metadata)
+
+	// On poll, stored offset > current file size is detected.
+	// With read_whole_file, offset resets to 0, so all 10 lines are read.
 	op2.poll(t.Context())
 	for range 10 {
 		sink2.ExpectToken(t, []byte(line))

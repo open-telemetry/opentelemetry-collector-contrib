@@ -286,19 +286,19 @@ func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
 		var err error
 
 		if md != nil {
-			// Check if file was copy-truncated since last seen
+			// Check if stored offset exceeds current file size
 			if info, statErr := file.Stat(); statErr == nil && md.Offset > info.Size() {
-				// File has been truncated (copytruncate rotation)
+				// Stored offset exceeds current file size
 				switch m.onTruncate {
 				case OnTruncateReadWholeFile:
-					m.set.Logger.Debug("File has been rotated(truncated). Resetting offset to 0",
+					m.set.Logger.Debug("Stored offset exceeds current file size. Resetting offset to 0",
 						zap.String("path", file.Name()),
 						zap.Int64("stored_offset", md.Offset),
 						zap.Int64("current_file_size", info.Size()),
 					)
 					md.Offset = 0
 				case OnTruncateReadNew:
-					m.set.Logger.Debug("File has been rotated(truncated). Storing new offset",
+					m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
 						zap.String("path", file.Name()),
 						zap.Int64("stored_offset", md.Offset),
 						zap.Int64("current_file_size", info.Size()),
@@ -307,7 +307,7 @@ func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
 					md.Offset = info.Size()
 				case OnTruncateIgnore:
 					// Keep the old offset - no data will be read until file grows past the original offset
-					m.set.Logger.Debug("File has been rotated(truncated). Keeping original offset",
+					m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
 						zap.String("path", file.Name()),
 						zap.Int64("stored_offset", md.Offset),
 						zap.Int64("current_file_size", info.Size()),
@@ -351,20 +351,20 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 					zap.String("rotated_path", file.Name()))
 			}
 		}
-		// Close old reader and adjust metadata if file was copy-truncated.
+		// Close old reader and adjust offset if needed.
 		md := oldReader.Close()
 		if info, err := file.Stat(); err == nil && md.Offset > info.Size() {
-			// File has been truncated (copytruncate rotation)
+			// Stored offset exceeds current file size
 			switch m.onTruncate {
 			case OnTruncateReadWholeFile:
-				m.set.Logger.Warn("File has been rotated(truncated). Resetting offset to 0",
+				m.set.Logger.Debug("Stored offset exceeds current file size. Resetting offset to 0",
 					zap.String("path", file.Name()),
 					zap.Int64("stored_offset", md.Offset),
 					zap.Int64("current_file_size", info.Size()),
 				)
 				md.Offset = 0
 			case OnTruncateReadNew:
-				m.set.Logger.Warn("File has been rotated(truncated). Storing new offset",
+				m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
 					zap.String("path", file.Name()),
 					zap.Int64("stored_offset", md.Offset),
 					zap.Int64("current_file_size", info.Size()),
@@ -373,7 +373,7 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 				md.Offset = info.Size()
 			case OnTruncateIgnore:
 				// Keep the old offset - no data will be read until file grows past the original offset
-				m.set.Logger.Warn("File has been rotated(truncated). Keeping original offset",
+				m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
 					zap.String("path", file.Name()),
 					zap.Int64("stored_offset", md.Offset),
 					zap.Int64("current_file_size", info.Size()),
@@ -385,19 +385,19 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 
 	// Check for closed files for match
 	if oldMetadata := m.tracker.GetClosedFile(fp); oldMetadata != nil {
-		// Check if file was copy-truncated since last seen
+		// Check if stored offset exceeds current file size
 		if info, statErr := file.Stat(); statErr == nil && oldMetadata.Offset > info.Size() {
-			// File has been truncated (copytruncate rotation)
+			// Stored offset exceeds current file size
 			switch m.onTruncate {
 			case OnTruncateReadWholeFile:
-				m.set.Logger.Debug("File has been rotated(truncated). Resetting offset to 0",
+				m.set.Logger.Debug("Stored offset exceeds current file size. Resetting offset to 0",
 					zap.String("path", file.Name()),
 					zap.Int64("stored_offset", oldMetadata.Offset),
 					zap.Int64("current_file_size", info.Size()),
 				)
 				oldMetadata.Offset = 0
 			case OnTruncateReadNew:
-				m.set.Logger.Debug("File has been rotated(truncated). Storing new offset",
+				m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
 					zap.String("path", file.Name()),
 					zap.Int64("stored_offset", oldMetadata.Offset),
 					zap.Int64("current_file_size", info.Size()),
@@ -406,7 +406,7 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 				oldMetadata.Offset = info.Size()
 			case OnTruncateIgnore:
 				// Keep the old offset - no data will be read until file grows past the original offset
-				m.set.Logger.Debug("File has been rotated(truncated). Keeping original offset",
+				m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
 					zap.String("path", file.Name()),
 					zap.Int64("stored_offset", oldMetadata.Offset),
 					zap.Int64("current_file_size", info.Size()),

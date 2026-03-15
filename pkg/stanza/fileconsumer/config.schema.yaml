@@ -33,6 +33,8 @@ $defs:
         $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.byte_size
       multiline:
         $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split.config
+      on_truncate:
+        type: string
       poll_interval:
         type: string
         format: duration
