@@ -1,5 +1,6 @@
 display_name: vCenter Receiver
 type: vcenter
+reaggregation_enabled: true
 
 description: This receiver fetches metrics from a vCenter or ESXi host running VMware vSphere APIs.
 
@@ -70,6 +71,7 @@ attributes:
       - total
       - used
     description: The type of CPU reservation for the host.
+    requirement_level: recommended
   cpu_state:
     description: CPU time spent in idle, ready or idle state.
     type: string
@@ -77,6 +79,7 @@ attributes:
       - "idle"
       - "ready"
       - "wait"
+    requirement_level: recommended
   disk_direction:
     name_override: direction
     description: The direction of disk latency.
@@ -84,18 +87,21 @@ attributes:
     enum:
       - read
       - write
+    requirement_level: recommended
   disk_state:
     description: The state of storage and whether it is already allocated or free.
     type: string
     enum:
       - available
       - used
+    requirement_level: recommended
   disk_type:
     description: The type of storage device that is being recorded.
     type: string
     enum:
       - virtual
       - physical
+    requirement_level: recommended
   entity_status:
     name_override: status
     description: The current status of the managed entity.
@@ -105,10 +111,12 @@ attributes:
       - "yellow"
       - "green"
       - "gray"
+    requirement_level: recommended
   host_effective:
     type: bool
     name_override: effective
     description: Whether the host is effective in the vCenter cluster.
+    requirement_level: recommended
   host_power_state:
     name_override: power_state
     description: The current power state of the host.
@@ -118,6 +126,7 @@ attributes:
       - "off"
       - "standby"
       - "unknown"
+    requirement_level: recommended
   memory_granted_type:
     name_override: type
     description: The type of memory granted.
@@ -125,6 +134,7 @@ attributes:
     enum:
       - private
       - shared
+    requirement_level: recommended
   memory_usage_type:
     name_override: type
     description: The type of memory usage.
@@ -133,10 +143,12 @@ attributes:
       - guest
       - host
       - overhead
+    requirement_level: recommended
   object_name:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
     type: string
+    requirement_level: recommended
   throughput_direction:
     name_override: direction
     description: The direction of network throughput.
@@ -144,6 +156,7 @@ attributes:
     enum:
       - transmitted
       - received
+    requirement_level: recommended
   vm_count_power_state:
     name_override: power_state
     description: The current power state of the virtual machine.
@@ -153,6 +166,7 @@ attributes:
       - "off"
       - "suspended"
       - "unknown"
+    requirement_level: recommended
   vsan_latency_type:
     name_override: type
     description: The type of vSAN latency.
@@ -160,6 +174,7 @@ attributes:
     enum:
       - read
       - write
+    requirement_level: recommended
   vsan_operation_type:
     name_override: type
     description: The type of vSAN operation.
@@ -168,7 +183,7 @@ attributes:
       - read
       - write
       - unmap
-
+    requirement_level: recommended
   vsan_throughput_direction:
     name_override: direction
     description: The type of vSAN throughput.
@@ -176,6 +191,7 @@ attributes:
     enum:
       - read
       - write
+    requirement_level: recommended
 
 metrics:
   vcenter.cluster.cpu.effective:
