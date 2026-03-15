@@ -1264,10 +1264,11 @@ func TestConsumeLogsMixedServiceNames(t *testing.T) {
 	rl2 := ld.ResourceLogs().AppendEmpty()
 	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("no service log")
 
-	// both logs should be exported — the one without service.name routes to empty key
+	// both logs should be exported — with a single endpoint, both routing keys
+	// hash to the same backend so batches are coalesced into one ConsumeLogs call
 	err = p.ConsumeLogs(t.Context(), ld)
 	assert.NoError(t, err)
-	assert.Len(t, sink.AllLogs(), 2, "both logs should be exported, missing service.name routes to empty key")
+	assert.Len(t, sink.AllLogs(), 1, "single endpoint coalesces all batches into one call")
 }
 
 func TestConsumeLogsTripleEndpoint(t *testing.T) {
