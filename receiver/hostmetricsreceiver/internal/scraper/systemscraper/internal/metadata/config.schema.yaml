@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       system.uptime:
-        description: "SystemUptimeConfig provides config for the system.uptime metric."
+        description: "SystemUptimeMetricConfig provides config for the system.uptime metric."
         type: object
         properties:
           enabled:
