@@ -5,7 +5,6 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -13,10 +12,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
@@ -114,16 +111,7 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	case traceIDRouting:
 		batches = splitLogsByTraceID(ld)
 	case svcRouting:
-		var errs []error
-		batches, errs = splitLogsByServiceName(ld)
-		if len(errs) > 0 {
-			for _, ee := range errs {
-				e.logger.Error("failed to export log", zap.Error(ee))
-			}
-			if len(batches) == 0 {
-				return consumererror.NewPermanent(errors.Join(errs...))
-			}
-		}
+		batches = splitLogsByServiceName(ld)
 	case resourceRouting:
 		batches = splitLogsByResourceID(ld)
 	case attrRouting:
@@ -169,20 +157,18 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return errs
 }
 
-func splitLogsByServiceName(ld plog.Logs) (map[string]plog.Logs, []error) {
+func splitLogsByServiceName(ld plog.Logs) map[string]plog.Logs {
 	results := make(map[string]plog.Logs, ld.ResourceLogs().Len())
-	var errs []error
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rm := ld.ResourceLogs().At(i)
 
+		key := ""
 		svc, ok := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey))
-		if !ok {
-			errs = append(errs, fmt.Errorf("unable to get service name from resource log with attributes: %v", rm.Resource().Attributes().AsRaw()))
-			continue
+		if ok {
+			key = svc.Str()
 		}
 
-		key := svc.Str()
 		existing, ok := results[key]
 		if ok {
 			rm.CopyTo(existing.ResourceLogs().AppendEmpty())
@@ -193,7 +179,7 @@ func splitLogsByServiceName(ld plog.Logs) (map[string]plog.Logs, []error) {
 		}
 	}
 
-	return results, errs
+	return results
 }
 
 func splitLogsByResourceID(ld plog.Logs) map[string]plog.Logs {
@@ -216,88 +202,186 @@ func splitLogsByResourceID(ld plog.Logs) map[string]plog.Logs {
 	return results
 }
 
+// splitLogsByTraceID splits logs per-record by trace ID, so records with
+// different trace IDs within the same ResourceLogs are routed to different
+// backends. This mirrors how batchpersignal.SplitLogs works.
 func splitLogsByTraceID(ld plog.Logs) map[string]plog.Logs {
-	results := make(map[string]plog.Logs, ld.ResourceLogs().Len())
+	results := make(map[string]plog.Logs)
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rm := ld.ResourceLogs().At(i)
+		rl := ld.ResourceLogs().At(i)
 
-		var traceID pcommon.TraceID
-		if rm.ScopeLogs().Len() > 0 && rm.ScopeLogs().At(0).LogRecords().Len() > 0 {
-			traceID = rm.ScopeLogs().At(0).LogRecords().At(0).TraceID()
-		}
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
 
-		key := traceID.String()
-		existing, ok := results[key]
-		if ok {
-			rm.CopyTo(existing.ResourceLogs().AppendEmpty())
-		} else {
-			newLD := plog.NewLogs()
-			rm.CopyTo(newLD.ResourceLogs().AppendEmpty())
-			results[key] = newLD
+			// Group log records by trace ID within this scope.
+			type scopeBatch struct {
+				rl plog.ResourceLogs
+			}
+			batches := make(map[string]*scopeBatch)
+
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				lr := sl.LogRecords().At(k)
+				key := lr.TraceID().String()
+
+				sb, ok := batches[key]
+				if !ok {
+					// First record with this trace ID in this scope —
+					// create a new ResourceLogs with resource + scope copied.
+					var logs plog.Logs
+					existing, found := results[key]
+					if found {
+						logs = existing
+					} else {
+						logs = plog.NewLogs()
+						results[key] = logs
+					}
+					newRL := logs.ResourceLogs().AppendEmpty()
+					rl.Resource().CopyTo(newRL.Resource())
+					newRL.SetSchemaUrl(rl.SchemaUrl())
+					newSL := newRL.ScopeLogs().AppendEmpty()
+					sl.Scope().CopyTo(newSL.Scope())
+					newSL.SetSchemaUrl(sl.SchemaUrl())
+					sb = &scopeBatch{rl: newRL}
+					batches[key] = sb
+				}
+
+				tgt := sb.rl.ScopeLogs().At(sb.rl.ScopeLogs().Len() - 1).LogRecords().AppendEmpty()
+				lr.CopyTo(tgt)
+			}
 		}
 	}
 
 	return results
 }
 
+// splitLogsByAttributes splits logs per-record, building a routing key from
+// resource → scope → log record attributes (including pseudo attributes
+// log.severity and log.body). This mirrors the metrics exporter pattern where
+// routing goes down to the deepest supported element when attributes are not
+// fully resolved at higher levels.
 func splitLogsByAttributes(ld plog.Logs, attrs []string) map[string]plog.Logs {
-	results := make(map[string]plog.Logs, ld.ResourceLogs().Len())
+	results := make(map[string]plog.Logs)
 	var rKey strings.Builder
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rm := ld.ResourceLogs().At(i)
-		rKey.Reset()
+		rl := ld.ResourceLogs().At(i)
+		resourceAttrs := rl.Resource().Attributes()
 
+		// Resolve attributes at resource level first.
+		var baseResourceKey strings.Builder
+		pendingResourceAttrs := make([]string, 0, len(attrs))
 		for _, a := range attrs {
-			// resource attributes
-			rAttr, ok := rm.Resource().Attributes().Get(a)
+			if val, ok := resourceAttrs.Get(a); ok {
+				baseResourceKey.WriteString(val.Str())
+				continue
+			}
+			pendingResourceAttrs = append(pendingResourceAttrs, a)
+		}
+
+		// If all attributes resolved at resource level, or there are no scope
+		// logs to inspect further, route using what we have.
+		if len(pendingResourceAttrs) == 0 || rl.ScopeLogs().Len() == 0 {
+			key := baseResourceKey.String()
+			existing, ok := results[key]
 			if ok {
-				rKey.WriteString(rAttr.Str())
+				rl.CopyTo(existing.ResourceLogs().AppendEmpty())
+			} else {
+				newLD := plog.NewLogs()
+				rl.CopyTo(newLD.ResourceLogs().AppendEmpty())
+				results[key] = newLD
+			}
+			continue
+		}
+
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
+			scopeAttrs := sl.Scope().Attributes()
+
+			// Resolve remaining attributes at scope level.
+			var baseScopeKey strings.Builder
+			baseScopeKey.WriteString(baseResourceKey.String())
+			pendingScopeAttrs := make([]string, 0, len(pendingResourceAttrs))
+			for _, a := range pendingResourceAttrs {
+				if val, ok := scopeAttrs.Get(a); ok {
+					baseScopeKey.WriteString(val.Str())
+					continue
+				}
+				pendingScopeAttrs = append(pendingScopeAttrs, a)
+			}
+
+			// If all attributes resolved at resource+scope level, no per-record split needed.
+			if len(pendingScopeAttrs) == 0 {
+				key := baseScopeKey.String()
+				appendLogScope(results, key, rl, sl)
 				continue
 			}
 
-			// scope attributes
-			if rm.ScopeLogs().Len() > 0 {
-				sAttr, ok := rm.ScopeLogs().At(0).Scope().Attributes().Get(a)
-				if ok {
-					rKey.WriteString(sAttr.Str())
-					continue
-				}
+			// Must inspect individual log records for remaining attributes.
+			type recordBatch struct {
+				rl plog.ResourceLogs
+			}
+			batches := make(map[string]*recordBatch)
 
-				// log record attributes and pseudo attributes
-				if rm.ScopeLogs().At(0).LogRecords().Len() > 0 {
-					lr := rm.ScopeLogs().At(0).LogRecords().At(0)
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				lr := sl.LogRecords().At(k)
+				rKey.Reset()
+				rKey.WriteString(baseScopeKey.String())
 
+				for _, a := range pendingScopeAttrs {
 					if a == pseudoAttrLogSeverity {
 						rKey.WriteString(lr.SeverityText())
 						continue
 					}
-
 					if a == pseudoAttrLogBody {
 						rKey.WriteString(lr.Body().AsString())
 						continue
 					}
-
-					lAttr, ok := lr.Attributes().Get(a)
-					if ok {
-						rKey.WriteString(lAttr.Str())
-						continue
+					if val, ok := lr.Attributes().Get(a); ok {
+						rKey.WriteString(val.Str())
 					}
 				}
-			}
-		}
 
-		key := rKey.String()
-		existing, ok := results[key]
-		if ok {
-			rm.CopyTo(existing.ResourceLogs().AppendEmpty())
-		} else {
-			newLD := plog.NewLogs()
-			rm.CopyTo(newLD.ResourceLogs().AppendEmpty())
-			results[key] = newLD
+				key := rKey.String()
+				rb, ok := batches[key]
+				if !ok {
+					var logs plog.Logs
+					existing, found := results[key]
+					if found {
+						logs = existing
+					} else {
+						logs = plog.NewLogs()
+						results[key] = logs
+					}
+					newRL := logs.ResourceLogs().AppendEmpty()
+					rl.Resource().CopyTo(newRL.Resource())
+					newRL.SetSchemaUrl(rl.SchemaUrl())
+					newSL := newRL.ScopeLogs().AppendEmpty()
+					sl.Scope().CopyTo(newSL.Scope())
+					newSL.SetSchemaUrl(sl.SchemaUrl())
+					rb = &recordBatch{rl: newRL}
+					batches[key] = rb
+				}
+
+				tgt := rb.rl.ScopeLogs().At(rb.rl.ScopeLogs().Len() - 1).LogRecords().AppendEmpty()
+				lr.CopyTo(tgt)
+			}
 		}
 	}
 
 	return results
+}
+
+// appendLogScope adds a full scope to the results map under the given key,
+// preserving resource and scope structure.
+func appendLogScope(results map[string]plog.Logs, key string, rl plog.ResourceLogs, sl plog.ScopeLogs) {
+	existing, ok := results[key]
+	if !ok {
+		existing = plog.NewLogs()
+		results[key] = existing
+	}
+	newRL := existing.ResourceLogs().AppendEmpty()
+	rl.Resource().CopyTo(newRL.Resource())
+	newRL.SetSchemaUrl(rl.SchemaUrl())
+	sl.CopyTo(newRL.ScopeLogs().AppendEmpty())
 }

@@ -398,16 +398,16 @@ func TestLogsWithMissingServiceName(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	// test with a log that has no service.name — should return permanent error
+	// test with a log that has no service.name — should still route (to empty key)
 	logWithoutSvc := plog.NewLogs()
 	rl := logWithoutSvc.ResourceLogs().AppendEmpty()
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("test")
 
 	err = p.ConsumeLogs(t.Context(), logWithoutSvc)
 
-	// verify — permanent error, no logs exported
-	assert.Error(t, err)
-	assert.Empty(t, sink.AllLogs())
+	// verify — log is routed (not dropped), no error
+	assert.NoError(t, err)
+	assert.NotEmpty(t, sink.AllLogs())
 }
 
 // this test validates that exporter can concurrently change the endpoints while consuming logs.
@@ -607,8 +607,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 func TestSplitLogsByServiceName(t *testing.T) {
 	t.Run("single service", func(t *testing.T) {
 		ld := simpleLogWithServiceName("svc-1")
-		batches, errs := splitLogsByServiceName(ld)
-		require.Empty(t, errs)
+		batches := splitLogsByServiceName(ld)
 		require.Len(t, batches, 1)
 		require.Contains(t, batches, "svc-1")
 	})
@@ -622,21 +621,21 @@ func TestSplitLogsByServiceName(t *testing.T) {
 		rl2.Resource().Attributes().PutStr("service.name", "svc-2")
 		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
 
-		batches, errs := splitLogsByServiceName(ld)
-		require.Empty(t, errs)
+		batches := splitLogsByServiceName(ld)
 		require.Len(t, batches, 2)
 		require.Contains(t, batches, "svc-1")
 		require.Contains(t, batches, "svc-2")
 	})
 
-	t.Run("missing service name", func(t *testing.T) {
+	t.Run("missing service name routes to empty key", func(t *testing.T) {
 		ld := plog.NewLogs()
 		rl := ld.ResourceLogs().AppendEmpty()
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
 
-		batches, errs := splitLogsByServiceName(ld)
-		require.Len(t, errs, 1)
-		require.Empty(t, batches)
+		batches := splitLogsByServiceName(ld)
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "")
+		assert.Equal(t, 1, batches[""].ResourceLogs().Len())
 	})
 
 	t.Run("duplicate service names merged", func(t *testing.T) {
@@ -648,8 +647,7 @@ func TestSplitLogsByServiceName(t *testing.T) {
 		rl2.Resource().Attributes().PutStr("service.name", "svc-1")
 		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
 
-		batches, errs := splitLogsByServiceName(ld)
-		require.Empty(t, errs)
+		batches := splitLogsByServiceName(ld)
 		require.Len(t, batches, 1)
 		require.Contains(t, batches, "svc-1")
 		assert.Equal(t, 2, batches["svc-1"].ResourceLogs().Len())
@@ -657,8 +655,7 @@ func TestSplitLogsByServiceName(t *testing.T) {
 
 	t.Run("empty logs", func(t *testing.T) {
 		ld := plog.NewLogs()
-		batches, errs := splitLogsByServiceName(ld)
-		require.Empty(t, errs)
+		batches := splitLogsByServiceName(ld)
 		require.Empty(t, batches)
 	})
 
@@ -667,18 +664,18 @@ func TestSplitLogsByServiceName(t *testing.T) {
 		rl1 := ld.ResourceLogs().AppendEmpty()
 		rl1.Resource().Attributes().PutStr("service.name", "svc-1")
 		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
-		// no service.name on this resource
+		// no service.name on this resource — routed to empty key
 		rl2 := ld.ResourceLogs().AppendEmpty()
 		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
 		rl3 := ld.ResourceLogs().AppendEmpty()
 		rl3.Resource().Attributes().PutStr("service.name", "svc-2")
 		rl3.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-3")
 
-		batches, errs := splitLogsByServiceName(ld)
-		require.Len(t, errs, 1) // one error for rl2
-		require.Len(t, batches, 2)
+		batches := splitLogsByServiceName(ld)
+		require.Len(t, batches, 3) // svc-1, svc-2, and empty key
 		require.Contains(t, batches, "svc-1")
 		require.Contains(t, batches, "svc-2")
+		require.Contains(t, batches, "")
 	})
 
 	t.Run("preserves log record data", func(t *testing.T) {
@@ -692,8 +689,7 @@ func TestSplitLogsByServiceName(t *testing.T) {
 		lr.SetSeverityText("ERROR")
 		lr.Attributes().PutStr("trace_id", "abc123")
 
-		batches, errs := splitLogsByServiceName(ld)
-		require.Empty(t, errs)
+		batches := splitLogsByServiceName(ld)
 		require.Len(t, batches, 1)
 
 		result := batches["svc-1"]
@@ -942,6 +938,71 @@ func TestSplitLogsByAttributes(t *testing.T) {
 		batches := splitLogsByAttributes(ld, []string{"env", "user.id"})
 		require.Len(t, batches, 1)
 		require.Contains(t, batches, "prod")
+	})
+
+	t.Run("mixed record attributes within single ResourceLogs are split per-record", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "svc-1")
+		sl := rl.ScopeLogs().AppendEmpty()
+		lr1 := sl.LogRecords().AppendEmpty()
+		lr1.SetSeverityText("ERROR")
+		lr1.Body().SetStr("error log")
+		lr2 := sl.LogRecords().AppendEmpty()
+		lr2.SetSeverityText("INFO")
+		lr2.Body().SetStr("info log")
+		lr3 := sl.LogRecords().AppendEmpty()
+		lr3.SetSeverityText("ERROR")
+		lr3.Body().SetStr("another error")
+
+		batches := splitLogsByAttributes(ld, []string{"log.severity"})
+		require.Len(t, batches, 2, "two different severities should produce two batches")
+		require.Contains(t, batches, "ERROR")
+		require.Contains(t, batches, "INFO")
+
+		// ERROR batch should have 2 records
+		errorBatch := batches["ERROR"]
+		totalError := 0
+		for i := 0; i < errorBatch.ResourceLogs().Len(); i++ {
+			for j := 0; j < errorBatch.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+				totalError += errorBatch.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+			}
+		}
+		assert.Equal(t, 2, totalError)
+
+		// INFO batch should have 1 record
+		infoBatch := batches["INFO"]
+		totalInfo := 0
+		for i := 0; i < infoBatch.ResourceLogs().Len(); i++ {
+			for j := 0; j < infoBatch.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+				totalInfo += infoBatch.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+			}
+		}
+		assert.Equal(t, 1, totalInfo)
+	})
+
+	t.Run("resource-level attributes skip per-record split", func(t *testing.T) {
+		// When all routing attributes are at resource level, the entire
+		// ResourceLogs should be copied as-is (no per-record iteration).
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("env", "prod")
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.LogRecords().AppendEmpty().Body().SetStr("log-1")
+		sl.LogRecords().AppendEmpty().Body().SetStr("log-2")
+
+		batches := splitLogsByAttributes(ld, []string{"env"})
+		require.Len(t, batches, 1)
+		require.Contains(t, batches, "prod")
+		// Both records should stay together in one ResourceLogs
+		totalRecords := 0
+		b := batches["prod"]
+		for i := 0; i < b.ResourceLogs().Len(); i++ {
+			for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+				totalRecords += b.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+			}
+		}
+		assert.Equal(t, 2, totalRecords)
 	})
 }
 
@@ -1203,10 +1264,10 @@ func TestConsumeLogsMixedServiceNames(t *testing.T) {
 	rl2 := ld.ResourceLogs().AppendEmpty()
 	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("no service log")
 
-	// this should still export the valid logs and log an error for the invalid one
+	// both logs should be exported — the one without service.name routes to empty key
 	err = p.ConsumeLogs(t.Context(), ld)
 	assert.NoError(t, err)
-	assert.Len(t, sink.AllLogs(), 1, "logs with valid service.name should still be exported")
+	assert.Len(t, sink.AllLogs(), 2, "both logs should be exported, missing service.name routes to empty key")
 }
 
 func TestConsumeLogsTripleEndpoint(t *testing.T) {
@@ -1406,6 +1467,45 @@ func TestSplitLogsByTraceID(t *testing.T) {
 		ld := plog.NewLogs()
 		batches := splitLogsByTraceID(ld)
 		require.Empty(t, batches)
+	})
+
+	t.Run("mixed traceIDs within single ResourceLogs are split per-record", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "svc-1")
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.LogRecords().AppendEmpty().SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+		sl.LogRecords().AppendEmpty().SetTraceID(pcommon.TraceID([16]byte{5, 6, 7, 8}))
+		sl.LogRecords().AppendEmpty().SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+
+		batches := splitLogsByTraceID(ld)
+		require.Len(t, batches, 2, "two different traceIDs should produce two batches")
+
+		tid1 := pcommon.TraceID([16]byte{1, 2, 3, 4}).String()
+		tid2 := pcommon.TraceID([16]byte{5, 6, 7, 8}).String()
+
+		require.Contains(t, batches, tid1)
+		require.Contains(t, batches, tid2)
+
+		// traceID {1,2,3,4} should have 2 records
+		b1 := batches[tid1]
+		totalRecords1 := 0
+		for i := 0; i < b1.ResourceLogs().Len(); i++ {
+			for j := 0; j < b1.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+				totalRecords1 += b1.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+			}
+		}
+		assert.Equal(t, 2, totalRecords1)
+
+		// traceID {5,6,7,8} should have 1 record
+		b2 := batches[tid2]
+		totalRecords2 := 0
+		for i := 0; i < b2.ResourceLogs().Len(); i++ {
+			for j := 0; j < b2.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+				totalRecords2 += b2.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+			}
+		}
+		assert.Equal(t, 1, totalRecords2)
 	})
 }
 
