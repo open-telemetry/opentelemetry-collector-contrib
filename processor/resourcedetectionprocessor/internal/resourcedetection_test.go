@@ -480,7 +480,7 @@ func TestStartStopRefreshing(t *testing.T) {
 
 func TestStartRefreshing_CalledMultipleTimes(t *testing.T) {
 	provider := NewResourceProvider(zap.NewNop(), 5*time.Second)
-	client := &http.Client{}
+	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Call StartRefreshing multiple times (simulating traces, metrics, logs processors)
 	provider.StartRefreshing(100*time.Millisecond, client)
