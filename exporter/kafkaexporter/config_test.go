@@ -77,7 +77,6 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "spans",
 					Encoding: "otlp_proto",
 				},
-				Topic:                                "spans",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
@@ -85,7 +84,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
+			id: component.NewIDWithName(metadata.Type, "per_signal_topic"),
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
@@ -93,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:     configkafka.NewDefaultClientConfig(),
 				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
-					Topic:                "legacy_topic",
+					Topic:                "per_signal_topic",
 					Encoding:             "otlp_proto",
 					TopicFromMetadataKey: "metadata_key",
 				},
@@ -102,21 +101,20 @@ func TestLoadConfig(t *testing.T) {
 					Encoding: "otlp_proto",
 				},
 				Traces: SignalConfig{
-					Topic:    "legacy_topic",
+					Topic:    "per_signal_topic",
 					Encoding: "otlp_proto",
 				},
 				Profiles: SignalConfig{
-					Topic:    "legacy_topic",
+					Topic:    "per_signal_topic",
 					Encoding: "otlp_proto",
 				},
-				Topic: "legacy_topic",
 				IncludeMetadataKeys: []string{
 					"metadata_key",
 				},
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "legacy_encoding"),
+			id: component.NewIDWithName(metadata.Type, "per_signal_encoding"),
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
@@ -125,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
 					Topic:    "otlp_logs",
-					Encoding: "legacy_encoding",
+					Encoding: "per_signal_encoding",
 				},
 				Metrics: SignalConfig{
 					Topic:    "otlp_metrics",
@@ -133,13 +131,12 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: SignalConfig{
 					Topic:    "otlp_spans",
-					Encoding: "legacy_encoding",
+					Encoding: "per_signal_encoding",
 				},
 				Profiles: SignalConfig{
 					Topic:    "otlp_profiles",
-					Encoding: "legacy_encoding",
+					Encoding: "per_signal_encoding",
 				},
-				Encoding: "legacy_encoding",
 			},
 		},
 		{
