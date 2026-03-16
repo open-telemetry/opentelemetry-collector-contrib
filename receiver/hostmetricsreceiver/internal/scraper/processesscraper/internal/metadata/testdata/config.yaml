@@ -6,7 +6,6 @@ all_set:
       attributes: ["status"]
     system.processes.created:
       enabled: true
-      attributes: []
 reaggregate_set:
   metrics:
     system.processes.count:
@@ -14,7 +13,6 @@ reaggregate_set:
       attributes: []
     system.processes.created:
       enabled: true
-      attributes: []
 none_set:
   metrics:
     system.processes.count:
@@ -22,4 +20,3 @@ none_set:
       attributes: ["status"]
     system.processes.created:
       enabled: false
-      attributes: []

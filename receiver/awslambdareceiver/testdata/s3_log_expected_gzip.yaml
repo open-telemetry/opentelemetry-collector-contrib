@@ -17,7 +17,7 @@ resourceLogs:
       - logRecords:
           - attributes:
             body:
-              stringValue: H4sIAAAAAAAAAwvOz01VyMlPV8jMUwg2VshPykpNLgEAo01BGxUAAAA=
+              stringValue: Logs in Gzip S3 object
             observedTimeUnixNano: "1764625361000000000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver

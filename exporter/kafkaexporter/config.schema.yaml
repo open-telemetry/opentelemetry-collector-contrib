@@ -15,9 +15,6 @@ $defs:
 description: Config defines configuration for Kafka exporter.
 type: object
 properties:
-  encoding:
-    description: 'Encoding holds the encoding of Kafka message values. Encoding has no default. If explicitly specified, it will take precedence over the default values of logs::encoding, metrics::encoding, and traces::encoding. Deprecated [v0.124.0]: use logs::encoding, metrics::encoding, and traces::encoding instead.'
-    type: string
   include_metadata_keys:
     description: IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers.
     type: array
@@ -49,9 +46,6 @@ properties:
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
-  topic:
-    description: 'Topic holds the name of the Kafka topic to which data should be exported. Topic has no default. If explicitly specified, it will take precedence over the default values of logs::topic, metrics::topic, and traces::topic. Deprecated [v0.124.0]: use logs::topic, metrics::topic, and traces::topic instead.'
-    type: string
   topic_from_attribute:
     description: TopicFromAttribute is the name of the attribute to use as the topic name.
     type: string

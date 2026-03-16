@@ -101,10 +101,10 @@ type metricInfo struct {
 }
 
 type metricSystemCPUFrequency struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        SystemCPUFrequencyMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.cpu.frequency metric with initial data.
@@ -125,7 +125,7 @@ func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "cpu") {
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUFrequencyMetricAttributeKeyCpu) {
 		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	}
 
@@ -179,7 +179,7 @@ func (m *metricSystemCPUFrequency) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemCPUFrequency(cfg MetricConfig) metricSystemCPUFrequency {
+func newMetricSystemCPUFrequency(cfg SystemCPUFrequencyMetricConfig) metricSystemCPUFrequency {
 	m := metricSystemCPUFrequency{config: cfg}
 
 	if cfg.Enabled {
@@ -190,10 +190,9 @@ func newMetricSystemCPUFrequency(cfg MetricConfig) metricSystemCPUFrequency {
 }
 
 type metricSystemCPULogicalCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   SystemCPULogicalCountMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills system.cpu.logical.count metric with initial data.
@@ -204,45 +203,16 @@ func (m *metricSystemCPULogicalCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemCPULogicalCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -255,18 +225,13 @@ func (m *metricSystemCPULogicalCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPULogicalCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemCPULogicalCount(cfg MetricConfig) metricSystemCPULogicalCount {
+func newMetricSystemCPULogicalCount(cfg SystemCPULogicalCountMetricConfig) metricSystemCPULogicalCount {
 	m := metricSystemCPULogicalCount{config: cfg}
 
 	if cfg.Enabled {
@@ -277,10 +242,9 @@ func newMetricSystemCPULogicalCount(cfg MetricConfig) metricSystemCPULogicalCoun
 }
 
 type metricSystemCPUPhysicalCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SystemCPUPhysicalCountMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills system.cpu.physical.count metric with initial data.
@@ -291,45 +255,16 @@ func (m *metricSystemCPUPhysicalCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemCPUPhysicalCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -342,18 +277,13 @@ func (m *metricSystemCPUPhysicalCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPUPhysicalCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemCPUPhysicalCount(cfg MetricConfig) metricSystemCPUPhysicalCount {
+func newMetricSystemCPUPhysicalCount(cfg SystemCPUPhysicalCountMetricConfig) metricSystemCPUPhysicalCount {
 	m := metricSystemCPUPhysicalCount{config: cfg}
 
 	if cfg.Enabled {
@@ -364,10 +294,10 @@ func newMetricSystemCPUPhysicalCount(cfg MetricConfig) metricSystemCPUPhysicalCo
 }
 
 type metricSystemCPUTime struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric            // data buffer for generated metric.
+	config        SystemCPUTimeMetricConfig // metric config provided by user.
+	capacity      int                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.cpu.time metric with initial data.
@@ -390,10 +320,10 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "cpu") {
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyCpu) {
 		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "state") {
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -447,7 +377,7 @@ func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
+func newMetricSystemCPUTime(cfg SystemCPUTimeMetricConfig) metricSystemCPUTime {
 	m := metricSystemCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -458,10 +388,10 @@ func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
 }
 
 type metricSystemCPUUtilization struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SystemCPUUtilizationMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.cpu.utilization metric with initial data.
@@ -482,10 +412,10 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "cpu") {
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyCpu) {
 		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "state") {
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -539,7 +469,7 @@ func (m *metricSystemCPUUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization {
+func newMetricSystemCPUUtilization(cfg SystemCPUUtilizationMetricConfig) metricSystemCPUUtilization {
 	m := metricSystemCPUUtilization{config: cfg}
 
 	if cfg.Enabled {

@@ -19,7 +19,7 @@ $defs:
         description: ConsulConfig contains user-specified configurations for the Consul detector
         $ref: ./internal/consul.config
       digitalocean:
-        description: DigitalOceanConfig contains user-specified configurations for the docker detector
+        description: DigitalOceanConfig contains user-specified configurations for the digitalocean detector
         $ref: ./internal/digitalocean.config
       docker:
         description: DockerConfig contains user-specified configurations for the docker detector

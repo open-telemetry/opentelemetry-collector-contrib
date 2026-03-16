@@ -195,7 +195,6 @@ body:
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
-      - processor/datadogsemantics
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/dnslookup
@@ -248,6 +247,7 @@ body:
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub
+      - receiver/azurefunctions
       - receiver/azuremonitor
       - receiver/carbon
       - receiver/chrony
