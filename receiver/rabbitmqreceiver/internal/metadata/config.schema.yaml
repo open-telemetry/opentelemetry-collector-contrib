@@ -5,560 +5,576 @@ $defs:
     type: object
     properties:
       rabbitmq.consumer.count:
-        description: "RabbitmqConsumerCountConfig provides config for the rabbitmq.consumer.count metric."
+        description: "RabbitmqConsumerCountMetricConfig provides config for the rabbitmq.consumer.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       rabbitmq.message.acknowledged:
-        description: "RabbitmqMessageAcknowledgedConfig provides config for the rabbitmq.message.acknowledged metric."
+        description: "RabbitmqMessageAcknowledgedMetricConfig provides config for the rabbitmq.message.acknowledged metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       rabbitmq.message.current:
-        description: "RabbitmqMessageCurrentConfig provides config for the rabbitmq.message.current metric."
+        description: "RabbitmqMessageCurrentMetricConfig provides config for the rabbitmq.message.current metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       rabbitmq.message.delivered:
-        description: "RabbitmqMessageDeliveredConfig provides config for the rabbitmq.message.delivered metric."
+        description: "RabbitmqMessageDeliveredMetricConfig provides config for the rabbitmq.message.delivered metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       rabbitmq.message.dropped:
-        description: "RabbitmqMessageDroppedConfig provides config for the rabbitmq.message.dropped metric."
+        description: "RabbitmqMessageDroppedMetricConfig provides config for the rabbitmq.message.dropped metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       rabbitmq.message.published:
-        description: "RabbitmqMessagePublishedConfig provides config for the rabbitmq.message.published metric."
+        description: "RabbitmqMessagePublishedMetricConfig provides config for the rabbitmq.message.published metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       rabbitmq.node.channel_closed:
-        description: "RabbitmqNodeChannelClosedConfig provides config for the rabbitmq.node.channel_closed metric."
+        description: "RabbitmqNodeChannelClosedMetricConfig provides config for the rabbitmq.node.channel_closed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.channel_closed_details.rate:
-        description: "RabbitmqNodeChannelClosedDetailsRateConfig provides config for the rabbitmq.node.channel_closed_details.rate metric."
+        description: "RabbitmqNodeChannelClosedDetailsRateMetricConfig provides config for the rabbitmq.node.channel_closed_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.channel_created:
-        description: "RabbitmqNodeChannelCreatedConfig provides config for the rabbitmq.node.channel_created metric."
+        description: "RabbitmqNodeChannelCreatedMetricConfig provides config for the rabbitmq.node.channel_created metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.channel_created_details.rate:
-        description: "RabbitmqNodeChannelCreatedDetailsRateConfig provides config for the rabbitmq.node.channel_created_details.rate metric."
+        description: "RabbitmqNodeChannelCreatedDetailsRateMetricConfig provides config for the rabbitmq.node.channel_created_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.connection_closed:
-        description: "RabbitmqNodeConnectionClosedConfig provides config for the rabbitmq.node.connection_closed metric."
+        description: "RabbitmqNodeConnectionClosedMetricConfig provides config for the rabbitmq.node.connection_closed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.connection_closed_details.rate:
-        description: "RabbitmqNodeConnectionClosedDetailsRateConfig provides config for the rabbitmq.node.connection_closed_details.rate metric."
+        description: "RabbitmqNodeConnectionClosedDetailsRateMetricConfig provides config for the rabbitmq.node.connection_closed_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.connection_created:
-        description: "RabbitmqNodeConnectionCreatedConfig provides config for the rabbitmq.node.connection_created metric."
+        description: "RabbitmqNodeConnectionCreatedMetricConfig provides config for the rabbitmq.node.connection_created metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.connection_created_details.rate:
-        description: "RabbitmqNodeConnectionCreatedDetailsRateConfig provides config for the rabbitmq.node.connection_created_details.rate metric."
+        description: "RabbitmqNodeConnectionCreatedDetailsRateMetricConfig provides config for the rabbitmq.node.connection_created_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.context_switches:
-        description: "RabbitmqNodeContextSwitchesConfig provides config for the rabbitmq.node.context_switches metric."
+        description: "RabbitmqNodeContextSwitchesMetricConfig provides config for the rabbitmq.node.context_switches metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.context_switches_details.rate:
-        description: "RabbitmqNodeContextSwitchesDetailsRateConfig provides config for the rabbitmq.node.context_switches_details.rate metric."
+        description: "RabbitmqNodeContextSwitchesDetailsRateMetricConfig provides config for the rabbitmq.node.context_switches_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.disk_free:
-        description: "RabbitmqNodeDiskFreeConfig provides config for the rabbitmq.node.disk_free metric."
+        description: "RabbitmqNodeDiskFreeMetricConfig provides config for the rabbitmq.node.disk_free metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.disk_free_alarm:
-        description: "RabbitmqNodeDiskFreeAlarmConfig provides config for the rabbitmq.node.disk_free_alarm metric."
+        description: "RabbitmqNodeDiskFreeAlarmMetricConfig provides config for the rabbitmq.node.disk_free_alarm metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.disk_free_details.rate:
-        description: "RabbitmqNodeDiskFreeDetailsRateConfig provides config for the rabbitmq.node.disk_free_details.rate metric."
+        description: "RabbitmqNodeDiskFreeDetailsRateMetricConfig provides config for the rabbitmq.node.disk_free_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.disk_free_limit:
-        description: "RabbitmqNodeDiskFreeLimitConfig provides config for the rabbitmq.node.disk_free_limit metric."
+        description: "RabbitmqNodeDiskFreeLimitMetricConfig provides config for the rabbitmq.node.disk_free_limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.fd_total:
-        description: "RabbitmqNodeFdTotalConfig provides config for the rabbitmq.node.fd_total metric."
+        description: "RabbitmqNodeFdTotalMetricConfig provides config for the rabbitmq.node.fd_total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.fd_used:
-        description: "RabbitmqNodeFdUsedConfig provides config for the rabbitmq.node.fd_used metric."
+        description: "RabbitmqNodeFdUsedMetricConfig provides config for the rabbitmq.node.fd_used metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.fd_used_details.rate:
-        description: "RabbitmqNodeFdUsedDetailsRateConfig provides config for the rabbitmq.node.fd_used_details.rate metric."
+        description: "RabbitmqNodeFdUsedDetailsRateMetricConfig provides config for the rabbitmq.node.fd_used_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.gc_bytes_reclaimed:
-        description: "RabbitmqNodeGcBytesReclaimedConfig provides config for the rabbitmq.node.gc_bytes_reclaimed metric."
+        description: "RabbitmqNodeGcBytesReclaimedMetricConfig provides config for the rabbitmq.node.gc_bytes_reclaimed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.gc_bytes_reclaimed_details.rate:
-        description: "RabbitmqNodeGcBytesReclaimedDetailsRateConfig provides config for the rabbitmq.node.gc_bytes_reclaimed_details.rate metric."
+        description: "RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig provides config for the rabbitmq.node.gc_bytes_reclaimed_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.gc_num:
-        description: "RabbitmqNodeGcNumConfig provides config for the rabbitmq.node.gc_num metric."
+        description: "RabbitmqNodeGcNumMetricConfig provides config for the rabbitmq.node.gc_num metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.gc_num_details.rate:
-        description: "RabbitmqNodeGcNumDetailsRateConfig provides config for the rabbitmq.node.gc_num_details.rate metric."
+        description: "RabbitmqNodeGcNumDetailsRateMetricConfig provides config for the rabbitmq.node.gc_num_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_read_avg_time:
-        description: "RabbitmqNodeIoReadAvgTimeConfig provides config for the rabbitmq.node.io_read_avg_time metric."
+        description: "RabbitmqNodeIoReadAvgTimeMetricConfig provides config for the rabbitmq.node.io_read_avg_time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_read_avg_time_details.rate:
-        description: "RabbitmqNodeIoReadAvgTimeDetailsRateConfig provides config for the rabbitmq.node.io_read_avg_time_details.rate metric."
+        description: "RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig provides config for the rabbitmq.node.io_read_avg_time_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_read_bytes:
-        description: "RabbitmqNodeIoReadBytesConfig provides config for the rabbitmq.node.io_read_bytes metric."
+        description: "RabbitmqNodeIoReadBytesMetricConfig provides config for the rabbitmq.node.io_read_bytes metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_read_bytes_details.rate:
-        description: "RabbitmqNodeIoReadBytesDetailsRateConfig provides config for the rabbitmq.node.io_read_bytes_details.rate metric."
+        description: "RabbitmqNodeIoReadBytesDetailsRateMetricConfig provides config for the rabbitmq.node.io_read_bytes_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_read_count:
-        description: "RabbitmqNodeIoReadCountConfig provides config for the rabbitmq.node.io_read_count metric."
+        description: "RabbitmqNodeIoReadCountMetricConfig provides config for the rabbitmq.node.io_read_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_read_count_details.rate:
-        description: "RabbitmqNodeIoReadCountDetailsRateConfig provides config for the rabbitmq.node.io_read_count_details.rate metric."
+        description: "RabbitmqNodeIoReadCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_read_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_reopen_count:
-        description: "RabbitmqNodeIoReopenCountConfig provides config for the rabbitmq.node.io_reopen_count metric."
+        description: "RabbitmqNodeIoReopenCountMetricConfig provides config for the rabbitmq.node.io_reopen_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_reopen_count_details.rate:
-        description: "RabbitmqNodeIoReopenCountDetailsRateConfig provides config for the rabbitmq.node.io_reopen_count_details.rate metric."
+        description: "RabbitmqNodeIoReopenCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_reopen_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_seek_avg_time:
-        description: "RabbitmqNodeIoSeekAvgTimeConfig provides config for the rabbitmq.node.io_seek_avg_time metric."
+        description: "RabbitmqNodeIoSeekAvgTimeMetricConfig provides config for the rabbitmq.node.io_seek_avg_time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_seek_avg_time_details.rate:
-        description: "RabbitmqNodeIoSeekAvgTimeDetailsRateConfig provides config for the rabbitmq.node.io_seek_avg_time_details.rate metric."
+        description: "RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig provides config for the rabbitmq.node.io_seek_avg_time_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_seek_count:
-        description: "RabbitmqNodeIoSeekCountConfig provides config for the rabbitmq.node.io_seek_count metric."
+        description: "RabbitmqNodeIoSeekCountMetricConfig provides config for the rabbitmq.node.io_seek_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_seek_count_details.rate:
-        description: "RabbitmqNodeIoSeekCountDetailsRateConfig provides config for the rabbitmq.node.io_seek_count_details.rate metric."
+        description: "RabbitmqNodeIoSeekCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_seek_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_sync_avg_time:
-        description: "RabbitmqNodeIoSyncAvgTimeConfig provides config for the rabbitmq.node.io_sync_avg_time metric."
+        description: "RabbitmqNodeIoSyncAvgTimeMetricConfig provides config for the rabbitmq.node.io_sync_avg_time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_sync_avg_time_details.rate:
-        description: "RabbitmqNodeIoSyncAvgTimeDetailsRateConfig provides config for the rabbitmq.node.io_sync_avg_time_details.rate metric."
+        description: "RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig provides config for the rabbitmq.node.io_sync_avg_time_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_sync_count:
-        description: "RabbitmqNodeIoSyncCountConfig provides config for the rabbitmq.node.io_sync_count metric."
+        description: "RabbitmqNodeIoSyncCountMetricConfig provides config for the rabbitmq.node.io_sync_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_sync_count_details.rate:
-        description: "RabbitmqNodeIoSyncCountDetailsRateConfig provides config for the rabbitmq.node.io_sync_count_details.rate metric."
+        description: "RabbitmqNodeIoSyncCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_sync_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_write_avg_time:
-        description: "RabbitmqNodeIoWriteAvgTimeConfig provides config for the rabbitmq.node.io_write_avg_time metric."
+        description: "RabbitmqNodeIoWriteAvgTimeMetricConfig provides config for the rabbitmq.node.io_write_avg_time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_write_avg_time_details.rate:
-        description: "RabbitmqNodeIoWriteAvgTimeDetailsRateConfig provides config for the rabbitmq.node.io_write_avg_time_details.rate metric."
+        description: "RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig provides config for the rabbitmq.node.io_write_avg_time_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_write_bytes:
-        description: "RabbitmqNodeIoWriteBytesConfig provides config for the rabbitmq.node.io_write_bytes metric."
+        description: "RabbitmqNodeIoWriteBytesMetricConfig provides config for the rabbitmq.node.io_write_bytes metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_write_bytes_details.rate:
-        description: "RabbitmqNodeIoWriteBytesDetailsRateConfig provides config for the rabbitmq.node.io_write_bytes_details.rate metric."
+        description: "RabbitmqNodeIoWriteBytesDetailsRateMetricConfig provides config for the rabbitmq.node.io_write_bytes_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_write_count:
-        description: "RabbitmqNodeIoWriteCountConfig provides config for the rabbitmq.node.io_write_count metric."
+        description: "RabbitmqNodeIoWriteCountMetricConfig provides config for the rabbitmq.node.io_write_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.io_write_count_details.rate:
-        description: "RabbitmqNodeIoWriteCountDetailsRateConfig provides config for the rabbitmq.node.io_write_count_details.rate metric."
+        description: "RabbitmqNodeIoWriteCountDetailsRateMetricConfig provides config for the rabbitmq.node.io_write_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.mem_alarm:
-        description: "RabbitmqNodeMemAlarmConfig provides config for the rabbitmq.node.mem_alarm metric."
+        description: "RabbitmqNodeMemAlarmMetricConfig provides config for the rabbitmq.node.mem_alarm metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.mem_limit:
-        description: "RabbitmqNodeMemLimitConfig provides config for the rabbitmq.node.mem_limit metric."
+        description: "RabbitmqNodeMemLimitMetricConfig provides config for the rabbitmq.node.mem_limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.mem_used:
-        description: "RabbitmqNodeMemUsedConfig provides config for the rabbitmq.node.mem_used metric."
+        description: "RabbitmqNodeMemUsedMetricConfig provides config for the rabbitmq.node.mem_used metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.mem_used_details.rate:
-        description: "RabbitmqNodeMemUsedDetailsRateConfig provides config for the rabbitmq.node.mem_used_details.rate metric."
+        description: "RabbitmqNodeMemUsedDetailsRateMetricConfig provides config for the rabbitmq.node.mem_used_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.mnesia_disk_tx_count:
-        description: "RabbitmqNodeMnesiaDiskTxCountConfig provides config for the rabbitmq.node.mnesia_disk_tx_count metric."
+        description: "RabbitmqNodeMnesiaDiskTxCountMetricConfig provides config for the rabbitmq.node.mnesia_disk_tx_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.mnesia_disk_tx_count_details.rate:
-        description: "RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig provides config for the rabbitmq.node.mnesia_disk_tx_count_details.rate metric."
+        description: "RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig provides config for the rabbitmq.node.mnesia_disk_tx_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.mnesia_ram_tx_count:
-        description: "RabbitmqNodeMnesiaRAMTxCountConfig provides config for the rabbitmq.node.mnesia_ram_tx_count metric."
+        description: "RabbitmqNodeMnesiaRAMTxCountMetricConfig provides config for the rabbitmq.node.mnesia_ram_tx_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.mnesia_ram_tx_count_details.rate:
-        description: "RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig provides config for the rabbitmq.node.mnesia_ram_tx_count_details.rate metric."
+        description: "RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig provides config for the rabbitmq.node.mnesia_ram_tx_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.msg_store_read_count:
-        description: "RabbitmqNodeMsgStoreReadCountConfig provides config for the rabbitmq.node.msg_store_read_count metric."
+        description: "RabbitmqNodeMsgStoreReadCountMetricConfig provides config for the rabbitmq.node.msg_store_read_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.msg_store_read_count_details.rate:
-        description: "RabbitmqNodeMsgStoreReadCountDetailsRateConfig provides config for the rabbitmq.node.msg_store_read_count_details.rate metric."
+        description: "RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig provides config for the rabbitmq.node.msg_store_read_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.msg_store_write_count:
-        description: "RabbitmqNodeMsgStoreWriteCountConfig provides config for the rabbitmq.node.msg_store_write_count metric."
+        description: "RabbitmqNodeMsgStoreWriteCountMetricConfig provides config for the rabbitmq.node.msg_store_write_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.msg_store_write_count_details.rate:
-        description: "RabbitmqNodeMsgStoreWriteCountDetailsRateConfig provides config for the rabbitmq.node.msg_store_write_count_details.rate metric."
+        description: "RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig provides config for the rabbitmq.node.msg_store_write_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.proc_total:
-        description: "RabbitmqNodeProcTotalConfig provides config for the rabbitmq.node.proc_total metric."
+        description: "RabbitmqNodeProcTotalMetricConfig provides config for the rabbitmq.node.proc_total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.proc_used:
-        description: "RabbitmqNodeProcUsedConfig provides config for the rabbitmq.node.proc_used metric."
+        description: "RabbitmqNodeProcUsedMetricConfig provides config for the rabbitmq.node.proc_used metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.proc_used_details.rate:
-        description: "RabbitmqNodeProcUsedDetailsRateConfig provides config for the rabbitmq.node.proc_used_details.rate metric."
+        description: "RabbitmqNodeProcUsedDetailsRateMetricConfig provides config for the rabbitmq.node.proc_used_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.processors:
-        description: "RabbitmqNodeProcessorsConfig provides config for the rabbitmq.node.processors metric."
+        description: "RabbitmqNodeProcessorsMetricConfig provides config for the rabbitmq.node.processors metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_created:
-        description: "RabbitmqNodeQueueCreatedConfig provides config for the rabbitmq.node.queue_created metric."
+        description: "RabbitmqNodeQueueCreatedMetricConfig provides config for the rabbitmq.node.queue_created metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_created_details.rate:
-        description: "RabbitmqNodeQueueCreatedDetailsRateConfig provides config for the rabbitmq.node.queue_created_details.rate metric."
+        description: "RabbitmqNodeQueueCreatedDetailsRateMetricConfig provides config for the rabbitmq.node.queue_created_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_declared:
-        description: "RabbitmqNodeQueueDeclaredConfig provides config for the rabbitmq.node.queue_declared metric."
+        description: "RabbitmqNodeQueueDeclaredMetricConfig provides config for the rabbitmq.node.queue_declared metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_declared_details.rate:
-        description: "RabbitmqNodeQueueDeclaredDetailsRateConfig provides config for the rabbitmq.node.queue_declared_details.rate metric."
+        description: "RabbitmqNodeQueueDeclaredDetailsRateMetricConfig provides config for the rabbitmq.node.queue_declared_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_deleted:
-        description: "RabbitmqNodeQueueDeletedConfig provides config for the rabbitmq.node.queue_deleted metric."
+        description: "RabbitmqNodeQueueDeletedMetricConfig provides config for the rabbitmq.node.queue_deleted metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_deleted_details.rate:
-        description: "RabbitmqNodeQueueDeletedDetailsRateConfig provides config for the rabbitmq.node.queue_deleted_details.rate metric."
+        description: "RabbitmqNodeQueueDeletedDetailsRateMetricConfig provides config for the rabbitmq.node.queue_deleted_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_index_read_count:
-        description: "RabbitmqNodeQueueIndexReadCountConfig provides config for the rabbitmq.node.queue_index_read_count metric."
+        description: "RabbitmqNodeQueueIndexReadCountMetricConfig provides config for the rabbitmq.node.queue_index_read_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_index_read_count_details.rate:
-        description: "RabbitmqNodeQueueIndexReadCountDetailsRateConfig provides config for the rabbitmq.node.queue_index_read_count_details.rate metric."
+        description: "RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig provides config for the rabbitmq.node.queue_index_read_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_index_write_count:
-        description: "RabbitmqNodeQueueIndexWriteCountConfig provides config for the rabbitmq.node.queue_index_write_count metric."
+        description: "RabbitmqNodeQueueIndexWriteCountMetricConfig provides config for the rabbitmq.node.queue_index_write_count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.queue_index_write_count_details.rate:
-        description: "RabbitmqNodeQueueIndexWriteCountDetailsRateConfig provides config for the rabbitmq.node.queue_index_write_count_details.rate metric."
+        description: "RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig provides config for the rabbitmq.node.queue_index_write_count_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.run_queue:
-        description: "RabbitmqNodeRunQueueConfig provides config for the rabbitmq.node.run_queue metric."
+        description: "RabbitmqNodeRunQueueMetricConfig provides config for the rabbitmq.node.run_queue metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.sockets_total:
-        description: "RabbitmqNodeSocketsTotalConfig provides config for the rabbitmq.node.sockets_total metric."
+        description: "RabbitmqNodeSocketsTotalMetricConfig provides config for the rabbitmq.node.sockets_total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.sockets_used:
-        description: "RabbitmqNodeSocketsUsedConfig provides config for the rabbitmq.node.sockets_used metric."
+        description: "RabbitmqNodeSocketsUsedMetricConfig provides config for the rabbitmq.node.sockets_used metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.sockets_used_details.rate:
-        description: "RabbitmqNodeSocketsUsedDetailsRateConfig provides config for the rabbitmq.node.sockets_used_details.rate metric."
+        description: "RabbitmqNodeSocketsUsedDetailsRateMetricConfig provides config for the rabbitmq.node.sockets_used_details.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       rabbitmq.node.uptime:
-        description: "RabbitmqNodeUptimeConfig provides config for the rabbitmq.node.uptime metric."
+        description: "RabbitmqNodeUptimeMetricConfig provides config for the rabbitmq.node.uptime metric."
         type: object
         properties:
           enabled:

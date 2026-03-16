@@ -3,9 +3,11 @@
 package awslambdareceiver
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -18,6 +20,8 @@ import (
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal/metadata"
 )
@@ -53,22 +57,15 @@ func TestCreateLogs(t *testing.T) {
 
 	// Test data - mock S3 file content
 	testData := []byte("version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status\n2 627286350134 eni-0377aa710071c557e 172.31.31.124 140.82.121.6 52718 443 6 13 3777 1751375679 ENDTIME ACCEPT OK\n")
-	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(testData, nil)
+	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(io.NopCloser(bytes.NewReader(testData)), nil)
 
 	// Register the extension with the same component ID as S3Encoding
 	// This is required: the extension ID must match cfg.S3Encoding
 	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
-			component.MustNewID(s3Encoding): &mockExtensionWithPLogUnmarshaler{
-				Unmarshaler: unmarshalLogsFunc(func(data []byte) (plog.Logs, error) {
-					require.Equal(t, string(testData), string(data))
-					logs := plog.NewLogs()
-					rl := logs.ResourceLogs().AppendEmpty()
-					sl := rl.ScopeLogs().AppendEmpty()
-					sl.LogRecords().AppendEmpty()
-					return logs, nil
-				}),
-			},
+			component.MustNewID(s3Encoding): &mockExtensionWithPLogUnmarshaler{},
 		}
 	}}
 
@@ -122,23 +119,13 @@ func TestCreateMetrics(t *testing.T) {
 	s3Service := internal.NewMockS3Service(goMock)
 	s3Provider := internal.NewMockS3Provider(goMock)
 	s3Provider.EXPECT().GetService(gomock.Any()).AnyTimes().Return(s3Service, nil)
-	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(
-		[]byte("dummy data"), nil,
-	)
+	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(io.NopCloser(bytes.NewReader([]byte("dummy data"))), nil)
 
 	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
-			component.MustNewID(encoderName): &mockExtensionWithPMetricUnmarshaler{
-				Unmarshaler: unmarshalMetricsFunc(func(data []byte) (pmetric.Metrics, error) {
-					require.Equal(t, "dummy data", string(data))
-					metrics := pmetric.NewMetrics()
-					rm := metrics.ResourceMetrics().AppendEmpty()
-					ilm := rm.ScopeMetrics().AppendEmpty()
-					dp := ilm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-					dp.SetIntValue(123)
-					return metrics, nil
-				}),
-			},
+			component.MustNewID(encoderName): &mockExtensionWithPMetricUnmarshaler{},
 		}
 	}}
 
@@ -547,9 +534,71 @@ type mockExtensionWithPLogUnmarshaler struct {
 	plog.Unmarshaler // Add the unmarshaler interface when needed.
 }
 
+func (mockExtensionWithPLogUnmarshaler) UnmarshalLogs(_ []byte) (plog.Logs, error) {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
+	return logs, nil
+}
+
+func (mockExtensionWithPLogUnmarshaler) NewLogsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	isEOF := false
+	return xstreamencoding.NewLogsDecoderAdapter(
+			func() (plog.Logs, error) {
+				if isEOF {
+					return plog.Logs{}, io.EOF
+				}
+
+				logs := plog.NewLogs()
+				rl := logs.ResourceLogs().AppendEmpty()
+				sl := rl.ScopeLogs().AppendEmpty()
+				sl.LogRecords().AppendEmpty()
+
+				isEOF = true
+				return logs, nil
+			},
+			func() int64 {
+				return 0
+			}),
+		nil
+}
+
 type mockExtensionWithPMetricUnmarshaler struct {
 	mockExtension       // Embed the base mock implementation.
 	pmetric.Unmarshaler // Add the unmarshaler interface when needed.
+}
+
+func (mockExtensionWithPMetricUnmarshaler) UnmarshalMetrics(_ []byte) (pmetric.Metrics, error) {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	dp := ilm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(123)
+	return metrics, nil
+}
+
+func (mockExtensionWithPMetricUnmarshaler) NewMetricsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.MetricsDecoder, error) {
+	isEOF := false
+	return xstreamencoding.NewMetricsDecoderAdapter(
+			func() (pmetric.Metrics, error) {
+				if isEOF {
+					return pmetric.Metrics{}, io.EOF
+				}
+
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
+				dp := ilm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetIntValue(123)
+
+				isEOF = true
+				return metrics, nil
+			},
+			func() int64 {
+				return 0
+			}),
+		nil
 }
 
 type mockExtension struct{}
@@ -571,16 +620,4 @@ type mockHost struct {
 
 func (m mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.GetFunc()
-}
-
-type unmarshalLogsFunc func([]byte) (plog.Logs, error)
-
-func (f unmarshalLogsFunc) UnmarshalLogs(data []byte) (plog.Logs, error) {
-	return f(data)
-}
-
-type unmarshalMetricsFunc func([]byte) (pmetric.Metrics, error)
-
-func (f unmarshalMetricsFunc) UnmarshalMetrics(data []byte) (pmetric.Metrics, error) {
-	return f(data)
 }

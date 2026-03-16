@@ -5,98 +5,98 @@ $defs:
     type: object
     properties:
       redis.clients.blocked:
-        description: "RedisClientsBlockedConfig provides config for the redis.clients.blocked metric."
+        description: "RedisClientsBlockedMetricConfig provides config for the redis.clients.blocked metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.clients.connected:
-        description: "RedisClientsConnectedConfig provides config for the redis.clients.connected metric."
+        description: "RedisClientsConnectedMetricConfig provides config for the redis.clients.connected metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.clients.max_input_buffer:
-        description: "RedisClientsMaxInputBufferConfig provides config for the redis.clients.max_input_buffer metric."
+        description: "RedisClientsMaxInputBufferMetricConfig provides config for the redis.clients.max_input_buffer metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.clients.max_output_buffer:
-        description: "RedisClientsMaxOutputBufferConfig provides config for the redis.clients.max_output_buffer metric."
+        description: "RedisClientsMaxOutputBufferMetricConfig provides config for the redis.clients.max_output_buffer metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.cluster.cluster_enabled:
-        description: "RedisClusterClusterEnabledConfig provides config for the redis.cluster.cluster_enabled metric."
+        description: "RedisClusterClusterEnabledMetricConfig provides config for the redis.cluster.cluster_enabled metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.known_nodes:
-        description: "RedisClusterKnownNodesConfig provides config for the redis.cluster.known_nodes metric."
+        description: "RedisClusterKnownNodesMetricConfig provides config for the redis.cluster.known_nodes metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.links_buffer_limit_exceeded.count:
-        description: "RedisClusterLinksBufferLimitExceededCountConfig provides config for the redis.cluster.links_buffer_limit_exceeded.count metric."
+        description: "RedisClusterLinksBufferLimitExceededCountMetricConfig provides config for the redis.cluster.links_buffer_limit_exceeded.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.node.count:
-        description: "RedisClusterNodeCountConfig provides config for the redis.cluster.node.count metric."
+        description: "RedisClusterNodeCountMetricConfig provides config for the redis.cluster.node.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.node.uptime:
-        description: "RedisClusterNodeUptimeConfig provides config for the redis.cluster.node.uptime metric."
+        description: "RedisClusterNodeUptimeMetricConfig provides config for the redis.cluster.node.uptime metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.slots_assigned:
-        description: "RedisClusterSlotsAssignedConfig provides config for the redis.cluster.slots_assigned metric."
+        description: "RedisClusterSlotsAssignedMetricConfig provides config for the redis.cluster.slots_assigned metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.slots_fail:
-        description: "RedisClusterSlotsFailConfig provides config for the redis.cluster.slots_fail metric."
+        description: "RedisClusterSlotsFailMetricConfig provides config for the redis.cluster.slots_fail metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.slots_ok:
-        description: "RedisClusterSlotsOkConfig provides config for the redis.cluster.slots_ok metric."
+        description: "RedisClusterSlotsOkMetricConfig provides config for the redis.cluster.slots_ok metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.slots_pfail:
-        description: "RedisClusterSlotsPfailConfig provides config for the redis.cluster.slots_pfail metric."
+        description: "RedisClusterSlotsPfailMetricConfig provides config for the redis.cluster.slots_pfail metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.state:
-        description: "RedisClusterStateConfig provides config for the redis.cluster.state metric."
+        description: "RedisClusterStateMetricConfig provides config for the redis.cluster.state metric."
         type: object
         properties:
           enabled:
@@ -119,28 +119,28 @@ $defs:
             default:
               - "cluster_state"
       redis.cluster.stats_messages_received:
-        description: "RedisClusterStatsMessagesReceivedConfig provides config for the redis.cluster.stats_messages_received metric."
+        description: "RedisClusterStatsMessagesReceivedMetricConfig provides config for the redis.cluster.stats_messages_received metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.stats_messages_sent:
-        description: "RedisClusterStatsMessagesSentConfig provides config for the redis.cluster.stats_messages_sent metric."
+        description: "RedisClusterStatsMessagesSentMetricConfig provides config for the redis.cluster.stats_messages_sent metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cluster.uptime:
-        description: "RedisClusterUptimeConfig provides config for the redis.cluster.uptime metric."
+        description: "RedisClusterUptimeMetricConfig provides config for the redis.cluster.uptime metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.cmd.calls:
-        description: "RedisCmdCallsConfig provides config for the redis.cmd.calls metric."
+        description: "RedisCmdCallsMetricConfig provides config for the redis.cmd.calls metric."
         type: object
         properties:
           enabled:
@@ -163,7 +163,7 @@ $defs:
             default:
               - "cmd"
       redis.cmd.latency:
-        description: "RedisCmdLatencyConfig provides config for the redis.cmd.latency metric."
+        description: "RedisCmdLatencyMetricConfig provides config for the redis.cmd.latency metric."
         type: object
         properties:
           enabled:
@@ -188,7 +188,7 @@ $defs:
               - "cmd"
               - "percentile"
       redis.cmd.usec:
-        description: "RedisCmdUsecConfig provides config for the redis.cmd.usec metric."
+        description: "RedisCmdUsecMetricConfig provides config for the redis.cmd.usec metric."
         type: object
         properties:
           enabled:
@@ -211,35 +211,35 @@ $defs:
             default:
               - "cmd"
       redis.commands:
-        description: "RedisCommandsConfig provides config for the redis.commands metric."
+        description: "RedisCommandsMetricConfig provides config for the redis.commands metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.commands.processed:
-        description: "RedisCommandsProcessedConfig provides config for the redis.commands.processed metric."
+        description: "RedisCommandsProcessedMetricConfig provides config for the redis.commands.processed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.connections.received:
-        description: "RedisConnectionsReceivedConfig provides config for the redis.connections.received metric."
+        description: "RedisConnectionsReceivedMetricConfig provides config for the redis.connections.received metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.connections.rejected:
-        description: "RedisConnectionsRejectedConfig provides config for the redis.connections.rejected metric."
+        description: "RedisConnectionsRejectedMetricConfig provides config for the redis.connections.rejected metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.cpu.time:
-        description: "RedisCPUTimeConfig provides config for the redis.cpu.time metric."
+        description: "RedisCPUTimeMetricConfig provides config for the redis.cpu.time metric."
         type: object
         properties:
           enabled:
@@ -262,7 +262,7 @@ $defs:
             default:
               - "state"
       redis.db.avg_ttl:
-        description: "RedisDbAvgTTLConfig provides config for the redis.db.avg_ttl metric."
+        description: "RedisDbAvgTTLMetricConfig provides config for the redis.db.avg_ttl metric."
         type: object
         properties:
           enabled:
@@ -285,7 +285,7 @@ $defs:
             default:
               - "db"
       redis.db.expires:
-        description: "RedisDbExpiresConfig provides config for the redis.db.expires metric."
+        description: "RedisDbExpiresMetricConfig provides config for the redis.db.expires metric."
         type: object
         properties:
           enabled:
@@ -308,7 +308,7 @@ $defs:
             default:
               - "db"
       redis.db.keys:
-        description: "RedisDbKeysConfig provides config for the redis.db.keys metric."
+        description: "RedisDbKeysMetricConfig provides config for the redis.db.keys metric."
         type: object
         properties:
           enabled:
@@ -331,98 +331,98 @@ $defs:
             default:
               - "db"
       redis.keys.evicted:
-        description: "RedisKeysEvictedConfig provides config for the redis.keys.evicted metric."
+        description: "RedisKeysEvictedMetricConfig provides config for the redis.keys.evicted metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.keys.expired:
-        description: "RedisKeysExpiredConfig provides config for the redis.keys.expired metric."
+        description: "RedisKeysExpiredMetricConfig provides config for the redis.keys.expired metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.keyspace.hits:
-        description: "RedisKeyspaceHitsConfig provides config for the redis.keyspace.hits metric."
+        description: "RedisKeyspaceHitsMetricConfig provides config for the redis.keyspace.hits metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.keyspace.misses:
-        description: "RedisKeyspaceMissesConfig provides config for the redis.keyspace.misses metric."
+        description: "RedisKeyspaceMissesMetricConfig provides config for the redis.keyspace.misses metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.latest_fork:
-        description: "RedisLatestForkConfig provides config for the redis.latest_fork metric."
+        description: "RedisLatestForkMetricConfig provides config for the redis.latest_fork metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.maxmemory:
-        description: "RedisMaxmemoryConfig provides config for the redis.maxmemory metric."
+        description: "RedisMaxmemoryMetricConfig provides config for the redis.maxmemory metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.memory.fragmentation_ratio:
-        description: "RedisMemoryFragmentationRatioConfig provides config for the redis.memory.fragmentation_ratio metric."
+        description: "RedisMemoryFragmentationRatioMetricConfig provides config for the redis.memory.fragmentation_ratio metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.memory.lua:
-        description: "RedisMemoryLuaConfig provides config for the redis.memory.lua metric."
+        description: "RedisMemoryLuaMetricConfig provides config for the redis.memory.lua metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.memory.peak:
-        description: "RedisMemoryPeakConfig provides config for the redis.memory.peak metric."
+        description: "RedisMemoryPeakMetricConfig provides config for the redis.memory.peak metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.memory.rss:
-        description: "RedisMemoryRssConfig provides config for the redis.memory.rss metric."
+        description: "RedisMemoryRssMetricConfig provides config for the redis.memory.rss metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.memory.used:
-        description: "RedisMemoryUsedConfig provides config for the redis.memory.used metric."
+        description: "RedisMemoryUsedMetricConfig provides config for the redis.memory.used metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.memory.used_memory_overhead:
-        description: "RedisMemoryUsedMemoryOverheadConfig provides config for the redis.memory.used_memory_overhead metric."
+        description: "RedisMemoryUsedMemoryOverheadMetricConfig provides config for the redis.memory.used_memory_overhead metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.memory.used_memory_startup:
-        description: "RedisMemoryUsedMemoryStartupConfig provides config for the redis.memory.used_memory_startup metric."
+        description: "RedisMemoryUsedMemoryStartupMetricConfig provides config for the redis.memory.used_memory_startup metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.mode:
-        description: "RedisModeConfig provides config for the redis.mode metric."
+        description: "RedisModeMetricConfig provides config for the redis.mode metric."
         type: object
         properties:
           enabled:
@@ -445,49 +445,49 @@ $defs:
             default:
               - "mode"
       redis.net.input:
-        description: "RedisNetInputConfig provides config for the redis.net.input metric."
+        description: "RedisNetInputMetricConfig provides config for the redis.net.input metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.net.output:
-        description: "RedisNetOutputConfig provides config for the redis.net.output metric."
+        description: "RedisNetOutputMetricConfig provides config for the redis.net.output metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.rdb.changes_since_last_save:
-        description: "RedisRdbChangesSinceLastSaveConfig provides config for the redis.rdb.changes_since_last_save metric."
+        description: "RedisRdbChangesSinceLastSaveMetricConfig provides config for the redis.rdb.changes_since_last_save metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.replication.backlog_first_byte_offset:
-        description: "RedisReplicationBacklogFirstByteOffsetConfig provides config for the redis.replication.backlog_first_byte_offset metric."
+        description: "RedisReplicationBacklogFirstByteOffsetMetricConfig provides config for the redis.replication.backlog_first_byte_offset metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.replication.offset:
-        description: "RedisReplicationOffsetConfig provides config for the redis.replication.offset metric."
+        description: "RedisReplicationOffsetMetricConfig provides config for the redis.replication.offset metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.replication.replica_offset:
-        description: "RedisReplicationReplicaOffsetConfig provides config for the redis.replication.replica_offset metric."
+        description: "RedisReplicationReplicaOffsetMetricConfig provides config for the redis.replication.replica_offset metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.role:
-        description: "RedisRoleConfig provides config for the redis.role metric."
+        description: "RedisRoleMetricConfig provides config for the redis.role metric."
         type: object
         properties:
           enabled:
@@ -510,63 +510,63 @@ $defs:
             default:
               - "role"
       redis.sentinel.masters:
-        description: "RedisSentinelMastersConfig provides config for the redis.sentinel.masters metric."
+        description: "RedisSentinelMastersMetricConfig provides config for the redis.sentinel.masters metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.sentinel.running_scripts:
-        description: "RedisSentinelRunningScriptsConfig provides config for the redis.sentinel.running_scripts metric."
+        description: "RedisSentinelRunningScriptsMetricConfig provides config for the redis.sentinel.running_scripts metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.sentinel.scripts_queue_length:
-        description: "RedisSentinelScriptsQueueLengthConfig provides config for the redis.sentinel.scripts_queue_length metric."
+        description: "RedisSentinelScriptsQueueLengthMetricConfig provides config for the redis.sentinel.scripts_queue_length metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.sentinel.simulate_failure_flags:
-        description: "RedisSentinelSimulateFailureFlagsConfig provides config for the redis.sentinel.simulate_failure_flags metric."
+        description: "RedisSentinelSimulateFailureFlagsMetricConfig provides config for the redis.sentinel.simulate_failure_flags metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.sentinel.tilt_since_seconds:
-        description: "RedisSentinelTiltSinceSecondsConfig provides config for the redis.sentinel.tilt_since_seconds metric."
+        description: "RedisSentinelTiltSinceSecondsMetricConfig provides config for the redis.sentinel.tilt_since_seconds metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.sentinel.total_tilt:
-        description: "RedisSentinelTotalTiltConfig provides config for the redis.sentinel.total_tilt metric."
+        description: "RedisSentinelTotalTiltMetricConfig provides config for the redis.sentinel.total_tilt metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.slaves.connected:
-        description: "RedisSlavesConnectedConfig provides config for the redis.slaves.connected metric."
+        description: "RedisSlavesConnectedMetricConfig provides config for the redis.slaves.connected metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       redis.tracking_total_keys:
-        description: "RedisTrackingTotalKeysConfig provides config for the redis.tracking_total_keys metric."
+        description: "RedisTrackingTotalKeysMetricConfig provides config for the redis.tracking_total_keys metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       redis.uptime:
-        description: "RedisUptimeConfig provides config for the redis.uptime metric."
+        description: "RedisUptimeMetricConfig provides config for the redis.uptime metric."
         type: object
         properties:
           enabled:

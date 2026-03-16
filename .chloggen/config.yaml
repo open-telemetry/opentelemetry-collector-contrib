@@ -49,9 +49,9 @@ components:
     - exporter/elasticsearch
     - exporter/faro
     - exporter/file
+    - exporter/google_cloud_storage
     - exporter/googlecloud
     - exporter/googlecloudpubsub
-    - exporter/googlecloudstorage
     - exporter/googlemanagedprometheus
     - exporter/honeycombmarker
     - exporter/influxdb
@@ -87,7 +87,7 @@ components:
     - extension/basicauth
     - extension/bearertokenauth
     - extension/cfgarden_observer
-    - extension/cgroupruntime
+    - extension/cgroup_runtime
     - extension/datadog
     - extension/db_storage
     - extension/docker_observer
@@ -185,7 +185,6 @@ components:
     - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
-    - processor/datadogsemantics
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector
@@ -239,6 +238,7 @@ components:
     - receiver/awsxray
     - receiver/azure_blob
     - receiver/azure_event_hub
+    - receiver/azure_functions
     - receiver/azure_monitor
     - receiver/carbon
     - receiver/chrony

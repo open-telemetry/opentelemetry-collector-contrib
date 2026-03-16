@@ -5,84 +5,84 @@ $defs:
     type: object
     properties:
       httpcheck.client.connection.duration:
-        description: "HttpcheckClientConnectionDurationConfig provides config for the httpcheck.client.connection.duration metric."
+        description: "HttpcheckClientConnectionDurationMetricConfig provides config for the httpcheck.client.connection.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       httpcheck.client.request.duration:
-        description: "HttpcheckClientRequestDurationConfig provides config for the httpcheck.client.request.duration metric."
+        description: "HttpcheckClientRequestDurationMetricConfig provides config for the httpcheck.client.request.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       httpcheck.dns.lookup.duration:
-        description: "HttpcheckDNSLookupDurationConfig provides config for the httpcheck.dns.lookup.duration metric."
+        description: "HttpcheckDNSLookupDurationMetricConfig provides config for the httpcheck.dns.lookup.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       httpcheck.duration:
-        description: "HttpcheckDurationConfig provides config for the httpcheck.duration metric."
+        description: "HttpcheckDurationMetricConfig provides config for the httpcheck.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       httpcheck.error:
-        description: "HttpcheckErrorConfig provides config for the httpcheck.error metric."
+        description: "HttpcheckErrorMetricConfig provides config for the httpcheck.error metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       httpcheck.response.duration:
-        description: "HttpcheckResponseDurationConfig provides config for the httpcheck.response.duration metric."
+        description: "HttpcheckResponseDurationMetricConfig provides config for the httpcheck.response.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       httpcheck.response.size:
-        description: "HttpcheckResponseSizeConfig provides config for the httpcheck.response.size metric."
+        description: "HttpcheckResponseSizeMetricConfig provides config for the httpcheck.response.size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       httpcheck.status:
-        description: "HttpcheckStatusConfig provides config for the httpcheck.status metric."
+        description: "HttpcheckStatusMetricConfig provides config for the httpcheck.status metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       httpcheck.tls.cert_remaining:
-        description: "HttpcheckTLSCertRemainingConfig provides config for the httpcheck.tls.cert_remaining metric."
+        description: "HttpcheckTLSCertRemainingMetricConfig provides config for the httpcheck.tls.cert_remaining metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       httpcheck.tls.handshake.duration:
-        description: "HttpcheckTLSHandshakeDurationConfig provides config for the httpcheck.tls.handshake.duration metric."
+        description: "HttpcheckTLSHandshakeDurationMetricConfig provides config for the httpcheck.tls.handshake.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       httpcheck.validation.failed:
-        description: "HttpcheckValidationFailedConfig provides config for the httpcheck.validation.failed metric."
+        description: "HttpcheckValidationFailedMetricConfig provides config for the httpcheck.validation.failed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       httpcheck.validation.passed:
-        description: "HttpcheckValidationPassedConfig provides config for the httpcheck.validation.passed metric."
+        description: "HttpcheckValidationPassedMetricConfig provides config for the httpcheck.validation.passed metric."
         type: object
         properties:
           enabled:
