@@ -33,6 +33,7 @@ type Server struct {
 	colconf        atomic.Value
 	aggregator     *status.Aggregator
 	startTimestamp time.Time
+	statusVerbose  bool
 	doneWg         sync.WaitGroup
 	doneCh         chan struct{}
 	doneOnce       sync.Once
@@ -61,6 +62,9 @@ func NewServer(
 	if legacyConfig.UseV2 {
 		srv.httpConfig = config.ServerConfig
 		includeAttributes := true // default for backward compatibility
+		if config.Status.Enabled {
+			srv.statusVerbose = config.Status.Verbose
+		}
 		if config.Status.Enabled {
 			includeAttributes = config.Status.IncludeAttributes
 		}

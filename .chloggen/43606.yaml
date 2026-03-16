@@ -4,7 +4,7 @@
 change_type: 'enhancement'
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: internal/healthcheck
+component: extension/healthcheckv2
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add component event attributes to serialized output.
@@ -16,9 +16,11 @@ issues: [43606]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When using verbose mode in the health check endpoint (?verbose), users will now see additional
-  attributes in the status output. These attributes provide more context about component states,
-  including details like error messages and affected components. For example:
+  When `http.status.include_attributes` is enabled in the healthcheckv2 extension (with `use_v2: true`),
+  users will see additional attributes in the status output. The detailed response is configured by
+  `http.status.verbose`. These attributes provide more
+  context about component states, including details like error messages and affected components.
+  For example:
   ```json
   {
     "healthy": false,
