@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       system.processes.count:
-        description: "SystemProcessesCountConfig provides config for the system.processes.count metric."
+        description: "SystemProcessesCountMetricConfig provides config for the system.processes.count metric."
         type: object
         properties:
           enabled:
@@ -28,7 +28,7 @@ $defs:
             default:
               - "status"
       system.processes.created:
-        description: "SystemProcessesCreatedConfig provides config for the system.processes.created metric."
+        description: "SystemProcessesCreatedMetricConfig provides config for the system.processes.created metric."
         type: object
         properties:
           enabled:

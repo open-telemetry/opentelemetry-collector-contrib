@@ -5,126 +5,126 @@ $defs:
     type: object
     properties:
       active_directory.ds.bind.rate:
-        description: "ActiveDirectoryDsBindRateConfig provides config for the active_directory.ds.bind.rate metric."
+        description: "ActiveDirectoryDsBindRateMetricConfig provides config for the active_directory.ds.bind.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.ldap.bind.last_successful.time:
-        description: "ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig provides config for the active_directory.ds.ldap.bind.last_successful.time metric."
+        description: "ActiveDirectoryDsLdapBindLastSuccessfulTimeMetricConfig provides config for the active_directory.ds.ldap.bind.last_successful.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.ldap.bind.rate:
-        description: "ActiveDirectoryDsLdapBindRateConfig provides config for the active_directory.ds.ldap.bind.rate metric."
+        description: "ActiveDirectoryDsLdapBindRateMetricConfig provides config for the active_directory.ds.ldap.bind.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.ldap.client.session.count:
-        description: "ActiveDirectoryDsLdapClientSessionCountConfig provides config for the active_directory.ds.ldap.client.session.count metric."
+        description: "ActiveDirectoryDsLdapClientSessionCountMetricConfig provides config for the active_directory.ds.ldap.client.session.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.ldap.search.rate:
-        description: "ActiveDirectoryDsLdapSearchRateConfig provides config for the active_directory.ds.ldap.search.rate metric."
+        description: "ActiveDirectoryDsLdapSearchRateMetricConfig provides config for the active_directory.ds.ldap.search.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.name_cache.hit_rate:
-        description: "ActiveDirectoryDsNameCacheHitRateConfig provides config for the active_directory.ds.name_cache.hit_rate metric."
+        description: "ActiveDirectoryDsNameCacheHitRateMetricConfig provides config for the active_directory.ds.name_cache.hit_rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.notification.queued:
-        description: "ActiveDirectoryDsNotificationQueuedConfig provides config for the active_directory.ds.notification.queued metric."
+        description: "ActiveDirectoryDsNotificationQueuedMetricConfig provides config for the active_directory.ds.notification.queued metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.operation.rate:
-        description: "ActiveDirectoryDsOperationRateConfig provides config for the active_directory.ds.operation.rate metric."
+        description: "ActiveDirectoryDsOperationRateMetricConfig provides config for the active_directory.ds.operation.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.replication.network.io:
-        description: "ActiveDirectoryDsReplicationNetworkIoConfig provides config for the active_directory.ds.replication.network.io metric."
+        description: "ActiveDirectoryDsReplicationNetworkIoMetricConfig provides config for the active_directory.ds.replication.network.io metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.replication.object.rate:
-        description: "ActiveDirectoryDsReplicationObjectRateConfig provides config for the active_directory.ds.replication.object.rate metric."
+        description: "ActiveDirectoryDsReplicationObjectRateMetricConfig provides config for the active_directory.ds.replication.object.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.replication.operation.pending:
-        description: "ActiveDirectoryDsReplicationOperationPendingConfig provides config for the active_directory.ds.replication.operation.pending metric."
+        description: "ActiveDirectoryDsReplicationOperationPendingMetricConfig provides config for the active_directory.ds.replication.operation.pending metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.replication.property.rate:
-        description: "ActiveDirectoryDsReplicationPropertyRateConfig provides config for the active_directory.ds.replication.property.rate metric."
+        description: "ActiveDirectoryDsReplicationPropertyRateMetricConfig provides config for the active_directory.ds.replication.property.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.replication.sync.object.pending:
-        description: "ActiveDirectoryDsReplicationSyncObjectPendingConfig provides config for the active_directory.ds.replication.sync.object.pending metric."
+        description: "ActiveDirectoryDsReplicationSyncObjectPendingMetricConfig provides config for the active_directory.ds.replication.sync.object.pending metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.replication.sync.request.count:
-        description: "ActiveDirectoryDsReplicationSyncRequestCountConfig provides config for the active_directory.ds.replication.sync.request.count metric."
+        description: "ActiveDirectoryDsReplicationSyncRequestCountMetricConfig provides config for the active_directory.ds.replication.sync.request.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.replication.value.rate:
-        description: "ActiveDirectoryDsReplicationValueRateConfig provides config for the active_directory.ds.replication.value.rate metric."
+        description: "ActiveDirectoryDsReplicationValueRateMetricConfig provides config for the active_directory.ds.replication.value.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.security_descriptor_propagations_event.queued:
-        description: "ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig provides config for the active_directory.ds.security_descriptor_propagations_event.queued metric."
+        description: "ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedMetricConfig provides config for the active_directory.ds.security_descriptor_propagations_event.queued metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.suboperation.rate:
-        description: "ActiveDirectoryDsSuboperationRateConfig provides config for the active_directory.ds.suboperation.rate metric."
+        description: "ActiveDirectoryDsSuboperationRateMetricConfig provides config for the active_directory.ds.suboperation.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       active_directory.ds.thread.count:
-        description: "ActiveDirectoryDsThreadCountConfig provides config for the active_directory.ds.thread.count metric."
+        description: "ActiveDirectoryDsThreadCountMetricConfig provides config for the active_directory.ds.thread.count metric."
         type: object
         properties:
           enabled:

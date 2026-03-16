@@ -5,21 +5,21 @@ $defs:
     type: object
     properties:
       tcpcheck.duration:
-        description: "TcpcheckDurationConfig provides config for the tcpcheck.duration metric."
+        description: "TcpcheckDurationMetricConfig provides config for the tcpcheck.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       tcpcheck.error:
-        description: "TcpcheckErrorConfig provides config for the tcpcheck.error metric."
+        description: "TcpcheckErrorMetricConfig provides config for the tcpcheck.error metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       tcpcheck.status:
-        description: "TcpcheckStatusConfig provides config for the tcpcheck.status metric."
+        description: "TcpcheckStatusMetricConfig provides config for the tcpcheck.status metric."
         type: object
         properties:
           enabled:

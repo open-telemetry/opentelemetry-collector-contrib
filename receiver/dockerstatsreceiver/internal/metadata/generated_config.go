@@ -9,25 +9,25 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// ContainerBlockioIoMergedRecursiveAttributeKey specifies the key of an attribute for the container.blockio.io_merged_recursive metric.
-type ContainerBlockioIoMergedRecursiveAttributeKey string
+// ContainerBlockioIoMergedRecursiveMetricAttributeKey specifies the key of an attribute for the container.blockio.io_merged_recursive metric.
+type ContainerBlockioIoMergedRecursiveMetricAttributeKey string
 
 const (
-	ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMajor ContainerBlockioIoMergedRecursiveAttributeKey = "device_major"
-	ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMinor ContainerBlockioIoMergedRecursiveAttributeKey = "device_minor"
-	ContainerBlockioIoMergedRecursiveAttributeKeyOperation   ContainerBlockioIoMergedRecursiveAttributeKey = "operation"
+	ContainerBlockioIoMergedRecursiveMetricAttributeKeyDeviceMajor ContainerBlockioIoMergedRecursiveMetricAttributeKey = "device_major"
+	ContainerBlockioIoMergedRecursiveMetricAttributeKeyDeviceMinor ContainerBlockioIoMergedRecursiveMetricAttributeKey = "device_minor"
+	ContainerBlockioIoMergedRecursiveMetricAttributeKeyOperation   ContainerBlockioIoMergedRecursiveMetricAttributeKey = "operation"
 )
 
-// ContainerBlockioIoMergedRecursiveConfig provides config for the container.blockio.io_merged_recursive metric.
-type ContainerBlockioIoMergedRecursiveConfig struct {
+// ContainerBlockioIoMergedRecursiveMetricConfig provides config for the container.blockio.io_merged_recursive metric.
+type ContainerBlockioIoMergedRecursiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerBlockioIoMergedRecursiveAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerBlockioIoMergedRecursiveMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerBlockioIoMergedRecursiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerBlockioIoMergedRecursiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -41,10 +41,10 @@ func (ms *ContainerBlockioIoMergedRecursiveConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-func (ms *ContainerBlockioIoMergedRecursiveConfig) Validate() error {
+func (ms *ContainerBlockioIoMergedRecursiveMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoMergedRecursiveAttributeKeyOperation:
+		case ContainerBlockioIoMergedRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoMergedRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoMergedRecursiveMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric container.blockio.io_merged_recursive doesn't have an attribute %v, valid attributes: [device_major, device_minor, operation]", val)
 		}
@@ -59,25 +59,25 @@ func (ms *ContainerBlockioIoMergedRecursiveConfig) Validate() error {
 	return nil
 }
 
-// ContainerBlockioIoQueuedRecursiveAttributeKey specifies the key of an attribute for the container.blockio.io_queued_recursive metric.
-type ContainerBlockioIoQueuedRecursiveAttributeKey string
+// ContainerBlockioIoQueuedRecursiveMetricAttributeKey specifies the key of an attribute for the container.blockio.io_queued_recursive metric.
+type ContainerBlockioIoQueuedRecursiveMetricAttributeKey string
 
 const (
-	ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMajor ContainerBlockioIoQueuedRecursiveAttributeKey = "device_major"
-	ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMinor ContainerBlockioIoQueuedRecursiveAttributeKey = "device_minor"
-	ContainerBlockioIoQueuedRecursiveAttributeKeyOperation   ContainerBlockioIoQueuedRecursiveAttributeKey = "operation"
+	ContainerBlockioIoQueuedRecursiveMetricAttributeKeyDeviceMajor ContainerBlockioIoQueuedRecursiveMetricAttributeKey = "device_major"
+	ContainerBlockioIoQueuedRecursiveMetricAttributeKeyDeviceMinor ContainerBlockioIoQueuedRecursiveMetricAttributeKey = "device_minor"
+	ContainerBlockioIoQueuedRecursiveMetricAttributeKeyOperation   ContainerBlockioIoQueuedRecursiveMetricAttributeKey = "operation"
 )
 
-// ContainerBlockioIoQueuedRecursiveConfig provides config for the container.blockio.io_queued_recursive metric.
-type ContainerBlockioIoQueuedRecursiveConfig struct {
+// ContainerBlockioIoQueuedRecursiveMetricConfig provides config for the container.blockio.io_queued_recursive metric.
+type ContainerBlockioIoQueuedRecursiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerBlockioIoQueuedRecursiveAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerBlockioIoQueuedRecursiveMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerBlockioIoQueuedRecursiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerBlockioIoQueuedRecursiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -91,10 +91,10 @@ func (ms *ContainerBlockioIoQueuedRecursiveConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-func (ms *ContainerBlockioIoQueuedRecursiveConfig) Validate() error {
+func (ms *ContainerBlockioIoQueuedRecursiveMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoQueuedRecursiveAttributeKeyOperation:
+		case ContainerBlockioIoQueuedRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoQueuedRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoQueuedRecursiveMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric container.blockio.io_queued_recursive doesn't have an attribute %v, valid attributes: [device_major, device_minor, operation]", val)
 		}
@@ -109,25 +109,25 @@ func (ms *ContainerBlockioIoQueuedRecursiveConfig) Validate() error {
 	return nil
 }
 
-// ContainerBlockioIoServiceBytesRecursiveAttributeKey specifies the key of an attribute for the container.blockio.io_service_bytes_recursive metric.
-type ContainerBlockioIoServiceBytesRecursiveAttributeKey string
+// ContainerBlockioIoServiceBytesRecursiveMetricAttributeKey specifies the key of an attribute for the container.blockio.io_service_bytes_recursive metric.
+type ContainerBlockioIoServiceBytesRecursiveMetricAttributeKey string
 
 const (
-	ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMajor ContainerBlockioIoServiceBytesRecursiveAttributeKey = "device_major"
-	ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMinor ContainerBlockioIoServiceBytesRecursiveAttributeKey = "device_minor"
-	ContainerBlockioIoServiceBytesRecursiveAttributeKeyOperation   ContainerBlockioIoServiceBytesRecursiveAttributeKey = "operation"
+	ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyDeviceMajor ContainerBlockioIoServiceBytesRecursiveMetricAttributeKey = "device_major"
+	ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyDeviceMinor ContainerBlockioIoServiceBytesRecursiveMetricAttributeKey = "device_minor"
+	ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyOperation   ContainerBlockioIoServiceBytesRecursiveMetricAttributeKey = "operation"
 )
 
-// ContainerBlockioIoServiceBytesRecursiveConfig provides config for the container.blockio.io_service_bytes_recursive metric.
-type ContainerBlockioIoServiceBytesRecursiveConfig struct {
+// ContainerBlockioIoServiceBytesRecursiveMetricConfig provides config for the container.blockio.io_service_bytes_recursive metric.
+type ContainerBlockioIoServiceBytesRecursiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerBlockioIoServiceBytesRecursiveAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerBlockioIoServiceBytesRecursiveMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerBlockioIoServiceBytesRecursiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerBlockioIoServiceBytesRecursiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -141,10 +141,10 @@ func (ms *ContainerBlockioIoServiceBytesRecursiveConfig) Unmarshal(parser *confm
 	return nil
 }
 
-func (ms *ContainerBlockioIoServiceBytesRecursiveConfig) Validate() error {
+func (ms *ContainerBlockioIoServiceBytesRecursiveMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServiceBytesRecursiveAttributeKeyOperation:
+		case ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric container.blockio.io_service_bytes_recursive doesn't have an attribute %v, valid attributes: [device_major, device_minor, operation]", val)
 		}
@@ -159,25 +159,25 @@ func (ms *ContainerBlockioIoServiceBytesRecursiveConfig) Validate() error {
 	return nil
 }
 
-// ContainerBlockioIoServiceTimeRecursiveAttributeKey specifies the key of an attribute for the container.blockio.io_service_time_recursive metric.
-type ContainerBlockioIoServiceTimeRecursiveAttributeKey string
+// ContainerBlockioIoServiceTimeRecursiveMetricAttributeKey specifies the key of an attribute for the container.blockio.io_service_time_recursive metric.
+type ContainerBlockioIoServiceTimeRecursiveMetricAttributeKey string
 
 const (
-	ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMajor ContainerBlockioIoServiceTimeRecursiveAttributeKey = "device_major"
-	ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMinor ContainerBlockioIoServiceTimeRecursiveAttributeKey = "device_minor"
-	ContainerBlockioIoServiceTimeRecursiveAttributeKeyOperation   ContainerBlockioIoServiceTimeRecursiveAttributeKey = "operation"
+	ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyDeviceMajor ContainerBlockioIoServiceTimeRecursiveMetricAttributeKey = "device_major"
+	ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyDeviceMinor ContainerBlockioIoServiceTimeRecursiveMetricAttributeKey = "device_minor"
+	ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyOperation   ContainerBlockioIoServiceTimeRecursiveMetricAttributeKey = "operation"
 )
 
-// ContainerBlockioIoServiceTimeRecursiveConfig provides config for the container.blockio.io_service_time_recursive metric.
-type ContainerBlockioIoServiceTimeRecursiveConfig struct {
+// ContainerBlockioIoServiceTimeRecursiveMetricConfig provides config for the container.blockio.io_service_time_recursive metric.
+type ContainerBlockioIoServiceTimeRecursiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerBlockioIoServiceTimeRecursiveAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerBlockioIoServiceTimeRecursiveMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerBlockioIoServiceTimeRecursiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerBlockioIoServiceTimeRecursiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -191,10 +191,10 @@ func (ms *ContainerBlockioIoServiceTimeRecursiveConfig) Unmarshal(parser *confma
 	return nil
 }
 
-func (ms *ContainerBlockioIoServiceTimeRecursiveConfig) Validate() error {
+func (ms *ContainerBlockioIoServiceTimeRecursiveMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServiceTimeRecursiveAttributeKeyOperation:
+		case ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric container.blockio.io_service_time_recursive doesn't have an attribute %v, valid attributes: [device_major, device_minor, operation]", val)
 		}
@@ -209,25 +209,25 @@ func (ms *ContainerBlockioIoServiceTimeRecursiveConfig) Validate() error {
 	return nil
 }
 
-// ContainerBlockioIoServicedRecursiveAttributeKey specifies the key of an attribute for the container.blockio.io_serviced_recursive metric.
-type ContainerBlockioIoServicedRecursiveAttributeKey string
+// ContainerBlockioIoServicedRecursiveMetricAttributeKey specifies the key of an attribute for the container.blockio.io_serviced_recursive metric.
+type ContainerBlockioIoServicedRecursiveMetricAttributeKey string
 
 const (
-	ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMajor ContainerBlockioIoServicedRecursiveAttributeKey = "device_major"
-	ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMinor ContainerBlockioIoServicedRecursiveAttributeKey = "device_minor"
-	ContainerBlockioIoServicedRecursiveAttributeKeyOperation   ContainerBlockioIoServicedRecursiveAttributeKey = "operation"
+	ContainerBlockioIoServicedRecursiveMetricAttributeKeyDeviceMajor ContainerBlockioIoServicedRecursiveMetricAttributeKey = "device_major"
+	ContainerBlockioIoServicedRecursiveMetricAttributeKeyDeviceMinor ContainerBlockioIoServicedRecursiveMetricAttributeKey = "device_minor"
+	ContainerBlockioIoServicedRecursiveMetricAttributeKeyOperation   ContainerBlockioIoServicedRecursiveMetricAttributeKey = "operation"
 )
 
-// ContainerBlockioIoServicedRecursiveConfig provides config for the container.blockio.io_serviced_recursive metric.
-type ContainerBlockioIoServicedRecursiveConfig struct {
+// ContainerBlockioIoServicedRecursiveMetricConfig provides config for the container.blockio.io_serviced_recursive metric.
+type ContainerBlockioIoServicedRecursiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerBlockioIoServicedRecursiveAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerBlockioIoServicedRecursiveMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerBlockioIoServicedRecursiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerBlockioIoServicedRecursiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -241,10 +241,10 @@ func (ms *ContainerBlockioIoServicedRecursiveConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-func (ms *ContainerBlockioIoServicedRecursiveConfig) Validate() error {
+func (ms *ContainerBlockioIoServicedRecursiveMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServicedRecursiveAttributeKeyOperation:
+		case ContainerBlockioIoServicedRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoServicedRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoServicedRecursiveMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric container.blockio.io_serviced_recursive doesn't have an attribute %v, valid attributes: [device_major, device_minor, operation]", val)
 		}
@@ -259,25 +259,25 @@ func (ms *ContainerBlockioIoServicedRecursiveConfig) Validate() error {
 	return nil
 }
 
-// ContainerBlockioIoTimeRecursiveAttributeKey specifies the key of an attribute for the container.blockio.io_time_recursive metric.
-type ContainerBlockioIoTimeRecursiveAttributeKey string
+// ContainerBlockioIoTimeRecursiveMetricAttributeKey specifies the key of an attribute for the container.blockio.io_time_recursive metric.
+type ContainerBlockioIoTimeRecursiveMetricAttributeKey string
 
 const (
-	ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMajor ContainerBlockioIoTimeRecursiveAttributeKey = "device_major"
-	ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMinor ContainerBlockioIoTimeRecursiveAttributeKey = "device_minor"
-	ContainerBlockioIoTimeRecursiveAttributeKeyOperation   ContainerBlockioIoTimeRecursiveAttributeKey = "operation"
+	ContainerBlockioIoTimeRecursiveMetricAttributeKeyDeviceMajor ContainerBlockioIoTimeRecursiveMetricAttributeKey = "device_major"
+	ContainerBlockioIoTimeRecursiveMetricAttributeKeyDeviceMinor ContainerBlockioIoTimeRecursiveMetricAttributeKey = "device_minor"
+	ContainerBlockioIoTimeRecursiveMetricAttributeKeyOperation   ContainerBlockioIoTimeRecursiveMetricAttributeKey = "operation"
 )
 
-// ContainerBlockioIoTimeRecursiveConfig provides config for the container.blockio.io_time_recursive metric.
-type ContainerBlockioIoTimeRecursiveConfig struct {
+// ContainerBlockioIoTimeRecursiveMetricConfig provides config for the container.blockio.io_time_recursive metric.
+type ContainerBlockioIoTimeRecursiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerBlockioIoTimeRecursiveAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerBlockioIoTimeRecursiveMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerBlockioIoTimeRecursiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerBlockioIoTimeRecursiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -291,10 +291,10 @@ func (ms *ContainerBlockioIoTimeRecursiveConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *ContainerBlockioIoTimeRecursiveConfig) Validate() error {
+func (ms *ContainerBlockioIoTimeRecursiveMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoTimeRecursiveAttributeKeyOperation:
+		case ContainerBlockioIoTimeRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoTimeRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoTimeRecursiveMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric container.blockio.io_time_recursive doesn't have an attribute %v, valid attributes: [device_major, device_minor, operation]", val)
 		}
@@ -309,25 +309,25 @@ func (ms *ContainerBlockioIoTimeRecursiveConfig) Validate() error {
 	return nil
 }
 
-// ContainerBlockioIoWaitTimeRecursiveAttributeKey specifies the key of an attribute for the container.blockio.io_wait_time_recursive metric.
-type ContainerBlockioIoWaitTimeRecursiveAttributeKey string
+// ContainerBlockioIoWaitTimeRecursiveMetricAttributeKey specifies the key of an attribute for the container.blockio.io_wait_time_recursive metric.
+type ContainerBlockioIoWaitTimeRecursiveMetricAttributeKey string
 
 const (
-	ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMajor ContainerBlockioIoWaitTimeRecursiveAttributeKey = "device_major"
-	ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMinor ContainerBlockioIoWaitTimeRecursiveAttributeKey = "device_minor"
-	ContainerBlockioIoWaitTimeRecursiveAttributeKeyOperation   ContainerBlockioIoWaitTimeRecursiveAttributeKey = "operation"
+	ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyDeviceMajor ContainerBlockioIoWaitTimeRecursiveMetricAttributeKey = "device_major"
+	ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyDeviceMinor ContainerBlockioIoWaitTimeRecursiveMetricAttributeKey = "device_minor"
+	ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyOperation   ContainerBlockioIoWaitTimeRecursiveMetricAttributeKey = "operation"
 )
 
-// ContainerBlockioIoWaitTimeRecursiveConfig provides config for the container.blockio.io_wait_time_recursive metric.
-type ContainerBlockioIoWaitTimeRecursiveConfig struct {
+// ContainerBlockioIoWaitTimeRecursiveMetricConfig provides config for the container.blockio.io_wait_time_recursive metric.
+type ContainerBlockioIoWaitTimeRecursiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerBlockioIoWaitTimeRecursiveAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerBlockioIoWaitTimeRecursiveMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerBlockioIoWaitTimeRecursiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerBlockioIoWaitTimeRecursiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -341,10 +341,10 @@ func (ms *ContainerBlockioIoWaitTimeRecursiveConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-func (ms *ContainerBlockioIoWaitTimeRecursiveConfig) Validate() error {
+func (ms *ContainerBlockioIoWaitTimeRecursiveMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoWaitTimeRecursiveAttributeKeyOperation:
+		case ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric container.blockio.io_wait_time_recursive doesn't have an attribute %v, valid attributes: [device_major, device_minor, operation]", val)
 		}
@@ -359,25 +359,25 @@ func (ms *ContainerBlockioIoWaitTimeRecursiveConfig) Validate() error {
 	return nil
 }
 
-// ContainerBlockioSectorsRecursiveAttributeKey specifies the key of an attribute for the container.blockio.sectors_recursive metric.
-type ContainerBlockioSectorsRecursiveAttributeKey string
+// ContainerBlockioSectorsRecursiveMetricAttributeKey specifies the key of an attribute for the container.blockio.sectors_recursive metric.
+type ContainerBlockioSectorsRecursiveMetricAttributeKey string
 
 const (
-	ContainerBlockioSectorsRecursiveAttributeKeyDeviceMajor ContainerBlockioSectorsRecursiveAttributeKey = "device_major"
-	ContainerBlockioSectorsRecursiveAttributeKeyDeviceMinor ContainerBlockioSectorsRecursiveAttributeKey = "device_minor"
-	ContainerBlockioSectorsRecursiveAttributeKeyOperation   ContainerBlockioSectorsRecursiveAttributeKey = "operation"
+	ContainerBlockioSectorsRecursiveMetricAttributeKeyDeviceMajor ContainerBlockioSectorsRecursiveMetricAttributeKey = "device_major"
+	ContainerBlockioSectorsRecursiveMetricAttributeKeyDeviceMinor ContainerBlockioSectorsRecursiveMetricAttributeKey = "device_minor"
+	ContainerBlockioSectorsRecursiveMetricAttributeKeyOperation   ContainerBlockioSectorsRecursiveMetricAttributeKey = "operation"
 )
 
-// ContainerBlockioSectorsRecursiveConfig provides config for the container.blockio.sectors_recursive metric.
-type ContainerBlockioSectorsRecursiveConfig struct {
+// ContainerBlockioSectorsRecursiveMetricConfig provides config for the container.blockio.sectors_recursive metric.
+type ContainerBlockioSectorsRecursiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerBlockioSectorsRecursiveAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerBlockioSectorsRecursiveMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerBlockioSectorsRecursiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerBlockioSectorsRecursiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -391,10 +391,10 @@ func (ms *ContainerBlockioSectorsRecursiveConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *ContainerBlockioSectorsRecursiveConfig) Validate() error {
+func (ms *ContainerBlockioSectorsRecursiveMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerBlockioSectorsRecursiveAttributeKeyDeviceMajor, ContainerBlockioSectorsRecursiveAttributeKeyDeviceMinor, ContainerBlockioSectorsRecursiveAttributeKeyOperation:
+		case ContainerBlockioSectorsRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioSectorsRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioSectorsRecursiveMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric container.blockio.sectors_recursive doesn't have an attribute %v, valid attributes: [device_major, device_minor, operation]", val)
 		}
@@ -409,13 +409,13 @@ func (ms *ContainerBlockioSectorsRecursiveConfig) Validate() error {
 	return nil
 }
 
-// ContainerCPULimitConfig provides config for the container.cpu.limit metric.
-type ContainerCPULimitConfig struct {
+// ContainerCPULimitMetricConfig provides config for the container.cpu.limit metric.
+type ContainerCPULimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPULimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPULimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -429,13 +429,13 @@ func (ms *ContainerCPULimitConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerCPULogicalCountConfig provides config for the container.cpu.logical.count metric.
-type ContainerCPULogicalCountConfig struct {
+// ContainerCPULogicalCountMetricConfig provides config for the container.cpu.logical.count metric.
+type ContainerCPULogicalCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPULogicalCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPULogicalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -449,13 +449,13 @@ func (ms *ContainerCPULogicalCountConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// ContainerCPUSharesConfig provides config for the container.cpu.shares metric.
-type ContainerCPUSharesConfig struct {
+// ContainerCPUSharesMetricConfig provides config for the container.cpu.shares metric.
+type ContainerCPUSharesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUSharesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUSharesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -469,13 +469,13 @@ func (ms *ContainerCPUSharesConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerCPUThrottlingDataPeriodsConfig provides config for the container.cpu.throttling_data.periods metric.
-type ContainerCPUThrottlingDataPeriodsConfig struct {
+// ContainerCPUThrottlingDataPeriodsMetricConfig provides config for the container.cpu.throttling_data.periods metric.
+type ContainerCPUThrottlingDataPeriodsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUThrottlingDataPeriodsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUThrottlingDataPeriodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -489,13 +489,13 @@ func (ms *ContainerCPUThrottlingDataPeriodsConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// ContainerCPUThrottlingDataThrottledPeriodsConfig provides config for the container.cpu.throttling_data.throttled_periods metric.
-type ContainerCPUThrottlingDataThrottledPeriodsConfig struct {
+// ContainerCPUThrottlingDataThrottledPeriodsMetricConfig provides config for the container.cpu.throttling_data.throttled_periods metric.
+type ContainerCPUThrottlingDataThrottledPeriodsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUThrottlingDataThrottledPeriodsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUThrottlingDataThrottledPeriodsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -509,13 +509,13 @@ func (ms *ContainerCPUThrottlingDataThrottledPeriodsConfig) Unmarshal(parser *co
 	return nil
 }
 
-// ContainerCPUThrottlingDataThrottledTimeConfig provides config for the container.cpu.throttling_data.throttled_time metric.
-type ContainerCPUThrottlingDataThrottledTimeConfig struct {
+// ContainerCPUThrottlingDataThrottledTimeMetricConfig provides config for the container.cpu.throttling_data.throttled_time metric.
+type ContainerCPUThrottlingDataThrottledTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUThrottlingDataThrottledTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUThrottlingDataThrottledTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -529,13 +529,13 @@ func (ms *ContainerCPUThrottlingDataThrottledTimeConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// ContainerCPUUsageKernelmodeConfig provides config for the container.cpu.usage.kernelmode metric.
-type ContainerCPUUsageKernelmodeConfig struct {
+// ContainerCPUUsageKernelmodeMetricConfig provides config for the container.cpu.usage.kernelmode metric.
+type ContainerCPUUsageKernelmodeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUUsageKernelmodeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUUsageKernelmodeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -549,23 +549,23 @@ func (ms *ContainerCPUUsageKernelmodeConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ContainerCPUUsagePercpuAttributeKey specifies the key of an attribute for the container.cpu.usage.percpu metric.
-type ContainerCPUUsagePercpuAttributeKey string
+// ContainerCPUUsagePercpuMetricAttributeKey specifies the key of an attribute for the container.cpu.usage.percpu metric.
+type ContainerCPUUsagePercpuMetricAttributeKey string
 
 const (
-	ContainerCPUUsagePercpuAttributeKeyCore ContainerCPUUsagePercpuAttributeKey = "core"
+	ContainerCPUUsagePercpuMetricAttributeKeyCore ContainerCPUUsagePercpuMetricAttributeKey = "core"
 )
 
-// ContainerCPUUsagePercpuConfig provides config for the container.cpu.usage.percpu metric.
-type ContainerCPUUsagePercpuConfig struct {
+// ContainerCPUUsagePercpuMetricConfig provides config for the container.cpu.usage.percpu metric.
+type ContainerCPUUsagePercpuMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerCPUUsagePercpuAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerCPUUsagePercpuMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerCPUUsagePercpuConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUUsagePercpuMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -579,10 +579,10 @@ func (ms *ContainerCPUUsagePercpuConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *ContainerCPUUsagePercpuConfig) Validate() error {
+func (ms *ContainerCPUUsagePercpuMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerCPUUsagePercpuAttributeKeyCore:
+		case ContainerCPUUsagePercpuMetricAttributeKeyCore:
 		default:
 			return fmt.Errorf("metric container.cpu.usage.percpu doesn't have an attribute %v, valid attributes: [core]", val)
 		}
@@ -597,13 +597,13 @@ func (ms *ContainerCPUUsagePercpuConfig) Validate() error {
 	return nil
 }
 
-// ContainerCPUUsageSystemConfig provides config for the container.cpu.usage.system metric.
-type ContainerCPUUsageSystemConfig struct {
+// ContainerCPUUsageSystemMetricConfig provides config for the container.cpu.usage.system metric.
+type ContainerCPUUsageSystemMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUUsageSystemConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUUsageSystemMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -617,13 +617,13 @@ func (ms *ContainerCPUUsageSystemConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerCPUUsageTotalConfig provides config for the container.cpu.usage.total metric.
-type ContainerCPUUsageTotalConfig struct {
+// ContainerCPUUsageTotalMetricConfig provides config for the container.cpu.usage.total metric.
+type ContainerCPUUsageTotalMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUUsageTotalConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUUsageTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -637,13 +637,13 @@ func (ms *ContainerCPUUsageTotalConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerCPUUsageUsermodeConfig provides config for the container.cpu.usage.usermode metric.
-type ContainerCPUUsageUsermodeConfig struct {
+// ContainerCPUUsageUsermodeMetricConfig provides config for the container.cpu.usage.usermode metric.
+type ContainerCPUUsageUsermodeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUUsageUsermodeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUUsageUsermodeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -657,13 +657,13 @@ func (ms *ContainerCPUUsageUsermodeConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerCPUUtilizationConfig provides config for the container.cpu.utilization metric.
-type ContainerCPUUtilizationConfig struct {
+// ContainerCPUUtilizationMetricConfig provides config for the container.cpu.utilization metric.
+type ContainerCPUUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerCPUUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -677,13 +677,13 @@ func (ms *ContainerCPUUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryActiveAnonConfig provides config for the container.memory.active_anon metric.
-type ContainerMemoryActiveAnonConfig struct {
+// ContainerMemoryActiveAnonMetricConfig provides config for the container.memory.active_anon metric.
+type ContainerMemoryActiveAnonMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryActiveAnonConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryActiveAnonMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -697,13 +697,13 @@ func (ms *ContainerMemoryActiveAnonConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerMemoryActiveFileConfig provides config for the container.memory.active_file metric.
-type ContainerMemoryActiveFileConfig struct {
+// ContainerMemoryActiveFileMetricConfig provides config for the container.memory.active_file metric.
+type ContainerMemoryActiveFileMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryActiveFileConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryActiveFileMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -717,13 +717,13 @@ func (ms *ContainerMemoryActiveFileConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerMemoryAnonConfig provides config for the container.memory.anon metric.
-type ContainerMemoryAnonConfig struct {
+// ContainerMemoryAnonMetricConfig provides config for the container.memory.anon metric.
+type ContainerMemoryAnonMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryAnonConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryAnonMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -737,13 +737,13 @@ func (ms *ContainerMemoryAnonConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryCacheConfig provides config for the container.memory.cache metric.
-type ContainerMemoryCacheConfig struct {
+// ContainerMemoryCacheMetricConfig provides config for the container.memory.cache metric.
+type ContainerMemoryCacheMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryCacheConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryCacheMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -757,13 +757,13 @@ func (ms *ContainerMemoryCacheConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryDirtyConfig provides config for the container.memory.dirty metric.
-type ContainerMemoryDirtyConfig struct {
+// ContainerMemoryDirtyMetricConfig provides config for the container.memory.dirty metric.
+type ContainerMemoryDirtyMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryDirtyConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryDirtyMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -777,13 +777,13 @@ func (ms *ContainerMemoryDirtyConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryFailsConfig provides config for the container.memory.fails metric.
-type ContainerMemoryFailsConfig struct {
+// ContainerMemoryFailsMetricConfig provides config for the container.memory.fails metric.
+type ContainerMemoryFailsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryFailsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryFailsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -797,13 +797,13 @@ func (ms *ContainerMemoryFailsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryFileConfig provides config for the container.memory.file metric.
-type ContainerMemoryFileConfig struct {
+// ContainerMemoryFileMetricConfig provides config for the container.memory.file metric.
+type ContainerMemoryFileMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryFileConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryFileMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -817,13 +817,13 @@ func (ms *ContainerMemoryFileConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryHierarchicalMemoryLimitConfig provides config for the container.memory.hierarchical_memory_limit metric.
-type ContainerMemoryHierarchicalMemoryLimitConfig struct {
+// ContainerMemoryHierarchicalMemoryLimitMetricConfig provides config for the container.memory.hierarchical_memory_limit metric.
+type ContainerMemoryHierarchicalMemoryLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryHierarchicalMemoryLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryHierarchicalMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -837,13 +837,13 @@ func (ms *ContainerMemoryHierarchicalMemoryLimitConfig) Unmarshal(parser *confma
 	return nil
 }
 
-// ContainerMemoryHierarchicalMemswLimitConfig provides config for the container.memory.hierarchical_memsw_limit metric.
-type ContainerMemoryHierarchicalMemswLimitConfig struct {
+// ContainerMemoryHierarchicalMemswLimitMetricConfig provides config for the container.memory.hierarchical_memsw_limit metric.
+type ContainerMemoryHierarchicalMemswLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryHierarchicalMemswLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryHierarchicalMemswLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -857,13 +857,13 @@ func (ms *ContainerMemoryHierarchicalMemswLimitConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-// ContainerMemoryInactiveAnonConfig provides config for the container.memory.inactive_anon metric.
-type ContainerMemoryInactiveAnonConfig struct {
+// ContainerMemoryInactiveAnonMetricConfig provides config for the container.memory.inactive_anon metric.
+type ContainerMemoryInactiveAnonMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryInactiveAnonConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryInactiveAnonMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -877,13 +877,13 @@ func (ms *ContainerMemoryInactiveAnonConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ContainerMemoryInactiveFileConfig provides config for the container.memory.inactive_file metric.
-type ContainerMemoryInactiveFileConfig struct {
+// ContainerMemoryInactiveFileMetricConfig provides config for the container.memory.inactive_file metric.
+type ContainerMemoryInactiveFileMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryInactiveFileConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryInactiveFileMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -897,13 +897,13 @@ func (ms *ContainerMemoryInactiveFileConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ContainerMemoryMappedFileConfig provides config for the container.memory.mapped_file metric.
-type ContainerMemoryMappedFileConfig struct {
+// ContainerMemoryMappedFileMetricConfig provides config for the container.memory.mapped_file metric.
+type ContainerMemoryMappedFileMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryMappedFileConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryMappedFileMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -917,13 +917,13 @@ func (ms *ContainerMemoryMappedFileConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerMemoryPercentConfig provides config for the container.memory.percent metric.
-type ContainerMemoryPercentConfig struct {
+// ContainerMemoryPercentMetricConfig provides config for the container.memory.percent metric.
+type ContainerMemoryPercentMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryPercentConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryPercentMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -937,13 +937,13 @@ func (ms *ContainerMemoryPercentConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryPgfaultConfig provides config for the container.memory.pgfault metric.
-type ContainerMemoryPgfaultConfig struct {
+// ContainerMemoryPgfaultMetricConfig provides config for the container.memory.pgfault metric.
+type ContainerMemoryPgfaultMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryPgfaultConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryPgfaultMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -957,13 +957,13 @@ func (ms *ContainerMemoryPgfaultConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryPgmajfaultConfig provides config for the container.memory.pgmajfault metric.
-type ContainerMemoryPgmajfaultConfig struct {
+// ContainerMemoryPgmajfaultMetricConfig provides config for the container.memory.pgmajfault metric.
+type ContainerMemoryPgmajfaultMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryPgmajfaultConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryPgmajfaultMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -977,13 +977,13 @@ func (ms *ContainerMemoryPgmajfaultConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerMemoryPgpginConfig provides config for the container.memory.pgpgin metric.
-type ContainerMemoryPgpginConfig struct {
+// ContainerMemoryPgpginMetricConfig provides config for the container.memory.pgpgin metric.
+type ContainerMemoryPgpginMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryPgpginConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryPgpginMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -997,13 +997,13 @@ func (ms *ContainerMemoryPgpginConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryPgpgoutConfig provides config for the container.memory.pgpgout metric.
-type ContainerMemoryPgpgoutConfig struct {
+// ContainerMemoryPgpgoutMetricConfig provides config for the container.memory.pgpgout metric.
+type ContainerMemoryPgpgoutMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryPgpgoutConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryPgpgoutMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1017,13 +1017,13 @@ func (ms *ContainerMemoryPgpgoutConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryRssConfig provides config for the container.memory.rss metric.
-type ContainerMemoryRssConfig struct {
+// ContainerMemoryRssMetricConfig provides config for the container.memory.rss metric.
+type ContainerMemoryRssMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryRssConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryRssMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1037,13 +1037,13 @@ func (ms *ContainerMemoryRssConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryRssHugeConfig provides config for the container.memory.rss_huge metric.
-type ContainerMemoryRssHugeConfig struct {
+// ContainerMemoryRssHugeMetricConfig provides config for the container.memory.rss_huge metric.
+type ContainerMemoryRssHugeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryRssHugeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryRssHugeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1057,13 +1057,13 @@ func (ms *ContainerMemoryRssHugeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryTotalActiveAnonConfig provides config for the container.memory.total_active_anon metric.
-type ContainerMemoryTotalActiveAnonConfig struct {
+// ContainerMemoryTotalActiveAnonMetricConfig provides config for the container.memory.total_active_anon metric.
+type ContainerMemoryTotalActiveAnonMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalActiveAnonConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalActiveAnonMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1077,13 +1077,13 @@ func (ms *ContainerMemoryTotalActiveAnonConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// ContainerMemoryTotalActiveFileConfig provides config for the container.memory.total_active_file metric.
-type ContainerMemoryTotalActiveFileConfig struct {
+// ContainerMemoryTotalActiveFileMetricConfig provides config for the container.memory.total_active_file metric.
+type ContainerMemoryTotalActiveFileMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalActiveFileConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalActiveFileMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1097,13 +1097,13 @@ func (ms *ContainerMemoryTotalActiveFileConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// ContainerMemoryTotalCacheConfig provides config for the container.memory.total_cache metric.
-type ContainerMemoryTotalCacheConfig struct {
+// ContainerMemoryTotalCacheMetricConfig provides config for the container.memory.total_cache metric.
+type ContainerMemoryTotalCacheMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalCacheConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalCacheMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1117,13 +1117,13 @@ func (ms *ContainerMemoryTotalCacheConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerMemoryTotalDirtyConfig provides config for the container.memory.total_dirty metric.
-type ContainerMemoryTotalDirtyConfig struct {
+// ContainerMemoryTotalDirtyMetricConfig provides config for the container.memory.total_dirty metric.
+type ContainerMemoryTotalDirtyMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalDirtyConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalDirtyMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1137,13 +1137,13 @@ func (ms *ContainerMemoryTotalDirtyConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerMemoryTotalInactiveAnonConfig provides config for the container.memory.total_inactive_anon metric.
-type ContainerMemoryTotalInactiveAnonConfig struct {
+// ContainerMemoryTotalInactiveAnonMetricConfig provides config for the container.memory.total_inactive_anon metric.
+type ContainerMemoryTotalInactiveAnonMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalInactiveAnonConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalInactiveAnonMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1157,13 +1157,13 @@ func (ms *ContainerMemoryTotalInactiveAnonConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// ContainerMemoryTotalInactiveFileConfig provides config for the container.memory.total_inactive_file metric.
-type ContainerMemoryTotalInactiveFileConfig struct {
+// ContainerMemoryTotalInactiveFileMetricConfig provides config for the container.memory.total_inactive_file metric.
+type ContainerMemoryTotalInactiveFileMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalInactiveFileConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalInactiveFileMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1177,13 +1177,13 @@ func (ms *ContainerMemoryTotalInactiveFileConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// ContainerMemoryTotalMappedFileConfig provides config for the container.memory.total_mapped_file metric.
-type ContainerMemoryTotalMappedFileConfig struct {
+// ContainerMemoryTotalMappedFileMetricConfig provides config for the container.memory.total_mapped_file metric.
+type ContainerMemoryTotalMappedFileMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalMappedFileConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalMappedFileMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1197,13 +1197,13 @@ func (ms *ContainerMemoryTotalMappedFileConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// ContainerMemoryTotalPgfaultConfig provides config for the container.memory.total_pgfault metric.
-type ContainerMemoryTotalPgfaultConfig struct {
+// ContainerMemoryTotalPgfaultMetricConfig provides config for the container.memory.total_pgfault metric.
+type ContainerMemoryTotalPgfaultMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalPgfaultConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalPgfaultMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1217,13 +1217,13 @@ func (ms *ContainerMemoryTotalPgfaultConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ContainerMemoryTotalPgmajfaultConfig provides config for the container.memory.total_pgmajfault metric.
-type ContainerMemoryTotalPgmajfaultConfig struct {
+// ContainerMemoryTotalPgmajfaultMetricConfig provides config for the container.memory.total_pgmajfault metric.
+type ContainerMemoryTotalPgmajfaultMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalPgmajfaultConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalPgmajfaultMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1237,13 +1237,13 @@ func (ms *ContainerMemoryTotalPgmajfaultConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// ContainerMemoryTotalPgpginConfig provides config for the container.memory.total_pgpgin metric.
-type ContainerMemoryTotalPgpginConfig struct {
+// ContainerMemoryTotalPgpginMetricConfig provides config for the container.memory.total_pgpgin metric.
+type ContainerMemoryTotalPgpginMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalPgpginConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalPgpginMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1257,13 +1257,13 @@ func (ms *ContainerMemoryTotalPgpginConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// ContainerMemoryTotalPgpgoutConfig provides config for the container.memory.total_pgpgout metric.
-type ContainerMemoryTotalPgpgoutConfig struct {
+// ContainerMemoryTotalPgpgoutMetricConfig provides config for the container.memory.total_pgpgout metric.
+type ContainerMemoryTotalPgpgoutMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalPgpgoutConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalPgpgoutMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1277,13 +1277,13 @@ func (ms *ContainerMemoryTotalPgpgoutConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ContainerMemoryTotalRssConfig provides config for the container.memory.total_rss metric.
-type ContainerMemoryTotalRssConfig struct {
+// ContainerMemoryTotalRssMetricConfig provides config for the container.memory.total_rss metric.
+type ContainerMemoryTotalRssMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalRssConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalRssMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1297,13 +1297,13 @@ func (ms *ContainerMemoryTotalRssConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryTotalRssHugeConfig provides config for the container.memory.total_rss_huge metric.
-type ContainerMemoryTotalRssHugeConfig struct {
+// ContainerMemoryTotalRssHugeMetricConfig provides config for the container.memory.total_rss_huge metric.
+type ContainerMemoryTotalRssHugeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalRssHugeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalRssHugeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1317,13 +1317,13 @@ func (ms *ContainerMemoryTotalRssHugeConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ContainerMemoryTotalUnevictableConfig provides config for the container.memory.total_unevictable metric.
-type ContainerMemoryTotalUnevictableConfig struct {
+// ContainerMemoryTotalUnevictableMetricConfig provides config for the container.memory.total_unevictable metric.
+type ContainerMemoryTotalUnevictableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalUnevictableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalUnevictableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1337,13 +1337,13 @@ func (ms *ContainerMemoryTotalUnevictableConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// ContainerMemoryTotalWritebackConfig provides config for the container.memory.total_writeback metric.
-type ContainerMemoryTotalWritebackConfig struct {
+// ContainerMemoryTotalWritebackMetricConfig provides config for the container.memory.total_writeback metric.
+type ContainerMemoryTotalWritebackMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryTotalWritebackConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryTotalWritebackMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1357,13 +1357,13 @@ func (ms *ContainerMemoryTotalWritebackConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// ContainerMemoryUnevictableConfig provides config for the container.memory.unevictable metric.
-type ContainerMemoryUnevictableConfig struct {
+// ContainerMemoryUnevictableMetricConfig provides config for the container.memory.unevictable metric.
+type ContainerMemoryUnevictableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryUnevictableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryUnevictableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1377,13 +1377,13 @@ func (ms *ContainerMemoryUnevictableConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// ContainerMemoryUsageLimitConfig provides config for the container.memory.usage.limit metric.
-type ContainerMemoryUsageLimitConfig struct {
+// ContainerMemoryUsageLimitMetricConfig provides config for the container.memory.usage.limit metric.
+type ContainerMemoryUsageLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryUsageLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryUsageLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1397,13 +1397,13 @@ func (ms *ContainerMemoryUsageLimitConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerMemoryUsageMaxConfig provides config for the container.memory.usage.max metric.
-type ContainerMemoryUsageMaxConfig struct {
+// ContainerMemoryUsageMaxMetricConfig provides config for the container.memory.usage.max metric.
+type ContainerMemoryUsageMaxMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryUsageMaxConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryUsageMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1417,13 +1417,13 @@ func (ms *ContainerMemoryUsageMaxConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerMemoryUsageTotalConfig provides config for the container.memory.usage.total metric.
-type ContainerMemoryUsageTotalConfig struct {
+// ContainerMemoryUsageTotalMetricConfig provides config for the container.memory.usage.total metric.
+type ContainerMemoryUsageTotalMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryUsageTotalConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryUsageTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1437,13 +1437,13 @@ func (ms *ContainerMemoryUsageTotalConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ContainerMemoryWritebackConfig provides config for the container.memory.writeback metric.
-type ContainerMemoryWritebackConfig struct {
+// ContainerMemoryWritebackMetricConfig provides config for the container.memory.writeback metric.
+type ContainerMemoryWritebackMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryWritebackConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryWritebackMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1457,23 +1457,23 @@ func (ms *ContainerMemoryWritebackConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// ContainerNetworkIoUsageRxBytesAttributeKey specifies the key of an attribute for the container.network.io.usage.rx_bytes metric.
-type ContainerNetworkIoUsageRxBytesAttributeKey string
+// ContainerNetworkIoUsageRxBytesMetricAttributeKey specifies the key of an attribute for the container.network.io.usage.rx_bytes metric.
+type ContainerNetworkIoUsageRxBytesMetricAttributeKey string
 
 const (
-	ContainerNetworkIoUsageRxBytesAttributeKeyInterface ContainerNetworkIoUsageRxBytesAttributeKey = "interface"
+	ContainerNetworkIoUsageRxBytesMetricAttributeKeyInterface ContainerNetworkIoUsageRxBytesMetricAttributeKey = "interface"
 )
 
-// ContainerNetworkIoUsageRxBytesConfig provides config for the container.network.io.usage.rx_bytes metric.
-type ContainerNetworkIoUsageRxBytesConfig struct {
+// ContainerNetworkIoUsageRxBytesMetricConfig provides config for the container.network.io.usage.rx_bytes metric.
+type ContainerNetworkIoUsageRxBytesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerNetworkIoUsageRxBytesAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerNetworkIoUsageRxBytesMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerNetworkIoUsageRxBytesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerNetworkIoUsageRxBytesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1487,10 +1487,10 @@ func (ms *ContainerNetworkIoUsageRxBytesConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *ContainerNetworkIoUsageRxBytesConfig) Validate() error {
+func (ms *ContainerNetworkIoUsageRxBytesMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerNetworkIoUsageRxBytesAttributeKeyInterface:
+		case ContainerNetworkIoUsageRxBytesMetricAttributeKeyInterface:
 		default:
 			return fmt.Errorf("metric container.network.io.usage.rx_bytes doesn't have an attribute %v, valid attributes: [interface]", val)
 		}
@@ -1505,23 +1505,23 @@ func (ms *ContainerNetworkIoUsageRxBytesConfig) Validate() error {
 	return nil
 }
 
-// ContainerNetworkIoUsageRxDroppedAttributeKey specifies the key of an attribute for the container.network.io.usage.rx_dropped metric.
-type ContainerNetworkIoUsageRxDroppedAttributeKey string
+// ContainerNetworkIoUsageRxDroppedMetricAttributeKey specifies the key of an attribute for the container.network.io.usage.rx_dropped metric.
+type ContainerNetworkIoUsageRxDroppedMetricAttributeKey string
 
 const (
-	ContainerNetworkIoUsageRxDroppedAttributeKeyInterface ContainerNetworkIoUsageRxDroppedAttributeKey = "interface"
+	ContainerNetworkIoUsageRxDroppedMetricAttributeKeyInterface ContainerNetworkIoUsageRxDroppedMetricAttributeKey = "interface"
 )
 
-// ContainerNetworkIoUsageRxDroppedConfig provides config for the container.network.io.usage.rx_dropped metric.
-type ContainerNetworkIoUsageRxDroppedConfig struct {
+// ContainerNetworkIoUsageRxDroppedMetricConfig provides config for the container.network.io.usage.rx_dropped metric.
+type ContainerNetworkIoUsageRxDroppedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerNetworkIoUsageRxDroppedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerNetworkIoUsageRxDroppedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerNetworkIoUsageRxDroppedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerNetworkIoUsageRxDroppedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1535,10 +1535,10 @@ func (ms *ContainerNetworkIoUsageRxDroppedConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *ContainerNetworkIoUsageRxDroppedConfig) Validate() error {
+func (ms *ContainerNetworkIoUsageRxDroppedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerNetworkIoUsageRxDroppedAttributeKeyInterface:
+		case ContainerNetworkIoUsageRxDroppedMetricAttributeKeyInterface:
 		default:
 			return fmt.Errorf("metric container.network.io.usage.rx_dropped doesn't have an attribute %v, valid attributes: [interface]", val)
 		}
@@ -1553,23 +1553,23 @@ func (ms *ContainerNetworkIoUsageRxDroppedConfig) Validate() error {
 	return nil
 }
 
-// ContainerNetworkIoUsageRxErrorsAttributeKey specifies the key of an attribute for the container.network.io.usage.rx_errors metric.
-type ContainerNetworkIoUsageRxErrorsAttributeKey string
+// ContainerNetworkIoUsageRxErrorsMetricAttributeKey specifies the key of an attribute for the container.network.io.usage.rx_errors metric.
+type ContainerNetworkIoUsageRxErrorsMetricAttributeKey string
 
 const (
-	ContainerNetworkIoUsageRxErrorsAttributeKeyInterface ContainerNetworkIoUsageRxErrorsAttributeKey = "interface"
+	ContainerNetworkIoUsageRxErrorsMetricAttributeKeyInterface ContainerNetworkIoUsageRxErrorsMetricAttributeKey = "interface"
 )
 
-// ContainerNetworkIoUsageRxErrorsConfig provides config for the container.network.io.usage.rx_errors metric.
-type ContainerNetworkIoUsageRxErrorsConfig struct {
+// ContainerNetworkIoUsageRxErrorsMetricConfig provides config for the container.network.io.usage.rx_errors metric.
+type ContainerNetworkIoUsageRxErrorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerNetworkIoUsageRxErrorsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerNetworkIoUsageRxErrorsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerNetworkIoUsageRxErrorsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerNetworkIoUsageRxErrorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1583,10 +1583,10 @@ func (ms *ContainerNetworkIoUsageRxErrorsConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *ContainerNetworkIoUsageRxErrorsConfig) Validate() error {
+func (ms *ContainerNetworkIoUsageRxErrorsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerNetworkIoUsageRxErrorsAttributeKeyInterface:
+		case ContainerNetworkIoUsageRxErrorsMetricAttributeKeyInterface:
 		default:
 			return fmt.Errorf("metric container.network.io.usage.rx_errors doesn't have an attribute %v, valid attributes: [interface]", val)
 		}
@@ -1601,23 +1601,23 @@ func (ms *ContainerNetworkIoUsageRxErrorsConfig) Validate() error {
 	return nil
 }
 
-// ContainerNetworkIoUsageRxPacketsAttributeKey specifies the key of an attribute for the container.network.io.usage.rx_packets metric.
-type ContainerNetworkIoUsageRxPacketsAttributeKey string
+// ContainerNetworkIoUsageRxPacketsMetricAttributeKey specifies the key of an attribute for the container.network.io.usage.rx_packets metric.
+type ContainerNetworkIoUsageRxPacketsMetricAttributeKey string
 
 const (
-	ContainerNetworkIoUsageRxPacketsAttributeKeyInterface ContainerNetworkIoUsageRxPacketsAttributeKey = "interface"
+	ContainerNetworkIoUsageRxPacketsMetricAttributeKeyInterface ContainerNetworkIoUsageRxPacketsMetricAttributeKey = "interface"
 )
 
-// ContainerNetworkIoUsageRxPacketsConfig provides config for the container.network.io.usage.rx_packets metric.
-type ContainerNetworkIoUsageRxPacketsConfig struct {
+// ContainerNetworkIoUsageRxPacketsMetricConfig provides config for the container.network.io.usage.rx_packets metric.
+type ContainerNetworkIoUsageRxPacketsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerNetworkIoUsageRxPacketsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerNetworkIoUsageRxPacketsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerNetworkIoUsageRxPacketsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerNetworkIoUsageRxPacketsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1631,10 +1631,10 @@ func (ms *ContainerNetworkIoUsageRxPacketsConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *ContainerNetworkIoUsageRxPacketsConfig) Validate() error {
+func (ms *ContainerNetworkIoUsageRxPacketsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerNetworkIoUsageRxPacketsAttributeKeyInterface:
+		case ContainerNetworkIoUsageRxPacketsMetricAttributeKeyInterface:
 		default:
 			return fmt.Errorf("metric container.network.io.usage.rx_packets doesn't have an attribute %v, valid attributes: [interface]", val)
 		}
@@ -1649,23 +1649,23 @@ func (ms *ContainerNetworkIoUsageRxPacketsConfig) Validate() error {
 	return nil
 }
 
-// ContainerNetworkIoUsageTxBytesAttributeKey specifies the key of an attribute for the container.network.io.usage.tx_bytes metric.
-type ContainerNetworkIoUsageTxBytesAttributeKey string
+// ContainerNetworkIoUsageTxBytesMetricAttributeKey specifies the key of an attribute for the container.network.io.usage.tx_bytes metric.
+type ContainerNetworkIoUsageTxBytesMetricAttributeKey string
 
 const (
-	ContainerNetworkIoUsageTxBytesAttributeKeyInterface ContainerNetworkIoUsageTxBytesAttributeKey = "interface"
+	ContainerNetworkIoUsageTxBytesMetricAttributeKeyInterface ContainerNetworkIoUsageTxBytesMetricAttributeKey = "interface"
 )
 
-// ContainerNetworkIoUsageTxBytesConfig provides config for the container.network.io.usage.tx_bytes metric.
-type ContainerNetworkIoUsageTxBytesConfig struct {
+// ContainerNetworkIoUsageTxBytesMetricConfig provides config for the container.network.io.usage.tx_bytes metric.
+type ContainerNetworkIoUsageTxBytesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerNetworkIoUsageTxBytesAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerNetworkIoUsageTxBytesMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerNetworkIoUsageTxBytesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerNetworkIoUsageTxBytesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1679,10 +1679,10 @@ func (ms *ContainerNetworkIoUsageTxBytesConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *ContainerNetworkIoUsageTxBytesConfig) Validate() error {
+func (ms *ContainerNetworkIoUsageTxBytesMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerNetworkIoUsageTxBytesAttributeKeyInterface:
+		case ContainerNetworkIoUsageTxBytesMetricAttributeKeyInterface:
 		default:
 			return fmt.Errorf("metric container.network.io.usage.tx_bytes doesn't have an attribute %v, valid attributes: [interface]", val)
 		}
@@ -1697,23 +1697,23 @@ func (ms *ContainerNetworkIoUsageTxBytesConfig) Validate() error {
 	return nil
 }
 
-// ContainerNetworkIoUsageTxDroppedAttributeKey specifies the key of an attribute for the container.network.io.usage.tx_dropped metric.
-type ContainerNetworkIoUsageTxDroppedAttributeKey string
+// ContainerNetworkIoUsageTxDroppedMetricAttributeKey specifies the key of an attribute for the container.network.io.usage.tx_dropped metric.
+type ContainerNetworkIoUsageTxDroppedMetricAttributeKey string
 
 const (
-	ContainerNetworkIoUsageTxDroppedAttributeKeyInterface ContainerNetworkIoUsageTxDroppedAttributeKey = "interface"
+	ContainerNetworkIoUsageTxDroppedMetricAttributeKeyInterface ContainerNetworkIoUsageTxDroppedMetricAttributeKey = "interface"
 )
 
-// ContainerNetworkIoUsageTxDroppedConfig provides config for the container.network.io.usage.tx_dropped metric.
-type ContainerNetworkIoUsageTxDroppedConfig struct {
+// ContainerNetworkIoUsageTxDroppedMetricConfig provides config for the container.network.io.usage.tx_dropped metric.
+type ContainerNetworkIoUsageTxDroppedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerNetworkIoUsageTxDroppedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerNetworkIoUsageTxDroppedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerNetworkIoUsageTxDroppedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerNetworkIoUsageTxDroppedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1727,10 +1727,10 @@ func (ms *ContainerNetworkIoUsageTxDroppedConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *ContainerNetworkIoUsageTxDroppedConfig) Validate() error {
+func (ms *ContainerNetworkIoUsageTxDroppedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerNetworkIoUsageTxDroppedAttributeKeyInterface:
+		case ContainerNetworkIoUsageTxDroppedMetricAttributeKeyInterface:
 		default:
 			return fmt.Errorf("metric container.network.io.usage.tx_dropped doesn't have an attribute %v, valid attributes: [interface]", val)
 		}
@@ -1745,23 +1745,23 @@ func (ms *ContainerNetworkIoUsageTxDroppedConfig) Validate() error {
 	return nil
 }
 
-// ContainerNetworkIoUsageTxErrorsAttributeKey specifies the key of an attribute for the container.network.io.usage.tx_errors metric.
-type ContainerNetworkIoUsageTxErrorsAttributeKey string
+// ContainerNetworkIoUsageTxErrorsMetricAttributeKey specifies the key of an attribute for the container.network.io.usage.tx_errors metric.
+type ContainerNetworkIoUsageTxErrorsMetricAttributeKey string
 
 const (
-	ContainerNetworkIoUsageTxErrorsAttributeKeyInterface ContainerNetworkIoUsageTxErrorsAttributeKey = "interface"
+	ContainerNetworkIoUsageTxErrorsMetricAttributeKeyInterface ContainerNetworkIoUsageTxErrorsMetricAttributeKey = "interface"
 )
 
-// ContainerNetworkIoUsageTxErrorsConfig provides config for the container.network.io.usage.tx_errors metric.
-type ContainerNetworkIoUsageTxErrorsConfig struct {
+// ContainerNetworkIoUsageTxErrorsMetricConfig provides config for the container.network.io.usage.tx_errors metric.
+type ContainerNetworkIoUsageTxErrorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerNetworkIoUsageTxErrorsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerNetworkIoUsageTxErrorsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerNetworkIoUsageTxErrorsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerNetworkIoUsageTxErrorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1775,10 +1775,10 @@ func (ms *ContainerNetworkIoUsageTxErrorsConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *ContainerNetworkIoUsageTxErrorsConfig) Validate() error {
+func (ms *ContainerNetworkIoUsageTxErrorsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerNetworkIoUsageTxErrorsAttributeKeyInterface:
+		case ContainerNetworkIoUsageTxErrorsMetricAttributeKeyInterface:
 		default:
 			return fmt.Errorf("metric container.network.io.usage.tx_errors doesn't have an attribute %v, valid attributes: [interface]", val)
 		}
@@ -1793,23 +1793,23 @@ func (ms *ContainerNetworkIoUsageTxErrorsConfig) Validate() error {
 	return nil
 }
 
-// ContainerNetworkIoUsageTxPacketsAttributeKey specifies the key of an attribute for the container.network.io.usage.tx_packets metric.
-type ContainerNetworkIoUsageTxPacketsAttributeKey string
+// ContainerNetworkIoUsageTxPacketsMetricAttributeKey specifies the key of an attribute for the container.network.io.usage.tx_packets metric.
+type ContainerNetworkIoUsageTxPacketsMetricAttributeKey string
 
 const (
-	ContainerNetworkIoUsageTxPacketsAttributeKeyInterface ContainerNetworkIoUsageTxPacketsAttributeKey = "interface"
+	ContainerNetworkIoUsageTxPacketsMetricAttributeKeyInterface ContainerNetworkIoUsageTxPacketsMetricAttributeKey = "interface"
 )
 
-// ContainerNetworkIoUsageTxPacketsConfig provides config for the container.network.io.usage.tx_packets metric.
-type ContainerNetworkIoUsageTxPacketsConfig struct {
+// ContainerNetworkIoUsageTxPacketsMetricConfig provides config for the container.network.io.usage.tx_packets metric.
+type ContainerNetworkIoUsageTxPacketsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerNetworkIoUsageTxPacketsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerNetworkIoUsageTxPacketsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerNetworkIoUsageTxPacketsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerNetworkIoUsageTxPacketsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1823,10 +1823,10 @@ func (ms *ContainerNetworkIoUsageTxPacketsConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *ContainerNetworkIoUsageTxPacketsConfig) Validate() error {
+func (ms *ContainerNetworkIoUsageTxPacketsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerNetworkIoUsageTxPacketsAttributeKeyInterface:
+		case ContainerNetworkIoUsageTxPacketsMetricAttributeKeyInterface:
 		default:
 			return fmt.Errorf("metric container.network.io.usage.tx_packets doesn't have an attribute %v, valid attributes: [interface]", val)
 		}
@@ -1841,13 +1841,13 @@ func (ms *ContainerNetworkIoUsageTxPacketsConfig) Validate() error {
 	return nil
 }
 
-// ContainerPidsCountConfig provides config for the container.pids.count metric.
-type ContainerPidsCountConfig struct {
+// ContainerPidsCountMetricConfig provides config for the container.pids.count metric.
+type ContainerPidsCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerPidsCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerPidsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1861,13 +1861,13 @@ func (ms *ContainerPidsCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerPidsLimitConfig provides config for the container.pids.limit metric.
-type ContainerPidsLimitConfig struct {
+// ContainerPidsLimitMetricConfig provides config for the container.pids.limit metric.
+type ContainerPidsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerPidsLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerPidsLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1881,13 +1881,13 @@ func (ms *ContainerPidsLimitConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerRestartsConfig provides config for the container.restarts metric.
-type ContainerRestartsConfig struct {
+// ContainerRestartsMetricConfig provides config for the container.restarts metric.
+type ContainerRestartsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerRestartsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerRestartsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1901,13 +1901,13 @@ func (ms *ContainerRestartsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerUptimeConfig provides config for the container.uptime metric.
-type ContainerUptimeConfig struct {
+// ContainerUptimeMetricConfig provides config for the container.uptime metric.
+type ContainerUptimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerUptimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1923,326 +1923,326 @@ func (ms *ContainerUptimeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for docker_stats metrics.
 type MetricsConfig struct {
-	ContainerBlockioIoMergedRecursive          ContainerBlockioIoMergedRecursiveConfig          `mapstructure:"container.blockio.io_merged_recursive"`
-	ContainerBlockioIoQueuedRecursive          ContainerBlockioIoQueuedRecursiveConfig          `mapstructure:"container.blockio.io_queued_recursive"`
-	ContainerBlockioIoServiceBytesRecursive    ContainerBlockioIoServiceBytesRecursiveConfig    `mapstructure:"container.blockio.io_service_bytes_recursive"`
-	ContainerBlockioIoServiceTimeRecursive     ContainerBlockioIoServiceTimeRecursiveConfig     `mapstructure:"container.blockio.io_service_time_recursive"`
-	ContainerBlockioIoServicedRecursive        ContainerBlockioIoServicedRecursiveConfig        `mapstructure:"container.blockio.io_serviced_recursive"`
-	ContainerBlockioIoTimeRecursive            ContainerBlockioIoTimeRecursiveConfig            `mapstructure:"container.blockio.io_time_recursive"`
-	ContainerBlockioIoWaitTimeRecursive        ContainerBlockioIoWaitTimeRecursiveConfig        `mapstructure:"container.blockio.io_wait_time_recursive"`
-	ContainerBlockioSectorsRecursive           ContainerBlockioSectorsRecursiveConfig           `mapstructure:"container.blockio.sectors_recursive"`
-	ContainerCPULimit                          ContainerCPULimitConfig                          `mapstructure:"container.cpu.limit"`
-	ContainerCPULogicalCount                   ContainerCPULogicalCountConfig                   `mapstructure:"container.cpu.logical.count"`
-	ContainerCPUShares                         ContainerCPUSharesConfig                         `mapstructure:"container.cpu.shares"`
-	ContainerCPUThrottlingDataPeriods          ContainerCPUThrottlingDataPeriodsConfig          `mapstructure:"container.cpu.throttling_data.periods"`
-	ContainerCPUThrottlingDataThrottledPeriods ContainerCPUThrottlingDataThrottledPeriodsConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
-	ContainerCPUThrottlingDataThrottledTime    ContainerCPUThrottlingDataThrottledTimeConfig    `mapstructure:"container.cpu.throttling_data.throttled_time"`
-	ContainerCPUUsageKernelmode                ContainerCPUUsageKernelmodeConfig                `mapstructure:"container.cpu.usage.kernelmode"`
-	ContainerCPUUsagePercpu                    ContainerCPUUsagePercpuConfig                    `mapstructure:"container.cpu.usage.percpu"`
-	ContainerCPUUsageSystem                    ContainerCPUUsageSystemConfig                    `mapstructure:"container.cpu.usage.system"`
-	ContainerCPUUsageTotal                     ContainerCPUUsageTotalConfig                     `mapstructure:"container.cpu.usage.total"`
-	ContainerCPUUsageUsermode                  ContainerCPUUsageUsermodeConfig                  `mapstructure:"container.cpu.usage.usermode"`
-	ContainerCPUUtilization                    ContainerCPUUtilizationConfig                    `mapstructure:"container.cpu.utilization"`
-	ContainerMemoryActiveAnon                  ContainerMemoryActiveAnonConfig                  `mapstructure:"container.memory.active_anon"`
-	ContainerMemoryActiveFile                  ContainerMemoryActiveFileConfig                  `mapstructure:"container.memory.active_file"`
-	ContainerMemoryAnon                        ContainerMemoryAnonConfig                        `mapstructure:"container.memory.anon"`
-	ContainerMemoryCache                       ContainerMemoryCacheConfig                       `mapstructure:"container.memory.cache"`
-	ContainerMemoryDirty                       ContainerMemoryDirtyConfig                       `mapstructure:"container.memory.dirty"`
-	ContainerMemoryFails                       ContainerMemoryFailsConfig                       `mapstructure:"container.memory.fails"`
-	ContainerMemoryFile                        ContainerMemoryFileConfig                        `mapstructure:"container.memory.file"`
-	ContainerMemoryHierarchicalMemoryLimit     ContainerMemoryHierarchicalMemoryLimitConfig     `mapstructure:"container.memory.hierarchical_memory_limit"`
-	ContainerMemoryHierarchicalMemswLimit      ContainerMemoryHierarchicalMemswLimitConfig      `mapstructure:"container.memory.hierarchical_memsw_limit"`
-	ContainerMemoryInactiveAnon                ContainerMemoryInactiveAnonConfig                `mapstructure:"container.memory.inactive_anon"`
-	ContainerMemoryInactiveFile                ContainerMemoryInactiveFileConfig                `mapstructure:"container.memory.inactive_file"`
-	ContainerMemoryMappedFile                  ContainerMemoryMappedFileConfig                  `mapstructure:"container.memory.mapped_file"`
-	ContainerMemoryPercent                     ContainerMemoryPercentConfig                     `mapstructure:"container.memory.percent"`
-	ContainerMemoryPgfault                     ContainerMemoryPgfaultConfig                     `mapstructure:"container.memory.pgfault"`
-	ContainerMemoryPgmajfault                  ContainerMemoryPgmajfaultConfig                  `mapstructure:"container.memory.pgmajfault"`
-	ContainerMemoryPgpgin                      ContainerMemoryPgpginConfig                      `mapstructure:"container.memory.pgpgin"`
-	ContainerMemoryPgpgout                     ContainerMemoryPgpgoutConfig                     `mapstructure:"container.memory.pgpgout"`
-	ContainerMemoryRss                         ContainerMemoryRssConfig                         `mapstructure:"container.memory.rss"`
-	ContainerMemoryRssHuge                     ContainerMemoryRssHugeConfig                     `mapstructure:"container.memory.rss_huge"`
-	ContainerMemoryTotalActiveAnon             ContainerMemoryTotalActiveAnonConfig             `mapstructure:"container.memory.total_active_anon"`
-	ContainerMemoryTotalActiveFile             ContainerMemoryTotalActiveFileConfig             `mapstructure:"container.memory.total_active_file"`
-	ContainerMemoryTotalCache                  ContainerMemoryTotalCacheConfig                  `mapstructure:"container.memory.total_cache"`
-	ContainerMemoryTotalDirty                  ContainerMemoryTotalDirtyConfig                  `mapstructure:"container.memory.total_dirty"`
-	ContainerMemoryTotalInactiveAnon           ContainerMemoryTotalInactiveAnonConfig           `mapstructure:"container.memory.total_inactive_anon"`
-	ContainerMemoryTotalInactiveFile           ContainerMemoryTotalInactiveFileConfig           `mapstructure:"container.memory.total_inactive_file"`
-	ContainerMemoryTotalMappedFile             ContainerMemoryTotalMappedFileConfig             `mapstructure:"container.memory.total_mapped_file"`
-	ContainerMemoryTotalPgfault                ContainerMemoryTotalPgfaultConfig                `mapstructure:"container.memory.total_pgfault"`
-	ContainerMemoryTotalPgmajfault             ContainerMemoryTotalPgmajfaultConfig             `mapstructure:"container.memory.total_pgmajfault"`
-	ContainerMemoryTotalPgpgin                 ContainerMemoryTotalPgpginConfig                 `mapstructure:"container.memory.total_pgpgin"`
-	ContainerMemoryTotalPgpgout                ContainerMemoryTotalPgpgoutConfig                `mapstructure:"container.memory.total_pgpgout"`
-	ContainerMemoryTotalRss                    ContainerMemoryTotalRssConfig                    `mapstructure:"container.memory.total_rss"`
-	ContainerMemoryTotalRssHuge                ContainerMemoryTotalRssHugeConfig                `mapstructure:"container.memory.total_rss_huge"`
-	ContainerMemoryTotalUnevictable            ContainerMemoryTotalUnevictableConfig            `mapstructure:"container.memory.total_unevictable"`
-	ContainerMemoryTotalWriteback              ContainerMemoryTotalWritebackConfig              `mapstructure:"container.memory.total_writeback"`
-	ContainerMemoryUnevictable                 ContainerMemoryUnevictableConfig                 `mapstructure:"container.memory.unevictable"`
-	ContainerMemoryUsageLimit                  ContainerMemoryUsageLimitConfig                  `mapstructure:"container.memory.usage.limit"`
-	ContainerMemoryUsageMax                    ContainerMemoryUsageMaxConfig                    `mapstructure:"container.memory.usage.max"`
-	ContainerMemoryUsageTotal                  ContainerMemoryUsageTotalConfig                  `mapstructure:"container.memory.usage.total"`
-	ContainerMemoryWriteback                   ContainerMemoryWritebackConfig                   `mapstructure:"container.memory.writeback"`
-	ContainerNetworkIoUsageRxBytes             ContainerNetworkIoUsageRxBytesConfig             `mapstructure:"container.network.io.usage.rx_bytes"`
-	ContainerNetworkIoUsageRxDropped           ContainerNetworkIoUsageRxDroppedConfig           `mapstructure:"container.network.io.usage.rx_dropped"`
-	ContainerNetworkIoUsageRxErrors            ContainerNetworkIoUsageRxErrorsConfig            `mapstructure:"container.network.io.usage.rx_errors"`
-	ContainerNetworkIoUsageRxPackets           ContainerNetworkIoUsageRxPacketsConfig           `mapstructure:"container.network.io.usage.rx_packets"`
-	ContainerNetworkIoUsageTxBytes             ContainerNetworkIoUsageTxBytesConfig             `mapstructure:"container.network.io.usage.tx_bytes"`
-	ContainerNetworkIoUsageTxDropped           ContainerNetworkIoUsageTxDroppedConfig           `mapstructure:"container.network.io.usage.tx_dropped"`
-	ContainerNetworkIoUsageTxErrors            ContainerNetworkIoUsageTxErrorsConfig            `mapstructure:"container.network.io.usage.tx_errors"`
-	ContainerNetworkIoUsageTxPackets           ContainerNetworkIoUsageTxPacketsConfig           `mapstructure:"container.network.io.usage.tx_packets"`
-	ContainerPidsCount                         ContainerPidsCountConfig                         `mapstructure:"container.pids.count"`
-	ContainerPidsLimit                         ContainerPidsLimitConfig                         `mapstructure:"container.pids.limit"`
-	ContainerRestarts                          ContainerRestartsConfig                          `mapstructure:"container.restarts"`
-	ContainerUptime                            ContainerUptimeConfig                            `mapstructure:"container.uptime"`
+	ContainerBlockioIoMergedRecursive          ContainerBlockioIoMergedRecursiveMetricConfig          `mapstructure:"container.blockio.io_merged_recursive"`
+	ContainerBlockioIoQueuedRecursive          ContainerBlockioIoQueuedRecursiveMetricConfig          `mapstructure:"container.blockio.io_queued_recursive"`
+	ContainerBlockioIoServiceBytesRecursive    ContainerBlockioIoServiceBytesRecursiveMetricConfig    `mapstructure:"container.blockio.io_service_bytes_recursive"`
+	ContainerBlockioIoServiceTimeRecursive     ContainerBlockioIoServiceTimeRecursiveMetricConfig     `mapstructure:"container.blockio.io_service_time_recursive"`
+	ContainerBlockioIoServicedRecursive        ContainerBlockioIoServicedRecursiveMetricConfig        `mapstructure:"container.blockio.io_serviced_recursive"`
+	ContainerBlockioIoTimeRecursive            ContainerBlockioIoTimeRecursiveMetricConfig            `mapstructure:"container.blockio.io_time_recursive"`
+	ContainerBlockioIoWaitTimeRecursive        ContainerBlockioIoWaitTimeRecursiveMetricConfig        `mapstructure:"container.blockio.io_wait_time_recursive"`
+	ContainerBlockioSectorsRecursive           ContainerBlockioSectorsRecursiveMetricConfig           `mapstructure:"container.blockio.sectors_recursive"`
+	ContainerCPULimit                          ContainerCPULimitMetricConfig                          `mapstructure:"container.cpu.limit"`
+	ContainerCPULogicalCount                   ContainerCPULogicalCountMetricConfig                   `mapstructure:"container.cpu.logical.count"`
+	ContainerCPUShares                         ContainerCPUSharesMetricConfig                         `mapstructure:"container.cpu.shares"`
+	ContainerCPUThrottlingDataPeriods          ContainerCPUThrottlingDataPeriodsMetricConfig          `mapstructure:"container.cpu.throttling_data.periods"`
+	ContainerCPUThrottlingDataThrottledPeriods ContainerCPUThrottlingDataThrottledPeriodsMetricConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
+	ContainerCPUThrottlingDataThrottledTime    ContainerCPUThrottlingDataThrottledTimeMetricConfig    `mapstructure:"container.cpu.throttling_data.throttled_time"`
+	ContainerCPUUsageKernelmode                ContainerCPUUsageKernelmodeMetricConfig                `mapstructure:"container.cpu.usage.kernelmode"`
+	ContainerCPUUsagePercpu                    ContainerCPUUsagePercpuMetricConfig                    `mapstructure:"container.cpu.usage.percpu"`
+	ContainerCPUUsageSystem                    ContainerCPUUsageSystemMetricConfig                    `mapstructure:"container.cpu.usage.system"`
+	ContainerCPUUsageTotal                     ContainerCPUUsageTotalMetricConfig                     `mapstructure:"container.cpu.usage.total"`
+	ContainerCPUUsageUsermode                  ContainerCPUUsageUsermodeMetricConfig                  `mapstructure:"container.cpu.usage.usermode"`
+	ContainerCPUUtilization                    ContainerCPUUtilizationMetricConfig                    `mapstructure:"container.cpu.utilization"`
+	ContainerMemoryActiveAnon                  ContainerMemoryActiveAnonMetricConfig                  `mapstructure:"container.memory.active_anon"`
+	ContainerMemoryActiveFile                  ContainerMemoryActiveFileMetricConfig                  `mapstructure:"container.memory.active_file"`
+	ContainerMemoryAnon                        ContainerMemoryAnonMetricConfig                        `mapstructure:"container.memory.anon"`
+	ContainerMemoryCache                       ContainerMemoryCacheMetricConfig                       `mapstructure:"container.memory.cache"`
+	ContainerMemoryDirty                       ContainerMemoryDirtyMetricConfig                       `mapstructure:"container.memory.dirty"`
+	ContainerMemoryFails                       ContainerMemoryFailsMetricConfig                       `mapstructure:"container.memory.fails"`
+	ContainerMemoryFile                        ContainerMemoryFileMetricConfig                        `mapstructure:"container.memory.file"`
+	ContainerMemoryHierarchicalMemoryLimit     ContainerMemoryHierarchicalMemoryLimitMetricConfig     `mapstructure:"container.memory.hierarchical_memory_limit"`
+	ContainerMemoryHierarchicalMemswLimit      ContainerMemoryHierarchicalMemswLimitMetricConfig      `mapstructure:"container.memory.hierarchical_memsw_limit"`
+	ContainerMemoryInactiveAnon                ContainerMemoryInactiveAnonMetricConfig                `mapstructure:"container.memory.inactive_anon"`
+	ContainerMemoryInactiveFile                ContainerMemoryInactiveFileMetricConfig                `mapstructure:"container.memory.inactive_file"`
+	ContainerMemoryMappedFile                  ContainerMemoryMappedFileMetricConfig                  `mapstructure:"container.memory.mapped_file"`
+	ContainerMemoryPercent                     ContainerMemoryPercentMetricConfig                     `mapstructure:"container.memory.percent"`
+	ContainerMemoryPgfault                     ContainerMemoryPgfaultMetricConfig                     `mapstructure:"container.memory.pgfault"`
+	ContainerMemoryPgmajfault                  ContainerMemoryPgmajfaultMetricConfig                  `mapstructure:"container.memory.pgmajfault"`
+	ContainerMemoryPgpgin                      ContainerMemoryPgpginMetricConfig                      `mapstructure:"container.memory.pgpgin"`
+	ContainerMemoryPgpgout                     ContainerMemoryPgpgoutMetricConfig                     `mapstructure:"container.memory.pgpgout"`
+	ContainerMemoryRss                         ContainerMemoryRssMetricConfig                         `mapstructure:"container.memory.rss"`
+	ContainerMemoryRssHuge                     ContainerMemoryRssHugeMetricConfig                     `mapstructure:"container.memory.rss_huge"`
+	ContainerMemoryTotalActiveAnon             ContainerMemoryTotalActiveAnonMetricConfig             `mapstructure:"container.memory.total_active_anon"`
+	ContainerMemoryTotalActiveFile             ContainerMemoryTotalActiveFileMetricConfig             `mapstructure:"container.memory.total_active_file"`
+	ContainerMemoryTotalCache                  ContainerMemoryTotalCacheMetricConfig                  `mapstructure:"container.memory.total_cache"`
+	ContainerMemoryTotalDirty                  ContainerMemoryTotalDirtyMetricConfig                  `mapstructure:"container.memory.total_dirty"`
+	ContainerMemoryTotalInactiveAnon           ContainerMemoryTotalInactiveAnonMetricConfig           `mapstructure:"container.memory.total_inactive_anon"`
+	ContainerMemoryTotalInactiveFile           ContainerMemoryTotalInactiveFileMetricConfig           `mapstructure:"container.memory.total_inactive_file"`
+	ContainerMemoryTotalMappedFile             ContainerMemoryTotalMappedFileMetricConfig             `mapstructure:"container.memory.total_mapped_file"`
+	ContainerMemoryTotalPgfault                ContainerMemoryTotalPgfaultMetricConfig                `mapstructure:"container.memory.total_pgfault"`
+	ContainerMemoryTotalPgmajfault             ContainerMemoryTotalPgmajfaultMetricConfig             `mapstructure:"container.memory.total_pgmajfault"`
+	ContainerMemoryTotalPgpgin                 ContainerMemoryTotalPgpginMetricConfig                 `mapstructure:"container.memory.total_pgpgin"`
+	ContainerMemoryTotalPgpgout                ContainerMemoryTotalPgpgoutMetricConfig                `mapstructure:"container.memory.total_pgpgout"`
+	ContainerMemoryTotalRss                    ContainerMemoryTotalRssMetricConfig                    `mapstructure:"container.memory.total_rss"`
+	ContainerMemoryTotalRssHuge                ContainerMemoryTotalRssHugeMetricConfig                `mapstructure:"container.memory.total_rss_huge"`
+	ContainerMemoryTotalUnevictable            ContainerMemoryTotalUnevictableMetricConfig            `mapstructure:"container.memory.total_unevictable"`
+	ContainerMemoryTotalWriteback              ContainerMemoryTotalWritebackMetricConfig              `mapstructure:"container.memory.total_writeback"`
+	ContainerMemoryUnevictable                 ContainerMemoryUnevictableMetricConfig                 `mapstructure:"container.memory.unevictable"`
+	ContainerMemoryUsageLimit                  ContainerMemoryUsageLimitMetricConfig                  `mapstructure:"container.memory.usage.limit"`
+	ContainerMemoryUsageMax                    ContainerMemoryUsageMaxMetricConfig                    `mapstructure:"container.memory.usage.max"`
+	ContainerMemoryUsageTotal                  ContainerMemoryUsageTotalMetricConfig                  `mapstructure:"container.memory.usage.total"`
+	ContainerMemoryWriteback                   ContainerMemoryWritebackMetricConfig                   `mapstructure:"container.memory.writeback"`
+	ContainerNetworkIoUsageRxBytes             ContainerNetworkIoUsageRxBytesMetricConfig             `mapstructure:"container.network.io.usage.rx_bytes"`
+	ContainerNetworkIoUsageRxDropped           ContainerNetworkIoUsageRxDroppedMetricConfig           `mapstructure:"container.network.io.usage.rx_dropped"`
+	ContainerNetworkIoUsageRxErrors            ContainerNetworkIoUsageRxErrorsMetricConfig            `mapstructure:"container.network.io.usage.rx_errors"`
+	ContainerNetworkIoUsageRxPackets           ContainerNetworkIoUsageRxPacketsMetricConfig           `mapstructure:"container.network.io.usage.rx_packets"`
+	ContainerNetworkIoUsageTxBytes             ContainerNetworkIoUsageTxBytesMetricConfig             `mapstructure:"container.network.io.usage.tx_bytes"`
+	ContainerNetworkIoUsageTxDropped           ContainerNetworkIoUsageTxDroppedMetricConfig           `mapstructure:"container.network.io.usage.tx_dropped"`
+	ContainerNetworkIoUsageTxErrors            ContainerNetworkIoUsageTxErrorsMetricConfig            `mapstructure:"container.network.io.usage.tx_errors"`
+	ContainerNetworkIoUsageTxPackets           ContainerNetworkIoUsageTxPacketsMetricConfig           `mapstructure:"container.network.io.usage.tx_packets"`
+	ContainerPidsCount                         ContainerPidsCountMetricConfig                         `mapstructure:"container.pids.count"`
+	ContainerPidsLimit                         ContainerPidsLimitMetricConfig                         `mapstructure:"container.pids.limit"`
+	ContainerRestarts                          ContainerRestartsMetricConfig                          `mapstructure:"container.restarts"`
+	ContainerUptime                            ContainerUptimeMetricConfig                            `mapstructure:"container.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		ContainerBlockioIoMergedRecursive: ContainerBlockioIoMergedRecursiveConfig{
+		ContainerBlockioIoMergedRecursive: ContainerBlockioIoMergedRecursiveMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerBlockioIoMergedRecursiveAttributeKey{ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoMergedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoMergedRecursiveAttributeKeyOperation},
+			EnabledAttributes:   []ContainerBlockioIoMergedRecursiveMetricAttributeKey{ContainerBlockioIoMergedRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoMergedRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoMergedRecursiveMetricAttributeKeyOperation},
 		},
-		ContainerBlockioIoQueuedRecursive: ContainerBlockioIoQueuedRecursiveConfig{
+		ContainerBlockioIoQueuedRecursive: ContainerBlockioIoQueuedRecursiveMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerBlockioIoQueuedRecursiveAttributeKey{ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoQueuedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoQueuedRecursiveAttributeKeyOperation},
+			EnabledAttributes:   []ContainerBlockioIoQueuedRecursiveMetricAttributeKey{ContainerBlockioIoQueuedRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoQueuedRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoQueuedRecursiveMetricAttributeKeyOperation},
 		},
-		ContainerBlockioIoServiceBytesRecursive: ContainerBlockioIoServiceBytesRecursiveConfig{
+		ContainerBlockioIoServiceBytesRecursive: ContainerBlockioIoServiceBytesRecursiveMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerBlockioIoServiceBytesRecursiveAttributeKey{ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServiceBytesRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServiceBytesRecursiveAttributeKeyOperation},
+			EnabledAttributes:   []ContainerBlockioIoServiceBytesRecursiveMetricAttributeKey{ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoServiceBytesRecursiveMetricAttributeKeyOperation},
 		},
-		ContainerBlockioIoServiceTimeRecursive: ContainerBlockioIoServiceTimeRecursiveConfig{
+		ContainerBlockioIoServiceTimeRecursive: ContainerBlockioIoServiceTimeRecursiveMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerBlockioIoServiceTimeRecursiveAttributeKey{ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServiceTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServiceTimeRecursiveAttributeKeyOperation},
+			EnabledAttributes:   []ContainerBlockioIoServiceTimeRecursiveMetricAttributeKey{ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoServiceTimeRecursiveMetricAttributeKeyOperation},
 		},
-		ContainerBlockioIoServicedRecursive: ContainerBlockioIoServicedRecursiveConfig{
+		ContainerBlockioIoServicedRecursive: ContainerBlockioIoServicedRecursiveMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerBlockioIoServicedRecursiveAttributeKey{ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoServicedRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoServicedRecursiveAttributeKeyOperation},
+			EnabledAttributes:   []ContainerBlockioIoServicedRecursiveMetricAttributeKey{ContainerBlockioIoServicedRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoServicedRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoServicedRecursiveMetricAttributeKeyOperation},
 		},
-		ContainerBlockioIoTimeRecursive: ContainerBlockioIoTimeRecursiveConfig{
+		ContainerBlockioIoTimeRecursive: ContainerBlockioIoTimeRecursiveMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerBlockioIoTimeRecursiveAttributeKey{ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoTimeRecursiveAttributeKeyOperation},
+			EnabledAttributes:   []ContainerBlockioIoTimeRecursiveMetricAttributeKey{ContainerBlockioIoTimeRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoTimeRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoTimeRecursiveMetricAttributeKeyOperation},
 		},
-		ContainerBlockioIoWaitTimeRecursive: ContainerBlockioIoWaitTimeRecursiveConfig{
+		ContainerBlockioIoWaitTimeRecursive: ContainerBlockioIoWaitTimeRecursiveMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerBlockioIoWaitTimeRecursiveAttributeKey{ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMajor, ContainerBlockioIoWaitTimeRecursiveAttributeKeyDeviceMinor, ContainerBlockioIoWaitTimeRecursiveAttributeKeyOperation},
+			EnabledAttributes:   []ContainerBlockioIoWaitTimeRecursiveMetricAttributeKey{ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioIoWaitTimeRecursiveMetricAttributeKeyOperation},
 		},
-		ContainerBlockioSectorsRecursive: ContainerBlockioSectorsRecursiveConfig{
+		ContainerBlockioSectorsRecursive: ContainerBlockioSectorsRecursiveMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerBlockioSectorsRecursiveAttributeKey{ContainerBlockioSectorsRecursiveAttributeKeyDeviceMajor, ContainerBlockioSectorsRecursiveAttributeKeyDeviceMinor, ContainerBlockioSectorsRecursiveAttributeKeyOperation},
+			EnabledAttributes:   []ContainerBlockioSectorsRecursiveMetricAttributeKey{ContainerBlockioSectorsRecursiveMetricAttributeKeyDeviceMajor, ContainerBlockioSectorsRecursiveMetricAttributeKeyDeviceMinor, ContainerBlockioSectorsRecursiveMetricAttributeKeyOperation},
 		},
-		ContainerCPULimit: ContainerCPULimitConfig{
+		ContainerCPULimit: ContainerCPULimitMetricConfig{
 			Enabled: false,
 		},
-		ContainerCPULogicalCount: ContainerCPULogicalCountConfig{
+		ContainerCPULogicalCount: ContainerCPULogicalCountMetricConfig{
 			Enabled: false,
 		},
-		ContainerCPUShares: ContainerCPUSharesConfig{
+		ContainerCPUShares: ContainerCPUSharesMetricConfig{
 			Enabled: false,
 		},
-		ContainerCPUThrottlingDataPeriods: ContainerCPUThrottlingDataPeriodsConfig{
+		ContainerCPUThrottlingDataPeriods: ContainerCPUThrottlingDataPeriodsMetricConfig{
 			Enabled: false,
 		},
-		ContainerCPUThrottlingDataThrottledPeriods: ContainerCPUThrottlingDataThrottledPeriodsConfig{
+		ContainerCPUThrottlingDataThrottledPeriods: ContainerCPUThrottlingDataThrottledPeriodsMetricConfig{
 			Enabled: false,
 		},
-		ContainerCPUThrottlingDataThrottledTime: ContainerCPUThrottlingDataThrottledTimeConfig{
+		ContainerCPUThrottlingDataThrottledTime: ContainerCPUThrottlingDataThrottledTimeMetricConfig{
 			Enabled: false,
 		},
-		ContainerCPUUsageKernelmode: ContainerCPUUsageKernelmodeConfig{
+		ContainerCPUUsageKernelmode: ContainerCPUUsageKernelmodeMetricConfig{
 			Enabled: true,
 		},
-		ContainerCPUUsagePercpu: ContainerCPUUsagePercpuConfig{
+		ContainerCPUUsagePercpu: ContainerCPUUsagePercpuMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerCPUUsagePercpuAttributeKey{ContainerCPUUsagePercpuAttributeKeyCore},
+			EnabledAttributes:   []ContainerCPUUsagePercpuMetricAttributeKey{ContainerCPUUsagePercpuMetricAttributeKeyCore},
 		},
-		ContainerCPUUsageSystem: ContainerCPUUsageSystemConfig{
+		ContainerCPUUsageSystem: ContainerCPUUsageSystemMetricConfig{
 			Enabled: false,
 		},
-		ContainerCPUUsageTotal: ContainerCPUUsageTotalConfig{
+		ContainerCPUUsageTotal: ContainerCPUUsageTotalMetricConfig{
 			Enabled: true,
 		},
-		ContainerCPUUsageUsermode: ContainerCPUUsageUsermodeConfig{
+		ContainerCPUUsageUsermode: ContainerCPUUsageUsermodeMetricConfig{
 			Enabled: true,
 		},
-		ContainerCPUUtilization: ContainerCPUUtilizationConfig{
+		ContainerCPUUtilization: ContainerCPUUtilizationMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryActiveAnon: ContainerMemoryActiveAnonConfig{
+		ContainerMemoryActiveAnon: ContainerMemoryActiveAnonMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryActiveFile: ContainerMemoryActiveFileConfig{
+		ContainerMemoryActiveFile: ContainerMemoryActiveFileMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryAnon: ContainerMemoryAnonConfig{
+		ContainerMemoryAnon: ContainerMemoryAnonMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryCache: ContainerMemoryCacheConfig{
+		ContainerMemoryCache: ContainerMemoryCacheMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryDirty: ContainerMemoryDirtyConfig{
+		ContainerMemoryDirty: ContainerMemoryDirtyMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryFails: ContainerMemoryFailsConfig{
+		ContainerMemoryFails: ContainerMemoryFailsMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryFile: ContainerMemoryFileConfig{
+		ContainerMemoryFile: ContainerMemoryFileMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryHierarchicalMemoryLimit: ContainerMemoryHierarchicalMemoryLimitConfig{
+		ContainerMemoryHierarchicalMemoryLimit: ContainerMemoryHierarchicalMemoryLimitMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryHierarchicalMemswLimit: ContainerMemoryHierarchicalMemswLimitConfig{
+		ContainerMemoryHierarchicalMemswLimit: ContainerMemoryHierarchicalMemswLimitMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryInactiveAnon: ContainerMemoryInactiveAnonConfig{
+		ContainerMemoryInactiveAnon: ContainerMemoryInactiveAnonMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryInactiveFile: ContainerMemoryInactiveFileConfig{
+		ContainerMemoryInactiveFile: ContainerMemoryInactiveFileMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryMappedFile: ContainerMemoryMappedFileConfig{
+		ContainerMemoryMappedFile: ContainerMemoryMappedFileMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryPercent: ContainerMemoryPercentConfig{
+		ContainerMemoryPercent: ContainerMemoryPercentMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryPgfault: ContainerMemoryPgfaultConfig{
+		ContainerMemoryPgfault: ContainerMemoryPgfaultMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryPgmajfault: ContainerMemoryPgmajfaultConfig{
+		ContainerMemoryPgmajfault: ContainerMemoryPgmajfaultMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryPgpgin: ContainerMemoryPgpginConfig{
+		ContainerMemoryPgpgin: ContainerMemoryPgpginMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryPgpgout: ContainerMemoryPgpgoutConfig{
+		ContainerMemoryPgpgout: ContainerMemoryPgpgoutMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryRss: ContainerMemoryRssConfig{
+		ContainerMemoryRss: ContainerMemoryRssMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryRssHuge: ContainerMemoryRssHugeConfig{
+		ContainerMemoryRssHuge: ContainerMemoryRssHugeMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalActiveAnon: ContainerMemoryTotalActiveAnonConfig{
+		ContainerMemoryTotalActiveAnon: ContainerMemoryTotalActiveAnonMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalActiveFile: ContainerMemoryTotalActiveFileConfig{
+		ContainerMemoryTotalActiveFile: ContainerMemoryTotalActiveFileMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalCache: ContainerMemoryTotalCacheConfig{
+		ContainerMemoryTotalCache: ContainerMemoryTotalCacheMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryTotalDirty: ContainerMemoryTotalDirtyConfig{
+		ContainerMemoryTotalDirty: ContainerMemoryTotalDirtyMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalInactiveAnon: ContainerMemoryTotalInactiveAnonConfig{
+		ContainerMemoryTotalInactiveAnon: ContainerMemoryTotalInactiveAnonMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalInactiveFile: ContainerMemoryTotalInactiveFileConfig{
+		ContainerMemoryTotalInactiveFile: ContainerMemoryTotalInactiveFileMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalMappedFile: ContainerMemoryTotalMappedFileConfig{
+		ContainerMemoryTotalMappedFile: ContainerMemoryTotalMappedFileMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalPgfault: ContainerMemoryTotalPgfaultConfig{
+		ContainerMemoryTotalPgfault: ContainerMemoryTotalPgfaultMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalPgmajfault: ContainerMemoryTotalPgmajfaultConfig{
+		ContainerMemoryTotalPgmajfault: ContainerMemoryTotalPgmajfaultMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalPgpgin: ContainerMemoryTotalPgpginConfig{
+		ContainerMemoryTotalPgpgin: ContainerMemoryTotalPgpginMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalPgpgout: ContainerMemoryTotalPgpgoutConfig{
+		ContainerMemoryTotalPgpgout: ContainerMemoryTotalPgpgoutMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalRss: ContainerMemoryTotalRssConfig{
+		ContainerMemoryTotalRss: ContainerMemoryTotalRssMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalRssHuge: ContainerMemoryTotalRssHugeConfig{
+		ContainerMemoryTotalRssHuge: ContainerMemoryTotalRssHugeMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalUnevictable: ContainerMemoryTotalUnevictableConfig{
+		ContainerMemoryTotalUnevictable: ContainerMemoryTotalUnevictableMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryTotalWriteback: ContainerMemoryTotalWritebackConfig{
+		ContainerMemoryTotalWriteback: ContainerMemoryTotalWritebackMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryUnevictable: ContainerMemoryUnevictableConfig{
+		ContainerMemoryUnevictable: ContainerMemoryUnevictableMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryUsageLimit: ContainerMemoryUsageLimitConfig{
+		ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryUsageMax: ContainerMemoryUsageMaxConfig{
+		ContainerMemoryUsageMax: ContainerMemoryUsageMaxMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryUsageTotal: ContainerMemoryUsageTotalConfig{
+		ContainerMemoryUsageTotal: ContainerMemoryUsageTotalMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryWriteback: ContainerMemoryWritebackConfig{
+		ContainerMemoryWriteback: ContainerMemoryWritebackMetricConfig{
 			Enabled: false,
 		},
-		ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesConfig{
+		ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerNetworkIoUsageRxBytesAttributeKey{ContainerNetworkIoUsageRxBytesAttributeKeyInterface},
+			EnabledAttributes:   []ContainerNetworkIoUsageRxBytesMetricAttributeKey{ContainerNetworkIoUsageRxBytesMetricAttributeKeyInterface},
 		},
-		ContainerNetworkIoUsageRxDropped: ContainerNetworkIoUsageRxDroppedConfig{
+		ContainerNetworkIoUsageRxDropped: ContainerNetworkIoUsageRxDroppedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerNetworkIoUsageRxDroppedAttributeKey{ContainerNetworkIoUsageRxDroppedAttributeKeyInterface},
+			EnabledAttributes:   []ContainerNetworkIoUsageRxDroppedMetricAttributeKey{ContainerNetworkIoUsageRxDroppedMetricAttributeKeyInterface},
 		},
-		ContainerNetworkIoUsageRxErrors: ContainerNetworkIoUsageRxErrorsConfig{
+		ContainerNetworkIoUsageRxErrors: ContainerNetworkIoUsageRxErrorsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerNetworkIoUsageRxErrorsAttributeKey{ContainerNetworkIoUsageRxErrorsAttributeKeyInterface},
+			EnabledAttributes:   []ContainerNetworkIoUsageRxErrorsMetricAttributeKey{ContainerNetworkIoUsageRxErrorsMetricAttributeKeyInterface},
 		},
-		ContainerNetworkIoUsageRxPackets: ContainerNetworkIoUsageRxPacketsConfig{
+		ContainerNetworkIoUsageRxPackets: ContainerNetworkIoUsageRxPacketsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerNetworkIoUsageRxPacketsAttributeKey{ContainerNetworkIoUsageRxPacketsAttributeKeyInterface},
+			EnabledAttributes:   []ContainerNetworkIoUsageRxPacketsMetricAttributeKey{ContainerNetworkIoUsageRxPacketsMetricAttributeKeyInterface},
 		},
-		ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesConfig{
+		ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerNetworkIoUsageTxBytesAttributeKey{ContainerNetworkIoUsageTxBytesAttributeKeyInterface},
+			EnabledAttributes:   []ContainerNetworkIoUsageTxBytesMetricAttributeKey{ContainerNetworkIoUsageTxBytesMetricAttributeKeyInterface},
 		},
-		ContainerNetworkIoUsageTxDropped: ContainerNetworkIoUsageTxDroppedConfig{
+		ContainerNetworkIoUsageTxDropped: ContainerNetworkIoUsageTxDroppedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerNetworkIoUsageTxDroppedAttributeKey{ContainerNetworkIoUsageTxDroppedAttributeKeyInterface},
+			EnabledAttributes:   []ContainerNetworkIoUsageTxDroppedMetricAttributeKey{ContainerNetworkIoUsageTxDroppedMetricAttributeKeyInterface},
 		},
-		ContainerNetworkIoUsageTxErrors: ContainerNetworkIoUsageTxErrorsConfig{
+		ContainerNetworkIoUsageTxErrors: ContainerNetworkIoUsageTxErrorsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerNetworkIoUsageTxErrorsAttributeKey{ContainerNetworkIoUsageTxErrorsAttributeKeyInterface},
+			EnabledAttributes:   []ContainerNetworkIoUsageTxErrorsMetricAttributeKey{ContainerNetworkIoUsageTxErrorsMetricAttributeKeyInterface},
 		},
-		ContainerNetworkIoUsageTxPackets: ContainerNetworkIoUsageTxPacketsConfig{
+		ContainerNetworkIoUsageTxPackets: ContainerNetworkIoUsageTxPacketsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerNetworkIoUsageTxPacketsAttributeKey{ContainerNetworkIoUsageTxPacketsAttributeKeyInterface},
+			EnabledAttributes:   []ContainerNetworkIoUsageTxPacketsMetricAttributeKey{ContainerNetworkIoUsageTxPacketsMetricAttributeKeyInterface},
 		},
-		ContainerPidsCount: ContainerPidsCountConfig{
+		ContainerPidsCount: ContainerPidsCountMetricConfig{
 			Enabled: false,
 		},
-		ContainerPidsLimit: ContainerPidsLimitConfig{
+		ContainerPidsLimit: ContainerPidsLimitMetricConfig{
 			Enabled: false,
 		},
-		ContainerRestarts: ContainerRestartsConfig{
+		ContainerRestarts: ContainerRestartsMetricConfig{
 			Enabled: false,
 		},
-		ContainerUptime: ContainerUptimeConfig{
+		ContainerUptime: ContainerUptimeMetricConfig{
 			Enabled: false,
 		},
 	}

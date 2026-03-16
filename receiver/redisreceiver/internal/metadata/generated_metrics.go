@@ -417,9 +417,9 @@ type metricInfo struct {
 }
 
 type metricRedisClientsBlocked struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   RedisClientsBlockedConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   RedisClientsBlockedMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills redis.clients.blocked metric with initial data.
@@ -458,7 +458,7 @@ func (m *metricRedisClientsBlocked) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClientsBlocked(cfg RedisClientsBlockedConfig) metricRedisClientsBlocked {
+func newMetricRedisClientsBlocked(cfg RedisClientsBlockedMetricConfig) metricRedisClientsBlocked {
 	m := metricRedisClientsBlocked{config: cfg}
 
 	if cfg.Enabled {
@@ -469,9 +469,9 @@ func newMetricRedisClientsBlocked(cfg RedisClientsBlockedConfig) metricRedisClie
 }
 
 type metricRedisClientsConnected struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   RedisClientsConnectedConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   RedisClientsConnectedMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills redis.clients.connected metric with initial data.
@@ -510,7 +510,7 @@ func (m *metricRedisClientsConnected) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClientsConnected(cfg RedisClientsConnectedConfig) metricRedisClientsConnected {
+func newMetricRedisClientsConnected(cfg RedisClientsConnectedMetricConfig) metricRedisClientsConnected {
 	m := metricRedisClientsConnected{config: cfg}
 
 	if cfg.Enabled {
@@ -521,9 +521,9 @@ func newMetricRedisClientsConnected(cfg RedisClientsConnectedConfig) metricRedis
 }
 
 type metricRedisClientsMaxInputBuffer struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   RedisClientsMaxInputBufferConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   RedisClientsMaxInputBufferMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills redis.clients.max_input_buffer metric with initial data.
@@ -560,7 +560,7 @@ func (m *metricRedisClientsMaxInputBuffer) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClientsMaxInputBuffer(cfg RedisClientsMaxInputBufferConfig) metricRedisClientsMaxInputBuffer {
+func newMetricRedisClientsMaxInputBuffer(cfg RedisClientsMaxInputBufferMetricConfig) metricRedisClientsMaxInputBuffer {
 	m := metricRedisClientsMaxInputBuffer{config: cfg}
 
 	if cfg.Enabled {
@@ -571,9 +571,9 @@ func newMetricRedisClientsMaxInputBuffer(cfg RedisClientsMaxInputBufferConfig) m
 }
 
 type metricRedisClientsMaxOutputBuffer struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   RedisClientsMaxOutputBufferConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   RedisClientsMaxOutputBufferMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills redis.clients.max_output_buffer metric with initial data.
@@ -610,7 +610,7 @@ func (m *metricRedisClientsMaxOutputBuffer) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClientsMaxOutputBuffer(cfg RedisClientsMaxOutputBufferConfig) metricRedisClientsMaxOutputBuffer {
+func newMetricRedisClientsMaxOutputBuffer(cfg RedisClientsMaxOutputBufferMetricConfig) metricRedisClientsMaxOutputBuffer {
 	m := metricRedisClientsMaxOutputBuffer{config: cfg}
 
 	if cfg.Enabled {
@@ -621,9 +621,9 @@ func newMetricRedisClientsMaxOutputBuffer(cfg RedisClientsMaxOutputBufferConfig)
 }
 
 type metricRedisClusterClusterEnabled struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   RedisClusterClusterEnabledConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   RedisClusterClusterEnabledMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.cluster_enabled metric with initial data.
@@ -660,7 +660,7 @@ func (m *metricRedisClusterClusterEnabled) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterClusterEnabled(cfg RedisClusterClusterEnabledConfig) metricRedisClusterClusterEnabled {
+func newMetricRedisClusterClusterEnabled(cfg RedisClusterClusterEnabledMetricConfig) metricRedisClusterClusterEnabled {
 	m := metricRedisClusterClusterEnabled{config: cfg}
 
 	if cfg.Enabled {
@@ -671,9 +671,9 @@ func newMetricRedisClusterClusterEnabled(cfg RedisClusterClusterEnabledConfig) m
 }
 
 type metricRedisClusterKnownNodes struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   RedisClusterKnownNodesConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   RedisClusterKnownNodesMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.known_nodes metric with initial data.
@@ -710,7 +710,7 @@ func (m *metricRedisClusterKnownNodes) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterKnownNodes(cfg RedisClusterKnownNodesConfig) metricRedisClusterKnownNodes {
+func newMetricRedisClusterKnownNodes(cfg RedisClusterKnownNodesMetricConfig) metricRedisClusterKnownNodes {
 	m := metricRedisClusterKnownNodes{config: cfg}
 
 	if cfg.Enabled {
@@ -721,9 +721,9 @@ func newMetricRedisClusterKnownNodes(cfg RedisClusterKnownNodesConfig) metricRed
 }
 
 type metricRedisClusterLinksBufferLimitExceededCount struct {
-	data     pmetric.Metric                                  // data buffer for generated metric.
-	config   RedisClusterLinksBufferLimitExceededCountConfig // metric config provided by user.
-	capacity int                                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                                        // data buffer for generated metric.
+	config   RedisClusterLinksBufferLimitExceededCountMetricConfig // metric config provided by user.
+	capacity int                                                   // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.links_buffer_limit_exceeded.count metric with initial data.
@@ -762,7 +762,7 @@ func (m *metricRedisClusterLinksBufferLimitExceededCount) emit(metrics pmetric.M
 	}
 }
 
-func newMetricRedisClusterLinksBufferLimitExceededCount(cfg RedisClusterLinksBufferLimitExceededCountConfig) metricRedisClusterLinksBufferLimitExceededCount {
+func newMetricRedisClusterLinksBufferLimitExceededCount(cfg RedisClusterLinksBufferLimitExceededCountMetricConfig) metricRedisClusterLinksBufferLimitExceededCount {
 	m := metricRedisClusterLinksBufferLimitExceededCount{config: cfg}
 
 	if cfg.Enabled {
@@ -773,9 +773,9 @@ func newMetricRedisClusterLinksBufferLimitExceededCount(cfg RedisClusterLinksBuf
 }
 
 type metricRedisClusterNodeCount struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   RedisClusterNodeCountConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   RedisClusterNodeCountMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.node.count metric with initial data.
@@ -812,7 +812,7 @@ func (m *metricRedisClusterNodeCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterNodeCount(cfg RedisClusterNodeCountConfig) metricRedisClusterNodeCount {
+func newMetricRedisClusterNodeCount(cfg RedisClusterNodeCountMetricConfig) metricRedisClusterNodeCount {
 	m := metricRedisClusterNodeCount{config: cfg}
 
 	if cfg.Enabled {
@@ -823,9 +823,9 @@ func newMetricRedisClusterNodeCount(cfg RedisClusterNodeCountConfig) metricRedis
 }
 
 type metricRedisClusterNodeUptime struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   RedisClusterNodeUptimeConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   RedisClusterNodeUptimeMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.node.uptime metric with initial data.
@@ -862,7 +862,7 @@ func (m *metricRedisClusterNodeUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterNodeUptime(cfg RedisClusterNodeUptimeConfig) metricRedisClusterNodeUptime {
+func newMetricRedisClusterNodeUptime(cfg RedisClusterNodeUptimeMetricConfig) metricRedisClusterNodeUptime {
 	m := metricRedisClusterNodeUptime{config: cfg}
 
 	if cfg.Enabled {
@@ -873,9 +873,9 @@ func newMetricRedisClusterNodeUptime(cfg RedisClusterNodeUptimeConfig) metricRed
 }
 
 type metricRedisClusterSlotsAssigned struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RedisClusterSlotsAssignedConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RedisClusterSlotsAssignedMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.slots_assigned metric with initial data.
@@ -912,7 +912,7 @@ func (m *metricRedisClusterSlotsAssigned) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterSlotsAssigned(cfg RedisClusterSlotsAssignedConfig) metricRedisClusterSlotsAssigned {
+func newMetricRedisClusterSlotsAssigned(cfg RedisClusterSlotsAssignedMetricConfig) metricRedisClusterSlotsAssigned {
 	m := metricRedisClusterSlotsAssigned{config: cfg}
 
 	if cfg.Enabled {
@@ -923,9 +923,9 @@ func newMetricRedisClusterSlotsAssigned(cfg RedisClusterSlotsAssignedConfig) met
 }
 
 type metricRedisClusterSlotsFail struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   RedisClusterSlotsFailConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   RedisClusterSlotsFailMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.slots_fail metric with initial data.
@@ -962,7 +962,7 @@ func (m *metricRedisClusterSlotsFail) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterSlotsFail(cfg RedisClusterSlotsFailConfig) metricRedisClusterSlotsFail {
+func newMetricRedisClusterSlotsFail(cfg RedisClusterSlotsFailMetricConfig) metricRedisClusterSlotsFail {
 	m := metricRedisClusterSlotsFail{config: cfg}
 
 	if cfg.Enabled {
@@ -973,9 +973,9 @@ func newMetricRedisClusterSlotsFail(cfg RedisClusterSlotsFailConfig) metricRedis
 }
 
 type metricRedisClusterSlotsOk struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   RedisClusterSlotsOkConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   RedisClusterSlotsOkMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.slots_ok metric with initial data.
@@ -1012,7 +1012,7 @@ func (m *metricRedisClusterSlotsOk) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterSlotsOk(cfg RedisClusterSlotsOkConfig) metricRedisClusterSlotsOk {
+func newMetricRedisClusterSlotsOk(cfg RedisClusterSlotsOkMetricConfig) metricRedisClusterSlotsOk {
 	m := metricRedisClusterSlotsOk{config: cfg}
 
 	if cfg.Enabled {
@@ -1023,9 +1023,9 @@ func newMetricRedisClusterSlotsOk(cfg RedisClusterSlotsOkConfig) metricRedisClus
 }
 
 type metricRedisClusterSlotsPfail struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   RedisClusterSlotsPfailConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   RedisClusterSlotsPfailMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.slots_pfail metric with initial data.
@@ -1062,7 +1062,7 @@ func (m *metricRedisClusterSlotsPfail) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterSlotsPfail(cfg RedisClusterSlotsPfailConfig) metricRedisClusterSlotsPfail {
+func newMetricRedisClusterSlotsPfail(cfg RedisClusterSlotsPfailMetricConfig) metricRedisClusterSlotsPfail {
 	m := metricRedisClusterSlotsPfail{config: cfg}
 
 	if cfg.Enabled {
@@ -1073,10 +1073,10 @@ func newMetricRedisClusterSlotsPfail(cfg RedisClusterSlotsPfailConfig) metricRed
 }
 
 type metricRedisClusterState struct {
-	data          pmetric.Metric          // data buffer for generated metric.
-	config        RedisClusterStateConfig // metric config provided by user.
-	capacity      int                     // max observed number of data points added to the metric.
-	aggDataPoints []int64                 // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        RedisClusterStateMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.cluster.state metric with initial data.
@@ -1097,7 +1097,7 @@ func (m *metricRedisClusterState) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisClusterStateAttributeKeyClusterState) {
+	if slices.Contains(m.config.EnabledAttributes, RedisClusterStateMetricAttributeKeyClusterState) {
 		dp.Attributes().PutStr("cluster_state", clusterStateAttributeValue)
 	}
 
@@ -1151,7 +1151,7 @@ func (m *metricRedisClusterState) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterState(cfg RedisClusterStateConfig) metricRedisClusterState {
+func newMetricRedisClusterState(cfg RedisClusterStateMetricConfig) metricRedisClusterState {
 	m := metricRedisClusterState{config: cfg}
 
 	if cfg.Enabled {
@@ -1162,9 +1162,9 @@ func newMetricRedisClusterState(cfg RedisClusterStateConfig) metricRedisClusterS
 }
 
 type metricRedisClusterStatsMessagesReceived struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   RedisClusterStatsMessagesReceivedConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   RedisClusterStatsMessagesReceivedMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.stats_messages_received metric with initial data.
@@ -1203,7 +1203,7 @@ func (m *metricRedisClusterStatsMessagesReceived) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricRedisClusterStatsMessagesReceived(cfg RedisClusterStatsMessagesReceivedConfig) metricRedisClusterStatsMessagesReceived {
+func newMetricRedisClusterStatsMessagesReceived(cfg RedisClusterStatsMessagesReceivedMetricConfig) metricRedisClusterStatsMessagesReceived {
 	m := metricRedisClusterStatsMessagesReceived{config: cfg}
 
 	if cfg.Enabled {
@@ -1214,9 +1214,9 @@ func newMetricRedisClusterStatsMessagesReceived(cfg RedisClusterStatsMessagesRec
 }
 
 type metricRedisClusterStatsMessagesSent struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   RedisClusterStatsMessagesSentConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   RedisClusterStatsMessagesSentMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.stats_messages_sent metric with initial data.
@@ -1255,7 +1255,7 @@ func (m *metricRedisClusterStatsMessagesSent) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricRedisClusterStatsMessagesSent(cfg RedisClusterStatsMessagesSentConfig) metricRedisClusterStatsMessagesSent {
+func newMetricRedisClusterStatsMessagesSent(cfg RedisClusterStatsMessagesSentMetricConfig) metricRedisClusterStatsMessagesSent {
 	m := metricRedisClusterStatsMessagesSent{config: cfg}
 
 	if cfg.Enabled {
@@ -1266,9 +1266,9 @@ func newMetricRedisClusterStatsMessagesSent(cfg RedisClusterStatsMessagesSentCon
 }
 
 type metricRedisClusterUptime struct {
-	data     pmetric.Metric           // data buffer for generated metric.
-	config   RedisClusterUptimeConfig // metric config provided by user.
-	capacity int                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   RedisClusterUptimeMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills redis.cluster.uptime metric with initial data.
@@ -1305,7 +1305,7 @@ func (m *metricRedisClusterUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterUptime(cfg RedisClusterUptimeConfig) metricRedisClusterUptime {
+func newMetricRedisClusterUptime(cfg RedisClusterUptimeMetricConfig) metricRedisClusterUptime {
 	m := metricRedisClusterUptime{config: cfg}
 
 	if cfg.Enabled {
@@ -1316,10 +1316,10 @@ func newMetricRedisClusterUptime(cfg RedisClusterUptimeConfig) metricRedisCluste
 }
 
 type metricRedisCmdCalls struct {
-	data          pmetric.Metric      // data buffer for generated metric.
-	config        RedisCmdCallsConfig // metric config provided by user.
-	capacity      int                 // max observed number of data points added to the metric.
-	aggDataPoints []int64             // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric            // data buffer for generated metric.
+	config        RedisCmdCallsMetricConfig // metric config provided by user.
+	capacity      int                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.cmd.calls metric with initial data.
@@ -1342,7 +1342,7 @@ func (m *metricRedisCmdCalls) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisCmdCallsAttributeKeyCmd) {
+	if slices.Contains(m.config.EnabledAttributes, RedisCmdCallsMetricAttributeKeyCmd) {
 		dp.Attributes().PutStr("cmd", cmdAttributeValue)
 	}
 
@@ -1396,7 +1396,7 @@ func (m *metricRedisCmdCalls) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisCmdCalls(cfg RedisCmdCallsConfig) metricRedisCmdCalls {
+func newMetricRedisCmdCalls(cfg RedisCmdCallsMetricConfig) metricRedisCmdCalls {
 	m := metricRedisCmdCalls{config: cfg}
 
 	if cfg.Enabled {
@@ -1407,10 +1407,10 @@ func newMetricRedisCmdCalls(cfg RedisCmdCallsConfig) metricRedisCmdCalls {
 }
 
 type metricRedisCmdLatency struct {
-	data          pmetric.Metric        // data buffer for generated metric.
-	config        RedisCmdLatencyConfig // metric config provided by user.
-	capacity      int                   // max observed number of data points added to the metric.
-	aggDataPoints []float64             // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        RedisCmdLatencyMetricConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []float64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.cmd.latency metric with initial data.
@@ -1431,10 +1431,10 @@ func (m *metricRedisCmdLatency) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisCmdLatencyAttributeKeyCmd) {
+	if slices.Contains(m.config.EnabledAttributes, RedisCmdLatencyMetricAttributeKeyCmd) {
 		dp.Attributes().PutStr("cmd", cmdAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, RedisCmdLatencyAttributeKeyPercentile) {
+	if slices.Contains(m.config.EnabledAttributes, RedisCmdLatencyMetricAttributeKeyPercentile) {
 		dp.Attributes().PutStr("percentile", percentileAttributeValue)
 	}
 
@@ -1488,7 +1488,7 @@ func (m *metricRedisCmdLatency) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisCmdLatency(cfg RedisCmdLatencyConfig) metricRedisCmdLatency {
+func newMetricRedisCmdLatency(cfg RedisCmdLatencyMetricConfig) metricRedisCmdLatency {
 	m := metricRedisCmdLatency{config: cfg}
 
 	if cfg.Enabled {
@@ -1499,10 +1499,10 @@ func newMetricRedisCmdLatency(cfg RedisCmdLatencyConfig) metricRedisCmdLatency {
 }
 
 type metricRedisCmdUsec struct {
-	data          pmetric.Metric     // data buffer for generated metric.
-	config        RedisCmdUsecConfig // metric config provided by user.
-	capacity      int                // max observed number of data points added to the metric.
-	aggDataPoints []int64            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric           // data buffer for generated metric.
+	config        RedisCmdUsecMetricConfig // metric config provided by user.
+	capacity      int                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.cmd.usec metric with initial data.
@@ -1525,7 +1525,7 @@ func (m *metricRedisCmdUsec) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisCmdUsecAttributeKeyCmd) {
+	if slices.Contains(m.config.EnabledAttributes, RedisCmdUsecMetricAttributeKeyCmd) {
 		dp.Attributes().PutStr("cmd", cmdAttributeValue)
 	}
 
@@ -1579,7 +1579,7 @@ func (m *metricRedisCmdUsec) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisCmdUsec(cfg RedisCmdUsecConfig) metricRedisCmdUsec {
+func newMetricRedisCmdUsec(cfg RedisCmdUsecMetricConfig) metricRedisCmdUsec {
 	m := metricRedisCmdUsec{config: cfg}
 
 	if cfg.Enabled {
@@ -1590,9 +1590,9 @@ func newMetricRedisCmdUsec(cfg RedisCmdUsecConfig) metricRedisCmdUsec {
 }
 
 type metricRedisCommands struct {
-	data     pmetric.Metric      // data buffer for generated metric.
-	config   RedisCommandsConfig // metric config provided by user.
-	capacity int                 // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   RedisCommandsMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills redis.commands metric with initial data.
@@ -1629,7 +1629,7 @@ func (m *metricRedisCommands) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisCommands(cfg RedisCommandsConfig) metricRedisCommands {
+func newMetricRedisCommands(cfg RedisCommandsMetricConfig) metricRedisCommands {
 	m := metricRedisCommands{config: cfg}
 
 	if cfg.Enabled {
@@ -1640,9 +1640,9 @@ func newMetricRedisCommands(cfg RedisCommandsConfig) metricRedisCommands {
 }
 
 type metricRedisCommandsProcessed struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   RedisCommandsProcessedConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   RedisCommandsProcessedMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills redis.commands.processed metric with initial data.
@@ -1681,7 +1681,7 @@ func (m *metricRedisCommandsProcessed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisCommandsProcessed(cfg RedisCommandsProcessedConfig) metricRedisCommandsProcessed {
+func newMetricRedisCommandsProcessed(cfg RedisCommandsProcessedMetricConfig) metricRedisCommandsProcessed {
 	m := metricRedisCommandsProcessed{config: cfg}
 
 	if cfg.Enabled {
@@ -1692,9 +1692,9 @@ func newMetricRedisCommandsProcessed(cfg RedisCommandsProcessedConfig) metricRed
 }
 
 type metricRedisConnectionsReceived struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   RedisConnectionsReceivedConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   RedisConnectionsReceivedMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills redis.connections.received metric with initial data.
@@ -1733,7 +1733,7 @@ func (m *metricRedisConnectionsReceived) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisConnectionsReceived(cfg RedisConnectionsReceivedConfig) metricRedisConnectionsReceived {
+func newMetricRedisConnectionsReceived(cfg RedisConnectionsReceivedMetricConfig) metricRedisConnectionsReceived {
 	m := metricRedisConnectionsReceived{config: cfg}
 
 	if cfg.Enabled {
@@ -1744,9 +1744,9 @@ func newMetricRedisConnectionsReceived(cfg RedisConnectionsReceivedConfig) metri
 }
 
 type metricRedisConnectionsRejected struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   RedisConnectionsRejectedConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   RedisConnectionsRejectedMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills redis.connections.rejected metric with initial data.
@@ -1785,7 +1785,7 @@ func (m *metricRedisConnectionsRejected) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisConnectionsRejected(cfg RedisConnectionsRejectedConfig) metricRedisConnectionsRejected {
+func newMetricRedisConnectionsRejected(cfg RedisConnectionsRejectedMetricConfig) metricRedisConnectionsRejected {
 	m := metricRedisConnectionsRejected{config: cfg}
 
 	if cfg.Enabled {
@@ -1796,10 +1796,10 @@ func newMetricRedisConnectionsRejected(cfg RedisConnectionsRejectedConfig) metri
 }
 
 type metricRedisCPUTime struct {
-	data          pmetric.Metric     // data buffer for generated metric.
-	config        RedisCPUTimeConfig // metric config provided by user.
-	capacity      int                // max observed number of data points added to the metric.
-	aggDataPoints []float64          // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric           // data buffer for generated metric.
+	config        RedisCPUTimeMetricConfig // metric config provided by user.
+	capacity      int                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.cpu.time metric with initial data.
@@ -1822,7 +1822,7 @@ func (m *metricRedisCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisCPUTimeAttributeKeyState) {
+	if slices.Contains(m.config.EnabledAttributes, RedisCPUTimeMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -1876,7 +1876,7 @@ func (m *metricRedisCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisCPUTime(cfg RedisCPUTimeConfig) metricRedisCPUTime {
+func newMetricRedisCPUTime(cfg RedisCPUTimeMetricConfig) metricRedisCPUTime {
 	m := metricRedisCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -1887,10 +1887,10 @@ func newMetricRedisCPUTime(cfg RedisCPUTimeConfig) metricRedisCPUTime {
 }
 
 type metricRedisDbAvgTTL struct {
-	data          pmetric.Metric      // data buffer for generated metric.
-	config        RedisDbAvgTTLConfig // metric config provided by user.
-	capacity      int                 // max observed number of data points added to the metric.
-	aggDataPoints []int64             // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric            // data buffer for generated metric.
+	config        RedisDbAvgTTLMetricConfig // metric config provided by user.
+	capacity      int                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.db.avg_ttl metric with initial data.
@@ -1911,7 +1911,7 @@ func (m *metricRedisDbAvgTTL) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisDbAvgTTLAttributeKeyDb) {
+	if slices.Contains(m.config.EnabledAttributes, RedisDbAvgTTLMetricAttributeKeyDb) {
 		dp.Attributes().PutStr("db", dbAttributeValue)
 	}
 
@@ -1965,7 +1965,7 @@ func (m *metricRedisDbAvgTTL) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisDbAvgTTL(cfg RedisDbAvgTTLConfig) metricRedisDbAvgTTL {
+func newMetricRedisDbAvgTTL(cfg RedisDbAvgTTLMetricConfig) metricRedisDbAvgTTL {
 	m := metricRedisDbAvgTTL{config: cfg}
 
 	if cfg.Enabled {
@@ -1976,10 +1976,10 @@ func newMetricRedisDbAvgTTL(cfg RedisDbAvgTTLConfig) metricRedisDbAvgTTL {
 }
 
 type metricRedisDbExpires struct {
-	data          pmetric.Metric       // data buffer for generated metric.
-	config        RedisDbExpiresConfig // metric config provided by user.
-	capacity      int                  // max observed number of data points added to the metric.
-	aggDataPoints []int64              // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        RedisDbExpiresMetricConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.db.expires metric with initial data.
@@ -2000,7 +2000,7 @@ func (m *metricRedisDbExpires) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisDbExpiresAttributeKeyDb) {
+	if slices.Contains(m.config.EnabledAttributes, RedisDbExpiresMetricAttributeKeyDb) {
 		dp.Attributes().PutStr("db", dbAttributeValue)
 	}
 
@@ -2054,7 +2054,7 @@ func (m *metricRedisDbExpires) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisDbExpires(cfg RedisDbExpiresConfig) metricRedisDbExpires {
+func newMetricRedisDbExpires(cfg RedisDbExpiresMetricConfig) metricRedisDbExpires {
 	m := metricRedisDbExpires{config: cfg}
 
 	if cfg.Enabled {
@@ -2065,10 +2065,10 @@ func newMetricRedisDbExpires(cfg RedisDbExpiresConfig) metricRedisDbExpires {
 }
 
 type metricRedisDbKeys struct {
-	data          pmetric.Metric    // data buffer for generated metric.
-	config        RedisDbKeysConfig // metric config provided by user.
-	capacity      int               // max observed number of data points added to the metric.
-	aggDataPoints []int64           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric          // data buffer for generated metric.
+	config        RedisDbKeysMetricConfig // metric config provided by user.
+	capacity      int                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.db.keys metric with initial data.
@@ -2089,7 +2089,7 @@ func (m *metricRedisDbKeys) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisDbKeysAttributeKeyDb) {
+	if slices.Contains(m.config.EnabledAttributes, RedisDbKeysMetricAttributeKeyDb) {
 		dp.Attributes().PutStr("db", dbAttributeValue)
 	}
 
@@ -2143,7 +2143,7 @@ func (m *metricRedisDbKeys) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisDbKeys(cfg RedisDbKeysConfig) metricRedisDbKeys {
+func newMetricRedisDbKeys(cfg RedisDbKeysMetricConfig) metricRedisDbKeys {
 	m := metricRedisDbKeys{config: cfg}
 
 	if cfg.Enabled {
@@ -2154,9 +2154,9 @@ func newMetricRedisDbKeys(cfg RedisDbKeysConfig) metricRedisDbKeys {
 }
 
 type metricRedisKeysEvicted struct {
-	data     pmetric.Metric         // data buffer for generated metric.
-	config   RedisKeysEvictedConfig // metric config provided by user.
-	capacity int                    // max observed number of data points added to the metric.
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   RedisKeysEvictedMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills redis.keys.evicted metric with initial data.
@@ -2195,7 +2195,7 @@ func (m *metricRedisKeysEvicted) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisKeysEvicted(cfg RedisKeysEvictedConfig) metricRedisKeysEvicted {
+func newMetricRedisKeysEvicted(cfg RedisKeysEvictedMetricConfig) metricRedisKeysEvicted {
 	m := metricRedisKeysEvicted{config: cfg}
 
 	if cfg.Enabled {
@@ -2206,9 +2206,9 @@ func newMetricRedisKeysEvicted(cfg RedisKeysEvictedConfig) metricRedisKeysEvicte
 }
 
 type metricRedisKeysExpired struct {
-	data     pmetric.Metric         // data buffer for generated metric.
-	config   RedisKeysExpiredConfig // metric config provided by user.
-	capacity int                    // max observed number of data points added to the metric.
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   RedisKeysExpiredMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills redis.keys.expired metric with initial data.
@@ -2247,7 +2247,7 @@ func (m *metricRedisKeysExpired) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisKeysExpired(cfg RedisKeysExpiredConfig) metricRedisKeysExpired {
+func newMetricRedisKeysExpired(cfg RedisKeysExpiredMetricConfig) metricRedisKeysExpired {
 	m := metricRedisKeysExpired{config: cfg}
 
 	if cfg.Enabled {
@@ -2258,9 +2258,9 @@ func newMetricRedisKeysExpired(cfg RedisKeysExpiredConfig) metricRedisKeysExpire
 }
 
 type metricRedisKeyspaceHits struct {
-	data     pmetric.Metric          // data buffer for generated metric.
-	config   RedisKeyspaceHitsConfig // metric config provided by user.
-	capacity int                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   RedisKeyspaceHitsMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills redis.keyspace.hits metric with initial data.
@@ -2299,7 +2299,7 @@ func (m *metricRedisKeyspaceHits) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisKeyspaceHits(cfg RedisKeyspaceHitsConfig) metricRedisKeyspaceHits {
+func newMetricRedisKeyspaceHits(cfg RedisKeyspaceHitsMetricConfig) metricRedisKeyspaceHits {
 	m := metricRedisKeyspaceHits{config: cfg}
 
 	if cfg.Enabled {
@@ -2310,9 +2310,9 @@ func newMetricRedisKeyspaceHits(cfg RedisKeyspaceHitsConfig) metricRedisKeyspace
 }
 
 type metricRedisKeyspaceMisses struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   RedisKeyspaceMissesConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   RedisKeyspaceMissesMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills redis.keyspace.misses metric with initial data.
@@ -2351,7 +2351,7 @@ func (m *metricRedisKeyspaceMisses) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisKeyspaceMisses(cfg RedisKeyspaceMissesConfig) metricRedisKeyspaceMisses {
+func newMetricRedisKeyspaceMisses(cfg RedisKeyspaceMissesMetricConfig) metricRedisKeyspaceMisses {
 	m := metricRedisKeyspaceMisses{config: cfg}
 
 	if cfg.Enabled {
@@ -2362,9 +2362,9 @@ func newMetricRedisKeyspaceMisses(cfg RedisKeyspaceMissesConfig) metricRedisKeys
 }
 
 type metricRedisLatestFork struct {
-	data     pmetric.Metric        // data buffer for generated metric.
-	config   RedisLatestForkConfig // metric config provided by user.
-	capacity int                   // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   RedisLatestForkMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills redis.latest_fork metric with initial data.
@@ -2401,7 +2401,7 @@ func (m *metricRedisLatestFork) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisLatestFork(cfg RedisLatestForkConfig) metricRedisLatestFork {
+func newMetricRedisLatestFork(cfg RedisLatestForkMetricConfig) metricRedisLatestFork {
 	m := metricRedisLatestFork{config: cfg}
 
 	if cfg.Enabled {
@@ -2412,9 +2412,9 @@ func newMetricRedisLatestFork(cfg RedisLatestForkConfig) metricRedisLatestFork {
 }
 
 type metricRedisMaxmemory struct {
-	data     pmetric.Metric       // data buffer for generated metric.
-	config   RedisMaxmemoryConfig // metric config provided by user.
-	capacity int                  // max observed number of data points added to the metric.
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   RedisMaxmemoryMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
 }
 
 // init fills redis.maxmemory metric with initial data.
@@ -2451,7 +2451,7 @@ func (m *metricRedisMaxmemory) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisMaxmemory(cfg RedisMaxmemoryConfig) metricRedisMaxmemory {
+func newMetricRedisMaxmemory(cfg RedisMaxmemoryMetricConfig) metricRedisMaxmemory {
 	m := metricRedisMaxmemory{config: cfg}
 
 	if cfg.Enabled {
@@ -2462,9 +2462,9 @@ func newMetricRedisMaxmemory(cfg RedisMaxmemoryConfig) metricRedisMaxmemory {
 }
 
 type metricRedisMemoryFragmentationRatio struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   RedisMemoryFragmentationRatioConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   RedisMemoryFragmentationRatioMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills redis.memory.fragmentation_ratio metric with initial data.
@@ -2501,7 +2501,7 @@ func (m *metricRedisMemoryFragmentationRatio) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricRedisMemoryFragmentationRatio(cfg RedisMemoryFragmentationRatioConfig) metricRedisMemoryFragmentationRatio {
+func newMetricRedisMemoryFragmentationRatio(cfg RedisMemoryFragmentationRatioMetricConfig) metricRedisMemoryFragmentationRatio {
 	m := metricRedisMemoryFragmentationRatio{config: cfg}
 
 	if cfg.Enabled {
@@ -2512,9 +2512,9 @@ func newMetricRedisMemoryFragmentationRatio(cfg RedisMemoryFragmentationRatioCon
 }
 
 type metricRedisMemoryLua struct {
-	data     pmetric.Metric       // data buffer for generated metric.
-	config   RedisMemoryLuaConfig // metric config provided by user.
-	capacity int                  // max observed number of data points added to the metric.
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   RedisMemoryLuaMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
 }
 
 // init fills redis.memory.lua metric with initial data.
@@ -2551,7 +2551,7 @@ func (m *metricRedisMemoryLua) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisMemoryLua(cfg RedisMemoryLuaConfig) metricRedisMemoryLua {
+func newMetricRedisMemoryLua(cfg RedisMemoryLuaMetricConfig) metricRedisMemoryLua {
 	m := metricRedisMemoryLua{config: cfg}
 
 	if cfg.Enabled {
@@ -2562,9 +2562,9 @@ func newMetricRedisMemoryLua(cfg RedisMemoryLuaConfig) metricRedisMemoryLua {
 }
 
 type metricRedisMemoryPeak struct {
-	data     pmetric.Metric        // data buffer for generated metric.
-	config   RedisMemoryPeakConfig // metric config provided by user.
-	capacity int                   // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   RedisMemoryPeakMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills redis.memory.peak metric with initial data.
@@ -2601,7 +2601,7 @@ func (m *metricRedisMemoryPeak) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisMemoryPeak(cfg RedisMemoryPeakConfig) metricRedisMemoryPeak {
+func newMetricRedisMemoryPeak(cfg RedisMemoryPeakMetricConfig) metricRedisMemoryPeak {
 	m := metricRedisMemoryPeak{config: cfg}
 
 	if cfg.Enabled {
@@ -2612,9 +2612,9 @@ func newMetricRedisMemoryPeak(cfg RedisMemoryPeakConfig) metricRedisMemoryPeak {
 }
 
 type metricRedisMemoryRss struct {
-	data     pmetric.Metric       // data buffer for generated metric.
-	config   RedisMemoryRssConfig // metric config provided by user.
-	capacity int                  // max observed number of data points added to the metric.
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   RedisMemoryRssMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
 }
 
 // init fills redis.memory.rss metric with initial data.
@@ -2651,7 +2651,7 @@ func (m *metricRedisMemoryRss) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisMemoryRss(cfg RedisMemoryRssConfig) metricRedisMemoryRss {
+func newMetricRedisMemoryRss(cfg RedisMemoryRssMetricConfig) metricRedisMemoryRss {
 	m := metricRedisMemoryRss{config: cfg}
 
 	if cfg.Enabled {
@@ -2662,9 +2662,9 @@ func newMetricRedisMemoryRss(cfg RedisMemoryRssConfig) metricRedisMemoryRss {
 }
 
 type metricRedisMemoryUsed struct {
-	data     pmetric.Metric        // data buffer for generated metric.
-	config   RedisMemoryUsedConfig // metric config provided by user.
-	capacity int                   // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   RedisMemoryUsedMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills redis.memory.used metric with initial data.
@@ -2701,7 +2701,7 @@ func (m *metricRedisMemoryUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisMemoryUsed(cfg RedisMemoryUsedConfig) metricRedisMemoryUsed {
+func newMetricRedisMemoryUsed(cfg RedisMemoryUsedMetricConfig) metricRedisMemoryUsed {
 	m := metricRedisMemoryUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -2712,9 +2712,9 @@ func newMetricRedisMemoryUsed(cfg RedisMemoryUsedConfig) metricRedisMemoryUsed {
 }
 
 type metricRedisMemoryUsedMemoryOverhead struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   RedisMemoryUsedMemoryOverheadConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   RedisMemoryUsedMemoryOverheadMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills redis.memory.used_memory_overhead metric with initial data.
@@ -2753,7 +2753,7 @@ func (m *metricRedisMemoryUsedMemoryOverhead) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricRedisMemoryUsedMemoryOverhead(cfg RedisMemoryUsedMemoryOverheadConfig) metricRedisMemoryUsedMemoryOverhead {
+func newMetricRedisMemoryUsedMemoryOverhead(cfg RedisMemoryUsedMemoryOverheadMetricConfig) metricRedisMemoryUsedMemoryOverhead {
 	m := metricRedisMemoryUsedMemoryOverhead{config: cfg}
 
 	if cfg.Enabled {
@@ -2764,9 +2764,9 @@ func newMetricRedisMemoryUsedMemoryOverhead(cfg RedisMemoryUsedMemoryOverheadCon
 }
 
 type metricRedisMemoryUsedMemoryStartup struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   RedisMemoryUsedMemoryStartupConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   RedisMemoryUsedMemoryStartupMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills redis.memory.used_memory_startup metric with initial data.
@@ -2805,7 +2805,7 @@ func (m *metricRedisMemoryUsedMemoryStartup) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisMemoryUsedMemoryStartup(cfg RedisMemoryUsedMemoryStartupConfig) metricRedisMemoryUsedMemoryStartup {
+func newMetricRedisMemoryUsedMemoryStartup(cfg RedisMemoryUsedMemoryStartupMetricConfig) metricRedisMemoryUsedMemoryStartup {
 	m := metricRedisMemoryUsedMemoryStartup{config: cfg}
 
 	if cfg.Enabled {
@@ -2816,10 +2816,10 @@ func newMetricRedisMemoryUsedMemoryStartup(cfg RedisMemoryUsedMemoryStartupConfi
 }
 
 type metricRedisMode struct {
-	data          pmetric.Metric  // data buffer for generated metric.
-	config        RedisModeConfig // metric config provided by user.
-	capacity      int             // max observed number of data points added to the metric.
-	aggDataPoints []int64         // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric        // data buffer for generated metric.
+	config        RedisModeMetricConfig // metric config provided by user.
+	capacity      int                   // max observed number of data points added to the metric.
+	aggDataPoints []int64               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.mode metric with initial data.
@@ -2840,7 +2840,7 @@ func (m *metricRedisMode) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisModeAttributeKeyMode) {
+	if slices.Contains(m.config.EnabledAttributes, RedisModeMetricAttributeKeyMode) {
 		dp.Attributes().PutStr("mode", modeAttributeValue)
 	}
 
@@ -2894,7 +2894,7 @@ func (m *metricRedisMode) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisMode(cfg RedisModeConfig) metricRedisMode {
+func newMetricRedisMode(cfg RedisModeMetricConfig) metricRedisMode {
 	m := metricRedisMode{config: cfg}
 
 	if cfg.Enabled {
@@ -2905,9 +2905,9 @@ func newMetricRedisMode(cfg RedisModeConfig) metricRedisMode {
 }
 
 type metricRedisNetInput struct {
-	data     pmetric.Metric      // data buffer for generated metric.
-	config   RedisNetInputConfig // metric config provided by user.
-	capacity int                 // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   RedisNetInputMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills redis.net.input metric with initial data.
@@ -2946,7 +2946,7 @@ func (m *metricRedisNetInput) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisNetInput(cfg RedisNetInputConfig) metricRedisNetInput {
+func newMetricRedisNetInput(cfg RedisNetInputMetricConfig) metricRedisNetInput {
 	m := metricRedisNetInput{config: cfg}
 
 	if cfg.Enabled {
@@ -2957,9 +2957,9 @@ func newMetricRedisNetInput(cfg RedisNetInputConfig) metricRedisNetInput {
 }
 
 type metricRedisNetOutput struct {
-	data     pmetric.Metric       // data buffer for generated metric.
-	config   RedisNetOutputConfig // metric config provided by user.
-	capacity int                  // max observed number of data points added to the metric.
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   RedisNetOutputMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
 }
 
 // init fills redis.net.output metric with initial data.
@@ -2998,7 +2998,7 @@ func (m *metricRedisNetOutput) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisNetOutput(cfg RedisNetOutputConfig) metricRedisNetOutput {
+func newMetricRedisNetOutput(cfg RedisNetOutputMetricConfig) metricRedisNetOutput {
 	m := metricRedisNetOutput{config: cfg}
 
 	if cfg.Enabled {
@@ -3009,9 +3009,9 @@ func newMetricRedisNetOutput(cfg RedisNetOutputConfig) metricRedisNetOutput {
 }
 
 type metricRedisRdbChangesSinceLastSave struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   RedisRdbChangesSinceLastSaveConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   RedisRdbChangesSinceLastSaveMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills redis.rdb.changes_since_last_save metric with initial data.
@@ -3050,7 +3050,7 @@ func (m *metricRedisRdbChangesSinceLastSave) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisRdbChangesSinceLastSave(cfg RedisRdbChangesSinceLastSaveConfig) metricRedisRdbChangesSinceLastSave {
+func newMetricRedisRdbChangesSinceLastSave(cfg RedisRdbChangesSinceLastSaveMetricConfig) metricRedisRdbChangesSinceLastSave {
 	m := metricRedisRdbChangesSinceLastSave{config: cfg}
 
 	if cfg.Enabled {
@@ -3061,9 +3061,9 @@ func newMetricRedisRdbChangesSinceLastSave(cfg RedisRdbChangesSinceLastSaveConfi
 }
 
 type metricRedisReplicationBacklogFirstByteOffset struct {
-	data     pmetric.Metric                               // data buffer for generated metric.
-	config   RedisReplicationBacklogFirstByteOffsetConfig // metric config provided by user.
-	capacity int                                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   RedisReplicationBacklogFirstByteOffsetMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
 }
 
 // init fills redis.replication.backlog_first_byte_offset metric with initial data.
@@ -3100,7 +3100,7 @@ func (m *metricRedisReplicationBacklogFirstByteOffset) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricRedisReplicationBacklogFirstByteOffset(cfg RedisReplicationBacklogFirstByteOffsetConfig) metricRedisReplicationBacklogFirstByteOffset {
+func newMetricRedisReplicationBacklogFirstByteOffset(cfg RedisReplicationBacklogFirstByteOffsetMetricConfig) metricRedisReplicationBacklogFirstByteOffset {
 	m := metricRedisReplicationBacklogFirstByteOffset{config: cfg}
 
 	if cfg.Enabled {
@@ -3111,9 +3111,9 @@ func newMetricRedisReplicationBacklogFirstByteOffset(cfg RedisReplicationBacklog
 }
 
 type metricRedisReplicationOffset struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   RedisReplicationOffsetConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   RedisReplicationOffsetMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills redis.replication.offset metric with initial data.
@@ -3150,7 +3150,7 @@ func (m *metricRedisReplicationOffset) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisReplicationOffset(cfg RedisReplicationOffsetConfig) metricRedisReplicationOffset {
+func newMetricRedisReplicationOffset(cfg RedisReplicationOffsetMetricConfig) metricRedisReplicationOffset {
 	m := metricRedisReplicationOffset{config: cfg}
 
 	if cfg.Enabled {
@@ -3161,9 +3161,9 @@ func newMetricRedisReplicationOffset(cfg RedisReplicationOffsetConfig) metricRed
 }
 
 type metricRedisReplicationReplicaOffset struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   RedisReplicationReplicaOffsetConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   RedisReplicationReplicaOffsetMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills redis.replication.replica_offset metric with initial data.
@@ -3200,7 +3200,7 @@ func (m *metricRedisReplicationReplicaOffset) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricRedisReplicationReplicaOffset(cfg RedisReplicationReplicaOffsetConfig) metricRedisReplicationReplicaOffset {
+func newMetricRedisReplicationReplicaOffset(cfg RedisReplicationReplicaOffsetMetricConfig) metricRedisReplicationReplicaOffset {
 	m := metricRedisReplicationReplicaOffset{config: cfg}
 
 	if cfg.Enabled {
@@ -3211,10 +3211,10 @@ func newMetricRedisReplicationReplicaOffset(cfg RedisReplicationReplicaOffsetCon
 }
 
 type metricRedisRole struct {
-	data          pmetric.Metric  // data buffer for generated metric.
-	config        RedisRoleConfig // metric config provided by user.
-	capacity      int             // max observed number of data points added to the metric.
-	aggDataPoints []int64         // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric        // data buffer for generated metric.
+	config        RedisRoleMetricConfig // metric config provided by user.
+	capacity      int                   // max observed number of data points added to the metric.
+	aggDataPoints []int64               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills redis.role metric with initial data.
@@ -3237,7 +3237,7 @@ func (m *metricRedisRole) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RedisRoleAttributeKeyRole) {
+	if slices.Contains(m.config.EnabledAttributes, RedisRoleMetricAttributeKeyRole) {
 		dp.Attributes().PutStr("role", roleAttributeValue)
 	}
 
@@ -3291,7 +3291,7 @@ func (m *metricRedisRole) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisRole(cfg RedisRoleConfig) metricRedisRole {
+func newMetricRedisRole(cfg RedisRoleMetricConfig) metricRedisRole {
 	m := metricRedisRole{config: cfg}
 
 	if cfg.Enabled {
@@ -3302,9 +3302,9 @@ func newMetricRedisRole(cfg RedisRoleConfig) metricRedisRole {
 }
 
 type metricRedisSentinelMasters struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   RedisSentinelMastersConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   RedisSentinelMastersMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills redis.sentinel.masters metric with initial data.
@@ -3341,7 +3341,7 @@ func (m *metricRedisSentinelMasters) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisSentinelMasters(cfg RedisSentinelMastersConfig) metricRedisSentinelMasters {
+func newMetricRedisSentinelMasters(cfg RedisSentinelMastersMetricConfig) metricRedisSentinelMasters {
 	m := metricRedisSentinelMasters{config: cfg}
 
 	if cfg.Enabled {
@@ -3352,9 +3352,9 @@ func newMetricRedisSentinelMasters(cfg RedisSentinelMastersConfig) metricRedisSe
 }
 
 type metricRedisSentinelRunningScripts struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   RedisSentinelRunningScriptsConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   RedisSentinelRunningScriptsMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills redis.sentinel.running_scripts metric with initial data.
@@ -3391,7 +3391,7 @@ func (m *metricRedisSentinelRunningScripts) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisSentinelRunningScripts(cfg RedisSentinelRunningScriptsConfig) metricRedisSentinelRunningScripts {
+func newMetricRedisSentinelRunningScripts(cfg RedisSentinelRunningScriptsMetricConfig) metricRedisSentinelRunningScripts {
 	m := metricRedisSentinelRunningScripts{config: cfg}
 
 	if cfg.Enabled {
@@ -3402,9 +3402,9 @@ func newMetricRedisSentinelRunningScripts(cfg RedisSentinelRunningScriptsConfig)
 }
 
 type metricRedisSentinelScriptsQueueLength struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   RedisSentinelScriptsQueueLengthConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   RedisSentinelScriptsQueueLengthMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills redis.sentinel.scripts_queue_length metric with initial data.
@@ -3441,7 +3441,7 @@ func (m *metricRedisSentinelScriptsQueueLength) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricRedisSentinelScriptsQueueLength(cfg RedisSentinelScriptsQueueLengthConfig) metricRedisSentinelScriptsQueueLength {
+func newMetricRedisSentinelScriptsQueueLength(cfg RedisSentinelScriptsQueueLengthMetricConfig) metricRedisSentinelScriptsQueueLength {
 	m := metricRedisSentinelScriptsQueueLength{config: cfg}
 
 	if cfg.Enabled {
@@ -3452,9 +3452,9 @@ func newMetricRedisSentinelScriptsQueueLength(cfg RedisSentinelScriptsQueueLengt
 }
 
 type metricRedisSentinelSimulateFailureFlags struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   RedisSentinelSimulateFailureFlagsConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   RedisSentinelSimulateFailureFlagsMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills redis.sentinel.simulate_failure_flags metric with initial data.
@@ -3491,7 +3491,7 @@ func (m *metricRedisSentinelSimulateFailureFlags) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricRedisSentinelSimulateFailureFlags(cfg RedisSentinelSimulateFailureFlagsConfig) metricRedisSentinelSimulateFailureFlags {
+func newMetricRedisSentinelSimulateFailureFlags(cfg RedisSentinelSimulateFailureFlagsMetricConfig) metricRedisSentinelSimulateFailureFlags {
 	m := metricRedisSentinelSimulateFailureFlags{config: cfg}
 
 	if cfg.Enabled {
@@ -3502,9 +3502,9 @@ func newMetricRedisSentinelSimulateFailureFlags(cfg RedisSentinelSimulateFailure
 }
 
 type metricRedisSentinelTiltSinceSeconds struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   RedisSentinelTiltSinceSecondsConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   RedisSentinelTiltSinceSecondsMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills redis.sentinel.tilt_since_seconds metric with initial data.
@@ -3541,7 +3541,7 @@ func (m *metricRedisSentinelTiltSinceSeconds) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricRedisSentinelTiltSinceSeconds(cfg RedisSentinelTiltSinceSecondsConfig) metricRedisSentinelTiltSinceSeconds {
+func newMetricRedisSentinelTiltSinceSeconds(cfg RedisSentinelTiltSinceSecondsMetricConfig) metricRedisSentinelTiltSinceSeconds {
 	m := metricRedisSentinelTiltSinceSeconds{config: cfg}
 
 	if cfg.Enabled {
@@ -3552,9 +3552,9 @@ func newMetricRedisSentinelTiltSinceSeconds(cfg RedisSentinelTiltSinceSecondsCon
 }
 
 type metricRedisSentinelTotalTilt struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   RedisSentinelTotalTiltConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   RedisSentinelTotalTiltMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills redis.sentinel.total_tilt metric with initial data.
@@ -3593,7 +3593,7 @@ func (m *metricRedisSentinelTotalTilt) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisSentinelTotalTilt(cfg RedisSentinelTotalTiltConfig) metricRedisSentinelTotalTilt {
+func newMetricRedisSentinelTotalTilt(cfg RedisSentinelTotalTiltMetricConfig) metricRedisSentinelTotalTilt {
 	m := metricRedisSentinelTotalTilt{config: cfg}
 
 	if cfg.Enabled {
@@ -3604,9 +3604,9 @@ func newMetricRedisSentinelTotalTilt(cfg RedisSentinelTotalTiltConfig) metricRed
 }
 
 type metricRedisSlavesConnected struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   RedisSlavesConnectedConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   RedisSlavesConnectedMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills redis.slaves.connected metric with initial data.
@@ -3645,7 +3645,7 @@ func (m *metricRedisSlavesConnected) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisSlavesConnected(cfg RedisSlavesConnectedConfig) metricRedisSlavesConnected {
+func newMetricRedisSlavesConnected(cfg RedisSlavesConnectedMetricConfig) metricRedisSlavesConnected {
 	m := metricRedisSlavesConnected{config: cfg}
 
 	if cfg.Enabled {
@@ -3656,9 +3656,9 @@ func newMetricRedisSlavesConnected(cfg RedisSlavesConnectedConfig) metricRedisSl
 }
 
 type metricRedisTrackingTotalKeys struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   RedisTrackingTotalKeysConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   RedisTrackingTotalKeysMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills redis.tracking_total_keys metric with initial data.
@@ -3697,7 +3697,7 @@ func (m *metricRedisTrackingTotalKeys) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisTrackingTotalKeys(cfg RedisTrackingTotalKeysConfig) metricRedisTrackingTotalKeys {
+func newMetricRedisTrackingTotalKeys(cfg RedisTrackingTotalKeysMetricConfig) metricRedisTrackingTotalKeys {
 	m := metricRedisTrackingTotalKeys{config: cfg}
 
 	if cfg.Enabled {
@@ -3708,9 +3708,9 @@ func newMetricRedisTrackingTotalKeys(cfg RedisTrackingTotalKeysConfig) metricRed
 }
 
 type metricRedisUptime struct {
-	data     pmetric.Metric    // data buffer for generated metric.
-	config   RedisUptimeConfig // metric config provided by user.
-	capacity int               // max observed number of data points added to the metric.
+	data     pmetric.Metric          // data buffer for generated metric.
+	config   RedisUptimeMetricConfig // metric config provided by user.
+	capacity int                     // max observed number of data points added to the metric.
 }
 
 // init fills redis.uptime metric with initial data.
@@ -3749,7 +3749,7 @@ func (m *metricRedisUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisUptime(cfg RedisUptimeConfig) metricRedisUptime {
+func newMetricRedisUptime(cfg RedisUptimeMetricConfig) metricRedisUptime {
 	m := metricRedisUptime{config: cfg}
 
 	if cfg.Enabled {
