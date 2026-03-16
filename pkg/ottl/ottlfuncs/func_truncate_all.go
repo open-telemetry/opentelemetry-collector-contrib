@@ -9,8 +9,9 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type TruncateAllArguments[K any] struct {
