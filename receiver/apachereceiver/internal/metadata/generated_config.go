@@ -4,23 +4,28 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled             bool `mapstructure:"enabled"`
-	enabledSetByUser    bool
-	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []string `mapstructure:"attributes"`
-	definedAttributes   []string
-	requiredAttributes  []string
+// ApacheConnectionsAsyncAttributeKey specifies the key of an attribute for the apache.connections.async metric.
+type ApacheConnectionsAsyncAttributeKey string
+
+const (
+	ApacheConnectionsAsyncAttributeKeyConnectionState ApacheConnectionsAsyncAttributeKey = "connection_state"
+)
+
+// ApacheConnectionsAsyncConfig provides config for the apache.connections.async metric.
+type ApacheConnectionsAsyncConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ApacheConnectionsAsyncAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ApacheConnectionsAsyncConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,100 +34,419 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	if len(ms.definedAttributes) > 0 {
-		for _, val := range ms.EnabledAttributes {
-			if !slices.Contains(ms.definedAttributes, val) {
-				return fmt.Errorf("%v is not defined in metadata.yaml", val)
-			}
-		}
 
-		for _, val := range ms.requiredAttributes {
-			if !slices.Contains(ms.EnabledAttributes, val) {
-				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-			}
-		}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
-		if ms.AggregationStrategy != AggregationStrategySum &&
-			ms.AggregationStrategy != AggregationStrategyAvg &&
-			ms.AggregationStrategy != AggregationStrategyMin &&
-			ms.AggregationStrategy != AggregationStrategyMax {
-			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+func (ms *ApacheConnectionsAsyncConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ApacheConnectionsAsyncAttributeKeyConnectionState:
+		default:
+			return fmt.Errorf("metric apache.connections.async doesn't have an attribute %v, valid attributes: [connection_state]", val)
 		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ApacheCPULoadConfig provides config for the apache.cpu.load metric.
+type ApacheCPULoadConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheCPULoadConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
+// ApacheCPUTimeAttributeKey specifies the key of an attribute for the apache.cpu.time metric.
+type ApacheCPUTimeAttributeKey string
+
+const (
+	ApacheCPUTimeAttributeKeyCPULevel ApacheCPUTimeAttributeKey = "level"
+	ApacheCPUTimeAttributeKeyCPUMode  ApacheCPUTimeAttributeKey = "mode"
+)
+
+// ApacheCPUTimeConfig provides config for the apache.cpu.time metric.
+type ApacheCPUTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ApacheCPUTimeAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ApacheCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ApacheCPUTimeConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ApacheCPUTimeAttributeKeyCPULevel, ApacheCPUTimeAttributeKeyCPUMode:
+		default:
+			return fmt.Errorf("metric apache.cpu.time doesn't have an attribute %v, valid attributes: [level, mode]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ApacheCurrentConnectionsConfig provides config for the apache.current_connections metric.
+type ApacheCurrentConnectionsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheCurrentConnectionsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheLoad1Config provides config for the apache.load.1 metric.
+type ApacheLoad1Config struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheLoad1Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheLoad15Config provides config for the apache.load.15 metric.
+type ApacheLoad15Config struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheLoad15Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheLoad5Config provides config for the apache.load.5 metric.
+type ApacheLoad5Config struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheLoad5Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheRequestTimeConfig provides config for the apache.request.time metric.
+type ApacheRequestTimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheRequestTimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheRequestsConfig provides config for the apache.requests metric.
+type ApacheRequestsConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheRequestsConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheScoreboardAttributeKey specifies the key of an attribute for the apache.scoreboard metric.
+type ApacheScoreboardAttributeKey string
+
+const (
+	ApacheScoreboardAttributeKeyScoreboardState ApacheScoreboardAttributeKey = "state"
+)
+
+// ApacheScoreboardConfig provides config for the apache.scoreboard metric.
+type ApacheScoreboardConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ApacheScoreboardAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ApacheScoreboardConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ApacheScoreboardConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ApacheScoreboardAttributeKeyScoreboardState:
+		default:
+			return fmt.Errorf("metric apache.scoreboard doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ApacheTrafficConfig provides config for the apache.traffic metric.
+type ApacheTrafficConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheTrafficConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheUptimeConfig provides config for the apache.uptime metric.
+type ApacheUptimeConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ApacheUptimeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ApacheWorkersAttributeKey specifies the key of an attribute for the apache.workers metric.
+type ApacheWorkersAttributeKey string
+
+const (
+	ApacheWorkersAttributeKeyWorkersState ApacheWorkersAttributeKey = "state"
+)
+
+// ApacheWorkersConfig provides config for the apache.workers metric.
+type ApacheWorkersConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ApacheWorkersAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ApacheWorkersConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ApacheWorkersConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ApacheWorkersAttributeKeyWorkersState:
+		default:
+			return fmt.Errorf("metric apache.workers doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for apache metrics.
 type MetricsConfig struct {
-	ApacheConnectionsAsync   MetricConfig `mapstructure:"apache.connections.async"`
-	ApacheCPULoad            MetricConfig `mapstructure:"apache.cpu.load"`
-	ApacheCPUTime            MetricConfig `mapstructure:"apache.cpu.time"`
-	ApacheCurrentConnections MetricConfig `mapstructure:"apache.current_connections"`
-	ApacheLoad1              MetricConfig `mapstructure:"apache.load.1"`
-	ApacheLoad15             MetricConfig `mapstructure:"apache.load.15"`
-	ApacheLoad5              MetricConfig `mapstructure:"apache.load.5"`
-	ApacheRequestTime        MetricConfig `mapstructure:"apache.request.time"`
-	ApacheRequests           MetricConfig `mapstructure:"apache.requests"`
-	ApacheScoreboard         MetricConfig `mapstructure:"apache.scoreboard"`
-	ApacheTraffic            MetricConfig `mapstructure:"apache.traffic"`
-	ApacheUptime             MetricConfig `mapstructure:"apache.uptime"`
-	ApacheWorkers            MetricConfig `mapstructure:"apache.workers"`
+	ApacheConnectionsAsync   ApacheConnectionsAsyncConfig   `mapstructure:"apache.connections.async"`
+	ApacheCPULoad            ApacheCPULoadConfig            `mapstructure:"apache.cpu.load"`
+	ApacheCPUTime            ApacheCPUTimeConfig            `mapstructure:"apache.cpu.time"`
+	ApacheCurrentConnections ApacheCurrentConnectionsConfig `mapstructure:"apache.current_connections"`
+	ApacheLoad1              ApacheLoad1Config              `mapstructure:"apache.load.1"`
+	ApacheLoad15             ApacheLoad15Config             `mapstructure:"apache.load.15"`
+	ApacheLoad5              ApacheLoad5Config              `mapstructure:"apache.load.5"`
+	ApacheRequestTime        ApacheRequestTimeConfig        `mapstructure:"apache.request.time"`
+	ApacheRequests           ApacheRequestsConfig           `mapstructure:"apache.requests"`
+	ApacheScoreboard         ApacheScoreboardConfig         `mapstructure:"apache.scoreboard"`
+	ApacheTraffic            ApacheTrafficConfig            `mapstructure:"apache.traffic"`
+	ApacheUptime             ApacheUptimeConfig             `mapstructure:"apache.uptime"`
+	ApacheWorkers            ApacheWorkersConfig            `mapstructure:"apache.workers"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		ApacheConnectionsAsync: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"connection_state"},
-			EnabledAttributes:  []string{"connection_state"},
+		ApacheConnectionsAsync: ApacheConnectionsAsyncConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []ApacheConnectionsAsyncAttributeKey{ApacheConnectionsAsyncAttributeKeyConnectionState},
 		},
-		ApacheCPULoad: MetricConfig{
+		ApacheCPULoad: ApacheCPULoadConfig{
 			Enabled: true,
 		},
-		ApacheCPUTime: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"level", "mode"},
-			EnabledAttributes:  []string{"level", "mode"},
+		ApacheCPUTime: ApacheCPUTimeConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ApacheCPUTimeAttributeKey{ApacheCPUTimeAttributeKeyCPULevel, ApacheCPUTimeAttributeKeyCPUMode},
 		},
-		ApacheCurrentConnections: MetricConfig{
+		ApacheCurrentConnections: ApacheCurrentConnectionsConfig{
 			Enabled: true,
 		},
-		ApacheLoad1: MetricConfig{
+		ApacheLoad1: ApacheLoad1Config{
 			Enabled: true,
 		},
-		ApacheLoad15: MetricConfig{
+		ApacheLoad15: ApacheLoad15Config{
 			Enabled: true,
 		},
-		ApacheLoad5: MetricConfig{
+		ApacheLoad5: ApacheLoad5Config{
 			Enabled: true,
 		},
-		ApacheRequestTime: MetricConfig{
+		ApacheRequestTime: ApacheRequestTimeConfig{
 			Enabled: true,
 		},
-		ApacheRequests: MetricConfig{
+		ApacheRequests: ApacheRequestsConfig{
 			Enabled: true,
 		},
-		ApacheScoreboard: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state"},
-			EnabledAttributes:  []string{"state"},
+		ApacheScoreboard: ApacheScoreboardConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ApacheScoreboardAttributeKey{ApacheScoreboardAttributeKeyScoreboardState},
 		},
-		ApacheTraffic: MetricConfig{
+		ApacheTraffic: ApacheTrafficConfig{
 			Enabled: true,
 		},
-		ApacheUptime: MetricConfig{
+		ApacheUptime: ApacheUptimeConfig{
 			Enabled: true,
 		},
-		ApacheWorkers: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"state"},
-			EnabledAttributes:  []string{"state"},
+		ApacheWorkers: ApacheWorkersConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []ApacheWorkersAttributeKey{ApacheWorkersAttributeKeyWorkersState},
 		},
 	}
 }

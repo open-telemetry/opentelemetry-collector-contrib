@@ -15,6 +15,7 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
@@ -24,6 +25,7 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:
@@ -48,6 +50,7 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
@@ -57,6 +60,7 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:
@@ -84,6 +88,7 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
@@ -93,6 +98,7 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:
@@ -120,6 +126,7 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
@@ -129,6 +136,7 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:
