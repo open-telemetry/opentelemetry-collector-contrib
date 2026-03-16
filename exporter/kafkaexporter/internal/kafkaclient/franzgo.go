@@ -34,13 +34,7 @@ func NewFranzSyncProducer(client *kgo.Client,
 // ExportData sends a batch of messages to Kafka
 func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
 	messages := makeFranzMessages(msgs)
-	setMessageHeaders(ctx, messages, p.metadataKeys,
-		func(key string, value []byte) kgo.RecordHeader {
-			return kgo.RecordHeader{Key: key, Value: value}
-		},
-		func(m *kgo.Record) []kgo.RecordHeader { return m.Headers },
-		func(m *kgo.Record, h []kgo.RecordHeader) { m.Headers = h },
-	)
+	setMessageHeaders(ctx, messages, p.metadataKeys)
 	result := p.client.ProduceSync(ctx, messages...)
 	var errs []error
 	for _, r := range result {

@@ -60,7 +60,6 @@ exporter/prometheusexporter exporter/prometheus
 exporter/prometheusremotewriteexporter exporter/prometheusremotewrite
 exporter/pulsarexporter exporter/pulsar
 exporter/rabbitmqexporter exporter/rabbitmq
-exporter/sapmexporter exporter/sapm
 exporter/sematextexporter exporter/sematext
 exporter/sentryexporter exporter/sentry
 exporter/signalfxexporter exporter/signalfx
@@ -177,7 +176,6 @@ pkg/xstreamencoding pkg/xstreamencoding
 processor/attributesprocessor processor/attributes
 processor/coralogixprocessor processor/coralogix
 processor/cumulativetodeltaprocessor processor/cumulativetodelta
-processor/datadogsemanticsprocessor processor/datadogsemantics
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
 processor/dnslookupprocessor processor/dnslookup
@@ -230,6 +228,7 @@ receiver/awss3receiver receiver/awss3
 receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
 receiver/azureeventhubreceiver receiver/azureeventhub
+receiver/azurefunctionsreceiver receiver/azurefunctions
 receiver/azuremonitorreceiver receiver/azuremonitor
 receiver/carbonreceiver receiver/carbon
 receiver/chronyreceiver receiver/chrony
@@ -350,4 +349,3 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
-receiver/k8slogreceiver receiver/k8slog

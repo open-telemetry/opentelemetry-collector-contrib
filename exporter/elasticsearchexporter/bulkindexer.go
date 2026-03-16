@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -63,13 +62,13 @@ const defaultMaxRetries = 2
 const (
 	// errorHintKnownIssues is the hint message for errors that are documented in the Known issues section.
 	errorHintKnownIssues = "check the \"Known issues\" section of Elasticsearch Exporter docs"
-	// errorHintOTelMappingMode is the hint message for illegal_argument_exception when using OTel mapping mode with incompatible Elasticsearch versions.
+	// errorHintOTelMappingMode is the hint message for illegal_argument_exception
+	// related to require_data_stream with incompatible Elasticsearch versions in OTel mode.
 	errorHintOTelMappingMode = "OTel mapping mode requires Elasticsearch 8.12+ (see Known issues in README)"
+	// errorHintECSMappingMode is the hint message for illegal_argument_exception
+	// related to require_data_stream with incompatible Elasticsearch versions in ECS mode.
+	errorHintECSMappingMode = "ECS mapping mode requires Elasticsearch 8.12+ (see Known issues in README)"
 )
-
-// otelDatasetSuffixRegex matches the .otel-{namespace} suffix pattern in OTel mapping mode indices.
-// Pattern: {signal}-{dataset}.otel-{namespace}
-var otelDatasetSuffixRegex = regexp.MustCompile(`^[^-]+?-[^-]+?\.otel-`)
 
 func newBulkIndexer(
 	client elastictransport.Interface,
@@ -77,8 +76,9 @@ func newBulkIndexer(
 	requireDataStream bool,
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
+	getErrorHintFunc func(index, errorType string) string,
 ) bulkIndexer {
-	return newSyncBulkIndexer(client, config, requireDataStream, tb, logger)
+	return newSyncBulkIndexer(client, config, requireDataStream, tb, logger, getErrorHintFunc)
 }
 
 func bulkIndexerConfig(client elastictransport.Interface, config *Config, requireDataStream bool, logger *zap.Logger) docappender.BulkIndexerConfig {
@@ -143,6 +143,7 @@ func newSyncBulkIndexer(
 	requireDataStream bool,
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
+	getErrorHintFunc func(index, errorType string) string,
 ) *syncBulkIndexer {
 	var maxFlushBytes int64
 	if config.QueueBatchConfig.HasValue() && config.QueueBatchConfig.Get().Batch.HasValue() {
@@ -160,6 +161,7 @@ func newSyncBulkIndexer(
 		telemetryBuilder:      tb,
 		logger:                logger,
 		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
+		getErrorHintFunc:      getErrorHintFunc,
 	}
 }
 
@@ -172,6 +174,7 @@ type syncBulkIndexer struct {
 	telemetryBuilder      *metadata.TelemetryBuilder
 	logger                *zap.Logger
 	failedDocsInputLogger *zap.Logger
+	getErrorHintFunc      func(index, errorType string) string
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
@@ -244,6 +247,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 			s.s.telemetryBuilder,
 			s.s.logger,
 			s.s.failedDocsInputLogger,
+			s.s.getErrorHintFunc,
 		); err != nil {
 			return err
 		}
@@ -279,6 +283,7 @@ func flushBulkIndexer(
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 	failedDocsInputLogger *zap.Logger,
+	getErrorHintFunc func(index, errorType string) string,
 ) error {
 	itemsCount := bi.Items()
 	if itemsCount == 0 {
@@ -388,10 +393,13 @@ func flushBulkIndexer(
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
+			zap.Int("http.response.status_code", resp.Status),
 		)
 
-		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
-			fields = append(fields, zap.String("hint", hint))
+		if getErrorHintFunc != nil {
+			if hint := getErrorHintFunc(resp.Index, resp.Error.Type); hint != "" {
+				fields = append(fields, zap.String("hint", hint))
+			}
 		}
 		logger.Error("failed to index document", fields...)
 
@@ -465,14 +473,19 @@ func getAttributesFromMetadataKeys(ctx context.Context, keys []string) []attribu
 	return attrs
 }
 
-func getErrorHint(index, errorType string) string {
+func getErrorHint(mode MappingMode, index, errorType string) string {
 	if strings.HasPrefix(index, ".ds-metrics-") && errorType == "version_conflict_engine_exception" {
 		return errorHintKnownIssues
 	}
-	// Detect illegal_argument_exception related to require_data_stream when using OTel mapping mode
-	// with Elasticsearch < 8.12. OTel mapping mode indices contain ".otel-" as a dataset suffix.
-	if errorType == "illegal_argument_exception" && otelDatasetSuffixRegex.MatchString(index) {
-		return errorHintOTelMappingMode
+	if errorType == "illegal_argument_exception" {
+		switch mode {
+		case MappingOTel:
+			return errorHintOTelMappingMode
+		case MappingECS:
+			return errorHintECSMappingMode
+		default:
+			//  no error hint for this mapping mode
+		}
 	}
 	return ""
 }
@@ -524,20 +537,28 @@ func (b *bulkIndexers) start(
 	}
 
 	for _, mode := range allowedMappingModes {
-		bi := newBulkIndexer(esClient, cfg, mode == MappingOTel, b.telemetryBuilder, set.Logger)
+		requireDataStream := mode == MappingOTel || mode == MappingECS
+		modeSpecificErrorHintFunc := func(index, errorType string) string {
+			return getErrorHint(mode, index, errorType)
+		}
+		bi := newBulkIndexer(esClient, cfg, requireDataStream, b.telemetryBuilder, set.Logger, modeSpecificErrorHintFunc)
 		b.modes[mode] = &wgTrackingBulkIndexer{bulkIndexer: bi, wg: &b.wg}
 	}
 
-	profilingEvents := newBulkIndexer(esClient, cfg, true, b.telemetryBuilder, set.Logger)
+	mappingModeNoneErrorHintFunc := func(index, errorType string) string {
+		return getErrorHint(MappingNone, index, errorType)
+	}
+
+	profilingEvents := newBulkIndexer(esClient, cfg, true, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingEvents = &wgTrackingBulkIndexer{bulkIndexer: profilingEvents, wg: &b.wg}
 
-	profilingStackTraces := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
+	profilingStackTraces := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingStackTraces = &wgTrackingBulkIndexer{bulkIndexer: profilingStackTraces, wg: &b.wg}
 
-	profilingStackFrames := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
+	profilingStackFrames := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingStackFrames = &wgTrackingBulkIndexer{bulkIndexer: profilingStackFrames, wg: &b.wg}
 
-	profilingExecutables := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
+	profilingExecutables := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingExecutables = &wgTrackingBulkIndexer{bulkIndexer: profilingExecutables, wg: &b.wg}
 	return nil
 }
