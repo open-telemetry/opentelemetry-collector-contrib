@@ -1,3 +1,4 @@
+display_name: Azure Blob Receiver
 type: azureblob
 
 status:
