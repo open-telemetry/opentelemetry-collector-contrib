@@ -8,7 +8,7 @@ This extension unmarshalls logs encoded in formats produced by AWS services.
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fawslogsencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fawslogsencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fawslogsencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fawslogsencoding) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m), [@Kavindu-Dodan](https://www.github.com/Kavindu-Dodan) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -170,6 +170,29 @@ otelcol --config=config.yaml --feature-gates --feature-gates=<FEATURE_GATE_ID>
 | `userIdentity.principalId`      | `aws.principal.id`             | `aws.user_identity.principal.id`              |
 | `userIdentity.arn`              | `aws.principal.arn`            | `aws.user_identity.principal.arn`             |
 | `userIdentity.type`             | `aws.principal.type`           | `aws.user_identity.principal.type`            |
+
+## Streaming Support
+
+The extension implements streaming support which allows processing of input data to be processed without loading entire logs into memory.
+The implementation follows `encoding.LogsDecoderExtension` contract and streamed unmarhaling is exposed through `NewLogsDecoder`.
+
+Note that, unlike non-streaming unmarshaling, caller is expected to detect and perform decompression operations (e.g. un-gzip).
+This allows streaming implementation to work independently of compression algorithms and buffer sizes.
+
+The table below summarizes streaming support details for each log type, along with the offset tracking mechanism,
+
+| Log Type            | Sub Log Type/Source            | Offset Tracking             | Notes                                                                                                                 |
+|---------------------|--------------------------------|-----------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| CloudTrail          | Generic records                | Number of records processed | Number of records are used as CloudTrail logs arrives as a JSON. Streaming is done on internal `Records` array        |
+| CloudTrail          | CloudWatch trigger             | Number of bytes processed   | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| CloudTrail          | Digest record                  | Number of bytes processed   | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| ELB Access Logs     | ALB/NLB/CLB                    | Bytes processed             |                                                                                                                       |
+| Network Firewall    | Alert/Flow/TLS                 | Bytes processed             |                                                                                                                       |
+| S3 Access Logs      | -                              | Bytes processed             |                                                                                                                       |
+| Subscription filter | -                              | Number of records processed | Supports processing multi-line inputs and offset tracks number of records that get processed                          |
+| VPC Flow Logs       | S3 plain text                  | Bytes processed             |                                                                                                                       |
+| VPC Flow Logs       | CloudWatch subscription filter | Bytes processed             | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| WAF Logs            | -                              | Bytes processed             |                                                                                                                       |
 
 ## Produced Records per Format
 

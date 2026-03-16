@@ -1,4 +1,7 @@
+display_name: SSH Check Receiver
 type: sshcheck
+
+description: This receiver creates stats by connecting to an SSH server which may be an SFTP server.
 
 status:
   class: receiver

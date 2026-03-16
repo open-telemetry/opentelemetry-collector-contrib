@@ -286,6 +286,74 @@ func TestConfig_DeploymentTypeDefault(t *testing.T) {
 	assert.Equal(t, "unknown", cfg.DeploymentType, "DeploymentType should default to 'unknown'")
 }
 
+func TestConfig_InstallationMethodDefault(t *testing.T) {
+	cfg := Config{
+		API: datadogconfig.APIConfig{
+			Site: datadogconfig.DefaultSite,
+			Key:  "1234567890abcdef1234567890abcdef",
+		},
+		HTTPConfig: &httpserver.Config{
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:8080",
+				},
+			},
+			Path: "/metadata",
+		},
+	}
+
+	err := cfg.Validate()
+	require.NoError(t, err)
+	assert.Empty(t, cfg.InstallationMethod, "InstallationMethod should default to empty string")
+}
+
+func TestConfig_InstallationMethodValidValues(t *testing.T) {
+	tests := []struct {
+		name               string
+		installationMethod string
+		expectError        bool
+	}{
+		{name: "empty is valid", installationMethod: "", expectError: false},
+		{name: "kubernetes is valid", installationMethod: "kubernetes", expectError: false},
+		{name: "bare-metal is valid", installationMethod: "bare-metal", expectError: false},
+		{name: "docker is valid", installationMethod: "docker", expectError: false},
+		{name: "ecs-fargate is valid", installationMethod: "ecs-fargate", expectError: false},
+		{name: "eks-fargate is valid", installationMethod: "eks-fargate", expectError: false},
+		{name: "invalid value fails", installationMethod: "invalid", expectError: true},
+		{name: "unknown is invalid", installationMethod: "unknown", expectError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				API: datadogconfig.APIConfig{
+					Site: datadogconfig.DefaultSite,
+					Key:  "1234567890abcdef1234567890abcdef",
+				},
+				HTTPConfig: &httpserver.Config{
+					ServerConfig: confighttp.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:8080",
+						},
+					},
+					Path: "/metadata",
+				},
+				InstallationMethod: tt.installationMethod,
+			}
+
+			err := cfg.Validate()
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "installation_method must be one of")
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestConfig_DeploymentTypeValidValues(t *testing.T) {
 	tests := []struct {
 		name           string

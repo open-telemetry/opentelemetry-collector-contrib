@@ -1,0 +1,4 @@
+change_type: 'deprecation'
+component: extension/cgroup_runtime
+note: Introduce new snake case compliant name `cgroup_runtime`
+issues: [46773]

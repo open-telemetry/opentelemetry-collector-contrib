@@ -37,7 +37,14 @@ func (dp Histogram) Value() (pcommon.Value, error) {
 	return histogramToValue(dp.HistogramDataPoint, dp.metric)
 }
 
-func (dp Histogram) DynamicTemplate(_ pmetric.Metric) string {
+func (dp Histogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTemplateMode) string {
+	if mode == DynamicTemplateModeECS {
+		if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+			return "summary_metrics"
+		}
+		return "histogram_metrics"
+	}
+
 	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
 		return "summary"
 	}
