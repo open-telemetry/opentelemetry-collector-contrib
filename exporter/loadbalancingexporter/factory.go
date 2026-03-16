@@ -69,12 +69,25 @@ func buildExporterSettings(typ component.Type, params exporter.Settings, endpoin
 	return params
 }
 
+func buildExporterQueueSettings(cfg *Config) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	if !cfg.QueueSettings.HasValue() {
+		return configoptional.None[exporterhelper.QueueBatchConfig]()
+	}
+
+	queueSettings := *cfg.QueueSettings.Get()
+	if cfg.Enabled && queueSettings.StorageID == nil {
+		queueSettings.WaitForResult = true
+	}
+
+	return configoptional.Some(queueSettings)
+}
+
 func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config) []exporterhelper.Option {
 	if cfg.TimeoutSettings.Timeout > 0 {
 		options = append(options, exporterhelper.WithTimeout(cfg.TimeoutSettings))
 	}
-	if cfg.QueueSettings.HasValue() {
-		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
+	if queueSettings := buildExporterQueueSettings(cfg); queueSettings.HasValue() {
+		options = append(options, exporterhelper.WithQueue(queueSettings))
 	}
 	if cfg.Enabled {
 		options = append(options, exporterhelper.WithRetry(cfg.BackOffConfig))

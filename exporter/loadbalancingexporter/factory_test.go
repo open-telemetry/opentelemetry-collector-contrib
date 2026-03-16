@@ -230,3 +230,49 @@ func TestBuildExporterResilienceOptions(t *testing.T) {
 		assert.Len(t, buildExporterResilienceOptions(o, cfg), 3)
 	})
 }
+
+func TestBuildExporterQueueSettings(t *testing.T) {
+	t.Run("no queue settings", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+
+		queueSettings := buildExporterQueueSettings(cfg)
+
+		assert.False(t, queueSettings.HasValue())
+	})
+
+	t.Run("queue without retry keeps wait_for_result disabled", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+
+		queueSettings := buildExporterQueueSettings(cfg)
+
+		require.True(t, queueSettings.HasValue())
+		assert.False(t, queueSettings.Get().WaitForResult)
+	})
+
+	t.Run("queue with retry enables wait_for_result", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+		cfg.BackOffConfig = configretry.NewDefaultBackOffConfig()
+
+		queueSettings := buildExporterQueueSettings(cfg)
+
+		require.True(t, queueSettings.HasValue())
+		assert.True(t, queueSettings.Get().WaitForResult)
+		assert.False(t, cfg.QueueSettings.Get().WaitForResult)
+	})
+
+	t.Run("persistent queue with retry does not force wait_for_result", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		queueCfg := exporterhelper.NewDefaultQueueConfig()
+		storageID := component.MustNewID("file_storage")
+		queueCfg.StorageID = &storageID
+		cfg.QueueSettings = configoptional.Some(queueCfg)
+		cfg.BackOffConfig = configretry.NewDefaultBackOffConfig()
+
+		queueSettings := buildExporterQueueSettings(cfg)
+
+		require.True(t, queueSettings.HasValue())
+		assert.False(t, queueSettings.Get().WaitForResult)
+	})
+}
