@@ -12,13 +12,18 @@ import (
 	"syscall"
 )
 
-func (r *Resolver) addOwnerInfo(file *os.File, attributes map[string]any) error {
+func (r *Resolver) addPermissionInfo(file *os.File, attributes map[string]any) error {
 	fileInfo, errStat := file.Stat()
 	if errStat != nil {
 		return fmt.Errorf("resolve file stat: %w", errStat)
 	}
 	fileStat := fileInfo.Sys().(*syscall.Stat_t)
 
+	if r.IncludeFilePermissions {
+		// Format the file mode as a 3-digit octal string (e.g., "755")
+		perms := fmt.Sprintf("%03o", fileInfo.Mode().Perm())
+		attributes[LogFilePermissions] = perms
+	}
 	if r.IncludeFileOwnerName {
 		fileOwner, errFileUser := user.LookupId(fmt.Sprint(fileStat.Uid))
 		if errFileUser != nil {

@@ -7,7 +7,7 @@ description: |
 status:
   class: receiver
   stability:
-    development: [profiles]
-  distributions: []
+    alpha: [profiles]
+  distributions: [contrib]
   codeowners:
     active: [MovieStoreGuy, atoulme]

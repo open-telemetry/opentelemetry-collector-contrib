@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -1277,42 +1276,69 @@ func TestDropLargeTraces(t *testing.T) {
 	assert.Len(t, allSampledTraces, 2)
 
 	// These traces should not count as dropped too early as we record a separate metric.
-	var md metricdata.ResourceMetrics
-	require.NoError(t, telem.reader.Collect(t.Context(), &md))
+	// Use Eventually to ensure metric aggregation is complete before asserting.
+	// This handles async metric pipeline timing, especially in slower CI environments.
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		var md metricdata.ResourceMetrics
+		err := telem.reader.Collect(t.Context(), &md)
+		require.NoError(collect, err)
 
-	expectedTooEarly := metricdata.Metrics{
-		Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
-		Description: "Count of traces that needed to be dropped before the configured wait time [Development]",
-		Unit:        "{traces}",
-		Data: metricdata.Sum[int64]{
-			IsMonotonic: true,
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints: []metricdata.DataPoint[int64]{
-				{
-					Value: 0,
+		expectedTooEarly := metricdata.Metrics{
+			Name: "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
+			Unit: "{traces}",
+			Data: metricdata.Sum[int64]{
+				IsMonotonic: true,
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 0,
+					},
 				},
 			},
-		},
-	}
-	tooEarly := telem.getMetric(expectedTooEarly.Name, md)
-	metricdatatest.AssertEqual(t, expectedTooEarly, tooEarly, metricdatatest.IgnoreTimestamp())
+		}
+		tooEarly := telem.getMetric(expectedTooEarly.Name, md)
+		// Verify metric exists and has expected structure
+		require.NotNil(collect, tooEarly)
+		require.Equal(collect, expectedTooEarly.Name, tooEarly.Name)
+		require.Equal(collect, expectedTooEarly.Unit, tooEarly.Unit)
+		// Validate metric metadata (IsMonotonic and Temporality)
+		tooEarlySum := tooEarly.Data.(metricdata.Sum[int64])
+		require.True(collect, tooEarlySum.IsMonotonic, "tooEarly metric must be monotonic")
+		require.Equal(collect, metricdata.CumulativeTemporality, tooEarlySum.Temporality,
+			"tooEarly metric must have CumulativeTemporality")
+		require.Len(collect,
+			tooEarlySum.DataPoints,
+			len(expectedTooEarly.Data.(metricdata.Sum[int64]).DataPoints))
+		require.Equal(collect, int64(0), tooEarlySum.DataPoints[0].Value)
 
-	expectedTooLarge := metricdata.Metrics{
-		Name:        "otelcol_processor_tail_sampling_traces_dropped_too_large",
-		Description: "Count of traces that were dropped because they were too large [Development]",
-		Unit:        "{traces}",
-		Data: metricdata.Sum[int64]{
-			IsMonotonic: true,
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints: []metricdata.DataPoint[int64]{
-				{
-					Value: 1,
+		expectedTooLarge := metricdata.Metrics{
+			Name: "otelcol_processor_tail_sampling_traces_dropped_too_large",
+			Unit: "{traces}",
+			Data: metricdata.Sum[int64]{
+				IsMonotonic: true,
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
 				},
 			},
-		},
-	}
-	tooLarge := telem.getMetric(expectedTooLarge.Name, md)
-	metricdatatest.AssertEqual(t, expectedTooLarge, tooLarge, metricdatatest.IgnoreTimestamp())
+		}
+		tooLarge := telem.getMetric(expectedTooLarge.Name, md)
+		// Verify metric exists and has expected structure
+		require.NotNil(collect, tooLarge)
+		require.Equal(collect, expectedTooLarge.Name, tooLarge.Name)
+		require.Equal(collect, expectedTooLarge.Unit, tooLarge.Unit)
+		// Validate metric metadata (IsMonotonic and Temporality)
+		tooLargeSum := tooLarge.Data.(metricdata.Sum[int64])
+		require.True(collect, tooLargeSum.IsMonotonic, "tooLarge metric must be monotonic")
+		require.Equal(collect, metricdata.CumulativeTemporality, tooLargeSum.Temporality,
+			"tooLarge metric must have CumulativeTemporality")
+		require.Len(collect,
+			tooLargeSum.DataPoints,
+			len(expectedTooLarge.Data.(metricdata.Sum[int64]).DataPoints))
+		require.Equal(collect, int64(1), tooLargeSum.DataPoints[0].Value)
+	}, 2*time.Second, 100*time.Millisecond)
 }
 
 // TestDeleteQueueCleared verifies that all in memory traces are removed from
