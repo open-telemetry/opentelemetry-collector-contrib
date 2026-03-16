@@ -4,7 +4,6 @@
 package otlpjsonconnector
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,7 +47,7 @@ func TestLogsConnectorConsumeLogsWithValidLogPayload(t *testing.T) {
 	lr := sl.LogRecords().AppendEmpty()
 	lr.Body().SetStr(`{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"test log"}}]}]}]}`)
 
-	err := c.ConsumeLogs(context.Background(), logs)
+	err := c.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// The valid log payload should be forwarded to the sink
@@ -68,7 +67,7 @@ func TestLogsConnectorConsumeLogsWithTracePayload(t *testing.T) {
 	lr := sl.LogRecords().AppendEmpty()
 	lr.Body().SetStr(`{"resourceSpans":[{"resource":{},"scopeSpans":[]}]}`)
 
-	err := c.ConsumeLogs(context.Background(), logs)
+	err := c.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// Trace payloads should be ignored by the logs connector
@@ -88,7 +87,7 @@ func TestLogsConnectorConsumeLogsWithMetricPayload(t *testing.T) {
 	lr := sl.LogRecords().AppendEmpty()
 	lr.Body().SetStr(`{"resourceMetrics":[{"resource":{},"scopeMetrics":[]}]}`)
 
-	err := c.ConsumeLogs(context.Background(), logs)
+	err := c.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// Metric payloads should be ignored by the logs connector
@@ -108,7 +107,7 @@ func TestLogsConnectorConsumeLogsWithInvalidPayload(t *testing.T) {
 	lr := sl.LogRecords().AppendEmpty()
 	lr.Body().SetStr(`this is not valid otlp json`)
 
-	err := c.ConsumeLogs(context.Background(), logs)
+	err := c.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// Invalid payloads should be dropped
@@ -128,7 +127,7 @@ func TestLogsConnectorConsumeLogsWithMalformedLogJSON(t *testing.T) {
 	lr := sl.LogRecords().AppendEmpty()
 	lr.Body().SetStr(`{"resourceLogs": [invalid json`)
 
-	err := c.ConsumeLogs(context.Background(), logs)
+	err := c.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// Malformed JSON should not cause panic but be dropped
@@ -143,7 +142,7 @@ func TestLogsConnectorConsumeLogsWithEmptyLogs(t *testing.T) {
 
 	// Empty logs input
 	logs := plog.NewLogs()
-	err := c.ConsumeLogs(context.Background(), logs)
+	err := c.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 	assert.Equal(t, 0, sink.LogRecordCount())
 }
