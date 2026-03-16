@@ -1,0 +1,19 @@
+kafka/missing_batch_partitioner_keys:
+  include_metadata_keys:
+    - metadata_key
+  sending_queue:
+    enabled: true
+    batch:
+      sizer: bytes
+
+kafka/not_superset_batch_partitioner_keys:
+  include_metadata_keys:
+    - metadata_key
+    - required_key
+  sending_queue:
+    enabled: true
+    batch:
+      sizer: bytes
+      partition:
+        metadata_keys:
+          - metadata_key

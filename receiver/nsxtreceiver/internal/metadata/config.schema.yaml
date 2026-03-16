@@ -5,49 +5,49 @@ $defs:
     type: object
     properties:
       nsxt.node.cpu.utilization:
-        description: "NsxtNodeCPUUtilizationConfig provides config for the nsxt.node.cpu.utilization metric."
+        description: "NsxtNodeCPUUtilizationMetricConfig provides config for the nsxt.node.cpu.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nsxt.node.filesystem.usage:
-        description: "NsxtNodeFilesystemUsageConfig provides config for the nsxt.node.filesystem.usage metric."
+        description: "NsxtNodeFilesystemUsageMetricConfig provides config for the nsxt.node.filesystem.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nsxt.node.filesystem.utilization:
-        description: "NsxtNodeFilesystemUtilizationConfig provides config for the nsxt.node.filesystem.utilization metric."
+        description: "NsxtNodeFilesystemUtilizationMetricConfig provides config for the nsxt.node.filesystem.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nsxt.node.memory.cache.usage:
-        description: "NsxtNodeMemoryCacheUsageConfig provides config for the nsxt.node.memory.cache.usage metric."
+        description: "NsxtNodeMemoryCacheUsageMetricConfig provides config for the nsxt.node.memory.cache.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nsxt.node.memory.usage:
-        description: "NsxtNodeMemoryUsageConfig provides config for the nsxt.node.memory.usage metric."
+        description: "NsxtNodeMemoryUsageMetricConfig provides config for the nsxt.node.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nsxt.node.network.io:
-        description: "NsxtNodeNetworkIoConfig provides config for the nsxt.node.network.io metric."
+        description: "NsxtNodeNetworkIoMetricConfig provides config for the nsxt.node.network.io metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nsxt.node.network.packet.count:
-        description: "NsxtNodeNetworkPacketCountConfig provides config for the nsxt.node.network.packet.count metric."
+        description: "NsxtNodeNetworkPacketCountMetricConfig provides config for the nsxt.node.network.packet.count metric."
         type: object
         properties:
           enabled:

@@ -5,49 +5,49 @@ $defs:
     type: object
     properties:
       iis.application_pool.state:
-        description: "IisApplicationPoolStateConfig provides config for the iis.application_pool.state metric."
+        description: "IisApplicationPoolStateMetricConfig provides config for the iis.application_pool.state metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.application_pool.uptime:
-        description: "IisApplicationPoolUptimeConfig provides config for the iis.application_pool.uptime metric."
+        description: "IisApplicationPoolUptimeMetricConfig provides config for the iis.application_pool.uptime metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.connection.active:
-        description: "IisConnectionActiveConfig provides config for the iis.connection.active metric."
+        description: "IisConnectionActiveMetricConfig provides config for the iis.connection.active metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.connection.anonymous:
-        description: "IisConnectionAnonymousConfig provides config for the iis.connection.anonymous metric."
+        description: "IisConnectionAnonymousMetricConfig provides config for the iis.connection.anonymous metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.connection.attempt.count:
-        description: "IisConnectionAttemptCountConfig provides config for the iis.connection.attempt.count metric."
+        description: "IisConnectionAttemptCountMetricConfig provides config for the iis.connection.attempt.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.network.blocked:
-        description: "IisNetworkBlockedConfig provides config for the iis.network.blocked metric."
+        description: "IisNetworkBlockedMetricConfig provides config for the iis.network.blocked metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.network.file.count:
-        description: "IisNetworkFileCountConfig provides config for the iis.network.file.count metric."
+        description: "IisNetworkFileCountMetricConfig provides config for the iis.network.file.count metric."
         type: object
         properties:
           enabled:
@@ -70,7 +70,7 @@ $defs:
             default:
               - "direction"
       iis.network.io:
-        description: "IisNetworkIoConfig provides config for the iis.network.io metric."
+        description: "IisNetworkIoMetricConfig provides config for the iis.network.io metric."
         type: object
         properties:
           enabled:
@@ -93,7 +93,7 @@ $defs:
             default:
               - "direction"
       iis.request.count:
-        description: "IisRequestCountConfig provides config for the iis.request.count metric."
+        description: "IisRequestCountMetricConfig provides config for the iis.request.count metric."
         type: object
         properties:
           enabled:
@@ -116,35 +116,35 @@ $defs:
             default:
               - "request"
       iis.request.queue.age.max:
-        description: "IisRequestQueueAgeMaxConfig provides config for the iis.request.queue.age.max metric."
+        description: "IisRequestQueueAgeMaxMetricConfig provides config for the iis.request.queue.age.max metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.request.queue.count:
-        description: "IisRequestQueueCountConfig provides config for the iis.request.queue.count metric."
+        description: "IisRequestQueueCountMetricConfig provides config for the iis.request.queue.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.request.rejected:
-        description: "IisRequestRejectedConfig provides config for the iis.request.rejected metric."
+        description: "IisRequestRejectedMetricConfig provides config for the iis.request.rejected metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.thread.active:
-        description: "IisThreadActiveConfig provides config for the iis.thread.active metric."
+        description: "IisThreadActiveMetricConfig provides config for the iis.thread.active metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       iis.uptime:
-        description: "IisUptimeConfig provides config for the iis.uptime metric."
+        description: "IisUptimeMetricConfig provides config for the iis.uptime metric."
         type: object
         properties:
           enabled:

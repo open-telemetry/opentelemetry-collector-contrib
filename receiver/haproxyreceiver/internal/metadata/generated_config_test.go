@@ -26,111 +26,112 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HaproxyActive: HaproxyActiveConfig{
+					HaproxyActive: HaproxyActiveMetricConfig{
 						Enabled: true,
 					},
-					HaproxyBackup: HaproxyBackupConfig{
+					HaproxyBackup: HaproxyBackupMetricConfig{
 						Enabled: true,
 					},
-					HaproxyBytesInput: HaproxyBytesInputConfig{
+					HaproxyBytesInput: HaproxyBytesInputMetricConfig{
 						Enabled: true,
 					},
-					HaproxyBytesOutput: HaproxyBytesOutputConfig{
+					HaproxyBytesOutput: HaproxyBytesOutputMetricConfig{
 						Enabled: true,
 					},
-					HaproxyClientsCanceled: HaproxyClientsCanceledConfig{
+					HaproxyClientsCanceled: HaproxyClientsCanceledMetricConfig{
 						Enabled: true,
 					},
-					HaproxyCompressionBypass: HaproxyCompressionBypassConfig{
+					HaproxyCompressionBypass: HaproxyCompressionBypassMetricConfig{
 						Enabled: true,
 					},
-					HaproxyCompressionCount: HaproxyCompressionCountConfig{
+					HaproxyCompressionCount: HaproxyCompressionCountMetricConfig{
 						Enabled: true,
 					},
-					HaproxyCompressionInput: HaproxyCompressionInputConfig{
+					HaproxyCompressionInput: HaproxyCompressionInputMetricConfig{
 						Enabled: true,
 					},
-					HaproxyCompressionOutput: HaproxyCompressionOutputConfig{
+					HaproxyCompressionOutput: HaproxyCompressionOutputMetricConfig{
 						Enabled: true,
 					},
-					HaproxyConnectionsAverageTime: HaproxyConnectionsAverageTimeConfig{
+					HaproxyConnectionsAverageTime: HaproxyConnectionsAverageTimeMetricConfig{
 						Enabled: true,
 					},
-					HaproxyConnectionsErrors: HaproxyConnectionsErrorsConfig{
+					HaproxyConnectionsErrors: HaproxyConnectionsErrorsMetricConfig{
 						Enabled: true,
 					},
-					HaproxyConnectionsRate: HaproxyConnectionsRateConfig{
+					HaproxyConnectionsRate: HaproxyConnectionsRateMetricConfig{
 						Enabled: true,
 					},
-					HaproxyConnectionsRetries: HaproxyConnectionsRetriesConfig{
+					HaproxyConnectionsRetries: HaproxyConnectionsRetriesMetricConfig{
 						Enabled: true,
 					},
-					HaproxyConnectionsTotal: HaproxyConnectionsTotalConfig{
+					HaproxyConnectionsTotal: HaproxyConnectionsTotalMetricConfig{
 						Enabled: true,
 					},
-					HaproxyDowntime: HaproxyDowntimeConfig{
+					HaproxyDowntime: HaproxyDowntimeMetricConfig{
 						Enabled: true,
 					},
-					HaproxyFailedChecks: HaproxyFailedChecksConfig{
+					HaproxyFailedChecks: HaproxyFailedChecksMetricConfig{
 						Enabled: true,
 					},
-					HaproxyRequestsAverageTime: HaproxyRequestsAverageTimeConfig{
+					HaproxyRequestsAverageTime: HaproxyRequestsAverageTimeMetricConfig{
 						Enabled: true,
 					},
-					HaproxyRequestsDenied: HaproxyRequestsDeniedConfig{
+					HaproxyRequestsDenied: HaproxyRequestsDeniedMetricConfig{
 						Enabled: true,
 					},
-					HaproxyRequestsErrors: HaproxyRequestsErrorsConfig{
+					HaproxyRequestsErrors: HaproxyRequestsErrorsMetricConfig{
 						Enabled: true,
 					},
-					HaproxyRequestsQueued: HaproxyRequestsQueuedConfig{
+					HaproxyRequestsQueued: HaproxyRequestsQueuedMetricConfig{
 						Enabled: true,
 					},
-					HaproxyRequestsRate: HaproxyRequestsRateConfig{
+					HaproxyRequestsRate: HaproxyRequestsRateMetricConfig{
 						Enabled: true,
 					},
-					HaproxyRequestsRedispatched: HaproxyRequestsRedispatchedConfig{
+					HaproxyRequestsRedispatched: HaproxyRequestsRedispatchedMetricConfig{
 						Enabled: true,
 					},
-					HaproxyRequestsTotal: HaproxyRequestsTotalConfig{
+					HaproxyRequestsTotal: HaproxyRequestsTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HaproxyRequestsTotalAttributeKey{HaproxyRequestsTotalAttributeKeyStatusCode},
+						EnabledAttributes:   []HaproxyRequestsTotalMetricAttributeKey{HaproxyRequestsTotalMetricAttributeKeyStatusCode},
 					},
-					HaproxyResponsesAverageTime: HaproxyResponsesAverageTimeConfig{
+					HaproxyResponsesAverageTime: HaproxyResponsesAverageTimeMetricConfig{
 						Enabled: true,
 					},
-					HaproxyResponsesDenied: HaproxyResponsesDeniedConfig{
+					HaproxyResponsesDenied: HaproxyResponsesDeniedMetricConfig{
 						Enabled: true,
 					},
-					HaproxyResponsesErrors: HaproxyResponsesErrorsConfig{
+					HaproxyResponsesErrors: HaproxyResponsesErrorsMetricConfig{
 						Enabled: true,
 					},
-					HaproxyServerSelectedTotal: HaproxyServerSelectedTotalConfig{
+					HaproxyServerSelectedTotal: HaproxyServerSelectedTotalMetricConfig{
 						Enabled: true,
 					},
-					HaproxySessionsAverage: HaproxySessionsAverageConfig{
+					HaproxySessionsAverage: HaproxySessionsAverageMetricConfig{
 						Enabled: true,
 					},
-					HaproxySessionsCount: HaproxySessionsCountConfig{
+					HaproxySessionsCount: HaproxySessionsCountMetricConfig{
 						Enabled: true,
 					},
-					HaproxySessionsLimit: HaproxySessionsLimitConfig{
+					HaproxySessionsLimit: HaproxySessionsLimitMetricConfig{
 						Enabled: true,
 					},
-					HaproxySessionsRate: HaproxySessionsRateConfig{
+					HaproxySessionsRate: HaproxySessionsRateMetricConfig{
 						Enabled: true,
 					},
-					HaproxySessionsTotal: HaproxySessionsTotalConfig{
+					HaproxySessionsTotal: HaproxySessionsTotalMetricConfig{
 						Enabled: true,
 					},
-					HaproxyWeight: HaproxyWeightConfig{
+					HaproxyWeight: HaproxyWeightMetricConfig{
 						Enabled: true,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HaproxyAddr:        ResourceAttributeConfig{Enabled: true},
 					HaproxyProxyName:   ResourceAttributeConfig{Enabled: true},
+					HaproxyServerState: ResourceAttributeConfig{Enabled: true},
 					HaproxyServiceName: ResourceAttributeConfig{Enabled: true},
 				},
 			},
@@ -139,111 +140,112 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HaproxyActive: HaproxyActiveConfig{
+					HaproxyActive: HaproxyActiveMetricConfig{
 						Enabled: false,
 					},
-					HaproxyBackup: HaproxyBackupConfig{
+					HaproxyBackup: HaproxyBackupMetricConfig{
 						Enabled: false,
 					},
-					HaproxyBytesInput: HaproxyBytesInputConfig{
+					HaproxyBytesInput: HaproxyBytesInputMetricConfig{
 						Enabled: false,
 					},
-					HaproxyBytesOutput: HaproxyBytesOutputConfig{
+					HaproxyBytesOutput: HaproxyBytesOutputMetricConfig{
 						Enabled: false,
 					},
-					HaproxyClientsCanceled: HaproxyClientsCanceledConfig{
+					HaproxyClientsCanceled: HaproxyClientsCanceledMetricConfig{
 						Enabled: false,
 					},
-					HaproxyCompressionBypass: HaproxyCompressionBypassConfig{
+					HaproxyCompressionBypass: HaproxyCompressionBypassMetricConfig{
 						Enabled: false,
 					},
-					HaproxyCompressionCount: HaproxyCompressionCountConfig{
+					HaproxyCompressionCount: HaproxyCompressionCountMetricConfig{
 						Enabled: false,
 					},
-					HaproxyCompressionInput: HaproxyCompressionInputConfig{
+					HaproxyCompressionInput: HaproxyCompressionInputMetricConfig{
 						Enabled: false,
 					},
-					HaproxyCompressionOutput: HaproxyCompressionOutputConfig{
+					HaproxyCompressionOutput: HaproxyCompressionOutputMetricConfig{
 						Enabled: false,
 					},
-					HaproxyConnectionsAverageTime: HaproxyConnectionsAverageTimeConfig{
+					HaproxyConnectionsAverageTime: HaproxyConnectionsAverageTimeMetricConfig{
 						Enabled: false,
 					},
-					HaproxyConnectionsErrors: HaproxyConnectionsErrorsConfig{
+					HaproxyConnectionsErrors: HaproxyConnectionsErrorsMetricConfig{
 						Enabled: false,
 					},
-					HaproxyConnectionsRate: HaproxyConnectionsRateConfig{
+					HaproxyConnectionsRate: HaproxyConnectionsRateMetricConfig{
 						Enabled: false,
 					},
-					HaproxyConnectionsRetries: HaproxyConnectionsRetriesConfig{
+					HaproxyConnectionsRetries: HaproxyConnectionsRetriesMetricConfig{
 						Enabled: false,
 					},
-					HaproxyConnectionsTotal: HaproxyConnectionsTotalConfig{
+					HaproxyConnectionsTotal: HaproxyConnectionsTotalMetricConfig{
 						Enabled: false,
 					},
-					HaproxyDowntime: HaproxyDowntimeConfig{
+					HaproxyDowntime: HaproxyDowntimeMetricConfig{
 						Enabled: false,
 					},
-					HaproxyFailedChecks: HaproxyFailedChecksConfig{
+					HaproxyFailedChecks: HaproxyFailedChecksMetricConfig{
 						Enabled: false,
 					},
-					HaproxyRequestsAverageTime: HaproxyRequestsAverageTimeConfig{
+					HaproxyRequestsAverageTime: HaproxyRequestsAverageTimeMetricConfig{
 						Enabled: false,
 					},
-					HaproxyRequestsDenied: HaproxyRequestsDeniedConfig{
+					HaproxyRequestsDenied: HaproxyRequestsDeniedMetricConfig{
 						Enabled: false,
 					},
-					HaproxyRequestsErrors: HaproxyRequestsErrorsConfig{
+					HaproxyRequestsErrors: HaproxyRequestsErrorsMetricConfig{
 						Enabled: false,
 					},
-					HaproxyRequestsQueued: HaproxyRequestsQueuedConfig{
+					HaproxyRequestsQueued: HaproxyRequestsQueuedMetricConfig{
 						Enabled: false,
 					},
-					HaproxyRequestsRate: HaproxyRequestsRateConfig{
+					HaproxyRequestsRate: HaproxyRequestsRateMetricConfig{
 						Enabled: false,
 					},
-					HaproxyRequestsRedispatched: HaproxyRequestsRedispatchedConfig{
+					HaproxyRequestsRedispatched: HaproxyRequestsRedispatchedMetricConfig{
 						Enabled: false,
 					},
-					HaproxyRequestsTotal: HaproxyRequestsTotalConfig{
+					HaproxyRequestsTotal: HaproxyRequestsTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HaproxyRequestsTotalAttributeKey{HaproxyRequestsTotalAttributeKeyStatusCode},
+						EnabledAttributes:   []HaproxyRequestsTotalMetricAttributeKey{HaproxyRequestsTotalMetricAttributeKeyStatusCode},
 					},
-					HaproxyResponsesAverageTime: HaproxyResponsesAverageTimeConfig{
+					HaproxyResponsesAverageTime: HaproxyResponsesAverageTimeMetricConfig{
 						Enabled: false,
 					},
-					HaproxyResponsesDenied: HaproxyResponsesDeniedConfig{
+					HaproxyResponsesDenied: HaproxyResponsesDeniedMetricConfig{
 						Enabled: false,
 					},
-					HaproxyResponsesErrors: HaproxyResponsesErrorsConfig{
+					HaproxyResponsesErrors: HaproxyResponsesErrorsMetricConfig{
 						Enabled: false,
 					},
-					HaproxyServerSelectedTotal: HaproxyServerSelectedTotalConfig{
+					HaproxyServerSelectedTotal: HaproxyServerSelectedTotalMetricConfig{
 						Enabled: false,
 					},
-					HaproxySessionsAverage: HaproxySessionsAverageConfig{
+					HaproxySessionsAverage: HaproxySessionsAverageMetricConfig{
 						Enabled: false,
 					},
-					HaproxySessionsCount: HaproxySessionsCountConfig{
+					HaproxySessionsCount: HaproxySessionsCountMetricConfig{
 						Enabled: false,
 					},
-					HaproxySessionsLimit: HaproxySessionsLimitConfig{
+					HaproxySessionsLimit: HaproxySessionsLimitMetricConfig{
 						Enabled: false,
 					},
-					HaproxySessionsRate: HaproxySessionsRateConfig{
+					HaproxySessionsRate: HaproxySessionsRateMetricConfig{
 						Enabled: false,
 					},
-					HaproxySessionsTotal: HaproxySessionsTotalConfig{
+					HaproxySessionsTotal: HaproxySessionsTotalMetricConfig{
 						Enabled: false,
 					},
-					HaproxyWeight: HaproxyWeightConfig{
+					HaproxyWeight: HaproxyWeightMetricConfig{
 						Enabled: false,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HaproxyAddr:        ResourceAttributeConfig{Enabled: false},
 					HaproxyProxyName:   ResourceAttributeConfig{Enabled: false},
+					HaproxyServerState: ResourceAttributeConfig{Enabled: false},
 					HaproxyServiceName: ResourceAttributeConfig{Enabled: false},
 				},
 			},
@@ -252,7 +254,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HaproxyActiveConfig{}, HaproxyBackupConfig{}, HaproxyBytesInputConfig{}, HaproxyBytesOutputConfig{}, HaproxyClientsCanceledConfig{}, HaproxyCompressionBypassConfig{}, HaproxyCompressionCountConfig{}, HaproxyCompressionInputConfig{}, HaproxyCompressionOutputConfig{}, HaproxyConnectionsAverageTimeConfig{}, HaproxyConnectionsErrorsConfig{}, HaproxyConnectionsRateConfig{}, HaproxyConnectionsRetriesConfig{}, HaproxyConnectionsTotalConfig{}, HaproxyDowntimeConfig{}, HaproxyFailedChecksConfig{}, HaproxyRequestsAverageTimeConfig{}, HaproxyRequestsDeniedConfig{}, HaproxyRequestsErrorsConfig{}, HaproxyRequestsQueuedConfig{}, HaproxyRequestsRateConfig{}, HaproxyRequestsRedispatchedConfig{}, HaproxyRequestsTotalConfig{}, HaproxyResponsesAverageTimeConfig{}, HaproxyResponsesDeniedConfig{}, HaproxyResponsesErrorsConfig{}, HaproxyServerSelectedTotalConfig{}, HaproxySessionsAverageConfig{}, HaproxySessionsCountConfig{}, HaproxySessionsLimitConfig{}, HaproxySessionsRateConfig{}, HaproxySessionsTotalConfig{}, HaproxyWeightConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HaproxyActiveMetricConfig{}, HaproxyBackupMetricConfig{}, HaproxyBytesInputMetricConfig{}, HaproxyBytesOutputMetricConfig{}, HaproxyClientsCanceledMetricConfig{}, HaproxyCompressionBypassMetricConfig{}, HaproxyCompressionCountMetricConfig{}, HaproxyCompressionInputMetricConfig{}, HaproxyCompressionOutputMetricConfig{}, HaproxyConnectionsAverageTimeMetricConfig{}, HaproxyConnectionsErrorsMetricConfig{}, HaproxyConnectionsRateMetricConfig{}, HaproxyConnectionsRetriesMetricConfig{}, HaproxyConnectionsTotalMetricConfig{}, HaproxyDowntimeMetricConfig{}, HaproxyFailedChecksMetricConfig{}, HaproxyRequestsAverageTimeMetricConfig{}, HaproxyRequestsDeniedMetricConfig{}, HaproxyRequestsErrorsMetricConfig{}, HaproxyRequestsQueuedMetricConfig{}, HaproxyRequestsRateMetricConfig{}, HaproxyRequestsRedispatchedMetricConfig{}, HaproxyRequestsTotalMetricConfig{}, HaproxyResponsesAverageTimeMetricConfig{}, HaproxyResponsesDeniedMetricConfig{}, HaproxyResponsesErrorsMetricConfig{}, HaproxyServerSelectedTotalMetricConfig{}, HaproxySessionsAverageMetricConfig{}, HaproxySessionsCountMetricConfig{}, HaproxySessionsLimitMetricConfig{}, HaproxySessionsRateMetricConfig{}, HaproxySessionsTotalMetricConfig{}, HaproxyWeightMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -282,6 +284,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				HaproxyAddr:        ResourceAttributeConfig{Enabled: true},
 				HaproxyProxyName:   ResourceAttributeConfig{Enabled: true},
+				HaproxyServerState: ResourceAttributeConfig{Enabled: true},
 				HaproxyServiceName: ResourceAttributeConfig{Enabled: true},
 			},
 		},
@@ -290,6 +293,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				HaproxyAddr:        ResourceAttributeConfig{Enabled: false},
 				HaproxyProxyName:   ResourceAttributeConfig{Enabled: false},
+				HaproxyServerState: ResourceAttributeConfig{Enabled: false},
 				HaproxyServiceName: ResourceAttributeConfig{Enabled: false},
 			},
 		},

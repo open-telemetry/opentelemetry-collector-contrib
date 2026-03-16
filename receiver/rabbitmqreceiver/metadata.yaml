@@ -1,6 +1,7 @@
 display_name: RabbitMQ Receiver
 type: rabbitmq
 
+reaggregation_enabled: true
 description: |
   This receiver fetches stats from a RabbitMQ node using the [RabbitMQ Management Plugin](https://www.rabbitmq.com/management.html).
 
@@ -188,6 +189,7 @@ attributes:
     name_override: state
     description: The state of messages in a queue.
     type: string
+    requirement_level: recommended
     enum:
       - ready
       - unacknowledged

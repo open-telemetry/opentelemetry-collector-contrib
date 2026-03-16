@@ -1124,7 +1124,7 @@ available at the benchmarks
 In that page, users can find details such as 
 [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#metrick8sattributesprocessor-5k-workload-cluster-ram-mib)
 and [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#metrick8sattributesprocessor-5k-workload-cluster-cpu-percentage)
-performance when the component is used in K8s Clusters (tests use [KOWK](https://kwok.sigs.k8s.io/))
+performance when the component is used in K8s Clusters (tests use [KWOK](https://kwok.sigs.k8s.io/))
 with a range number of workloads.
 Refer to the [test](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/be97561f515e7ecad2db9ed2acc7818f66e864c9/testbed/tests/k8sattributes_processor_test.go#L394-L398)
 for more information about the setup.

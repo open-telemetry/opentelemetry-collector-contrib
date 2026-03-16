@@ -451,6 +451,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.application_wait_time | The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta). | Any Double |
 | oracledb.buffer_gets | Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta). | Any Int |
 | oracledb.cluster_wait_time | Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta). | Any Double |
+| oracledb.command_type | Command type of the query. | Any Int |
 | oracledb.concurrency_wait_time | Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta). | Any Double |
 | oracledb.cpu_time | Total time (in seconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta). | Any Double |
 | oracledb.direct_reads | The number of direct path reads performed by a query — i.e., data blocks read directly from disk into the session’s memory (reporting delta). | Any Int |
@@ -464,7 +465,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.physical_write_requests | The number of times a query requested to write data to disk (reporting delta). | Any Int |
 | oracledb.rows_processed | The total number of rows that a query has read, returned, or affected during its execution (reporting delta). | Any Int |
 | oracledb.user_io_wait_time | The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta). | Any Double |
-| oracledb.procedure_execution_count | The number of times the stored procedure has been executed, derived from the maximum statement execution count across all statements in the procedure (reporting delta). | Any Int |
+| oracledb.procedure_execution_count | The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution. | Any Int |
 | oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int |
 | oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str |
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str |
